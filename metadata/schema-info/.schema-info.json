@@ -1,0 +1,18 @@
+[
+  {
+    "fields": {
+      "SchemaName": "__mj_BizAppsCommon",
+      "EntityIDMin": 1,
+      "EntityIDMax": 1000000,
+      "EntityNamePrefix": "Common: ",
+      "Description": "Common Business App Data"
+    },
+    "primaryKey": {
+      "ID": "0A9F0FDD-CD4D-4892-BA45-85722B982032"
+    },
+    "sync": {
+      "lastModified": "2026-02-15T20:47:08.228Z",
+      "checksum": "64d109bbd594593e237a8126578dc7eb66917858a7133607c5e231222c71c541"
+    }
+  }
+]
