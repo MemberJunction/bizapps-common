@@ -4,6 +4,49 @@
       "BaseView": "vwPeopleExtended",
       "BaseViewGenerated": false
     },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "IsNameField": true,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-02-27T22:48:59.202Z",
+            "checksum": "7eed61d7e6b053a30e312c82208b59beeffaa35465e6bbaf1ce6e42980f9884d"
+          }
+        },
+        {
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=FirstName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-02-27T22:48:59.227Z",
+            "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
+          }
+        },
+        {
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LastName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-02-27T22:48:59.252Z",
+            "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
+          }
+        }
+      ]
+    },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ.BizApps.Common: People"
     },
