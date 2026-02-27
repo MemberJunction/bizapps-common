@@ -11,23 +11,19 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-// mj_generatedentities (14 classes)
+// mj_generatedentities (10 classes)
 import {
-    ActionItemEntity,
-    AgendaItemEntity,
-    ArtifactEntity,
-    ArtifactTypeEntity,
-    AttendanceEntity,
-    CommitteeEntity,
-    MeetingEntity,
-    MembershipEntity,
-    MinuteEntity,
-    MotionEntity,
-    RoleEntity,
-    TermEntity,
-    TypeEntity,
-    VoteEntity,
-} from 'mj_generatedentities';
+    mjBizAppsCommonAddressEntity,
+    mjBizAppsCommonAddressLinkEntity,
+    mjBizAppsCommonAddressTypeEntity,
+    mjBizAppsCommonContactMethodEntity,
+    mjBizAppsCommonContactTypeEntity,
+    mjBizAppsCommonOrganizationEntity,
+    mjBizAppsCommonOrganizationTypeEntity,
+    mjBizAppsCommonPersonEntity,
+    mjBizAppsCommonRelationshipEntity,
+    mjBizAppsCommonRelationshipTypeEntity,
+} from '@memberjunction/bizapps-common-entities';
 
 /**
  * Runtime references to every @RegisterClass decorated class.
@@ -35,29 +31,25 @@ import {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const CLASS_REGISTRATIONS: any[] = [
-    ActionItemEntity,
-    AgendaItemEntity,
-    ArtifactEntity,
-    ArtifactTypeEntity,
-    AttendanceEntity,
-    CommitteeEntity,
-    MeetingEntity,
-    MembershipEntity,
-    MinuteEntity,
-    MotionEntity,
-    RoleEntity,
-    TermEntity,
-    TypeEntity,
-    VoteEntity,
+    mjBizAppsCommonAddressEntity,
+    mjBizAppsCommonAddressLinkEntity,
+    mjBizAppsCommonAddressTypeEntity,
+    mjBizAppsCommonContactMethodEntity,
+    mjBizAppsCommonContactTypeEntity,
+    mjBizAppsCommonOrganizationEntity,
+    mjBizAppsCommonOrganizationTypeEntity,
+    mjBizAppsCommonPersonEntity,
+    mjBizAppsCommonRelationshipEntity,
+    mjBizAppsCommonRelationshipTypeEntity,
 ];
 
 /** Marker constant indicating the manifest has been loaded. */
 export const CLASS_REGISTRATIONS_MANIFEST_LOADED = true;
 
 /** Total @RegisterClass decorated classes discovered in dependency tree */
-export const CLASS_REGISTRATIONS_COUNT = 14;
+export const CLASS_REGISTRATIONS_COUNT = 10;
 
 /** Packages imported by this manifest */
 export const CLASS_REGISTRATIONS_PACKAGES = [
-    'mj_generatedentities',
+    '@memberjunction/bizapps-common-entities',
 ] as const;

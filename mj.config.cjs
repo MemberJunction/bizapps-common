@@ -26,12 +26,12 @@ module.exports = {
     { type: 'SQL', directory: './SQL Scripts/generated', appendOutputCode: true },
     {
       type: 'Angular',
-      directory: './apps/MJExplorer/src/app/generated',
+      directory: './packages/Angular/src/lib/generated',
       options: [{ name: 'maxComponentsPerModule', value: 20 }],
     },
-    { type: 'GraphQLServer', directory: './apps/MJAPI/src/generated' },
-    { type: 'ActionSubclasses', directory: './packages/GeneratedActions/src/generated' },
-    { type: 'EntitySubclasses', directory: './packages/GeneratedEntities/src/generated' },
+    { type: 'GraphQLServer', directory: './packages/Server/src/generated' },
+    { type: 'ActionSubclasses', directory: './packages/Actions/src/generated' },
+    { type: 'EntitySubclasses', directory: './packages/Entities/src/generated' },
     { type: 'DBSchemaJSON', directory: './Schema Files' },
   ],
 
@@ -41,13 +41,25 @@ module.exports = {
    */
   commands: [
     {
-      workingDirectory: './packages/GeneratedEntities',
+      workingDirectory: './packages/Entities',
       command: 'npm',
       args: ['run', 'build'],
       when: 'after',
     },
     {
-      workingDirectory: './packages/GeneratedActions',
+      workingDirectory: './packages/Actions',
+      command: 'npm',
+      args: ['run', 'build'],
+      when: 'after',
+    },
+    {
+      workingDirectory: './packages/Server',
+      command: 'npm',
+      args: ['run', 'build'],
+      when: 'after',
+    },
+    {
+      workingDirectory: './packages/Angular',
       command: 'npm',
       args: ['run', 'build'],
       when: 'after',

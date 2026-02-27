@@ -67,6 +67,14 @@ type ActionResultOutput {
   Success: Boolean!
 }
 
+input AdhocQueryInput {
+  """SQL query to execute. Must be a SELECT or WITH (CTE) statement."""
+  SQL: String!
+
+  """Query timeout in seconds. Defaults to 30."""
+  TimeoutSeconds: Int
+}
+
 input AggregateExpressionInput {
   """Optional alias for the result (used in error messages and debugging)"""
   alias: String
@@ -2211,6 +2219,7 @@ input CreateMJEntityInput {
   AllowAllRowsAPI: Boolean
   AllowCreateAPI: Boolean
   AllowDeleteAPI: Boolean
+  AllowMultipleSubtypes: Boolean
   AllowRecordMerge: Boolean
   AllowUpdateAPI: Boolean
   AllowUserSearchAPI: Boolean
@@ -2675,6 +2684,54 @@ input CreateMJOAuthTokenInput {
   RefreshCount: Int
   Scope: String
   TokenType: String
+}
+
+input CreateMJOpenAppDependencyInput {
+  DependsOnAppID: String
+  DependsOnAppName: String
+  ID: String
+  InstalledVersion: String
+  OpenAppID: String
+  Status: String
+  VersionRange: String
+}
+
+input CreateMJOpenAppInput {
+  Color: String
+  ConfigurationSchemaJSON: String
+  Description: String
+  DisplayName: String
+  ID: String
+  Icon: String
+  InstalledByUserID: String
+  License: String
+  MJVersionRange: String
+  ManifestJSON: String
+  Name: String
+  Publisher: String
+  PublisherEmail: String
+  PublisherURL: String
+  RepositoryURL: String
+  SchemaName: String
+  Status: String
+  Version: String
+}
+
+input CreateMJOpenAppInstallHistoryInput {
+  Action: String
+  DurationSeconds: Int
+  EndedAt: Timestamp
+  ErrorMessage: String
+  ErrorPhase: String
+  ExecutedByUserID: String
+  ID: String
+  ManifestJSON: String
+  OpenAppID: String
+  PreviousVersion: String
+  StartedAt: Timestamp
+  Success: Boolean
+  Summary: String
+  Version: String
 }
 
 input CreateMJOutputDeliveryTypeInput {
@@ -3644,7 +3701,7 @@ type CreateQueryResultType {
   EmbeddingModelID: String
   EmbeddingModelName: String
   EmbeddingVector: String
-  Entities: [QueryEntityType!]
+  Entities: [MJQueryEntityType!]
   ErrorMessage: String
   Fields: [QueryFieldType!]
   ID: String
@@ -3809,181 +3866,6 @@ input CreatemjBizAppsCommonRelationshipTypeInput {
   IsDirectional: Boolean
   Name: String
   ReverseLabel: String
-}
-
-input CreatemjCommitteesActionItemInput {
-  AgendaItemID: String
-  AssignedByPersonID: String
-  AssignedToPersonID: String
-  CommitteeID: String
-  CompletedAt: Timestamp
-  CompletionNotes: String
-  Description: String
-  DueDate: Timestamp
-  ID: String
-  MeetingID: String
-  Priority: String
-  Status: String
-  Title: String
-}
-
-input CreatemjCommitteesAgendaItemInput {
-  Description: String
-  DurationMinutes: Int
-  ID: String
-  ItemType: String
-  MeetingID: String
-  Notes: String
-  ParentAgendaItemID: String
-  PresenterPersonID: String
-  RelatedDocumentURL: String
-  Sequence: Int
-  Status: String
-  Title: String
-}
-
-input CreatemjCommitteesArtifactInput {
-  ActionItemID: String
-  AgendaItemID: String
-  ArtifactTypeID: String
-  CommitteeID: String
-  Description: String
-  ExternalID: String
-  FileSize: Int
-  ID: String
-  MeetingID: String
-  MimeType: String
-  Provider: String
-  Title: String
-  URL: String
-  UploadedByPersonID: String
-}
-
-input CreatemjCommitteesArtifactTypeInput {
-  Description: String
-  ExtendedEntityID: String
-  ID: String
-  IconClass: String
-  Name: String
-}
-
-input CreatemjCommitteesAttendanceInput {
-  AttendanceStatus: String
-  ID: String
-  JoinedAt: Timestamp
-  LeftAt: Timestamp
-  MeetingID: String
-  Notes: String
-  PersonID: String
-}
-
-input CreatemjCommitteesCommitteeInput {
-  CharterDocumentURL: String
-  Description: String
-  DissolutionDate: Timestamp
-  FormationDate: Timestamp
-  ID: String
-  IsPublic: Boolean
-  MissionStatement: String
-  Name: String
-  OrganizationID: String
-  ParentCommitteeID: String
-  Status: String
-  TypeID: String
-}
-
-input CreatemjCommitteesMeetingInput {
-  CalendarEventID: String
-  CommitteeID: String
-  Description: String
-  EndDateTime: Timestamp
-  ID: String
-  LocationText: String
-  LocationType: String
-  StartDateTime: Timestamp
-  Status: String
-  TimeZone: String
-  Title: String
-  TranscriptURL: String
-  VideoJoinURL: String
-  VideoMeetingID: String
-  VideoProvider: String
-  VideoRecordingURL: String
-}
-
-input CreatemjCommitteesMembershipInput {
-  CommitteeID: String
-  EndDate: Timestamp
-  EndReason: String
-  ID: String
-  Notes: String
-  PersonID: String
-  RoleID: String
-  StartDate: Timestamp
-  Status: String
-  TermID: String
-}
-
-input CreatemjCommitteesMinuteInput {
-  ApprovalStatus: String
-  ApprovedAt: Timestamp
-  ApprovedByMeetingID: String
-  ArtifactID: String
-  ID: String
-  Notes: String
-}
-
-input CreatemjCommitteesMotionInput {
-  AbstainCount: Int
-  AgendaItemID: String
-  Description: String
-  ID: String
-  MeetingID: String
-  MovedByMembershipID: String
-  NoCount: Int
-  Notes: String
-  Result: String
-  ResultSummary: String
-  SecondedByMembershipID: String
-  Sequence: Int
-  Title: String
-  YesCount: Int
-}
-
-input CreatemjCommitteesRoleInput {
-  DefaultPermissionsJSON: String
-  Description: String
-  ID: String
-  IsOfficer: Boolean
-  IsVotingRole: Boolean
-  Name: String
-  Sequence: Int
-}
-
-input CreatemjCommitteesTermInput {
-  CommitteeID: String
-  EndDate: Timestamp
-  ID: String
-  Name: String
-  StartDate: Timestamp
-  Status: String
-}
-
-input CreatemjCommitteesTypeInput {
-  DefaultTermMonths: Int
-  Description: String
-  ID: String
-  IconClass: String
-  IsStandards: Boolean
-  Name: String
-}
-
-input CreatemjCommitteesVoteInput {
-  ID: String
-  MembershipID: String
-  MotionID: String
-  Notes: String
-  VoteValue: String
 }
 
 input DatasetItemFilterTypeGQL {
@@ -4156,6 +4038,12 @@ input GetMCPOAuthStatusInput {
   StateParameter: String!
 }
 
+type ISAChildEntitiesResult {
+  ChildEntityNames: [String!]
+  ErrorMessage: String
+  Success: Boolean!
+}
+
 type ISAChildEntityResult {
   ChildEntityName: String
   ErrorMessage: String
@@ -4252,7 +4140,6 @@ type MCPOAuthStatusResult {
 
 """List of all actions that are possible across all AI Models"""
 type MJAIAction_ {
-  AIModelActions_AIActionIDArray: [MJAIModelAction_!]!
   DefaultModel: String
   DefaultModelID: String
 
@@ -4261,13 +4148,14 @@ type MJAIAction_ {
   """
   DefaultPrompt: String
   Description: String
-  EntityAIActions_AIActionIDArray: [MJEntityAIAction_!]!
   ID: String!
 
   """
   Controls whether this AI action is currently available for use across the system.
   """
   IsActive: Boolean!
+  MJAIModelActions_AIActionIDArray: [MJAIModelAction_!]!
+  MJEntityAIActions_AIActionIDArray: [MJEntityAIAction_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -4694,9 +4582,9 @@ type MJAIAgentModel_ {
 Defines categories and types for AI agent notes, enabling classification and organization of agent-generated observations, recommendations, and learnings.
 """
 type MJAIAgentNoteType_ {
-  AIAgentNotes_AgentNoteTypeIDArray: [MJAIAgentNote_!]!
   Description: String
   ID: String!
+  MJAIAgentNotes_AgentNoteTypeIDArray: [MJAIAgentNote_!]!
   Name: String
 
   """
@@ -5073,7 +4961,7 @@ type MJAIAgentRunStep_ {
 
   """JSON serialization of input data passed to this step for execution"""
   InputData: String
-  MJ_AIAgentRunSteps_ParentIDArray: [MJAIAgentRunStep_!]!
+  MJAIAgentRunSteps_ParentIDArray: [MJAIAgentRunStep_!]!
 
   """JSON serialization of the output data produced by this step"""
   OutputData: String
@@ -5132,7 +5020,6 @@ type MJAIAgentRunStep_ {
 Tracks individual execution runs of AI agents, including hierarchical sub-agent runs. Provides basic logging, state persistence, and resource tracking for agent executions. Supports pause/resume functionality through state serialization.
 """
 type MJAIAgentRun_ {
-  AIAgentNotes_SourceAIAgentRunIDArray: [MJAIAgentNote_!]!
   Agent: String
 
   """Reference to the AIAgent that is being executed in this run"""
@@ -5206,11 +5093,12 @@ type MJAIAgentRun_ {
   Links to the previous run in a chain. Different from ParentRunID which is for sub-agent hierarchy.
   """
   LastRunID: String
-  MJ_AIAgentExamples_SourceAIAgentRunIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentRunMedias_AgentRunIDArray: [MJAIAgentRunMedia_!]!
-  MJ_AIAgentRunSteps_AgentRunIDArray: [MJAIAgentRunStep_!]!
-  MJ_AIAgentRuns_ParentRunIDArray: [MJAIAgentRun_!]!
-  MJ_AIPromptRuns_AgentRunIDArray: [MJAIPromptRun_!]!
+  MJAIAgentExamples_SourceAIAgentRunIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_SourceAIAgentRunIDArray: [MJAIAgentNote_!]!
+  MJAIAgentRunMedias_AgentRunIDArray: [MJAIAgentRunMedia_!]!
+  MJAIAgentRunSteps_AgentRunIDArray: [MJAIAgentRunStep_!]!
+  MJAIAgentRuns_ParentRunIDArray: [MJAIAgentRun_!]!
+  MJAIPromptRuns_AgentRunIDArray: [MJAIPromptRun_!]!
 
   """Final message from the agent to the end user at the end of a run"""
   Message: String
@@ -5400,8 +5288,8 @@ type MJAIAgentStep_ {
   Specifies what type of operation executes in the loop body. Values: Action, Sub-Agent, Prompt. Only used when StepType is ForEach or While.
   """
   LoopBodyType: String
-  MJ_AIAgentStepPaths_DestinationStepIDArray: [MJAIAgentStepPath_!]!
-  MJ_AIAgentStepPaths_OriginStepIDArray: [MJAIAgentStepPath_!]!
+  MJAIAgentStepPaths_DestinationStepIDArray: [MJAIAgentStepPath_!]!
+  MJAIAgentStepPaths_OriginStepIDArray: [MJAIAgentStepPath_!]!
   Name: String!
   OnErrorBehavior: String!
   PositionX: Int!
@@ -5434,8 +5322,6 @@ type MJAIAgentStep_ {
 Defines types of AI agents with their system prompts and behavioral characteristics. Each agent type represents a category of agents that share common system-level instructions and capabilities.
 """
 type MJAIAgentType_ {
-  AIAgents_TypeIDArray: [MJAIAgent_!]!
-
   """
   The placeholder name used in the system prompt template where the agent prompt result should be injected. For example, if the system prompt contains "{{ agentPrompt }}", this field should contain "agentPrompt". This enables proper hierarchical prompt execution where the agent type's system prompt acts as the parent and the agent's specific prompt acts as the child.
   """
@@ -5458,6 +5344,7 @@ type MJAIAgentType_ {
   Indicates whether this agent type is available for use. Inactive types cannot be assigned to new agents.
   """
   IsActive: Boolean!
+  MJAIAgents_TypeIDArray: [MJAIAgent_!]!
 
   """
   Unique name of the agent type (e.g., "Base", "CustomerSupport", "DataAnalysis"). Used for programmatic identification and factory instantiation.
@@ -5495,14 +5382,6 @@ type MJAIAgentType_ {
 
 """Table to store information about AI agents."""
 type MJAIAgent_ {
-  AIAgentActions_AgentIDArray: [MJAIAgentAction_!]!
-  AIAgentLearningCycles_AgentIDArray: [MJAIAgentLearningCycle_!]!
-  AIAgentModels_AgentIDArray: [MJAIAgentModel_!]!
-  AIAgentNotes_AgentIDArray: [MJAIAgentNote_!]!
-  AIAgentRequests_AgentIDArray: [MJAIAgentRequest_!]!
-  AIAgents_ParentIDArray: [MJAIAgent_!]!
-  AIResultCache_AgentIDArray: [MJAIResultCache_!]!
-
   """
   JSON object containing parameter values that customize how this agent's type-level system prompt is rendered. The schema is defined by the agent type's PromptParamsSchema field. Allows per-agent control over which prompt sections are included, enabling token savings by excluding unused documentation.
   """
@@ -5545,7 +5424,6 @@ type MJAIAgent_ {
   ContextCompressionMessageThreshold: Int
   ContextCompressionPrompt: String
   ContextCompressionPromptID: String
-  ConversationDetails_AgentIDArray: [MJConversationDetail_!]!
   DefaultArtifactType: String
 
   """
@@ -5654,20 +5532,28 @@ type MJAIAgent_ {
   URL to an image file or base64 data URI (e.g., data:image/png;base64,...) for the agent logo. Takes precedence over IconClass in UI display.
   """
   LogoURL: String
-  MJ_AIAgentArtifactTypes_AgentIDArray: [MJAIAgentArtifactType_!]!
-  MJ_AIAgentConfigurations_AgentIDArray: [MJAIAgentConfiguration_!]!
-  MJ_AIAgentDataSources_AgentIDArray: [MJAIAgentDataSource_!]!
-  MJ_AIAgentExamples_AgentIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentModalities_AgentIDArray: [MJAIAgentModality_!]!
-  MJ_AIAgentPermissions_AgentIDArray: [MJAIAgentPermission_!]!
-  MJ_AIAgentPrompts_AgentIDArray: [MJAIAgentPrompt_!]!
-  MJ_AIAgentRelationships_AgentIDArray: [MJAIAgentRelationship_!]!
-  MJ_AIAgentRelationships_SubAgentIDArray: [MJAIAgentRelationship_!]!
-  MJ_AIAgentRuns_AgentIDArray: [MJAIAgentRun_!]!
-  MJ_AIAgentSteps_AgentIDArray: [MJAIAgentStep_!]!
-  MJ_AIAgentSteps_SubAgentIDArray: [MJAIAgentStep_!]!
-  MJ_AIPromptRuns_AgentIDArray: [MJAIPromptRun_!]!
-  MJ_Tasks_AgentIDArray: [MJTask_!]!
+  MJAIAgentActions_AgentIDArray: [MJAIAgentAction_!]!
+  MJAIAgentArtifactTypes_AgentIDArray: [MJAIAgentArtifactType_!]!
+  MJAIAgentConfigurations_AgentIDArray: [MJAIAgentConfiguration_!]!
+  MJAIAgentDataSources_AgentIDArray: [MJAIAgentDataSource_!]!
+  MJAIAgentExamples_AgentIDArray: [MJAIAgentExample_!]!
+  MJAIAgentLearningCycles_AgentIDArray: [MJAIAgentLearningCycle_!]!
+  MJAIAgentModalities_AgentIDArray: [MJAIAgentModality_!]!
+  MJAIAgentModels_AgentIDArray: [MJAIAgentModel_!]!
+  MJAIAgentNotes_AgentIDArray: [MJAIAgentNote_!]!
+  MJAIAgentPermissions_AgentIDArray: [MJAIAgentPermission_!]!
+  MJAIAgentPrompts_AgentIDArray: [MJAIAgentPrompt_!]!
+  MJAIAgentRelationships_AgentIDArray: [MJAIAgentRelationship_!]!
+  MJAIAgentRelationships_SubAgentIDArray: [MJAIAgentRelationship_!]!
+  MJAIAgentRequests_AgentIDArray: [MJAIAgentRequest_!]!
+  MJAIAgentRuns_AgentIDArray: [MJAIAgentRun_!]!
+  MJAIAgentSteps_AgentIDArray: [MJAIAgentStep_!]!
+  MJAIAgentSteps_SubAgentIDArray: [MJAIAgentStep_!]!
+  MJAIAgents_ParentIDArray: [MJAIAgent_!]!
+  MJAIPromptRuns_AgentIDArray: [MJAIPromptRun_!]!
+  MJAIResultCache_AgentIDArray: [MJAIResultCache_!]!
+  MJConversationDetails_AgentIDArray: [MJConversationDetail_!]!
+  MJTasks_AgentIDArray: [MJTask_!]!
 
   """
   Maximum cost in dollars allowed for a single agent run. Run will be terminated
@@ -5824,8 +5710,8 @@ type MJAIArchitecture_ {
   Description: String
   ID: String!
   KeyPaper: String
-  MJ_AIArchitectures_ParentArchitectureIDArray: [MJAIArchitecture_!]!
-  MJ_AIModelArchitectures_ArchitectureIDArray: [MJAIModelArchitecture_!]!
+  MJAIArchitectures_ParentArchitectureIDArray: [MJAIArchitecture_!]!
+  MJAIModelArchitectures_ArchitectureIDArray: [MJAIModelArchitecture_!]!
   Name: String!
   ParentArchitecture: String
 
@@ -5871,7 +5757,6 @@ type MJAIConfigurationParam_ {
 Stores configurations for AI prompt execution environments and settings.
 """
 type MJAIConfiguration_ {
-  AIResultCache_ConfigurationIDArray: [MJAIResultCache_!]!
   DefaultPromptForContextCompression: String
 
   """
@@ -5904,13 +5789,14 @@ type MJAIConfiguration_ {
   Indicates whether this is the default configuration to use when none is specified.
   """
   IsDefault: Boolean!
-  MJ_AIAgentConfigurations_AIConfigurationIDArray: [MJAIAgentConfiguration_!]!
-  MJ_AIAgentPrompts_ConfigurationIDArray: [MJAIAgentPrompt_!]!
-  MJ_AIAgentRuns_ConfigurationIDArray: [MJAIAgentRun_!]!
-  MJ_AIConfigurationParams_ConfigurationIDArray: [MJAIConfigurationParam_!]!
-  MJ_AIConfigurations_ParentIDArray: [MJAIConfiguration_!]!
-  MJ_AIPromptModels_ConfigurationIDArray: [MJAIPromptModel_!]!
-  MJ_AIPromptRuns_ConfigurationIDArray: [MJAIPromptRun_!]!
+  MJAIAgentConfigurations_AIConfigurationIDArray: [MJAIAgentConfiguration_!]!
+  MJAIAgentPrompts_ConfigurationIDArray: [MJAIAgentPrompt_!]!
+  MJAIAgentRuns_ConfigurationIDArray: [MJAIAgentRun_!]!
+  MJAIConfigurationParams_ConfigurationIDArray: [MJAIConfigurationParam_!]!
+  MJAIConfigurations_ParentIDArray: [MJAIConfiguration_!]!
+  MJAIPromptModels_ConfigurationIDArray: [MJAIPromptModel_!]!
+  MJAIPromptRuns_ConfigurationIDArray: [MJAIPromptRun_!]!
+  MJAIResultCache_ConfigurationIDArray: [MJAIResultCache_!]!
 
   """The name of the configuration."""
   Name: String!
@@ -5978,9 +5864,6 @@ type MJAICredentialBinding_ {
 Master list of AI content modalities (Text, Image, Audio, Video, etc.) that models can accept as input or produce as output. New modalities can be added via INSERT without schema changes.
 """
 type MJAIModality_ {
-  AIModelTypes_DefaultInputModalityIDArray: [MJAIModelType_!]!
-  AIModelTypes_DefaultOutputModalityIDArray: [MJAIModelType_!]!
-
   """
   Maps to ChatMessageContentBlock.type values: text, image_url, video_url, audio_url, file_url, embedding. Must match the TypeScript type definition.
   """
@@ -6007,11 +5890,13 @@ type MJAIModality_ {
   MIME type pattern for this modality (e.g., image/*, audio/*, video/*, text/*, application/*). Used for file type validation.
   """
   MIMETypePattern: String
-  MJ_AIAgentModalities_ModalityIDArray: [MJAIAgentModality_!]!
-  MJ_AIAgentRunMedias_ModalityIDArray: [MJAIAgentRunMedia_!]!
-  MJ_AIModelModalities_ModalityIDArray: [MJAIModelModality_!]!
-  MJ_AIPromptRunMedias_ModalityIDArray: [MJAIPromptRunMedia_!]!
-  MJ_ConversationDetailAttachments_ModalityIDArray: [MJConversationDetailAttachment_!]!
+  MJAIAgentModalities_ModalityIDArray: [MJAIAgentModality_!]!
+  MJAIAgentRunMedias_ModalityIDArray: [MJAIAgentRunMedia_!]!
+  MJAIModelModalities_ModalityIDArray: [MJAIModelModality_!]!
+  MJAIModelTypes_DefaultInputModalityIDArray: [MJAIModelType_!]!
+  MJAIModelTypes_DefaultOutputModalityIDArray: [MJAIModelType_!]!
+  MJAIPromptRunMedias_ModalityIDArray: [MJAIPromptRunMedia_!]!
+  MJConversationDetailAttachments_ModalityIDArray: [MJConversationDetailAttachment_!]!
 
   """
   Display name of the modality (e.g., Text, Image, Audio, Video, File, Embedding).
@@ -6179,7 +6064,7 @@ type MJAIModelPriceType_ {
   """
   Description: String
   ID: String!
-  MJ_AIModelCosts_PriceTypeIDArray: [MJAIModelCost_!]!
+  MJAIModelCosts_PriceTypeIDArray: [MJAIModelCost_!]!
 
   """
   Short, descriptive name for the price type (e.g., "Tokens", "Minutes", "Characters")
@@ -6203,7 +6088,7 @@ type MJAIModelPriceUnitType_ {
   """
   DriverClass: String!
   ID: String!
-  MJ_AIModelCosts_UnitTypeIDArray: [MJAIModelCost_!]!
+  MJAIModelCosts_UnitTypeIDArray: [MJAIModelCost_!]!
 
   """
   Display name for the pricing unit (e.g., "Per 1M Tokens", "Per 1K Tokens", "Per Minute")
@@ -6215,8 +6100,6 @@ type MJAIModelPriceUnitType_ {
 
 """Types of AI Models"""
 type MJAIModelType_ {
-  AIModels_AIModelTypeIDArray: [MJAIModel_!]!
-  AIPrompts_AIModelTypeIDArray: [MJAIPrompt_!]!
   DefaultInputModality: String!
 
   """
@@ -6231,6 +6114,8 @@ type MJAIModelType_ {
   DefaultOutputModalityID: String!
   Description: String
   ID: String!
+  MJAIModels_AIModelTypeIDArray: [MJAIModel_!]!
+  MJAIPrompts_AIModelTypeIDArray: [MJAIPrompt_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -6253,7 +6138,7 @@ type MJAIModelVendor_ {
   """The import path for the driver class."""
   DriverImportPath: String
   ID: String!
-  MJ_AICredentialBindings_AIModelVendorIDArray: [MJAICredentialBinding_!]!
+  MJAICredentialBindings_AIModelVendorIDArray: [MJAICredentialBinding_!]!
 
   """
   The maximum number of input tokens supported by this model-vendor implementation.
@@ -6305,16 +6190,9 @@ type MJAIModelVendor_ {
 
 """Catalog of all AI Models configured in the system"""
 type MJAIModel_ {
-  AIActions_DefaultModelIDArray: [MJAIAction_!]!
-  AIAgentModels_ModelIDArray: [MJAIAgentModel_!]!
-  AIAgentNotes_EmbeddingModelIDArray: [MJAIAgentNote_!]!
-  AIModelActions_AIModelIDArray: [MJAIModelAction_!]!
   AIModelType: String!
   AIModelTypeID: String!
-  AIModels_PriorVersionIDArray: [MJAIModel_!]!
-  AIResultCache_AIModelIDArray: [MJAIResultCache_!]!
   APIName: String
-  ContentTypes_AIModelIDArray: [MJContentType_!]!
 
   """
   Optional column that ranks the cost of the AI model. Default is 0 and should be non-negative.
@@ -6323,9 +6201,6 @@ type MJAIModel_ {
   Description: String
   DriverClass: String
   DriverImportPath: String
-  EntityAIActions_AIModelIDArray: [MJEntityAIAction_!]!
-  EntityDocuments_AIModelIDArray: [MJEntityDocument_!]!
-  GeneratedCodes_GeneratedByModelIDArray: [MJGeneratedCode_!]!
   ID: String!
 
   """
@@ -6336,14 +6211,26 @@ type MJAIModel_ {
 
   """Controls whether this AI model is available for use in the system."""
   IsActive: Boolean!
-  MJ_AIAgentExamples_EmbeddingModelIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentRuns_OverrideModelIDArray: [MJAIAgentRun_!]!
-  MJ_AIModelArchitectures_ModelIDArray: [MJAIModelArchitecture_!]!
-  MJ_AIModelCosts_ModelIDArray: [MJAIModelCost_!]!
-  MJ_AIModelModalities_ModelIDArray: [MJAIModelModality_!]!
-  MJ_AIModelVendors_ModelIDArray: [MJAIModelVendor_!]!
-  MJ_AIPromptModels_ModelIDArray: [MJAIPromptModel_!]!
-  MJ_AIPromptRuns_ModelIDArray: [MJAIPromptRun_!]!
+  MJAIActions_DefaultModelIDArray: [MJAIAction_!]!
+  MJAIAgentExamples_EmbeddingModelIDArray: [MJAIAgentExample_!]!
+  MJAIAgentModels_ModelIDArray: [MJAIAgentModel_!]!
+  MJAIAgentNotes_EmbeddingModelIDArray: [MJAIAgentNote_!]!
+  MJAIAgentRuns_OverrideModelIDArray: [MJAIAgentRun_!]!
+  MJAIModelActions_AIModelIDArray: [MJAIModelAction_!]!
+  MJAIModelArchitectures_ModelIDArray: [MJAIModelArchitecture_!]!
+  MJAIModelCosts_ModelIDArray: [MJAIModelCost_!]!
+  MJAIModelModalities_ModelIDArray: [MJAIModelModality_!]!
+  MJAIModelVendors_ModelIDArray: [MJAIModelVendor_!]!
+  MJAIModels_PriorVersionIDArray: [MJAIModel_!]!
+  MJAIPromptModels_ModelIDArray: [MJAIPromptModel_!]!
+  MJAIPromptRuns_ModelIDArray: [MJAIPromptRun_!]!
+  MJAIResultCache_AIModelIDArray: [MJAIResultCache_!]!
+  MJContentTypes_AIModelIDArray: [MJContentType_!]!
+  MJEntityAIActions_AIModelIDArray: [MJEntityAIAction_!]!
+  MJEntityDocuments_AIModelIDArray: [MJEntityDocument_!]!
+  MJGeneratedCodes_GeneratedByModelIDArray: [MJGeneratedCode_!]!
+  MJQueries_EmbeddingModelIDArray: [MJQuery_!]!
+  MJVectorIndexes_EmbeddingModelIDArray: [MJVectorIndex_!]!
 
   """
   This column stores unstructured text notes that provide insights into what the model is particularly good at and areas where it may not perform as well. These notes can be used by a human or an AI to determine if the model is a good fit for various purposes.
@@ -6360,7 +6247,6 @@ type MJAIModel_ {
   Reference to the previous version of this model, creating a version lineage chain. For example, GPT-4 Turbo might reference GPT-4 as its prior version.
   """
   PriorVersionID: String
-  Queries_EmbeddingModelIDArray: [MJQuery_!]!
 
   """
   Optional column that ranks the speed of the AI model. Default is 0 and should be non-negative.
@@ -6368,7 +6254,6 @@ type MJAIModel_ {
   SpeedRank: Int
   SupportedResponseFormats: String
   SupportsEffortLevel: Boolean
-  VectorIndexes_EmbeddingModelIDArray: [MJVectorIndex_!]!
   Vendor: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -6376,10 +6261,10 @@ type MJAIModel_ {
 
 """Categories for organizing AI prompts in a hierarchical structure."""
 type MJAIPromptCategory_ {
-  AIPromptCategories_ParentIDArray: [MJAIPromptCategory_!]!
-  AIPrompts_CategoryIDArray: [MJAIPrompt_!]!
   Description: String
   ID: String!
+  MJAIPromptCategories_ParentIDArray: [MJAIPromptCategory_!]!
+  MJAIPrompts_CategoryIDArray: [MJAIPrompt_!]!
   Name: String!
   Parent: String
 
@@ -6411,7 +6296,7 @@ type MJAIPromptModel_ {
   """
   ExecutionGroup: Int!
   ID: String!
-  MJ_AICredentialBindings_AIPromptModelIDArray: [MJAICredentialBinding_!]!
+  MJAICredentialBindings_AIPromptModelIDArray: [MJAICredentialBinding_!]!
   Model: String!
 
   """References the AI model to use for this prompt."""
@@ -6474,7 +6359,7 @@ type MJAIPromptRunMedia_ {
   Height: Int
   ID: String!
   InlineData: String
-  MJ_AIAgentRunMedias_SourcePromptRunMediaIDArray: [MJAIAgentRunMedia_!]!
+  MJAIAgentRunMedias_SourcePromptRunMediaIDArray: [MJAIAgentRunMedia_!]!
   Metadata: String
   MimeType: String!
   Modality: String!
@@ -6491,7 +6376,6 @@ type MJAIPromptRunMedia_ {
 Tracks AI prompt executions including timings, inputs, outputs, and performance metrics.
 """
 type MJAIPromptRun_ {
-  AIResultCache_PromptRunIDArray: [MJAIResultCache_!]!
   Agent: String
 
   """If this prompt was run as part of an agent, references the agent."""
@@ -6626,8 +6510,9 @@ type MJAIPromptRun_ {
 
   """Whether log probabilities were requested for this run"""
   LogProbs: Boolean
-  MJ_AIPromptRunMedias_PromptRunIDArray: [MJAIPromptRunMedia_!]!
-  MJ_AIPromptRuns_ParentIDArray: [MJAIPromptRun_!]!
+  MJAIPromptRunMedias_PromptRunIDArray: [MJAIPromptRunMedia_!]!
+  MJAIPromptRuns_ParentIDArray: [MJAIPromptRun_!]!
+  MJAIResultCache_PromptRunIDArray: [MJAIResultCache_!]!
 
   """Maximum number of retries configured on the prompt"""
   MaxRetriesConfigured: Int
@@ -6848,9 +6733,9 @@ type MJAIPromptRun_ {
 
 """Types of AI prompts such as Chat, Text-to-Image, Text-to-Video, etc."""
 type MJAIPromptType_ {
-  AIPrompts_TypeIDArray: [MJAIPrompt_!]!
   Description: String
   ID: String!
+  MJAIPrompts_TypeIDArray: [MJAIPrompt_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -6860,17 +6745,12 @@ type MJAIPromptType_ {
 Stores AI prompts, including references to categories, types, and templates.
 """
 type MJAIPrompt_ {
-  AIAgentActions_CompactPromptIDArray: [MJAIAgentAction_!]!
-  AIAgents_ContextCompressionPromptIDArray: [MJAIAgent_!]!
   AIModelType: String
 
   """
   References the type of AI model this prompt is designed for (LLM, Image, Audio, etc.).
   """
   AIModelTypeID: String
-  AIPrompts_ResultSelectorPromptIDArray: [MJAIPrompt_!]!
-  AIResultCache_AIPromptIDArray: [MJAIResultCache_!]!
-  Actions_DefaultCompactPromptIDArray: [MJAction_!]!
 
   """
   Method for matching cached results: Exact (string matching) or Vector (embedding similarity).
@@ -6953,13 +6833,18 @@ type MJAIPrompt_ {
   Default setting for including log probabilities in the response. Can be overridden at runtime.
   """
   IncludeLogProbs: Boolean
-  MJ_AIAgentPrompts_PromptIDArray: [MJAIAgentPrompt_!]!
-  MJ_AIAgentSteps_PromptIDArray: [MJAIAgentStep_!]!
-  MJ_AIAgentTypes_SystemPromptIDArray: [MJAIAgentType_!]!
-  MJ_AIConfigurations_DefaultPromptForContextCompressionIDArray: [MJAIConfiguration_!]!
-  MJ_AIConfigurations_DefaultPromptForContextSummarizationIDArray: [MJAIConfiguration_!]!
-  MJ_AIPromptModels_PromptIDArray: [MJAIPromptModel_!]!
-  MJ_AIPromptRuns_PromptIDArray: [MJAIPromptRun_!]!
+  MJAIAgentActions_CompactPromptIDArray: [MJAIAgentAction_!]!
+  MJAIAgentPrompts_PromptIDArray: [MJAIAgentPrompt_!]!
+  MJAIAgentSteps_PromptIDArray: [MJAIAgentStep_!]!
+  MJAIAgentTypes_SystemPromptIDArray: [MJAIAgentType_!]!
+  MJAIAgents_ContextCompressionPromptIDArray: [MJAIAgent_!]!
+  MJAIConfigurations_DefaultPromptForContextCompressionIDArray: [MJAIConfiguration_!]!
+  MJAIConfigurations_DefaultPromptForContextSummarizationIDArray: [MJAIConfiguration_!]!
+  MJAIPromptModels_PromptIDArray: [MJAIPromptModel_!]!
+  MJAIPromptRuns_PromptIDArray: [MJAIPromptRun_!]!
+  MJAIPrompts_ResultSelectorPromptIDArray: [MJAIPrompt_!]!
+  MJAIResultCache_AIPromptIDArray: [MJAIResultCache_!]!
+  MJActions_DefaultCompactPromptIDArray: [MJAction_!]!
 
   """Maximum number of retry attempts for API failures."""
   MaxRetries: Int!
@@ -7157,8 +7042,8 @@ type MJAIVendorTypeDefinition_ {
   """Detailed description of the vendor type."""
   Description: String
   ID: String!
-  MJ_AIModelVendors_TypeIDArray: [MJAIModelVendor_!]!
-  MJ_AIVendorTypes_TypeIDArray: [MJAIVendorType_!]!
+  MJAIModelVendors_TypeIDArray: [MJAIModelVendor_!]!
+  MJAIVendorTypes_TypeIDArray: [MJAIVendorType_!]!
 
   """The name of the vendor type."""
   Name: String!
@@ -7193,7 +7078,6 @@ type MJAIVendorType_ {
 Stores information about AI vendors providing models and/or inference services.
 """
 type MJAIVendor_ {
-  AIResultCache_VendorIDArray: [MJAIResultCache_!]!
   CredentialType: String
 
   """
@@ -7204,13 +7088,14 @@ type MJAIVendor_ {
   """Detailed description of the vendor and their AI offerings."""
   Description: String
   ID: String!
-  MJ_AIAgentRuns_OverrideVendorIDArray: [MJAIAgentRun_!]!
-  MJ_AICredentialBindings_AIVendorIDArray: [MJAICredentialBinding_!]!
-  MJ_AIModelCosts_VendorIDArray: [MJAIModelCost_!]!
-  MJ_AIModelVendors_VendorIDArray: [MJAIModelVendor_!]!
-  MJ_AIPromptModels_VendorIDArray: [MJAIPromptModel_!]!
-  MJ_AIPromptRuns_VendorIDArray: [MJAIPromptRun_!]!
-  MJ_AIVendorTypes_VendorIDArray: [MJAIVendorType_!]!
+  MJAIAgentRuns_OverrideVendorIDArray: [MJAIAgentRun_!]!
+  MJAICredentialBindings_AIVendorIDArray: [MJAICredentialBinding_!]!
+  MJAIModelCosts_VendorIDArray: [MJAIModelCost_!]!
+  MJAIModelVendors_VendorIDArray: [MJAIModelVendor_!]!
+  MJAIPromptModels_VendorIDArray: [MJAIPromptModel_!]!
+  MJAIPromptRuns_VendorIDArray: [MJAIPromptRun_!]!
+  MJAIResultCache_VendorIDArray: [MJAIResultCache_!]!
+  MJAIVendorTypes_VendorIDArray: [MJAIVendorType_!]!
 
   """The unique name of the vendor."""
   Name: String!
@@ -7267,9 +7152,9 @@ type MJAPIApplication_ {
   Whether this application is currently active. Inactive applications reject all API key authentication.
   """
   IsActive: Boolean!
-  MJ_APIApplicationScopes_ApplicationIDArray: [MJAPIApplicationScope_!]!
-  MJ_APIKeyApplications_ApplicationIDArray: [MJAPIKeyApplication_!]!
-  MJ_APIKeyUsageLogs_ApplicationIDArray: [MJAPIKeyUsageLog_!]!
+  MJAPIApplicationScopes_ApplicationIDArray: [MJAPIApplicationScope_!]!
+  MJAPIKeyApplications_ApplicationIDArray: [MJAPIKeyApplication_!]!
+  MJAPIKeyUsageLogs_ApplicationIDArray: [MJAPIKeyUsageLog_!]!
 
   """
   Unique name identifying the application (e.g., MJAPI, MCPServer, Portal, CLI).
@@ -7431,9 +7316,9 @@ type MJAPIKey_ {
   Timestamp of the most recent successful authentication using this key. Updated on each valid API request.
   """
   LastUsedAt: Timestamp
-  MJ_APIKeyApplications_APIKeyIDArray: [MJAPIKeyApplication_!]!
-  MJ_APIKeyScopes_APIKeyIDArray: [MJAPIKeyScope_!]!
-  MJ_APIKeyUsageLogs_APIKeyIDArray: [MJAPIKeyUsageLog_!]!
+  MJAPIKeyApplications_APIKeyIDArray: [MJAPIKeyApplication_!]!
+  MJAPIKeyScopes_APIKeyIDArray: [MJAPIKeyScope_!]!
+  MJAPIKeyUsageLogs_APIKeyIDArray: [MJAPIKeyUsageLog_!]!
 
   """
   Current lifecycle status of the key. Active keys can be used for authentication; Revoked keys are permanently disabled.
@@ -7469,9 +7354,9 @@ type MJAPIScope_ {
   Whether this scope is currently active. Inactive scopes are ignored during authorization.
   """
   IsActive: Boolean!
-  MJ_APIApplicationScopes_ScopeIDArray: [MJAPIApplicationScope_!]!
-  MJ_APIKeyScopes_ScopeIDArray: [MJAPIKeyScope_!]!
-  MJ_APIScopes_ParentIDArray: [MJAPIScope_!]!
+  MJAPIApplicationScopes_ScopeIDArray: [MJAPIApplicationScope_!]!
+  MJAPIKeyScopes_ScopeIDArray: [MJAPIKeyScope_!]!
+  MJAPIScopes_ParentIDArray: [MJAPIScope_!]!
 
   """
   Unique scope identifier following the pattern category:permission (e.g., entities:read, agents:execute, admin:*). Supports wildcard (*) for broad permissions.
@@ -7557,13 +7442,12 @@ type MJActionAuthorization_ {
 Organizes actions into categories, including name, description, and optional parent category for hierarchy.
 """
 type MJActionCategory_ {
-  ActionCategories_ParentIDArray: [MJActionCategory_!]!
-  Actions_CategoryIDArray: [MJAction_!]!
-
   """Description of the action category."""
   Description: String
   ID: String!
-  MJ_MCPServerTools_GeneratedActionCategoryIDArray: [MJMCPServerTool_!]!
+  MJActionCategories_ParentIDArray: [MJActionCategory_!]!
+  MJActions_CategoryIDArray: [MJAction_!]!
+  MJMCPServerTools_GeneratedActionCategoryIDArray: [MJMCPServerTool_!]!
 
   """Name of the action category."""
   Name: String!
@@ -7581,11 +7465,10 @@ type MJActionCategory_ {
 Lists possible contexts for action execution with optional descriptions.
 """
 type MJActionContextType_ {
-  ActionContexts_ContextTypeIDArray: [MJActionContext_!]!
-
   """Description of the context type."""
   Description: String
   ID: String!
+  MJActionContexts_ContextTypeIDArray: [MJActionContext_!]!
 
   """Name of the context type."""
   Name: String!
@@ -7657,8 +7540,8 @@ type MJActionFilter_ {
   Technical documentation of the filter code logic, including expected inputs, outputs, and any dependencies or assumptions.
   """
   CodeExplanation: String
-  EntityActionFilters_ActionFilterIDArray: [MJEntityActionFilter_!]!
   ID: String!
+  MJEntityActionFilters_ActionFilterIDArray: [MJEntityActionFilter_!]!
 
   """
   Additional notes or implementation details about the filter logic, including examples or edge cases to consider.
@@ -7699,7 +7582,6 @@ type MJActionParam_ {
   """
   DefaultValue: String
   Description: String
-  EntityActionParams_ActionParamIDArray: [MJEntityActionParam_!]!
   ID: String!
 
   """
@@ -7711,13 +7593,14 @@ type MJActionParam_ {
   Determines if this parameter must be provided for input parameters or will always be populated for output parameters.
   """
   IsRequired: Boolean!
+  MJEntityActionParams_ActionParamIDArray: [MJEntityActionParam_!]!
+  MJScheduledActionParams_ActionParamIDArray: [MJScheduledActionParam_!]!
 
   """
   Specifies the type of media this parameter outputs when ValueType is MediaOutput. Used for action discovery and validation.
   """
   MediaModality: String
   Name: String!
-  ScheduledActionParams_ActionParamIDArray: [MJScheduledActionParam_!]!
 
   """
   Specifies whether this parameter is used for Input, Output, or Both directions in the action execution flow.
@@ -7758,14 +7641,6 @@ type MJActionResultCode_ {
 Stores action definitions, including prompts, generated code, user comments, and status.
 """
 type MJAction_ {
-  AIAgentActions_ActionIDArray: [MJAIAgentAction_!]!
-  ActionAuthorizations_ActionIDArray: [MJActionAuthorization_!]!
-  ActionContexts_ActionIDArray: [MJActionContext_!]!
-  ActionExecutionLogs_ActionIDArray: [MJActionExecutionLog_!]!
-  ActionLibraries_ActionIDArray: [MJActionLibrary_!]!
-  ActionParams_ActionIDArray: [MJActionParam_!]!
-  ActionResultCodes_ActionIDArray: [MJActionResultCode_!]!
-  Actions_ParentIDArray: [MJAction_!]!
   Category: String
   CategoryID: String
 
@@ -7806,7 +7681,6 @@ type MJAction_ {
   For actions where Type='Custom', this specifies the fully qualified class name of the BaseAction sub-class that should be instantiated to handle the action execution. This provides a more reliable mechanism than relying on the Name field for class instantiation.
   """
   DriverClass: String
-  EntityActions_ActionIDArray: [MJEntityAction_!]!
 
   """
   If set to 1, the Action will generate code for the provided UserPrompt on the next Save even if the UserPrompt hasn't changed. This is useful to force regeneration when other candidates (such as a change in Action Inputs/Outputs) occurs or on demand by a user.
@@ -7818,8 +7692,18 @@ type MJAction_ {
   Font Awesome icon class (e.g., fa-cog, fa-play, fa-search) for visual representation of the action.
   """
   IconClass: String
-  MJ_AIAgentSteps_ActionIDArray: [MJAIAgentStep_!]!
-  MJ_MCPServerTools_GeneratedActionIDArray: [MJMCPServerTool_!]!
+  MJAIAgentActions_ActionIDArray: [MJAIAgentAction_!]!
+  MJAIAgentSteps_ActionIDArray: [MJAIAgentStep_!]!
+  MJActionAuthorizations_ActionIDArray: [MJActionAuthorization_!]!
+  MJActionContexts_ActionIDArray: [MJActionContext_!]!
+  MJActionExecutionLogs_ActionIDArray: [MJActionExecutionLog_!]!
+  MJActionLibraries_ActionIDArray: [MJActionLibrary_!]!
+  MJActionParams_ActionIDArray: [MJActionParam_!]!
+  MJActionResultCodes_ActionIDArray: [MJActionResultCode_!]!
+  MJActions_ParentIDArray: [MJAction_!]!
+  MJEntityActions_ActionIDArray: [MJEntityAction_!]!
+  MJMCPServerTools_GeneratedActionIDArray: [MJMCPServerTool_!]!
+  MJScheduledActions_ActionIDArray: [MJScheduledAction_!]!
 
   """
   The name of the action. Must be unique within the combination of CategoryID and ParentID. Actions with the same name can exist in different categories or under different parents.
@@ -7835,7 +7719,6 @@ type MJAction_ {
   """Number of days to retain execution logs; NULL for indefinite."""
   RetentionPeriod: Int
   RootParentID: String
-  ScheduledActions_ActionIDArray: [MJScheduledAction_!]!
 
   """Status of the action (Pending, Active, Disabled)."""
   Status: String!
@@ -7905,9 +7788,6 @@ type MJApplicationSetting_ {
 Applications are used to group entities in the user interface for ease of user access
 """
 type MJApplication_ {
-  ApplicationEntities_ApplicationIDArray: [MJApplicationEntity_!]!
-  ApplicationSettings_ApplicationIDArray: [MJApplicationSetting_!]!
-
   """
   When true, Path is automatically generated from Name on save. Set to false to manually control the Path value. Defaults to true for new applications.
   """
@@ -7920,7 +7800,6 @@ type MJApplication_ {
 
   """Hex color code for visual theming (e.g., #4caf50)"""
   Color: String
-  Dashboards_ApplicationIDArray: [MJDashboard_!]!
 
   """
   If turned on, when a new user first uses the MJ Explorer app, the application records with this turned on will have this application included in their selected application list.
@@ -7948,7 +7827,11 @@ type MJApplication_ {
   Specify the CSS class information for the display icon for each application.
   """
   Icon: String
-  MJ_DashboardUserPreferences_ApplicationIDArray: [MJDashboardUserPreference_!]!
+  MJApplicationEntities_ApplicationIDArray: [MJApplicationEntity_!]!
+  MJApplicationSettings_ApplicationIDArray: [MJApplicationSetting_!]!
+  MJDashboardUserPreferences_ApplicationIDArray: [MJDashboardUserPreference_!]!
+  MJDashboards_ApplicationIDArray: [MJDashboard_!]!
+  MJUserApplications_ApplicationIDArray: [MJUserApplication_!]!
   Name: String!
 
   """
@@ -7975,7 +7858,6 @@ type MJApplication_ {
   Position of the permanent nav icon when NavigationStyle is Nav Bar or Both. Left of App Switcher = appears before the app switcher, Left of User Menu = appears near the user avatar. Ignored when NavigationStyle is App Switcher.
   """
   TopNavLocation: String
-  UserApplications_ApplicationIDArray: [MJUserApplication_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -8013,8 +7895,6 @@ type MJArtifactPermission_ {
 Defines the types of artifacts that can be created within conversations
 """
 type MJArtifactType_ {
-  AIAgents_DefaultArtifactTypeIDArray: [MJAIAgent_!]!
-
   """MIME type or content identifier for this artifact type"""
   ContentType: String!
 
@@ -8039,10 +7919,11 @@ type MJArtifactType_ {
 
   """Indicates if this artifact type is currently available for use"""
   IsEnabled: Boolean!
-  MJ_AIAgentArtifactTypes_ArtifactTypeIDArray: [MJAIAgentArtifactType_!]!
-  MJ_ArtifactTypes_ParentIDArray: [MJArtifactType_!]!
-  MJ_Artifacts_TypeIDArray: [MJArtifact_!]!
-  MJ_ConversationArtifacts_ArtifactTypeIDArray: [MJConversationArtifact_!]!
+  MJAIAgentArtifactTypes_ArtifactTypeIDArray: [MJAIAgentArtifactType_!]!
+  MJAIAgents_DefaultArtifactTypeIDArray: [MJAIAgent_!]!
+  MJArtifactTypes_ParentIDArray: [MJArtifactType_!]!
+  MJArtifacts_TypeIDArray: [MJArtifact_!]!
+  MJConversationArtifacts_ArtifactTypeIDArray: [MJConversationArtifact_!]!
 
   """Display name of the artifact type"""
   Name: String!
@@ -8137,10 +8018,10 @@ type MJArtifactVersion_ {
   """
   Description: String
   ID: String!
-  MJ_ArtifactUses_ArtifactVersionIDArray: [MJArtifactUse_!]!
-  MJ_ArtifactVersionAttributes_ArtifactVersionIDArray: [MJArtifactVersionAttribute_!]!
-  MJ_CollectionArtifacts_ArtifactVersionIDArray: [MJCollectionArtifact_!]!
-  MJ_ConversationDetailArtifacts_ArtifactVersionIDArray: [MJConversationDetailArtifact_!]!
+  MJArtifactUses_ArtifactVersionIDArray: [MJArtifactUse_!]!
+  MJArtifactVersionAttributes_ArtifactVersionIDArray: [MJArtifactVersionAttribute_!]!
+  MJCollectionArtifacts_ArtifactVersionIDArray: [MJCollectionArtifact_!]!
+  MJConversationDetailArtifacts_ArtifactVersionIDArray: [MJConversationDetailArtifact_!]!
 
   """
   Name of this artifact version. Can differ from Artifact.Name as it may evolve with versions.
@@ -8167,9 +8048,9 @@ type MJArtifact_ {
   Environment: String!
   EnvironmentID: String!
   ID: String!
-  MJ_ArtifactPermissions_ArtifactIDArray: [MJArtifactPermission_!]!
-  MJ_ArtifactVersions_ArtifactIDArray: [MJArtifactVersion_!]!
-  MJ_CollectionArtifacts_ArtifactIDArray: [MJCollectionArtifact_!]!
+  MJArtifactPermissions_ArtifactIDArray: [MJArtifactPermission_!]!
+  MJArtifactVersions_ArtifactIDArray: [MJArtifactVersion_!]!
+  MJCollectionArtifacts_ArtifactIDArray: [MJCollectionArtifact_!]!
 
   """Display name for the artifact"""
   Name: String!
@@ -8190,12 +8071,12 @@ type MJArtifact_ {
 Defines the types of events that can be recorded in the audit log, enabling categorization and filtering of system activities.
 """
 type MJAuditLogType_ {
-  AuditLogTypes_ParentIDArray: [MJAuditLogType_!]!
-  AuditLogs_AuditLogTypeNameArray: [MJAuditLog_!]!
   Authorization: String
   AuthorizationID: String
   Description: String
   ID: String!
+  MJAuditLogTypes_ParentIDArray: [MJAuditLogType_!]!
+  MJAuditLogs_AuditLogTypeNameArray: [MJAuditLog_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -8255,11 +8136,6 @@ type MJAuthorizationRole_ {
 Stores the fundamental permissions and access rights that can be granted to users and roles throughout the system.
 """
 type MJAuthorization_ {
-  ActionAuthorizations_AuthorizationIDArray: [MJActionAuthorization_!]!
-  AuditLogTypes_AuthorizationNameArray: [MJAuditLogType_!]!
-  AuditLogs_AuthorizationNameArray: [MJAuditLog_!]!
-  AuthorizationRoles_AuthorizationIDArray: [MJAuthorizationRole_!]!
-  Authorizations_ParentIDArray: [MJAuthorization_!]!
   Description: String
   ID: String!
 
@@ -8267,6 +8143,11 @@ type MJAuthorization_ {
   Indicates whether this authorization is currently active and can be granted to users or roles.
   """
   IsActive: Boolean!
+  MJActionAuthorizations_AuthorizationIDArray: [MJActionAuthorization_!]!
+  MJAuditLogTypes_AuthorizationNameArray: [MJAuditLogType_!]!
+  MJAuditLogs_AuthorizationNameArray: [MJAuditLog_!]!
+  MJAuthorizationRoles_AuthorizationIDArray: [MJAuthorizationRole_!]!
+  MJAuthorizations_ParentIDArray: [MJAuthorization_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -8347,9 +8228,9 @@ type MJCollection_ {
 
   """Font Awesome icon class for UI display"""
   Icon: String
-  MJ_CollectionArtifacts_CollectionIDArray: [MJCollectionArtifact_!]!
-  MJ_CollectionPermissions_CollectionIDArray: [MJCollectionPermission_!]!
-  MJ_Collections_ParentIDArray: [MJCollection_!]!
+  MJCollectionArtifacts_CollectionIDArray: [MJCollectionArtifact_!]!
+  MJCollectionPermissions_CollectionIDArray: [MJCollectionPermission_!]!
+  MJCollections_ParentIDArray: [MJCollection_!]!
 
   """Display name for the collection"""
   Name: String!
@@ -8369,9 +8250,9 @@ type MJCollection_ {
 
 """Base message types and their supported functionalities."""
 type MJCommunicationBaseMessageType_ {
-  CommunicationProviderMessageTypes_CommunicationBaseMessageTypeIDArray: [MJCommunicationProviderMessageType_!]!
-  EntityCommunicationMessageTypes_BaseMessageTypeIDArray: [MJEntityCommunicationMessageType_!]!
   ID: String!
+  MJCommunicationProviderMessageTypes_CommunicationBaseMessageTypeIDArray: [MJCommunicationProviderMessageType_!]!
+  MJEntityCommunicationMessageTypes_BaseMessageTypeIDArray: [MJEntityCommunicationMessageType_!]!
 
   """The maximum size in bytes for the message."""
   MaxBytes: Int
@@ -8431,10 +8312,10 @@ type MJCommunicationProviderMessageType_ {
   AdditionalAttributes: String
   CommunicationBaseMessageType: String!
   CommunicationBaseMessageTypeID: String!
-  CommunicationLogs_CommunicationProviderMessageTypeIDArray: [MJCommunicationLog_!]!
   CommunicationProvider: String!
   CommunicationProviderID: String!
   ID: String!
+  MJCommunicationLogs_CommunicationProviderMessageTypeIDArray: [MJCommunicationLog_!]!
   Name: String!
 
   """The status of the provider message type (Disabled or Active)."""
@@ -8445,10 +8326,10 @@ type MJCommunicationProviderMessageType_ {
 
 """All supported communication providers."""
 type MJCommunicationProvider_ {
-  CommunicationLogs_CommunicationProviderIDArray: [MJCommunicationLog_!]!
-  CommunicationProviderMessageTypes_CommunicationProviderIDArray: [MJCommunicationProviderMessageType_!]!
   Description: String
   ID: String!
+  MJCommunicationLogs_CommunicationProviderIDArray: [MJCommunicationLog_!]!
+  MJCommunicationProviderMessageTypes_CommunicationProviderIDArray: [MJCommunicationProviderMessageType_!]!
   Name: String!
 
   """The status of the communication provider (Disabled or Active)."""
@@ -8482,7 +8363,6 @@ type MJCommunicationProvider_ {
 """Runs of bulk message sends and receives."""
 type MJCommunicationRun_ {
   Comments: String
-  CommunicationLogs_CommunicationRunIDArray: [MJCommunicationLog_!]!
 
   """The direction of the communication run (Sending or Receiving)."""
   Direction: String!
@@ -8491,6 +8371,7 @@ type MJCommunicationRun_ {
   """The error message if the communication run failed."""
   ErrorMessage: String
   ID: String!
+  MJCommunicationLogs_CommunicationRunIDArray: [MJCommunicationLog_!]!
   StartedAt: Timestamp
 
   """
@@ -8563,7 +8444,6 @@ type MJCompanyIntegrationRunDetail_ {
   CompanyIntegrationRunID: String!
   Entity: String!
   EntityID: String!
-  ErrorLogs_CompanyIntegrationRunDetailIDArray: [MJErrorLog_!]!
 
   """Timestamp when this specific record operation was executed."""
   ExecutedAt: Timestamp!
@@ -8573,6 +8453,7 @@ type MJCompanyIntegrationRunDetail_ {
   Indicates whether this individual record operation succeeded or failed.
   """
   IsSuccess: Boolean!
+  MJErrorLogs_CompanyIntegrationRunDetailIDArray: [MJErrorLog_!]!
 
   """
   The ID of the specific record being processed in this integration operation.
@@ -8591,8 +8472,6 @@ type MJCompanyIntegrationRun_ {
   Comments: String
   Company: String!
   CompanyIntegrationID: String!
-  CompanyIntegrationRunAPILogs_CompanyIntegrationRunIDArray: [MJCompanyIntegrationRunAPILog_!]!
-  CompanyIntegrationRunDetails_CompanyIntegrationRunIDArray: [MJCompanyIntegrationRunDetail_!]!
 
   """
   Optional configuration data in JSON format for the request that started the integration run for audit purposes.
@@ -8602,9 +8481,11 @@ type MJCompanyIntegrationRun_ {
 
   """Optional error log information for the integration run."""
   ErrorLog: String
-  ErrorLogs_CompanyIntegrationRunIDArray: [MJErrorLog_!]!
   ID: String!
   Integration: String!
+  MJCompanyIntegrationRunAPILogs_CompanyIntegrationRunIDArray: [MJCompanyIntegrationRunAPILog_!]!
+  MJCompanyIntegrationRunDetails_CompanyIntegrationRunIDArray: [MJCompanyIntegrationRunDetail_!]!
+  MJErrorLogs_CompanyIntegrationRunIDArray: [MJErrorLog_!]!
   RunByUser: String!
   RunByUserID: String!
   StartedAt: Timestamp
@@ -8635,8 +8516,6 @@ type MJCompanyIntegration_ {
   ClientSecret: String
   Company: String!
   CompanyID: String!
-  CompanyIntegrationRecordMaps_CompanyIntegrationIDArray: [MJCompanyIntegrationRecordMap_!]!
-  CompanyIntegrationRuns_CompanyIntegrationIDArray: [MJCompanyIntegrationRun_!]!
 
   """
   Flexible field for storing integration-specific configuration or metadata.
@@ -8644,7 +8523,6 @@ type MJCompanyIntegration_ {
   CustomAttribute1: String
   DriverClassName: String
   DriverImportPath: String
-  EmployeeCompanyIntegrations_CompanyIntegrationIDArray: [MJEmployeeCompanyIntegration_!]!
 
   """The company's identifier in the external system, used for API calls."""
   ExternalSystemID: String
@@ -8662,7 +8540,10 @@ type MJCompanyIntegration_ {
   LastRunEndedAt: Timestamp
   LastRunID: String
   LastRunStartedAt: Timestamp
-  Lists_CompanyIntegrationIDArray: [MJList_!]!
+  MJCompanyIntegrationRecordMaps_CompanyIntegrationIDArray: [MJCompanyIntegrationRecordMap_!]!
+  MJCompanyIntegrationRuns_CompanyIntegrationIDArray: [MJCompanyIntegrationRun_!]!
+  MJEmployeeCompanyIntegrations_CompanyIntegrationIDArray: [MJEmployeeCompanyIntegration_!]!
+  MJLists_CompanyIntegrationIDArray: [MJList_!]!
 
   """
   User-friendly name for the company integration instance, typically in the format "Company: Integration".
@@ -8684,26 +8565,26 @@ type MJCompanyIntegration_ {
 A list of organizational units within your business. These can be subsidiaries or divisions or other units. Companies are used to organizae employee records and also for separating integrations if you have multiple integrations of the same type of system.
 """
 type MJCompany_ {
-  AIAgentNotes_CompanyIDArray: [MJAIAgentNote_!]!
-  CompanyIntegrations_CompanyNameArray: [MJCompanyIntegration_!]!
   Description: String!
 
   """
   The primary email domain associated with this company, used for employee email validation and SSO configuration.
   """
   Domain: String
-  Employees_CompanyIDArray: [MJEmployee_!]!
   ID: String!
 
   """URL pointing to the company's logo image, used for branding in the UI."""
   LogoURL: String
-  MJ_AIAgentExamples_CompanyIDArray: [MJAIAgentExample_!]!
-  MJ_MCPServerConnections_CompanyIDArray: [MJMCPServerConnection_!]!
+  MJAIAgentExamples_CompanyIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_CompanyIDArray: [MJAIAgentNote_!]!
+  MJCompanyIntegrations_CompanyNameArray: [MJCompanyIntegration_!]!
+  MJEmployees_CompanyIDArray: [MJEmployee_!]!
+  MJMCPServerConnections_CompanyIDArray: [MJMCPServerConnection_!]!
+  MJWorkflows_CompanyNameArray: [MJWorkflow_!]!
   Name: String!
 
   """The primary website URL for this company or division."""
   Website: String
-  Workflows_CompanyNameArray: [MJWorkflow_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -8781,7 +8662,7 @@ type MJComponentLibrary_ {
   JSON configuration for library-specific lint rules that are applied during component validation. This field contains structured rules that define how components using this library should be validated, including DOM element requirements, initialization patterns, lifecycle methods, and common error patterns. Example structure: {"initialization": {"constructorName": "Chart", "elementType": "canvas"}, "lifecycle": {"requiredMethods": ["render"], "cleanupMethods": ["destroy"]}}. The linter dynamically applies these rules based on the libraries referenced in a component spec, enabling extensible validation without hardcoding library-specific logic.
   """
   LintRules: String
-  MJ_ComponentLibraryLinks_LibraryIDArray: [MJComponentLibraryLink_!]!
+  MJComponentLibraryLinks_LibraryIDArray: [MJComponentLibraryLink_!]!
 
   """
   NPM-style package name (e.g., recharts, lodash, @memberjunction/lib-name)
@@ -8816,7 +8697,7 @@ type MJComponentRegistry_ {
 
   """Primary key for the component registry"""
   ID: String!
-  MJ_Components_SourceRegistryIDArray: [MJComponent_!]!
+  MJComponents_SourceRegistryIDArray: [MJComponent_!]!
 
   """
   Name of the registry (e.g., MemberJunction Registry, NPM, Internal Registry)
@@ -8891,9 +8772,9 @@ type MJComponent_ {
 
   """Last synchronization timestamp with the source registry"""
   LastSyncedAt: Timestamp
-  MJ_ComponentDependencies_ComponentIDArray: [MJComponentDependency_!]!
-  MJ_ComponentDependencies_DependencyComponentIDArray: [MJComponentDependency_!]!
-  MJ_ComponentLibraryLinks_ComponentIDArray: [MJComponentLibraryLink_!]!
+  MJComponentDependencies_ComponentIDArray: [MJComponentDependency_!]!
+  MJComponentDependencies_DependencyComponentIDArray: [MJComponentDependency_!]!
+  MJComponentLibraryLinks_ComponentIDArray: [MJComponentLibraryLink_!]!
 
   """Component name within the namespace (e.g., revenue-tracker)"""
   Name: String!
@@ -8959,14 +8840,13 @@ type MJComponent_ {
 Defines supported file types for content management, including extensions and processing rules for different content formats.
 """
 type MJContentFileType_ {
-  ContentItems_ContentFileTypeIDArray: [MJContentItem_!]!
-  ContentSources_ContentFileTypeIDArray: [MJContentSource_!]!
-
   """
   The file extension (e.g., .pdf, .docx, .jpg) used to identify this content type.
   """
   FileExtension: String
   ID: String!
+  MJContentItems_ContentFileTypeIDArray: [MJContentItem_!]!
+  MJContentSources_ContentFileTypeIDArray: [MJContentSource_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -9015,8 +8895,6 @@ type MJContentItem_ {
   Checksum: String
   ContentFileType: String!
   ContentFileTypeID: String!
-  ContentItemAttributes_ContentItemIDArray: [MJContentItemAttribute_!]!
-  ContentItemTags_ItemIDArray: [MJContentItemTag_!]!
   ContentSource: String
   ContentSourceID: String!
   ContentSourceType: String!
@@ -9025,6 +8903,8 @@ type MJContentItem_ {
   ContentTypeID: String!
   Description: String
   ID: String!
+  MJContentItemAttributes_ContentItemIDArray: [MJContentItemAttribute_!]!
+  MJContentItemTags_ItemIDArray: [MJContentItemTag_!]!
   Name: String
 
   """The extracted text content from the source document or file."""
@@ -9102,10 +8982,10 @@ type MJContentSourceTypeParam_ {
 Catalogs available content source types such as file systems, APIs, websites, databases, and cloud storage platforms with their capabilities.
 """
 type MJContentSourceType_ {
-  ContentItems_ContentSourceTypeIDArray: [MJContentItem_!]!
-  ContentSources_ContentSourceTypeIDArray: [MJContentSource_!]!
   Description: String
   ID: String!
+  MJContentItems_ContentSourceTypeIDArray: [MJContentItem_!]!
+  MJContentSources_ContentSourceTypeIDArray: [MJContentSource_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -9117,14 +8997,14 @@ Configures connections to external content repositories and systems from which c
 type MJContentSource_ {
   ContentFileType: String!
   ContentFileTypeID: String!
-  ContentItems_ContentSourceIDArray: [MJContentItem_!]!
-  ContentProcessRuns_SourceIDArray: [MJContentProcessRun_!]!
-  ContentSourceParams_ContentSourceIDArray: [MJContentSourceParam_!]!
   ContentSourceType: String!
   ContentSourceTypeID: String!
   ContentType: String!
   ContentTypeID: String!
   ID: String!
+  MJContentItems_ContentSourceIDArray: [MJContentItem_!]!
+  MJContentProcessRuns_SourceIDArray: [MJContentProcessRun_!]!
+  MJContentSourceParams_ContentSourceIDArray: [MJContentSourceParam_!]!
   Name: String
 
   """Base URL or connection string for accessing this content source."""
@@ -9155,10 +9035,10 @@ Defines categories of content with specific schemas, behaviors, and processing r
 type MJContentType_ {
   AIModel: String!
   AIModelID: String!
-  ContentItems_ContentTypeIDArray: [MJContentItem_!]!
-  ContentSources_ContentTypeIDArray: [MJContentSource_!]!
   Description: String
   ID: String!
+  MJContentItems_ContentTypeIDArray: [MJContentItem_!]!
+  MJContentSources_ContentTypeIDArray: [MJContentSource_!]!
 
   """Maximum number of tags allowed on content of this type."""
   MaxTags: Int!
@@ -9202,8 +9082,8 @@ type MJConversationArtifactVersion_ {
 
   """Reference to the parent artifact"""
   ConversationArtifactID: String!
-  ConversationDetails_ArtifactVersionIDArray: [MJConversationDetail_!]!
   ID: String!
+  MJConversationDetails_ArtifactVersionIDArray: [MJConversationDetail_!]!
 
   """Sequential version number (starting from 1) for this artifact"""
   Version: Int!
@@ -9221,7 +9101,6 @@ type MJConversationArtifact_ {
   """User comments about the artifact"""
   Comments: String
   Conversation: String
-  ConversationDetails_ArtifactIDArray: [MJConversationDetail_!]!
 
   """Reference to the conversation this artifact belongs to"""
   ConversationID: String!
@@ -9229,8 +9108,9 @@ type MJConversationArtifact_ {
   """Extended description of the artifact"""
   Description: String
   ID: String!
-  MJ_ConversationArtifactPermissions_ConversationArtifactIDArray: [MJConversationArtifactPermission_!]!
-  MJ_ConversationArtifactVersions_ConversationArtifactIDArray: [MJConversationArtifactVersion_!]!
+  MJConversationArtifactPermissions_ConversationArtifactIDArray: [MJConversationArtifactPermission_!]!
+  MJConversationArtifactVersions_ConversationArtifactIDArray: [MJConversationArtifactVersion_!]!
+  MJConversationDetails_ArtifactIDArray: [MJConversationDetail_!]!
 
   """Display name of the artifact"""
   Name: String!
@@ -9358,8 +9238,6 @@ type MJConversationDetailRating_ {
 Stores individual messages, responses, and interactions within a conversation, maintaining the complete dialogue history with timestamps.
 """
 type MJConversationDetail_ {
-  AIAgentNotes_SourceConversationDetailIDArray: [MJAIAgentNote_!]!
-
   """
   JSON array of actionable commands that user can trigger (shown as clickable buttons/links). Supports open:resource (navigate to records/dashboards/reports/forms) and open:url (external links). Typically used after completing work to provide easy navigation to created/modified resources.
   """
@@ -9393,7 +9271,6 @@ type MJConversationDetail_ {
   """
   CompletionTime: Int
   Conversation: String
-  ConversationDetails_ParentIDArray: [MJConversationDetail_!]!
   ConversationID: String!
 
   """Error message if this conversation turn encountered a problem."""
@@ -9414,12 +9291,15 @@ type MJConversationDetail_ {
   Indicates if this message is pinned within the conversation for easy reference
   """
   IsPinned: Boolean!
-  MJ_AIAgentExamples_SourceConversationDetailIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentRuns_ConversationDetailIDArray: [MJAIAgentRun_!]!
-  MJ_ConversationDetailArtifacts_ConversationDetailIDArray: [MJConversationDetailArtifact_!]!
-  MJ_ConversationDetailAttachments_ConversationDetailIDArray: [MJConversationDetailAttachment_!]!
-  MJ_ConversationDetailRatings_ConversationDetailIDArray: [MJConversationDetailRating_!]!
-  MJ_Tasks_ConversationDetailIDArray: [MJTask_!]!
+  MJAIAgentExamples_SourceConversationDetailIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_SourceConversationDetailIDArray: [MJAIAgentNote_!]!
+  MJAIAgentRuns_ConversationDetailIDArray: [MJAIAgentRun_!]!
+  MJConversationDetailArtifacts_ConversationDetailIDArray: [MJConversationDetailArtifact_!]!
+  MJConversationDetailAttachments_ConversationDetailIDArray: [MJConversationDetailAttachment_!]!
+  MJConversationDetailRatings_ConversationDetailIDArray: [MJConversationDetailRating_!]!
+  MJConversationDetails_ParentIDArray: [MJConversationDetail_!]!
+  MJReports_ConversationDetailIDArray: [MJReport_!]!
+  MJTasks_ConversationDetailIDArray: [MJTask_!]!
 
   """The actual content of the message in the conversation."""
   Message: String!
@@ -9439,7 +9319,6 @@ type MJConversationDetail_ {
   This column stores human or AI-generated reflections on how to improve future responses based on the user feedback and the AI output generated for prior messages in the conversation.
   """
   ReflectionInsights: String
-  Reports_ConversationDetailIDArray: [MJReport_!]!
 
   """
   JSON object containing agent response form definition with questions and validation rules. Supports 8 question types: text, textarea, email, number, currency, date, datetime, choices (buttongroup/radio/dropdown/checkbox). Used for collecting structured user input with proper validation.
@@ -9494,8 +9373,6 @@ type MJConversationDetail_ {
 Tracks conversation sessions between users and AI agents or between users, including context, participants, and metadata.
 """
 type MJConversation_ {
-  AIAgentNotes_SourceConversationIDArray: [MJAIAgentNote_!]!
-  ConversationDetails_ConversationIDArray: [MJConversationDetail_!]!
   DataContext: String
   DataContextID: String
   Description: String
@@ -9520,13 +9397,15 @@ type MJConversation_ {
   ID of a related record this conversation is about (support ticket, order, etc.).
   """
   LinkedRecordID: String
-  MJ_AIAgentExamples_SourceConversationIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentRuns_ConversationIDArray: [MJAIAgentRun_!]!
-  MJ_ConversationArtifacts_ConversationIDArray: [MJConversationArtifact_!]!
+  MJAIAgentExamples_SourceConversationIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_SourceConversationIDArray: [MJAIAgentNote_!]!
+  MJAIAgentRuns_ConversationIDArray: [MJAIAgentRun_!]!
+  MJConversationArtifacts_ConversationIDArray: [MJConversationArtifact_!]!
+  MJConversationDetails_ConversationIDArray: [MJConversationDetail_!]!
+  MJReports_ConversationIDArray: [MJReport_!]!
   Name: String
   Project: String
   ProjectID: String
-  Reports_ConversationIDArray: [MJReport_!]!
 
   """
   Tracks the processing status of the conversation: Available, Processing
@@ -9557,8 +9436,8 @@ type MJCredentialCategory_ {
 
   """Font Awesome icon class for UI display (e.g., fa-solid fa-folder)."""
   IconClass: String
-  MJ_CredentialCategories_ParentIDArray: [MJCredentialCategory_!]!
-  MJ_Credentials_CategoryIDArray: [MJCredential_!]!
+  MJCredentialCategories_ParentIDArray: [MJCredentialCategory_!]!
+  MJCredentials_CategoryIDArray: [MJCredential_!]!
 
   """Display name for the category."""
   Name: String!
@@ -9593,9 +9472,9 @@ type MJCredentialType_ {
 
   """Font Awesome icon class for UI display (e.g., fa-brands fa-openai)."""
   IconClass: String
-  MJ_AIVendors_CredentialTypeIDArray: [MJAIVendor_!]!
-  MJ_Credentials_CredentialTypeIDArray: [MJCredential_!]!
-  MJ_MCPServers_CredentialTypeIDArray: [MJMCPServer_!]!
+  MJAIVendors_CredentialTypeIDArray: [MJAIVendor_!]!
+  MJCredentials_CredentialTypeIDArray: [MJCredential_!]!
+  MJMCPServers_CredentialTypeIDArray: [MJMCPServer_!]!
 
   """Unique name for the credential type (e.g., OpenAI, SendGrid, AWS S3)."""
   Name: String!
@@ -9648,10 +9527,10 @@ type MJCredential_ {
 
   """Timestamp of the last successful validation against the provider."""
   LastValidatedAt: Timestamp
-  MJ_AICredentialBindings_CredentialIDArray: [MJAICredentialBinding_!]!
-  MJ_FileStorageAccounts_CredentialIDArray: [MJFileStorageAccount_!]!
-  MJ_MCPServerConnections_CredentialIDArray: [MJMCPServerConnection_!]!
-  MJ_OAuthTokens_CredentialIDArray: [MJOAuthToken_!]!
+  MJAICredentialBindings_CredentialIDArray: [MJAICredentialBinding_!]!
+  MJFileStorageAccounts_CredentialIDArray: [MJFileStorageAccount_!]!
+  MJMCPServerConnections_CredentialIDArray: [MJMCPServerConnection_!]!
+  MJOAuthTokens_CredentialIDArray: [MJOAuthToken_!]!
 
   """
   Human-readable name for this credential (e.g., Production SendGrid, Development OpenAI).
@@ -9731,12 +9610,12 @@ type MJDashboardCategoryPermission_ {
 Organizes dashboards into logical groupings for navigation and access control, supporting hierarchical categorization.
 """
 type MJDashboardCategory_ {
-  DashboardCategories_ParentIDArray: [MJDashboardCategory_!]!
-  Dashboards_CategoryIDArray: [MJDashboard_!]!
   Description: String
   ID: String!
-  MJ_DashboardCategoryLinks_DashboardCategoryIDArray: [MJDashboardCategoryLink_!]!
-  MJ_DashboardCategoryPermissions_DashboardCategoryIDArray: [MJDashboardCategoryPermission_!]!
+  MJDashboardCategories_ParentIDArray: [MJDashboardCategory_!]!
+  MJDashboardCategoryLinks_DashboardCategoryIDArray: [MJDashboardCategoryLink_!]!
+  MJDashboardCategoryPermissions_DashboardCategoryIDArray: [MJDashboardCategoryPermission_!]!
+  MJDashboards_CategoryIDArray: [MJDashboard_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -9892,10 +9771,10 @@ type MJDashboard_ {
   Environment: String!
   EnvironmentID: String!
   ID: String!
-  MJ_DashboardCategoryLinks_DashboardIDArray: [MJDashboardCategoryLink_!]!
-  MJ_DashboardPermissions_DashboardIDArray: [MJDashboardPermission_!]!
-  MJ_DashboardUserPreferences_DashboardIDArray: [MJDashboardUserPreference_!]!
-  MJ_DashboardUserStates_DashboardIDArray: [MJDashboardUserState_!]!
+  MJDashboardCategoryLinks_DashboardIDArray: [MJDashboardCategoryLink_!]!
+  MJDashboardPermissions_DashboardIDArray: [MJDashboardPermission_!]!
+  MJDashboardUserPreferences_DashboardIDArray: [MJDashboardUserPreference_!]!
+  MJDashboardUserStates_DashboardIDArray: [MJDashboardUserState_!]!
   Name: String!
 
   """Scope of the dashboard: Global or App-specific"""
@@ -9968,8 +9847,6 @@ type MJDataContextItem_ {
 Data Contexts are a primitive within the MemberJunction architecture. They store information about data contexts which are groups of data including views, queries, or raw SQL statements. Data contexts can be used in conversations, reports and more.
 """
 type MJDataContext_ {
-  Conversations_DataContextIDArray: [MJConversation_!]!
-  DataContextItems_DataContextIDArray: [MJDataContextItem_!]!
   Description: String
   ID: String!
 
@@ -9977,8 +9854,10 @@ type MJDataContext_ {
   Timestamp of when the data in this context was last refreshed or recalculated.
   """
   LastRefreshedAt: Timestamp
+  MJConversations_DataContextIDArray: [MJConversation_!]!
+  MJDataContextItems_DataContextIDArray: [MJDataContextItem_!]!
+  MJReports_DataContextIDArray: [MJReport_!]!
   Name: String!
-  Reports_DataContextIDArray: [MJReport_!]!
   User: String!
   UserID: String!
   _mj__CreatedAt: Timestamp!
@@ -10021,9 +9900,9 @@ type MJDatasetItem_ {
 
 """Cacheable sets of data that can span one or more items"""
 type MJDataset_ {
-  DatasetItems_DatasetNameArray: [MJDatasetItem_!]!
   Description: String
   ID: String!
+  MJDatasetItems_DatasetNameArray: [MJDatasetItem_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -10074,9 +9953,9 @@ Stores detailed results for each record analyzed in a duplicate detection run, i
 """
 type MJDuplicateRunDetail_ {
   DuplicateRun: String!
-  DuplicateRunDetailMatches_DuplicateRunDetailIDArray: [MJDuplicateRunDetailMatch_!]!
   DuplicateRunID: String!
   ID: String!
+  MJDuplicateRunDetailMatches_DuplicateRunDetailIDArray: [MJDuplicateRunDetailMatch_!]!
 
   """
   If MatchStatus='Error' this field can be used to track the error from that phase of the process for logging/diagnostics.
@@ -10122,11 +10001,11 @@ type MJDuplicateRun_ {
   ApprovalStatus: String!
   ApprovedByUser: String
   ApprovedByUserID: String
-  DuplicateRunDetails_DuplicateRunIDArray: [MJDuplicateRunDetail_!]!
   EndedAt: Timestamp
   Entity: String!
   EntityID: String!
   ID: String!
+  MJDuplicateRunDetails_DuplicateRunIDArray: [MJDuplicateRunDetail_!]!
 
   """Error details if the duplicate detection run failed."""
   ProcessingErrorMessage: String
@@ -10204,10 +10083,6 @@ type MJEmployee_ {
 
   """Employee's primary email address, must be unique across the system."""
   Email: String!
-  EmployeeCompanyIntegrations_EmployeeIDArray: [MJEmployeeCompanyIntegration_!]!
-  EmployeeRoles_EmployeeIDArray: [MJEmployeeRole_!]!
-  EmployeeSkills_EmployeeIDArray: [MJEmployeeSkill_!]!
-  Employees_SupervisorIDArray: [MJEmployee_!]!
   FirstLast: String
 
   """Employee's first name or given name."""
@@ -10216,6 +10091,11 @@ type MJEmployee_ {
 
   """Employee's last name or surname."""
   LastName: String!
+  MJEmployeeCompanyIntegrations_EmployeeIDArray: [MJEmployeeCompanyIntegration_!]!
+  MJEmployeeRoles_EmployeeIDArray: [MJEmployeeRole_!]!
+  MJEmployeeSkills_EmployeeIDArray: [MJEmployeeSkill_!]!
+  MJEmployees_SupervisorIDArray: [MJEmployee_!]!
+  MJUsers_EmployeeIDArray: [MJUser_!]!
 
   """Employee's primary phone number for business contact."""
   Phone: String
@@ -10227,7 +10107,6 @@ type MJEmployee_ {
 
   """Employee's job title or position within the organization."""
   Title: String
-  Users_EmployeeIDArray: [MJUser_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -10257,7 +10136,7 @@ type MJEncryptionAlgorithm_ {
 
   """Required key length in bits (e.g., 256 for AES-256)."""
   KeyLengthBits: Int!
-  MJ_EncryptionKeys_EncryptionAlgorithmIDArray: [MJEncryptionKey_!]!
+  MJEncryptionKeys_EncryptionAlgorithmIDArray: [MJEncryptionKey_!]!
 
   """
   Algorithm name (e.g., AES-256-GCM). Must match the format used in encrypted values.
@@ -10297,7 +10176,7 @@ type MJEncryptionKeySource_ {
 
   """Whether this key source is available for use."""
   IsActive: Boolean!
-  MJ_EncryptionKeys_EncryptionKeySourceIDArray: [MJEncryptionKey_!]!
+  MJEncryptionKeys_EncryptionKeySourceIDArray: [MJEncryptionKey_!]!
 
   """Unique name for this key source (e.g., Environment Variable, AWS KMS)."""
   Name: String!
@@ -10325,7 +10204,6 @@ type MJEncryptionKey_ {
 
   """References the key source that provides the key material."""
   EncryptionKeySourceID: String!
-  EntityFields_EncryptionKeyIDArray: [MJEntityField_!]!
 
   """
   Optional expiration date. Keys past this date cannot be used for new encryption.
@@ -10345,6 +10223,7 @@ type MJEncryptionKey_ {
 
   """Version string for key rotation tracking. Incremented during rotation."""
   KeyVersion: String!
+  MJEntityFields_EncryptionKeyIDArray: [MJEntityField_!]!
 
   """Prefix marker for encrypted values (default: $ENC$)."""
   Marker: String!
@@ -10431,8 +10310,8 @@ type MJEntityActionInvocationType_ {
 
   """Order in which this invocation type appears in UI lists and menus."""
   DisplaySequence: Int!
-  EntityActionInvocations_InvocationTypeIDArray: [MJEntityActionInvocation_!]!
   ID: String!
+  MJEntityActionInvocations_InvocationTypeIDArray: [MJEntityActionInvocation_!]!
 
   """Name of the invocation type such as Record Created/Updated/etc."""
   Name: String!
@@ -10487,11 +10366,11 @@ type MJEntityAction_ {
   Action: String!
   ActionID: String!
   Entity: String!
-  EntityActionFilters_EntityActionIDArray: [MJEntityActionFilter_!]!
-  EntityActionInvocations_EntityActionIDArray: [MJEntityActionInvocation_!]!
-  EntityActionParams_EntityActionIDArray: [MJEntityActionParam_!]!
   EntityID: String!
   ID: String!
+  MJEntityActionFilters_EntityActionIDArray: [MJEntityActionFilter_!]!
+  MJEntityActionInvocations_EntityActionIDArray: [MJEntityActionInvocation_!]!
+  MJEntityActionParams_EntityActionIDArray: [MJEntityActionParam_!]!
 
   """Status of the entity action (Pending, Active, Disabled)."""
   Status: String!
@@ -10523,12 +10402,12 @@ type MJEntityCommunicationMessageType_ {
   BaseMessageType: String!
   BaseMessageTypeID: String!
   Entity: String!
-  EntityCommunicationFields_EntityCommunicationMessageTypeIDArray: [MJEntityCommunicationField_!]!
   EntityID: String!
   ID: String!
 
   """Indicates whether the message type is active"""
   IsActive: Boolean!
+  MJEntityCommunicationFields_EntityCommunicationMessageTypeIDArray: [MJEntityCommunicationField_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -10566,8 +10445,8 @@ type MJEntityDocumentSetting_ {
 """Defines types of documents that can be generated from entity data."""
 type MJEntityDocumentType_ {
   Description: String
-  EntityDocuments_TypeIDArray: [MJEntityDocument_!]!
   ID: String!
+  MJEntityDocuments_TypeIDArray: [MJEntityDocument_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -10585,11 +10464,11 @@ type MJEntityDocument_ {
   """
   AbsoluteMatchThreshold: Float!
   Entity: String!
-  EntityDocumentRuns_EntityDocumentIDArray: [MJEntityDocumentRun_!]!
-  EntityDocumentSettings_EntityDocumentIDArray: [MJEntityDocumentSetting_!]!
   EntityID: String!
-  EntityRecordDocuments_EntityDocumentIDArray: [MJEntityRecordDocument_!]!
   ID: String!
+  MJEntityDocumentRuns_EntityDocumentIDArray: [MJEntityDocumentRun_!]!
+  MJEntityDocumentSettings_EntityDocumentIDArray: [MJEntityDocumentSetting_!]!
+  MJEntityRecordDocuments_EntityDocumentIDArray: [MJEntityRecordDocument_!]!
   Name: String!
 
   """
@@ -10734,7 +10613,6 @@ type MJEntityField_ {
   Entity: String!
   EntityClassName: String
   EntityCodeName: String
-  EntityFieldValues_EntityFieldIDArray: [MJEntityFieldValue_!]!
   EntityID: String!
 
   """
@@ -10802,6 +10680,7 @@ type MJEntityField_ {
 
   """SQL data length (auto maintained by CodeGen)"""
   Length: Int
+  MJEntityFieldValues_EntityFieldIDArray: [MJEntityFieldValue_!]!
 
   """Name of the field within the database table"""
   Name: String!
@@ -10950,8 +10829,8 @@ This table stores a list of components that are available for displaying relatio
 """
 type MJEntityRelationshipDisplayComponent_ {
   Description: String
-  EntityRelationships_DisplayComponentIDArray: [MJEntityRelationship_!]!
   ID: String!
+  MJEntityRelationships_DisplayComponentIDArray: [MJEntityRelationship_!]!
   Name: String!
 
   """
@@ -11086,8 +10965,6 @@ type MJEntitySetting_ {
 
 """Catalog of all entities across all schemas"""
 type MJEntity_ {
-  AIAgentNotes_PrimaryScopeEntityIDArray: [MJAIAgentNote_!]!
-
   """
   If set to 1, a GraphQL query will be enabled that allows access to all rows in the entity.
   """
@@ -11104,6 +10981,11 @@ type MJEntity_ {
   AllowDeleteAPI: Boolean!
 
   """
+  When false (default), child types are disjoint - a record can only be one child type at a time. When true, a record can simultaneously exist as multiple child types (e.g., a Person can be both a Member and a Volunteer).
+  """
+  AllowMultipleSubtypes: Boolean!
+
+  """
   This field must be turned on in order to enable merging of records for the entity. For AllowRecordMerge to be turned on, AllowDeleteAPI must be set to 1, and DeleteType must be set to Soft
   """
   AllowRecordMerge: Boolean!
@@ -11117,8 +10999,6 @@ type MJEntity_ {
   Enabling this bit will result in search being possible at the API and UI layers
   """
   AllowUserSearchAPI: Boolean!
-  ApplicationEntities_EntityIDArray: [MJApplicationEntity_!]!
-  AuditLogs_EntityIDArray: [MJAuditLog_!]!
 
   """
   When set to 1, accessing a record by an end-user will result in an Audit Log record being created
@@ -11156,16 +11036,19 @@ type MJEntity_ {
   When set to 1, the deleted spDelete will pre-process deletion to related entities that have 1:M cardinality with this entity. This does not have effect if spDeleteGenerated = 0
   """
   CascadeDeletes: Boolean!
+
+  """
+  Schema-based programmatic class name used for TypeScript entity classes, Zod schemas, and Angular form components. Computed as GetProgrammaticName(GetClassNameSchemaPrefix(SchemaName) + BaseTable + NameSuffix). The prefix is derived from SchemaName (guaranteed unique by SQL Server), not from EntityNamePrefix. For the core __mj schema, the prefix is "MJ"; for all other schemas it is the alphanumeric-sanitized schema name. This prevents cross-schema collisions and aligns with GraphQL type naming in getGraphQLTypeNameBase().
+  """
   ClassName: String
+
+  """
+  Schema-based programmatic code name derived from the entity Name. Uses GetClassNameSchemaPrefix(SchemaName) as the prefix, then strips EntityNamePrefix from the Name and removes spaces. For "__mj" schema with entity "MJ: AI Models", this produces "MJAIModels". For entities in other schemas, the sanitized schema name is prepended. Used in GraphQL type generation and internal code references.
+  """
   CodeName: String
-  CompanyIntegrationRecordMaps_EntityIDArray: [MJCompanyIntegrationRecordMap_!]!
-  CompanyIntegrationRunDetails_EntityIDArray: [MJCompanyIntegrationRunDetail_!]!
-  Conversations_LinkedEntityIDArray: [MJConversation_!]!
 
   """Set to 1 if a custom resolver has been created for the entity."""
   CustomResolverAPI: Boolean!
-  DataContextItems_EntityIDArray: [MJDataContextItem_!]!
-  DatasetItems_EntityIDArray: [MJDatasetItem_!]!
 
   """
   Hard deletes physically remove rows from the underlying BaseTable. Soft deletes do not remove rows but instead mark the row as deleted by using the special field __mj_DeletedAt which will automatically be added to the entity's basetable by the CodeGen tool.
@@ -11174,27 +11057,15 @@ type MJEntity_ {
   Description: String
 
   """
-  Optional display name for the entity. If not provided, the entity Name will be used for display purposes.
+  User-friendly display name shown in the Explorer UI and other interfaces. When set, this is used instead of the entity Name for display purposes. Typically contains the entity name without the schema prefix — e.g., "AI Models" when Name is "MJ: AI Models". If NULL, the UI falls back to using the full Name.
   """
   DisplayName: String
-  DuplicateRuns_EntityIDArray: [MJDuplicateRun_!]!
-  Entities_ParentIDArray: [MJEntity_!]!
-  EntityAIActions_EntityIDArray: [MJEntityAIAction_!]!
-  EntityActions_EntityIDArray: [MJEntityAction_!]!
-  EntityCommunicationMessageTypes_EntityIDArray: [MJEntityCommunicationMessageType_!]!
-  EntityDocuments_EntityIDArray: [MJEntityDocument_!]!
-  EntityFields_EntityIDArray: [MJEntityField_!]!
 
   """Import path for the entity subclass in the TypeScript codebase."""
   EntityObjectSubclassImport: String
 
   """TypeScript class name for the entity subclass in the codebase."""
   EntityObjectSubclassName: String
-  EntityPermissions_EntityIDArray: [MJEntityPermission_!]!
-  EntityRecordDocuments_EntityIDArray: [MJEntityRecordDocument_!]!
-  EntityRelationships_EntityIDArray: [MJEntityRelationship_!]!
-  EntitySettings_EntityIDArray: [MJEntitySetting_!]!
-  FileEntityRecordLinks_EntityIDArray: [MJFileEntityRecordLink_!]!
 
   """Name of the SQL Server full-text catalog if search is enabled."""
   FullTextCatalog: String
@@ -11216,7 +11087,6 @@ type MJEntity_ {
 
   """Indicates if the search function was auto-generated by CodeGen."""
   FullTextSearchFunctionGenerated: Boolean!
-  GeneratedCodes_LinkedEntityIDArray: [MJGeneratedCode_!]!
   ID: String!
 
   """
@@ -11228,16 +11098,56 @@ type MJEntity_ {
   If set to 0, the entity will not be available at all in the GraphQL API or the object model.
   """
   IncludeInAPI: Boolean!
-  IntegrationURLFormats_EntityIDArray: [MJIntegrationURLFormat_!]!
-  Lists_EntityIDArray: [MJList_!]!
-  MJ_AIAgentExamples_PrimaryScopeEntityIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentRuns_PrimaryScopeEntityIDArray: [MJAIAgentRun_!]!
-  MJ_AccessControlRules_EntityIDArray: [MJAccessControlRule_!]!
-  MJ_RecordLinks_SourceEntityIDArray: [MJRecordLink_!]!
-  MJ_RecordLinks_TargetEntityIDArray: [MJRecordLink_!]!
-  MJ_TestRuns_TargetLogEntityIDArray: [MJTestRun_!]!
-  MJ_VersionLabelItems_EntityIDArray: [MJVersionLabelItem_!]!
-  MJ_VersionLabels_EntityIDArray: [MJVersionLabel_!]!
+  MJAIAgentExamples_PrimaryScopeEntityIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_PrimaryScopeEntityIDArray: [MJAIAgentNote_!]!
+  MJAIAgentRuns_PrimaryScopeEntityIDArray: [MJAIAgentRun_!]!
+  MJAccessControlRules_EntityIDArray: [MJAccessControlRule_!]!
+  MJApplicationEntities_EntityIDArray: [MJApplicationEntity_!]!
+  MJAuditLogs_EntityIDArray: [MJAuditLog_!]!
+  MJCompanyIntegrationRecordMaps_EntityIDArray: [MJCompanyIntegrationRecordMap_!]!
+  MJCompanyIntegrationRunDetails_EntityIDArray: [MJCompanyIntegrationRunDetail_!]!
+  MJConversations_LinkedEntityIDArray: [MJConversation_!]!
+  MJDataContextItems_EntityIDArray: [MJDataContextItem_!]!
+  MJDatasetItems_EntityIDArray: [MJDatasetItem_!]!
+  MJDuplicateRuns_EntityIDArray: [MJDuplicateRun_!]!
+  MJEntities_ParentIDArray: [MJEntity_!]!
+  MJEntityAIActions_EntityIDArray: [MJEntityAIAction_!]!
+  MJEntityActions_EntityIDArray: [MJEntityAction_!]!
+  MJEntityCommunicationMessageTypes_EntityIDArray: [MJEntityCommunicationMessageType_!]!
+  MJEntityDocuments_EntityIDArray: [MJEntityDocument_!]!
+  MJEntityFields_EntityIDArray: [MJEntityField_!]!
+  MJEntityPermissions_EntityIDArray: [MJEntityPermission_!]!
+  MJEntityRecordDocuments_EntityIDArray: [MJEntityRecordDocument_!]!
+  MJEntityRelationships_EntityIDArray: [MJEntityRelationship_!]!
+  MJEntitySettings_EntityIDArray: [MJEntitySetting_!]!
+  MJFileEntityRecordLinks_EntityIDArray: [MJFileEntityRecordLink_!]!
+  MJGeneratedCodes_LinkedEntityIDArray: [MJGeneratedCode_!]!
+  MJIntegrationURLFormats_EntityIDArray: [MJIntegrationURLFormat_!]!
+  MJLists_EntityIDArray: [MJList_!]!
+  MJQueryEntities_EntityIDArray: [MJQueryEntity_!]!
+  MJQueryFields_SourceEntityIDArray: [MJQueryField_!]!
+  MJRecommendationItems_DestinationEntityIDArray: [MJRecommendationItem_!]!
+  MJRecommendations_SourceEntityIDArray: [MJRecommendation_!]!
+  MJRecordChanges_EntityIDArray: [MJRecordChange_!]!
+  MJRecordLinks_SourceEntityIDArray: [MJRecordLink_!]!
+  MJRecordLinks_TargetEntityIDArray: [MJRecordLink_!]!
+  MJRecordMergeLogs_EntityIDArray: [MJRecordMergeLog_!]!
+  MJResourceTypes_EntityIDArray: [MJResourceType_!]!
+  MJTaggedItems_EntityIDArray: [MJTaggedItem_!]!
+  MJTemplateParams_EntityIDArray: [MJTemplateParam_!]!
+  MJTestRuns_TargetLogEntityIDArray: [MJTestRun_!]!
+  MJUserApplicationEntities_EntityIDArray: [MJUserApplicationEntity_!]!
+  MJUserFavorites_EntityIDArray: [MJUserFavorite_!]!
+  MJUserRecordLogs_EntityIDArray: [MJUserRecordLog_!]!
+  MJUserViewCategories_EntityIDArray: [MJUserViewCategory_!]!
+  MJUserViews_EntityIDArray: [MJUserView_!]!
+  MJUsers_LinkedEntityIDArray: [MJUser_!]!
+  MJVersionLabelItems_EntityIDArray: [MJVersionLabelItem_!]!
+  MJVersionLabels_EntityIDArray: [MJVersionLabel_!]!
+
+  """
+  The canonical, unique name for this entity. For entities in schemas with an EntityNamePrefix configured (e.g., "MJ: " for the core schema), the Name includes the prefix: "MJ: AI Models", "MJ: Users", etc. This is the value used in GetEntityObject(), RunView({ EntityName }), and @RegisterClass decorators. The DisplayName column provides the shorter, UI-friendly alternative without the prefix.
+  """
   Name: String!
 
   """Optional suffix appended to entity names for display purposes."""
@@ -11251,18 +11161,11 @@ type MJEntity_ {
   Used to specify a field within the entity that in turn contains the field name that will be used for record-level communication preferences. For example in a hypothetical entity called Contacts, say there is a field called PreferredComm and that field had possible values of Email1, SMS, and Phone, and those value in turn corresponded to field names in the entity. Each record in the Contacts entity could have a specific preference for which field would be used for communication. The MJ Communication Framework will use this information when available, as a priority ahead of the data in the Entity Communication Fields entity which is entity-level and not record-level.
   """
   PreferredCommunicationField: String
-  QueryEntities_EntityIDArray: [MJQueryEntity_!]!
-  QueryFields_SourceEntityIDArray: [MJQueryField_!]!
-  RecommendationItems_DestinationEntityIDArray: [MJRecommendationItem_!]!
-  Recommendations_SourceEntityIDArray: [MJRecommendation_!]!
-  RecordChanges_EntityIDArray: [MJRecordChange_!]!
-  RecordMergeLogs_EntityIDArray: [MJRecordMergeLog_!]!
 
   """
   When another entity links to this entity with a foreign key, this is the default component type that will be used in the UI. CodeGen will populate the RelatedEntityDisplayType column in the Entity Fields entity with whatever is provided here whenever a new foreign key is detected by CodeGen. The selection can be overridden on a per-foreign-key basis in each row of the Entity Fields entity.
   """
   RelationshipDefaultDisplayType: String!
-  ResourceTypes_EntityIDArray: [MJResourceType_!]!
 
   """
   Cached row count for this entity, populated by automatic row count processes when AutoRowCountFrequency is configured.
@@ -11306,27 +11209,19 @@ type MJEntity_ {
   Status of the entity. Active: fully functional; Deprecated: functional but generates console warnings when used; Disabled: not available for use even though metadata and physical table remain.
   """
   Status: String!
-  TaggedItems_EntityIDArray: [MJTaggedItem_!]!
-  TemplateParams_EntityIDArray: [MJTemplateParam_!]!
 
   """
   When set to 1, changes made via the MemberJunction architecture will result in tracking records being created in the RecordChange table. In addition, when turned on CodeGen will ensure that your table has two fields: __mj_CreatedAt and __mj_UpdatedAt which are special fields used in conjunction with the RecordChange table to track changes to rows in your entity.
   """
   TrackRecordChanges: Boolean!
-  UserApplicationEntities_EntityIDArray: [MJUserApplicationEntity_!]!
-  UserFavorites_EntityIDArray: [MJUserFavorite_!]!
 
   """Indicates if the default user form was auto-generated for this entity."""
   UserFormGenerated: Boolean!
-  UserRecordLogs_EntityIDArray: [MJUserRecordLog_!]!
-  UserViewCategories_EntityIDArray: [MJUserViewCategory_!]!
 
   """
   Maximum number of rows to return in user-created views for this entity.
   """
   UserViewMaxRows: Int
-  UserViews_EntityIDArray: [MJUserView_!]!
-  Users_LinkedEntityIDArray: [MJUser_!]!
 
   """
   Indicates if this is a virtual entity without a physical database table.
@@ -11363,23 +11258,22 @@ type MJEntity_ {
 Top-level container for organizing conversations, artifacts, and collections. Provides isolation and grouping for different teams, clients, or functional areas.
 """
 type MJEnvironment_ {
-  Conversations_EnvironmentIDArray: [MJConversation_!]!
-  Dashboards_EnvironmentIDArray: [MJDashboard_!]!
-
   """Detailed description of the environment purpose and scope"""
   Description: String
   ID: String!
 
   """Indicates if this is the default environment for the organization"""
   IsDefault: Boolean!
-  MJ_Artifacts_EnvironmentIDArray: [MJArtifact_!]!
-  MJ_Collections_EnvironmentIDArray: [MJCollection_!]!
-  MJ_Projects_EnvironmentIDArray: [MJProject_!]!
-  MJ_Tasks_EnvironmentIDArray: [MJTask_!]!
+  MJArtifacts_EnvironmentIDArray: [MJArtifact_!]!
+  MJCollections_EnvironmentIDArray: [MJCollection_!]!
+  MJConversations_EnvironmentIDArray: [MJConversation_!]!
+  MJDashboards_EnvironmentIDArray: [MJDashboard_!]!
+  MJProjects_EnvironmentIDArray: [MJProject_!]!
+  MJReports_EnvironmentIDArray: [MJReport_!]!
+  MJTasks_EnvironmentIDArray: [MJTask_!]!
 
   """Display name for the environment"""
   Name: String!
-  Reports_EnvironmentIDArray: [MJReport_!]!
 
   """JSON configuration for environment-specific settings and features"""
   Settings: String
@@ -11473,9 +11367,9 @@ Organizes files into categories for classification, access control, and lifecycl
 """
 type MJFileCategory_ {
   Description: String
-  FileCategories_ParentIDArray: [MJFileCategory_!]!
-  Files_CategoryIDArray: [MJFile_!]!
   ID: String!
+  MJFileCategories_ParentIDArray: [MJFileCategory_!]!
+  MJFiles_CategoryIDArray: [MJFile_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -11537,8 +11431,6 @@ type MJFileStorageAccount_ {
 Configures connections to file storage systems including local, cloud, and network storage with authentication and access rules.
 """
 type MJFileStorageProvider_ {
-  AIAgents_AttachmentStorageProviderIDArray: [MJAIAgent_!]!
-
   """
   Identifier for the client-side driver implementation for this storage provider.
   """
@@ -11549,13 +11441,14 @@ type MJFileStorageProvider_ {
   """
   Configuration: String
   Description: String
-  Files_ProviderIDArray: [MJFile_!]!
   ID: String!
 
   """Whether this storage provider is currently available for use."""
   IsActive: Boolean!
-  MJ_AIConfigurations_DefaultStorageProviderIDArray: [MJAIConfiguration_!]!
-  MJ_FileStorageAccounts_ProviderIDArray: [MJFileStorageAccount_!]!
+  MJAIAgents_AttachmentStorageProviderIDArray: [MJAIAgent_!]!
+  MJAIConfigurations_DefaultStorageProviderIDArray: [MJAIConfiguration_!]!
+  MJFileStorageAccounts_ProviderIDArray: [MJFileStorageAccount_!]!
+  MJFiles_ProviderIDArray: [MJFile_!]!
   Name: String!
 
   """
@@ -11592,11 +11485,11 @@ type MJFile_ {
   ContentType: String
   Description: String
   DownloadUrl: String!
-  FileEntityRecordLinks_FileIDArray: [MJFileEntityRecordLink_!]!
   ID: String!
-  MJ_AIAgentRunMedias_FileIDArray: [MJAIAgentRunMedia_!]!
-  MJ_AIPromptRunMedias_FileIDArray: [MJAIPromptRunMedia_!]!
-  MJ_ConversationDetailAttachments_FileIDArray: [MJConversationDetailAttachment_!]!
+  MJAIAgentRunMedias_FileIDArray: [MJAIAgentRunMedia_!]!
+  MJAIPromptRunMedias_FileIDArray: [MJAIPromptRunMedia_!]!
+  MJConversationDetailAttachments_FileIDArray: [MJConversationDetailAttachment_!]!
+  MJFileEntityRecordLinks_FileIDArray: [MJFileEntityRecordLink_!]!
   Name: String!
   Provider: String!
   ProviderID: String!
@@ -11615,9 +11508,9 @@ Categorization for generated code, including optional parent-child relationships
 """
 type MJGeneratedCodeCategory_ {
   Description: String
-  GeneratedCodeCategories_ParentIDArray: [MJGeneratedCodeCategory_!]!
-  GeneratedCodes_CategoryIDArray: [MJGeneratedCode_!]!
   ID: String!
+  MJGeneratedCodeCategories_ParentIDArray: [MJGeneratedCodeCategory_!]!
+  MJGeneratedCodes_CategoryIDArray: [MJGeneratedCode_!]!
   Name: String!
   Parent: String
 
@@ -11709,20 +11602,20 @@ type MJIntegration_ {
 
   """The TypeScript/JavaScript class name implementing this integration."""
   ClassName: String
-  CompanyIntegrations_IntegrationNameArray: [MJCompanyIntegration_!]!
   Description: String
   ID: String!
 
   """Module import path for the integration class in the codebase."""
   ImportPath: String
-  IntegrationURLFormats_IntegrationIDArray: [MJIntegrationURLFormat_!]!
+  MJCompanyIntegrations_IntegrationNameArray: [MJCompanyIntegration_!]!
+  MJIntegrationURLFormats_IntegrationIDArray: [MJIntegrationURLFormat_!]!
+  MJRecordChanges_IntegrationIDArray: [MJRecordChange_!]!
   Name: String!
 
   """
   Base URL for navigating to records in the external system from MemberJunction.
   """
   NavigationBaseURL: String
-  RecordChanges_IntegrationIDArray: [MJRecordChange_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -11744,10 +11637,10 @@ type MJLibraryItem_ {
 Stores information about the available libraries, including a list of classes/functions, type definitions, and sample code. You can add additional custom libraries here to make them avaialable to code generation features within the system.
 """
 type MJLibrary_ {
-  ActionLibraries_LibraryIDArray: [MJActionLibrary_!]!
   Description: String
   ID: String!
-  LibraryItems_LibraryIDArray: [MJLibraryItem_!]!
+  MJActionLibraries_LibraryIDArray: [MJActionLibrary_!]!
+  MJLibraryItems_LibraryIDArray: [MJLibraryItem_!]!
   Name: String!
 
   """
@@ -11774,8 +11667,8 @@ Groups lists into categories for organization and navigation, supporting hierarc
 type MJListCategory_ {
   Description: String
   ID: String!
-  ListCategories_ParentIDArray: [MJListCategory_!]!
-  Lists_CategoryIDArray: [MJList_!]!
+  MJListCategories_ParentIDArray: [MJListCategory_!]!
+  MJLists_CategoryIDArray: [MJList_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -11877,7 +11770,6 @@ type MJList_ {
   CompanyIntegration: String
   CompanyIntegrationID: String
   Description: String
-  DuplicateRuns_SourceListIDArray: [MJDuplicateRun_!]!
   Entity: String!
   EntityID: String!
 
@@ -11886,9 +11778,10 @@ type MJList_ {
   """
   ExternalSystemRecordID: String
   ID: String!
-  ListDetails_ListIDArray: [MJListDetail_!]!
-  MJ_ListInvitations_ListIDArray: [MJListInvitation_!]!
-  MJ_ListShares_ListIDArray: [MJListShare_!]!
+  MJDuplicateRuns_SourceListIDArray: [MJDuplicateRun_!]!
+  MJListDetails_ListIDArray: [MJListDetail_!]!
+  MJListInvitations_ListIDArray: [MJListInvitation_!]!
+  MJListShares_ListIDArray: [MJListShare_!]!
   Name: String!
   User: String!
   UserID: String!
@@ -11975,12 +11868,12 @@ type MJMCPServerConnection_ {
   LogToolCalls: Boolean!
   MCPServer: String!
   MCPServerID: String!
-  MJ_MCPServerConnectionPermissions_MCPServerConnectionIDArray: [MJMCPServerConnectionPermission_!]!
-  MJ_MCPServerConnectionTools_MCPServerConnectionIDArray: [MJMCPServerConnectionTool_!]!
-  MJ_MCPToolExecutionLogs_MCPServerConnectionIDArray: [MJMCPToolExecutionLog_!]!
-  MJ_OAuthAuthorizationStates_MCPServerConnectionIDArray: [MJOAuthAuthorizationState_!]!
-  MJ_OAuthClientRegistrations_MCPServerConnectionIDArray: [MJOAuthClientRegistration_!]!
-  MJ_OAuthTokens_MCPServerConnectionIDArray: [MJOAuthToken_!]!
+  MJMCPServerConnectionPermissions_MCPServerConnectionIDArray: [MJMCPServerConnectionPermission_!]!
+  MJMCPServerConnectionTools_MCPServerConnectionIDArray: [MJMCPServerConnectionTool_!]!
+  MJMCPToolExecutionLogs_MCPServerConnectionIDArray: [MJMCPToolExecutionLog_!]!
+  MJOAuthAuthorizationStates_MCPServerConnectionIDArray: [MJOAuthAuthorizationState_!]!
+  MJOAuthClientRegistrations_MCPServerConnectionIDArray: [MJOAuthClientRegistration_!]!
+  MJOAuthTokens_MCPServerConnectionIDArray: [MJOAuthToken_!]!
 
   """Max output size to log in bytes (default: 100KB)"""
   MaxOutputLogSize: Int
@@ -12009,8 +11902,8 @@ type MJMCPServerTool_ {
   LastSeenAt: Timestamp!
   MCPServer: String!
   MCPServerID: String!
-  MJ_MCPServerConnectionTools_MCPServerToolIDArray: [MJMCPServerConnectionTool_!]!
-  MJ_MCPToolExecutionLogs_MCPServerToolIDArray: [MJMCPToolExecutionLog_!]!
+  MJMCPServerConnectionTools_MCPServerToolIDArray: [MJMCPServerConnectionTool_!]!
+  MJMCPToolExecutionLogs_MCPServerToolIDArray: [MJMCPToolExecutionLog_!]!
 
   """JSON Schema for tool output (if provided)"""
   OutputSchema: String
@@ -12047,9 +11940,9 @@ type MJMCPServer_ {
   ID: String!
   IconClass: String
   LastSyncAt: Timestamp
-  MJ_MCPServerConnections_MCPServerIDArray: [MJMCPServerConnection_!]!
-  MJ_MCPServerTools_MCPServerIDArray: [MJMCPServerTool_!]!
-  MJ_OAuthClientRegistrations_MCPServerIDArray: [MJOAuthClientRegistration_!]!
+  MJMCPServerConnections_MCPServerIDArray: [MJMCPServerConnection_!]!
+  MJMCPServerTools_MCPServerIDArray: [MJMCPServerTool_!]!
+  MJOAuthClientRegistrations_MCPServerIDArray: [MJOAuthClientRegistration_!]!
 
   """Unique display name for the MCP server"""
   Name: String!
@@ -12263,14 +12156,159 @@ type MJOAuthToken_ {
   _mj__UpdatedAt: Timestamp!
 }
 
+"""Inter-app dependency relationships between installed Open Apps"""
+type MJOpenAppDependency_ {
+  DependsOnApp: String
+  DependsOnAppID: String
+
+  """Name of the app that this app depends on (matches OpenApp.Name)"""
+  DependsOnAppName: String!
+  ID: String!
+
+  """Actual installed version of the dependency (NULL if not yet installed)"""
+  InstalledVersion: String
+  OpenApp: String!
+  OpenAppID: String!
+
+  """
+  Whether the dependency is satisfied: Satisfied, Missing, or Incompatible
+  """
+  Status: String!
+
+  """
+  Semver range specifying which versions of the dependency are acceptable (e.g. ^1.0.0)
+  """
+  VersionRange: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+"""Audit trail of every install, upgrade, and removal for Open Apps"""
+type MJOpenAppInstallHistory_ {
+  """Type of operation performed: Install, Upgrade, or Remove"""
+  Action: String!
+
+  """Total wall-clock seconds the operation took to complete"""
+  DurationSeconds: Int
+
+  """Timestamp when the operation completed (success or failure)"""
+  EndedAt: Timestamp
+
+  """Detailed error message if the operation failed"""
+  ErrorMessage: String
+
+  """
+  Which phase of the operation failed: Schema, Migration, Packages, Config, Hooks, or Record
+  """
+  ErrorPhase: String
+  ExecutedByUser: String!
+  ExecutedByUserID: String!
+  ID: String!
+
+  """Snapshot of the mj-app.json manifest at the time of this operation"""
+  ManifestJSON: String!
+  OpenApp: String!
+  OpenAppID: String!
+
+  """
+  Version that was installed before this operation (NULL for initial installs)
+  """
+  PreviousVersion: String
+
+  """Timestamp when the operation began"""
+  StartedAt: Timestamp
+
+  """Whether the operation completed successfully (1) or failed (0)"""
+  Success: Boolean!
+
+  """Human-readable summary of what happened during this operation"""
+  Summary: String
+
+  """Semver version that was installed or upgraded to in this operation"""
+  Version: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+"""Tracks all MJ Open Apps installed in this instance"""
+type MJOpenApp_ {
+  """Optional hex color code for branding in the UI (e.g. #FF5733)"""
+  Color: String
+
+  """
+  Optional JSON Schema defining the configuration options this app accepts
+  """
+  ConfigurationSchemaJSON: String
+
+  """Optional long description of what this app does"""
+  Description: String
+
+  """Human-readable display name shown in the UI (e.g. Acme CRM)"""
+  DisplayName: String!
+  ID: String!
+
+  """Optional icon identifier (e.g. Font Awesome class) for UI display"""
+  Icon: String
+  InstalledByUser: String!
+  InstalledByUserID: String!
+
+  """SPDX license identifier for this app (e.g. MIT, Apache-2.0)"""
+  License: String
+  MJOpenAppDependencies_DependsOnAppIDArray: [MJOpenAppDependency_!]!
+  MJOpenAppDependencies_OpenAppIDArray: [MJOpenAppDependency_!]!
+  MJOpenAppInstallHistories_OpenAppIDArray: [MJOpenAppInstallHistory_!]!
+
+  """
+  Semver range specifying which MJ versions this app is compatible with (e.g. >=4.0.0 <5.0.0)
+  """
+  MJVersionRange: String!
+
+  """
+  Full mj-app.json manifest stored as JSON for the currently installed version
+  """
+  ManifestJSON: String!
+
+  """
+  Unique lowercase identifier for the app (e.g. acme-crm). Must contain only lowercase letters, digits, and hyphens.
+  """
+  Name: String!
+
+  """Name of the organization or individual who published the app"""
+  Publisher: String!
+
+  """Optional contact email for the publisher"""
+  PublisherEmail: String
+
+  """Optional website URL for the publisher"""
+  PublisherURL: String
+
+  """GitHub repository URL where this app is hosted"""
+  RepositoryURL: String!
+
+  """
+  Database schema name used by this app for its tables and objects. Unique per instance.
+  """
+  SchemaName: String
+
+  """
+  Current lifecycle status of the app: Active, Disabled, Error, Installing, Upgrading, Removing, or Removed
+  """
+  Status: String!
+
+  """Currently installed semver version string (e.g. 1.2.3)"""
+  Version: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
 """
 Defines methods for delivering generated outputs such as email, file storage, API endpoints, or messaging platforms.
 """
 type MJOutputDeliveryType_ {
   Description: String
   ID: String!
+  MJReports_OutputDeliveryTypeIDArray: [MJReport_!]!
   Name: String!
-  Reports_OutputDeliveryTypeIDArray: [MJReport_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -12286,8 +12324,8 @@ type MJOutputFormatType_ {
   """
   DisplayFormat: String
   ID: String!
+  MJReports_OutputFormatTypeIDArray: [MJReport_!]!
   Name: String!
-  Reports_OutputFormatTypeIDArray: [MJReport_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -12298,8 +12336,8 @@ Defines events that can trigger output generation such as schedules, data change
 type MJOutputTriggerType_ {
   Description: String
   ID: String!
+  MJReports_OutputTriggerTypeIDArray: [MJReport_!]!
   Name: String!
-  Reports_OutputTriggerTypeIDArray: [MJReport_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -12310,7 +12348,6 @@ Container for grouping related conversations around a common topic, client, or i
 type MJProject_ {
   """Hex color code for project badges in UI (#RRGGBB format)"""
   Color: String
-  Conversations_ProjectIDArray: [MJConversation_!]!
 
   """Detailed description of the project goals and scope"""
   Description: String
@@ -12325,8 +12362,9 @@ type MJProject_ {
   Indicates if this project is archived and should be hidden from active lists
   """
   IsArchived: Boolean!
-  MJ_Projects_ParentIDArray: [MJProject_!]!
-  MJ_Tasks_ProjectIDArray: [MJTask_!]!
+  MJConversations_ProjectIDArray: [MJConversation_!]!
+  MJProjects_ParentIDArray: [MJProject_!]!
+  MJTasks_ProjectIDArray: [MJTask_!]!
 
   """Display name for the project"""
   Name: String!
@@ -12388,16 +12426,23 @@ type MJQueryCategory_ {
   DefaultCacheTTLMinutes: Int
   Description: String
   ID: String!
+  MJQueries_CategoryIDArray: [MJQuery_!]!
+  MJQueryCategories_ParentIDArray: [MJQueryCategory_!]!
   Name: String!
   Parent: String
   ParentID: String
-  Queries_CategoryIDArray: [MJQuery_!]!
-  QueryCategories_ParentIDArray: [MJQueryCategory_!]!
   RootParentID: String
   User: String!
   UserID: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+}
+
+type MJQueryEntityType {
+  Entity: String
+  EntityID: String!
+  ID: String!
+  QueryID: String!
 }
 
 """
@@ -12584,7 +12629,6 @@ type MJQuery_ {
   CacheValidationSQL: String
   Category: String
   CategoryID: String
-  DataContextItems_QueryIDArray: [MJDataContextItem_!]!
   Description: String
   EmbeddingModel: String
 
@@ -12608,7 +12652,11 @@ type MJQuery_ {
   """
   Feedback: String
   ID: String!
-  MJ_QueryParameters_QueryIDArray: [MJQueryParameter_!]!
+  MJDataContextItems_QueryIDArray: [MJDataContextItem_!]!
+  MJQueryEntities_QueryIDArray: [MJQueryEntity_!]!
+  MJQueryFields_QueryIDArray: [MJQueryField_!]!
+  MJQueryParameters_QueryIDArray: [MJQueryParameter_!]!
+  MJQueryPermissions_QueryIDArray: [MJQueryPermission_!]!
   Name: String!
 
   """
@@ -12620,9 +12668,6 @@ type MJQuery_ {
   Value indicating the quality of the query, higher values mean a better quality
   """
   QualityRank: Int
-  QueryEntities_QueryIDArray: [MJQueryEntity_!]!
-  QueryFields_QueryIDArray: [MJQueryField_!]!
-  QueryPermissions_QueryIDArray: [MJQueryPermission_!]!
 
   """The actual SQL query text to execute, may include parameters."""
   SQL: String
@@ -12688,8 +12733,8 @@ type MJQueueType_ {
 
   """Field IsActive for entity Queue Types."""
   IsActive: Boolean!
+  MJQueues_QueueTypeIDArray: [MJQueue_!]!
   Name: String!
-  Queues_QueueTypeIDArray: [MJQueue_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -12704,6 +12749,7 @@ type MJQueue_ {
 
   """Field LastHeartbeat for entity Queues."""
   LastHeartbeat: Timestamp!
+  MJQueueTasks_QueueIDArray: [MJQueueTask_!]!
   Name: String!
 
   """Field ProcessCwd for entity Queues."""
@@ -12738,7 +12784,6 @@ type MJQueue_ {
 
   """Field ProcessVersion for entity Queues."""
   ProcessVersion: String
-  QueueTasks_QueueIDArray: [MJQueueTask_!]!
   QueueType: String!
   QueueTypeID: String!
   _mj__CreatedAt: Timestamp!
@@ -12770,8 +12815,8 @@ type MJRecommendationItem_ {
 type MJRecommendationProvider_ {
   Description: String
   ID: String!
+  MJRecommendationRuns_RecommendationProviderIDArray: [MJRecommendationRun_!]!
   Name: String!
-  RecommendationRuns_RecommendationProviderIDArray: [MJRecommendationRun_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -12785,9 +12830,9 @@ type MJRecommendationRun_ {
   """The end date of the recommendation run"""
   EndDate: Timestamp
   ID: String!
+  MJRecommendations_RecommendationRunIDArray: [MJRecommendation_!]!
   RecommendationProvider: String!
   RecommendationProviderID: String!
-  Recommendations_RecommendationRunIDArray: [MJRecommendation_!]!
   RunByUser: String!
   RunByUserID: String!
 
@@ -12805,7 +12850,7 @@ Recommendation headers that store the left side of the recommendation which we t
 """
 type MJRecommendation_ {
   ID: String!
-  RecommendationItems_RecommendationIDArray: [MJRecommendationItem_!]!
+  MJRecommendationItems_RecommendationIDArray: [MJRecommendationItem_!]!
   RecommendationRun: String!
   RecommendationRunID: String!
   SourceEntity: String!
@@ -12822,7 +12867,7 @@ type MJRecordChangeReplayRun_ {
   """Timestamp when the replay run ended"""
   EndedAt: Timestamp
   ID: String!
-  RecordChanges_ReplayRunIDArray: [MJRecordChange_!]!
+  MJRecordChanges_ReplayRunIDArray: [MJRecordChange_!]!
 
   """Timestamp when the replay run started"""
   StartedAt: Timestamp!
@@ -12864,7 +12909,7 @@ type MJRecordChange_ {
   ID: String!
   Integration: String
   IntegrationID: String
-  MJ_VersionLabelItems_RecordChangeIDArray: [MJVersionLabelItem_!]!
+  MJVersionLabelItems_RecordChangeIDArray: [MJVersionLabelItem_!]!
 
   """Field RecordID for entity Record Changes."""
   RecordID: String!
@@ -12948,12 +12993,13 @@ type MJRecordMergeLog_ {
   ApprovedByUser: String
   ApprovedByUserID: String
   Comments: String
-  DuplicateRunDetailMatches_RecordMergeLogIDArray: [MJDuplicateRunDetailMatch_!]!
   Entity: String!
   EntityID: String!
   ID: String!
   InitiatedByUser: String!
   InitiatedByUserID: String!
+  MJDuplicateRunDetailMatches_RecordMergeLogIDArray: [MJDuplicateRunDetailMatch_!]!
+  MJRecordMergeDeletionLogs_RecordMergeLogIDArray: [MJRecordMergeDeletionLog_!]!
 
   """Field ProcessingEndedAt for entity Record Merge Logs."""
   ProcessingEndedAt: Timestamp
@@ -12968,7 +13014,6 @@ type MJRecordMergeLog_ {
 
   """Field ProcessingStatus for entity Record Merge Logs."""
   ProcessingStatus: String!
-  RecordMergeDeletionLogs_RecordMergeLogIDArray: [MJRecordMergeDeletionLog_!]!
 
   """
   The ID of the record that survived the merge and contains the consolidated data.
@@ -12984,11 +13029,11 @@ Organizes reports into logical groupings for navigation, access control, and dis
 type MJReportCategory_ {
   Description: String
   ID: String!
+  MJReportCategories_ParentIDArray: [MJReportCategory_!]!
+  MJReports_CategoryIDArray: [MJReport_!]!
   Name: String!
   Parent: String
   ParentID: String
-  ReportCategories_ParentIDArray: [MJReportCategory_!]!
-  Reports_CategoryIDArray: [MJReport_!]!
   RootParentID: String
   User: String!
   UserID: String!
@@ -13068,8 +13113,9 @@ type MJReport_ {
   Environment: String!
   EnvironmentID: String!
   ID: String!
-  MJ_ReportUserStates_ReportIDArray: [MJReportUserState_!]!
-  MJ_ReportVersions_ReportIDArray: [MJReportVersion_!]!
+  MJReportSnapshots_ReportIDArray: [MJReportSnapshot_!]!
+  MJReportUserStates_ReportIDArray: [MJReportUserState_!]!
+  MJReportVersions_ReportIDArray: [MJReportVersion_!]!
   Name: String!
   OutputDeliveryType: String
   OutputDeliveryTypeID: String
@@ -13087,7 +13133,6 @@ type MJReport_ {
   OutputTriggerTypeID: String
   OutputWorkflow: String
   OutputWorkflowID: String
-  ReportSnapshots_ReportIDArray: [MJReportSnapshot_!]!
 
   """Field SharingScope for entity Reports."""
   SharingScope: String!
@@ -13189,11 +13234,11 @@ type MJResourceType_ {
 
   """Icon identifier for displaying this resource type in the UI."""
   Icon: String
+  MJResourceLinks_ResourceTypeIDArray: [MJResourceLink_!]!
+  MJResourcePermissions_ResourceTypeIDArray: [MJResourcePermission_!]!
+  MJUserNotifications_ResourceTypeIDArray: [MJUserNotification_!]!
+  MJWorkspaceItems_ResourceTypeIDArray: [MJWorkspaceItem_!]!
   Name: String!
-  ResourceLinks_ResourceTypeIDArray: [MJResourceLink_!]!
-  ResourcePermissions_ResourceTypeIDArray: [MJResourcePermission_!]!
-  UserNotifications_ResourceTypeIDArray: [MJUserNotification_!]!
-  WorkspaceItems_ResourceTypeIDArray: [MJWorkspaceItem_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -13202,8 +13247,6 @@ type MJResourceType_ {
 Roles are used for security administration and can have zero to many Users as members
 """
 type MJRole_ {
-  AuthorizationRoles_RoleNameArray: [MJAuthorizationRole_!]!
-
   """Description of the role"""
   Description: String
 
@@ -13211,24 +13254,25 @@ type MJRole_ {
   The unique ID of the role in the directory being used for authentication, for example an ID in Azure.
   """
   DirectoryID: String
-  EmployeeRoles_RoleIDArray: [MJEmployeeRole_!]!
-  EntityPermissions_RoleNameArray: [MJEntityPermission_!]!
   ID: String!
-  MJ_AIAgentPermissions_RoleIDArray: [MJAIAgentPermission_!]!
-  MJ_MCPServerConnectionPermissions_RoleIDArray: [MJMCPServerConnectionPermission_!]!
+  MJAIAgentPermissions_RoleIDArray: [MJAIAgentPermission_!]!
+  MJAuthorizationRoles_RoleIDArray: [MJAuthorizationRole_!]!
+  MJEmployeeRoles_RoleIDArray: [MJEmployeeRole_!]!
+  MJEntityPermissions_RoleIDArray: [MJEntityPermission_!]!
+  MJMCPServerConnectionPermissions_RoleIDArray: [MJMCPServerConnectionPermission_!]!
+  MJQueryPermissions_RoleIDArray: [MJQueryPermission_!]!
+  MJResourcePermissions_RoleIDArray: [MJResourcePermission_!]!
+  MJUserRoles_RoleIDArray: [MJUserRole_!]!
 
   """
   Role with full permissions to manage AI agents and all related entities. This role is required for AgentSpecSync operations to function correctly, allowing create, read, update, and delete operations on agents, prompts, actions, relationships, steps, and paths.
   """
   Name: String!
-  QueryPermissions_RoleNameArray: [MJQueryPermission_!]!
-  ResourcePermissions_RoleIDArray: [MJResourcePermission_!]!
 
   """
   The name of the role in the database, this is used for auto-generating permission statements by CodeGen
   """
   SQLName: String
-  UserRoles_RoleNameArray: [MJUserRole_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -13238,13 +13282,13 @@ Defines data access rules that filter records based on user context, implementin
 """
 type MJRowLevelSecurityFilter_ {
   Description: String
-  EntityPermissions_ReadRLSFilterIDArray: [MJEntityPermission_!]!
 
   """
   SQL WHERE clause template that filters records based on user context variables.
   """
   FilterText: String
   ID: String!
+  MJEntityPermissions_ReadRLSFilterIDArray: [MJEntityPermission_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -13295,11 +13339,11 @@ type MJScheduledAction_ {
 
   """Interval in days for the scheduled action"""
   IntervalDays: Int
+  MJScheduledActionParams_ScheduledActionIDArray: [MJScheduledActionParam_!]!
 
   """Month for the scheduled action"""
   Month: String
   Name: String!
-  ScheduledActionParams_ScheduledActionIDArray: [MJScheduledActionParam_!]!
 
   """Status of the scheduled action (Pending, Active, Disabled, Expired)"""
   Status: String!
@@ -13338,7 +13382,7 @@ type MJScheduledJobRun_ {
   """
   ExecutedByUserID: String
   ID: String!
-  MJ_AIAgentRuns_ScheduledJobRunIDArray: [MJAIAgentRun_!]!
+  MJAIAgentRuns_ScheduledJobRunIDArray: [MJAIAgentRun_!]!
 
   """
   Timestamp when this execution was queued (for ConcurrencyMode=Queue). NULL for immediate executions. When set, indicates this run is waiting for a previous execution to complete before starting.
@@ -13389,7 +13433,7 @@ type MJScheduledJobType_ {
   """
   DriverClass: String!
   ID: String!
-  MJ_ScheduledJobs_JobTypeIDArray: [MJScheduledJob_!]!
+  MJScheduledJobs_JobTypeIDArray: [MJScheduledJob_!]!
 
   """Unique name identifying this job type (e.g., Agent, Action, Report)."""
   Name: String!
@@ -13463,7 +13507,7 @@ type MJScheduledJob_ {
   Identifier of the server instance that currently holds the lock (e.g., "hostname-12345"). Used for troubleshooting and monitoring which server is executing which job.
   """
   LockedByInstance: String
-  MJ_ScheduledJobRuns_ScheduledJobIDArray: [MJScheduledJobRun_!]!
+  MJScheduledJobRuns_ScheduledJobIDArray: [MJScheduledJobRun_!]!
 
   """
   Human-readable name for this scheduled job. Should clearly identify what the job does.
@@ -13567,13 +13611,13 @@ type MJSchemaInfo_ {
 A hierarchical list of possible skills that are linked to Employees and can also be linked to any other entity
 """
 type MJSkill_ {
-  EmployeeSkills_SkillIDArray: [MJEmployeeSkill_!]!
   ID: String!
+  MJEmployeeSkills_SkillIDArray: [MJEmployeeSkill_!]!
+  MJSkills_ParentIDArray: [MJSkill_!]!
   Name: String!
   Parent: String
   ParentID: String
   RootParentID: String
-  Skills_ParentIDArray: [MJSkill_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -13587,12 +13631,12 @@ type MJTag_ {
   """Field DisplayName for entity Tags."""
   DisplayName: String!
   ID: String!
+  MJTaggedItems_TagIDArray: [MJTaggedItem_!]!
+  MJTags_ParentIDArray: [MJTag_!]!
   Name: String!
   Parent: String
   ParentID: String
   RootParentID: String
-  TaggedItems_TagIDArray: [MJTaggedItem_!]!
-  Tags_ParentIDArray: [MJTag_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -13635,7 +13679,7 @@ type MJTaskType_ {
   """
   Description: String
   ID: String!
-  MJ_Tasks_TypeIDArray: [MJTask_!]!
+  MJTasks_TypeIDArray: [MJTask_!]!
 
   """Display name for the task type"""
   Name: String!
@@ -13663,9 +13707,9 @@ type MJTask_ {
   Environment: String!
   EnvironmentID: String!
   ID: String!
-  MJ_TaskDependencies_DependsOnTaskIDArray: [MJTaskDependency_!]!
-  MJ_TaskDependencies_TaskIDArray: [MJTaskDependency_!]!
-  MJ_Tasks_ParentIDArray: [MJTask_!]!
+  MJTaskDependencies_DependsOnTaskIDArray: [MJTaskDependency_!]!
+  MJTaskDependencies_TaskIDArray: [MJTaskDependency_!]!
+  MJTasks_ParentIDArray: [MJTask_!]!
 
   """Display name for the task"""
   Name: String!
@@ -13698,14 +13742,14 @@ type MJTemplateCategory_ {
   """Description of the template category"""
   Description: String
   ID: String!
+  MJTemplateCategories_ParentIDArray: [MJTemplateCategory_!]!
+  MJTemplates_CategoryIDArray: [MJTemplate_!]!
 
   """Name of the template category"""
   Name: String!
   Parent: String
   ParentID: String
   RootParentID: String
-  TemplateCategories_ParentIDArray: [MJTemplateCategory_!]!
-  Templates_CategoryIDArray: [MJTemplate_!]!
   User: String!
   UserID: String!
   _mj__CreatedAt: Timestamp!
@@ -13722,10 +13766,10 @@ type MJTemplateContentType_ {
   """Description of the template content type"""
   Description: String
   ID: String!
+  MJTemplateContents_TypeIDArray: [MJTemplateContent_!]!
 
   """Name of the template content type"""
   Name: String!
-  TemplateContents_TypeIDArray: [MJTemplateContent_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -13740,6 +13784,7 @@ type MJTemplateContent_ {
   Indicates whether the content is active or not. Use this to disable a particular Template Content item without having to remove it
   """
   IsActive: Boolean!
+  MJTemplateParams_TemplateContentIDArray: [MJTemplateParam_!]!
 
   """
   Priority of the content version, higher priority versions will be used ahead of lower priority versions for a given Type
@@ -13747,7 +13792,6 @@ type MJTemplateContent_ {
   Priority: Int!
   Template: String!
   TemplateID: String!
-  TemplateParams_TemplateContentIDArray: [MJTemplateParam_!]!
 
   """The actual text content for the template"""
   TemplateText: String
@@ -13819,8 +13863,6 @@ type MJTemplateParam_ {
 Templates are used for dynamic expansion of a static template with data from a given context. Templates can be used to create documents, messages and anything else that requires dynamic document creation merging together static text, data and lightweight logic
 """
 type MJTemplate_ {
-  AIPrompts_TemplateIDArray: [MJAIPrompt_!]!
-
   """
   Optional, if provided, this template will not be available for use until the specified date. Requires IsActive to be set to 1
   """
@@ -13835,20 +13877,21 @@ type MJTemplate_ {
   Optional, if provided, this template will not be available for use after the specified date. If IsActive=0, this has no effect.
   """
   DisabledAt: Timestamp
-  EntityDocuments_TemplateIDArray: [MJEntityDocument_!]!
   ID: String!
 
   """
   If set to 0, the template will be disabled regardless of the values in ActiveAt/DisabledAt. 
   """
   IsActive: Boolean!
-  MJ_UserNotificationTypes_EmailTemplateIDArray: [MJUserNotificationType_!]!
-  MJ_UserNotificationTypes_SMSTemplateIDArray: [MJUserNotificationType_!]!
+  MJAIPrompts_TemplateIDArray: [MJAIPrompt_!]!
+  MJEntityDocuments_TemplateIDArray: [MJEntityDocument_!]!
+  MJTemplateContents_TemplateIDArray: [MJTemplateContent_!]!
+  MJTemplateParams_TemplateIDArray: [MJTemplateParam_!]!
+  MJUserNotificationTypes_EmailTemplateIDArray: [MJUserNotificationType_!]!
+  MJUserNotificationTypes_SMSTemplateIDArray: [MJUserNotificationType_!]!
 
   """Name of the template"""
   Name: String!
-  TemplateContents_TemplateIDArray: [MJTemplateContent_!]!
-  TemplateParams_TemplateIDArray: [MJTemplateParam_!]!
   User: String!
   UserID: String!
 
@@ -13948,8 +13991,6 @@ type MJTestRun_ {
 
   """Timestamp when the test run completed"""
   CompletedAt: Timestamp
-  ConversationDetails_TestRunIDArray: [MJConversationDetail_!]!
-  Conversations_TestRunIDArray: [MJConversation_!]!
 
   """
   Cost in USD for running this test (e.g., LLM token costs, compute resources)
@@ -13978,9 +14019,11 @@ type MJTestRun_ {
   Detailed execution log capturing status messages, diagnostic output, and driver-specific information streamed during test execution. Format is timestamped log lines.
   """
   Log: String
-  MJ_AIAgentRuns_TestRunIDArray: [MJAIAgentRun_!]!
-  MJ_AIPromptRuns_TestRunIDArray: [MJAIPromptRun_!]!
-  MJ_TestRunFeedbacks_TestRunIDArray: [MJTestRunFeedback_!]!
+  MJAIAgentRuns_TestRunIDArray: [MJAIAgentRun_!]!
+  MJAIPromptRuns_TestRunIDArray: [MJAIPromptRun_!]!
+  MJConversationDetails_TestRunIDArray: [MJConversationDetail_!]!
+  MJConversations_TestRunIDArray: [MJConversation_!]!
+  MJTestRunFeedbacks_TestRunIDArray: [MJTestRunFeedback_!]!
 
   """
   Unique machine identifier (typically MAC address) for the execution host. Enables deduplication and tracking of test execution across different machines.
@@ -14119,7 +14162,7 @@ type MJTestSuiteRun_ {
   """
   GitCommit: String
   ID: String!
-  MJ_TestRuns_TestSuiteRunIDArray: [MJTestRun_!]!
+  MJTestRuns_TestSuiteRunIDArray: [MJTestRun_!]!
 
   """
   Unique machine identifier (typically MAC address) for the execution host. Enables deduplication and tracking of suite execution across different machines.
@@ -14243,9 +14286,9 @@ type MJTestSuite_ {
   """Detailed description of what this suite tests and its purpose"""
   Description: String
   ID: String!
-  MJ_TestSuiteRuns_SuiteIDArray: [MJTestSuiteRun_!]!
-  MJ_TestSuiteTests_SuiteIDArray: [MJTestSuiteTest_!]!
-  MJ_TestSuites_ParentIDArray: [MJTestSuite_!]!
+  MJTestSuiteRuns_SuiteIDArray: [MJTestSuiteRun_!]!
+  MJTestSuiteTests_SuiteIDArray: [MJTestSuiteTest_!]!
+  MJTestSuites_ParentIDArray: [MJTestSuite_!]!
 
   """
   Maximum total execution time in milliseconds for the entire suite. If NULL, no suite-level timeout applies (individual test timeouts still apply). When exceeded, current test is cancelled and remaining tests are skipped.
@@ -14294,8 +14337,8 @@ type MJTestType_ {
   """
   DriverClass: String!
   ID: String!
-  MJ_TestRubrics_TypeIDArray: [MJTestRubric_!]!
-  MJ_Tests_TypeIDArray: [MJTest_!]!
+  MJTestRubrics_TypeIDArray: [MJTestRubric_!]!
+  MJTests_TypeIDArray: [MJTest_!]!
 
   """
   Unique name for the test type (e.g., "Agent Eval", "Workflow Test", "Code Generation Test")
@@ -14347,8 +14390,8 @@ type MJTest_ {
   JSON object defining the inputs/parameters for the test. Structure varies by test type (e.g., for Agent Eval: {prompt, context, conversationHistory})
   """
   InputDefinition: String
-  MJ_TestRuns_TestIDArray: [MJTestRun_!]!
-  MJ_TestSuiteTests_TestIDArray: [MJTestSuiteTest_!]!
+  MJTestRuns_TestIDArray: [MJTestRun_!]!
+  MJTestSuiteTests_TestIDArray: [MJTestSuiteTest_!]!
 
   """
   Maximum execution time in milliseconds for this test. If NULL, uses default (300000ms = 5 minutes). Can be overridden by Configuration JSON maxExecutionTime field for backward compatibility.
@@ -14419,11 +14462,11 @@ type MJUserApplication_ {
 
   """Whether this application is currently visible to the user."""
   IsActive: Boolean!
+  MJUserApplicationEntities_UserApplicationIDArray: [MJUserApplicationEntity_!]!
 
   """Display order of this application in the user's navigation."""
   Sequence: Int!
   User: String!
-  UserApplicationEntities_UserApplicationIDArray: [MJUserApplicationEntity_!]!
   UserID: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -14488,14 +14531,14 @@ type MJUserNotificationType_ {
   EmailTemplateID: String
   ID: String!
   Icon: String
-  MJ_UserNotificationPreferences_NotificationTypeIDArray: [MJUserNotificationPreference_!]!
+  MJUserNotificationPreferences_NotificationTypeIDArray: [MJUserNotificationPreference_!]!
+  MJUserNotifications_NotificationTypeIDArray: [MJUserNotification_!]!
 
   """Unique name for the notification type (e.g., 'Agent Completion')"""
   Name: String!
   Priority: Int
   SMSTemplate: String
   SMSTemplateID: String
-  UserNotifications_NotificationTypeIDArray: [MJUserNotification_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14609,14 +14652,14 @@ type MJUserViewCategory_ {
   Entity: String!
   EntityID: String!
   ID: String!
+  MJUserViewCategories_ParentIDArray: [MJUserViewCategory_!]!
+  MJUserViews_CategoryIDArray: [MJUserView_!]!
   Name: String!
   Parent: String
   ParentID: String
   RootParentID: String
   User: String!
   UserID: String!
-  UserViewCategories_ParentIDArray: [MJUserViewCategory_!]!
-  UserViews_CategoryIDArray: [MJUserView_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14641,6 +14684,7 @@ User Views can be logged when run to capture the date and user that ran the view
 """
 type MJUserViewRun_ {
   ID: String!
+  MJUserViewRunDetails_UserViewRunIDArray: [MJUserViewRunDetail_!]!
 
   """Timestamp when the view was executed."""
   RunAt: Timestamp!
@@ -14648,7 +14692,6 @@ type MJUserViewRun_ {
   RunByUserID: String!
   UserView: String!
   UserViewID: String!
-  UserViewRunDetails_UserViewRunIDArray: [MJUserViewRunDetail_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14670,7 +14713,6 @@ type MJUserView_ {
   Indicates if a custom WHERE clause is used instead of standard filters.
   """
   CustomWhereClause: Boolean!
-  DataContextItems_ViewIDArray: [MJDataContextItem_!]!
   Description: String
 
   """
@@ -14680,7 +14722,6 @@ type MJUserView_ {
   Entity: String!
   EntityBaseView: String!
   EntityID: String!
-  EntityRelationships_DisplayUserViewGUIDArray: [MJEntityRelationship_!]!
 
   """JSON storing the view's filter configuration."""
   FilterState: String
@@ -14696,6 +14737,9 @@ type MJUserView_ {
 
   """Whether this view is shared with other users."""
   IsShared: Boolean!
+  MJDataContextItems_ViewIDArray: [MJDataContextItem_!]!
+  MJEntityRelationships_DisplayUserViewGUIDArray: [MJEntityRelationship_!]!
+  MJUserViewRuns_UserViewIDArray: [MJUserViewRun_!]!
   Name: String!
 
   """Whether AI-powered smart filtering is enabled for this view."""
@@ -14722,7 +14766,6 @@ type MJUserView_ {
   UserID: String!
   UserName: String!
   UserType: String!
-  UserViewRuns_UserViewIDArray: [MJUserViewRun_!]!
 
   """Direct SQL WHERE clause for the view filter."""
   WhereClause: String
@@ -14732,22 +14775,6 @@ type MJUserView_ {
 
 """A list of all users who have or had access to the system"""
 type MJUser_ {
-  AIAgentNotes_UserIDArray: [MJAIAgentNote_!]!
-  AIAgentRequests_RequestForUserIDArray: [MJAIAgentRequest_!]!
-  AIAgentRequests_ResponseByUserIDArray: [MJAIAgentRequest_!]!
-  AIAgents_OwnerUserIDArray: [MJAIAgent_!]!
-  ActionExecutionLogs_UserIDArray: [MJActionExecutionLog_!]!
-  Actions_CodeApprovedByUserIDArray: [MJAction_!]!
-  AuditLogs_UserIDArray: [MJAuditLog_!]!
-  CommunicationRuns_UserIDArray: [MJCommunicationRun_!]!
-  CompanyIntegrationRuns_RunByUserIDArray: [MJCompanyIntegrationRun_!]!
-  ConversationDetails_UserIDArray: [MJConversationDetail_!]!
-  Conversations_UserIDArray: [MJConversation_!]!
-  DashboardCategories_UserIDArray: [MJDashboardCategory_!]!
-  Dashboards_UserIDArray: [MJDashboard_!]!
-  DataContexts_UserIDArray: [MJDataContext_!]!
-  DuplicateRuns_StartedByUserIDArray: [MJDuplicateRun_!]!
-
   """
   Unique email address for the user. This field must be unique across all users in the system.
   """
@@ -14776,70 +14803,94 @@ type MJUser_ {
 
   """Type of record this user is linked to (None, Employee, Contact, etc.)."""
   LinkedRecordType: String!
-  ListCategories_UserIDArray: [MJListCategory_!]!
-  Lists_UserIDArray: [MJList_!]!
-  MJ_AIAgentExamples_UserIDArray: [MJAIAgentExample_!]!
-  MJ_AIAgentPermissions_UserIDArray: [MJAIAgentPermission_!]!
-  MJ_AIAgentRuns_UserIDArray: [MJAIAgentRun_!]!
-  MJ_APIKeys_CreatedByUserIDArray: [MJAPIKey_!]!
-  MJ_APIKeys_UserIDArray: [MJAPIKey_!]!
-  MJ_AccessControlRules_GrantedByUserIDArray: [MJAccessControlRule_!]!
-  MJ_ArtifactPermissions_SharedByUserIDArray: [MJArtifactPermission_!]!
-  MJ_ArtifactPermissions_UserIDArray: [MJArtifactPermission_!]!
-  MJ_ArtifactUses_UserIDArray: [MJArtifactUse_!]!
-  MJ_ArtifactVersions_UserIDArray: [MJArtifactVersion_!]!
-  MJ_Artifacts_UserIDArray: [MJArtifact_!]!
-  MJ_CollectionPermissions_SharedByUserIDArray: [MJCollectionPermission_!]!
-  MJ_CollectionPermissions_UserIDArray: [MJCollectionPermission_!]!
-  MJ_Collections_OwnerIDArray: [MJCollection_!]!
-  MJ_ConversationDetailRatings_UserIDArray: [MJConversationDetailRating_!]!
-  MJ_DashboardCategoryLinks_UserIDArray: [MJDashboardCategoryLink_!]!
-  MJ_DashboardCategoryPermissions_SharedByUserIDArray: [MJDashboardCategoryPermission_!]!
-  MJ_DashboardCategoryPermissions_UserIDArray: [MJDashboardCategoryPermission_!]!
-  MJ_DashboardPermissions_SharedByUserIDArray: [MJDashboardPermission_!]!
-  MJ_DashboardPermissions_UserIDArray: [MJDashboardPermission_!]!
-  MJ_DashboardUserPreferences_UserIDArray: [MJDashboardUserPreference_!]!
-  MJ_DashboardUserStates_UserIDArray: [MJDashboardUserState_!]!
-  MJ_ListInvitations_CreatedByUserIDArray: [MJListInvitation_!]!
-  MJ_ListShares_UserIDArray: [MJListShare_!]!
-  MJ_MCPServerConnectionPermissions_UserIDArray: [MJMCPServerConnectionPermission_!]!
-  MJ_MCPToolExecutionLogs_UserIDArray: [MJMCPToolExecutionLog_!]!
-  MJ_OAuthAuthorizationStates_UserIDArray: [MJOAuthAuthorizationState_!]!
-  MJ_PublicLinks_UserIDArray: [MJPublicLink_!]!
-  MJ_ReportUserStates_UserIDArray: [MJReportUserState_!]!
-  MJ_ScheduledJobRuns_ExecutedByUserIDArray: [MJScheduledJobRun_!]!
-  MJ_ScheduledJobs_NotifyUserIDArray: [MJScheduledJob_!]!
-  MJ_ScheduledJobs_OwnerUserIDArray: [MJScheduledJob_!]!
-  MJ_Tasks_UserIDArray: [MJTask_!]!
-  MJ_TestRunFeedbacks_ReviewerUserIDArray: [MJTestRunFeedback_!]!
-  MJ_TestRuns_RunByUserIDArray: [MJTestRun_!]!
-  MJ_TestSuiteRuns_RunByUserIDArray: [MJTestSuiteRun_!]!
-  MJ_UserNotificationPreferences_UserIDArray: [MJUserNotificationPreference_!]!
-  MJ_UserSettings_UserIDArray: [MJUserSetting_!]!
-  MJ_VersionLabelRestores_UserIDArray: [MJVersionLabelRestore_!]!
-  MJ_VersionLabels_CreatedByUserIDArray: [MJVersionLabel_!]!
+  MJAIAgentExamples_UserIDArray: [MJAIAgentExample_!]!
+  MJAIAgentNotes_UserIDArray: [MJAIAgentNote_!]!
+  MJAIAgentPermissions_UserIDArray: [MJAIAgentPermission_!]!
+  MJAIAgentRequests_RequestForUserIDArray: [MJAIAgentRequest_!]!
+  MJAIAgentRequests_ResponseByUserIDArray: [MJAIAgentRequest_!]!
+  MJAIAgentRuns_UserIDArray: [MJAIAgentRun_!]!
+  MJAIAgents_OwnerUserIDArray: [MJAIAgent_!]!
+  MJAPIKeys_CreatedByUserIDArray: [MJAPIKey_!]!
+  MJAPIKeys_UserIDArray: [MJAPIKey_!]!
+  MJAccessControlRules_GrantedByUserIDArray: [MJAccessControlRule_!]!
+  MJActionExecutionLogs_UserIDArray: [MJActionExecutionLog_!]!
+  MJActions_CodeApprovedByUserIDArray: [MJAction_!]!
+  MJArtifactPermissions_SharedByUserIDArray: [MJArtifactPermission_!]!
+  MJArtifactPermissions_UserIDArray: [MJArtifactPermission_!]!
+  MJArtifactUses_UserIDArray: [MJArtifactUse_!]!
+  MJArtifactVersions_UserIDArray: [MJArtifactVersion_!]!
+  MJArtifacts_UserIDArray: [MJArtifact_!]!
+  MJAuditLogs_UserIDArray: [MJAuditLog_!]!
+  MJCollectionPermissions_SharedByUserIDArray: [MJCollectionPermission_!]!
+  MJCollectionPermissions_UserIDArray: [MJCollectionPermission_!]!
+  MJCollections_OwnerIDArray: [MJCollection_!]!
+  MJCommunicationRuns_UserIDArray: [MJCommunicationRun_!]!
+  MJCompanyIntegrationRuns_RunByUserIDArray: [MJCompanyIntegrationRun_!]!
+  MJConversationDetailRatings_UserIDArray: [MJConversationDetailRating_!]!
+  MJConversationDetails_UserIDArray: [MJConversationDetail_!]!
+  MJConversations_UserIDArray: [MJConversation_!]!
+  MJDashboardCategories_UserIDArray: [MJDashboardCategory_!]!
+  MJDashboardCategoryLinks_UserIDArray: [MJDashboardCategoryLink_!]!
+  MJDashboardCategoryPermissions_SharedByUserIDArray: [MJDashboardCategoryPermission_!]!
+  MJDashboardCategoryPermissions_UserIDArray: [MJDashboardCategoryPermission_!]!
+  MJDashboardPermissions_SharedByUserIDArray: [MJDashboardPermission_!]!
+  MJDashboardPermissions_UserIDArray: [MJDashboardPermission_!]!
+  MJDashboardUserPreferences_UserIDArray: [MJDashboardUserPreference_!]!
+  MJDashboardUserStates_UserIDArray: [MJDashboardUserState_!]!
+  MJDashboards_UserIDArray: [MJDashboard_!]!
+  MJDataContexts_UserIDArray: [MJDataContext_!]!
+  MJDuplicateRuns_StartedByUserIDArray: [MJDuplicateRun_!]!
+  MJListCategories_UserIDArray: [MJListCategory_!]!
+  MJListInvitations_CreatedByUserIDArray: [MJListInvitation_!]!
+  MJListShares_UserIDArray: [MJListShare_!]!
+  MJLists_UserIDArray: [MJList_!]!
+  MJMCPServerConnectionPermissions_UserIDArray: [MJMCPServerConnectionPermission_!]!
+  MJMCPToolExecutionLogs_UserIDArray: [MJMCPToolExecutionLog_!]!
+  MJOAuthAuthorizationStates_UserIDArray: [MJOAuthAuthorizationState_!]!
+  MJOpenAppInstallHistories_ExecutedByUserIDArray: [MJOpenAppInstallHistory_!]!
+  MJOpenApps_InstalledByUserIDArray: [MJOpenApp_!]!
+  MJPublicLinks_UserIDArray: [MJPublicLink_!]!
+  MJQueryCategories_UserIDArray: [MJQueryCategory_!]!
+  MJRecommendationRuns_RunByUserIDArray: [MJRecommendationRun_!]!
+  MJRecordChangeReplayRuns_UserIDArray: [MJRecordChangeReplayRun_!]!
+  MJRecordChanges_UserIDArray: [MJRecordChange_!]!
+  MJRecordMergeLogs_InitiatedByUserIDArray: [MJRecordMergeLog_!]!
+  MJReportCategories_UserIDArray: [MJReportCategory_!]!
+  MJReportSnapshots_UserIDArray: [MJReportSnapshot_!]!
+  MJReportUserStates_UserIDArray: [MJReportUserState_!]!
+  MJReports_UserIDArray: [MJReport_!]!
+  MJResourceLinks_UserIDArray: [MJResourceLink_!]!
+  MJResourcePermissions_UserIDArray: [MJResourcePermission_!]!
+  MJScheduledActions_CreatedByUserIDArray: [MJScheduledAction_!]!
+  MJScheduledJobRuns_ExecutedByUserIDArray: [MJScheduledJobRun_!]!
+  MJScheduledJobs_NotifyUserIDArray: [MJScheduledJob_!]!
+  MJScheduledJobs_OwnerUserIDArray: [MJScheduledJob_!]!
+  MJTasks_UserIDArray: [MJTask_!]!
+  MJTemplateCategories_UserIDArray: [MJTemplateCategory_!]!
+  MJTemplates_UserIDArray: [MJTemplate_!]!
+  MJTestRunFeedbacks_ReviewerUserIDArray: [MJTestRunFeedback_!]!
+  MJTestRuns_RunByUserIDArray: [MJTestRun_!]!
+  MJTestSuiteRuns_RunByUserIDArray: [MJTestSuiteRun_!]!
+  MJUserApplications_UserIDArray: [MJUserApplication_!]!
+  MJUserFavorites_UserIDArray: [MJUserFavorite_!]!
+  MJUserNotificationPreferences_UserIDArray: [MJUserNotificationPreference_!]!
+  MJUserNotifications_UserIDArray: [MJUserNotification_!]!
+  MJUserRecordLogs_UserIDArray: [MJUserRecordLog_!]!
+  MJUserRoles_UserIDArray: [MJUserRole_!]!
+  MJUserSettings_UserIDArray: [MJUserSetting_!]!
+  MJUserViewCategories_UserIDArray: [MJUserViewCategory_!]!
+  MJUserViewRuns_RunByUserIDArray: [MJUserViewRun_!]!
+  MJUserViews_UserIDArray: [MJUserView_!]!
+  MJVersionLabelRestores_UserIDArray: [MJVersionLabelRestore_!]!
+  MJVersionLabels_CreatedByUserIDArray: [MJVersionLabel_!]!
+  MJWorkspaces_UserIDArray: [MJWorkspace_!]!
   Name: String!
-  QueryCategories_UserIDArray: [MJQueryCategory_!]!
-  RecommendationRuns_RunByUserIDArray: [MJRecommendationRun_!]!
-  RecordChangeReplayRuns_UserIDArray: [MJRecordChangeReplayRun_!]!
-  RecordChanges_UserIDArray: [MJRecordChange_!]!
-  RecordMergeLogs_InitiatedByUserIDArray: [MJRecordMergeLog_!]!
-  ReportCategories_UserIDArray: [MJReportCategory_!]!
-  ReportSnapshots_UserIDArray: [MJReportSnapshot_!]!
-  Reports_UserIDArray: [MJReport_!]!
-  ResourceLinks_UserIDArray: [MJResourceLink_!]!
-  ResourcePermissions_UserIDArray: [MJResourcePermission_!]!
-  ScheduledActions_CreatedByUserIDArray: [MJScheduledAction_!]!
-  TemplateCategories_UserIDArray: [MJTemplateCategory_!]!
-  Templates_UserIDArray: [MJTemplate_!]!
 
   """User's professional title or salutation."""
   Title: String
 
   """User account type (User, Guest, System, API)."""
   Type: String!
-  UserApplications_UserIDArray: [MJUserApplication_!]!
-  UserFavorites_UserIDArray: [MJUserFavorite_!]!
 
   """
   Font Awesome icon class for user avatar (e.g., "fa-solid fa-user-astronaut"). Used as fallback when UserImageURL is not provided. Example classes: "fa-solid fa-user", "fa-regular fa-circle-user", "fa-solid fa-user-tie".
@@ -14850,13 +14901,6 @@ type MJUser_ {
   User avatar image. Can be a Base64 encoded data URI (e.g., "data:image/png;base64,...") or a URL to an image file. Preferred over UserImageIconClass when present. Recommended for small thumbnail images only to maintain performance.
   """
   UserImageURL: String
-  UserNotifications_UserIDArray: [MJUserNotification_!]!
-  UserRecordLogs_UserIDArray: [MJUserRecordLog_!]!
-  UserRoles_UserIDArray: [MJUserRole_!]!
-  UserViewCategories_UserIDArray: [MJUserViewCategory_!]!
-  UserViewRuns_RunByUserIDArray: [MJUserViewRun_!]!
-  UserViews_UserIDArray: [MJUserView_!]!
-  Workspaces_UserIDArray: [MJWorkspace_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14871,10 +14915,10 @@ type MJVectorDatabase_ {
   """Field DefaultURL for entity Vector Databases."""
   DefaultURL: String
   Description: String
-  EntityDocuments_IDArray: [MJEntityDocument_!]!
   ID: String!
+  MJEntityDocuments_IDArray: [MJEntityDocument_!]!
+  MJVectorIndexes_VectorDatabaseIDArray: [MJVectorIndex_!]!
   Name: String!
-  VectorIndexes_VectorDatabaseIDArray: [MJVectorIndex_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14884,8 +14928,8 @@ type MJVectorIndex_ {
   Description: String
   EmbeddingModel: String!
   EmbeddingModelID: String!
-  EntityRecordDocuments_VectorIndexIDArray: [MJEntityRecordDocument_!]!
   ID: String!
+  MJEntityRecordDocuments_VectorIndexIDArray: [MJEntityRecordDocument_!]!
   Name: String!
   VectorDatabase: String!
   VectorDatabaseID: String!
@@ -15030,10 +15074,10 @@ type MJVersionLabel_ {
   Total number of VersionLabelItem rows created for this label. Populated after label creation completes.
   """
   ItemCount: Int!
-  MJ_VersionLabelItems_VersionLabelIDArray: [MJVersionLabelItem_!]!
-  MJ_VersionLabelRestores_PreRestoreLabelIDArray: [MJVersionLabelRestore_!]!
-  MJ_VersionLabelRestores_VersionLabelIDArray: [MJVersionLabelRestore_!]!
-  MJ_VersionLabels_ParentIDArray: [MJVersionLabel_!]!
+  MJVersionLabelItems_VersionLabelIDArray: [MJVersionLabelItem_!]!
+  MJVersionLabelRestores_PreRestoreLabelIDArray: [MJVersionLabelRestore_!]!
+  MJVersionLabelRestores_VersionLabelIDArray: [MJVersionLabelRestore_!]!
+  MJVersionLabels_ParentIDArray: [MJVersionLabel_!]!
 
   """Human-readable label name, e.g. Release 2.5, Pre-Refactor Snapshot"""
   Name: String!
@@ -15075,8 +15119,8 @@ type MJWorkflowEngine_ {
   """Import path for the workflow engine driver."""
   DriverPath: String!
   ID: String!
+  MJWorkflows_WorkflowEngineNameArray: [MJWorkflow_!]!
   Name: String!
-  Workflows_WorkflowEngineNameArray: [MJWorkflow_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -15128,15 +15172,15 @@ type MJWorkflow_ {
   """
   ExternalSystemRecordID: String!
   ID: String!
+  MJReports_OutputWorkflowIDArray: [MJReport_!]!
+  MJWorkflowRuns_WorkflowNameArray: [MJWorkflowRun_!]!
   Name: String!
-  Reports_OutputWorkflowIDArray: [MJReport_!]!
 
   """
   If specified, this subclass key, via the ClassFactory, will be instantiated, to execute this workflow. If not specified the WorkflowBase class will be used by default.
   """
   SubclassName: String
   WorkflowEngineID: String!
-  WorkflowRuns_WorkflowNameArray: [MJWorkflowRun_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -15176,10 +15220,10 @@ type MJWorkspace_ {
   Configuration: String
   Description: String
   ID: String!
+  MJWorkspaceItems_WorkSpaceIDArray: [MJWorkspaceItem_!]!
   Name: String!
   User: String!
   UserID: String!
-  WorkspaceItems_WorkSpaceIDArray: [MJWorkspaceItem_!]!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -15391,6 +15435,9 @@ type Mutation {
   CreateMJOAuthAuthorizationState(input: CreateMJOAuthAuthorizationStateInput!): MJOAuthAuthorizationState_!
   CreateMJOAuthClientRegistration(input: CreateMJOAuthClientRegistrationInput!): MJOAuthClientRegistration_!
   CreateMJOAuthToken(input: CreateMJOAuthTokenInput!): MJOAuthToken_!
+  CreateMJOpenApp(input: CreateMJOpenAppInput!): MJOpenApp_!
+  CreateMJOpenAppDependency(input: CreateMJOpenAppDependencyInput!): MJOpenAppDependency_!
+  CreateMJOpenAppInstallHistory(input: CreateMJOpenAppInstallHistoryInput!): MJOpenAppInstallHistory_!
   CreateMJOutputDeliveryType(input: CreateMJOutputDeliveryTypeInput!): MJOutputDeliveryType_!
   CreateMJOutputFormatType(input: CreateMJOutputFormatTypeInput!): MJOutputFormatType_!
   CreateMJOutputTriggerType(input: CreateMJOutputTriggerTypeInput!): MJOutputTriggerType_!
@@ -15488,20 +15535,6 @@ type Mutation {
   CreatemjBizAppsCommonPerson(input: CreatemjBizAppsCommonPersonInput!): mjBizAppsCommonPerson_!
   CreatemjBizAppsCommonRelationship(input: CreatemjBizAppsCommonRelationshipInput!): mjBizAppsCommonRelationship_!
   CreatemjBizAppsCommonRelationshipType(input: CreatemjBizAppsCommonRelationshipTypeInput!): mjBizAppsCommonRelationshipType_!
-  CreatemjCommitteesActionItem(input: CreatemjCommitteesActionItemInput!): mjCommitteesActionItem_!
-  CreatemjCommitteesAgendaItem(input: CreatemjCommitteesAgendaItemInput!): mjCommitteesAgendaItem_!
-  CreatemjCommitteesArtifact(input: CreatemjCommitteesArtifactInput!): mjCommitteesArtifact_!
-  CreatemjCommitteesArtifactType(input: CreatemjCommitteesArtifactTypeInput!): mjCommitteesArtifactType_!
-  CreatemjCommitteesAttendance(input: CreatemjCommitteesAttendanceInput!): mjCommitteesAttendance_!
-  CreatemjCommitteesCommittee(input: CreatemjCommitteesCommitteeInput!): mjCommitteesCommittee_!
-  CreatemjCommitteesMeeting(input: CreatemjCommitteesMeetingInput!): mjCommitteesMeeting_!
-  CreatemjCommitteesMembership(input: CreatemjCommitteesMembershipInput!): mjCommitteesMembership_!
-  CreatemjCommitteesMinute(input: CreatemjCommitteesMinuteInput!): mjCommitteesMinute_!
-  CreatemjCommitteesMotion(input: CreatemjCommitteesMotionInput!): mjCommitteesMotion_!
-  CreatemjCommitteesRole(input: CreatemjCommitteesRoleInput!): mjCommitteesRole_!
-  CreatemjCommitteesTerm(input: CreatemjCommitteesTermInput!): mjCommitteesTerm_!
-  CreatemjCommitteesType(input: CreatemjCommitteesTypeInput!): mjCommitteesType_!
-  CreatemjCommitteesVote(input: CreatemjCommitteesVoteInput!): mjCommitteesVote_!
   DeleteFile(ID: String!, options___: DeleteOptionsInput!): MJFile_!
   DeleteFileCategory(ID: String!, options___: DeleteOptionsInput!): MJFileCategory_!
   DeleteMJAIAction(ID: String!, options___: DeleteOptionsInput!): MJAIAction_!
@@ -15693,6 +15726,9 @@ type Mutation {
   DeleteMJOAuthAuthorizationState(ID: String!, options___: DeleteOptionsInput!): MJOAuthAuthorizationState_!
   DeleteMJOAuthClientRegistration(ID: String!, options___: DeleteOptionsInput!): MJOAuthClientRegistration_!
   DeleteMJOAuthToken(ID: String!, options___: DeleteOptionsInput!): MJOAuthToken_!
+  DeleteMJOpenApp(ID: String!, options___: DeleteOptionsInput!): MJOpenApp_!
+  DeleteMJOpenAppDependency(ID: String!, options___: DeleteOptionsInput!): MJOpenAppDependency_!
+  DeleteMJOpenAppInstallHistory(ID: String!, options___: DeleteOptionsInput!): MJOpenAppInstallHistory_!
   DeleteMJOutputDeliveryType(ID: String!, options___: DeleteOptionsInput!): MJOutputDeliveryType_!
   DeleteMJOutputFormatType(ID: String!, options___: DeleteOptionsInput!): MJOutputFormatType_!
   DeleteMJOutputTriggerType(ID: String!, options___: DeleteOptionsInput!): MJOutputTriggerType_!
@@ -15788,20 +15824,6 @@ type Mutation {
   DeletemjBizAppsCommonPerson(ID: String!, options___: DeleteOptionsInput!): mjBizAppsCommonPerson_!
   DeletemjBizAppsCommonRelationship(ID: String!, options___: DeleteOptionsInput!): mjBizAppsCommonRelationship_!
   DeletemjBizAppsCommonRelationshipType(ID: String!, options___: DeleteOptionsInput!): mjBizAppsCommonRelationshipType_!
-  DeletemjCommitteesActionItem(ID: String!, options___: DeleteOptionsInput!): mjCommitteesActionItem_!
-  DeletemjCommitteesAgendaItem(ID: String!, options___: DeleteOptionsInput!): mjCommitteesAgendaItem_!
-  DeletemjCommitteesArtifact(ID: String!, options___: DeleteOptionsInput!): mjCommitteesArtifact_!
-  DeletemjCommitteesArtifactType(ID: String!, options___: DeleteOptionsInput!): mjCommitteesArtifactType_!
-  DeletemjCommitteesAttendance(ID: String!, options___: DeleteOptionsInput!): mjCommitteesAttendance_!
-  DeletemjCommitteesCommittee(ID: String!, options___: DeleteOptionsInput!): mjCommitteesCommittee_!
-  DeletemjCommitteesMeeting(ID: String!, options___: DeleteOptionsInput!): mjCommitteesMeeting_!
-  DeletemjCommitteesMembership(ID: String!, options___: DeleteOptionsInput!): mjCommitteesMembership_!
-  DeletemjCommitteesMinute(ID: String!, options___: DeleteOptionsInput!): mjCommitteesMinute_!
-  DeletemjCommitteesMotion(ID: String!, options___: DeleteOptionsInput!): mjCommitteesMotion_!
-  DeletemjCommitteesRole(ID: String!, options___: DeleteOptionsInput!): mjCommitteesRole_!
-  DeletemjCommitteesTerm(ID: String!, options___: DeleteOptionsInput!): mjCommitteesTerm_!
-  DeletemjCommitteesType(ID: String!, options___: DeleteOptionsInput!): mjCommitteesType_!
-  DeletemjCommitteesVote(ID: String!, options___: DeleteOptionsInput!): mjCommitteesVote_!
   EmbedText(modelSize: String!, textToEmbed: [String!]!): EmbedTextResult!
   ExecuteMCPTool(input: ExecuteMCPToolInput!): ExecuteMCPToolResult!
   ExecuteSimplePrompt(messages: String, modelPower: String, preferredModels: [String!], responseFormat: String, systemPrompt: String!): SimplePromptResult!
@@ -15814,7 +15836,7 @@ type Mutation {
   RevokeAPIKey(apiKeyId: String!): RevokeAPIKeyResult!
   RevokeMCPOAuth(input: RevokeMCPOAuthInput!): RevokeMCPOAuthResult!
   RunAIAgent(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String, createArtifacts: Boolean, createNotification: Boolean, data: String, lastRunId: String, messages: String!, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String, templateData: String): AIAgentRunResult!
-  RunAIAgentFromConversationDetail(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String!, createArtifacts: Boolean, createNotification: Boolean, data: String, lastRunId: String, maxHistoryMessages: Int, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String): AIAgentRunResult!
+  RunAIAgentFromConversationDetail(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String!, createArtifacts: Boolean, createNotification: Boolean, data: String, fireAndForget: Boolean, lastRunId: String, maxHistoryMessages: Int, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String): AIAgentRunResult!
   RunAIPrompt(configurationId: String, data: String, frequencyPenalty: Float, includeLogProbs: Boolean, messages: String, minP: Float, overrideModelId: String, overrideVendorId: String, presencePenalty: Float, promptId: String!, rerunFromPromptRunID: String, responseFormat: String, seed: Int, skipValidation: Boolean, stopSequences: [String!], systemPromptOverride: String, temperature: Float, templateData: String, topK: Int, topLogProbs: Int, topP: Float): AIPromptRunResult!
   RunAction(input: RunActionInput!): ActionResultOutput!
   RunEntityAction(input: EntityActionInput!): ActionResultOutput!
@@ -16018,6 +16040,9 @@ type Mutation {
   UpdateMJOAuthAuthorizationState(input: UpdateMJOAuthAuthorizationStateInput!): MJOAuthAuthorizationState_!
   UpdateMJOAuthClientRegistration(input: UpdateMJOAuthClientRegistrationInput!): MJOAuthClientRegistration_!
   UpdateMJOAuthToken(input: UpdateMJOAuthTokenInput!): MJOAuthToken_!
+  UpdateMJOpenApp(input: UpdateMJOpenAppInput!): MJOpenApp_!
+  UpdateMJOpenAppDependency(input: UpdateMJOpenAppDependencyInput!): MJOpenAppDependency_!
+  UpdateMJOpenAppInstallHistory(input: UpdateMJOpenAppInstallHistoryInput!): MJOpenAppInstallHistory_!
   UpdateMJOutputDeliveryType(input: UpdateMJOutputDeliveryTypeInput!): MJOutputDeliveryType_!
   UpdateMJOutputFormatType(input: UpdateMJOutputFormatTypeInput!): MJOutputFormatType_!
   UpdateMJOutputTriggerType(input: UpdateMJOutputTriggerTypeInput!): MJOutputTriggerType_!
@@ -16112,20 +16137,6 @@ type Mutation {
   UpdatemjBizAppsCommonPerson(input: UpdatemjBizAppsCommonPersonInput!): mjBizAppsCommonPerson_!
   UpdatemjBizAppsCommonRelationship(input: UpdatemjBizAppsCommonRelationshipInput!): mjBizAppsCommonRelationship_!
   UpdatemjBizAppsCommonRelationshipType(input: UpdatemjBizAppsCommonRelationshipTypeInput!): mjBizAppsCommonRelationshipType_!
-  UpdatemjCommitteesActionItem(input: UpdatemjCommitteesActionItemInput!): mjCommitteesActionItem_!
-  UpdatemjCommitteesAgendaItem(input: UpdatemjCommitteesAgendaItemInput!): mjCommitteesAgendaItem_!
-  UpdatemjCommitteesArtifact(input: UpdatemjCommitteesArtifactInput!): mjCommitteesArtifact_!
-  UpdatemjCommitteesArtifactType(input: UpdatemjCommitteesArtifactTypeInput!): mjCommitteesArtifactType_!
-  UpdatemjCommitteesAttendance(input: UpdatemjCommitteesAttendanceInput!): mjCommitteesAttendance_!
-  UpdatemjCommitteesCommittee(input: UpdatemjCommitteesCommitteeInput!): mjCommitteesCommittee_!
-  UpdatemjCommitteesMeeting(input: UpdatemjCommitteesMeetingInput!): mjCommitteesMeeting_!
-  UpdatemjCommitteesMembership(input: UpdatemjCommitteesMembershipInput!): mjCommitteesMembership_!
-  UpdatemjCommitteesMinute(input: UpdatemjCommitteesMinuteInput!): mjCommitteesMinute_!
-  UpdatemjCommitteesMotion(input: UpdatemjCommitteesMotionInput!): mjCommitteesMotion_!
-  UpdatemjCommitteesRole(input: UpdatemjCommitteesRoleInput!): mjCommitteesRole_!
-  UpdatemjCommitteesTerm(input: UpdatemjCommitteesTermInput!): mjCommitteesTerm_!
-  UpdatemjCommitteesType(input: UpdatemjCommitteesTypeInput!): mjCommitteesType_!
-  UpdatemjCommitteesVote(input: UpdatemjCommitteesVoteInput!): mjCommitteesVote_!
   startSqlLogging(input: StartSqlLoggingInput!): SqlLoggingSession!
   stopAllSqlLogging: Boolean!
   stopSqlLogging(sessionId: String!): Boolean!
@@ -16165,30 +16176,30 @@ type PushStatusNotification {
 }
 
 type Query {
-  AllAIActions: [MJAIAction_!]!
-  AllAIModelActions: [MJAIModelAction_!]!
-  AllAIModelTypes: [MJAIModelType_!]!
-  AllAIModels: [MJAIModel_!]!
-  AllApplications: [MJApplication_!]!
-  AllAuditLogTypes: [MJAuditLogType_!]!
-  AllAuthorizationRoles: [MJAuthorizationRole_!]!
-  AllAuthorizations: [MJAuthorization_!]!
-  AllCompanies: [MJCompany_!]!
-  AllEmployees: [MJEmployee_!]!
-  AllEntities: [MJEntity_!]!
-  AllEntityAIActions: [MJEntityAIAction_!]!
-  AllEntityFieldValues: [MJEntityFieldValue_!]!
-  AllEntityFields: [MJEntityField_!]!
-  AllEntityPermissions: [MJEntityPermission_!]!
-  AllEntityRelationships: [MJEntityRelationship_!]!
-  AllIntegrationURLFormats: [MJIntegrationURLFormat_!]!
-  AllIntegrations: [MJIntegration_!]!
-  AllRoles: [MJRole_!]!
-  AllRowLevelSecurityFilters: [MJRowLevelSecurityFilter_!]!
-  AllSkills: [MJSkill_!]!
-  AllUserRoles: [MJUserRole_!]!
-  AllUserViews: [MJUserView_!]!
-  AllUsers: [MJUser_!]!
+  AllMJAIActions: [MJAIAction_!]!
+  AllMJAIModelActions: [MJAIModelAction_!]!
+  AllMJAIModelTypes: [MJAIModelType_!]!
+  AllMJAIModels: [MJAIModel_!]!
+  AllMJApplications: [MJApplication_!]!
+  AllMJAuditLogTypes: [MJAuditLogType_!]!
+  AllMJAuthorizationRoles: [MJAuthorizationRole_!]!
+  AllMJAuthorizations: [MJAuthorization_!]!
+  AllMJCompanies: [MJCompany_!]!
+  AllMJEmployees: [MJEmployee_!]!
+  AllMJEntities: [MJEntity_!]!
+  AllMJEntityAIActions: [MJEntityAIAction_!]!
+  AllMJEntityFieldValues: [MJEntityFieldValue_!]!
+  AllMJEntityFields: [MJEntityField_!]!
+  AllMJEntityPermissions: [MJEntityPermission_!]!
+  AllMJEntityRelationships: [MJEntityRelationship_!]!
+  AllMJIntegrationURLFormats: [MJIntegrationURLFormat_!]!
+  AllMJIntegrations: [MJIntegration_!]!
+  AllMJRoles: [MJRole_!]!
+  AllMJRowLevelSecurityFilters: [MJRowLevelSecurityFilter_!]!
+  AllMJSkills: [MJSkill_!]!
+  AllMJUserRoles: [MJUserRole_!]!
+  AllMJUserViews: [MJUserView_!]!
+  AllMJUsers: [MJUser_!]!
   CreatePreAuthDownloadUrl(input: CreatePreAuthDownloadUrlInput!): String!
   CurrentUser: MJUser_!
   CurrentUserDefaultViewByEntityID(EntityID: Int!): [MJUserView_!]!
@@ -16196,7 +16207,9 @@ type Query {
   DefaultViewByUserAndEntity(EntityID: Int!, UserID: Int!): [MJUserView_!]!
   EmbedTextSystemUser(modelSize: String!, textToEmbed: [String!]!): EmbedTextResult!
   EntitiesBySchemas(ExcludeSchemas: [String!], IncludeSchemas: [String!]): [MJEntity_!]!
+  ExecuteAdhocQuery(input: AdhocQueryInput!): RunQueryResultType!
   ExecuteSimplePromptSystemUser(messages: String, modelPower: String, preferredModels: [String!], responseFormat: String, systemPrompt: String!): SimplePromptResult!
+  FindISAChildEntities(EntityName: String!, RecordID: String!): ISAChildEntitiesResult!
   FindISAChildEntity(EntityName: String!, RecordID: String!): ISAChildEntityResult!
   GetAllEntities: SimpleEntityResultType!
   GetData(input: GetDataInputType!): GetDataOutputType!
@@ -16417,6 +16430,9 @@ type Query {
   MJOAuthAuthorizationState(ID: String!): MJOAuthAuthorizationState_
   MJOAuthClientRegistration(ID: String!): MJOAuthClientRegistration_
   MJOAuthToken(ID: String!): MJOAuthToken_
+  MJOpenApp(ID: String!): MJOpenApp_
+  MJOpenAppDependency(ID: String!): MJOpenAppDependency_
+  MJOpenAppInstallHistory(ID: String!): MJOpenAppInstallHistory_
   MJOutputDeliveryType(ID: String!): MJOutputDeliveryType_
   MJOutputFormatType(ID: String!): MJOutputFormatType_
   MJOutputTriggerType(ID: String!): MJOutputTriggerType_
@@ -17073,6 +17089,15 @@ type Query {
   RunMJOAuthTokenDynamicView(input: RunDynamicViewInput!): RunMJOAuthTokenViewResult!
   RunMJOAuthTokenViewByID(input: RunViewByIDInput!): RunMJOAuthTokenViewResult!
   RunMJOAuthTokenViewByName(input: RunViewByNameInput!): RunMJOAuthTokenViewResult!
+  RunMJOpenAppDependencyDynamicView(input: RunDynamicViewInput!): RunMJOpenAppDependencyViewResult!
+  RunMJOpenAppDependencyViewByID(input: RunViewByIDInput!): RunMJOpenAppDependencyViewResult!
+  RunMJOpenAppDependencyViewByName(input: RunViewByNameInput!): RunMJOpenAppDependencyViewResult!
+  RunMJOpenAppDynamicView(input: RunDynamicViewInput!): RunMJOpenAppViewResult!
+  RunMJOpenAppInstallHistoryDynamicView(input: RunDynamicViewInput!): RunMJOpenAppInstallHistoryViewResult!
+  RunMJOpenAppInstallHistoryViewByID(input: RunViewByIDInput!): RunMJOpenAppInstallHistoryViewResult!
+  RunMJOpenAppInstallHistoryViewByName(input: RunViewByNameInput!): RunMJOpenAppInstallHistoryViewResult!
+  RunMJOpenAppViewByID(input: RunViewByIDInput!): RunMJOpenAppViewResult!
+  RunMJOpenAppViewByName(input: RunViewByNameInput!): RunMJOpenAppViewResult!
   RunMJOutputDeliveryTypeDynamicView(input: RunDynamicViewInput!): RunMJOutputDeliveryTypeViewResult!
   RunMJOutputDeliveryTypeViewByID(input: RunViewByIDInput!): RunMJOutputDeliveryTypeViewResult!
   RunMJOutputDeliveryTypeViewByName(input: RunViewByNameInput!): RunMJOutputDeliveryTypeViewResult!
@@ -17363,48 +17388,6 @@ type Query {
   RunmjBizAppsCommonRelationshipTypeViewByName(input: RunViewByNameInput!): RunmjBizAppsCommonRelationshipTypeViewResult!
   RunmjBizAppsCommonRelationshipViewByID(input: RunViewByIDInput!): RunmjBizAppsCommonRelationshipViewResult!
   RunmjBizAppsCommonRelationshipViewByName(input: RunViewByNameInput!): RunmjBizAppsCommonRelationshipViewResult!
-  RunmjCommitteesActionItemDynamicView(input: RunDynamicViewInput!): RunmjCommitteesActionItemViewResult!
-  RunmjCommitteesActionItemViewByID(input: RunViewByIDInput!): RunmjCommitteesActionItemViewResult!
-  RunmjCommitteesActionItemViewByName(input: RunViewByNameInput!): RunmjCommitteesActionItemViewResult!
-  RunmjCommitteesAgendaItemDynamicView(input: RunDynamicViewInput!): RunmjCommitteesAgendaItemViewResult!
-  RunmjCommitteesAgendaItemViewByID(input: RunViewByIDInput!): RunmjCommitteesAgendaItemViewResult!
-  RunmjCommitteesAgendaItemViewByName(input: RunViewByNameInput!): RunmjCommitteesAgendaItemViewResult!
-  RunmjCommitteesArtifactDynamicView(input: RunDynamicViewInput!): RunmjCommitteesArtifactViewResult!
-  RunmjCommitteesArtifactTypeDynamicView(input: RunDynamicViewInput!): RunmjCommitteesArtifactTypeViewResult!
-  RunmjCommitteesArtifactTypeViewByID(input: RunViewByIDInput!): RunmjCommitteesArtifactTypeViewResult!
-  RunmjCommitteesArtifactTypeViewByName(input: RunViewByNameInput!): RunmjCommitteesArtifactTypeViewResult!
-  RunmjCommitteesArtifactViewByID(input: RunViewByIDInput!): RunmjCommitteesArtifactViewResult!
-  RunmjCommitteesArtifactViewByName(input: RunViewByNameInput!): RunmjCommitteesArtifactViewResult!
-  RunmjCommitteesAttendanceDynamicView(input: RunDynamicViewInput!): RunmjCommitteesAttendanceViewResult!
-  RunmjCommitteesAttendanceViewByID(input: RunViewByIDInput!): RunmjCommitteesAttendanceViewResult!
-  RunmjCommitteesAttendanceViewByName(input: RunViewByNameInput!): RunmjCommitteesAttendanceViewResult!
-  RunmjCommitteesCommitteeDynamicView(input: RunDynamicViewInput!): RunmjCommitteesCommitteeViewResult!
-  RunmjCommitteesCommitteeViewByID(input: RunViewByIDInput!): RunmjCommitteesCommitteeViewResult!
-  RunmjCommitteesCommitteeViewByName(input: RunViewByNameInput!): RunmjCommitteesCommitteeViewResult!
-  RunmjCommitteesMeetingDynamicView(input: RunDynamicViewInput!): RunmjCommitteesMeetingViewResult!
-  RunmjCommitteesMeetingViewByID(input: RunViewByIDInput!): RunmjCommitteesMeetingViewResult!
-  RunmjCommitteesMeetingViewByName(input: RunViewByNameInput!): RunmjCommitteesMeetingViewResult!
-  RunmjCommitteesMembershipDynamicView(input: RunDynamicViewInput!): RunmjCommitteesMembershipViewResult!
-  RunmjCommitteesMembershipViewByID(input: RunViewByIDInput!): RunmjCommitteesMembershipViewResult!
-  RunmjCommitteesMembershipViewByName(input: RunViewByNameInput!): RunmjCommitteesMembershipViewResult!
-  RunmjCommitteesMinuteDynamicView(input: RunDynamicViewInput!): RunmjCommitteesMinuteViewResult!
-  RunmjCommitteesMinuteViewByID(input: RunViewByIDInput!): RunmjCommitteesMinuteViewResult!
-  RunmjCommitteesMinuteViewByName(input: RunViewByNameInput!): RunmjCommitteesMinuteViewResult!
-  RunmjCommitteesMotionDynamicView(input: RunDynamicViewInput!): RunmjCommitteesMotionViewResult!
-  RunmjCommitteesMotionViewByID(input: RunViewByIDInput!): RunmjCommitteesMotionViewResult!
-  RunmjCommitteesMotionViewByName(input: RunViewByNameInput!): RunmjCommitteesMotionViewResult!
-  RunmjCommitteesRoleDynamicView(input: RunDynamicViewInput!): RunmjCommitteesRoleViewResult!
-  RunmjCommitteesRoleViewByID(input: RunViewByIDInput!): RunmjCommitteesRoleViewResult!
-  RunmjCommitteesRoleViewByName(input: RunViewByNameInput!): RunmjCommitteesRoleViewResult!
-  RunmjCommitteesTermDynamicView(input: RunDynamicViewInput!): RunmjCommitteesTermViewResult!
-  RunmjCommitteesTermViewByID(input: RunViewByIDInput!): RunmjCommitteesTermViewResult!
-  RunmjCommitteesTermViewByName(input: RunViewByNameInput!): RunmjCommitteesTermViewResult!
-  RunmjCommitteesTypeDynamicView(input: RunDynamicViewInput!): RunmjCommitteesTypeViewResult!
-  RunmjCommitteesTypeViewByID(input: RunViewByIDInput!): RunmjCommitteesTypeViewResult!
-  RunmjCommitteesTypeViewByName(input: RunViewByNameInput!): RunmjCommitteesTypeViewResult!
-  RunmjCommitteesVoteDynamicView(input: RunDynamicViewInput!): RunmjCommitteesVoteViewResult!
-  RunmjCommitteesVoteViewByID(input: RunViewByIDInput!): RunmjCommitteesVoteViewResult!
-  RunmjCommitteesVoteViewByName(input: RunViewByNameInput!): RunmjCommitteesVoteViewResult!
   SearchAcrossAccounts(input: SearchAcrossAccountsInput!): SearchAcrossAccountsPayload!
   SearchRegistryComponents(params: SearchRegistryComponentsInput!): RegistryComponentSearchResultType!
   UpdateWhereClause(ID: String!): [MJUserView_!]!
@@ -17427,29 +17410,8 @@ type Query {
   mjBizAppsCommonPerson(ID: String!): mjBizAppsCommonPerson_
   mjBizAppsCommonRelationship(ID: String!): mjBizAppsCommonRelationship_
   mjBizAppsCommonRelationshipType(ID: String!): mjBizAppsCommonRelationshipType_
-  mjCommitteesActionItem(ID: String!): mjCommitteesActionItem_
-  mjCommitteesAgendaItem(ID: String!): mjCommitteesAgendaItem_
-  mjCommitteesArtifact(ID: String!): mjCommitteesArtifact_
-  mjCommitteesArtifactType(ID: String!): mjCommitteesArtifactType_
-  mjCommitteesAttendance(ID: String!): mjCommitteesAttendance_
-  mjCommitteesCommittee(ID: String!): mjCommitteesCommittee_
-  mjCommitteesMeeting(ID: String!): mjCommitteesMeeting_
-  mjCommitteesMembership(ID: String!): mjCommitteesMembership_
-  mjCommitteesMinute(ID: String!): mjCommitteesMinute_
-  mjCommitteesMotion(ID: String!): mjCommitteesMotion_
-  mjCommitteesRole(ID: String!): mjCommitteesRole_
-  mjCommitteesTerm(ID: String!): mjCommitteesTerm_
-  mjCommitteesType(ID: String!): mjCommitteesType_
-  mjCommitteesVote(ID: String!): mjCommitteesVote_
   readSqlLogFile(maxLines: Int, sessionId: String!): String!
   sqlLoggingConfig: SqlLoggingConfig!
-}
-
-type QueryEntityType {
-  Entity: String
-  EntityID: String!
-  ID: String!
-  QueryID: String!
 }
 
 type QueryFieldType {
@@ -19547,6 +19509,36 @@ type RunMJOAuthTokenViewResult {
   UserViewRunID: String
 }
 
+type RunMJOpenAppDependencyViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJOpenAppDependency_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJOpenAppInstallHistoryViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJOpenAppInstallHistory_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJOpenAppViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJOpenApp_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
 type RunMJOutputDeliveryTypeViewResult {
   ErrorMessage: String
   ExecutionTime: Int
@@ -20907,146 +20899,6 @@ type RunmjBizAppsCommonRelationshipViewResult {
   ErrorMessage: String
   ExecutionTime: Int
   Results: [mjBizAppsCommonRelationship_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesActionItemViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesActionItem_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesAgendaItemViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesAgendaItem_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesArtifactTypeViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesArtifactType_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesArtifactViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesArtifact_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesAttendanceViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesAttendance_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesCommitteeViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesCommittee_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesMeetingViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesMeeting_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesMembershipViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesMembership_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesMinuteViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesMinute_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesMotionViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesMotion_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesRoleViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesRole_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesTermViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesTerm_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesTypeViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesType_!]!
-  RowCount: Int
-  Success: Boolean!
-  TotalRowCount: Int
-  UserViewRunID: String
-}
-
-type RunmjCommitteesVoteViewResult {
-  ErrorMessage: String
-  ExecutionTime: Int
-  Results: [mjCommitteesVote_!]!
   RowCount: Int
   Success: Boolean!
   TotalRowCount: Int
@@ -23512,6 +23364,7 @@ input UpdateMJEntityInput {
   AllowAllRowsAPI: Boolean
   AllowCreateAPI: Boolean
   AllowDeleteAPI: Boolean
+  AllowMultipleSubtypes: Boolean
   AllowRecordMerge: Boolean
   AllowUpdateAPI: Boolean
   AllowUserSearchAPI: Boolean
@@ -24011,6 +23864,57 @@ input UpdateMJOAuthTokenInput {
   RefreshCount: Int
   Scope: String
   TokenType: String
+}
+
+input UpdateMJOpenAppDependencyInput {
+  DependsOnAppID: String
+  DependsOnAppName: String
+  ID: String!
+  InstalledVersion: String
+  OldValues___: [KeyValuePairInput!]
+  OpenAppID: String
+  Status: String
+  VersionRange: String
+}
+
+input UpdateMJOpenAppInput {
+  Color: String
+  ConfigurationSchemaJSON: String
+  Description: String
+  DisplayName: String
+  ID: String!
+  Icon: String
+  InstalledByUserID: String
+  License: String
+  MJVersionRange: String
+  ManifestJSON: String
+  Name: String
+  OldValues___: [KeyValuePairInput!]
+  Publisher: String
+  PublisherEmail: String
+  PublisherURL: String
+  RepositoryURL: String
+  SchemaName: String
+  Status: String
+  Version: String
+}
+
+input UpdateMJOpenAppInstallHistoryInput {
+  Action: String
+  DurationSeconds: Int
+  EndedAt: Timestamp
+  ErrorMessage: String
+  ErrorPhase: String
+  ExecutedByUserID: String
+  ID: String!
+  ManifestJSON: String
+  OldValues___: [KeyValuePairInput!]
+  OpenAppID: String
+  PreviousVersion: String
+  StartedAt: Timestamp
+  Success: Boolean
+  Summary: String
+  Version: String
 }
 
 input UpdateMJOutputDeliveryTypeInput {
@@ -25047,7 +24951,7 @@ type UpdateQueryResultType {
   EmbeddingModelID: String
   EmbeddingModelName: String
   EmbeddingVector: String
-  Entities: [QueryEntityType!]
+  Entities: [MJQueryEntityType!]
   ErrorMessage: String
   Fields: [QueryFieldType!]
   ID: String
@@ -25205,195 +25109,6 @@ input UpdatemjBizAppsCommonRelationshipTypeInput {
   ReverseLabel: String
 }
 
-input UpdatemjCommitteesActionItemInput {
-  AgendaItemID: String
-  AssignedByPersonID: String
-  AssignedToPersonID: String
-  CommitteeID: String
-  CompletedAt: Timestamp
-  CompletionNotes: String
-  Description: String
-  DueDate: Timestamp
-  ID: String!
-  MeetingID: String
-  OldValues___: [KeyValuePairInput!]
-  Priority: String
-  Status: String
-  Title: String
-}
-
-input UpdatemjCommitteesAgendaItemInput {
-  Description: String
-  DurationMinutes: Int
-  ID: String!
-  ItemType: String
-  MeetingID: String
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-  ParentAgendaItemID: String
-  PresenterPersonID: String
-  RelatedDocumentURL: String
-  Sequence: Int
-  Status: String
-  Title: String
-}
-
-input UpdatemjCommitteesArtifactInput {
-  ActionItemID: String
-  AgendaItemID: String
-  ArtifactTypeID: String
-  CommitteeID: String
-  Description: String
-  ExternalID: String
-  FileSize: Int
-  ID: String!
-  MeetingID: String
-  MimeType: String
-  OldValues___: [KeyValuePairInput!]
-  Provider: String
-  Title: String
-  URL: String
-  UploadedByPersonID: String
-}
-
-input UpdatemjCommitteesArtifactTypeInput {
-  Description: String
-  ExtendedEntityID: String
-  ID: String!
-  IconClass: String
-  Name: String
-  OldValues___: [KeyValuePairInput!]
-}
-
-input UpdatemjCommitteesAttendanceInput {
-  AttendanceStatus: String
-  ID: String!
-  JoinedAt: Timestamp
-  LeftAt: Timestamp
-  MeetingID: String
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-  PersonID: String
-}
-
-input UpdatemjCommitteesCommitteeInput {
-  CharterDocumentURL: String
-  Description: String
-  DissolutionDate: Timestamp
-  FormationDate: Timestamp
-  ID: String!
-  IsPublic: Boolean
-  MissionStatement: String
-  Name: String
-  OldValues___: [KeyValuePairInput!]
-  OrganizationID: String
-  ParentCommitteeID: String
-  Status: String
-  TypeID: String
-}
-
-input UpdatemjCommitteesMeetingInput {
-  CalendarEventID: String
-  CommitteeID: String
-  Description: String
-  EndDateTime: Timestamp
-  ID: String!
-  LocationText: String
-  LocationType: String
-  OldValues___: [KeyValuePairInput!]
-  StartDateTime: Timestamp
-  Status: String
-  TimeZone: String
-  Title: String
-  TranscriptURL: String
-  VideoJoinURL: String
-  VideoMeetingID: String
-  VideoProvider: String
-  VideoRecordingURL: String
-}
-
-input UpdatemjCommitteesMembershipInput {
-  CommitteeID: String
-  EndDate: Timestamp
-  EndReason: String
-  ID: String!
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-  PersonID: String
-  RoleID: String
-  StartDate: Timestamp
-  Status: String
-  TermID: String
-}
-
-input UpdatemjCommitteesMinuteInput {
-  ApprovalStatus: String
-  ApprovedAt: Timestamp
-  ApprovedByMeetingID: String
-  ArtifactID: String
-  ID: String!
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-}
-
-input UpdatemjCommitteesMotionInput {
-  AbstainCount: Int
-  AgendaItemID: String
-  Description: String
-  ID: String!
-  MeetingID: String
-  MovedByMembershipID: String
-  NoCount: Int
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-  Result: String
-  ResultSummary: String
-  SecondedByMembershipID: String
-  Sequence: Int
-  Title: String
-  YesCount: Int
-}
-
-input UpdatemjCommitteesRoleInput {
-  DefaultPermissionsJSON: String
-  Description: String
-  ID: String!
-  IsOfficer: Boolean
-  IsVotingRole: Boolean
-  Name: String
-  OldValues___: [KeyValuePairInput!]
-  Sequence: Int
-}
-
-input UpdatemjCommitteesTermInput {
-  CommitteeID: String
-  EndDate: Timestamp
-  ID: String!
-  Name: String
-  OldValues___: [KeyValuePairInput!]
-  StartDate: Timestamp
-  Status: String
-}
-
-input UpdatemjCommitteesTypeInput {
-  DefaultTermMonths: Int
-  Description: String
-  ID: String!
-  IconClass: String
-  IsStandards: Boolean
-  Name: String
-  OldValues___: [KeyValuePairInput!]
-}
-
-input UpdatemjCommitteesVoteInput {
-  ID: String!
-  MembershipID: String
-  MotionID: String
-  Notes: String
-  OldValues___: [KeyValuePairInput!]
-  VoteValue: String
-}
-
 type UserFavoriteResult {
   CompositeKey: CompositeKeyOutputType!
   EntityID: Int!
@@ -25463,8 +25178,6 @@ type mjBizAppsCommonAddressLink_ {
 
 """Categories of addresses such as Home, Work, Mailing, Billing"""
 type mjBizAppsCommonAddressType_ {
-  Common_AddressLinks_AddressTypeIDArray: [mjBizAppsCommonAddressLink_!]!
-
   """
   Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank
   """
@@ -25478,6 +25191,7 @@ type mjBizAppsCommonAddressType_ {
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonAddressLinks_AddressTypeIDArray: [mjBizAppsCommonAddressLink_!]!
 }
 
 """
@@ -25486,7 +25200,6 @@ Standalone physical address records linked to entities via AddressLink for shari
 type mjBizAppsCommonAddress_ {
   """City or locality name"""
   City: String!
-  Common_AddressLinks_AddressIDArray: [mjBizAppsCommonAddressLink_!]!
 
   """Country code or name, defaults to US"""
   Country: String!
@@ -25514,6 +25227,7 @@ type mjBizAppsCommonAddress_ {
   StateProvince: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonAddressLinks_AddressIDArray: [mjBizAppsCommonAddressLink_!]!
 }
 
 """
@@ -25549,8 +25263,6 @@ type mjBizAppsCommonContactMethod_ {
 Categories of contact methods such as Phone, Mobile, Email, LinkedIn, Website
 """
 type mjBizAppsCommonContactType_ {
-  Common_ContactMethods_ContactTypeIDArray: [mjBizAppsCommonContactMethod_!]!
-
   """Detailed description of this contact type"""
   Description: String
   ID: String!
@@ -25562,14 +25274,13 @@ type mjBizAppsCommonContactType_ {
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonContactMethods_ContactTypeIDArray: [mjBizAppsCommonContactMethod_!]!
 }
 
 """
 Categories of organizations such as Company, Non-Profit, Association, Government
 """
 type mjBizAppsCommonOrganizationType_ {
-  Common_Organizations_OrganizationTypeIDArray: [mjBizAppsCommonOrganization_!]!
-
   """Detailed description of this organization type"""
   Description: String
   ID: String!
@@ -25581,18 +25292,13 @@ type mjBizAppsCommonOrganizationType_ {
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonOrganizations_OrganizationTypeIDArray: [mjBizAppsCommonOrganization_!]!
 }
 
 """
 Companies, associations, government bodies, and other organizations with hierarchy support
 """
 type mjBizAppsCommonOrganization_ {
-  Committees_Committees_OrganizationIDArray: [mjCommitteesCommittee_!]!
-  Common_ContactMethods_OrganizationIDArray: [mjBizAppsCommonContactMethod_!]!
-  Common_Organizations_ParentIDArray: [mjBizAppsCommonOrganization_!]!
-  Common_Relationships_FromOrganizationIDArray: [mjBizAppsCommonRelationship_!]!
-  Common_Relationships_ToOrganizationIDArray: [mjBizAppsCommonRelationship_!]!
-
   """Description of the organization purpose and scope"""
   Description: String
 
@@ -25630,21 +25336,16 @@ type mjBizAppsCommonOrganization_ {
   Website: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonContactMethods_OrganizationIDArray: [mjBizAppsCommonContactMethod_!]!
+  mjBizAppsCommonOrganizations_ParentIDArray: [mjBizAppsCommonOrganization_!]!
+  mjBizAppsCommonRelationships_FromOrganizationIDArray: [mjBizAppsCommonRelationship_!]!
+  mjBizAppsCommonRelationships_ToOrganizationIDArray: [mjBizAppsCommonRelationship_!]!
 }
 
 """Individual people, optionally linked to MJ system user accounts"""
 type mjBizAppsCommonPerson_ {
   """Biographical text or notes about this person"""
   Bio: String
-  Committees_ActionItems_AssignedByPersonIDArray: [mjCommitteesActionItem_!]!
-  Committees_ActionItems_AssignedToPersonIDArray: [mjCommitteesActionItem_!]!
-  Committees_AgendaItems_PresenterPersonIDArray: [mjCommitteesAgendaItem_!]!
-  Committees_Artifacts_UploadedByPersonIDArray: [mjCommitteesArtifact_!]!
-  Committees_Attendances_PersonIDArray: [mjCommitteesAttendance_!]!
-  Committees_Memberships_PersonIDArray: [mjCommitteesMembership_!]!
-  Common_ContactMethods_PersonIDArray: [mjBizAppsCommonContactMethod_!]!
-  Common_Relationships_FromPersonIDArray: [mjBizAppsCommonRelationship_!]!
-  Common_Relationships_ToPersonIDArray: [mjBizAppsCommonRelationship_!]!
 
   """Date of birth"""
   DateOfBirth: Timestamp
@@ -25689,6 +25390,9 @@ type mjBizAppsCommonPerson_ {
   Title: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonContactMethods_PersonIDArray: [mjBizAppsCommonContactMethod_!]!
+  mjBizAppsCommonRelationships_FromPersonIDArray: [mjBizAppsCommonRelationship_!]!
+  mjBizAppsCommonRelationships_ToPersonIDArray: [mjBizAppsCommonRelationship_!]!
 }
 
 """
@@ -25699,7 +25403,6 @@ type mjBizAppsCommonRelationshipType_ {
   Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization
   """
   Category: String!
-  Common_Relationships_RelationshipTypeIDArray: [mjBizAppsCommonRelationship_!]!
 
   """Detailed description of this relationship type"""
   Description: String
@@ -25722,6 +25425,7 @@ type mjBizAppsCommonRelationshipType_ {
   ReverseLabel: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
+  mjBizAppsCommonRelationships_RelationshipTypeIDArray: [mjBizAppsCommonRelationship_!]!
 }
 
 """
@@ -25753,444 +25457,6 @@ type mjBizAppsCommonRelationship_ {
   ToOrganization: String
   ToOrganizationID: String
   ToPersonID: String
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Tasks and action items assigned from committees or meetings"""
-type mjCommitteesActionItem_ {
-  AgendaItemID: String
-  AssignedByPersonID: String
-  AssignedToPersonID: String!
-  Committee: String!
-  CommitteeID: String!
-  Committees_Artifacts_ActionItemIDArray: [mjCommitteesArtifact_!]!
-
-  """Timestamp when the action item was completed"""
-  CompletedAt: Timestamp
-
-  """Notes about how the item was completed"""
-  CompletionNotes: String
-
-  """Detailed description of what needs to be done"""
-  Description: String
-
-  """Due date for completion"""
-  DueDate: Timestamp
-  ID: String!
-  MeetingID: String
-
-  """Priority level: Low, Medium, High, Critical"""
-  Priority: String!
-
-  """Current status: Open, InProgress, Blocked, Completed, Cancelled"""
-  Status: String!
-
-  """Title of the action item"""
-  Title: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Structured agenda items for meetings with hierarchy support"""
-type mjCommitteesAgendaItem_ {
-  Committees_ActionItems_AgendaItemIDArray: [mjCommitteesActionItem_!]!
-  Committees_AgendaItems_ParentAgendaItemIDArray: [mjCommitteesAgendaItem_!]!
-  Committees_Artifacts_AgendaItemIDArray: [mjCommitteesArtifact_!]!
-  Committees_Motions_AgendaItemIDArray: [mjCommitteesMotion_!]!
-
-  """Detailed description of the agenda item"""
-  Description: String
-
-  """Estimated duration in minutes"""
-  DurationMinutes: Int
-  ID: String!
-
-  """Type of item: Information, Discussion, Action, Vote, Report, Other"""
-  ItemType: String!
-  MeetingID: String!
-
-  """Discussion notes and outcomes captured during the meeting"""
-  Notes: String
-  ParentAgendaItemID: String
-  PresenterPersonID: String
-
-  """URL to related document for this item"""
-  RelatedDocumentURL: String
-  RootParentAgendaItemID: String
-
-  """Display order within the meeting agenda"""
-  Sequence: Int!
-
-  """Current status: Pending, Discussed, Tabled, Completed, Skipped"""
-  Status: String!
-
-  """Title of the agenda item"""
-  Title: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""
-Categories of committee artifacts with optional extension entity for type-specific fields
-"""
-type mjCommitteesArtifactType_ {
-  Committees_Artifacts_ArtifactTypeIDArray: [mjCommitteesArtifact_!]!
-
-  """Detailed description of this artifact type"""
-  Description: String
-  ExtendedEntity: String
-
-  """
-  Optional reference to an MJ Entity that provides additional fields for this artifact type via a 1:1 extension table
-  """
-  ExtendedEntityID: String
-  ID: String!
-
-  """Font Awesome icon class for UI display"""
-  IconClass: String
-
-  """Display name for the artifact type"""
-  Name: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Links to external documents and files from various providers"""
-type mjCommitteesArtifact_ {
-  ActionItemID: String
-  AgendaItemID: String
-  ArtifactType: String!
-  ArtifactTypeID: String!
-  Committee: String
-  CommitteeID: String
-  Committees_Minutes_ArtifactIDArray: [mjCommitteesMinute_!]!
-
-  """Description of the artifact contents"""
-  Description: String
-
-  """Provider-specific document or file ID"""
-  ExternalID: String
-
-  """File size in bytes"""
-  FileSize: Int
-  ID: String!
-  MeetingID: String
-
-  """MIME type of the file"""
-  MimeType: String
-
-  """Storage provider: GoogleDrive, SharePoint, Box, OneDrive, Dropbox, URL"""
-  Provider: String!
-
-  """Display title for the artifact"""
-  Title: String!
-
-  """Direct URL to access the artifact"""
-  URL: String!
-  UploadedByPersonID: String
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Meeting attendance records for committee members"""
-type mjCommitteesAttendance_ {
-  """Attendance status: Expected, Present, Absent, Excused, Partial"""
-  AttendanceStatus: String!
-  ID: String!
-
-  """Timestamp when the attendee joined the meeting"""
-  JoinedAt: Timestamp
-
-  """Timestamp when the attendee left the meeting"""
-  LeftAt: Timestamp
-  MeetingID: String!
-
-  """Additional notes about attendance"""
-  Notes: String
-  PersonID: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Core committee records with hierarchy support"""
-type mjCommitteesCommittee_ {
-  """URL to the committee charter document"""
-  CharterDocumentURL: String
-  Committees_ActionItems_CommitteeIDArray: [mjCommitteesActionItem_!]!
-  Committees_Artifacts_CommitteeIDArray: [mjCommitteesArtifact_!]!
-  Committees_Committees_ParentCommitteeIDArray: [mjCommitteesCommittee_!]!
-  Committees_Meetings_CommitteeIDArray: [mjCommitteesMeeting_!]!
-  Committees_Memberships_CommitteeIDArray: [mjCommitteesMembership_!]!
-  Committees_Terms_CommitteeIDArray: [mjCommitteesTerm_!]!
-
-  """Detailed description of the committee purpose and scope"""
-  Description: String
-
-  """Date the committee was dissolved, if applicable"""
-  DissolutionDate: Timestamp
-
-  """Date the committee was formed"""
-  FormationDate: Timestamp
-  ID: String!
-
-  """Whether the committee is visible to all users"""
-  IsPublic: Boolean!
-
-  """Brief statement of the committee mission"""
-  MissionStatement: String
-
-  """Official name of the committee"""
-  Name: String!
-  Organization: String
-  OrganizationID: String
-  ParentCommittee: String
-  ParentCommitteeID: String
-  RootParentCommitteeID: String
-
-  """Current status: Active, Inactive, Pending, or Dissolved"""
-  Status: String!
-  Type: String!
-  TypeID: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Committee meeting records with scheduling and video conferencing info"""
-type mjCommitteesMeeting_ {
-  """External calendar event ID for sync purposes"""
-  CalendarEventID: String
-  Committee: String!
-  CommitteeID: String!
-  Committees_ActionItems_MeetingIDArray: [mjCommitteesActionItem_!]!
-  Committees_AgendaItems_MeetingIDArray: [mjCommitteesAgendaItem_!]!
-  Committees_Artifacts_MeetingIDArray: [mjCommitteesArtifact_!]!
-  Committees_Attendances_MeetingIDArray: [mjCommitteesAttendance_!]!
-  Committees_Minutes_ApprovedByMeetingIDArray: [mjCommitteesMinute_!]!
-  Committees_Motions_MeetingIDArray: [mjCommitteesMotion_!]!
-
-  """Detailed description or purpose of the meeting"""
-  Description: String
-
-  """Scheduled end date and time with timezone offset"""
-  EndDateTime: Timestamp
-  ID: String!
-
-  """Physical address or room name for in-person meetings"""
-  LocationText: String
-
-  """Meeting format: Virtual, InPerson, or Hybrid"""
-  LocationType: String!
-
-  """Scheduled start date and time with timezone offset"""
-  StartDateTime: Timestamp!
-
-  """
-  Current status: Draft, Scheduled, InProgress, Completed, Cancelled, Postponed
-  """
-  Status: String!
-
-  """IANA timezone identifier for the meeting"""
-  TimeZone: String!
-
-  """Title of the meeting"""
-  Title: String!
-
-  """URL to the meeting transcript"""
-  TranscriptURL: String
-
-  """URL to join the video meeting"""
-  VideoJoinURL: String
-
-  """External meeting ID from the video provider"""
-  VideoMeetingID: String
-
-  """Video conferencing provider: Zoom, Teams, Meet, etc."""
-  VideoProvider: String
-
-  """URL to the meeting recording after completion"""
-  VideoRecordingURL: String
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Person assignments to committees with roles and terms"""
-type mjCommitteesMembership_ {
-  Committee: String!
-  CommitteeID: String!
-  Committees_Motions_MovedByMembershipIDArray: [mjCommitteesMotion_!]!
-  Committees_Motions_SecondedByMembershipIDArray: [mjCommitteesMotion_!]!
-  Committees_Votes_MembershipIDArray: [mjCommitteesVote_!]!
-
-  """Date the membership ended, if applicable"""
-  EndDate: Timestamp
-
-  """Reason the membership ended: Term ended, Resigned, Removed, etc."""
-  EndReason: String
-  ID: String!
-
-  """Additional notes about this membership"""
-  Notes: String
-  PersonID: String!
-  Role: String!
-  RoleID: String!
-
-  """Date the membership started"""
-  StartDate: Timestamp!
-
-  """Current status: Active, Pending, Ended, or Suspended"""
-  Status: String!
-  Term: String
-  TermID: String
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Extension entity for Minutes artifacts with approval tracking"""
-type mjCommitteesMinute_ {
-  """Current approval status: Draft, PendingApproval, Approved, Rejected"""
-  ApprovalStatus: String!
-
-  """Timestamp when the minutes were approved"""
-  ApprovedAt: Timestamp
-
-  """
-  Reference to the meeting at which these minutes were approved (typically the next meeting)
-  """
-  ApprovedByMeetingID: String
-  ArtifactID: String!
-  ID: String!
-
-  """Additional notes about the minutes"""
-  Notes: String
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Formal motions put to vote during committee meetings"""
-type mjCommitteesMotion_ {
-  """Number of Abstain votes"""
-  AbstainCount: Int
-  AgendaItemID: String
-  Committees_Votes_MotionIDArray: [mjCommitteesVote_!]!
-
-  """Full text or description of the motion"""
-  Description: String
-  ID: String!
-  MeetingID: String!
-
-  """The committee member who made the motion"""
-  MovedByMembershipID: String
-
-  """Number of No votes"""
-  NoCount: Int
-
-  """Additional notes about the motion or vote"""
-  Notes: String
-
-  """Outcome of the vote: Pending, Passed, Failed, Tabled, Withdrawn"""
-  Result: String!
-
-  """Human-readable vote tally, e.g. 7-2-1 or Passed unanimously"""
-  ResultSummary: String
-
-  """The committee member who seconded the motion"""
-  SecondedByMembershipID: String
-
-  """Display order when multiple motions exist for the same agenda item"""
-  Sequence: Int!
-
-  """Title of the motion"""
-  Title: String!
-
-  """Number of Yes votes"""
-  YesCount: Int
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Roles that members can hold on committees"""
-type mjCommitteesRole_ {
-  Committees_Memberships_RoleIDArray: [mjCommitteesMembership_!]!
-
-  """JSON object defining default permissions for this role"""
-  DefaultPermissionsJSON: String
-
-  """Detailed description of role responsibilities"""
-  Description: String
-  ID: String!
-
-  """Whether this is an officer role like Chair or Secretary"""
-  IsOfficer: Boolean!
-
-  """Whether members in this role can vote"""
-  IsVotingRole: Boolean!
-
-  """Display name for the role"""
-  Name: String!
-
-  """Display order for sorting roles"""
-  Sequence: Int!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Time periods for committee membership cycles"""
-type mjCommitteesTerm_ {
-  Committee: String!
-  CommitteeID: String!
-  Committees_Memberships_TermIDArray: [mjCommitteesMembership_!]!
-
-  """End date of the term"""
-  EndDate: Timestamp
-  ID: String!
-
-  """Display name for the term, e.g. 2025-2026"""
-  Name: String!
-
-  """Start date of the term"""
-  StartDate: Timestamp!
-
-  """Current status: Active, Upcoming, or Completed"""
-  Status: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Categories of committees such as Board, Standing, Ad Hoc, Workgroup"""
-type mjCommitteesType_ {
-  Committees_Committees_TypeIDArray: [mjCommitteesCommittee_!]!
-
-  """Default term length in months for committees of this type"""
-  DefaultTermMonths: Int
-
-  """Detailed description of this committee type"""
-  Description: String
-  ID: String!
-
-  """Font Awesome icon class for UI display"""
-  IconClass: String
-
-  """Whether this type is for standards development committees"""
-  IsStandards: Boolean!
-
-  """Display name for the committee type"""
-  Name: String!
-  _mj__CreatedAt: Timestamp!
-  _mj__UpdatedAt: Timestamp!
-}
-
-"""Individual vote records for committee motions"""
-type mjCommitteesVote_ {
-  ID: String!
-  MembershipID: String!
-  MotionID: String!
-
-  """Optional notes explaining the vote"""
-  Notes: String
-
-  """The vote cast: Yes, No, Abstain, or Absent"""
-  VoteValue: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }

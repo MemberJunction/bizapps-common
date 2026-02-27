@@ -1,0 +1,44 @@
+[
+  {
+    "fields": {
+      "Name": "Home",
+      "Description": "Primary residential address",
+      "DefaultRank": 10
+    }
+  },
+  {
+    "fields": {
+      "Name": "Work",
+      "Description": "Business or office address",
+      "DefaultRank": 20
+    }
+  },
+  {
+    "fields": {
+      "Name": "Mailing",
+      "Description": "Preferred address for receiving mail and correspondence",
+      "DefaultRank": 30
+    }
+  },
+  {
+    "fields": {
+      "Name": "Billing",
+      "Description": "Address used for invoices and financial correspondence",
+      "DefaultRank": 40
+    }
+  },
+  {
+    "fields": {
+      "Name": "Shipping",
+      "Description": "Address for physical deliveries",
+      "DefaultRank": 50
+    }
+  },
+  {
+    "fields": {
+      "Name": "Legal",
+      "Description": "Registered legal or statutory address",
+      "DefaultRank": 60
+    }
+  }
+]

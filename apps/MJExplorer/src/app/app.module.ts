@@ -21,8 +21,8 @@ import { MJExplorerAppModule } from '@memberjunction/ng-explorer-app';
 // Import pre-built MJ class registrations manifest (covers all @memberjunction/* packages)
 import {CLASS_REGISTRATIONS} from '@memberjunction/ng-bootstrap';
 
-// Import supplemental manifest for user-defined classes (generated at prestart with --exclude-packages @memberjunction)
-import {CLASS_REGISTRATIONS as LOCAL_CLASSES} from './generated/class-registrations-manifest';
+// Import supplemental manifest for BizApps Common classes
+import {CLASS_REGISTRATIONS as LOCAL_CLASSES} from '@memberjunction/bizapps-common-ng';
 
 // static code path builder
 const combinedClasses = [...CLASS_REGISTRATIONS, ...LOCAL_CLASSES];
@@ -37,7 +37,7 @@ import { InteractionType } from '@azure/msal-browser';
 // Project stuff
 //***********************************************************
 import { AppComponent } from './app.component';
-import { GeneratedFormsModule } from './generated/generated-forms.module';
+import { GeneratedFormsModule } from '@memberjunction/bizapps-common-ng';
 import { environment } from '../environments/environment';
 import { NavigationItemDemoComponent } from './demo/navigation-item.component';
 import { HelloDashboardComponent } from './demo/hello-dashboard/hello-dashboard.component';

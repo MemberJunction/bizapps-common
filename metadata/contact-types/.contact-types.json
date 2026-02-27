@@ -1,0 +1,58 @@
+[
+  {
+    "fields": {
+      "Name": "Email",
+      "Description": "Email address",
+      "IconClass": "fa-solid fa-envelope"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Mobile Phone",
+      "Description": "Mobile or cell phone number",
+      "IconClass": "fa-solid fa-mobile-screen"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Work Phone",
+      "Description": "Business or office phone number",
+      "IconClass": "fa-solid fa-phone-office"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Home Phone",
+      "Description": "Residential phone number",
+      "IconClass": "fa-solid fa-phone"
+    }
+  },
+  {
+    "fields": {
+      "Name": "LinkedIn",
+      "Description": "LinkedIn profile URL",
+      "IconClass": "fa-brands fa-linkedin"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Twitter / X",
+      "Description": "Twitter / X profile URL or handle",
+      "IconClass": "fa-brands fa-x-twitter"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Website",
+      "Description": "Personal or professional website URL",
+      "IconClass": "fa-solid fa-globe"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Fax",
+      "Description": "Fax number",
+      "IconClass": "fa-solid fa-fax"
+    }
+  }
+]

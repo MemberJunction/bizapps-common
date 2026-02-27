@@ -1,0 +1,58 @@
+[
+  {
+    "fields": {
+      "Name": "Corporation",
+      "Description": "Incorporated business entity (C-Corp, S-Corp)",
+      "IconClass": "fa-solid fa-building"
+    }
+  },
+  {
+    "fields": {
+      "Name": "LLC",
+      "Description": "Limited liability company",
+      "IconClass": "fa-solid fa-briefcase"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Non-Profit",
+      "Description": "Tax-exempt non-profit organization (501(c)(3), etc.)",
+      "IconClass": "fa-solid fa-hand-holding-heart"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Government",
+      "Description": "Government agency or department",
+      "IconClass": "fa-solid fa-landmark"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Partnership",
+      "Description": "General or limited partnership",
+      "IconClass": "fa-solid fa-handshake"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Sole Proprietorship",
+      "Description": "Unincorporated business owned by a single individual",
+      "IconClass": "fa-solid fa-user-tie"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Association",
+      "Description": "Professional or trade association",
+      "IconClass": "fa-solid fa-people-group"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Educational Institution",
+      "Description": "School, college, university, or training organization",
+      "IconClass": "fa-solid fa-graduation-cap"
+    }
+  }
+]

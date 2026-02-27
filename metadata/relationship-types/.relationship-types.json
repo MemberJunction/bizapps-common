@@ -1,0 +1,142 @@
+[
+  {
+    "fields": {
+      "Name": "Spouse",
+      "Description": "Married or domestic partner relationship",
+      "Category": "PersonToPerson",
+      "IsDirectional": false,
+      "ForwardLabel": "is spouse of",
+      "ReverseLabel": "is spouse of"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Parent / Child",
+      "Description": "Parent-child family relationship",
+      "Category": "PersonToPerson",
+      "IsDirectional": true,
+      "ForwardLabel": "is parent of",
+      "ReverseLabel": "is child of"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Sibling",
+      "Description": "Brother or sister relationship",
+      "Category": "PersonToPerson",
+      "IsDirectional": false,
+      "ForwardLabel": "is sibling of",
+      "ReverseLabel": "is sibling of"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Friend",
+      "Description": "Personal friendship",
+      "Category": "PersonToPerson",
+      "IsDirectional": false,
+      "ForwardLabel": "is friend of",
+      "ReverseLabel": "is friend of"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Employee",
+      "Description": "Employment relationship between a person and an organization",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is employee of",
+      "ReverseLabel": "employs"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Board Member",
+      "Description": "Person serves on the board of directors of an organization",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is board member of",
+      "ReverseLabel": "has board member"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Member",
+      "Description": "Person is a member of an organization or association",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is member of",
+      "ReverseLabel": "has member"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Volunteer",
+      "Description": "Person volunteers for an organization",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "volunteers for",
+      "ReverseLabel": "has volunteer"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Customer",
+      "Description": "Person is a customer or client of an organization",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is customer of",
+      "ReverseLabel": "has customer"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Consultant",
+      "Description": "Person provides consulting services to an organization",
+      "Category": "PersonToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "consults for",
+      "ReverseLabel": "has consultant"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Subsidiary",
+      "Description": "One organization is a subsidiary or division of another",
+      "Category": "OrganizationToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is subsidiary of",
+      "ReverseLabel": "has subsidiary"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Partner",
+      "Description": "Strategic or business partnership between organizations",
+      "Category": "OrganizationToOrganization",
+      "IsDirectional": false,
+      "ForwardLabel": "is partner of",
+      "ReverseLabel": "is partner of"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Vendor",
+      "Description": "One organization supplies goods or services to another",
+      "Category": "OrganizationToOrganization",
+      "IsDirectional": true,
+      "ForwardLabel": "is vendor to",
+      "ReverseLabel": "has vendor"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Affiliate",
+      "Description": "Formal affiliation between two organizations",
+      "Category": "OrganizationToOrganization",
+      "IsDirectional": false,
+      "ForwardLabel": "is affiliate of",
+      "ReverseLabel": "is affiliate of"
+    }
+  }
+]

@@ -1,9 +1,9 @@
 {
-  "entity": "MJ: Schema Info",
+  "entity": "Common: Relationship Types",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,
-    "newFileName": ".schema-info.json",
+    "newFileName": ".relationship-types.json",
     "appendRecordsToExistingFile": true,
     "updateExistingRecords": true,
     "ignoreNullFields": true,

@@ -4,7 +4,11 @@
     "autoCreateMissingRecords": true
   },
   "directoryOrder": [
-    "schema-info" 
+    "schema-info",
+    "address-types",
+    "contact-types",
+    "organization-types",
+    "relationship-types"
   ],
   "emitSyncNotes": false
 }
