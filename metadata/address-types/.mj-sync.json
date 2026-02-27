@@ -1,5 +1,5 @@
 {
-  "entity": "Common: Address Types",
+  "entity": "MJ.BizApps.Common: Address Types",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,

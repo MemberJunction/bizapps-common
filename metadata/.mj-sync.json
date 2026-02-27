@@ -8,7 +8,15 @@
     "address-types",
     "contact-types",
     "organization-types",
-    "relationship-types"
+    "relationship-types",
+    "entities"
   ],
+  "sqlLogging": {
+    "enabled": true,
+    "outputDirectory": "./sql_logging",
+    "filterPatterns": ["*spCreateAIPromptRun*", "*spUpdateAIPromptRun*"],
+    "filterType": "exclude",
+    "formatAsMigration": false
+  },
   "emitSyncNotes": false
 }

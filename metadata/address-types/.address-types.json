@@ -3,42 +3,90 @@
     "fields": {
       "Name": "Home",
       "Description": "Primary residential address",
+      "IconClass": "fa-solid fa-house",
       "DefaultRank": 10
+    },
+    "primaryKey": {
+      "ID": "49183F91-F101-48F6-B2BE-AEC550B2CA0E"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.928Z",
+      "checksum": "4a72c33f483adc73f45ba82610d7fa64671f05223a48352919277e2a2e1131cf"
     }
   },
   {
     "fields": {
       "Name": "Work",
       "Description": "Business or office address",
+      "IconClass": "fa-solid fa-building",
       "DefaultRank": 20
+    },
+    "primaryKey": {
+      "ID": "0EFFA181-179B-4B68-ACC8-A57D55C4D73D"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.942Z",
+      "checksum": "650bd405878323abc7bc785317458d738613c80fec40ee53191e03c511222c40"
     }
   },
   {
     "fields": {
       "Name": "Mailing",
       "Description": "Preferred address for receiving mail and correspondence",
+      "IconClass": "fa-solid fa-mailbox",
       "DefaultRank": 30
+    },
+    "primaryKey": {
+      "ID": "964C05C1-C947-467B-97B9-A7495BDDB7B0"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.956Z",
+      "checksum": "89bb42c9e262f1bb31e3155695dfb02e1923fb89beab338199302e3cb18f9d85"
     }
   },
   {
     "fields": {
       "Name": "Billing",
       "Description": "Address used for invoices and financial correspondence",
+      "IconClass": "fa-solid fa-file-invoice-dollar",
       "DefaultRank": 40
+    },
+    "primaryKey": {
+      "ID": "E2C28836-F2C2-4590-A519-BCAB0E864974"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.971Z",
+      "checksum": "d53bfbe139dcb3f28af247906c20e9908b70f2337b3ef792ec79edda9870e495"
     }
   },
   {
     "fields": {
       "Name": "Shipping",
       "Description": "Address for physical deliveries",
+      "IconClass": "fa-solid fa-truck",
       "DefaultRank": 50
+    },
+    "primaryKey": {
+      "ID": "C466C5B0-35AE-46D6-B95E-88823E2E7EE5"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.986Z",
+      "checksum": "3c8f3f0141c011ab7c18d52420e774c32069199645c2a4096ae74bec0049b59f"
     }
   },
   {
     "fields": {
       "Name": "Legal",
       "Description": "Registered legal or statutory address",
+      "IconClass": "fa-solid fa-scale-balanced",
       "DefaultRank": 60
+    },
+    "primaryKey": {
+      "ID": "4D1E1A1A-1CD1-4069-BF1E-198F838A0DFF"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:45.999Z",
+      "checksum": "f17a4b10735ee8b1f6524cc3368c18e8c7c9d093a21a69f5c508a5d0cba5b98e"
     }
   }
 ]

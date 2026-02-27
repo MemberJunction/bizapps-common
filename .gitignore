@@ -45,3 +45,6 @@ SQL Scripts/generated/.gitkeep
 SQL Scripts/utilities/MJ Metadata Wipe Out - CAREFUL.sql
 report.html
 report.json
+
+
+metadata/sql_logging

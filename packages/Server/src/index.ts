@@ -7,8 +7,8 @@
  */
 
 // Import entity and action packages to trigger @RegisterClass decorators
-import '@memberjunction/bizapps-common-entities';
-import '@memberjunction/bizapps-common-actions';
+import '@mj-biz-apps/common-entities';
+import '@mj-biz-apps/common-actions';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';

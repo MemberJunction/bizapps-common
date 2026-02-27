@@ -22,6 +22,8 @@ module.exports = {
    * Output paths for code generation
    * These are specific to this distribution's directory structure
    */
+  entityPackageName: '@mj-biz-apps/common-entities',
+
   output: [
     { type: 'SQL', directory: './SQL Scripts/generated', appendOutputCode: true },
     {

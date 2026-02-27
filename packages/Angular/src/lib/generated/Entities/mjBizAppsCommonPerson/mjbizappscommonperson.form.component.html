@@ -8,11 +8,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Identity & Profile Section -->
+    <!-- Personal Identity Section -->
     <mj-collapsible-panel
-        SectionKey="identityProfile"
-        SectionName="Identity & Profile"
-        Icon="fa fa-id-card"
+        SectionKey="personalIdentity"
+        SectionName="Personal Identity"
+        Icon="fa fa-user"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -82,28 +82,19 @@
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
-            FieldName="PhotoURL"
+            FieldName="DisplayName"
             Type="textbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-            LinkType="URL"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="Bio"
-            Type="textarea"
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
 
     </mj-collapsible-panel>
 
-    <!-- Contact & Professional Section -->
+    <!-- Professional and Profile Section -->
     <mj-collapsible-panel
-        SectionKey="contactProfessional"
-        SectionName="Contact & Professional"
-        Icon="fa fa-address-book"
+        SectionKey="professionalAndProfile"
+        SectionName="Professional and Profile"
+        Icon="fa fa-info-circle"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -131,14 +122,72 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PhotoURL"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+            LinkType="URL"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="Bio"
+            Type="textarea"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryEmail"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+            LinkType="Email"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryPhone"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="CurrentOrganizationID"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="CurrentOrganizationName"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="CurrentJobTitle"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
 
     </mj-collapsible-panel>
 
-    <!-- Account Management Section -->
+    <!-- Account and Status Section -->
     <mj-collapsible-panel
-        SectionKey="accountManagement"
-        SectionName="Account Management"
-        Icon="fa fa-user-cog"
+        SectionKey="accountAndStatus"
+        SectionName="Account and Status"
+        Icon="fa fa-flag"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -161,11 +210,93 @@
 
     </mj-collapsible-panel>
 
+    <!-- Primary Address Section -->
+    <mj-collapsible-panel
+        SectionKey="primaryAddress"
+        SectionName="Primary Address"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLine1"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLine2"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressCity"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressState"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressPostalCode"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressCountry"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLatitude"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLongitude"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressType"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
     <!-- System Metadata Section -->
     <mj-collapsible-panel
         SectionKey="systemMetadata"
         SectionName="System Metadata"
-        Icon="fa fa-database"
+        Icon="fa fa-cog"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -191,75 +322,75 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Common: Contact Methods Section -->
+    <!-- MJ.BizApps.Common: Contact Methods Section -->
     <mj-collapsible-panel
-        SectionKey="commonContactMethods"
-        SectionName="Common: Contact Methods"
+        SectionKey="mJBizAppsCommonContactMethods"
+        SectionName="MJ.BizApps.Common: Contact Methods"
         Icon="fa fa-address-book"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonContactMethods')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonContactMethods')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Contact Methods','PersonID')"
-                [NewRecordValues]="NewRecordValues('Common: Contact Methods')"
-                [AllowLoad]="IsSectionExpanded('commonContactMethods')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Contact Methods','PersonID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Contact Methods')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonContactMethods')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonContactMethods', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonContactMethods', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
         }
     </mj-collapsible-panel>
 
-    <!-- Common: Relationships Section -->
+    <!-- MJ.BizApps.Common: Relationships Section -->
     <mj-collapsible-panel
-        SectionKey="commonRelationships"
-        SectionName="Common: Relationships"
-        Icon="fa fa-project-diagram"
+        SectionKey="mJBizAppsCommonRelationships"
+        SectionName="MJ.BizApps.Common: Relationships"
+        Icon="fa fa-handshake"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonRelationships')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonRelationships')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Relationships','ToPersonID')"
-                [NewRecordValues]="NewRecordValues('Common: Relationships')"
-                [AllowLoad]="IsSectionExpanded('commonRelationships')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Relationships','ToPersonID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Relationships')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonRelationships')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonRelationships', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonRelationships', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
         }
     </mj-collapsible-panel>
 
-    <!-- Common: Relationships Section -->
+    <!-- MJ.BizApps.Common: Relationships Section -->
     <mj-collapsible-panel
-        SectionKey="commonRelationships"
-        SectionName="Common: Relationships"
-        Icon="fa fa-project-diagram"
+        SectionKey="mJBizAppsCommonRelationships"
+        SectionName="MJ.BizApps.Common: Relationships"
+        Icon="fa fa-handshake"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonRelationships')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonRelationships')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Relationships','FromPersonID')"
-                [NewRecordValues]="NewRecordValues('Common: Relationships')"
-                [AllowLoad]="IsSectionExpanded('commonRelationships')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Relationships','FromPersonID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Relationships')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonRelationships')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonRelationships', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonRelationships', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

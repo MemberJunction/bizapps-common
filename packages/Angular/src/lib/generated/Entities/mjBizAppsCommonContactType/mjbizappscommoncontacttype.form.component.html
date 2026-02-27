@@ -8,11 +8,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Contact Type Details Section -->
+    <!-- Type Definition Section -->
     <mj-collapsible-panel
-        SectionKey="contactTypeDetails"
-        SectionName="Contact Type Details"
-        Icon="fa fa-id-card"
+        SectionKey="typeDefinition"
+        SectionName="Type Definition"
+        Icon="fa fa-tag"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -31,11 +31,37 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- UI Configuration Section -->
+    <mj-collapsible-panel
+        SectionKey="uIConfiguration"
+        SectionName="UI Configuration"
+        Icon="fa fa-desktop"
+        [Form]="this"
+        [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
             FieldName="IconClass"
             Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="DisplayRank"
+            Type="number"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="IsActive"
+            Type="checkbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
@@ -72,25 +98,25 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Common: Contact Methods Section -->
+    <!-- MJ.BizApps.Common: Contact Methods Section -->
     <mj-collapsible-panel
-        SectionKey="commonContactMethods"
-        SectionName="Common: Contact Methods"
+        SectionKey="mJBizAppsCommonContactMethods"
+        SectionName="MJ.BizApps.Common: Contact Methods"
         Icon="fa fa-address-book"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonContactMethods')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonContactMethods')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Contact Methods','ContactTypeID')"
-                [NewRecordValues]="NewRecordValues('Common: Contact Methods')"
-                [AllowLoad]="IsSectionExpanded('commonContactMethods')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Contact Methods','ContactTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Contact Methods')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonContactMethods')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonContactMethods', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonContactMethods', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

@@ -1,9 +1,9 @@
 {
-  "entity": "MJ.BizApps.Common: Relationship Types",
+  "entity": "MJ: Entities",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,
-    "newFileName": ".relationship-types.json",
+    "newFileName": ".entities.json",
     "appendRecordsToExistingFile": true,
     "updateExistingRecords": true,
     "ignoreNullFields": true,

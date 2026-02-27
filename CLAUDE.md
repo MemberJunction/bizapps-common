@@ -9,12 +9,15 @@ This is a **shared library repository** built on top of the [MemberJunction](htt
 
 ```
 bizapps-common/
+  mj-app.json          - MJ Open App manifest
   apps/
-    MJAPI/         - GraphQL API server (port 4101)
-    MJExplorer/    - Angular UI application (port 4301)
+    MJAPI/             - GraphQL API server (port 4101)
+    MJExplorer/        - Angular UI application (port 4301)
   packages/
-    GeneratedEntities/  - CodeGen-generated entity subclasses
-    GeneratedActions/   - CodeGen-generated action subclasses
+    Entities/          - @mj-biz-apps/common-entities (CodeGen-generated entity subclasses)
+    Actions/           - @mj-biz-apps/common-actions (CodeGen-generated action subclasses)
+    Server/            - @mj-biz-apps/common-server (server bootstrap + GraphQL resolvers)
+    Angular/           - @mj-biz-apps/common-ng (Angular bootstrap + form components)
 ```
 
 ---
@@ -274,8 +277,10 @@ get myInput(): string | null { return this._myInput; }
 ## CodeGen
 
 This repo uses MemberJunction's CodeGen system to generate entity and action subclasses. The generated code lives in:
-- `packages/GeneratedEntities/` - Entity TypeScript classes with Zod schemas
-- `packages/GeneratedActions/` - Action TypeScript classes
+- `packages/Entities/` - Entity TypeScript classes with Zod schemas
+- `packages/Actions/` - Action TypeScript classes
+- `packages/Server/src/generated/` - GraphQL resolvers and class registrations
+- `packages/Angular/src/lib/generated/` - Angular form components and module
 
 **Key rules:**
 - Never manually edit files in generated directories - CodeGen will overwrite them
@@ -299,7 +304,7 @@ This repo uses MemberJunction's CodeGen system to generate entity and action sub
 - **Full Stack**: Compound configuration running both MJAPI + MJExplorer
 
 ### Source Map Scoping
-Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/GeneratedEntities/**`, `packages/GeneratedActions/**`). Third-party packages and node_modules are excluded to avoid noise.
+Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/Entities/**`, `packages/Actions/**`, `packages/Server/**`, `packages/Angular/**`). Third-party packages and node_modules are excluded to avoid noise.
 
 ---
 

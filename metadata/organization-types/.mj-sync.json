@@ -1,5 +1,5 @@
 {
-  "entity": "Common: Organization Types",
+  "entity": "MJ.BizApps.Common: Organization Types",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,

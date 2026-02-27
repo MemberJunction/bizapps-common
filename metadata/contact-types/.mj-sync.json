@@ -1,5 +1,5 @@
 {
-  "entity": "Common: Contact Types",
+  "entity": "MJ.BizApps.Common: Contact Types",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,

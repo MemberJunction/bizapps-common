@@ -3,56 +3,120 @@
     "fields": {
       "Name": "Email",
       "Description": "Email address",
-      "IconClass": "fa-solid fa-envelope"
+      "IconClass": "fa-solid fa-envelope",
+      "DisplayRank": 10
+    },
+    "primaryKey": {
+      "ID": "FB4D3737-8479-44E5-AF91-2DB63311D293"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.051Z",
+      "checksum": "0453a115c2c1e6a571b3e406ae83dfed73bdca78d9aa0dbd388db9b4084c293b"
     }
   },
   {
     "fields": {
       "Name": "Mobile Phone",
       "Description": "Mobile or cell phone number",
-      "IconClass": "fa-solid fa-mobile-screen"
+      "IconClass": "fa-solid fa-mobile-screen",
+      "DisplayRank": 20
+    },
+    "primaryKey": {
+      "ID": "96421246-0F8F-4CDB-A5C5-BA6B190C1AFE"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.065Z",
+      "checksum": "beb2816fe61e1604b9f3563ac1ba2019f58b463322059c39f78e5380c7430c10"
     }
   },
   {
     "fields": {
       "Name": "Work Phone",
       "Description": "Business or office phone number",
-      "IconClass": "fa-solid fa-phone-office"
+      "IconClass": "fa-solid fa-phone-office",
+      "DisplayRank": 30
+    },
+    "primaryKey": {
+      "ID": "BCDA98AC-06A4-40FC-A1CC-E44BB783FBC9"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.081Z",
+      "checksum": "346bbcaaba076edae0e178b7e6fede71eaa88387a671319eb6507378ba7228a5"
     }
   },
   {
     "fields": {
       "Name": "Home Phone",
       "Description": "Residential phone number",
-      "IconClass": "fa-solid fa-phone"
+      "IconClass": "fa-solid fa-phone",
+      "DisplayRank": 40
+    },
+    "primaryKey": {
+      "ID": "C3BA9432-8D05-4AFE-BF6D-61F976A466E6"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.095Z",
+      "checksum": "4d66483eb86db1204204d7fcaa6ba1bc02127db74afd53ca87b5c550c096fe99"
     }
   },
   {
     "fields": {
       "Name": "LinkedIn",
       "Description": "LinkedIn profile URL",
-      "IconClass": "fa-brands fa-linkedin"
+      "IconClass": "fa-brands fa-linkedin",
+      "DisplayRank": 50
+    },
+    "primaryKey": {
+      "ID": "FDBFF502-CE06-456B-BCC3-8A2C23D16D45"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.109Z",
+      "checksum": "e28ec51c7c43c4ce39aad46eedd1b926b45f5c2154f3fc6a2598dadc15fd00e6"
     }
   },
   {
     "fields": {
       "Name": "Twitter / X",
       "Description": "Twitter / X profile URL or handle",
-      "IconClass": "fa-brands fa-x-twitter"
+      "IconClass": "fa-brands fa-x-twitter",
+      "DisplayRank": 60
+    },
+    "primaryKey": {
+      "ID": "02A126F9-ED1B-4BBF-8479-8B10CC916150"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.123Z",
+      "checksum": "8c3cb4f15c2119acb0795e9eedd762007744e1772e9acd13f1369611501b41d1"
     }
   },
   {
     "fields": {
       "Name": "Website",
       "Description": "Personal or professional website URL",
-      "IconClass": "fa-solid fa-globe"
+      "IconClass": "fa-solid fa-globe",
+      "DisplayRank": 70
+    },
+    "primaryKey": {
+      "ID": "F2DBF3EA-7ACF-4725-92D3-AB630B613293"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.138Z",
+      "checksum": "9f87f8d7006b62462fe02de7ae98111fbcbd6f70666356c491fac8bd088d1604"
     }
   },
   {
     "fields": {
       "Name": "Fax",
       "Description": "Fax number",
-      "IconClass": "fa-solid fa-fax"
+      "IconClass": "fa-solid fa-fax",
+      "DisplayRank": 80
+    },
+    "primaryKey": {
+      "ID": "A33D19DB-27FD-400C-A9C9-F3D3C4A12E8F"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.152Z",
+      "checksum": "c2190dd7b5652a16023b8d8bd05718510f9d9cafb0a376b13efcc9d0a1ea1ce4"
     }
   }
 ]

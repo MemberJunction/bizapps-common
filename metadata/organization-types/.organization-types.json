@@ -3,56 +3,120 @@
     "fields": {
       "Name": "Corporation",
       "Description": "Incorporated business entity (C-Corp, S-Corp)",
-      "IconClass": "fa-solid fa-building"
+      "IconClass": "fa-solid fa-building",
+      "DisplayRank": 10
+    },
+    "primaryKey": {
+      "ID": "A8DB7343-DCC9-44D1-B99F-9E21024C3C2E"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.197Z",
+      "checksum": "bc13c1b895f5cb37b1ae9a2fb5ba1e10db395ccdc17e0a6979b96c1b03032c34"
     }
   },
   {
     "fields": {
       "Name": "LLC",
       "Description": "Limited liability company",
-      "IconClass": "fa-solid fa-briefcase"
+      "IconClass": "fa-solid fa-briefcase",
+      "DisplayRank": 20
+    },
+    "primaryKey": {
+      "ID": "288B017D-60A4-48A7-A845-EF30B99BDBEF"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.213Z",
+      "checksum": "690863b7cdf87e5bd578c8cd2ca948c0fcc4897a788b6e07e3098be110ba555e"
     }
   },
   {
     "fields": {
       "Name": "Non-Profit",
       "Description": "Tax-exempt non-profit organization (501(c)(3), etc.)",
-      "IconClass": "fa-solid fa-hand-holding-heart"
+      "IconClass": "fa-solid fa-hand-holding-heart",
+      "DisplayRank": 30
+    },
+    "primaryKey": {
+      "ID": "BAAA53F4-A8AA-4EAA-B04E-1BA6F964B341"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.229Z",
+      "checksum": "efbfde19b9d1a7ab54f3a851911cbafba9328e4be75f8a7a4968fc6b909597c1"
     }
   },
   {
     "fields": {
       "Name": "Government",
       "Description": "Government agency or department",
-      "IconClass": "fa-solid fa-landmark"
+      "IconClass": "fa-solid fa-landmark",
+      "DisplayRank": 40
+    },
+    "primaryKey": {
+      "ID": "1E61230B-0F48-458A-811B-66C9CF6B688E"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.248Z",
+      "checksum": "e5531e5b6c74b2d74f32414d51e1e32000abe297a9700e2b45a56721da5f04c1"
     }
   },
   {
     "fields": {
       "Name": "Partnership",
       "Description": "General or limited partnership",
-      "IconClass": "fa-solid fa-handshake"
+      "IconClass": "fa-solid fa-handshake",
+      "DisplayRank": 50
+    },
+    "primaryKey": {
+      "ID": "5CAB6265-CB87-4269-A321-2473160BD625"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.265Z",
+      "checksum": "0d61ffbeb4d950af0eb901acd5c09fb04896eefe443a13a8f9320a7cb2e531bc"
     }
   },
   {
     "fields": {
       "Name": "Sole Proprietorship",
       "Description": "Unincorporated business owned by a single individual",
-      "IconClass": "fa-solid fa-user-tie"
+      "IconClass": "fa-solid fa-user-tie",
+      "DisplayRank": 60
+    },
+    "primaryKey": {
+      "ID": "042C63AF-93EB-4BB4-A469-F3C209F8936E"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.281Z",
+      "checksum": "6a5530d956e933443f8c47c5b94d564cb88cbd41bb53717ace225e2f5bdf3e0f"
     }
   },
   {
     "fields": {
       "Name": "Association",
       "Description": "Professional or trade association",
-      "IconClass": "fa-solid fa-people-group"
+      "IconClass": "fa-solid fa-people-group",
+      "DisplayRank": 70
+    },
+    "primaryKey": {
+      "ID": "7D6D1763-3198-42B2-A23C-F0FF76DAD8D2"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.296Z",
+      "checksum": "21ce98da39f2536f428faaf49ac39a84afac43274f07faab2c2334d4e0c58728"
     }
   },
   {
     "fields": {
       "Name": "Educational Institution",
       "Description": "School, college, university, or training organization",
-      "IconClass": "fa-solid fa-graduation-cap"
+      "IconClass": "fa-solid fa-graduation-cap",
+      "DisplayRank": 80
+    },
+    "primaryKey": {
+      "ID": "4BE0D87B-EFCB-447D-9410-FEF8EED23BC8"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.309Z",
+      "checksum": "11d95b629e3184ebb44983f856f4c41c6944462712f3d32914ef4157b26522de"
     }
   }
 ]

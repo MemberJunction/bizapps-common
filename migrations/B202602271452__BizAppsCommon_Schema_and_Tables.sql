@@ -13,6 +13,8 @@ CREATE TABLE __mj_BizAppsCommon.OrganizationType (
     Name NVARCHAR(100) NOT NULL,
     Description NVARCHAR(MAX),
     IconClass NVARCHAR(100),
+    DisplayRank INT NOT NULL DEFAULT 100,
+    IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_OrganizationType PRIMARY KEY (ID),
     CONSTRAINT UQ_OrganizationType_Name UNIQUE (Name)
 );
@@ -25,7 +27,9 @@ CREATE TABLE __mj_BizAppsCommon.AddressType (
     ID UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
     Name NVARCHAR(100) NOT NULL,
     Description NVARCHAR(MAX),
+    IconClass NVARCHAR(100),
     DefaultRank INT NOT NULL DEFAULT 100,
+    IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_AddressType PRIMARY KEY (ID),
     CONSTRAINT UQ_AddressType_Name UNIQUE (Name)
 );
@@ -39,6 +43,8 @@ CREATE TABLE __mj_BizAppsCommon.ContactType (
     Name NVARCHAR(100) NOT NULL,
     Description NVARCHAR(MAX),
     IconClass NVARCHAR(100),
+    DisplayRank INT NOT NULL DEFAULT 100,
+    IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_ContactType PRIMARY KEY (ID),
     CONSTRAINT UQ_ContactType_Name UNIQUE (Name)
 );
@@ -55,6 +61,7 @@ CREATE TABLE __mj_BizAppsCommon.RelationshipType (
     IsDirectional BIT NOT NULL DEFAULT 1,
     ForwardLabel NVARCHAR(100),
     ReverseLabel NVARCHAR(100),
+    IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_RelationshipType PRIMARY KEY (ID),
     CONSTRAINT UQ_RelationshipType_Name UNIQUE (Name),
     CONSTRAINT CK_RelationshipType_Category CHECK (Category IN ('PersonToPerson', 'PersonToOrganization', 'OrganizationToOrganization'))
@@ -162,7 +169,10 @@ CREATE TABLE __mj_BizAppsCommon.ContactMethod (
     CONSTRAINT FK_ContactMethod_Person FOREIGN KEY (PersonID) REFERENCES __mj_BizAppsCommon.Person(ID),
     CONSTRAINT FK_ContactMethod_Organization FOREIGN KEY (OrganizationID) REFERENCES __mj_BizAppsCommon.Organization(ID),
     CONSTRAINT FK_ContactMethod_ContactType FOREIGN KEY (ContactTypeID) REFERENCES __mj_BizAppsCommon.ContactType(ID),
-    CONSTRAINT CK_ContactMethod_Owner CHECK (PersonID IS NOT NULL OR OrganizationID IS NOT NULL)
+    CONSTRAINT CK_ContactMethod_Owner CHECK (
+        (PersonID IS NOT NULL AND OrganizationID IS NULL) OR
+        (PersonID IS NULL AND OrganizationID IS NOT NULL)
+    )
 );
 GO
 
@@ -200,6 +210,46 @@ CREATE TABLE __mj_BizAppsCommon.Relationship (
 GO
 
 ---------------------------------------------------------------------------
+-- INDEXES: Unique filtered index on Person.LinkedUserID
+---------------------------------------------------------------------------
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Person_LinkedUserID
+    ON __mj_BizAppsCommon.Person (LinkedUserID)
+    WHERE LinkedUserID IS NOT NULL;
+GO
+
+---------------------------------------------------------------------------
+-- INDEXES: Composite indexes for enriched view query performance
+---------------------------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_AddressLink_EntityRecord_Primary
+    ON __mj_BizAppsCommon.AddressLink (EntityID, RecordID, IsPrimary)
+    INCLUDE (AddressID, AddressTypeID);
+GO
+
+CREATE NONCLUSTERED INDEX IX_ContactMethod_Person_Type_Primary
+    ON __mj_BizAppsCommon.ContactMethod (PersonID, ContactTypeID, IsPrimary)
+    INCLUDE (Value)
+    WHERE PersonID IS NOT NULL;
+GO
+
+CREATE NONCLUSTERED INDEX IX_ContactMethod_Organization_Type_Primary
+    ON __mj_BizAppsCommon.ContactMethod (OrganizationID, ContactTypeID, IsPrimary)
+    INCLUDE (Value)
+    WHERE OrganizationID IS NOT NULL;
+GO
+
+CREATE NONCLUSTERED INDEX IX_Relationship_FromPerson_Type_Status
+    ON __mj_BizAppsCommon.Relationship (FromPersonID, RelationshipTypeID, Status)
+    INCLUDE (Title, ToOrganizationID, StartDate)
+    WHERE FromPersonID IS NOT NULL;
+GO
+
+CREATE NONCLUSTERED INDEX IX_Relationship_ToOrganization_Status
+    ON __mj_BizAppsCommon.Relationship (ToOrganizationID, Status)
+    INCLUDE (RelationshipTypeID)
+    WHERE ToOrganizationID IS NOT NULL;
+GO
+
+---------------------------------------------------------------------------
 -- EXTENDED PROPERTIES: Schema
 ---------------------------------------------------------------------------
 EXEC sp_addextendedproperty
@@ -219,6 +269,10 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Detailed descr
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'OrganizationType', @level2type = N'COLUMN', @level2name = N'Description';
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Font Awesome icon class for UI display',
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'OrganizationType', @level2type = N'COLUMN', @level2name = N'IconClass';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Sort order in dropdown lists. Lower values appear first',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'OrganizationType', @level2type = N'COLUMN', @level2name = N'DisplayRank';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'OrganizationType', @level2type = N'COLUMN', @level2name = N'IsActive';
 GO
 
 ---------------------------------------------------------------------------
@@ -230,8 +284,12 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Display name f
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'AddressType', @level2type = N'COLUMN', @level2name = N'Name';
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Detailed description of this address type',
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'AddressType', @level2type = N'COLUMN', @level2name = N'Description';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Font Awesome icon class for UI display',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'AddressType', @level2type = N'COLUMN', @level2name = N'IconClass';
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank',
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'AddressType', @level2type = N'COLUMN', @level2name = N'DefaultRank';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'AddressType', @level2type = N'COLUMN', @level2name = N'IsActive';
 GO
 
 ---------------------------------------------------------------------------
@@ -245,6 +303,10 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Detailed descr
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'ContactType', @level2type = N'COLUMN', @level2name = N'Description';
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Font Awesome icon class for UI display',
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'ContactType', @level2type = N'COLUMN', @level2name = N'IconClass';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Sort order in dropdown lists. Lower values appear first',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'ContactType', @level2type = N'COLUMN', @level2name = N'DisplayRank';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'ContactType', @level2type = N'COLUMN', @level2name = N'IsActive';
 GO
 
 ---------------------------------------------------------------------------
@@ -264,6 +326,8 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Label describi
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'RelationshipType', @level2type = N'COLUMN', @level2name = N'ForwardLabel';
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Label describing the To-to-From direction, e.g. employs, is child of',
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'RelationshipType', @level2type = N'COLUMN', @level2name = N'ReverseLabel';
+EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+    @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'RelationshipType', @level2type = N'COLUMN', @level2name = N'IsActive';
 GO
 
 ---------------------------------------------------------------------------
@@ -396,9 +460,31 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'Additional not
     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon', @level1type = N'TABLE', @level1name = N'Relationship', @level2type = N'COLUMN', @level2name = N'Notes';
 GO
 
+ 
 
 
 
+
+
+-- MANUAL UPDATE OF SCHEMA INFO from metadata file to ensure we have things set for the codegeneration
+INSERT INTO __mj.SchemaInfo 
+(
+  ID,
+  SchemaName,
+  EntityIDMin, EntityIDMax,
+  Comments,
+  Description,
+  EntityNamePrefix, EntityNameSuffix
+)
+VALUES
+(
+  '0A9F0FDD-CD4D-4892-BA45-85722B982032',
+  '__mj_BizAppsCommon',
+  1, 1000000,
+  NULL,
+  'MemberJunction: Common Business App Data',
+  'MJ.BizApps.Common: ', NULL
+)
 
 
 
@@ -454,7 +540,7 @@ GO
 
 
 -- CODE GEN RUN 
-/* SQL generated to create new entity Common: Address Types */
+/* SQL generated to create new entity MJ.BizApps.Common: Organization Types */
 
       INSERT INTO [${flyway:defaultSchema}].Entity (
          ID,
@@ -477,588 +563,8 @@ GO
          , UserViewMaxRows
       )
       VALUES (
-         '66fa272f-59bb-4105-a1f3-4e5d4d63f381',
-         'Common: Address Types',
-         'Address Types',
-         NULL,
-         NULL,
-         'AddressType',
-         'vwAddressTypes',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to create new application ${flyway:defaultSchema}_BizAppsCommon */
-INSERT INTO [${flyway:defaultSchema}].Application (ID, Name, Description, SchemaAutoAddNewEntities, Path, AutoUpdatePath)
-                       VALUES ('691ed607-8def-4598-8121-d4d2b45bc110', '${flyway:defaultSchema}_BizAppsCommon', 'Generated for schema', '${flyway:defaultSchema}_BizAppsCommon', 'mjbizappscommon', 1)
-
-/* SQL generated to add new entity Common: Address Types to application ID: '691ed607-8def-4598-8121-d4d2b45bc110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ed607-8def-4598-8121-d4d2b45bc110', '66fa272f-59bb-4105-a1f3-4e5d4d63f381', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ed607-8def-4598-8121-d4d2b45bc110'))
-
-/* SQL generated to add new permission for entity Common: Address Types for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('66fa272f-59bb-4105-a1f3-4e5d4d63f381', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Address Types for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('66fa272f-59bb-4105-a1f3-4e5d4d63f381', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Address Types for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('66fa272f-59bb-4105-a1f3-4e5d4d63f381', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Contact Types */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         'd17353e5-1fb0-4940-8d91-3e4007549200',
-         'Common: Contact Types',
-         'Contact Types',
-         NULL,
-         NULL,
-         'ContactType',
-         'vwContactTypes',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Contact Types to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', 'd17353e5-1fb0-4940-8d91-3e4007549200', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Contact Types for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('d17353e5-1fb0-4940-8d91-3e4007549200', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Contact Types for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('d17353e5-1fb0-4940-8d91-3e4007549200', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Contact Types for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('d17353e5-1fb0-4940-8d91-3e4007549200', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Relationship Types */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         '7bfa6aaf-c89f-41d6-bad5-737644abedcb',
-         'Common: Relationship Types',
-         'Relationship Types',
-         NULL,
-         NULL,
-         'RelationshipType',
-         'vwRelationshipTypes',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Relationship Types to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', '7bfa6aaf-c89f-41d6-bad5-737644abedcb', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Relationship Types for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('7bfa6aaf-c89f-41d6-bad5-737644abedcb', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Relationship Types for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('7bfa6aaf-c89f-41d6-bad5-737644abedcb', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Relationship Types for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('7bfa6aaf-c89f-41d6-bad5-737644abedcb', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: People */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         'a3cb56e8-38b9-4456-bd88-f5e69e219d65',
-         'Common: People',
-         'People',
-         NULL,
-         NULL,
-         'Person',
-         'vwPeople',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: People to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', 'a3cb56e8-38b9-4456-bd88-f5e69e219d65', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: People for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('a3cb56e8-38b9-4456-bd88-f5e69e219d65', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: People for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('a3cb56e8-38b9-4456-bd88-f5e69e219d65', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: People for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('a3cb56e8-38b9-4456-bd88-f5e69e219d65', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Organizations */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         '74defef0-a5f5-41d6-9b63-8a07f706abfd',
-         'Common: Organizations',
-         'Organizations',
-         NULL,
-         NULL,
-         'Organization',
-         'vwOrganizations',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Organizations to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', '74defef0-a5f5-41d6-9b63-8a07f706abfd', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Organizations for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('74defef0-a5f5-41d6-9b63-8a07f706abfd', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Organizations for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('74defef0-a5f5-41d6-9b63-8a07f706abfd', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Organizations for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('74defef0-a5f5-41d6-9b63-8a07f706abfd', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Addresses */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         'b59cca6f-e48c-4de5-a784-db0df9e2885c',
-         'Common: Addresses',
-         'Addresses',
-         NULL,
-         NULL,
-         'Address',
-         'vwAddresses',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Addresses to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', 'b59cca6f-e48c-4de5-a784-db0df9e2885c', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Addresses for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('b59cca6f-e48c-4de5-a784-db0df9e2885c', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Addresses for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('b59cca6f-e48c-4de5-a784-db0df9e2885c', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Addresses for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('b59cca6f-e48c-4de5-a784-db0df9e2885c', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Address Links */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         '8e6d93fa-4768-4672-8a5c-35dcad34c9bd',
-         'Common: Address Links',
-         'Address Links',
-         NULL,
-         NULL,
-         'AddressLink',
-         'vwAddressLinks',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Address Links to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', '8e6d93fa-4768-4672-8a5c-35dcad34c9bd', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Address Links for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('8e6d93fa-4768-4672-8a5c-35dcad34c9bd', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Address Links for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('8e6d93fa-4768-4672-8a5c-35dcad34c9bd', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Address Links for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('8e6d93fa-4768-4672-8a5c-35dcad34c9bd', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Contact Methods */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         'fa624cad-3867-49dd-b9f8-be3ef2c81fca',
-         'Common: Contact Methods',
-         'Contact Methods',
-         NULL,
-         NULL,
-         'ContactMethod',
-         'vwContactMethods',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Contact Methods to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', 'fa624cad-3867-49dd-b9f8-be3ef2c81fca', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Contact Methods for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('fa624cad-3867-49dd-b9f8-be3ef2c81fca', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Contact Methods for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('fa624cad-3867-49dd-b9f8-be3ef2c81fca', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Contact Methods for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('fa624cad-3867-49dd-b9f8-be3ef2c81fca', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Relationships */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         '2c2b874f-0880-4de7-a0bf-63b6c6afe9eb',
-         'Common: Relationships',
-         'Relationships',
-         NULL,
-         NULL,
-         'Relationship',
-         'vwRelationships',
-         '${flyway:defaultSchema}_BizAppsCommon',
-         1,
-         0
-         , 1
-         , 0
-         , 0
-         , 0
-         , 1
-         , 1
-         , 1
-         , 1000
-      )
-   
-
-/* SQL generated to add new entity Common: Relationships to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
-INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
-                                       (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', '2c2b874f-0880-4de7-a0bf-63b6c6afe9eb', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
-
-/* SQL generated to add new permission for entity Common: Relationships for role UI */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('2c2b874f-0880-4de7-a0bf-63b6c6afe9eb', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
-
-/* SQL generated to add new permission for entity Common: Relationships for role Developer */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('2c2b874f-0880-4de7-a0bf-63b6c6afe9eb', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
-
-/* SQL generated to add new permission for entity Common: Relationships for role Integration */
-INSERT INTO ${flyway:defaultSchema}.EntityPermission
-                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('2c2b874f-0880-4de7-a0bf-63b6c6afe9eb', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
-
-/* SQL generated to create new entity Common: Organization Types */
-
-      INSERT INTO [${flyway:defaultSchema}].Entity (
-         ID,
-         Name,
-         DisplayName,
-         Description,
-         NameSuffix,
-         BaseTable,
-         BaseView,
-         SchemaName,
-         IncludeInAPI,
-         AllowUserSearchAPI
-         , TrackRecordChanges
-         , AuditRecordAccess
-         , AuditViewRuns
-         , AllowAllRowsAPI
-         , AllowCreateAPI
-         , AllowUpdateAPI
-         , AllowDeleteAPI
-         , UserViewMaxRows
-      )
-      VALUES (
-         '0ab066c1-8fe5-4363-86e6-bef80975205c',
-         'Common: Organization Types',
+         'a77d9725-4871-484b-99f0-f65461d7abee',
+         'MJ.BizApps.Common: Organization Types',
          'Organization Types',
          NULL,
          NULL,
@@ -1078,25 +584,611 @@ INSERT INTO ${flyway:defaultSchema}.EntityPermission
       )
    
 
-/* SQL generated to add new entity Common: Organization Types to application ID: '691ED607-8DEF-4598-8121-D4D2B45BC110' */
+/* SQL generated to create new application ${flyway:defaultSchema}_BizAppsCommon */
+INSERT INTO [${flyway:defaultSchema}].Application (ID, Name, Description, SchemaAutoAddNewEntities, Path, AutoUpdatePath)
+                       VALUES ('b479eb79-1260-40af-a5ea-f8aa0b71384f', '${flyway:defaultSchema}_BizAppsCommon', 'Generated for schema', '${flyway:defaultSchema}_BizAppsCommon', 'mjbizappscommon', 1)
+
+/* SQL generated to add new entity MJ.BizApps.Common: Organization Types to application ID: 'b479eb79-1260-40af-a5ea-f8aa0b71384f' */
 INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
                                        (ApplicationID, EntityID, Sequence) VALUES
-                                       ('691ED607-8DEF-4598-8121-D4D2B45BC110', '0ab066c1-8fe5-4363-86e6-bef80975205c', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = '691ED607-8DEF-4598-8121-D4D2B45BC110'))
+                                       ('b479eb79-1260-40af-a5ea-f8aa0b71384f', 'a77d9725-4871-484b-99f0-f65461d7abee', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'b479eb79-1260-40af-a5ea-f8aa0b71384f'))
 
-/* SQL generated to add new permission for entity Common: Organization Types for role UI */
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organization Types for role UI */
 INSERT INTO ${flyway:defaultSchema}.EntityPermission
                                                    (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('0ab066c1-8fe5-4363-86e6-bef80975205c', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
 
-/* SQL generated to add new permission for entity Common: Organization Types for role Developer */
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organization Types for role Developer */
 INSERT INTO ${flyway:defaultSchema}.EntityPermission
                                                    (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('0ab066c1-8fe5-4363-86e6-bef80975205c', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
 
-/* SQL generated to add new permission for entity Common: Organization Types for role Integration */
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organization Types for role Integration */
 INSERT INTO ${flyway:defaultSchema}.EntityPermission
                                                    (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
-                                                   ('0ab066c1-8fe5-4363-86e6-bef80975205c', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Address Types */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '7a7245d1-2316-44a4-b147-a50ff19f5942',
+         'MJ.BizApps.Common: Address Types',
+         'Address Types',
+         NULL,
+         NULL,
+         'AddressType',
+         'vwAddressTypes',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Address Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7a7245d1-2316-44a4-b147-a50ff19f5942', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Types for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Types for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Types for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Contact Types */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5',
+         'MJ.BizApps.Common: Contact Types',
+         'Contact Types',
+         NULL,
+         NULL,
+         'ContactType',
+         'vwContactTypes',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Contact Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Types for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Types for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Types for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Relationship Types */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '5f214f43-109c-407d-b505-7b0b3b72acb5',
+         'MJ.BizApps.Common: Relationship Types',
+         'Relationship Types',
+         NULL,
+         NULL,
+         'RelationshipType',
+         'vwRelationshipTypes',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Relationship Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '5f214f43-109c-407d-b505-7b0b3b72acb5', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationship Types for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationship Types for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationship Types for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: People */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '7a94ada9-7880-4fae-97d8-db0e934c3f5f',
+         'MJ.BizApps.Common: People',
+         'People',
+         NULL,
+         NULL,
+         'Person',
+         'vwPeople',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: People to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7a94ada9-7880-4fae-97d8-db0e934c3f5f', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: People for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: People for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: People for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Organizations */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         'c70448f9-9792-41d7-a82c-784b66429d54',
+         'MJ.BizApps.Common: Organizations',
+         'Organizations',
+         NULL,
+         NULL,
+         'Organization',
+         'vwOrganizations',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Organizations to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'c70448f9-9792-41d7-a82c-784b66429d54', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organizations for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organizations for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Organizations for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Addresses */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '61b5c6fb-7317-46d1-8e05-f669b7bc6f3e',
+         'MJ.BizApps.Common: Addresses',
+         'Addresses',
+         NULL,
+         NULL,
+         'Address',
+         'vwAddresses',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Addresses to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Addresses for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Addresses for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Addresses for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Address Links */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         'f2fc2e85-b210-43a9-8565-290ad9d0c6e7',
+         'MJ.BizApps.Common: Address Links',
+         'Address Links',
+         NULL,
+         NULL,
+         'AddressLink',
+         'vwAddressLinks',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Address Links to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'f2fc2e85-b210-43a9-8565-290ad9d0c6e7', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Links for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Links for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Address Links for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Contact Methods */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '32c45078-d33b-4760-9be5-0df7f483f591',
+         'MJ.BizApps.Common: Contact Methods',
+         'Contact Methods',
+         NULL,
+         NULL,
+         'ContactMethod',
+         'vwContactMethods',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Contact Methods to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '32c45078-d33b-4760-9be5-0df7f483f591', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Methods for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Methods for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Contact Methods for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL generated to create new entity MJ.BizApps.Common: Relationships */
+
+      INSERT INTO [${flyway:defaultSchema}].Entity (
+         ID,
+         Name,
+         DisplayName,
+         Description,
+         NameSuffix,
+         BaseTable,
+         BaseView,
+         SchemaName,
+         IncludeInAPI,
+         AllowUserSearchAPI
+         , TrackRecordChanges
+         , AuditRecordAccess
+         , AuditViewRuns
+         , AllowAllRowsAPI
+         , AllowCreateAPI
+         , AllowUpdateAPI
+         , AllowDeleteAPI
+         , UserViewMaxRows
+      )
+      VALUES (
+         '709ca9da-b124-4155-be39-e857ef672d82',
+         'MJ.BizApps.Common: Relationships',
+         'Relationships',
+         NULL,
+         NULL,
+         'Relationship',
+         'vwRelationships',
+         '${flyway:defaultSchema}_BizAppsCommon',
+         1,
+         0
+         , 1
+         , 0
+         , 0
+         , 0
+         , 1
+         , 1
+         , 1
+         , 1000
+      )
+   
+
+/* SQL generated to add new entity MJ.BizApps.Common: Relationships to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+INSERT INTO ${flyway:defaultSchema}.ApplicationEntity
+                                       (ApplicationID, EntityID, Sequence) VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '709ca9da-b124-4155-be39-e857ef672d82', (SELECT ISNULL(MAX(Sequence),0)+1 FROM ${flyway:defaultSchema}.ApplicationEntity WHERE ApplicationID = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'))
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationships for role UI */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationships for role Developer */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 0)
+
+/* SQL generated to add new permission for entity MJ.BizApps.Common: Relationships for role Integration */
+INSERT INTO ${flyway:defaultSchema}.EntityPermission
+                                                   (EntityID, RoleID, CanRead, CanCreate, CanUpdate, CanDelete) VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1)
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.ContactMethod */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactMethod] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.ContactMethod */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactMethod] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.AddressLink */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
@@ -1110,17 +1202,11 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactType] ADD __mj_Creat
 /* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.ContactType */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactType] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.AddressType */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[AddressType] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Organization */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Organization] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.AddressType */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[AddressType] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Relationship */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Relationship] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Relationship */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Relationship] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Organization */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Organization] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.RelationshipType */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[RelationshipType] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
@@ -1128,17 +1214,23 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[RelationshipType] ADD __mj_
 /* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.RelationshipType */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[RelationshipType] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Organization */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Organization] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.AddressType */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[AddressType] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Organization */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Organization] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.AddressType */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[AddressType] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.ContactMethod */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactMethod] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Person */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.ContactMethod */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[ContactMethod] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Person */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Relationship */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Relationship] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Relationship */
+ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Relationship] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.OrganizationType */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[OrganizationType] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
@@ -1152,18 +1244,12 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Address] ADD __mj_CreatedAt
 /* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Address */
 ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Address] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Person */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_CreatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}_BizAppsCommon.Person */
-ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt DATETIMEOFFSET NOT NULL DEFAULT GETUTCDATE()
-
 /* SQL text to insert new entity field */
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '68dab59e-ca4c-4c79-9ab8-32ed9ba29b3e'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'ID')
+         WHERE ID = 'c66b3740-b4b9-4ba4-b53d-9cdc6a64dafb'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'ID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -1196,8 +1282,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '68dab59e-ca4c-4c79-9ab8-32ed9ba29b3e',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
+            'c66b3740-b4b9-4ba4-b53d-9cdc6a64dafb',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100001,
             'ID',
             'ID',
@@ -1227,8 +1313,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'd78a7c9e-a347-451a-8535-00edb6ab4359'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'AddressID')
+         WHERE ID = 'b6b5a623-f308-496e-8845-0cf1e92e9d00'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'PersonID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -1261,3778 +1347,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'd78a7c9e-a347-451a-8535-00edb6ab4359',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100002,
-            'AddressID',
-            'Address ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'cfcbe12e-5b60-44c1-bdf9-f672294778fb'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'EntityID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'cfcbe12e-5b60-44c1-bdf9-f672294778fb',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100003,
-            'EntityID',
-            'Entity ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            'E0238F34-2837-EF11-86D4-6045BDEE16E6',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '4fc0f14d-3d67-412d-b93d-2944b9dd06b1'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'RecordID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '4fc0f14d-3d67-412d-b93d-2944b9dd06b1',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100004,
-            'RecordID',
-            'Record ID',
-            'Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys',
-            'nvarchar',
-            1400,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '71e1c019-742d-422f-b412-d85757922adb'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'AddressTypeID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '71e1c019-742d-422f-b412-d85757922adb',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100005,
-            'AddressTypeID',
-            'Address Type ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'cdcbe6ce-9644-4387-83fd-dd5d9d653665'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'IsPrimary')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'cdcbe6ce-9644-4387-83fd-dd5d9d653665',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100006,
-            'IsPrimary',
-            'Is Primary',
-            'Whether this is the primary address for the linked record. Only one address per entity record should be marked primary',
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'a679cd5b-cce9-4b4f-ba52-e9189c78e43d'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'Rank')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'a679cd5b-cce9-4b4f-ba52-e9189c78e43d',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100007,
-            'Rank',
-            'Rank',
-            'Sort order override for this specific link. When NULL, falls back to AddressType.DefaultRank. Lower values appear first',
-            'int',
-            4,
-            10,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '81398f0e-7aef-40a2-8dcd-3504d4d2779a'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '81398f0e-7aef-40a2-8dcd-3504d4d2779a',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100008,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '4e1dc335-24a5-4940-b511-c5c1b8369dc2'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '4e1dc335-24a5-4940-b511-c5c1b8369dc2',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100009,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '8a5238ff-1427-4868-9e70-27223709aad4'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '8a5238ff-1427-4868-9e70-27223709aad4',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'af7d302b-8340-4ea7-bbf3-22c04f63333c'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = 'Name')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'af7d302b-8340-4ea7-bbf3-22c04f63333c',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100002,
-            'Name',
-            'Name',
-            'Display name for the contact type',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'd5cbc8c6-0351-4ad2-8db8-22efed381292'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = 'Description')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'd5cbc8c6-0351-4ad2-8db8-22efed381292',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100003,
-            'Description',
-            'Description',
-            'Detailed description of this contact type',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '40359756-9750-41ec-8558-b9a87850f884'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = 'IconClass')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '40359756-9750-41ec-8558-b9a87850f884',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100004,
-            'IconClass',
-            'Icon Class',
-            'Font Awesome icon class for UI display',
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '99dc79f5-9599-45d9-b867-1ab3d029f2a8'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '99dc79f5-9599-45d9-b867-1ab3d029f2a8',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100005,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'fd6a186c-1a0b-46b5-9020-dd50e850c41f'  OR 
-               (EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'fd6a186c-1a0b-46b5-9020-dd50e850c41f',
-            'D17353E5-1FB0-4940-8D91-3E4007549200', -- Entity: Common: Contact Types
-            100006,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '621fc111-0d6c-483d-b53c-1a5ad69865b2'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '621fc111-0d6c-483d-b53c-1a5ad69865b2',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'ee25af1d-0b36-426f-9006-76007868a0a4'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = 'Name')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'ee25af1d-0b36-426f-9006-76007868a0a4',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100002,
-            'Name',
-            'Name',
-            'Display name for the address type',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '075337aa-e0af-45a5-8de2-70764cd154d6'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = 'Description')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '075337aa-e0af-45a5-8de2-70764cd154d6',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100003,
-            'Description',
-            'Description',
-            'Detailed description of this address type',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '96f82cb6-0432-45c4-8449-af29288a372b'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = 'DefaultRank')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '96f82cb6-0432-45c4-8449-af29288a372b',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100004,
-            'DefaultRank',
-            'Default Rank',
-            'Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank',
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(100)',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '40dae327-885c-47b6-892d-6a1a160e32b2'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '40dae327-885c-47b6-892d-6a1a160e32b2',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100005,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '2e8428ca-21d5-4caa-ae2a-ae3783d8cb39'  OR 
-               (EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '2e8428ca-21d5-4caa-ae2a-ae3783d8cb39',
-            '66FA272F-59BB-4105-A1F3-4E5D4D63F381', -- Entity: Common: Address Types
-            100006,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e1bf9e93-1f96-486f-b4e0-49d038159b5c'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'e1bf9e93-1f96-486f-b4e0-49d038159b5c',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'eaac9a59-ce53-43e4-b663-0cefaf8300d0'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'RelationshipTypeID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'eaac9a59-ce53-43e4-b663-0cefaf8300d0',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100002,
-            'RelationshipTypeID',
-            'Relationship Type ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '874ba7fa-14c5-4277-9c83-ff2187d6f0e1'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'FromPersonID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '874ba7fa-14c5-4277-9c83-ff2187d6f0e1',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100003,
-            'FromPersonID',
-            'From Person ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '12fbd8af-5847-453d-b40e-3d740c04769d'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'FromOrganizationID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '12fbd8af-5847-453d-b40e-3d740c04769d',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100004,
-            'FromOrganizationID',
-            'From Organization ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'eb71a369-66c0-4c86-9b77-63a11ba01874'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'ToPersonID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'eb71a369-66c0-4c86-9b77-63a11ba01874',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100005,
-            'ToPersonID',
-            'To Person ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'cffb2d6a-96bd-4548-82b2-a344d0f4df89'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'ToOrganizationID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'cffb2d6a-96bd-4548-82b2-a344d0f4df89',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100006,
-            'ToOrganizationID',
-            'To Organization ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '41798d66-072d-4f85-9d13-51c754f165c5'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'Title')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '41798d66-072d-4f85-9d13-51c754f165c5',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100007,
-            'Title',
-            'Title',
-            'Contextual title for this specific relationship, e.g. CEO, Primary Contact, Founding Member',
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '854946a7-ef5b-4818-8afb-cd99b5e313e8'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'StartDate')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '854946a7-ef5b-4818-8afb-cd99b5e313e8',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100008,
-            'StartDate',
-            'Start Date',
-            'Date the relationship began',
-            'date',
-            3,
-            10,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7d0ae077-e5ab-4b21-93aa-3cb682bb906a'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'EndDate')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '7d0ae077-e5ab-4b21-93aa-3cb682bb906a',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100009,
-            'EndDate',
-            'End Date',
-            'Date the relationship ended, if applicable',
-            'date',
-            3,
-            10,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '228f924e-db74-41e4-8d20-942d899c03d6'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'Status')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '228f924e-db74-41e4-8d20-942d899c03d6',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100010,
-            'Status',
-            'Status',
-            'Current status: Active, Inactive, or Ended',
-            'nvarchar',
-            100,
-            0,
-            0,
-            0,
-            'Active',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '9929cc69-0349-4dca-9f74-4b11cf31ad1a'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'Notes')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '9929cc69-0349-4dca-9f74-4b11cf31ad1a',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100011,
-            'Notes',
-            'Notes',
-            'Additional notes about this relationship',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c4f00f0e-461c-4eac-b70c-b7508f850000'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'c4f00f0e-461c-4eac-b70c-b7508f850000',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100012,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '531daa90-2cbc-4af9-91b3-a77205d4d4a1'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '531daa90-2cbc-4af9-91b3-a77205d4d4a1',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100013,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'b6a2c73f-6d40-45f9-af82-52dd3d29c6fb'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'b6a2c73f-6d40-45f9-af82-52dd3d29c6fb',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'fda58326-2507-4f14-9143-d17758d1b999'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'Name')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'fda58326-2507-4f14-9143-d17758d1b999',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100002,
-            'Name',
-            'Name',
-            'Display name for the relationship type, e.g. Employee, Spouse, Partner',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e351f0d1-98d9-449e-9c0a-6d43d5b4d390'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'Description')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'e351f0d1-98d9-449e-9c0a-6d43d5b4d390',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100003,
-            'Description',
-            'Description',
-            'Detailed description of this relationship type',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '722c3e0d-ab64-4276-b53d-ca77c54143cf'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'Category')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '722c3e0d-ab64-4276-b53d-ca77c54143cf',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100004,
-            'Category',
-            'Category',
-            'Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization',
-            'nvarchar',
-            100,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'd4ea503e-413f-4809-9969-a69e1df8261b'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'IsDirectional')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'd4ea503e-413f-4809-9969-a69e1df8261b',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100005,
-            'IsDirectional',
-            'Is Directional',
-            'Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner',
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(1)',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c97e3d06-0d30-44f3-b692-45a4125bc66e'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'ForwardLabel')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'c97e3d06-0d30-44f3-b692-45a4125bc66e',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100006,
-            'ForwardLabel',
-            'Forward Label',
-            'Label describing the From-to-To direction, e.g. is employee of, is parent of',
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '80f81755-7e41-44c8-a429-ac94e5ce7689'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = 'ReverseLabel')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '80f81755-7e41-44c8-a429-ac94e5ce7689',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100007,
-            'ReverseLabel',
-            'Reverse Label',
-            'Label describing the To-to-From direction, e.g. employs, is child of',
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '8aeb1280-b915-4e5e-a5ee-f641d20378a4'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '8aeb1280-b915-4e5e-a5ee-f641d20378a4',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100008,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'a40dafe1-4aa7-40e5-a0be-8a32b5ee8012'  OR 
-               (EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'a40dafe1-4aa7-40e5-a0be-8a32b5ee8012',
-            '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', -- Entity: Common: Relationship Types
-            100009,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7c6e93c3-e124-46bb-a0f5-1da136396afd'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '7c6e93c3-e124-46bb-a0f5-1da136396afd',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '3bb45a32-8836-4868-9408-44101f79da8d'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Name')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '3bb45a32-8836-4868-9408-44101f79da8d',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100002,
-            'Name',
-            'Name',
-            'Common or display name of the organization',
-            'nvarchar',
-            510,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '4a6c3b90-a1dc-48b6-8268-7170539663a9'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'LegalName')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '4a6c3b90-a1dc-48b6-8268-7170539663a9',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100003,
-            'LegalName',
-            'Legal Name',
-            'Full legal name if different from display name',
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '0902c7f8-4d7f-40ea-baa6-a6c36b22fea5'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'OrganizationTypeID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '0902c7f8-4d7f-40ea-baa6-a6c36b22fea5',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100004,
-            'OrganizationTypeID',
-            'Organization Type ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7a4a63e0-651d-4127-932a-c3d2ec1f24c6'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'ParentID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '7a4a63e0-651d-4127-932a-c3d2ec1f24c6',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100005,
-            'ParentID',
-            'Parent ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '0b217d86-fa43-4c64-bce7-ff4fabddaa6d'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Website')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '0b217d86-fa43-4c64-bce7-ff4fabddaa6d',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100006,
-            'Website',
-            'Website',
-            'Primary website URL',
-            'nvarchar',
-            2000,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '31300b38-c784-4e2a-a7cf-1f18ced9c458'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'LogoURL')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '31300b38-c784-4e2a-a7cf-1f18ced9c458',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100007,
-            'LogoURL',
-            'Logo URL',
-            'URL to organization logo image',
-            'nvarchar',
-            2000,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '83410a49-636c-4540-88f5-7ac573e0fc39'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Description')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '83410a49-636c-4540-88f5-7ac573e0fc39',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100008,
-            'Description',
-            'Description',
-            'Description of the organization purpose and scope',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'daa78da8-7a01-4ada-b992-c9518d4abc7a'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Email')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'daa78da8-7a01-4ada-b992-c9518d4abc7a',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100009,
-            'Email',
-            'Email',
-            'Primary contact email address',
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '598bf53a-74ab-4d88-9087-fefe711a0784'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Phone')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '598bf53a-74ab-4d88-9087-fefe711a0784',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100010,
-            'Phone',
-            'Phone',
-            'Primary phone number',
-            'nvarchar',
-            100,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '24f6c30c-ae49-4f55-bbb1-e9abf12af0db'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'FoundedDate')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '24f6c30c-ae49-4f55-bbb1-e9abf12af0db',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100011,
-            'FoundedDate',
-            'Founded Date',
-            'Date the organization was founded or incorporated',
-            'date',
-            3,
-            10,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c9defea8-649d-46ef-8ad5-67ce6f8365ce'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'TaxID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'c9defea8-649d-46ef-8ad5-67ce6f8365ce',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100012,
-            'TaxID',
-            'Tax ID',
-            'Tax identification number such as EIN',
-            'nvarchar',
-            100,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '5ed84866-8b7b-42c5-912e-80fdac5b4d1f'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Status')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '5ed84866-8b7b-42c5-912e-80fdac5b4d1f',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100013,
-            'Status',
-            'Status',
-            'Current status: Active, Inactive, or Dissolved',
-            'nvarchar',
-            100,
-            0,
-            0,
-            0,
-            'Active',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '3f12cf81-8bf2-4f9f-8e77-de9819dcb251'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '3f12cf81-8bf2-4f9f-8e77-de9819dcb251',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100014,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'ac571288-2d4b-431d-97ca-7328bf50404f'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = '__mj_UpdatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'ac571288-2d4b-431d-97ca-7328bf50404f',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100015,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'b2e878a1-c0e8-450d-8525-732ca54589a3'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'ID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'b2e878a1-c0e8-450d-8525-732ca54589a3',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '4781a91c-0f0b-40bf-b4dd-c95611b821f1'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'PersonID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '4781a91c-0f0b-40bf-b4dd-c95611b821f1',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            'b6b5a623-f308-496e-8845-0cf1e92e9d00',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100002,
             'PersonID',
             'Person ID',
@@ -5046,7 +1362,7 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
             0,
             1,
             0,
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
             'ID',
             0,
             0,
@@ -5062,8 +1378,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '203c3260-2df9-4478-b639-d0401ac0ac28'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'OrganizationID')
+         WHERE ID = '0ec64524-99cd-484d-bf82-0e422d0c9903'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'OrganizationID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5096,8 +1412,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '203c3260-2df9-4478-b639-d0401ac0ac28',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            '0ec64524-99cd-484d-bf82-0e422d0c9903',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100003,
             'OrganizationID',
             'Organization ID',
@@ -5111,7 +1427,7 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
             0,
             1,
             0,
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD',
+            'C70448F9-9792-41D7-A82C-784B66429D54',
             'ID',
             0,
             0,
@@ -5127,8 +1443,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '0b306e5d-0024-471a-9e43-5293c57d4759'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'ContactTypeID')
+         WHERE ID = '5c42f4d1-4abd-4cc6-b5da-a164d5cba7a1'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'ContactTypeID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5161,8 +1477,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '0b306e5d-0024-471a-9e43-5293c57d4759',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            '5c42f4d1-4abd-4cc6-b5da-a164d5cba7a1',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100004,
             'ContactTypeID',
             'Contact Type ID',
@@ -5176,7 +1492,7 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
             0,
             1,
             0,
-            'D17353E5-1FB0-4940-8D91-3E4007549200',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5',
             'ID',
             0,
             0,
@@ -5192,8 +1508,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'eeded48b-3219-4f5c-86b8-7fd7865041b5'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'Value')
+         WHERE ID = '77c20975-15e3-4a89-9414-3a829a5ea249'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'Value')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5226,8 +1542,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'eeded48b-3219-4f5c-86b8-7fd7865041b5',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            '77c20975-15e3-4a89-9414-3a829a5ea249',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100005,
             'Value',
             'Value',
@@ -5257,8 +1573,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'bbf473e7-86cc-407d-844d-ffd044b468d6'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'Label')
+         WHERE ID = 'cba68064-c466-460e-ad1b-89256634a753'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'Label')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5291,8 +1607,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'bbf473e7-86cc-407d-844d-ffd044b468d6',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            'cba68064-c466-460e-ad1b-89256634a753',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100006,
             'Label',
             'Label',
@@ -5322,8 +1638,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '3e918e15-cf7f-4141-bd82-87341be4206c'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'IsPrimary')
+         WHERE ID = '9aaa02e5-c378-43be-a1b3-6ef7355cdf22'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'IsPrimary')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5356,8 +1672,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '3e918e15-cf7f-4141-bd82-87341be4206c',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            '9aaa02e5-c378-43be-a1b3-6ef7355cdf22',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100007,
             'IsPrimary',
             'Is Primary',
@@ -5387,8 +1703,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '89aa9c83-7ef0-42e8-a019-0791fc956ebc'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = '__mj_CreatedAt')
+         WHERE ID = 'da376286-2631-4fa3-88da-1d7be44312cc'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = '__mj_CreatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5421,8 +1737,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '89aa9c83-7ef0-42e8-a019-0791fc956ebc',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            'da376286-2631-4fa3-88da-1d7be44312cc',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100008,
             '__mj_CreatedAt',
             'Created At',
@@ -5452,8 +1768,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '3553478f-f6ba-4c1e-a5db-91a7f3a3e11e'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = '__mj_UpdatedAt')
+         WHERE ID = 'fc8dc59a-e1b5-4136-9000-99643e602806'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = '__mj_UpdatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5486,8 +1802,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '3553478f-f6ba-4c1e-a5db-91a7f3a3e11e',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            'fc8dc59a-e1b5-4136-9000-99643e602806',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100009,
             '__mj_UpdatedAt',
             'Updated At',
@@ -5517,8 +1833,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '53e42417-862d-4a5f-aad2-32b83853313b'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = 'ID')
+         WHERE ID = 'c7ef895a-84e9-4388-8f9d-4e60a73ce67d'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'ID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5551,8 +1867,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '53e42417-862d-4a5f-aad2-32b83853313b',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            'c7ef895a-84e9-4388-8f9d-4e60a73ce67d',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
             100001,
             'ID',
             'ID',
@@ -5582,8 +1898,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'bb0e133c-34de-442e-a6be-26006cce426a'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = 'Name')
+         WHERE ID = 'effa8dd0-9fce-4504-83a8-a1415c912621'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'AddressID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5616,12 +1932,597 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'bb0e133c-34de-442e-a6be-26006cce426a',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            'effa8dd0-9fce-4504-83a8-a1415c912621',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100002,
+            'AddressID',
+            'Address ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '63d14e61-c4be-4369-a775-7a93a14a6432'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'EntityID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '63d14e61-c4be-4369-a775-7a93a14a6432',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100003,
+            'EntityID',
+            'Entity ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            'E0238F34-2837-EF11-86D4-6045BDEE16E6',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8e6c198e-773e-4582-b020-7c7a9716b2c8'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'RecordID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8e6c198e-773e-4582-b020-7c7a9716b2c8',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100004,
+            'RecordID',
+            'Record ID',
+            'Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys',
+            'nvarchar',
+            1400,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '633eab3f-8828-4db0-9b19-6ad04a75cb83'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'AddressTypeID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '633eab3f-8828-4db0-9b19-6ad04a75cb83',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100005,
+            'AddressTypeID',
+            'Address Type ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            '7A7245D1-2316-44A4-B147-A50FF19F5942',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '80d85088-71d2-42f1-a9a3-086ee3f96b3d'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'IsPrimary')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '80d85088-71d2-42f1-a9a3-086ee3f96b3d',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100006,
+            'IsPrimary',
+            'Is Primary',
+            'Whether this is the primary address for the linked record. Only one address per entity record should be marked primary',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'cf61a8c5-2f33-4756-ad71-257504e7b4e3'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'Rank')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'cf61a8c5-2f33-4756-ad71-257504e7b4e3',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100007,
+            'Rank',
+            'Rank',
+            'Sort order override for this specific link. When NULL, falls back to AddressType.DefaultRank. Lower values appear first',
+            'int',
+            4,
+            10,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8d738e18-a0ba-45ef-88c0-d8bc29d8d877'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8d738e18-a0ba-45ef-88c0-d8bc29d8d877',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100008,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b3518e84-62ff-488b-963b-4e7076932a8f'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b3518e84-62ff-488b-963b-4e7076932a8f',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100009,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'c40c2682-a2fa-4676-833b-75030293220c'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'c40c2682-a2fa-4676-833b-75030293220c',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '1d142a23-e13c-4852-9dd9-a896774c3bda'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'Name')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '1d142a23-e13c-4852-9dd9-a896774c3bda',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100002,
             'Name',
             'Name',
-            'Display name for the organization type',
+            'Display name for the contact type',
             'nvarchar',
             200,
             0,
@@ -5647,8 +2548,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'dc1550d3-7488-4cce-a291-8623ece507f1'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = 'Description')
+         WHERE ID = '8096a2bd-684f-44e0-b26b-424f52619220'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'Description')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5681,12 +2582,12 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'dc1550d3-7488-4cce-a291-8623ece507f1',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            '8096a2bd-684f-44e0-b26b-424f52619220',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100003,
             'Description',
             'Description',
-            'Detailed description of this organization type',
+            'Detailed description of this contact type',
             'nvarchar',
             -1,
             0,
@@ -5712,8 +2613,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '48e12bde-31f1-4aa8-822e-ef3520612691'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = 'IconClass')
+         WHERE ID = '00865ed9-b98d-4f58-8c5d-022ac87ff8e7'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'IconClass')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5746,8 +2647,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '48e12bde-31f1-4aa8-822e-ef3520612691',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            '00865ed9-b98d-4f58-8c5d-022ac87ff8e7',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100004,
             'IconClass',
             'Icon Class',
@@ -5777,8 +2678,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '8ad9e989-c6b1-4ca3-85e5-3d625b7c8812'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = '__mj_CreatedAt')
+         WHERE ID = '45829cd8-c67d-4527-b25e-4390889eeb85'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'DisplayRank')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5811,20 +2712,20 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '8ad9e989-c6b1-4ca3-85e5-3d625b7c8812',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            '45829cd8-c67d-4527-b25e-4390889eeb85',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100005,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
+            'DisplayRank',
+            'Display Rank',
+            'Sort order in dropdown lists. Lower values appear first',
+            'int',
+            4,
             10,
-            34,
-            7,
-            0,
-            'getutcdate()',
             0,
             0,
+            '(100)',
+            0,
+            1,
             0,
             NULL,
             NULL,
@@ -5842,8 +2743,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'f8a490db-1a16-401d-a33a-a3213d95ee3d'  OR 
-               (EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C' AND Name = '__mj_UpdatedAt')
+         WHERE ID = '9fff0788-f1a4-4971-9b53-2fef0407880a'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'IsActive')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5876,20 +2777,20 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'f8a490db-1a16-401d-a33a-a3213d95ee3d',
-            '0AB066C1-8FE5-4363-86E6-BEF80975205C', -- Entity: Common: Organization Types
+            '9fff0788-f1a4-4971-9b53-2fef0407880a',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100006,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
+            'IsActive',
+            'Is Active',
+            'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+            'bit',
+            1,
+            1,
             0,
             0,
+            '(1)',
+            0,
+            1,
             0,
             NULL,
             NULL,
@@ -5907,8 +2808,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'ae4f724d-aece-4d56-945e-d5b5170f9222'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'ID')
+         WHERE ID = '86c73c1a-89cd-4326-a8bb-145e6b0b2f4a'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = '__mj_CreatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -5941,659 +2842,9 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'ae4f724d-aece-4d56-945e-d5b5170f9222',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100001,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '67bdb609-9120-4e5d-826d-d2536d3ce054'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Line1')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '67bdb609-9120-4e5d-826d-d2536d3ce054',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100002,
-            'Line1',
-            'Line 1',
-            'Street address line 1',
-            'nvarchar',
-            510,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'a6b583ac-755f-4489-a79f-3e1a200baffc'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Line2')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'a6b583ac-755f-4489-a79f-3e1a200baffc',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100003,
-            'Line2',
-            'Line 2',
-            'Street address line 2 (suite, apt, etc.)',
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c3bf655f-a151-4297-bdb7-96cf0f22308a'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Line3')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'c3bf655f-a151-4297-bdb7-96cf0f22308a',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100004,
-            'Line3',
-            'Line 3',
-            'Street address line 3 (additional detail)',
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '1ec1dc9d-2630-4ae3-92de-49b4f15f28bc'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'City')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '1ec1dc9d-2630-4ae3-92de-49b4f15f28bc',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100005,
-            'City',
-            'City',
-            'City or locality name',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '150d68ad-0e84-42eb-8b49-f977df4a92ab'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'StateProvince')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '150d68ad-0e84-42eb-8b49-f977df4a92ab',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100006,
-            'StateProvince',
-            'State Province',
-            'State, province, or region',
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '64328a12-e707-45fc-aed0-0149f0a584b9'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'PostalCode')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '64328a12-e707-45fc-aed0-0149f0a584b9',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
+            '86c73c1a-89cd-4326-a8bb-145e6b0b2f4a',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
             100007,
-            'PostalCode',
-            'Postal Code',
-            'Postal or ZIP code',
-            'nvarchar',
-            40,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '174fd558-ffb0-4499-8586-ada3511a4e39'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Country')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '174fd558-ffb0-4499-8586-ada3511a4e39',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100008,
-            'Country',
-            'Country',
-            'Country code or name, defaults to US',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'US',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '78e3ec5b-4f15-45cf-9d80-e1a0e0405a42'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Latitude')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '78e3ec5b-4f15-45cf-9d80-e1a0e0405a42',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100009,
-            'Latitude',
-            'Latitude',
-            'Geographic latitude for mapping',
-            'decimal',
-            5,
-            9,
-            6,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '4200842e-a5d3-4c2c-85bb-e0c9699bb419'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = 'Longitude')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '4200842e-a5d3-4c2c-85bb-e0c9699bb419',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100010,
-            'Longitude',
-            'Longitude',
-            'Geographic longitude for mapping',
-            'decimal',
-            5,
-            9,
-            6,
-            1,
-            'null',
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7e8f1d7a-a42d-4944-9739-44adb7e902d7'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = '__mj_CreatedAt')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '7e8f1d7a-a42d-4944-9739-44adb7e902d7',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100011,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -6622,8 +2873,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '0cb3ad60-386a-4a43-8ace-d692cdb39f1c'  OR 
-               (EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C' AND Name = '__mj_UpdatedAt')
+         WHERE ID = 'a005a7db-76ec-4ddf-8482-7951be69b165'  OR 
+               (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = '__mj_UpdatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6656,9 +2907,9 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '0cb3ad60-386a-4a43-8ace-d692cdb39f1c',
-            'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', -- Entity: Common: Addresses
-            100012,
+            'a005a7db-76ec-4ddf-8482-7951be69b165',
+            '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ.BizApps.Common: Contact Types
+            100008,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -6687,8 +2938,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'd0b95ea1-8f6a-42f7-8a57-0509760535c4'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'ID')
+         WHERE ID = 'b194ee44-85db-4d2a-a76f-9feb0b5f1aeb'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'ID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6721,8 +2972,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'd0b95ea1-8f6a-42f7-8a57-0509760535c4',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            'b194ee44-85db-4d2a-a76f-9feb0b5f1aeb',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
             100001,
             'ID',
             'ID',
@@ -6752,8 +3003,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c36f71ab-a12a-466b-91ce-d3b3c466f277'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'FirstName')
+         WHERE ID = '9f465e98-0614-4987-bed8-90b8a1450685'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Name')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6786,8 +3037,2153 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'c36f71ab-a12a-466b-91ce-d3b3c466f277',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '9f465e98-0614-4987-bed8-90b8a1450685',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100002,
+            'Name',
+            'Name',
+            'Common or display name of the organization',
+            'nvarchar',
+            510,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '28daa78c-fabd-438d-8f24-055987b58b60'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'LegalName')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '28daa78c-fabd-438d-8f24-055987b58b60',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100003,
+            'LegalName',
+            'Legal Name',
+            'Full legal name if different from display name',
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '9e6fcd82-bcdf-443a-a87d-e16eef761068'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'OrganizationTypeID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '9e6fcd82-bcdf-443a-a87d-e16eef761068',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100004,
+            'OrganizationTypeID',
+            'Organization Type ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            'A77D9725-4871-484B-99F0-F65461D7ABEE',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'd78a9db0-2ed9-4d73-a408-24b0e03981c9'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'ParentID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'd78a9db0-2ed9-4d73-a408-24b0e03981c9',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100005,
+            'ParentID',
+            'Parent ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            'C70448F9-9792-41D7-A82C-784B66429D54',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'c8c255e3-d3c1-4f3d-84aa-07b30981fb3e'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Website')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'c8c255e3-d3c1-4f3d-84aa-07b30981fb3e',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100006,
+            'Website',
+            'Website',
+            'Primary website URL',
+            'nvarchar',
+            2000,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '428426b8-70e5-409e-ba30-8aad6dfaf08e'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'LogoURL')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '428426b8-70e5-409e-ba30-8aad6dfaf08e',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100007,
+            'LogoURL',
+            'Logo URL',
+            'URL to organization logo image',
+            'nvarchar',
+            2000,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'e1f4b6bc-8465-429b-922c-353f6d1b547c'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Description')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'e1f4b6bc-8465-429b-922c-353f6d1b547c',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100008,
+            'Description',
+            'Description',
+            'Description of the organization purpose and scope',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '46b9d67f-3365-47b4-bfe1-6bb932392ae3'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Email')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '46b9d67f-3365-47b4-bfe1-6bb932392ae3',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100009,
+            'Email',
+            'Email',
+            'Primary contact email address',
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '9a9b834c-1d11-4a4e-98b3-904d048f89dc'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Phone')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '9a9b834c-1d11-4a4e-98b3-904d048f89dc',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100010,
+            'Phone',
+            'Phone',
+            'Primary phone number',
+            'nvarchar',
+            100,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '012ce6d0-f4dc-4921-90d6-c56be2f3d1b3'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'FoundedDate')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '012ce6d0-f4dc-4921-90d6-c56be2f3d1b3',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100011,
+            'FoundedDate',
+            'Founded Date',
+            'Date the organization was founded or incorporated',
+            'date',
+            3,
+            10,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '3a676695-4dee-4a2e-95e5-00a96de43dad'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'TaxID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '3a676695-4dee-4a2e-95e5-00a96de43dad',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100012,
+            'TaxID',
+            'Tax ID',
+            'Tax identification number such as EIN',
+            'nvarchar',
+            100,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8620f795-6511-4715-a823-d3c905af3ecc'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Status')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8620f795-6511-4715-a823-d3c905af3ecc',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100013,
+            'Status',
+            'Status',
+            'Current status: Active, Inactive, or Dissolved',
+            'nvarchar',
+            100,
+            0,
+            0,
+            0,
+            'Active',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '36566057-63b7-49b2-a7f2-928c0d798c02'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '36566057-63b7-49b2-a7f2-928c0d798c02',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100014,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'e219f8e5-5247-425e-bd32-abd41f8615bd'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'e219f8e5-5247-425e-bd32-abd41f8615bd',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100015,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '2b7f56c2-c197-45e1-9c79-af1bfde094d4'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '2b7f56c2-c197-45e1-9c79-af1bfde094d4',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b0c9f62f-cd73-4eeb-87a8-1f55ade79539'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'Name')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b0c9f62f-cd73-4eeb-87a8-1f55ade79539',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100002,
+            'Name',
+            'Name',
+            'Display name for the relationship type, e.g. Employee, Spouse, Partner',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8f51e66c-379d-4e06-acf6-75f98e690782'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'Description')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8f51e66c-379d-4e06-acf6-75f98e690782',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100003,
+            'Description',
+            'Description',
+            'Detailed description of this relationship type',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'acaec8f6-49f4-47c0-983d-33bb4fb29e7b'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'Category')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'acaec8f6-49f4-47c0-983d-33bb4fb29e7b',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100004,
+            'Category',
+            'Category',
+            'Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization',
+            'nvarchar',
+            100,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b66f18b2-77da-4f8e-b9e3-44e9bc6cfc54'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'IsDirectional')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b66f18b2-77da-4f8e-b9e3-44e9bc6cfc54',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100005,
+            'IsDirectional',
+            'Is Directional',
+            'Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '7b610118-fb6d-4ce0-886f-23881c4647e3'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'ForwardLabel')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '7b610118-fb6d-4ce0-886f-23881c4647e3',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100006,
+            'ForwardLabel',
+            'Forward Label',
+            'Label describing the From-to-To direction, e.g. is employee of, is parent of',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8221fa5a-6288-48ea-9f5c-92dbbb9020cf'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'ReverseLabel')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8221fa5a-6288-48ea-9f5c-92dbbb9020cf',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100007,
+            'ReverseLabel',
+            'Reverse Label',
+            'Label describing the To-to-From direction, e.g. employs, is child of',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '60d162bd-2934-4ad7-a74e-f27ef47656d7'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = 'IsActive')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '60d162bd-2934-4ad7-a74e-f27ef47656d7',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100008,
+            'IsActive',
+            'Is Active',
+            'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8c67deb3-e9ba-412d-9875-dd29a5523fce'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8c67deb3-e9ba-412d-9875-dd29a5523fce',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100009,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'f28625fd-5f8f-429c-8100-9b9c54205ab0'  OR 
+               (EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'f28625fd-5f8f-429c-8100-9b9c54205ab0',
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- Entity: MJ.BizApps.Common: Relationship Types
+            100010,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '85492901-7593-46e0-8d3d-d50ed60346d5'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '85492901-7593-46e0-8d3d-d50ed60346d5',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b93aa266-faa5-461d-b32b-a0f26c698b2c'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'Name')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b93aa266-faa5-461d-b32b-a0f26c698b2c',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100002,
+            'Name',
+            'Name',
+            'Display name for the address type',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '255fcd46-e0e2-4b77-ab45-0ccdf6181e36'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'Description')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '255fcd46-e0e2-4b77-ab45-0ccdf6181e36',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100003,
+            'Description',
+            'Description',
+            'Detailed description of this address type',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b0408d09-cf61-4d1d-b951-8e0c5490bd29'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'IconClass')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b0408d09-cf61-4d1d-b951-8e0c5490bd29',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100004,
+            'IconClass',
+            'Icon Class',
+            'Font Awesome icon class for UI display',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '971c65dd-9f0c-4b46-ab06-8d5a3e47cbc3'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'DefaultRank')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '971c65dd-9f0c-4b46-ab06-8d5a3e47cbc3',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100005,
+            'DefaultRank',
+            'Default Rank',
+            'Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank',
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(100)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'f70d2734-af27-4969-9c8b-b51259e71f8f'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = 'IsActive')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'f70d2734-af27-4969-9c8b-b51259e71f8f',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100006,
+            'IsActive',
+            'Is Active',
+            'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '236794a4-9f6f-472e-9d9f-c77383cf48f5'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '236794a4-9f6f-472e-9d9f-c77383cf48f5',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100007,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'bca9babd-e370-4376-89ac-dcf9340e5734'  OR 
+               (EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'bca9babd-e370-4376-89ac-dcf9340e5734',
+            '7A7245D1-2316-44A4-B147-A50FF19F5942', -- Entity: MJ.BizApps.Common: Address Types
+            100008,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '2a0b54f1-94f8-466c-86c2-931e200258c1'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '2a0b54f1-94f8-466c-86c2-931e200258c1',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '4942cbcc-6d0b-44f5-be38-9d697d02b463'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'FirstName')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '4942cbcc-6d0b-44f5-be38-9d697d02b463',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100002,
             'FirstName',
             'First Name',
@@ -6817,8 +5213,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'fcdcecc5-509b-4a56-a7e6-7a9bbebbebec'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'LastName')
+         WHERE ID = '09ad91da-42c7-44f4-ae71-5ac6e50d7657'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'LastName')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6851,8 +5247,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'fcdcecc5-509b-4a56-a7e6-7a9bbebbebec',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '09ad91da-42c7-44f4-ae71-5ac6e50d7657',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100003,
             'LastName',
             'Last Name',
@@ -6882,8 +5278,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '1d5f5717-709d-4934-a749-11fe56a2bbbb'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'MiddleName')
+         WHERE ID = '528500f1-1bb8-4564-a46d-5d45362f3e05'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'MiddleName')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6916,8 +5312,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '1d5f5717-709d-4934-a749-11fe56a2bbbb',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '528500f1-1bb8-4564-a46d-5d45362f3e05',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100004,
             'MiddleName',
             'Middle Name',
@@ -6947,8 +5343,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'cf1e51af-191b-47e7-bc44-3a6c705ac739'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Prefix')
+         WHERE ID = '31733eb2-a6cb-4433-8fac-f278676855dc'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Prefix')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -6981,8 +5377,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'cf1e51af-191b-47e7-bc44-3a6c705ac739',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '31733eb2-a6cb-4433-8fac-f278676855dc',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100005,
             'Prefix',
             'Prefix',
@@ -7012,8 +5408,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e6687162-799a-4bb3-a5be-54eb87e22e83'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Suffix')
+         WHERE ID = '9f22ee0d-ac30-4805-89ec-e2c8576615be'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Suffix')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7046,8 +5442,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'e6687162-799a-4bb3-a5be-54eb87e22e83',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '9f22ee0d-ac30-4805-89ec-e2c8576615be',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100006,
             'Suffix',
             'Suffix',
@@ -7077,8 +5473,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '61021226-3fcc-468d-828a-d4c6b01d6200'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'PreferredName')
+         WHERE ID = '27375f71-8f8f-4dab-8803-96ae73ea28ce'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'PreferredName')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7111,8 +5507,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '61021226-3fcc-468d-828a-d4c6b01d6200',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '27375f71-8f8f-4dab-8803-96ae73ea28ce',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100007,
             'PreferredName',
             'Preferred Name',
@@ -7142,8 +5538,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '39c0d8a8-099b-4427-8921-8bb4e766ea47'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Title')
+         WHERE ID = '0b992115-7c59-4d6e-a49e-ddae2d7e9056'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Title')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7176,8 +5572,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '39c0d8a8-099b-4427-8921-8bb4e766ea47',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '0b992115-7c59-4d6e-a49e-ddae2d7e9056',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100008,
             'Title',
             'Title',
@@ -7207,8 +5603,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '8f92f420-e2b8-4ea9-8aef-efd6d5b41607'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Email')
+         WHERE ID = 'f6b2a29b-cfe9-410d-9732-3ae2acf44dc0'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Email')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7241,8 +5637,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '8f92f420-e2b8-4ea9-8aef-efd6d5b41607',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            'f6b2a29b-cfe9-410d-9732-3ae2acf44dc0',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100009,
             'Email',
             'Email',
@@ -7272,8 +5668,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '886ccd64-5654-4095-9e8e-345951b0db65'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Phone')
+         WHERE ID = '1b312aa3-5ccc-48e6-b034-a8bf437c9a4d'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Phone')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7306,8 +5702,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '886ccd64-5654-4095-9e8e-345951b0db65',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '1b312aa3-5ccc-48e6-b034-a8bf437c9a4d',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100010,
             'Phone',
             'Phone',
@@ -7337,8 +5733,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '05d10617-2fa9-40ff-b9e4-59b6aac4acbe'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'DateOfBirth')
+         WHERE ID = '45090e40-2e5c-4359-b14d-b3d902685c11'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'DateOfBirth')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7371,8 +5767,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '05d10617-2fa9-40ff-b9e4-59b6aac4acbe',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '45090e40-2e5c-4359-b14d-b3d902685c11',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100011,
             'DateOfBirth',
             'Date Of Birth',
@@ -7402,8 +5798,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '6354a8e3-2ad5-4fbf-bc44-321aee5c669f'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Gender')
+         WHERE ID = '69b0d1a5-c5f5-4f21-9f39-4dcb1c46f76f'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Gender')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7436,8 +5832,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '6354a8e3-2ad5-4fbf-bc44-321aee5c669f',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '69b0d1a5-c5f5-4f21-9f39-4dcb1c46f76f',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100012,
             'Gender',
             'Gender',
@@ -7467,8 +5863,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'a494bb71-2768-4024-b778-509aa1e8cb55'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'PhotoURL')
+         WHERE ID = '6bd597e1-05b9-46f6-80fd-5a98d35c4fdd'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'PhotoURL')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7501,8 +5897,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'a494bb71-2768-4024-b778-509aa1e8cb55',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '6bd597e1-05b9-46f6-80fd-5a98d35c4fdd',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100013,
             'PhotoURL',
             'Photo URL',
@@ -7532,8 +5928,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'f32f4925-bdd8-4f42-b2a8-8dafec07de2f'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Bio')
+         WHERE ID = '152f8f83-767b-4b4f-af92-ef786126dec0'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Bio')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7566,8 +5962,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'f32f4925-bdd8-4f42-b2a8-8dafec07de2f',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '152f8f83-767b-4b4f-af92-ef786126dec0',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100014,
             'Bio',
             'Bio',
@@ -7597,8 +5993,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7dfc3bf1-a07f-463e-845a-c934275bbfcf'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'LinkedUserID')
+         WHERE ID = '79f1eeab-367e-4b45-a9b8-75639f6410cb'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'LinkedUserID')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7631,8 +6027,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '7dfc3bf1-a07f-463e-845a-c934275bbfcf',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '79f1eeab-367e-4b45-a9b8-75639f6410cb',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100015,
             'LinkedUserID',
             'Linked User ID',
@@ -7653,7 +6049,7 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
             1,
             0,
             0,
-            0,
+            1,
             'Search'
          )
       END
@@ -7662,8 +6058,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c64968cb-cc40-403a-a02b-e245fe564172'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'Status')
+         WHERE ID = '57f78065-e9db-4d2c-a2f8-524d4f15d902'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'Status')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7696,8 +6092,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'c64968cb-cc40-403a-a02b-e245fe564172',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '57f78065-e9db-4d2c-a2f8-524d4f15d902',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100016,
             'Status',
             'Status',
@@ -7727,8 +6123,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e4076d06-6941-4562-95de-ec544aa22861'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = '__mj_CreatedAt')
+         WHERE ID = '86c714e8-b200-4f9f-817a-baf052aeee3d'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = '__mj_CreatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7761,8 +6157,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            'e4076d06-6941-4562-95de-ec544aa22861',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '86c714e8-b200-4f9f-817a-baf052aeee3d',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100017,
             '__mj_CreatedAt',
             'Created At',
@@ -7792,8 +6188,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '8a17598a-ffa8-4a10-8d14-0454d494457e'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = '__mj_UpdatedAt')
+         WHERE ID = 'cc25d06a-8f7e-433d-9658-500f225d55ec'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = '__mj_UpdatedAt')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -7826,8 +6222,8 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
          VALUES
          (
-            '8a17598a-ffa8-4a10-8d14-0454d494457e',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            'cc25d06a-8f7e-433d-9658-500f225d55ec',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100018,
             '__mj_UpdatedAt',
             'Updated At',
@@ -7853,254 +6249,2399 @@ ALTER TABLE [${flyway:defaultSchema}_BizAppsCommon].[Person] ADD __mj_UpdatedAt 
          )
       END
 
-/* SQL text to insert entity field value with ID 6eb44eb5-68a0-4680-a4bd-1360fce6b095 */
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'fefdad15-7ba5-470a-a689-147d9303ab34'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'fefdad15-7ba5-470a-a689-147d9303ab34',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '4bffafbd-bf4e-4907-963b-95733c670b7e'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'RelationshipTypeID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '4bffafbd-bf4e-4907-963b-95733c670b7e',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100002,
+            'RelationshipTypeID',
+            'Relationship Type ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            '5F214F43-109C-407D-B505-7B0B3B72ACB5',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8974264b-dc82-4276-b89e-c65e14f078f8'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'FromPersonID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8974264b-dc82-4276-b89e-c65e14f078f8',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100003,
+            'FromPersonID',
+            'From Person ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '6d46f59f-ff3f-4351-a697-e7db414a1e3e'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'FromOrganizationID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '6d46f59f-ff3f-4351-a697-e7db414a1e3e',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100004,
+            'FromOrganizationID',
+            'From Organization ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            'C70448F9-9792-41D7-A82C-784B66429D54',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'ad3ecdaa-e2be-40d9-b83e-1868ab68c778'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'ToPersonID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'ad3ecdaa-e2be-40d9-b83e-1868ab68c778',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100005,
+            'ToPersonID',
+            'To Person ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '42eba3ce-7ddb-4149-be93-e245f351b963'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'ToOrganizationID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '42eba3ce-7ddb-4149-be93-e245f351b963',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100006,
+            'ToOrganizationID',
+            'To Organization ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            'C70448F9-9792-41D7-A82C-784B66429D54',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '2acbd16a-2a78-4807-8b8d-d0920382eae6'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'Title')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '2acbd16a-2a78-4807-8b8d-d0920382eae6',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100007,
+            'Title',
+            'Title',
+            'Contextual title for this specific relationship, e.g. CEO, Primary Contact, Founding Member',
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '62d8a345-e8ac-4ee6-88a9-1959f6258657'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'StartDate')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '62d8a345-e8ac-4ee6-88a9-1959f6258657',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100008,
+            'StartDate',
+            'Start Date',
+            'Date the relationship began',
+            'date',
+            3,
+            10,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '0afc293d-e93d-4bd2-a71c-acb2631ca278'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'EndDate')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '0afc293d-e93d-4bd2-a71c-acb2631ca278',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100009,
+            'EndDate',
+            'End Date',
+            'Date the relationship ended, if applicable',
+            'date',
+            3,
+            10,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '80b0c5c4-915a-4e72-9978-74cb33902f08'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'Status')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '80b0c5c4-915a-4e72-9978-74cb33902f08',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100010,
+            'Status',
+            'Status',
+            'Current status: Active, Inactive, or Ended',
+            'nvarchar',
+            100,
+            0,
+            0,
+            0,
+            'Active',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'cd66c882-d041-46f1-8de2-3807b1bd8b5a'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'Notes')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'cd66c882-d041-46f1-8de2-3807b1bd8b5a',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100011,
+            'Notes',
+            'Notes',
+            'Additional notes about this relationship',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '5f0be392-8f9c-4995-bc97-344d361c9706'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '5f0be392-8f9c-4995-bc97-344d361c9706',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100012,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b15ae830-4bcb-4aa3-847e-916885287462'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b15ae830-4bcb-4aa3-847e-916885287462',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100013,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '665481ad-fc97-49be-a98c-ab58aa509f59'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '665481ad-fc97-49be-a98c-ab58aa509f59',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '82f2cdbc-8793-4fe4-bfca-380a8a22f41f'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'Name')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '82f2cdbc-8793-4fe4-bfca-380a8a22f41f',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100002,
+            'Name',
+            'Name',
+            'Display name for the organization type',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'e6f5450e-c909-426c-8ea6-968a3a68b6ca'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'Description')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'e6f5450e-c909-426c-8ea6-968a3a68b6ca',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100003,
+            'Description',
+            'Description',
+            'Detailed description of this organization type',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '1d7e13df-447a-49b8-9a07-1fa0cc058115'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'IconClass')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '1d7e13df-447a-49b8-9a07-1fa0cc058115',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100004,
+            'IconClass',
+            'Icon Class',
+            'Font Awesome icon class for UI display',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8686f717-72ac-4ecb-b3ff-200da50df000'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'DisplayRank')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8686f717-72ac-4ecb-b3ff-200da50df000',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100005,
+            'DisplayRank',
+            'Display Rank',
+            'Sort order in dropdown lists. Lower values appear first',
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(100)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'a6aaf1ab-1212-4066-9a84-2f0dae43b5be'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = 'IsActive')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'a6aaf1ab-1212-4066-9a84-2f0dae43b5be',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100006,
+            'IsActive',
+            'Is Active',
+            'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '7c026948-1d22-4d12-b839-a8af848811ba'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '7c026948-1d22-4d12-b839-a8af848811ba',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100007,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'a2efb1da-409f-40fa-be98-02e394a0f965'  OR 
+               (EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'a2efb1da-409f-40fa-be98-02e394a0f965',
+            'A77D9725-4871-484B-99F0-F65461D7ABEE', -- Entity: MJ.BizApps.Common: Organization Types
+            100008,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'ba3e4fae-198f-48e4-bd9f-774d8584e259'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'ID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'ba3e4fae-198f-48e4-bd9f-774d8584e259',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100001,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8c5ed1b2-107e-4195-9e05-ac25c452971d'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Line1')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8c5ed1b2-107e-4195-9e05-ac25c452971d',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100002,
+            'Line1',
+            'Line 1',
+            'Street address line 1',
+            'nvarchar',
+            510,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'c6515a57-dace-4684-ad9d-03297e60cde4'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Line2')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'c6515a57-dace-4684-ad9d-03297e60cde4',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100003,
+            'Line2',
+            'Line 2',
+            'Street address line 2 (suite, apt, etc.)',
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '9540ede1-741a-4b6f-b9f0-8de3c3edfc31'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Line3')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '9540ede1-741a-4b6f-b9f0-8de3c3edfc31',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100004,
+            'Line3',
+            'Line 3',
+            'Street address line 3 (additional detail)',
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '0c71e92a-d747-4302-b17f-78c92930d2ce'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'City')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '0c71e92a-d747-4302-b17f-78c92930d2ce',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100005,
+            'City',
+            'City',
+            'City or locality name',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'd43eca52-4b7a-434e-92ce-c3ff69824306'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'StateProvince')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'd43eca52-4b7a-434e-92ce-c3ff69824306',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100006,
+            'StateProvince',
+            'State Province',
+            'State, province, or region',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '65acac26-5f6c-4a67-8559-bd7c0943a925'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'PostalCode')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '65acac26-5f6c-4a67-8559-bd7c0943a925',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100007,
+            'PostalCode',
+            'Postal Code',
+            'Postal or ZIP code',
+            'nvarchar',
+            40,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '63bb48d1-67c2-4cd9-bdd9-f86f6154f77c'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Country')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '63bb48d1-67c2-4cd9-bdd9-f86f6154f77c',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100008,
+            'Country',
+            'Country',
+            'Country code or name, defaults to US',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'US',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '66d63980-b9b5-47a0-ba8b-6b55977cb60c'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Latitude')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '66d63980-b9b5-47a0-ba8b-6b55977cb60c',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100009,
+            'Latitude',
+            'Latitude',
+            'Geographic latitude for mapping',
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'b03f710e-9199-4986-90bf-3ece5037d79a'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = 'Longitude')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'b03f710e-9199-4986-90bf-3ece5037d79a',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100010,
+            'Longitude',
+            'Longitude',
+            'Geographic longitude for mapping',
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            'null',
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'cfe3572f-9b12-4d14-bba5-2f9a8a3b66f0'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = '__mj_CreatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'cfe3572f-9b12-4d14-bba5-2f9a8a3b66f0',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100011,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '2ff61a35-fb7c-455a-8883-6998b141b095'  OR 
+               (EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND Name = '__mj_UpdatedAt')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '2ff61a35-fb7c-455a-8883-6998b141b095',
+            '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- Entity: MJ.BizApps.Common: Addresses
+            100012,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert entity field value with ID 43ccc1f7-a27a-4bd1-8424-e29edefe48b0 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('6eb44eb5-68a0-4680-a4bd-1360fce6b095', '722C3E0D-AB64-4276-B53D-CA77C54143CF', 1, 'OrganizationToOrganization', 'OrganizationToOrganization')
+                                       ('43ccc1f7-a27a-4bd1-8424-e29edefe48b0', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 1, 'OrganizationToOrganization', 'OrganizationToOrganization')
 
-/* SQL text to insert entity field value with ID 9931055f-87bf-46d7-afac-dbe3dff6e4b4 */
+/* SQL text to insert entity field value with ID 42cbe5a8-ac27-42aa-b0af-0218573d30dd */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('9931055f-87bf-46d7-afac-dbe3dff6e4b4', '722C3E0D-AB64-4276-B53D-CA77C54143CF', 2, 'PersonToOrganization', 'PersonToOrganization')
+                                       ('42cbe5a8-ac27-42aa-b0af-0218573d30dd', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 2, 'PersonToOrganization', 'PersonToOrganization')
 
-/* SQL text to insert entity field value with ID 882fa96c-0de3-4af5-957d-89f408256d61 */
+/* SQL text to insert entity field value with ID 1f80325c-a9f1-4eac-aff5-2d071efe77b7 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('882fa96c-0de3-4af5-957d-89f408256d61', '722C3E0D-AB64-4276-B53D-CA77C54143CF', 3, 'PersonToPerson', 'PersonToPerson')
+                                       ('1f80325c-a9f1-4eac-aff5-2d071efe77b7', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 3, 'PersonToPerson', 'PersonToPerson')
 
-/* SQL text to update ValueListType for entity field ID 722C3E0D-AB64-4276-B53D-CA77C54143CF */
-UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='722C3E0D-AB64-4276-B53D-CA77C54143CF'
+/* SQL text to update ValueListType for entity field ID ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B */
+UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B'
 
-/* SQL text to insert entity field value with ID 322f3b64-1d55-4058-9347-0b022b5b596a */
+/* SQL text to insert entity field value with ID facaa0a3-9463-47ce-975c-e3d00717335c */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('322f3b64-1d55-4058-9347-0b022b5b596a', 'C64968CB-CC40-403A-A02B-E245FE564172', 1, 'Active', 'Active')
+                                       ('facaa0a3-9463-47ce-975c-e3d00717335c', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 1, 'Active', 'Active')
 
-/* SQL text to insert entity field value with ID a2e1739f-11fa-4ab9-9538-9914adbdaa4a */
+/* SQL text to insert entity field value with ID 51f1886c-560e-4321-a9bd-f7cb311a22ea */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('a2e1739f-11fa-4ab9-9538-9914adbdaa4a', 'C64968CB-CC40-403A-A02B-E245FE564172', 2, 'Deceased', 'Deceased')
+                                       ('51f1886c-560e-4321-a9bd-f7cb311a22ea', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 2, 'Deceased', 'Deceased')
 
-/* SQL text to insert entity field value with ID ec370387-816c-4b2e-9c05-bae2cff8af97 */
+/* SQL text to insert entity field value with ID 5d5c5c1c-8314-493a-a647-13eda26e4120 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('ec370387-816c-4b2e-9c05-bae2cff8af97', 'C64968CB-CC40-403A-A02B-E245FE564172', 3, 'Inactive', 'Inactive')
+                                       ('5d5c5c1c-8314-493a-a647-13eda26e4120', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 3, 'Inactive', 'Inactive')
 
-/* SQL text to update ValueListType for entity field ID C64968CB-CC40-403A-A02B-E245FE564172 */
-UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='C64968CB-CC40-403A-A02B-E245FE564172'
+/* SQL text to update ValueListType for entity field ID 57F78065-E9DB-4D2C-A2F8-524D4F15D902 */
+UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='57F78065-E9DB-4D2C-A2F8-524D4F15D902'
 
-/* SQL text to insert entity field value with ID 693e6655-1f22-4a12-aa92-3dd657f36584 */
+/* SQL text to insert entity field value with ID 615f2381-74ed-428f-91d5-f0d1272f5ad2 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('693e6655-1f22-4a12-aa92-3dd657f36584', '5ED84866-8B7B-42C5-912E-80FDAC5B4D1F', 1, 'Active', 'Active')
+                                       ('615f2381-74ed-428f-91d5-f0d1272f5ad2', '8620F795-6511-4715-A823-D3C905AF3ECC', 1, 'Active', 'Active')
 
-/* SQL text to insert entity field value with ID a31ffdca-a66d-4267-919a-580f195ceea4 */
+/* SQL text to insert entity field value with ID ebdcd22f-fb23-48fb-8905-7f66811f3532 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('a31ffdca-a66d-4267-919a-580f195ceea4', '5ED84866-8B7B-42C5-912E-80FDAC5B4D1F', 2, 'Dissolved', 'Dissolved')
+                                       ('ebdcd22f-fb23-48fb-8905-7f66811f3532', '8620F795-6511-4715-A823-D3C905AF3ECC', 2, 'Dissolved', 'Dissolved')
 
-/* SQL text to insert entity field value with ID 4515dfea-8f4f-491d-87b7-5f4d4bd81651 */
+/* SQL text to insert entity field value with ID 23179677-9fbd-4ad5-8374-895734b795b7 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('4515dfea-8f4f-491d-87b7-5f4d4bd81651', '5ED84866-8B7B-42C5-912E-80FDAC5B4D1F', 3, 'Inactive', 'Inactive')
+                                       ('23179677-9fbd-4ad5-8374-895734b795b7', '8620F795-6511-4715-A823-D3C905AF3ECC', 3, 'Inactive', 'Inactive')
 
-/* SQL text to update ValueListType for entity field ID 5ED84866-8B7B-42C5-912E-80FDAC5B4D1F */
-UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='5ED84866-8B7B-42C5-912E-80FDAC5B4D1F'
+/* SQL text to update ValueListType for entity field ID 8620F795-6511-4715-A823-D3C905AF3ECC */
+UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='8620F795-6511-4715-A823-D3C905AF3ECC'
 
-/* SQL text to insert entity field value with ID c5422acf-c9c4-4e9c-a97c-2bd5768d13a7 */
+/* SQL text to insert entity field value with ID 6dcd32d9-9534-4295-9de1-204f961127e8 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('c5422acf-c9c4-4e9c-a97c-2bd5768d13a7', '228F924E-DB74-41E4-8D20-942D899C03D6', 1, 'Active', 'Active')
+                                       ('6dcd32d9-9534-4295-9de1-204f961127e8', '80B0C5C4-915A-4E72-9978-74CB33902F08', 1, 'Active', 'Active')
 
-/* SQL text to insert entity field value with ID be5f406e-536c-470f-93ed-dd209d56b007 */
+/* SQL text to insert entity field value with ID 58ff360b-46f2-458d-b66c-95768c6e95e7 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('be5f406e-536c-470f-93ed-dd209d56b007', '228F924E-DB74-41E4-8D20-942D899C03D6', 2, 'Ended', 'Ended')
+                                       ('58ff360b-46f2-458d-b66c-95768c6e95e7', '80B0C5C4-915A-4E72-9978-74CB33902F08', 2, 'Ended', 'Ended')
 
-/* SQL text to insert entity field value with ID 945fde93-a912-4d53-8e27-ff91fdc2cb06 */
+/* SQL text to insert entity field value with ID 71e4f1ea-0f72-4b43-befe-7a1de14eed47 */
 INSERT INTO [${flyway:defaultSchema}].EntityFieldValue
                                        (ID, EntityFieldID, Sequence, Value, Code)
                                     VALUES
-                                       ('945fde93-a912-4d53-8e27-ff91fdc2cb06', '228F924E-DB74-41E4-8D20-942D899C03D6', 3, 'Inactive', 'Inactive')
+                                       ('71e4f1ea-0f72-4b43-befe-7a1de14eed47', '80B0C5C4-915A-4E72-9978-74CB33902F08', 3, 'Inactive', 'Inactive')
 
-/* SQL text to update ValueListType for entity field ID 228F924E-DB74-41E4-8D20-942D899C03D6 */
-UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='228F924E-DB74-41E4-8D20-942D899C03D6'
-
-
-/* Create Entity Relationship: Common: Contact Types -> Common: Contact Methods (One To Many via ContactTypeID) */
-   IF NOT EXISTS (
-      SELECT 1
-      FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '7acdd231-51b3-416e-8e7a-e7e75ac87e6d'
-   )
-   BEGIN
-      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('7acdd231-51b3-416e-8e7a-e7e75ac87e6d', 'D17353E5-1FB0-4940-8D91-3E4007549200', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', 'ContactTypeID', 'One To Many', 1, 1, 'Common: Contact Methods', 1);
-   END
-                              
-/* Create Entity Relationship: Common: Address Types -> Common: Address Links (One To Many via AddressTypeID) */
-   IF NOT EXISTS (
-      SELECT 1
-      FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = 'f1e2bf7c-4973-446e-8b48-3975bf9b15ed'
-   )
-   BEGIN
-      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('f1e2bf7c-4973-446e-8b48-3975bf9b15ed', '66FA272F-59BB-4105-A1F3-4E5D4D63F381', '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', 'AddressTypeID', 'One To Many', 1, 1, 'Common: Address Links', 1);
-   END
-                              
-/* Create Entity Relationship: MJ: Entities -> Common: Address Links (One To Many via EntityID) */
-   IF NOT EXISTS (
-      SELECT 1
-      FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '54a62f1c-7827-4eb7-964e-6239dc8d405c'
-   )
-   BEGIN
-      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('54a62f1c-7827-4eb7-964e-6239dc8d405c', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', 'EntityID', 'One To Many', 1, 1, 'Common: Address Links', 2);
-   END
-                              
-/* Create Entity Relationship: MJ: Users -> Common: People (One To Many via LinkedUserID) */
-   IF NOT EXISTS (
-      SELECT 1
-      FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '824ce063-f4cf-416f-8b13-83186157c95f'
-   )
-   BEGIN
-      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('824ce063-f4cf-416f-8b13-83186157c95f', 'E1238F34-2837-EF11-86D4-6045BDEE16E6', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', 'LinkedUserID', 'One To Many', 1, 1, 'Common: People', 1);
-   END
-                              
-/* Create Entity Relationship: Common: Relationship Types -> Common: Relationships (One To Many via RelationshipTypeID) */
-   IF NOT EXISTS (
-      SELECT 1
-      FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '99f43e3f-8037-41df-8a25-19f2f14b64c0'
-   )
-   BEGIN
-      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('99f43e3f-8037-41df-8a25-19f2f14b64c0', '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'RelationshipTypeID', 'One To Many', 1, 1, 'Common: Relationships', 1);
-   END
-                              
+/* SQL text to update ValueListType for entity field ID 80B0C5C4-915A-4E72-9978-74CB33902F08 */
+UPDATE [${flyway:defaultSchema}].EntityField SET ValueListType='List' WHERE ID='80B0C5C4-915A-4E72-9978-74CB33902F08'
 
 
-/* Create Entity Relationship: Common: Organizations -> Common: Relationships (One To Many via FromOrganizationID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Contact Types -> MJ.BizApps.Common: Contact Methods (One To Many via ContactTypeID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '2d071d5c-cc49-4a2c-8577-3bee4d5797af'
+      WHERE ID = '2d050398-8dba-49b2-848e-4a88a9191eff'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('2d071d5c-cc49-4a2c-8577-3bee4d5797af', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'FromOrganizationID', 'One To Many', 1, 1, 'Common: Relationships', 2);
+                              VALUES ('2d050398-8dba-49b2-848e-4a88a9191eff', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'ContactTypeID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Contact Methods', 1);
    END
                               
-/* Create Entity Relationship: Common: Organizations -> Common: Relationships (One To Many via ToOrganizationID) */
+/* Create Entity Relationship: MJ: Entities -> MJ.BizApps.Common: Address Links (One To Many via EntityID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '821e0b04-ad20-40b4-b19d-b6c1c1c6b948'
+      WHERE ID = '2a078d6b-5ef4-4eba-b166-57a295bb304d'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('821e0b04-ad20-40b4-b19d-b6c1c1c6b948', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'ToOrganizationID', 'One To Many', 1, 1, 'Common: Relationships', 3);
+                              VALUES ('2a078d6b-5ef4-4eba-b166-57a295bb304d', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'EntityID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Address Links', 1);
    END
                               
-/* Create Entity Relationship: Common: Organizations -> Common: Organizations (One To Many via ParentID) */
+/* Create Entity Relationship: MJ: Users -> MJ.BizApps.Common: People (One To Many via LinkedUserID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '3533be62-dfa7-4b4d-b640-31aebf2e9cbc'
+      WHERE ID = '4b115dcc-dbc1-4c6f-b45c-3ae939cde7b8'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('3533be62-dfa7-4b4d-b640-31aebf2e9cbc', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', 'ParentID', 'One To Many', 1, 1, 'Common: Organizations', 1);
+                              VALUES ('4b115dcc-dbc1-4c6f-b45c-3ae939cde7b8', 'E1238F34-2837-EF11-86D4-6045BDEE16E6', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'LinkedUserID', 'One To Many', 1, 1, 'MJ.BizApps.Common: People', 1);
    END
                               
-/* Create Entity Relationship: Common: Organizations -> Common: Contact Methods (One To Many via OrganizationID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Organizations -> MJ.BizApps.Common: Contact Methods (One To Many via OrganizationID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '0d6871dd-9689-4dda-85bd-a6d5f5688728'
+      WHERE ID = '4d7a3d74-4e29-4fea-98f1-2d870a226a63'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('0d6871dd-9689-4dda-85bd-a6d5f5688728', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', 'OrganizationID', 'One To Many', 1, 1, 'Common: Contact Methods', 2);
+                              VALUES ('4d7a3d74-4e29-4fea-98f1-2d870a226a63', 'C70448F9-9792-41D7-A82C-784B66429D54', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'OrganizationID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Contact Methods', 2);
    END
                               
-/* Create Entity Relationship: Common: Organization Types -> Common: Organizations (One To Many via OrganizationTypeID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Organizations -> MJ.BizApps.Common: Organizations (One To Many via ParentID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = '58296c32-759f-4ab8-9a03-11f7097c836b'
+      WHERE ID = '9d170fc9-ece8-4a03-a857-54ccaf628836'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('58296c32-759f-4ab8-9a03-11f7097c836b', '0AB066C1-8FE5-4363-86E6-BEF80975205C', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', 'OrganizationTypeID', 'One To Many', 1, 1, 'Common: Organizations', 2);
+                              VALUES ('9d170fc9-ece8-4a03-a857-54ccaf628836', 'C70448F9-9792-41D7-A82C-784B66429D54', 'C70448F9-9792-41D7-A82C-784B66429D54', 'ParentID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Organizations', 1);
    END
                               
 
 
-/* Create Entity Relationship: Common: Addresses -> Common: Address Links (One To Many via AddressID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Organizations -> MJ.BizApps.Common: Relationships (One To Many via ToOrganizationID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = 'bc311529-aa34-4e07-ad29-3dbc4deda591'
+      WHERE ID = 'c1f0a217-026c-44c6-8724-ca4991dc0258'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('bc311529-aa34-4e07-ad29-3dbc4deda591', 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', 'AddressID', 'One To Many', 1, 1, 'Common: Address Links', 3);
+                              VALUES ('c1f0a217-026c-44c6-8724-ca4991dc0258', 'C70448F9-9792-41D7-A82C-784B66429D54', '709CA9DA-B124-4155-BE39-E857EF672D82', 'ToOrganizationID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Relationships', 1);
    END
                               
-/* Create Entity Relationship: Common: People -> Common: Relationships (One To Many via ToPersonID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Organizations -> MJ.BizApps.Common: Relationships (One To Many via FromOrganizationID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = 'acd1104e-96ea-419d-a160-e153a0b4b6c6'
+      WHERE ID = '1997a9d1-921a-4af2-9f04-a42bd22163a4'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('acd1104e-96ea-419d-a160-e153a0b4b6c6', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'ToPersonID', 'One To Many', 1, 1, 'Common: Relationships', 4);
+                              VALUES ('1997a9d1-921a-4af2-9f04-a42bd22163a4', 'C70448F9-9792-41D7-A82C-784B66429D54', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FromOrganizationID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Relationships', 2);
    END
                               
-/* Create Entity Relationship: Common: People -> Common: Contact Methods (One To Many via PersonID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Relationship Types -> MJ.BizApps.Common: Relationships (One To Many via RelationshipTypeID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = 'c44d4251-ffd0-4db6-bd21-1f43e731191a'
+      WHERE ID = '978706e5-7e49-45de-b904-c917571f6f67'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('c44d4251-ffd0-4db6-bd21-1f43e731191a', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', 'PersonID', 'One To Many', 1, 1, 'Common: Contact Methods', 3);
+                              VALUES ('978706e5-7e49-45de-b904-c917571f6f67', '5F214F43-109C-407D-B505-7B0B3B72ACB5', '709CA9DA-B124-4155-BE39-E857EF672D82', 'RelationshipTypeID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Relationships', 3);
    END
                               
-/* Create Entity Relationship: Common: People -> Common: Relationships (One To Many via FromPersonID) */
+/* Create Entity Relationship: MJ.BizApps.Common: Address Types -> MJ.BizApps.Common: Address Links (One To Many via AddressTypeID) */
    IF NOT EXISTS (
       SELECT 1
       FROM [${flyway:defaultSchema}].EntityRelationship
-      WHERE ID = 'e01a742b-643c-4afa-9e6a-3e2245e1c39a'
+      WHERE ID = '9013b0db-bd0e-463a-9861-bd587744e75a'
    )
    BEGIN
       INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
-                              VALUES ('e01a742b-643c-4afa-9e6a-3e2245e1c39a', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'FromPersonID', 'One To Many', 1, 1, 'Common: Relationships', 5);
+                              VALUES ('9013b0db-bd0e-463a-9861-bd587744e75a', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'AddressTypeID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Address Links', 2);
+   END
+                              
+/* Create Entity Relationship: MJ.BizApps.Common: People -> MJ.BizApps.Common: Relationships (One To Many via ToPersonID) */
+   IF NOT EXISTS (
+      SELECT 1
+      FROM [${flyway:defaultSchema}].EntityRelationship
+      WHERE ID = 'e5d30b7e-fcbc-49eb-97a7-28e12bd604c9'
+   )
+   BEGIN
+      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
+                              VALUES ('e5d30b7e-fcbc-49eb-97a7-28e12bd604c9', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '709CA9DA-B124-4155-BE39-E857EF672D82', 'ToPersonID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Relationships', 4);
+   END
+                              
+
+
+/* Create Entity Relationship: MJ.BizApps.Common: People -> MJ.BizApps.Common: Contact Methods (One To Many via PersonID) */
+   IF NOT EXISTS (
+      SELECT 1
+      FROM [${flyway:defaultSchema}].EntityRelationship
+      WHERE ID = '1f63a0cf-3f16-4eac-a241-845c633779cc'
+   )
+   BEGIN
+      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
+                              VALUES ('1f63a0cf-3f16-4eac-a241-845c633779cc', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'PersonID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Contact Methods', 3);
+   END
+                              
+/* Create Entity Relationship: MJ.BizApps.Common: People -> MJ.BizApps.Common: Relationships (One To Many via FromPersonID) */
+   IF NOT EXISTS (
+      SELECT 1
+      FROM [${flyway:defaultSchema}].EntityRelationship
+      WHERE ID = 'c37cbf7a-9f75-4210-b2c5-7b64f8e9480d'
+   )
+   BEGIN
+      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
+                              VALUES ('c37cbf7a-9f75-4210-b2c5-7b64f8e9480d', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FromPersonID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Relationships', 5);
+   END
+                              
+/* Create Entity Relationship: MJ.BizApps.Common: Organization Types -> MJ.BizApps.Common: Organizations (One To Many via OrganizationTypeID) */
+   IF NOT EXISTS (
+      SELECT 1
+      FROM [${flyway:defaultSchema}].EntityRelationship
+      WHERE ID = '654b6801-e8d4-4c42-bb6b-5a5784dbbd5b'
+   )
+   BEGIN
+      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
+                              VALUES ('654b6801-e8d4-4c42-bb6b-5a5784dbbd5b', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'C70448F9-9792-41D7-A82C-784B66429D54', 'OrganizationTypeID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Organizations', 2);
+   END
+                              
+/* Create Entity Relationship: MJ.BizApps.Common: Addresses -> MJ.BizApps.Common: Address Links (One To Many via AddressID) */
+   IF NOT EXISTS (
+      SELECT 1
+      FROM [${flyway:defaultSchema}].EntityRelationship
+      WHERE ID = 'ce979efc-9636-4d0b-94f8-48e0ca9ff33b'
+   )
+   BEGIN
+      INSERT INTO ${flyway:defaultSchema}.EntityRelationship (ID, EntityID, RelatedEntityID, RelatedEntityJoinField, Type, BundleInAPI, DisplayInForm, DisplayName, Sequence)
+                              VALUES ('ce979efc-9636-4d0b-94f8-48e0ca9ff33b', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'AddressID', 'One To Many', 1, 1, 'MJ.BizApps.Common: Address Links', 3);
    END
                               
 
 /* Index for Foreign Keys for AddressLink */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Links
+-- Entity: MJ.BizApps.Common: Address Links
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8133,15 +8674,15 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_AddressLink_AddressTypeID ON [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] ([AddressTypeID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID CFCBE12E-5B60-44C1-BDF9-F672294778FB */
+/* SQL text to update entity field related entity name field map for entity field ID 63D14E61-C4BE-4369-A775-7A93A14A6432 */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='CFCBE12E-5B60-44C1-BDF9-F672294778FB',
+         @EntityFieldID='63D14E61-C4BE-4369-A775-7A93A14A6432',
          @RelatedEntityNameFieldMap='Entity'
 
 /* Index for Foreign Keys for AddressType */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8152,7 +8693,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 /* Index for Foreign Keys for Address */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8163,7 +8704,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 /* Index for Foreign Keys for ContactMethod */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8196,15 +8737,15 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ContactMethod_ContactTypeID ON [${flyway:defaultSchema}_BizAppsCommon].[ContactMethod] ([ContactTypeID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 203C3260-2DF9-4478-B639-D0401AC0AC28 */
+/* SQL text to update entity field related entity name field map for entity field ID 0EC64524-99CD-484D-BF82-0E422D0C9903 */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='203C3260-2DF9-4478-B639-D0401AC0AC28',
+         @EntityFieldID='0EC64524-99CD-484D-BF82-0E422D0C9903',
          @RelatedEntityNameFieldMap='Organization'
 
 /* Index for Foreign Keys for ContactType */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8212,10 +8753,10 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 -----------------------------------------------------------------
 
 
-/* Base View SQL for Common: Address Types */
+/* Base View SQL for MJ.BizApps.Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: vwAddressTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8223,7 +8764,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Address Types
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Address Types
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  AddressType
 -----               PRIMARY KEY: ID
@@ -8242,10 +8783,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Address Types */
+/* Base View Permissions SQL for MJ.BizApps.Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: Permissions for vwAddressTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8254,10 +8795,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressTypes] TO [cdp
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Address Types */
+/* spCreate SQL for MJ.BizApps.Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: spCreateAddressType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8275,7 +8816,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressType]
     @ID uniqueidentifier = NULL,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @DefaultRank int = NULL
+    @IconClass nvarchar(100),
+    @DefaultRank int = NULL,
+    @IsActive bit = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -8289,7 +8832,9 @@ BEGIN
                 [ID],
                 [Name],
                 [Description],
-                [DefaultRank]
+                [IconClass],
+                [DefaultRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
@@ -8297,7 +8842,9 @@ BEGIN
                 @ID,
                 @Name,
                 @Description,
-                ISNULL(@DefaultRank, 100)
+                @IconClass,
+                ISNULL(@DefaultRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     ELSE
@@ -8307,14 +8854,18 @@ BEGIN
             (
                 [Name],
                 [Description],
-                [DefaultRank]
+                [IconClass],
+                [DefaultRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
             (
                 @Name,
                 @Description,
-                ISNULL(@DefaultRank, 100)
+                @IconClass,
+                ISNULL(@DefaultRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     -- return the new record from the base view, which might have some calculated fields
@@ -8324,16 +8875,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressType] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Address Types */
+/* spCreate Permissions for MJ.BizApps.Common: Address Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Address Types */
+/* spUpdate SQL for MJ.BizApps.Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: spUpdateAddressType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8351,7 +8902,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressType]
     @ID uniqueidentifier,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @DefaultRank int
+    @IconClass nvarchar(100),
+    @DefaultRank int,
+    @IsActive bit
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -8360,7 +8913,9 @@ BEGIN
     SET
         [Name] = @Name,
         [Description] = @Description,
-        [DefaultRank] = @DefaultRank
+        [IconClass] = @IconClass,
+        [DefaultRank] = @DefaultRank,
+        [IsActive] = @IsActive
     WHERE
         [ID] = @ID
 
@@ -8408,16 +8963,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Address Types */
+/* spUpdate Permissions for MJ.BizApps.Common: Address Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* Base View SQL for Common: Addresses */
+/* Base View SQL for MJ.BizApps.Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: vwAddresses
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8425,7 +8980,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressType] T
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Addresses
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Addresses
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  Address
 -----               PRIMARY KEY: ID
@@ -8444,10 +8999,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddresses] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Addresses */
+/* Base View Permissions SQL for MJ.BizApps.Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: Permissions for vwAddresses
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8456,10 +9011,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddresses] TO [cdp_UI
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddresses] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Addresses */
+/* spCreate SQL for MJ.BizApps.Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: spCreateAddress
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8556,16 +9111,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddress] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Addresses */
+/* spCreate Permissions for MJ.BizApps.Common: Addresses */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddress] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Addresses */
+/* spUpdate SQL for MJ.BizApps.Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: spUpdateAddress
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8652,16 +9207,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Addresses */
+/* spUpdate Permissions for MJ.BizApps.Common: Addresses */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddress] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* Base View SQL for Common: Contact Types */
+/* Base View SQL for MJ.BizApps.Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: vwContactTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8669,7 +9224,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddress] TO [c
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Contact Types
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Contact Types
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  ContactType
 -----               PRIMARY KEY: ID
@@ -8688,10 +9243,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Contact Types */
+/* Base View Permissions SQL for MJ.BizApps.Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: Permissions for vwContactTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8700,10 +9255,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactTypes] TO [cdp
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Contact Types */
+/* spCreate SQL for MJ.BizApps.Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: spCreateContactType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8721,7 +9276,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateContactType]
     @ID uniqueidentifier = NULL,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @IconClass nvarchar(100)
+    @IconClass nvarchar(100),
+    @DisplayRank int = NULL,
+    @IsActive bit = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -8735,7 +9292,9 @@ BEGIN
                 [ID],
                 [Name],
                 [Description],
-                [IconClass]
+                [IconClass],
+                [DisplayRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
@@ -8743,7 +9302,9 @@ BEGIN
                 @ID,
                 @Name,
                 @Description,
-                @IconClass
+                @IconClass,
+                ISNULL(@DisplayRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     ELSE
@@ -8753,14 +9314,18 @@ BEGIN
             (
                 [Name],
                 [Description],
-                [IconClass]
+                [IconClass],
+                [DisplayRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
             (
                 @Name,
                 @Description,
-                @IconClass
+                @IconClass,
+                ISNULL(@DisplayRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     -- return the new record from the base view, which might have some calculated fields
@@ -8770,16 +9335,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateContactType] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Contact Types */
+/* spCreate Permissions for MJ.BizApps.Common: Contact Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateContactType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Contact Types */
+/* spUpdate SQL for MJ.BizApps.Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: spUpdateContactType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8797,7 +9362,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateContactType]
     @ID uniqueidentifier,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @IconClass nvarchar(100)
+    @IconClass nvarchar(100),
+    @DisplayRank int,
+    @IsActive bit
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -8806,7 +9373,9 @@ BEGIN
     SET
         [Name] = @Name,
         [Description] = @Description,
-        [IconClass] = @IconClass
+        [IconClass] = @IconClass,
+        [DisplayRank] = @DisplayRank,
+        [IsActive] = @IsActive
     WHERE
         [ID] = @ID
 
@@ -8854,16 +9423,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Contact Types */
+/* spUpdate Permissions for MJ.BizApps.Common: Contact Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateContactType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Address Types */
+/* spDelete SQL for MJ.BizApps.Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Types
+-- Entity: MJ.BizApps.Common: Address Types
 -- Item: spDeleteAddressType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8899,16 +9468,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressType] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Address Types */
+/* spDelete Permissions for MJ.BizApps.Common: Address Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressType] TO [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Addresses */
+/* spDelete SQL for MJ.BizApps.Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Addresses
+-- Entity: MJ.BizApps.Common: Addresses
 -- Item: spDeleteAddress
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8944,16 +9513,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddress] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Addresses */
+/* spDelete Permissions for MJ.BizApps.Common: Addresses */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddress] TO [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Contact Types */
+/* spDelete SQL for MJ.BizApps.Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Types
+-- Entity: MJ.BizApps.Common: Contact Types
 -- Item: spDeleteContactType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -8989,304 +9558,26 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteContactType] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Contact Types */
+/* spDelete Permissions for MJ.BizApps.Common: Contact Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteContactType] TO [cdp_Integration]
 
 
 
-/* SQL text to update entity field related entity name field map for entity field ID 71E1C019-742D-422F-B412-D85757922ADB */
+/* SQL text to update entity field related entity name field map for entity field ID 5C42F4D1-4ABD-4CC6-B5DA-A164D5CBA7A1 */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='71E1C019-742D-422F-B412-D85757922ADB',
-         @RelatedEntityNameFieldMap='AddressType'
-
-/* SQL text to update entity field related entity name field map for entity field ID 0B306E5D-0024-471A-9E43-5293C57D4759 */
-EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='0B306E5D-0024-471A-9E43-5293C57D4759',
+         @EntityFieldID='5C42F4D1-4ABD-4CC6-B5DA-A164D5CBA7A1',
          @RelatedEntityNameFieldMap='ContactType'
 
-/* Base View SQL for Common: Address Links */
+/* SQL text to update entity field related entity name field map for entity field ID 633EAB3F-8828-4DB0-9B19-6AD04A75CB83 */
+EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
+         @EntityFieldID='633EAB3F-8828-4DB0-9B19-6AD04A75CB83',
+         @RelatedEntityNameFieldMap='AddressType'
+
+/* Base View SQL for MJ.BizApps.Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Address Links
--- Item: vwAddressLinks
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Address Links
------               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
------               BASE TABLE:  AddressLink
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]
-AS
-SELECT
-    a.*,
-    MJEntity_EntityID.[Name] AS [Entity],
-    mjBizAppsCommonAddressType_AddressTypeID.[Name] AS [AddressType]
-FROM
-    [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] AS a
-INNER JOIN
-    [${flyway:defaultSchema}].[Entity] AS MJEntity_EntityID
-  ON
-    [a].[EntityID] = MJEntity_EntityID.[ID]
-INNER JOIN
-    [${flyway:defaultSchema}_BizAppsCommon].[AddressType] AS mjBizAppsCommonAddressType_AddressTypeID
-  ON
-    [a].[AddressTypeID] = mjBizAppsCommonAddressType_AddressTypeID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
-    
-
-/* Base View Permissions SQL for Common: Address Links */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: Common: Address Links
--- Item: Permissions for vwAddressLinks
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
-
-/* spCreate SQL for Common: Address Links */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: Common: Address Links
--- Item: spCreateAddressLink
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR AddressLink
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink]
-    @ID uniqueidentifier = NULL,
-    @AddressID uniqueidentifier,
-    @EntityID uniqueidentifier,
-    @RecordID nvarchar(700),
-    @AddressTypeID uniqueidentifier,
-    @IsPrimary bit = NULL,
-    @Rank int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-    
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-            (
-                [ID],
-                [AddressID],
-                [EntityID],
-                [RecordID],
-                [AddressTypeID],
-                [IsPrimary],
-                [Rank]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                @AddressID,
-                @EntityID,
-                @RecordID,
-                @AddressTypeID,
-                ISNULL(@IsPrimary, 0),
-                @Rank
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-            (
-                [AddressID],
-                [EntityID],
-                [RecordID],
-                [AddressTypeID],
-                [IsPrimary],
-                [Rank]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @AddressID,
-                @EntityID,
-                @RecordID,
-                @AddressTypeID,
-                ISNULL(@IsPrimary, 0),
-                @Rank
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink] TO [cdp_Developer], [cdp_Integration]
-    
-
-/* spCreate Permissions for Common: Address Links */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink] TO [cdp_Developer], [cdp_Integration]
-
-
-
-/* spUpdate SQL for Common: Address Links */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: Common: Address Links
--- Item: spUpdateAddressLink
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR AddressLink
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink]
-    @ID uniqueidentifier,
-    @AddressID uniqueidentifier,
-    @EntityID uniqueidentifier,
-    @RecordID nvarchar(700),
-    @AddressTypeID uniqueidentifier,
-    @IsPrimary bit,
-    @Rank int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-    SET
-        [AddressID] = @AddressID,
-        [EntityID] = @EntityID,
-        [RecordID] = @RecordID,
-        [AddressTypeID] = @AddressTypeID,
-        [IsPrimary] = @IsPrimary,
-        [Rank] = @Rank
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the AddressLink table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[trgUpdateAddressLink]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}_BizAppsCommon].[trgUpdateAddressLink];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}_BizAppsCommon].trgUpdateAddressLink
-ON [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-        
-
-/* spUpdate Permissions for Common: Address Links */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink] TO [cdp_Developer], [cdp_Integration]
-
-
-
-/* spDelete SQL for Common: Address Links */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: Common: Address Links
--- Item: spDeleteAddressLink
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR AddressLink
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink] TO [cdp_Integration]
-    
-
-/* spDelete Permissions for Common: Address Links */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink] TO [cdp_Integration]
-
-
-
-/* Base View SQL for Common: Contact Methods */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: vwContactMethods
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9294,7 +9585,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink] T
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Contact Methods
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Contact Methods
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  ContactMethod
 -----               PRIMARY KEY: ID
@@ -9323,10 +9614,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactMethods] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Contact Methods */
+/* Base View Permissions SQL for MJ.BizApps.Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: Permissions for vwContactMethods
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9335,10 +9626,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactMethods] TO [c
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwContactMethods] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Contact Methods */
+/* spCreate SQL for MJ.BizApps.Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: spCreateContactMethod
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9420,16 +9711,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateContactMethod] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Contact Methods */
+/* spCreate Permissions for MJ.BizApps.Common: Contact Methods */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateContactMethod] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Contact Methods */
+/* spUpdate SQL for MJ.BizApps.Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: spUpdateContactMethod
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9510,16 +9801,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Contact Methods */
+/* spUpdate Permissions for MJ.BizApps.Common: Contact Methods */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateContactMethod] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Contact Methods */
+/* spDelete SQL for MJ.BizApps.Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Contact Methods
+-- Entity: MJ.BizApps.Common: Contact Methods
 -- Item: spDeleteContactMethod
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9555,16 +9846,294 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteContactMethod] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Contact Methods */
+/* spDelete Permissions for MJ.BizApps.Common: Contact Methods */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteContactMethod] TO [cdp_Integration]
+
+
+
+/* Base View SQL for MJ.BizApps.Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ.BizApps.Common: Address Links
+-- Item: vwAddressLinks
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Address Links
+-----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
+-----               BASE TABLE:  AddressLink
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]
+AS
+SELECT
+    a.*,
+    MJEntity_EntityID.[Name] AS [Entity],
+    mjBizAppsCommonAddressType_AddressTypeID.[Name] AS [AddressType]
+FROM
+    [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] AS a
+INNER JOIN
+    [${flyway:defaultSchema}].[Entity] AS MJEntity_EntityID
+  ON
+    [a].[EntityID] = MJEntity_EntityID.[ID]
+INNER JOIN
+    [${flyway:defaultSchema}_BizAppsCommon].[AddressType] AS mjBizAppsCommonAddressType_AddressTypeID
+  ON
+    [a].[AddressTypeID] = mjBizAppsCommonAddressType_AddressTypeID.[ID]
+GO
+GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
+    
+
+/* Base View Permissions SQL for MJ.BizApps.Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ.BizApps.Common: Address Links
+-- Item: Permissions for vwAddressLinks
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
+
+/* spCreate SQL for MJ.BizApps.Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ.BizApps.Common: Address Links
+-- Item: spCreateAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR AddressLink
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink]
+    @ID uniqueidentifier = NULL,
+    @AddressID uniqueidentifier,
+    @EntityID uniqueidentifier,
+    @RecordID nvarchar(700),
+    @AddressTypeID uniqueidentifier,
+    @IsPrimary bit = NULL,
+    @Rank int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
+    
+    IF @ID IS NOT NULL
+    BEGIN
+        -- User provided a value, use it
+        INSERT INTO [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+            (
+                [ID],
+                [AddressID],
+                [EntityID],
+                [RecordID],
+                [AddressTypeID],
+                [IsPrimary],
+                [Rank]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ID,
+                @AddressID,
+                @EntityID,
+                @RecordID,
+                @AddressTypeID,
+                ISNULL(@IsPrimary, 0),
+                @Rank
+            )
+    END
+    ELSE
+    BEGIN
+        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
+        INSERT INTO [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+            (
+                [AddressID],
+                [EntityID],
+                [RecordID],
+                [AddressTypeID],
+                [IsPrimary],
+                [Rank]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @AddressID,
+                @EntityID,
+                @RecordID,
+                @AddressTypeID,
+                ISNULL(@IsPrimary, 0),
+                @Rank
+            )
+    END
+    -- return the new record from the base view, which might have some calculated fields
+    SELECT * FROM [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink] TO [cdp_Developer], [cdp_Integration]
+    
+
+/* spCreate Permissions for MJ.BizApps.Common: Address Links */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateAddressLink] TO [cdp_Developer], [cdp_Integration]
+
+
+
+/* spUpdate SQL for MJ.BizApps.Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ.BizApps.Common: Address Links
+-- Item: spUpdateAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR AddressLink
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink]
+    @ID uniqueidentifier,
+    @AddressID uniqueidentifier,
+    @EntityID uniqueidentifier,
+    @RecordID nvarchar(700),
+    @AddressTypeID uniqueidentifier,
+    @IsPrimary bit,
+    @Rank int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+    SET
+        [AddressID] = @AddressID,
+        [EntityID] = @EntityID,
+        [RecordID] = @RecordID,
+        [AddressTypeID] = @AddressTypeID,
+        [IsPrimary] = @IsPrimary,
+        [Rank] = @Rank
+    WHERE
+        [ID] = @ID
+
+    -- Check if the update was successful
+    IF @@ROWCOUNT = 0
+        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
+        SELECT TOP 0 * FROM [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks] WHERE 1=0
+    ELSE
+        -- Return the updated record so the caller can see the updated values and any calculated fields
+        SELECT
+                                        *
+                                    FROM
+                                        [${flyway:defaultSchema}_BizAppsCommon].[vwAddressLinks]
+                                    WHERE
+                                        [ID] = @ID
+                                    
+END
+GO
+
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink] TO [cdp_Developer], [cdp_Integration]
+GO
+
+------------------------------------------------------------
+----- TRIGGER FOR __mj_UpdatedAt field for the AddressLink table
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[trgUpdateAddressLink]', 'TR') IS NOT NULL
+    DROP TRIGGER [${flyway:defaultSchema}_BizAppsCommon].[trgUpdateAddressLink];
+GO
+CREATE TRIGGER [${flyway:defaultSchema}_BizAppsCommon].trgUpdateAddressLink
+ON [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+    SET
+        __mj_UpdatedAt = GETUTCDATE()
+    FROM
+        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink] AS _organicTable
+    INNER JOIN
+        INSERTED AS I ON
+        _organicTable.[ID] = I.[ID];
+END;
+GO
+        
+
+/* spUpdate Permissions for MJ.BizApps.Common: Address Links */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateAddressLink] TO [cdp_Developer], [cdp_Integration]
+
+
+
+/* spDelete SQL for MJ.BizApps.Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ.BizApps.Common: Address Links
+-- Item: spDeleteAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR AddressLink
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink]
+    @ID uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM
+        [${flyway:defaultSchema}_BizAppsCommon].[AddressLink]
+    WHERE
+        [ID] = @ID
+
+
+    -- Check if the delete was successful
+    IF @@ROWCOUNT = 0
+        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+    ELSE
+        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink] TO [cdp_Integration]
+    
+
+/* spDelete Permissions for MJ.BizApps.Common: Address Links */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteAddressLink] TO [cdp_Integration]
 
 
 
 /* Index for Foreign Keys for OrganizationType */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9575,7 +10144,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteContactMethod]
 /* Index for Foreign Keys for Organization */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9599,10 +10168,10 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_Organization_ParentID ON [${flyway:defaultSchema}_BizAppsCommon].[Organization] ([ParentID]);
 
-/* Root ID Function SQL for Common: Organizations.ParentID */
+/* Root ID Function SQL for MJ.BizApps.Common: Organizations.ParentID */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: fnOrganizationParentID_GetRootID
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9664,15 +10233,15 @@ RETURN
 GO
 
 
-/* SQL text to update entity field related entity name field map for entity field ID 0902C7F8-4D7F-40EA-BAA6-A6C36B22FEA5 */
+/* SQL text to update entity field related entity name field map for entity field ID 9E6FCD82-BCDF-443A-A87D-E16EEF761068 */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='0902C7F8-4D7F-40EA-BAA6-A6C36B22FEA5',
+         @EntityFieldID='9E6FCD82-BCDF-443A-A87D-E16EEF761068',
          @RelatedEntityNameFieldMap='OrganizationType'
 
 /* Index for Foreign Keys for Person */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9687,15 +10256,15 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_Person_LinkedUserID ON [${flyway:defaultSchema}_BizAppsCommon].[Person] ([LinkedUserID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 7DFC3BF1-A07F-463E-845A-C934275BBFCF */
+/* SQL text to update entity field related entity name field map for entity field ID 79F1EEAB-367E-4B45-A9B8-75639F6410CB */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='7DFC3BF1-A07F-463E-845A-C934275BBFCF',
+         @EntityFieldID='79F1EEAB-367E-4B45-A9B8-75639F6410CB',
          @RelatedEntityNameFieldMap='LinkedUser'
 
 /* Index for Foreign Keys for RelationshipType */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9706,7 +10275,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 /* Index for Foreign Keys for Relationship */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: Index for Foreign Keys
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9757,15 +10326,15 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_Relationship_ToOrganizationID ON [${flyway:defaultSchema}_BizAppsCommon].[Relationship] ([ToOrganizationID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID EAAC9A59-CE53-43E4-B663-0CEFAF8300D0 */
+/* SQL text to update entity field related entity name field map for entity field ID 4BFFAFBD-BF4E-4907-963B-95733C670B7E */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='EAAC9A59-CE53-43E4-B663-0CEFAF8300D0',
+         @EntityFieldID='4BFFAFBD-BF4E-4907-963B-95733C670B7E',
          @RelatedEntityNameFieldMap='RelationshipType'
 
-/* Base View SQL for Common: Organization Types */
+/* Base View SQL for MJ.BizApps.Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: vwOrganizationTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9773,7 +10342,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Organization Types
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Organization Types
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  OrganizationType
 -----               PRIMARY KEY: ID
@@ -9792,10 +10361,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizationTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Organization Types */
+/* Base View Permissions SQL for MJ.BizApps.Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: Permissions for vwOrganizationTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9804,10 +10373,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizationTypes] TO
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizationTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Organization Types */
+/* spCreate SQL for MJ.BizApps.Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: spCreateOrganizationType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9825,7 +10394,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateOrganizationTy
     @ID uniqueidentifier = NULL,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @IconClass nvarchar(100)
+    @IconClass nvarchar(100),
+    @DisplayRank int = NULL,
+    @IsActive bit = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -9839,7 +10410,9 @@ BEGIN
                 [ID],
                 [Name],
                 [Description],
-                [IconClass]
+                [IconClass],
+                [DisplayRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
@@ -9847,7 +10420,9 @@ BEGIN
                 @ID,
                 @Name,
                 @Description,
-                @IconClass
+                @IconClass,
+                ISNULL(@DisplayRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     ELSE
@@ -9857,14 +10432,18 @@ BEGIN
             (
                 [Name],
                 [Description],
-                [IconClass]
+                [IconClass],
+                [DisplayRank],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
             (
                 @Name,
                 @Description,
-                @IconClass
+                @IconClass,
+                ISNULL(@DisplayRank, 100),
+                ISNULL(@IsActive, 1)
             )
     END
     -- return the new record from the base view, which might have some calculated fields
@@ -9874,16 +10453,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateOrganizationType] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Organization Types */
+/* spCreate Permissions for MJ.BizApps.Common: Organization Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateOrganizationType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Organization Types */
+/* spUpdate SQL for MJ.BizApps.Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: spUpdateOrganizationType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9901,7 +10480,9 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateOrganizationTy
     @ID uniqueidentifier,
     @Name nvarchar(100),
     @Description nvarchar(MAX),
-    @IconClass nvarchar(100)
+    @IconClass nvarchar(100),
+    @DisplayRank int,
+    @IsActive bit
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -9910,7 +10491,9 @@ BEGIN
     SET
         [Name] = @Name,
         [Description] = @Description,
-        [IconClass] = @IconClass
+        [IconClass] = @IconClass,
+        [DisplayRank] = @DisplayRank,
+        [IsActive] = @IsActive
     WHERE
         [ID] = @ID
 
@@ -9958,16 +10541,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Organization Types */
+/* spUpdate Permissions for MJ.BizApps.Common: Organization Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateOrganizationType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* Base View SQL for Common: Relationship Types */
+/* Base View SQL for MJ.BizApps.Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: vwRelationshipTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -9975,7 +10558,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateOrganizationTy
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Relationship Types
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Relationship Types
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  RelationshipType
 -----               PRIMARY KEY: ID
@@ -9994,10 +10577,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationshipTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Relationship Types */
+/* Base View Permissions SQL for MJ.BizApps.Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: Permissions for vwRelationshipTypes
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10006,10 +10589,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationshipTypes] TO
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationshipTypes] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Relationship Types */
+/* spCreate SQL for MJ.BizApps.Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: spCreateRelationshipType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10030,7 +10613,8 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spCreateRelationshipTy
     @Category nvarchar(50),
     @IsDirectional bit = NULL,
     @ForwardLabel nvarchar(100),
-    @ReverseLabel nvarchar(100)
+    @ReverseLabel nvarchar(100),
+    @IsActive bit = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -10047,7 +10631,8 @@ BEGIN
                 [Category],
                 [IsDirectional],
                 [ForwardLabel],
-                [ReverseLabel]
+                [ReverseLabel],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
@@ -10058,7 +10643,8 @@ BEGIN
                 @Category,
                 ISNULL(@IsDirectional, 1),
                 @ForwardLabel,
-                @ReverseLabel
+                @ReverseLabel,
+                ISNULL(@IsActive, 1)
             )
     END
     ELSE
@@ -10071,7 +10657,8 @@ BEGIN
                 [Category],
                 [IsDirectional],
                 [ForwardLabel],
-                [ReverseLabel]
+                [ReverseLabel],
+                [IsActive]
             )
         OUTPUT INSERTED.[ID] INTO @InsertedRow
         VALUES
@@ -10081,7 +10668,8 @@ BEGIN
                 @Category,
                 ISNULL(@IsDirectional, 1),
                 @ForwardLabel,
-                @ReverseLabel
+                @ReverseLabel,
+                ISNULL(@IsActive, 1)
             )
     END
     -- return the new record from the base view, which might have some calculated fields
@@ -10091,16 +10679,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateRelationshipType] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Relationship Types */
+/* spCreate Permissions for MJ.BizApps.Common: Relationship Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateRelationshipType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Relationship Types */
+/* spUpdate SQL for MJ.BizApps.Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: spUpdateRelationshipType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10121,7 +10709,8 @@ CREATE PROCEDURE [${flyway:defaultSchema}_BizAppsCommon].[spUpdateRelationshipTy
     @Category nvarchar(50),
     @IsDirectional bit,
     @ForwardLabel nvarchar(100),
-    @ReverseLabel nvarchar(100)
+    @ReverseLabel nvarchar(100),
+    @IsActive bit
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -10133,7 +10722,8 @@ BEGIN
         [Category] = @Category,
         [IsDirectional] = @IsDirectional,
         [ForwardLabel] = @ForwardLabel,
-        [ReverseLabel] = @ReverseLabel
+        [ReverseLabel] = @ReverseLabel,
+        [IsActive] = @IsActive
     WHERE
         [ID] = @ID
 
@@ -10181,16 +10771,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Relationship Types */
+/* spUpdate Permissions for MJ.BizApps.Common: Relationship Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateRelationshipType] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Organization Types */
+/* spDelete SQL for MJ.BizApps.Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organization Types
+-- Entity: MJ.BizApps.Common: Organization Types
 -- Item: spDeleteOrganizationType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10226,16 +10816,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteOrganizationType] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Organization Types */
+/* spDelete Permissions for MJ.BizApps.Common: Organization Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteOrganizationType] TO [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Relationship Types */
+/* spDelete SQL for MJ.BizApps.Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationship Types
+-- Entity: MJ.BizApps.Common: Relationship Types
 -- Item: spDeleteRelationshipType
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10271,26 +10861,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationshipType] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Relationship Types */
+/* spDelete Permissions for MJ.BizApps.Common: Relationship Types */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationshipType] TO [cdp_Integration]
 
 
 
-/* SQL text to update entity field related entity name field map for entity field ID 7A4A63E0-651D-4127-932A-C3D2EC1F24C6 */
-EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='7A4A63E0-651D-4127-932A-C3D2EC1F24C6',
-         @RelatedEntityNameFieldMap='Parent'
-
-/* SQL text to update entity field related entity name field map for entity field ID 12FBD8AF-5847-453D-B40E-3D740C04769D */
-EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='12FBD8AF-5847-453D-B40E-3D740C04769D',
-         @RelatedEntityNameFieldMap='FromOrganization'
-
-/* Base View SQL for Common: People */
+/* Base View SQL for MJ.BizApps.Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: vwPeople
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10298,7 +10878,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: People
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: People
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  Person
 -----               PRIMARY KEY: ID
@@ -10322,10 +10902,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwPeople] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: People */
+/* Base View Permissions SQL for MJ.BizApps.Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: Permissions for vwPeople
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10334,10 +10914,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwPeople] TO [cdp_UI], 
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwPeople] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: People */
+/* spCreate SQL for MJ.BizApps.Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: spCreatePerson
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10464,16 +11044,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreatePerson] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: People */
+/* spCreate Permissions for MJ.BizApps.Common: People */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreatePerson] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: People */
+/* spUpdate SQL for MJ.BizApps.Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: spUpdatePerson
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10572,16 +11152,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: People */
+/* spUpdate Permissions for MJ.BizApps.Common: People */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdatePerson] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: People */
+/* spDelete SQL for MJ.BizApps.Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: People
+-- Entity: MJ.BizApps.Common: People
 -- Item: spDeletePerson
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10617,16 +11197,26 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeletePerson] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: People */
+/* spDelete Permissions for MJ.BizApps.Common: People */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeletePerson] TO [cdp_Integration]
 
 
 
-/* Base View SQL for Common: Organizations */
+/* SQL text to update entity field related entity name field map for entity field ID D78A9DB0-2ED9-4D73-A408-24B0E03981C9 */
+EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
+         @EntityFieldID='D78A9DB0-2ED9-4D73-A408-24B0E03981C9',
+         @RelatedEntityNameFieldMap='Parent'
+
+/* SQL text to update entity field related entity name field map for entity field ID 6D46F59F-FF3F-4351-A697-E7DB414A1E3E */
+EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
+         @EntityFieldID='6D46F59F-FF3F-4351-A697-E7DB414A1E3E',
+         @RelatedEntityNameFieldMap='FromOrganization'
+
+/* Base View SQL for MJ.BizApps.Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: vwOrganizations
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10634,7 +11224,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeletePerson] TO [cd
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Organizations
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Organizations
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  Organization
 -----               PRIMARY KEY: ID
@@ -10666,10 +11256,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizations] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Organizations */
+/* Base View Permissions SQL for MJ.BizApps.Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: Permissions for vwOrganizations
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10678,10 +11268,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizations] TO [cd
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwOrganizations] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Organizations */
+/* spCreate SQL for MJ.BizApps.Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: spCreateOrganization
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10793,16 +11383,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateOrganization] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Organizations */
+/* spCreate Permissions for MJ.BizApps.Common: Organizations */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateOrganization] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Organizations */
+/* spUpdate SQL for MJ.BizApps.Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: spUpdateOrganization
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10895,16 +11485,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Organizations */
+/* spUpdate Permissions for MJ.BizApps.Common: Organizations */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateOrganization] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Organizations */
+/* spDelete SQL for MJ.BizApps.Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Organizations
+-- Entity: MJ.BizApps.Common: Organizations
 -- Item: spDeleteOrganization
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10940,21 +11530,21 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteOrganization] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Organizations */
+/* spDelete Permissions for MJ.BizApps.Common: Organizations */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteOrganization] TO [cdp_Integration]
 
 
 
-/* SQL text to update entity field related entity name field map for entity field ID CFFB2D6A-96BD-4548-82B2-A344D0F4DF89 */
+/* SQL text to update entity field related entity name field map for entity field ID 42EBA3CE-7DDB-4149-BE93-E245F351B963 */
 EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
-         @EntityFieldID='CFFB2D6A-96BD-4548-82B2-A344D0F4DF89',
+         @EntityFieldID='42EBA3CE-7DDB-4149-BE93-E245F351B963',
          @RelatedEntityNameFieldMap='ToOrganization'
 
-/* Base View SQL for Common: Relationships */
+/* Base View SQL for MJ.BizApps.Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: vwRelationships
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -10962,7 +11552,7 @@ EXEC [${flyway:defaultSchema}].spUpdateEntityFieldRelatedEntityNameFieldMap
 -----------------------------------------------------------------
 
 ------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      Common: Relationships
+----- BASE VIEW FOR ENTITY:      MJ.BizApps.Common: Relationships
 -----               SCHEMA:      ${flyway:defaultSchema}_BizAppsCommon
 -----               BASE TABLE:  Relationship
 -----               PRIMARY KEY: ID
@@ -10996,10 +11586,10 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationships] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
     
 
-/* Base View Permissions SQL for Common: Relationships */
+/* Base View Permissions SQL for MJ.BizApps.Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: Permissions for vwRelationships
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -11008,10 +11598,10 @@ GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationships] TO [cd
 
 GRANT SELECT ON [${flyway:defaultSchema}_BizAppsCommon].[vwRelationships] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 
-/* spCreate SQL for Common: Relationships */
+/* spCreate SQL for MJ.BizApps.Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: spCreateRelationship
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -11113,16 +11703,16 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateRelationship] TO [cdp_Developer], [cdp_Integration]
     
 
-/* spCreate Permissions for Common: Relationships */
+/* spCreate Permissions for MJ.BizApps.Common: Relationships */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spCreateRelationship] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spUpdate SQL for Common: Relationships */
+/* spUpdate SQL for MJ.BizApps.Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: spUpdateRelationship
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -11211,16 +11801,16 @@ END;
 GO
         
 
-/* spUpdate Permissions for Common: Relationships */
+/* spUpdate Permissions for MJ.BizApps.Common: Relationships */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spUpdateRelationship] TO [cdp_Developer], [cdp_Integration]
 
 
 
-/* spDelete SQL for Common: Relationships */
+/* spDelete SQL for MJ.BizApps.Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
--- Entity: Common: Relationships
+-- Entity: MJ.BizApps.Common: Relationships
 -- Item: spDeleteRelationship
 --
 -- This was generated by the MemberJunction CodeGen tool.
@@ -11256,7 +11846,7 @@ GO
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] TO [cdp_Integration]
     
 
-/* spDelete Permissions for Common: Relationships */
+/* spDelete Permissions for MJ.BizApps.Common: Relationships */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] TO [cdp_Integration]
 
@@ -11266,8 +11856,8 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'f3b09f69-8011-4432-9c00-eb25b7105552'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'Entity')
+         WHERE ID = '86227274-0d90-4f5e-b43f-8b303ebe4844'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'Organization')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -11300,528 +11890,8 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
          )
          VALUES
          (
-            'f3b09f69-8011-4432-9c00-eb25b7105552',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100019,
-            'Entity',
-            'Entity',
-            NULL,
-            'nvarchar',
-            510,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '3f5652f9-ecdd-4150-9d86-9cf42b2bc70a'  OR 
-               (EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD' AND Name = 'AddressType')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '3f5652f9-ecdd-4150-9d86-9cf42b2bc70a',
-            '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', -- Entity: Common: Address Links
-            100020,
-            'AddressType',
-            'Address Type',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'cbc69adf-fa7d-49bb-8381-a865e1835ecf'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'RelationshipType')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'cbc69adf-fa7d-49bb-8381-a865e1835ecf',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100027,
-            'RelationshipType',
-            'Relationship Type',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '38964da0-3d90-40de-907b-9cf0dff7d28d'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'FromOrganization')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '38964da0-3d90-40de-907b-9cf0dff7d28d',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100028,
-            'FromOrganization',
-            'From Organization',
-            NULL,
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '7832fc96-8f92-4741-8db9-a294e60de30b'  OR 
-               (EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB' AND Name = 'ToOrganization')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '7832fc96-8f92-4741-8db9-a294e60de30b',
-            '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', -- Entity: Common: Relationships
-            100029,
-            'ToOrganization',
-            'To Organization',
-            NULL,
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'c48b0fee-c836-4bb3-8420-16566930fa4b'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'OrganizationType')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'c48b0fee-c836-4bb3-8420-16566930fa4b',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100031,
-            'OrganizationType',
-            'Organization Type',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e20d4075-a743-4ce0-90d0-d69e62e9636b'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'Parent')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'e20d4075-a743-4ce0-90d0-d69e62e9636b',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100032,
-            'Parent',
-            'Parent',
-            NULL,
-            'nvarchar',
-            510,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '74ed75bd-8b3d-45b4-8f7c-f4d8e249a032'  OR 
-               (EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD' AND Name = 'RootParentID')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            '74ed75bd-8b3d-45b4-8f7c-f4d8e249a032',
-            '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', -- Entity: Common: Organizations
-            100033,
-            'RootParentID',
-            'Root Parent ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            'null',
-            0,
-            0,
-            1,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search'
-         )
-      END
-
-/* SQL text to insert new entity field */
-
-      IF NOT EXISTS (
-         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'e9a06e3f-8fb4-4477-aa70-8772710d15ef'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'Organization')
-         -- check to make sure we're not inserting a duplicate entity field metadata record
-      )
-      BEGIN
-         INSERT INTO [${flyway:defaultSchema}].EntityField
-         (
-            ID,
-            EntityID,
-            Sequence,
-            Name,
-            DisplayName,
-            Description,
-            Type,
-            Length,
-            Precision,
-            Scale,
-            AllowsNull,
-            DefaultValue,
-            AutoIncrement,
-            AllowUpdateAPI,
-            IsVirtual,
-            RelatedEntityID,
-            RelatedEntityFieldName,
-            IsNameField,
-            IncludeInUserSearchAPI,
-            IncludeRelatedEntityNameFieldInBaseView,
-            DefaultInView,
-            IsPrimaryKey,
-            IsUnique,
-            RelatedEntityDisplayType
-         )
-         VALUES
-         (
-            'e9a06e3f-8fb4-4477-aa70-8772710d15ef',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            '86227274-0d90-4f5e-b43f-8b303ebe4844',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100019,
             'Organization',
             'Organization',
@@ -11851,8 +11921,8 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = '9f1c52a9-52cc-4e28-89e6-506a3c461a23'  OR 
-               (EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA' AND Name = 'ContactType')
+         WHERE ID = 'f261cf20-990d-44df-b604-a603a9892a90'  OR 
+               (EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND Name = 'ContactType')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -11885,8 +11955,8 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
          )
          VALUES
          (
-            '9f1c52a9-52cc-4e28-89e6-506a3c461a23',
-            'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', -- Entity: Common: Contact Methods
+            'f261cf20-990d-44df-b604-a603a9892a90',
+            '32C45078-D33B-4760-9BE5-0DF7F483F591', -- Entity: MJ.BizApps.Common: Contact Methods
             100020,
             'ContactType',
             'Contact Type',
@@ -11916,8 +11986,8 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
       IF NOT EXISTS (
          SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
-         WHERE ID = 'fcaa14f7-23bd-41c0-bbb0-b9655ecfc0ac'  OR 
-               (EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65' AND Name = 'LinkedUser')
+         WHERE ID = '311aec01-4c33-4cef-9898-bd3425834c3c'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'Entity')
          -- check to make sure we're not inserting a duplicate entity field metadata record
       )
       BEGIN
@@ -11950,8 +12020,333 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
          )
          VALUES
          (
-            'fcaa14f7-23bd-41c0-bbb0-b9655ecfc0ac',
-            'A3CB56E8-38B9-4456-BD88-F5E69E219D65', -- Entity: Common: People
+            '311aec01-4c33-4cef-9898-bd3425834c3c',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100019,
+            'Entity',
+            'Entity',
+            NULL,
+            'nvarchar',
+            510,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'e79c20c4-b9d9-433f-bd0e-5134829f1a25'  OR 
+               (EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND Name = 'AddressType')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'e79c20c4-b9d9-433f-bd0e-5134829f1a25',
+            'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- Entity: MJ.BizApps.Common: Address Links
+            100020,
+            'AddressType',
+            'Address Type',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'efd20ada-e18b-41dc-8f4f-f4ed58fe0165'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'OrganizationType')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'efd20ada-e18b-41dc-8f4f-f4ed58fe0165',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100031,
+            'OrganizationType',
+            'Organization Type',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '97844d3b-a436-4ce7-8246-976ba9ff9a87'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'Parent')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '97844d3b-a436-4ce7-8246-976ba9ff9a87',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100032,
+            'Parent',
+            'Parent',
+            NULL,
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '8f929c6b-ab7e-438c-839f-3cb4357bb69c'  OR 
+               (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'RootParentID')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '8f929c6b-ab7e-438c-839f-3cb4357bb69c',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ.BizApps.Common: Organizations
+            100033,
+            'RootParentID',
+            'Root Parent ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '5f857a6e-befc-4c29-bc2b-fd6876c269b2'  OR 
+               (EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND Name = 'LinkedUser')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '5f857a6e-befc-4c29-bc2b-fd6876c269b2',
+            '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- Entity: MJ.BizApps.Common: People
             100037,
             'LinkedUser',
             'Linked User',
@@ -11977,71 +12372,260 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
          )
       END
 
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = '07c7d2b2-8916-4220-961f-076c298dd2c9'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'RelationshipType')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            '07c7d2b2-8916-4220-961f-076c298dd2c9',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100027,
+            'RelationshipType',
+            'Relationship Type',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'db499ee6-8fc5-4fc7-bc36-f758d5b76bcb'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'FromOrganization')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'db499ee6-8fc5-4fc7-bc36-f758d5b76bcb',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100028,
+            'FromOrganization',
+            'From Organization',
+            NULL,
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
+/* SQL text to insert new entity field */
+
+      IF NOT EXISTS (
+         SELECT 1 FROM [${flyway:defaultSchema}].EntityField 
+         WHERE ID = 'e9b40366-4907-44c0-99b1-502e35d6e345'  OR 
+               (EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82' AND Name = 'ToOrganization')
+         -- check to make sure we're not inserting a duplicate entity field metadata record
+      )
+      BEGIN
+         INSERT INTO [${flyway:defaultSchema}].EntityField
+         (
+            ID,
+            EntityID,
+            Sequence,
+            Name,
+            DisplayName,
+            Description,
+            Type,
+            Length,
+            Precision,
+            Scale,
+            AllowsNull,
+            DefaultValue,
+            AutoIncrement,
+            AllowUpdateAPI,
+            IsVirtual,
+            RelatedEntityID,
+            RelatedEntityFieldName,
+            IsNameField,
+            IncludeInUserSearchAPI,
+            IncludeRelatedEntityNameFieldInBaseView,
+            DefaultInView,
+            IsPrimaryKey,
+            IsUnique,
+            RelatedEntityDisplayType
+         )
+         VALUES
+         (
+            'e9b40366-4907-44c0-99b1-502e35d6e345',
+            '709CA9DA-B124-4155-BE39-E857EF672D82', -- Entity: MJ.BizApps.Common: Relationships
+            100029,
+            'ToOrganization',
+            'To Organization',
+            NULL,
+            'nvarchar',
+            510,
+            0,
+            0,
+            1,
+            'null',
+            0,
+            0,
+            1,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search'
+         )
+      END
+
 /* Set field properties for entity */
 
             UPDATE [${flyway:defaultSchema}].EntityField
             SET IsNameField = 1
-            WHERE ID = '67BDB609-9120-4E5D-826D-D2536D3CE054'
+            WHERE ID = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
             AND AutoUpdateIsNameField = 1
          
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '67BDB609-9120-4E5D-826D-D2536D3CE054'
+               WHERE ID = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '1EC1DC9D-2630-4AE3-92DE-49B4F15F28BC'
+               WHERE ID = '0C71E92A-D747-4302-B17F-78C92930D2CE'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '150D68AD-0E84-42EB-8B49-F977DF4A92AB'
+               WHERE ID = 'D43ECA52-4B7A-434E-92CE-C3FF69824306'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '64328A12-E707-45FC-AED0-0149F0A584B9'
+               WHERE ID = '65ACAC26-5F6C-4A67-8559-BD7C0943A925'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '174FD558-FFB0-4499-8586-ADA3511A4E39'
+               WHERE ID = '63BB48D1-67C2-4CD9-BDD9-F86F6154F77C'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '67BDB609-9120-4E5D-826D-D2536D3CE054'
+                  WHERE ID = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'A6B583AC-755F-4489-A79F-3E1A200BAFFC'
+                  WHERE ID = 'C6515A57-DACE-4684-AD9D-03297E60CDE4'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '1EC1DC9D-2630-4AE3-92DE-49B4F15F28BC'
+                  WHERE ID = '0C71E92A-D747-4302-B17F-78C92930D2CE'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '150D68AD-0E84-42EB-8B49-F977DF4A92AB'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '64328A12-E707-45FC-AED0-0149F0A584B9'
+                  WHERE ID = '65ACAC26-5F6C-4A67-8559-BD7C0943A925'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
@@ -12049,19 +12633,25 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'D5CBC8C6-0351-4AD2-8DB8-22EFED381292'
+               WHERE ID = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '40359756-9750-41EC-8558-B9A87850F884'
+               WHERE ID = '971C65DD-9F0C-4B46-AB06-8D5A3E47CBC3'
+               AND AutoUpdateDefaultInView = 1
+            
+
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'F70D2734-AF27-4969-9C8B-B51259E71F8F'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'D5CBC8C6-0351-4AD2-8DB8-22EFED381292'
+                  WHERE ID = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
@@ -12069,69 +12659,31 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '075337AA-E0AF-45A5-8DE2-70764CD154D6'
+               WHERE ID = '8096A2BD-684F-44E0-B26B-424F52619220'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '96F82CB6-0432-45C4-8449-AF29288A372B'
-               AND AutoUpdateDefaultInView = 1
-            
-
-/* Set field properties for entity */
-
-            UPDATE [${flyway:defaultSchema}].EntityField
-            SET IsNameField = 1
-            WHERE ID = 'EEDED48B-3219-4F5C-86B8-7FD7865041B5'
-            AND AutoUpdateIsNameField = 1
-         
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = 'EEDED48B-3219-4F5C-86B8-7FD7865041B5'
+               WHERE ID = '00865ED9-B98D-4F58-8C5D-022AC87FF8E7'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'BBF473E7-86CC-407D-844D-FFD044B468D6'
+               WHERE ID = '45829CD8-C67D-4527-B25E-4390889EEB85'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '3E918E15-CF7F-4141-BD82-87341BE4206C'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '9F1C52A9-52CC-4E28-89E6-506A3C461A23'
+               WHERE ID = '9FFF0788-F1A4-4971-9B53-2FEF0407880A'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'EEDED48B-3219-4F5C-86B8-7FD7865041B5'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'BBF473E7-86CC-407D-844D-FFD044B468D6'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'E9A06E3F-8FB4-4477-AA70-8772710D15EF'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '9F1C52A9-52CC-4E28-89E6-506A3C461A23'
+                  WHERE ID = '8096A2BD-684F-44E0-B26B-424F52619220'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
@@ -12139,471 +12691,212 @@ GRANT EXECUTE ON [${flyway:defaultSchema}_BizAppsCommon].[spDeleteRelationship] 
 
             UPDATE [${flyway:defaultSchema}].EntityField
             SET IsNameField = 1
-            WHERE ID = '3F5652F9-ECDD-4150-9D86-9CF42B2BC70A'
+            WHERE ID = '77C20975-15E3-4A89-9414-3A829A5EA249'
             AND AutoUpdateIsNameField = 1
          
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '4FC0F14D-3D67-412D-B93D-2944B9DD06B1'
+               WHERE ID = '77C20975-15E3-4A89-9414-3A829A5EA249'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'CDCBE6CE-9644-4387-83FD-DD5D9D653665'
+               WHERE ID = 'CBA68064-C466-460E-AD1B-89256634A753'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'A679CD5B-CCE9-4B4F-BA52-E9189C78E43D'
+               WHERE ID = '9AAA02E5-C378-43BE-A1B3-6EF7355CDF22'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'F3B09F69-8011-4432-9C00-EB25B7105552'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '3F5652F9-ECDD-4150-9D86-9CF42B2BC70A'
+               WHERE ID = 'F261CF20-990D-44DF-B604-A603A9892A90'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '4FC0F14D-3D67-412D-B93D-2944B9DD06B1'
+                  WHERE ID = '77C20975-15E3-4A89-9414-3A829A5EA249'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'F3B09F69-8011-4432-9C00-EB25B7105552'
+                  WHERE ID = 'CBA68064-C466-460E-AD1B-89256634A753'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '3F5652F9-ECDD-4150-9D86-9CF42B2BC70A'
+                  WHERE ID = '86227274-0D90-4F5E-B43F-8B303EBE4844'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
-/* Set categories for 6 fields */
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = 'F261CF20-990D-44DF-B604-A603A9892A90'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
 
--- UPDATE Entity Field Category Info Common: Address Types.ID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '621FC111-0D6C-483D-B53C-1A5AD69865B2' AND AutoUpdateCategory = 1
+/* Set field properties for entity */
 
--- UPDATE Entity Field Category Info Common: Address Types.Name 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Address Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'EE25AF1D-0B36-426F-9006-76007868A0A4' AND AutoUpdateCategory = 1
+            UPDATE [${flyway:defaultSchema}].EntityField
+            SET IsNameField = 1
+            WHERE ID = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+            AND AutoUpdateIsNameField = 1
+         
 
--- UPDATE Entity Field Category Info Common: Address Types.Description 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Address Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '075337AA-E0AF-45A5-8DE2-70764CD154D6' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Types.DefaultRank 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Address Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '96F82CB6-0432-45C4-8449-AF29288A372B' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Types.__mj_CreatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '40DAE327-885C-47B6-892D-6A1A160E32B2' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Types.__mj_UpdatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '2E8428CA-21D5-4CAA-AE2A-AE3783D8CB39' AND AutoUpdateCategory = 1
-
-/* Set entity icon to fa fa-tags */
-
-               UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-tags', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381'
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '8E6C198E-773E-4582-B020-7C7A9716B2C8'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryInfo setting for entity */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('43799fd7-3ee0-4ef9-b20b-631c8b1839ea', '66FA272F-59BB-4105-A1F3-4E5D4D63F381', 'FieldCategoryInfo', '{"Address Type Details":{"icon":"fa fa-address-book","description":"Configuration for address categories including naming and display priority"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit fields and unique identifiers"}}', GETUTCDATE(), GETUTCDATE())
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '80D85088-71D2-42F1-A9A3-086EE3F96B3D'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryIcons setting (legacy) */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('01fdf8bc-8eea-4a79-bdf5-f007ebada4ec', '66FA272F-59BB-4105-A1F3-4E5D4D63F381', 'FieldCategoryIcons', '{"Address Type Details":"fa fa-address-book","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE())
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'CF61A8C5-2F33-4756-AD71-257504E7B4E3'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
-
-         UPDATE [${flyway:defaultSchema}].ApplicationEntity
-         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '66FA272F-59BB-4105-A1F3-4E5D4D63F381'
-      
-
-/* Set categories for 6 fields */
-
--- UPDATE Entity Field Category Info Common: Contact Types.ID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '8A5238FF-1427-4868-9E70-27223709AAD4' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Types.Name 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'AF7D302B-8340-4EA7-BBF3-22C04F63333C' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Types.Description 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'D5CBC8C6-0351-4AD2-8DB8-22EFED381292' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Types.IconClass 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Type Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '40359756-9750-41EC-8558-B9A87850F884' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Types.__mj_CreatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '99DC79F5-9599-45D9-B867-1AB3D029F2A8' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Types.__mj_UpdatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'FD6A186C-1A0B-46B5-9020-DD50E850C41F' AND AutoUpdateCategory = 1
-
-/* Set entity icon to fa fa-address-book */
-
-               UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-address-book', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = 'D17353E5-1FB0-4940-8D91-3E4007549200'
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '311AEC01-4C33-4CEF-9898-BD3425834C3C'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryInfo setting for entity */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('f0482151-a366-4a4b-9b24-896291d8ee3c', 'D17353E5-1FB0-4940-8D91-3E4007549200', 'FieldCategoryInfo', '{"Contact Type Details":{"icon":"fa fa-id-card","description":"Basic information and visual configuration for contact method categories"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE())
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryIcons setting (legacy) */
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = '8E6C198E-773E-4582-B020-7C7A9716B2C8'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
 
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('2811b294-3996-40bf-987a-689830392b89', 'D17353E5-1FB0-4940-8D91-3E4007549200', 'FieldCategoryIcons', '{"Contact Type Details":"fa fa-id-card","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
-            
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = '311AEC01-4C33-4CEF-9898-BD3425834C3C'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
 
-/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
-
-         UPDATE [${flyway:defaultSchema}].ApplicationEntity
-         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = 'D17353E5-1FB0-4940-8D91-3E4007549200'
-      
-
-/* Set categories for 12 fields */
-
--- UPDATE Entity Field Category Info Common: Addresses.ID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'AE4F724D-AECE-4D56-945E-D5B5170F9222' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Line1 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Street Address',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Address Line 1',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '67BDB609-9120-4E5D-826D-D2536D3CE054' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Line2 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Street Address',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Address Line 2',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'A6B583AC-755F-4489-A79F-3E1A200BAFFC' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Line3 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Street Address',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Address Line 3',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'C3BF655F-A151-4297-BDB7-96CF0F22308A' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.City 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Locality and Region',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '1EC1DC9D-2630-4AE3-92DE-49B4F15F28BC' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.StateProvince 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Locality and Region',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'State / Province',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '150D68AD-0E84-42EB-8B49-F977DF4A92AB' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.PostalCode 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Locality and Region',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '64328A12-E707-45FC-AED0-0149F0A584B9' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Country 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Locality and Region',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '174FD558-FFB0-4499-8586-ADA3511A4E39' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Latitude 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Geographic Location',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Geo',
-   CodeType = NULL
-WHERE 
-   ID = '78E3EC5B-4F15-45CF-9D80-E1A0E0405A42' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.Longitude 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Geographic Location',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Geo',
-   CodeType = NULL
-WHERE 
-   ID = '4200842E-A5D3-4C2C-85BB-E0C9699BB419' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.__mj_CreatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '7E8F1D7A-A42D-4944-9739-44ADB7E902D7' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Addresses.__mj_UpdatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '0CB3AD60-386A-4A43-8ACE-D692CDB39F1C' AND AutoUpdateCategory = 1
-
-/* Set entity icon to fa fa-map-marked-alt */
-
-               UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-map-marked-alt', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C'
-            
-
-/* Insert FieldCategoryInfo setting for entity */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('a55faf4b-fc0f-446e-a2d7-f1946e3eae05', 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', 'FieldCategoryInfo', '{"Street Address":{"icon":"fa fa-road","description":"Specific street-level location details including building and unit numbers"},"Locality and Region":{"icon":"fa fa-city","description":"Broader geographic identifiers including city, state, postal code, and country"},"Geographic Location":{"icon":"fa fa-globe-americas","description":"Precise GPS coordinates used for mapping and spatial analysis"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE())
-            
-
-/* Insert FieldCategoryIcons setting (legacy) */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('150c4065-a91d-4dd0-ba41-7ad9daf7eb39', 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C', 'FieldCategoryIcons', '{"Street Address":"fa fa-road","Locality and Region":"fa fa-city","Geographic Location":"fa fa-globe-americas","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
-            
-
-/* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
-
-         UPDATE [${flyway:defaultSchema}].ApplicationEntity
-         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = 'B59CCA6F-E48C-4DE5-A784-DB0DF9E2885C'
-      
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
 
 /* Set categories for 11 fields */
 
--- UPDATE Entity Field Category Info Common: Address Links.AddressID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Address Assignment',
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'C7EF895A-84E9-4388-8F9D-4E60A73CE67D' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.AddressID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Linkage Details',
    GeneratedFormSection = 'Category',
    DisplayName = 'Address',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D78A7C9E-A347-451A-8535-00EDB6AB4359' AND AutoUpdateCategory = 1
+   ID = 'EFFA8DD0-9FCE-4504-83A8-A1415C912621' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.AddressType 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.EntityID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Address Assignment',
+   Category = 'Linkage Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Entity',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '63D14E61-C4BE-4369-A775-7A93A14A6432' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.RecordID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Linkage Details',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3F5652F9-ECDD-4150-9D86-9CF42B2BC70A' AND AutoUpdateCategory = 1
+   ID = '8E6C198E-773E-4582-B020-7C7A9716B2C8' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.AddressTypeID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.Entity 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Address Assignment',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '71E1C019-742D-422F-B412-D85757922ADB' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Links.IsPrimary 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Address Assignment',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'CDCBE6CE-9644-4387-83FD-DD5D9D653665' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Links.Rank 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Address Assignment',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'A679CD5B-CCE9-4B4F-BA52-E9189C78E43D' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Links.Entity 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Linked Record Details',
+   Category = 'Linkage Details',
    GeneratedFormSection = 'Category',
    DisplayName = 'Entity Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F3B09F69-8011-4432-9C00-EB25B7105552' AND AutoUpdateCategory = 1
+   ID = '311AEC01-4C33-4CEF-9898-BD3425834C3C' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.EntityID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.AddressTypeID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Linked Record Details',
+   Category = 'Address Preferences',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Address Type',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '633EAB3F-8828-4DB0-9B19-6AD04A75CB83' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.AddressType 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Preferences',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Address Type Name',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.IsPrimary 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Preferences',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'CFCBE12E-5B60-44C1-BDF9-F672294778FB' AND AutoUpdateCategory = 1
+   ID = '80D85088-71D2-42F1-A9A3-086EE3F96B3D' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.RecordID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.Rank 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Linked Record Details',
+   Category = 'Address Preferences',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '4FC0F14D-3D67-412D-B93D-2944B9DD06B1' AND AutoUpdateCategory = 1
+   ID = 'CF61A8C5-2F33-4756-AD71-257504E7B4E3' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.ID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.__mj_CreatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -12611,9 +12904,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '68DAB59E-CA4C-4C79-9AB8-32ED9BA29B3E' AND AutoUpdateCategory = 1
+   ID = '8D738E18-A0BA-45EF-88C0-D8BC29D8D877' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Address Links.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Links.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -12621,47 +12914,87 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '81398F0E-7AEF-40A2-8DCD-3504D4D2779A' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Address Links.__mj_UpdatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '4E1DC335-24A5-4940-B511-C5C1B8369DC2' AND AutoUpdateCategory = 1
+   ID = 'B3518E84-62FF-488B-963B-4E7076932A8F' AND AutoUpdateCategory = 1
 
 /* Set entity icon to fa fa-link */
 
                UPDATE [${flyway:defaultSchema}].Entity
                SET Icon = 'fa fa-link', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD'
+               WHERE ID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('bc1e8289-b541-417d-9586-5981b2838d95', '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', 'FieldCategoryInfo', '{"Address Assignment":{"icon":"fa fa-map-marker-alt","description":"Configuration for the specific address link, including its type and priority."},"Linked Record Details":{"icon":"fa fa-database","description":"Information identifying the specific system record this address is associated with."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit timestamps for the link record."}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('7fd53db4-1494-48e2-898e-2e0dff273160', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'FieldCategoryInfo', '{"Linkage Details":{"icon":"fa fa-link","description":"Fields defining the connection between a specific record and an address record."},"Address Preferences":{"icon":"fa fa-sliders-h","description":"Settings for how this address is categorized and prioritized for the linked record."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields."}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('5ed7a139-f64c-47c3-a27b-2d998a470196', '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD', 'FieldCategoryIcons', '{"Address Assignment":"fa fa-map-marker-alt","Linked Record Details":"fa fa-database","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('2cef1622-be9a-4935-928a-99acd5df2f79', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'FieldCategoryIcons', '{"Linkage Details":"fa fa-link","Address Preferences":"fa fa-sliders-h","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=0 for NEW entity (category: junction, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '8E6D93FA-4768-4672-8A5C-35DCAD34C9BD'
+         WHERE EntityID = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7'
       
 
-/* Set categories for 11 fields */
+/* Set categories for 8 fields */
 
--- UPDATE Entity Field Category Info Common: Contact Methods.ID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.Name 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '1D142A23-E13C-4852-9DD9-A896774C3BDA' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.Description 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8096A2BD-684F-44E0-B26B-424F52619220' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.IconClass 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'UI Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '00865ED9-B98D-4F58-8C5D-022AC87FF8E7' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.DisplayRank 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'UI Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '45829CD8-C67D-4527-B25E-4390889EEB85' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.IsActive 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'UI Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '9FFF0788-F1A4-4971-9B53-2FEF0407880A' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -12669,95 +13002,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B2E878A1-C0E8-450D-8525-732CA54589A3' AND AutoUpdateCategory = 1
+   ID = 'C40C2682-A2FA-4676-833B-75030293220C' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Contact Methods.PersonID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Linked Records',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Person',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '4781A91C-0F0B-40BF-B4DD-C95611B821F1' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.OrganizationID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Linked Records',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '203C3260-2DF9-4478-B639-D0401AC0AC28' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.Organization 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Linked Records',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization Name',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'E9A06E3F-8FB4-4477-AA70-8772710D15EF' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.ContactTypeID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Contact Type',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '0B306E5D-0024-471A-9E43-5293C57D4759' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.ContactType 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Contact Type Name',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '9F1C52A9-52CC-4E28-89E6-506A3C461A23' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.Value 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Contact Value',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'EEDED48B-3219-4F5C-86B8-7FD7865041B5' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.Label 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'BBF473E7-86CC-407D-844D-FFD044B468D6' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.IsPrimary 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '3E918E15-CF7F-4141-BD82-87341BE4206C' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Contact Methods.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.__mj_CreatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -12765,9 +13012,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '89AA9C83-7EF0-42E8-A019-0791FC956EBC' AND AutoUpdateCategory = 1
+   ID = '86C73C1A-89CD-4326-A8BB-145E6B0B2F4A' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Contact Methods.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Types.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -12775,87 +13022,492 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3553478F-F6BA-4C1E-A5DB-91A7F3A3E11E' AND AutoUpdateCategory = 1
+   ID = 'A005A7DB-76EC-4DDF-8482-7951BE69B165' AND AutoUpdateCategory = 1
 
-/* Set entity icon to fa fa-address-book */
+/* Set entity icon to fa fa-address-card */
 
                UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-address-book', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA'
+               SET Icon = 'fa fa-address-card', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('e53cca14-6eea-487f-be40-38cc4caf5f6c', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', 'FieldCategoryInfo', '{"Contact Details":{"icon":"fa fa-id-card","description":"Core information about the contact method including its type, value, and priority."},"Linked Records":{"icon":"fa fa-link","description":"Information about the person or organization associated with this contact method."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields."}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('449a8f9f-5278-41e7-b16b-8b3b44fb1d5b', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tag","description":"Core identification and descriptive information for the contact method"},"UI Configuration":{"icon":"fa fa-desktop","description":"Settings controlling the visual presentation, sorting, and availability in the application"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('af7a90a1-e7e9-4f08-a738-fdf6b60ba73a', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA', 'FieldCategoryIcons', '{"Contact Details":"fa fa-id-card","Linked Records":"fa fa-link","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('5d6d1806-aa02-4e9f-b0be-04b1faa07d03', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tag","UI Configuration":"fa fa-desktop","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+         UPDATE [${flyway:defaultSchema}].ApplicationEntity
+         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
+         WHERE EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5'
+      
+
+/* Set categories for 12 fields */
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.ID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'BA3E4FAE-198F-48E4-BD9F-774D8584E259' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Line1 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Address Line 1',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8C5ED1B2-107E-4195-9E05-AC25C452971D' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Line2 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Address Line 2',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'C6515A57-DACE-4684-AD9D-03297E60CDE4' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Line3 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Address Line 3',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '9540EDE1-741A-4B6F-B9F0-8DE3C3EDFC31' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.City 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '0C71E92A-D747-4302-B17F-78C92930D2CE' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.StateProvince 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'State / Province',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'D43ECA52-4B7A-434E-92CE-C3FF69824306' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.PostalCode 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '65ACAC26-5F6C-4A67-8559-BD7C0943A925' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Country 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Address Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '63BB48D1-67C2-4CD9-BDD9-F86F6154F77C' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Latitude 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Geographic Location',
+   GeneratedFormSection = 'Category',
+   ExtendedType = 'Geo',
+   CodeType = NULL
+WHERE 
+   ID = '66D63980-B9B5-47A0-BA8B-6B55977CB60C' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.Longitude 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Geographic Location',
+   GeneratedFormSection = 'Category',
+   ExtendedType = 'Geo',
+   CodeType = NULL
+WHERE 
+   ID = 'B03F710E-9199-4986-90BF-3ECE5037D79A' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.__mj_CreatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'CFE3572F-9B12-4D14-BBA5-2F9A8A3B66F0' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Addresses.__mj_UpdatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '2FF61A35-FB7C-455A-8883-6998B141B095' AND AutoUpdateCategory = 1
+
+/* Set entity icon to fa fa-map-marker-alt */
+
+               UPDATE [${flyway:defaultSchema}].Entity
+               SET Icon = 'fa fa-map-marker-alt', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E'
+            
+
+/* Insert FieldCategoryInfo setting for entity */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('dd5d439c-a2ee-4880-973b-e2ac49de7913', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'FieldCategoryInfo', '{"Address Details":{"icon":"fa fa-home","description":"Physical street address, locality, and regional information"},"Geographic Location":{"icon":"fa fa-globe-americas","description":"Precise geospatial coordinates for mapping and location services"},"System Metadata":{"icon":"fa fa-cog","description":"Internal record identifiers and system-managed audit timestamps"}}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Insert FieldCategoryIcons setting (legacy) */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('fee02b31-8541-4c15-8ee8-4eb7c94e0aaf', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'FieldCategoryIcons', '{"Address Details":"fa fa-home","Geographic Location":"fa fa-globe-americas","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA'
+         WHERE EntityID = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E'
+      
+
+/* Set categories for 8 fields */
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.ID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '85492901-7593-46E0-8D3D-D50ED60346D5' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.Name 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'B93AA266-FAA5-461D-B32B-A0F26C698B2C' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.Description 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.IsActive 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Active',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'F70D2734-AF27-4969-9C8B-B51259E71F8F' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.IconClass 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Display and Sorting',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'B0408D09-CF61-4D1D-B951-8E0C5490BD29' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.DefaultRank 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Display and Sorting',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '971C65DD-9F0C-4B46-AB06-8D5A3E47CBC3' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.__mj_CreatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '236794A4-9F6F-472E-9D9F-C77383CF48F5' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Address Types.__mj_UpdatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'BCA9BABD-E370-4376-89AC-DCF9340E5734' AND AutoUpdateCategory = 1
+
+/* Set entity icon to fa fa-map-signs */
+
+               UPDATE [${flyway:defaultSchema}].Entity
+               SET Icon = 'fa fa-map-signs', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '7A7245D1-2316-44A4-B147-A50FF19F5942'
+            
+
+/* Insert FieldCategoryInfo setting for entity */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('885b5884-f599-4c9e-8686-0347959cafbc', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tag","description":"Core properties defining the address category and its availability status."},"Display and Sorting":{"icon":"fa fa-sort-amount-down-alt","description":"Visual configuration for how this type is represented and ordered in the user interface."},"System Metadata":{"icon":"fa fa-database","description":"Internal identifiers and system-managed audit timestamps."}}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Insert FieldCategoryIcons setting (legacy) */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('70a2e738-3547-4283-98e0-b31659a5b1b4', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tag","Display and Sorting":"fa fa-sort-amount-down-alt","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+         UPDATE [${flyway:defaultSchema}].ApplicationEntity
+         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
+         WHERE EntityID = '7A7245D1-2316-44A4-B147-A50FF19F5942'
+      
+
+/* Set categories for 11 fields */
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.ID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'C66B3740-B4B9-4BA4-B53D-9CDC6A64DAFB' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.PersonID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Linked Record',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Person',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'B6B5A623-F308-496E-8845-0CF1E92E9D00' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.OrganizationID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Linked Record',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Organization',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '0EC64524-99CD-484D-BF82-0E422D0C9903' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.Organization 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Linked Record',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Organization Name',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '86227274-0D90-4F5E-B43F-8B303EBE4844' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.ContactTypeID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Contact Type',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '5C42F4D1-4ABD-4CC6-B5DA-A164D5CBA7A1' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.ContactType 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Contact Type Name',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'F261CF20-990D-44DF-B604-A603A9892A90' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.Value 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Contact Value',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '77C20975-15E3-4A89-9414-3A829A5EA249' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.Label 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'CBA68064-C466-460E-AD1B-89256634A753' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.IsPrimary 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '9AAA02E5-C378-43BE-A1B3-6EF7355CDF22' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.__mj_CreatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'DA376286-2631-4FA3-88DA-1D7BE44312CC' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Contact Methods.__mj_UpdatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'FC8DC59A-E1B5-4136-9000-99643E602806' AND AutoUpdateCategory = 1
+
+/* Set entity icon to fa fa-address-book */
+
+               UPDATE [${flyway:defaultSchema}].Entity
+               SET Icon = 'fa fa-address-book', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '32C45078-D33B-4760-9BE5-0DF7F483F591'
+            
+
+/* Insert FieldCategoryInfo setting for entity */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('84c0c552-a6b2-497b-ab9d-76e79ab4a6f8', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'FieldCategoryInfo', '{"Contact Information":{"icon":"fa fa-address-card","description":"Core details of the contact method including the value, type, and priority status."},"Linked Record":{"icon":"fa fa-link","description":"Information regarding the person or organization associated with this contact method."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit fields and internal identifiers."}}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Insert FieldCategoryIcons setting (legacy) */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('0a789d66-d4b6-4db8-ab17-f86f350e4170', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'FieldCategoryIcons', '{"Contact Information":"fa fa-address-card","Linked Record":"fa fa-link","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
+
+         UPDATE [${flyway:defaultSchema}].ApplicationEntity
+         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
+         WHERE EntityID = '32C45078-D33B-4760-9BE5-0DF7F483F591'
       
 
 /* Set field properties for entity */
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'DAA78DA8-7A01-4ADA-B992-C9518D4ABC7A'
+               WHERE ID = '46B9D67F-3365-47B4-BFE1-6BB932392AE3'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '5ED84866-8B7B-42C5-912E-80FDAC5B4D1F'
+               WHERE ID = '9A9B834C-1D11-4A4E-98B3-904D048F89DC'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'C48B0FEE-C836-4BB3-8420-16566930FA4B'
+               WHERE ID = '8620F795-6511-4715-A823-D3C905AF3ECC'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'E20D4075-A743-4CE0-90D0-D69E62E9636B'
+               WHERE ID = 'EFD20ADA-E18B-41DC-8F4F-F4ED58FE0165'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '4A6C3B90-A1DC-48B6-8268-7170539663A9'
+                  WHERE ID = '28DAA78C-FABD-438D-8F24-055987B58B60'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '0B217D86-FA43-4C64-BCE7-FF4FABDDAA6D'
+                  WHERE ID = 'C8C255E3-D3C1-4F3D-84AA-07B30981FB3E'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'DAA78DA8-7A01-4ADA-B992-C9518D4ABC7A'
+                  WHERE ID = '46B9D67F-3365-47B4-BFE1-6BB932392AE3'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '598BF53A-74AB-4D88-9087-FEFE711A0784'
+                  WHERE ID = '9A9B834C-1D11-4A4E-98B3-904D048F89DC'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'C9DEFEA8-649D-46EF-8AD5-67CE6F8365CE'
+                  WHERE ID = '3A676695-4DEE-4A2E-95E5-00A96DE43DAD'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
@@ -12863,13 +13515,19 @@ WHERE
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'DC1550D3-7488-4CCE-A291-8623ECE507F1'
+               WHERE ID = 'E6F5450E-C909-426C-8EA6-968A3A68B6CA'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '48E12BDE-31F1-4AA8-822E-EF3520612691'
+               WHERE ID = '8686F717-72AC-4ECB-B3FF-200DA50DF000'
+               AND AutoUpdateDefaultInView = 1
+            
+
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'A6AAF1AB-1212-4066-9A84-2F0DAE43B5BE'
                AND AutoUpdateDefaultInView = 1
             
 
@@ -12877,37 +13535,43 @@ WHERE
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '722C3E0D-AB64-4276-B53D-CA77C54143CF'
+               WHERE ID = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'C97E3D06-0D30-44F3-B692-45A4125BC66E'
+               WHERE ID = '7B610118-FB6D-4CE0-886F-23881C4647E3'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '80F81755-7E41-44C8-A429-AC94E5CE7689'
+               WHERE ID = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF'
+               AND AutoUpdateDefaultInView = 1
+            
+
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '60D162BD-2934-4AD7-A74E-F27EF47656D7'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '722C3E0D-AB64-4276-B53D-CA77C54143CF'
+                  WHERE ID = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'C97E3D06-0D30-44F3-B692-45A4125BC66E'
+                  WHERE ID = '7B610118-FB6D-4CE0-886F-23881C4647E3'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '80F81755-7E41-44C8-A429-AC94E5CE7689'
+                  WHERE ID = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
@@ -12915,179 +13579,165 @@ WHERE
 
             UPDATE [${flyway:defaultSchema}].EntityField
             SET IsNameField = 1
-            WHERE ID = 'FCDCECC5-509B-4A56-A7E6-7A9BBEBBEBEC'
+            WHERE ID = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
             AND AutoUpdateIsNameField = 1
          
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'C36F71AB-A12A-466B-91CE-D3B3C466F277'
+               WHERE ID = '4942CBCC-6D0B-44F5-BE38-9D697D02B463'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'FCDCECC5-509B-4A56-A7E6-7A9BBEBBEBEC'
+               WHERE ID = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '39C0D8A8-099B-4427-8921-8BB4E766EA47'
+               WHERE ID = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = '8F92F420-E2B8-4EA9-8AEF-EFD6D5B41607'
+               WHERE ID = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0'
                AND AutoUpdateDefaultInView = 1
             
 
                UPDATE [${flyway:defaultSchema}].EntityField
                SET DefaultInView = 1
-               WHERE ID = 'C64968CB-CC40-403A-A02B-E245FE564172'
+               WHERE ID = '57F78065-E9DB-4D2C-A2F8-524D4F15D902'
+               AND AutoUpdateDefaultInView = 1
+            
+
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '5F857A6E-BEFC-4C29-BC2B-FD6876C269B2'
                AND AutoUpdateDefaultInView = 1
             
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'C36F71AB-A12A-466B-91CE-D3B3C466F277'
+                  WHERE ID = '4942CBCC-6D0B-44F5-BE38-9D697D02B463'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'FCDCECC5-509B-4A56-A7E6-7A9BBEBBEBEC'
+                  WHERE ID = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '1D5F5717-709D-4934-A749-11FE56A2BBBB'
+                  WHERE ID = '528500F1-1BB8-4564-A46D-5D45362F3E05'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '61021226-3FCC-468D-828A-D4C6B01D6200'
+                  WHERE ID = '27375F71-8F8F-4DAB-8803-96AE73EA28CE'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '39C0D8A8-099B-4427-8921-8BB4E766EA47'
+                  WHERE ID = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '8F92F420-E2B8-4EA9-8AEF-EFD6D5B41607'
+                  WHERE ID = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
                   UPDATE [${flyway:defaultSchema}].EntityField
                   SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '886CCD64-5654-4095-9E8E-345951B0DB65'
+                  WHERE ID = '1B312AA3-5CCC-48E6-B034-A8BF437C9A4D'
                   AND AutoUpdateIncludeInUserSearchAPI = 1
                
 
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'FCAA14F7-23BD-41C0-BBB0-B9655ECFC0AC'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
+/* Set field properties for entity */
 
-/* Set categories for 6 fields */
+            UPDATE [${flyway:defaultSchema}].EntityField
+            SET IsNameField = 1
+            WHERE ID = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+            AND AutoUpdateIsNameField = 1
+         
 
--- UPDATE Entity Field Category Info Common: Organization Types.ID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '53E42417-862D-4A5F-AAD2-32B83853313B' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organization Types.Name 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Type Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'BB0E133C-34DE-442E-A6BE-26006CCE426A' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organization Types.Description 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Type Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'DC1550D3-7488-4CCE-A291-8623ECE507F1' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organization Types.IconClass 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Type Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '48E12BDE-31F1-4AA8-822E-EF3520612691' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organization Types.__mj_CreatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '8AD9E989-C6B1-4CA3-85E5-3D625B7C8812' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organization Types.__mj_UpdatedAt 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'F8A490DB-1A16-401D-A33A-A3213D95EE3D' AND AutoUpdateCategory = 1
-
-/* Set entity icon to fa fa-building */
-
-               UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-building', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '0AB066C1-8FE5-4363-86E6-BEF80975205C'
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryInfo setting for entity */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('c59873fa-e72d-4132-b792-ad49e243bcb1', '0AB066C1-8FE5-4363-86E6-BEF80975205C', 'FieldCategoryInfo', '{"Type Configuration":{"icon":"fa fa-list-ul","description":"Core attributes defining the organization type and its visual display in the application."},"System Metadata":{"icon":"fa fa-cog","description":"Internal system identifiers and audit tracking timestamps."}}', GETUTCDATE(), GETUTCDATE())
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '62D8A345-E8AC-4EE6-88A9-1959F6258657'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Insert FieldCategoryIcons setting (legacy) */
-
-               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('1eea04e7-d542-4a4c-b9a9-d6bb14a8da2d', '0AB066C1-8FE5-4363-86E6-BEF80975205C', 'FieldCategoryIcons', '{"Type Configuration":"fa fa-list-ul","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '80B0C5C4-915A-4E72-9978-74CB33902F08'
+               AND AutoUpdateDefaultInView = 1
             
 
-/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = '07C7D2B2-8916-4220-961F-076C298DD2C9'
+               AND AutoUpdateDefaultInView = 1
+            
 
-         UPDATE [${flyway:defaultSchema}].ApplicationEntity
-         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '0AB066C1-8FE5-4363-86E6-BEF80975205C'
-      
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB'
+               AND AutoUpdateDefaultInView = 1
+            
 
-/* Set categories for 9 fields */
+               UPDATE [${flyway:defaultSchema}].EntityField
+               SET DefaultInView = 1
+               WHERE ID = 'E9B40366-4907-44C0-99B1-502E35D6E345'
+               AND AutoUpdateDefaultInView = 1
+            
 
--- UPDATE Entity Field Category Info Common: Relationship Types.ID 
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
+
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = '80B0C5C4-915A-4E72-9978-74CB33902F08'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
+
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = '07C7D2B2-8916-4220-961F-076C298DD2C9'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
+
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
+
+                  UPDATE [${flyway:defaultSchema}].EntityField
+                  SET IncludeInUserSearchAPI = 1
+                  WHERE ID = 'E9B40366-4907-44C0-99B1-502E35D6E345'
+                  AND AutoUpdateIncludeInUserSearchAPI = 1
+               
+
+/* Set categories for 10 fields */
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13095,70 +13745,80 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B6A2C73F-6D40-45F9-AF82-52DD3D29C6FB' AND AutoUpdateCategory = 1
+   ID = '2B7F56C2-C197-45E1-9C79-AF1BFDE094D4' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.Name 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.Name 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Relationship Definition',
+   Category = 'Type Definition',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FDA58326-2507-4F14-9143-D17758D1B999' AND AutoUpdateCategory = 1
+   ID = 'B0C9F62F-CD73-4EEB-87A8-1F55ADE79539' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.Description 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.Description 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Relationship Definition',
+   Category = 'Type Definition',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E351F0D1-98D9-449E-9C0A-6D43D5B4D390' AND AutoUpdateCategory = 1
+   ID = '8F51E66C-379D-4E06-ACF6-75F98E690782' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.Category 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.Category 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Relationship Definition',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Connection Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '722C3E0D-AB64-4276-B53D-CA77C54143CF' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationship Types.IsDirectional 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Directional Configuration',
+   Category = 'Type Definition',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D4EA503E-413F-4809-9969-A69E1DF8261B' AND AutoUpdateCategory = 1
+   ID = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.ForwardLabel 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.IsActive 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Directional Configuration',
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Active',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '60D162BD-2934-4AD7-A74E-F27EF47656D7' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.IsDirectional 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Directionality and Labels',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C97E3D06-0D30-44F3-B692-45A4125BC66E' AND AutoUpdateCategory = 1
+   ID = 'B66F18B2-77DA-4F8E-B9E3-44E9BC6CFC54' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.ReverseLabel 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.ForwardLabel 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Directional Configuration',
+   Category = 'Directionality and Labels',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '80F81755-7E41-44C8-A429-AC94E5CE7689' AND AutoUpdateCategory = 1
+   ID = '7B610118-FB6D-4CE0-886F-23881C4647E3' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.ReverseLabel 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Directionality and Labels',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.__mj_CreatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13166,9 +13826,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '8AEB1280-B915-4E5E-A5EE-F641D20378A4' AND AutoUpdateCategory = 1
+   ID = '8C67DEB3-E9BA-412D-9875-DD29A5523FCE' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationship Types.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationship Types.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13176,111 +13836,37 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'A40DAFE1-4AA7-40E5-A0BE-8A32B5EE8012' AND AutoUpdateCategory = 1
+   ID = 'F28625FD-5F8F-429C-8100-9B9C54205AB0' AND AutoUpdateCategory = 1
 
 /* Set entity icon to fa fa-project-diagram */
 
                UPDATE [${flyway:defaultSchema}].Entity
                SET Icon = 'fa fa-project-diagram', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB'
+               WHERE ID = '5F214F43-109C-407D-B505-7B0B3B72ACB5'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('2175fda0-7bd8-41bd-a14c-5a5bd9ec464c', '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', 'FieldCategoryInfo', '{"Relationship Definition":{"icon":"fa fa-tag","description":"Basic properties and classification of the relationship type"},"Directional Configuration":{"icon":"fa fa-exchange-alt","description":"Settings for relationship symmetry and directional display labels"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('53e9f46a-8aac-456f-8dcf-5c631cbec3de', '5F214F43-109C-407D-B505-7B0B3B72ACB5', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tags","description":"Basic identification, description, and classification of the relationship type"},"Directionality and Labels":{"icon":"fa fa-exchange-alt","description":"Configuration for how relationships are labeled and whether they have a specific direction"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit timestamps"}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('61b0daac-ca07-4d2d-8cd2-cf93951ddcc9', '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB', 'FieldCategoryIcons', '{"Relationship Definition":"fa fa-tag","Directional Configuration":"fa fa-exchange-alt","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('30e7e163-24ac-44e9-80fd-061defd0e33b', '5F214F43-109C-407D-B505-7B0B3B72ACB5', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tags","Directionality and Labels":"fa fa-exchange-alt","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '7BFA6AAF-C89F-41D6-BAD5-737644ABEDCB'
+         WHERE EntityID = '5F214F43-109C-407D-B505-7B0B3B72ACB5'
       
 
-/* Set field properties for entity */
+/* Set categories for 8 fields */
 
-            UPDATE [${flyway:defaultSchema}].EntityField
-            SET IsNameField = 1
-            WHERE ID = '41798D66-072D-4F85-9D13-51C754F165C5'
-            AND AutoUpdateIsNameField = 1
-         
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '41798D66-072D-4F85-9D13-51C754F165C5'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '854946A7-EF5B-4818-8AFB-CD99B5E313E8'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '228F924E-DB74-41E4-8D20-942D899C03D6'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = 'CBC69ADF-FA7D-49BB-8381-A865E1835ECF'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '38964DA0-3D90-40DE-907B-9CF0DFF7D28D'
-               AND AutoUpdateDefaultInView = 1
-            
-
-               UPDATE [${flyway:defaultSchema}].EntityField
-               SET DefaultInView = 1
-               WHERE ID = '7832FC96-8F92-4741-8DB9-A294E60DE30B'
-               AND AutoUpdateDefaultInView = 1
-            
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '41798D66-072D-4F85-9D13-51C754F165C5'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '228F924E-DB74-41E4-8D20-942D899C03D6'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = 'CBC69ADF-FA7D-49BB-8381-A865E1835ECF'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '38964DA0-3D90-40DE-907B-9CF0DFF7D28D'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-                  UPDATE [${flyway:defaultSchema}].EntityField
-                  SET IncludeInUserSearchAPI = 1
-                  WHERE ID = '7832FC96-8F92-4741-8DB9-A294E60DE30B'
-                  AND AutoUpdateIncludeInUserSearchAPI = 1
-               
-
-/* Set categories for 18 fields */
-
--- UPDATE Entity Field Category Info Common: Organizations.ID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13288,142 +13874,238 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '7C6E93C3-E124-46BB-A0F5-1DA136396AFD' AND AutoUpdateCategory = 1
+   ID = '665481AD-FC97-49BE-A98C-AB58AA509F59' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.Name 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.Name 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
+   Category = 'Organization Type Details',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3BB45A32-8836-4868-9408-44101F79DA8D' AND AutoUpdateCategory = 1
+   ID = '82F2CDBC-8793-4FE4-BFCA-380A8A22F41F' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.LegalName 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.Description 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
+   Category = 'Organization Type Details',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '4A6C3B90-A1DC-48B6-8268-7170539663A9' AND AutoUpdateCategory = 1
+   ID = 'E6F5450E-C909-426C-8EA6-968A3A68B6CA' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.OrganizationTypeID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.IconClass 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization Type',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '0902C7F8-4D7F-40EA-BAA6-A6C36B22FEA5' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organizations.OrganizationType 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Organization Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization Type Name',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'C48B0FEE-C836-4BB3-8420-16566930FA4B' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organizations.Status 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Organization Details',
+   Category = 'Organization Type Details',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5ED84866-8B7B-42C5-912E-80FDAC5B4D1F' AND AutoUpdateCategory = 1
+   ID = '1D7E13DF-447A-49B8-9A07-1FA0CC058115' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.FoundedDate 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.DisplayRank 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
+   Category = 'Organization Type Details',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '24F6C30C-AE49-4F55-BBB1-E9ABF12AF0DB' AND AutoUpdateCategory = 1
+   ID = '8686F717-72AC-4ECB-B3FF-200DA50DF000' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.TaxID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.IsActive 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
+   Category = 'Organization Type Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Active',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'A6AAF1AB-1212-4066-9A84-2F0DAE43B5BE' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.__mj_CreatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C9DEFEA8-649D-46EF-8AD5-67CE6F8365CE' AND AutoUpdateCategory = 1
+   ID = '7C026948-1D22-4D12-B839-A8AF848811BA' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.Description 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organization Types.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Organization Details',
+   Category = 'System Metadata',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '83410A49-636C-4540-88F5-7AC573E0FC39' AND AutoUpdateCategory = 1
+   ID = 'A2EFB1DA-409F-40FA-BE98-02E394A0F965' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.Website 
+/* Set entity icon to fa fa-building */
+
+               UPDATE [${flyway:defaultSchema}].Entity
+               SET Icon = 'fa fa-building', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = 'A77D9725-4871-484B-99F0-F65461D7ABEE'
+            
+
+/* Insert FieldCategoryInfo setting for entity */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('5b1136b8-dd63-4fc0-a319-04b8349847da', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'FieldCategoryInfo', '{"Organization Type Details":{"icon":"fa fa-list-ul","description":"Configuration for organization categories including labels, descriptions, and UI display settings"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit fields and unique identifiers"}}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Insert FieldCategoryIcons setting (legacy) */
+
+               INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
+               VALUES ('e0b43043-9502-45c8-9eb4-72fd7adf5f22', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'FieldCategoryIcons', '{"Organization Type Details":"fa fa-list-ul","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+            
+
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+         UPDATE [${flyway:defaultSchema}].ApplicationEntity
+         SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
+         WHERE EntityID = 'A77D9725-4871-484B-99F0-F65461D7ABEE'
+      
+
+/* Set categories for 18 fields */
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Contact and Online Presence',
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'B194EE44-85DB-4D2A-A76F-9FEB0B5F1AEB' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Name 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '9F465E98-0614-4987-BED8-90B8A1450685' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.LegalName 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '28DAA78C-FABD-438D-8F24-055987B58B60' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.OrganizationType 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'EFD20ADA-E18B-41DC-8F4F-F4ED58FE0165' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.OrganizationTypeID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '9E6FCD82-BCDF-443A-A87D-E16EEF761068' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.FoundedDate 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '012CE6D0-F4DC-4921-90D6-C56BE2F3D1B3' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.TaxID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '3A676695-4DEE-4A2E-95E5-00A96DE43DAD' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Status 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8620F795-6511-4715-A823-D3C905AF3ECC' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Description 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Organization Identity',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'E1F4B6BC-8465-429B-922C-353F6D1B547C' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Website 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Contact Information',
    GeneratedFormSection = 'Category',
    ExtendedType = 'URL',
    CodeType = NULL
 WHERE 
-   ID = '0B217D86-FA43-4C64-BCE7-FF4FABDDAA6D' AND AutoUpdateCategory = 1
+   ID = 'C8C255E3-D3C1-4F3D-84AA-07B30981FB3E' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.LogoURL 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.LogoURL 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Contact and Online Presence',
+   Category = 'Contact Information',
    GeneratedFormSection = 'Category',
    ExtendedType = 'URL',
    CodeType = NULL
 WHERE 
-   ID = '31300B38-C784-4E2A-A7CF-1F18CED9C458' AND AutoUpdateCategory = 1
+   ID = '428426B8-70E5-409E-BA30-8AAD6DFAF08E' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.Email 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Email 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Contact and Online Presence',
+   Category = 'Contact Information',
    GeneratedFormSection = 'Category',
    ExtendedType = 'Email',
    CodeType = NULL
 WHERE 
-   ID = 'DAA78DA8-7A01-4ADA-B992-C9518D4ABC7A' AND AutoUpdateCategory = 1
+   ID = '46B9D67F-3365-47B4-BFE1-6BB932392AE3' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.Phone 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Phone 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Contact and Online Presence',
+   Category = 'Contact Information',
    GeneratedFormSection = 'Category',
    ExtendedType = 'Tel',
    CodeType = NULL
 WHERE 
-   ID = '598BF53A-74AB-4D88-9087-FEFE711A0784' AND AutoUpdateCategory = 1
+   ID = '9A9B834C-1D11-4A4E-98B3-904D048F89DC' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.ParentID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Hierarchy and Structure',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Parent Organization',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '7A4A63E0-651D-4127-932A-C3D2EC1F24C6' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Organizations.Parent 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.Parent 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'Hierarchy and Structure',
@@ -13432,20 +14114,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E20D4075-A743-4CE0-90D0-D69E62E9636B' AND AutoUpdateCategory = 1
+   ID = '97844D3B-A436-4CE7-8246-976BA9FF9A87' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.RootParentID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.ParentID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'Hierarchy and Structure',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Root Parent',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '74ED75BD-8B3D-45B4-8F7C-F4D8E249A032' AND AutoUpdateCategory = 1
+   ID = 'D78A9DB0-2ED9-4D73-A408-24B0E03981C9' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.RootParentID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Hierarchy and Structure',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8F929C6B-AB7E-438C-839F-3CB4357BB69C' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.__mj_CreatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13453,9 +14144,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3F12CF81-8BF2-4F9F-8E77-DE9819DCB251' AND AutoUpdateCategory = 1
+   ID = '36566057-63B7-49B2-A7F2-928C0D798C02' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Organizations.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Organizations.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13463,37 +14154,37 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'AC571288-2D4B-431D-97CA-7328BF50404F' AND AutoUpdateCategory = 1
+   ID = 'E219F8E5-5247-425E-BD32-ABD41F8615BD' AND AutoUpdateCategory = 1
 
 /* Set entity icon to fa fa-building */
 
                UPDATE [${flyway:defaultSchema}].Entity
                SET Icon = 'fa fa-building', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD'
+               WHERE ID = 'C70448F9-9792-41D7-A82C-784B66429D54'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('aa5b3614-5f5a-411e-b80b-e610929c93d9', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', 'FieldCategoryInfo', '{"Organization Details":{"icon":"fa fa-id-card","description":"Core identity information, classification, and legal identification for the organization"},"Contact and Online Presence":{"icon":"fa fa-address-book","description":"Communication channels and digital branding information"},"Hierarchy and Structure":{"icon":"fa fa-sitemap","description":"Information regarding the organization''s position within a corporate or structural hierarchy"},"System Metadata":{"icon":"fa fa-cog","description":"Internal system identifiers and audit timestamps"}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('4c3a1db8-34e8-487c-9f87-c37187658d61', 'C70448F9-9792-41D7-A82C-784B66429D54', 'FieldCategoryInfo', '{"Organization Identity":{"icon":"fa fa-id-card","description":"Core identity details including legal names, types, and operational status"},"Contact Information":{"icon":"fa fa-address-book","description":"Communication channels including website, email, and phone details"},"Hierarchy and Structure":{"icon":"fa fa-sitemap","description":"Relationship details defining the organization''s position within a corporate hierarchy"},"System Metadata":{"icon":"fa fa-cog","description":"System-generated audit and identification fields"}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('f1d3e6ac-263a-41c5-a40c-c31ecae13c59', '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD', 'FieldCategoryIcons', '{"Organization Details":"fa fa-id-card","Contact and Online Presence":"fa fa-address-book","Hierarchy and Structure":"fa fa-sitemap","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('67187477-2498-46db-bf43-c9363ea694cf', 'C70448F9-9792-41D7-A82C-784B66429D54', 'FieldCategoryIcons', '{"Organization Identity":"fa fa-id-card","Contact Information":"fa fa-address-book","Hierarchy and Structure":"fa fa-sitemap","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=1 for NEW entity (category: primary, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 1, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '74DEFEF0-A5F5-41D6-9B63-8A07F706ABFD'
+         WHERE EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54'
       
 
 /* Set categories for 19 fields */
 
--- UPDATE Entity Field Category Info Common: People.ID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13501,171 +14192,176 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D0B95EA1-8F6A-42F7-8A57-0509760535C4' AND AutoUpdateCategory = 1
+   ID = '2A0B54F1-94F8-466C-86C2-931E200258C1' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.FirstName 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.FirstName 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C36F71AB-A12A-466B-91CE-D3B3C466F277' AND AutoUpdateCategory = 1
+   ID = '4942CBCC-6D0B-44F5-BE38-9D697D02B463' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.LastName 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.LastName 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FCDCECC5-509B-4A56-A7E6-7A9BBEBBEBEC' AND AutoUpdateCategory = 1
+   ID = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.MiddleName 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.MiddleName 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '1D5F5717-709D-4934-A749-11FE56A2BBBB' AND AutoUpdateCategory = 1
+   ID = '528500F1-1BB8-4564-A46D-5D45362F3E05' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.Prefix 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Prefix 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'CF1E51AF-191B-47E7-BC44-3A6C705AC739' AND AutoUpdateCategory = 1
+   ID = '31733EB2-A6CB-4433-8FAC-F278676855DC' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.Suffix 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Suffix 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E6687162-799A-4BB3-A5BE-54EB87E22E83' AND AutoUpdateCategory = 1
+   ID = '9F22EE0D-AC30-4805-89EC-E2C8576615BE' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.PreferredName 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.PreferredName 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '61021226-3FCC-468D-828A-D4C6B01D6200' AND AutoUpdateCategory = 1
+   ID = '27375F71-8F8F-4DAB-8803-96AE73EA28CE' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.DateOfBirth 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.DateOfBirth 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    DisplayName = 'Date of Birth',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '05D10617-2FA9-40FF-B9E4-59B6AAC4ACBE' AND AutoUpdateCategory = 1
+   ID = '45090E40-2E5C-4359-B14D-B3D902685C11' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.Gender 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Gender 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Personal Identity',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '6354A8E3-2AD5-4FBF-BC44-321AEE5C669F' AND AutoUpdateCategory = 1
+   ID = '69B0D1A5-C5F5-4F21-9F39-4DCB1C46F76F' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.PhotoURL 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Title 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Professional and Profile',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Job Title',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Email 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Professional and Profile',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Email Address',
+   ExtendedType = 'Email',
+   CodeType = NULL
+WHERE 
+   ID = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Phone 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Professional and Profile',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Phone Number',
+   ExtendedType = 'Tel',
+   CodeType = NULL
+WHERE 
+   ID = '1B312AA3-5CCC-48E6-B034-A8BF437C9A4D' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.PhotoURL 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Professional and Profile',
    GeneratedFormSection = 'Category',
    ExtendedType = 'URL',
    CodeType = NULL
 WHERE 
-   ID = 'A494BB71-2768-4024-B778-509AA1E8CB55' AND AutoUpdateCategory = 1
+   ID = '6BD597E1-05B9-46F6-80FD-5A98D35C4FDD' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.Bio 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Bio 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Identity & Profile',
+   Category = 'Professional and Profile',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Biography',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '152F8F83-767B-4B4F-AF92-EF786126DEC0' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.LinkedUserID 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Account and Status',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Linked User',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '79F1EEAB-367E-4B45-A9B8-75639F6410CB' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.LinkedUser 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Account and Status',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Linked User Name',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '5F857A6E-BEFC-4C29-BC2B-FD6876C269B2' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.Status 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Account and Status',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F32F4925-BDD8-4F42-B2A8-8DAFEC07DE2F' AND AutoUpdateCategory = 1
+   ID = '57F78065-E9DB-4D2C-A2F8-524D4F15D902' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.Title 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact & Professional',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Professional Title',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '39C0D8A8-099B-4427-8921-8BB4E766EA47' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.Email 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact & Professional',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Email',
-   CodeType = NULL
-WHERE 
-   ID = '8F92F420-E2B8-4EA9-8AEF-EFD6D5B41607' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.Phone 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Contact & Professional',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Tel',
-   CodeType = NULL
-WHERE 
-   ID = '886CCD64-5654-4095-9E8E-345951B0DB65' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.Status 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Account Management',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'C64968CB-CC40-403A-A02B-E245FE564172' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.LinkedUserID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Account Management',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '7DFC3BF1-A07F-463E-845A-C934275BBFCF' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.LinkedUser 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Account Management',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'FCAA14F7-23BD-41C0-BBB0-B9655ECFC0AC' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: People.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.__mj_CreatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13673,9 +14369,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E4076D06-6941-4562-95DE-EC544AA22861' AND AutoUpdateCategory = 1
+   ID = '86C714E8-B200-4F9F-817A-BAF052AEEE3D' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: People.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: People.__mj_UpdatedAt 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13683,185 +14379,163 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '8A17598A-FFA8-4A10-8D14-0454D494457E' AND AutoUpdateCategory = 1
+   ID = 'CC25D06A-8F7E-433D-9658-500F225D55EC' AND AutoUpdateCategory = 1
 
-/* Set entity icon to fa fa-user */
+/* Set entity icon to fa fa-users */
 
                UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-user', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65'
+               SET Icon = 'fa fa-users', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('e442b6d0-7e30-4f2e-8983-350e189e0bdc', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', 'FieldCategoryInfo', '{"Identity & Profile":{"icon":"fa fa-id-card","description":"Personal details, names, demographics, and biographical information"},"Contact & Professional":{"icon":"fa fa-address-book","description":"Information on how to reach the person and their professional role"},"Account Management":{"icon":"fa fa-user-cog","description":"Record status and links to internal system user accounts"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit fields and technical identifiers"}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('1e69ca34-851b-4425-be26-94b9efeb7192', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'FieldCategoryInfo', '{"Personal Identity":{"icon":"fa fa-id-card","description":"Core identification details including name, date of birth, and gender"},"Professional and Profile":{"icon":"fa fa-user-tie","description":"Professional title, contact details, and biographical information"},"Account and Status":{"icon":"fa fa-user-check","description":"Current record status and links to system user accounts"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('41d3db9a-ba53-4a55-820b-01426b505f37', 'A3CB56E8-38B9-4456-BD88-F5E69E219D65', 'FieldCategoryIcons', '{"Identity & Profile":"fa fa-id-card","Contact & Professional":"fa fa-address-book","Account Management":"fa fa-user-cog","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('c19bfff2-a14c-4e01-9550-809a42ee947f', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'FieldCategoryIcons', '{"Personal Identity":"fa fa-id-card","Professional and Profile":"fa fa-user-tie","Account and Status":"fa fa-user-check","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=1 for NEW entity (category: primary, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 1, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = 'A3CB56E8-38B9-4456-BD88-F5E69E219D65'
+         WHERE EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
       
 
 /* Set categories for 16 fields */
 
--- UPDATE Entity Field Category Info Common: Relationships.ID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.FromPersonID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'System Metadata',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'E1BF9E93-1F96-486F-B4E0-49D038159B5C' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.RelationshipTypeID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Relationship Type',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'EAAC9A59-CE53-43E4-B663-0CEFAF8300D0' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.RelationshipType 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Relationship Type Name',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'CBC69ADF-FA7D-49BB-8381-A865E1835ECF' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.Title 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '41798D66-072D-4F85-9D13-51C754F165C5' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.Status 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '228F924E-DB74-41E4-8D20-942D899C03D6' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.StartDate 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '854946A7-EF5B-4818-8AFB-CD99B5E313E8' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.EndDate 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '7D0AE077-E5AB-4B21-93AA-3CB682BB906A' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.Notes 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Relationship Details',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '9929CC69-0349-4DCA-9F74-4B11CF31AD1A' AND AutoUpdateCategory = 1
-
--- UPDATE Entity Field Category Info Common: Relationships.FromPersonID 
-UPDATE [${flyway:defaultSchema}].EntityField
-SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'From Person',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '874BA7FA-14C5-4277-9C83-FF2187D6F0E1' AND AutoUpdateCategory = 1
+   ID = '8974264B-DC82-4276-B89E-C65E14F078F8' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.FromOrganizationID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.FromOrganizationID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'From Organization',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '12FBD8AF-5847-453D-B40E-3D740C04769D' AND AutoUpdateCategory = 1
+   ID = '6D46F59F-FF3F-4351-A697-E7DB414A1E3E' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.FromOrganization 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.FromOrganization 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'From Organization Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '38964DA0-3D90-40DE-907B-9CF0DFF7D28D' AND AutoUpdateCategory = 1
+   ID = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.ToPersonID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.ToPersonID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'To Person',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'EB71A369-66C0-4C86-9B77-63A11BA01874' AND AutoUpdateCategory = 1
+   ID = 'AD3ECDAA-E2BE-40D9-B83E-1868AB68C778' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.ToOrganizationID 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.ToOrganizationID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'To Organization',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'CFFB2D6A-96BD-4548-82B2-A344D0F4DF89' AND AutoUpdateCategory = 1
+   ID = '42EBA3CE-7DDB-4149-BE93-E245F351B963' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.ToOrganization 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.ToOrganization 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
-   Category = 'Participants',
+   Category = 'Relationship Participants',
    GeneratedFormSection = 'Category',
    DisplayName = 'To Organization Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '7832FC96-8F92-4741-8DB9-A294E60DE30B' AND AutoUpdateCategory = 1
+   ID = 'E9B40366-4907-44C0-99B1-502E35D6E345' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.RelationshipType 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '07C7D2B2-8916-4220-961F-076C298DD2C9' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.Title 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.Status 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '80B0C5C4-915A-4E72-9978-74CB33902F08' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.StartDate 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '62D8A345-E8AC-4EE6-88A9-1959F6258657' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.EndDate 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '0AFC293D-E93D-4BD2-A71C-ACB2631CA278' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.Notes 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'Relationship Details',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'CD66C882-D041-46F1-8DE2-3807B1BD8B5A' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.ID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13869,9 +14543,9 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C4F00F0E-461C-4EAC-B70C-B7508F850000' AND AutoUpdateCategory = 1
+   ID = 'FEFDAD15-7BA5-470A-A689-147D9303AB34' AND AutoUpdateCategory = 1
 
--- UPDATE Entity Field Category Info Common: Relationships.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.RelationshipTypeID 
 UPDATE [${flyway:defaultSchema}].EntityField
 SET 
    Category = 'System Metadata',
@@ -13879,80 +14553,114 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '531DAA90-2CBC-4AF9-91B3-A77205D4D4A1' AND AutoUpdateCategory = 1
+   ID = '4BFFAFBD-BF4E-4907-963B-95733C670B7E' AND AutoUpdateCategory = 1
 
-/* Set entity icon to fa fa-project-diagram */
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.__mj_CreatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '5F0BE392-8F9C-4995-BC97-344D361C9706' AND AutoUpdateCategory = 1
+
+-- UPDATE Entity Field Category Info MJ.BizApps.Common: Relationships.__mj_UpdatedAt 
+UPDATE [${flyway:defaultSchema}].EntityField
+SET 
+   Category = 'System Metadata',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'B15AE830-4BCB-4AA3-847E-916885287462' AND AutoUpdateCategory = 1
+
+/* Set entity icon to fa fa-handshake */
 
                UPDATE [${flyway:defaultSchema}].Entity
-               SET Icon = 'fa fa-project-diagram', __mj_UpdatedAt = GETUTCDATE()
-               WHERE ID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB'
+               SET Icon = 'fa fa-handshake', __mj_UpdatedAt = GETUTCDATE()
+               WHERE ID = '709CA9DA-B124-4155-BE39-E857EF672D82'
             
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('59511a5f-6d5a-4e2e-a4eb-fa75a77cb5f2', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'FieldCategoryInfo', '{"Relationship Details":{"icon":"fa fa-id-card","description":"Core attributes of the link including type, title, status, and effective dates"},"Participants":{"icon":"fa fa-users","description":"The people or organizations involved in this directional relationship"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit tracking information"}}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('13263fbc-3148-4e07-912e-fe7853d85442', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FieldCategoryInfo', '{"Relationship Participants":{"icon":"fa fa-users","description":"The people and organizations being linked together in this relationship"},"Relationship Details":{"icon":"fa fa-info-circle","description":"Core attributes including the type, status, duration, and contextual title of the link"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit tracking information"}}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${flyway:defaultSchema}].EntitySetting (ID, EntityID, Name, Value, __mj_CreatedAt, __mj_UpdatedAt)
-               VALUES ('8077344a-6690-4b3a-b74c-3eefafb01237', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB', 'FieldCategoryIcons', '{"Relationship Details":"fa fa-id-card","Participants":"fa fa-users","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
+               VALUES ('b475965c-2d9c-423f-9eb0-4827f5490909', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FieldCategoryIcons', '{"Relationship Participants":"fa fa-users","Relationship Details":"fa fa-info-circle","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE())
             
 
 /* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${flyway:defaultSchema}].ApplicationEntity
          SET DefaultForNewUser = 0, __mj_UpdatedAt = GETUTCDATE()
-         WHERE EntityID = '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB'
+         WHERE EntityID = '709CA9DA-B124-4155-BE39-E857EF672D82'
       
 
-/* Generated Validation Functions for Common: Contact Methods */
--- CHECK constraint for Common: Contact Methods @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
+/* Generated Validation Functions for MJ.BizApps.Common: Contact Methods */
+-- CHECK constraint for MJ.BizApps.Common: Contact Methods @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
 INSERT INTO [${flyway:defaultSchema}].[GeneratedCode] (CategoryID, GeneratedByModelID, GeneratedAt, Language, Status, Source, Code, Description, Name, LinkedEntityID, LinkedRecordPrimaryKey)
-                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([PersonID] IS NOT NULL OR [OrganizationID] IS NOT NULL)', 'public ValidatePersonIDOrOrganizationIDNotNull(result: ValidationResult) {
-	if (this.PersonID == null && this.OrganizationID == null) {
+                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([PersonID] IS NOT NULL AND [OrganizationID] IS NULL OR [PersonID] IS NULL AND [OrganizationID] IS NOT NULL)', 'public ValidatePersonIDOrOrganizationIDExclusivity(result: ValidationResult) {
+	// Check if both fields are null or if both fields are populated
+	const hasPerson = this.PersonID != null;
+	const hasOrganization = this.OrganizationID != null;
+
+	if (hasPerson === hasOrganization) {
+		const errorMessage = "Each record must be associated with either a person or an organization, but not both.";
 		result.Errors.push(new ValidationErrorInfo(
 			"PersonID",
-			"A contact record must be associated with either a person or an organization.",
+			errorMessage,
 			this.PersonID,
 			ValidationErrorType.Failure
 		));
+		result.Errors.push(new ValidationErrorInfo(
+			"OrganizationID",
+			errorMessage,
+			this.OrganizationID,
+			ValidationErrorType.Failure
+		));
 	}
-}', 'Each contact record must be linked to either a person or an organization to ensure the information is correctly assigned and not left orphaned.', 'ValidatePersonIDOrOrganizationIDNotNull', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', 'FA624CAD-3867-49DD-B9F8-BE3EF2C81FCA');
+}', 'Each record must be linked to either a person or an organization. This ensures that contact information is correctly attributed to exactly one entity and prevents data ambiguity caused by having both or neither assigned.', 'ValidatePersonIDOrOrganizationIDExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '32C45078-D33B-4760-9BE5-0DF7F483F591');
   
             
 
-/* Generated Validation Functions for Common: Relationships */
--- CHECK constraint for Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
+/* Generated Validation Functions for MJ.BizApps.Common: Relationships */
+-- CHECK constraint for MJ.BizApps.Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
 INSERT INTO [${flyway:defaultSchema}].[GeneratedCode] (CategoryID, GeneratedByModelID, GeneratedAt, Language, Status, Source, Code, Description, Name, LinkedEntityID, LinkedRecordPrimaryKey)
-                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([FromPersonID] IS NOT NULL AND [FromOrganizationID] IS NULL OR [FromPersonID] IS NULL AND [FromOrganizationID] IS NOT NULL)', 'public ValidateExclusiveFromPersonOrOrganization(result: ValidationResult) {
-	if ((this.FromPersonID == null && this.FromOrganizationID == null) || (this.FromPersonID != null && this.FromOrganizationID != null)) {
+                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([FromPersonID] IS NOT NULL AND [FromOrganizationID] IS NULL OR [FromPersonID] IS NULL AND [FromOrganizationID] IS NOT NULL)', 'public ValidateFromPersonOrFromOrganizationExclusivity(result: ValidationResult) {
+	const hasPerson = this.FromPersonID != null;
+	const hasOrg = this.FromOrganizationID != null;
+
+	if ((hasPerson && hasOrg) || (!hasPerson && !hasOrg)) {
 		result.Errors.push(new ValidationErrorInfo(
 			"FromPersonID",
-			"A relationship must be linked to exactly one source: either a person or an organization.",
+			"You must specify either a Person or an Organization as the source, but not both and not neither.",
 			this.FromPersonID,
 			ValidationErrorType.Failure
 		));
 	}
-}', 'A relationship must be associated with either a person or an organization as the source, but not both and not neither.', 'ValidateExclusiveFromPersonOrOrganization', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB');
+}', 'A relationship must be linked to exactly one source: either a person or an organization. This ensures that the origin of the relationship is clearly defined and prevents data where both or neither are specified.', 'ValidateFromPersonOrFromOrganizationExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '709CA9DA-B124-4155-BE39-E857EF672D82');
   
-            -- CHECK constraint for Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
+            -- CHECK constraint for MJ.BizApps.Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
 INSERT INTO [${flyway:defaultSchema}].[GeneratedCode] (CategoryID, GeneratedByModelID, GeneratedAt, Language, Status, Source, Code, Description, Name, LinkedEntityID, LinkedRecordPrimaryKey)
-                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([ToPersonID] IS NOT NULL AND [ToOrganizationID] IS NULL OR [ToPersonID] IS NULL AND [ToOrganizationID] IS NOT NULL)', 'public ValidateToPersonOrToOrganization(result: ValidationResult) {
-	// The constraint requires exactly one of ToPersonID or ToOrganizationID to be populated
-	const hasToPerson = this.ToPersonID != null;
-	const hasToOrganization = this.ToOrganizationID != null;
+                      VALUES ((SELECT ID FROM ${flyway:defaultSchema}.vwGeneratedCodeCategories WHERE Name='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', GETUTCDATE(), 'TypeScript','Approved', '([ToPersonID] IS NOT NULL AND [ToOrganizationID] IS NULL OR [ToPersonID] IS NULL AND [ToOrganizationID] IS NOT NULL)', 'public ValidateToPersonOrToOrganizationExclusivity(result: ValidationResult) {
+	// Ensure that exactly one of ToPersonID or ToOrganizationID is populated
+	const hasPerson = this.ToPersonID != null;
+	const hasOrganization = this.ToOrganizationID != null;
 
-	if ((hasToPerson && hasToOrganization) || (!hasToPerson && !hasToOrganization)) {
+	if ((hasPerson && hasOrganization) || (!hasPerson && !hasOrganization)) {
 		result.Errors.push(new ValidationErrorInfo(
 			"ToPersonID",
-			"A relationship must be associated with exactly one recipient: either a Person or an Organization.",
+			"A relationship must be associated with either a person or an organization, but not both and not neither.",
 			this.ToPersonID,
 			ValidationErrorType.Failure
 		));
 	}
-}', 'Each relationship must be assigned to either a person or an organization. This ensures that the destination of the relationship is clearly defined and prevents records from being linked to both types of entities or neither.', 'ValidateToPersonOrToOrganization', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '2C2B874F-0880-4DE7-A0BF-63B6C6AFE9EB');
+}', 'A relationship must be linked to exactly one target: either a person or an organization. This ensures that the destination of the relationship is clearly defined and prevents ambiguous or missing links.', 'ValidateToPersonOrToOrganizationExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '709CA9DA-B124-4155-BE39-E857EF672D82');
   
             
 

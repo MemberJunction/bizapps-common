@@ -8,11 +8,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Relationship Definition Section -->
+    <!-- Type Definition Section -->
     <mj-collapsible-panel
-        SectionKey="relationshipDefinition"
-        SectionName="Relationship Definition"
-        Icon="fa fa-tag"
+        SectionKey="typeDefinition"
+        SectionName="Type Definition"
+        Icon="fa fa-tags"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -39,13 +39,21 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="IsActive"
+            Type="checkbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
 
     </mj-collapsible-panel>
 
-    <!-- Directional Configuration Section -->
+    <!-- Directionality and Labels Section -->
     <mj-collapsible-panel
-        SectionKey="directionalConfiguration"
-        SectionName="Directional Configuration"
+        SectionKey="directionalityAndLabels"
+        SectionName="Directionality and Labels"
         Icon="fa fa-exchange-alt"
         [Form]="this"
         [FormContext]="formContext">
@@ -106,25 +114,25 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Common: Relationships Section -->
+    <!-- MJ.BizApps.Common: Relationships Section -->
     <mj-collapsible-panel
-        SectionKey="commonRelationships"
-        SectionName="Common: Relationships"
-        Icon="fa fa-project-diagram"
+        SectionKey="mJBizAppsCommonRelationships"
+        SectionName="MJ.BizApps.Common: Relationships"
+        Icon="fa fa-handshake"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonRelationships')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonRelationships')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Relationships','RelationshipTypeID')"
-                [NewRecordValues]="NewRecordValues('Common: Relationships')"
-                [AllowLoad]="IsSectionExpanded('commonRelationships')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Relationships','RelationshipTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Relationships')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonRelationships')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonRelationships', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonRelationships', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

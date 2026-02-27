@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { mjBizAppsCommonAddressLinkEntity } from '@memberjunction/bizapps-common-entities';
+import { mjBizAppsCommonAddressLinkEntity } from '@mj-biz-apps/common-entities';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 
-@RegisterClass(BaseFormComponent, 'Common: Address Links') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Address Links') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommonaddresslink-form',
@@ -15,8 +15,8 @@ export class mjBizAppsCommonAddressLinkFormComponent extends BaseFormComponent {
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'addressAssignment', sectionName: 'Address Assignment', isExpanded: true },
-            { sectionKey: 'linkedRecordDetails', sectionName: 'Linked Record Details', isExpanded: true },
+            { sectionKey: 'linkageDetails', sectionName: 'Linkage Details', isExpanded: true },
+            { sectionKey: 'addressPreferences', sectionName: 'Address Preferences', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

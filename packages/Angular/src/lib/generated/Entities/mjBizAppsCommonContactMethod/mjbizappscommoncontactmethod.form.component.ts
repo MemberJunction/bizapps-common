@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { mjBizAppsCommonContactMethodEntity } from '@memberjunction/bizapps-common-entities';
+import { mjBizAppsCommonContactMethodEntity } from '@mj-biz-apps/common-entities';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 
-@RegisterClass(BaseFormComponent, 'Common: Contact Methods') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Contact Methods') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommoncontactmethod-form',
@@ -15,8 +15,8 @@ export class mjBizAppsCommonContactMethodFormComponent extends BaseFormComponent
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'linkedRecords', sectionName: 'Linked Records', isExpanded: true },
-            { sectionKey: 'contactDetails', sectionName: 'Contact Details', isExpanded: true },
+            { sectionKey: 'linkedRecord', sectionName: 'Linked Record', isExpanded: true },
+            { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

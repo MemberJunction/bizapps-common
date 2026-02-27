@@ -1,0 +1,28 @@
+[
+  {
+    "fields": {
+      "BaseView": "vwPeopleExtended",
+      "BaseViewGenerated": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ.BizApps.Common: People"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.734Z",
+      "checksum": "7f3d78b92d13e18c9f39b6fddf8c373c892a4e8535cb106da5424315846edfa7"
+    }
+  },
+  {
+    "fields": {
+      "BaseView": "vwOrganizationsExtended",
+      "BaseViewGenerated": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ.BizApps.Common: Organizations"
+    },
+    "sync": {
+      "lastModified": "2026-02-27T21:33:46.758Z",
+      "checksum": "247f441645cb491005fc8cedf372457b7e8e54d345cfdf00a883b9c39a06f2a7"
+    }
+  }
+]

@@ -3357,6 +3357,29 @@ input CreateMJTestRunInput {
   TotalChecks: Int
 }
 
+input CreateMJTestRunOutputInput {
+  Description: String
+  DurationSeconds: Float
+  FileSizeBytes: Int
+  Height: Int
+  ID: String
+  InlineData: String
+  Metadata: String
+  MimeType: String
+  Name: String
+  OutputTypeID: String
+  Sequence: Int
+  StepNumber: Int
+  TestRunID: String
+  Width: Int
+}
+
+input CreateMJTestRunOutputTypeInput {
+  Description: String
+  ID: String
+  Name: String
+}
+
 input CreateMJTestSuiteInput {
   Configuration: String
   Description: String
@@ -3782,6 +3805,8 @@ input CreatemjBizAppsCommonAddressTypeInput {
   DefaultRank: Int
   Description: String
   ID: String
+  IconClass: String
+  IsActive: Boolean
   Name: String
 }
 
@@ -3797,8 +3822,10 @@ input CreatemjBizAppsCommonContactMethodInput {
 
 input CreatemjBizAppsCommonContactTypeInput {
   Description: String
+  DisplayRank: Int
   ID: String
   IconClass: String
+  IsActive: Boolean
   Name: String
 }
 
@@ -3820,8 +3847,10 @@ input CreatemjBizAppsCommonOrganizationInput {
 
 input CreatemjBizAppsCommonOrganizationTypeInput {
   Description: String
+  DisplayRank: Int
   ID: String
   IconClass: String
+  IsActive: Boolean
   Name: String
 }
 
@@ -3863,6 +3892,7 @@ input CreatemjBizAppsCommonRelationshipTypeInput {
   Description: String
   ForwardLabel: String
   ID: String
+  IsActive: Boolean
   IsDirectional: Boolean
   Name: String
   ReverseLabel: String
@@ -13982,6 +14012,74 @@ type MJTestRunFeedback_ {
   _mj__UpdatedAt: Timestamp!
 }
 
+type MJTestRunOutputType_ {
+  """Description of what this output type represents and when it is used"""
+  Description: String
+  ID: String!
+  MJTestRunOutputs_OutputTypeIDArray: [MJTestRunOutput_!]!
+
+  """
+  Unique name identifying this output type (e.g., Screenshot, Log, Data, Video)
+  """
+  Name: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+type MJTestRunOutput_ {
+  """Additional context about this output"""
+  Description: String
+
+  """Duration in seconds for audio or video outputs"""
+  DurationSeconds: Float
+
+  """Size of the output data in bytes"""
+  FileSizeBytes: Int
+
+  """Height in pixels for image or video outputs"""
+  Height: Int
+  ID: String!
+
+  """
+  Base64-encoded binary data (images, audio, video) or text content (logs, JSON, HTML)
+  """
+  InlineData: String
+
+  """
+  JSON object with additional metadata about this output (e.g., URL at time of capture, tool calls, error info)
+  """
+  Metadata: String
+
+  """
+  MIME type of the output data (e.g., image/png, text/plain, application/json, video/mp4)
+  """
+  MimeType: String
+
+  """Human-readable label for this output (e.g., Step 3 Screenshot)"""
+  Name: String
+  OutputType: String!
+
+  """Foreign key to the output type category (Screenshot, Log, Video, etc.)"""
+  OutputTypeID: String!
+
+  """Chronological ordering for storyboarding outputs across steps"""
+  Sequence: Int!
+
+  """
+  Which step produced this output, for step-based tests like Computer Use
+  """
+  StepNumber: Int
+  TestRun: String!
+
+  """Foreign key to the parent test run that produced this output"""
+  TestRunID: String!
+
+  """Width in pixels for image or video outputs"""
+  Width: Int
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
 """
 Execution instance of a single test. Captures inputs, outputs, results, and links to the target being tested (e.g., Agent Run). Can be part of a suite run or standalone. The TargetLogID links to type-specific execution logs (AgentRun, WorkflowRun, etc.) which contain the detailed trace information.
 """
@@ -14024,6 +14122,7 @@ type MJTestRun_ {
   MJConversationDetails_TestRunIDArray: [MJConversationDetail_!]!
   MJConversations_TestRunIDArray: [MJConversation_!]!
   MJTestRunFeedbacks_TestRunIDArray: [MJTestRunFeedback_!]!
+  MJTestRunOutputs_TestRunIDArray: [MJTestRunOutput_!]!
 
   """
   Unique machine identifier (typically MAC address) for the execution host. Enables deduplication and tracking of test execution across different machines.
@@ -15492,6 +15591,8 @@ type Mutation {
   CreateMJTestRubric(input: CreateMJTestRubricInput!): MJTestRubric_!
   CreateMJTestRun(input: CreateMJTestRunInput!): MJTestRun_!
   CreateMJTestRunFeedback(input: CreateMJTestRunFeedbackInput!): MJTestRunFeedback_!
+  CreateMJTestRunOutput(input: CreateMJTestRunOutputInput!): MJTestRunOutput_!
+  CreateMJTestRunOutputType(input: CreateMJTestRunOutputTypeInput!): MJTestRunOutputType_!
   CreateMJTestSuite(input: CreateMJTestSuiteInput!): MJTestSuite_!
   CreateMJTestSuiteRun(input: CreateMJTestSuiteRunInput!): MJTestSuiteRun_!
   CreateMJTestSuiteTest(input: CreateMJTestSuiteTestInput!): MJTestSuiteTest_!
@@ -15783,6 +15884,8 @@ type Mutation {
   DeleteMJTestRubric(ID: String!, options___: DeleteOptionsInput!): MJTestRubric_!
   DeleteMJTestRun(ID: String!, options___: DeleteOptionsInput!): MJTestRun_!
   DeleteMJTestRunFeedback(ID: String!, options___: DeleteOptionsInput!): MJTestRunFeedback_!
+  DeleteMJTestRunOutput(ID: String!, options___: DeleteOptionsInput!): MJTestRunOutput_!
+  DeleteMJTestRunOutputType(ID: String!, options___: DeleteOptionsInput!): MJTestRunOutputType_!
   DeleteMJTestSuite(ID: String!, options___: DeleteOptionsInput!): MJTestSuite_!
   DeleteMJTestSuiteRun(ID: String!, options___: DeleteOptionsInput!): MJTestSuiteRun_!
   DeleteMJTestSuiteTest(ID: String!, options___: DeleteOptionsInput!): MJTestSuiteTest_!
@@ -15835,14 +15938,14 @@ type Mutation {
   RefreshMCPOAuthToken(input: RefreshMCPOAuthTokenInput!): RefreshMCPOAuthTokenResult!
   RevokeAPIKey(apiKeyId: String!): RevokeAPIKeyResult!
   RevokeMCPOAuth(input: RevokeMCPOAuthInput!): RevokeMCPOAuthResult!
-  RunAIAgent(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String, createArtifacts: Boolean, createNotification: Boolean, data: String, lastRunId: String, messages: String!, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String, templateData: String): AIAgentRunResult!
+  RunAIAgent(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String, createArtifacts: Boolean, createNotification: Boolean, data: String, fireAndForget: Boolean, lastRunId: String, messages: String!, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String, templateData: String): AIAgentRunResult!
   RunAIAgentFromConversationDetail(agentId: String!, autoPopulateLastRunPayload: Boolean, configurationId: String, conversationDetailId: String!, createArtifacts: Boolean, createNotification: Boolean, data: String, fireAndForget: Boolean, lastRunId: String, maxHistoryMessages: Int, payload: String, sessionId: String!, sourceArtifactId: String, sourceArtifactVersionId: String): AIAgentRunResult!
   RunAIPrompt(configurationId: String, data: String, frequencyPenalty: Float, includeLogProbs: Boolean, messages: String, minP: Float, overrideModelId: String, overrideVendorId: String, presencePenalty: Float, promptId: String!, rerunFromPromptRunID: String, responseFormat: String, seed: Int, skipValidation: Boolean, stopSequences: [String!], systemPromptOverride: String, temperature: Float, templateData: String, topK: Int, topLogProbs: Int, topP: Float): AIPromptRunResult!
   RunAction(input: RunActionInput!): ActionResultOutput!
   RunEntityAction(input: EntityActionInput!): ActionResultOutput!
   RunTemplate(contextData: String, templateId: String!): TemplateRunResult!
-  RunTest(environment: String, tags: String, testId: String!, variables: String, verbose: Boolean): TestRunResult!
-  RunTestSuite(environment: String, parallel: Boolean, selectedTestIds: String, sequenceEnd: Int, sequenceStart: Int, suiteId: String!, tags: String, variables: String, verbose: Boolean): TestSuiteRunResult!
+  RunTest(environment: String, fireAndForget: Boolean, tags: String, testId: String!, variables: String, verbose: Boolean): TestRunResult!
+  RunTestSuite(environment: String, fireAndForget: Boolean, parallel: Boolean, selectedTestIds: String, sequenceEnd: Int, sequenceStart: Int, suiteId: String!, tags: String, variables: String, verbose: Boolean): TestSuiteRunResult!
   SendComponentFeedback(feedback: ComponentFeedbackInput!): ComponentFeedbackResponse!
   SetRecordFavoriteStatus(params: UserFavoriteSetParams!): UserFavoriteResult!
   SyncData(items: [ActionItemInputType!]!): SyncDataResultType!
@@ -16097,6 +16200,8 @@ type Mutation {
   UpdateMJTestRubric(input: UpdateMJTestRubricInput!): MJTestRubric_!
   UpdateMJTestRun(input: UpdateMJTestRunInput!): MJTestRun_!
   UpdateMJTestRunFeedback(input: UpdateMJTestRunFeedbackInput!): MJTestRunFeedback_!
+  UpdateMJTestRunOutput(input: UpdateMJTestRunOutputInput!): MJTestRunOutput_!
+  UpdateMJTestRunOutputType(input: UpdateMJTestRunOutputTypeInput!): MJTestRunOutputType_!
   UpdateMJTestSuite(input: UpdateMJTestSuiteInput!): MJTestSuite_!
   UpdateMJTestSuiteRun(input: UpdateMJTestSuiteRunInput!): MJTestSuiteRun_!
   UpdateMJTestSuiteTest(input: UpdateMJTestSuiteTestInput!): MJTestSuiteTest_!
@@ -16487,6 +16592,8 @@ type Query {
   MJTestRubric(ID: String!): MJTestRubric_
   MJTestRun(ID: String!): MJTestRun_
   MJTestRunFeedback(ID: String!): MJTestRunFeedback_
+  MJTestRunOutput(ID: String!): MJTestRunOutput_
+  MJTestRunOutputType(ID: String!): MJTestRunOutputType_
   MJTestSuite(ID: String!): MJTestSuite_
   MJTestSuiteRun(ID: String!): MJTestSuiteRun_
   MJTestSuiteTest(ID: String!): MJTestSuiteTest_
@@ -17256,6 +17363,12 @@ type Query {
   RunMJTestRunFeedbackDynamicView(input: RunDynamicViewInput!): RunMJTestRunFeedbackViewResult!
   RunMJTestRunFeedbackViewByID(input: RunViewByIDInput!): RunMJTestRunFeedbackViewResult!
   RunMJTestRunFeedbackViewByName(input: RunViewByNameInput!): RunMJTestRunFeedbackViewResult!
+  RunMJTestRunOutputDynamicView(input: RunDynamicViewInput!): RunMJTestRunOutputViewResult!
+  RunMJTestRunOutputTypeDynamicView(input: RunDynamicViewInput!): RunMJTestRunOutputTypeViewResult!
+  RunMJTestRunOutputTypeViewByID(input: RunViewByIDInput!): RunMJTestRunOutputTypeViewResult!
+  RunMJTestRunOutputTypeViewByName(input: RunViewByNameInput!): RunMJTestRunOutputTypeViewResult!
+  RunMJTestRunOutputViewByID(input: RunViewByIDInput!): RunMJTestRunOutputViewResult!
+  RunMJTestRunOutputViewByName(input: RunViewByNameInput!): RunMJTestRunOutputViewResult!
   RunMJTestRunViewByID(input: RunViewByIDInput!): RunMJTestRunViewResult!
   RunMJTestRunViewByName(input: RunViewByNameInput!): RunMJTestRunViewResult!
   RunMJTestSuiteDynamicView(input: RunDynamicViewInput!): RunMJTestSuiteViewResult!
@@ -20053,6 +20166,26 @@ type RunMJTestRunFeedbackViewResult {
   ErrorMessage: String
   ExecutionTime: Int
   Results: [MJTestRunFeedback_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJTestRunOutputTypeViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJTestRunOutputType_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJTestRunOutputViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJTestRunOutput_!]!
   RowCount: Int
   Success: Boolean!
   TotalRowCount: Int
@@ -24594,6 +24727,31 @@ input UpdateMJTestRunInput {
   TotalChecks: Int
 }
 
+input UpdateMJTestRunOutputInput {
+  Description: String
+  DurationSeconds: Float
+  FileSizeBytes: Int
+  Height: Int
+  ID: String!
+  InlineData: String
+  Metadata: String
+  MimeType: String
+  Name: String
+  OldValues___: [KeyValuePairInput!]
+  OutputTypeID: String
+  Sequence: Int
+  StepNumber: Int
+  TestRunID: String
+  Width: Int
+}
+
+input UpdateMJTestRunOutputTypeInput {
+  Description: String
+  ID: String!
+  Name: String
+  OldValues___: [KeyValuePairInput!]
+}
+
 input UpdateMJTestSuiteInput {
   Configuration: String
   Description: String
@@ -25015,6 +25173,8 @@ input UpdatemjBizAppsCommonAddressTypeInput {
   DefaultRank: Int
   Description: String
   ID: String!
+  IconClass: String
+  IsActive: Boolean
   Name: String
   OldValues___: [KeyValuePairInput!]
 }
@@ -25032,8 +25192,10 @@ input UpdatemjBizAppsCommonContactMethodInput {
 
 input UpdatemjBizAppsCommonContactTypeInput {
   Description: String
+  DisplayRank: Int
   ID: String!
   IconClass: String
+  IsActive: Boolean
   Name: String
   OldValues___: [KeyValuePairInput!]
 }
@@ -25057,8 +25219,10 @@ input UpdatemjBizAppsCommonOrganizationInput {
 
 input UpdatemjBizAppsCommonOrganizationTypeInput {
   Description: String
+  DisplayRank: Int
   ID: String!
   IconClass: String
+  IsActive: Boolean
   Name: String
   OldValues___: [KeyValuePairInput!]
 }
@@ -25103,6 +25267,7 @@ input UpdatemjBizAppsCommonRelationshipTypeInput {
   Description: String
   ForwardLabel: String
   ID: String!
+  IsActive: Boolean
   IsDirectional: Boolean
   Name: String
   OldValues___: [KeyValuePairInput!]
@@ -25151,6 +25316,7 @@ enum UserType {
 Polymorphic link table connecting Address records to any entity record in the system via EntityID and RecordID
 """
 type mjBizAppsCommonAddressLink_ {
+  Address: String!
   AddressID: String!
   AddressType: String!
   AddressTypeID: String!
@@ -25186,6 +25352,14 @@ type mjBizAppsCommonAddressType_ {
   """Detailed description of this address type"""
   Description: String
   ID: String!
+
+  """Font Awesome icon class for UI display"""
+  IconClass: String
+
+  """
+  Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records
+  """
+  IsActive: Boolean!
 
   """Display name for the address type"""
   Name: String!
@@ -25249,6 +25423,7 @@ type mjBizAppsCommonContactMethod_ {
   Label: String
   Organization: String
   OrganizationID: String
+  Person: String
   PersonID: String
 
   """
@@ -25265,10 +25440,18 @@ Categories of contact methods such as Phone, Mobile, Email, LinkedIn, Website
 type mjBizAppsCommonContactType_ {
   """Detailed description of this contact type"""
   Description: String
+
+  """Sort order in dropdown lists. Lower values appear first"""
+  DisplayRank: Int!
   ID: String!
 
   """Font Awesome icon class for UI display"""
   IconClass: String
+
+  """
+  Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records
+  """
+  IsActive: Boolean!
 
   """Display name for the contact type"""
   Name: String!
@@ -25283,10 +25466,18 @@ Categories of organizations such as Company, Non-Profit, Association, Government
 type mjBizAppsCommonOrganizationType_ {
   """Detailed description of this organization type"""
   Description: String
+
+  """Sort order in dropdown lists. Lower values appear first"""
+  DisplayRank: Int!
   ID: String!
 
   """Font Awesome icon class for UI display"""
   IconClass: String
+
+  """
+  Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records
+  """
+  IsActive: Boolean!
 
   """Display name for the organization type"""
   Name: String!
@@ -25299,6 +25490,9 @@ type mjBizAppsCommonOrganizationType_ {
 Companies, associations, government bodies, and other organizations with hierarchy support
 """
 type mjBizAppsCommonOrganization_ {
+  ActivePersonCount: Int
+  ChildOrgCount: Int
+
   """Description of the organization purpose and scope"""
   Description: String
 
@@ -25324,6 +25518,15 @@ type mjBizAppsCommonOrganization_ {
 
   """Primary phone number"""
   Phone: String
+  PrimaryAddressCity: String
+  PrimaryAddressCountry: String
+  PrimaryAddressLine1: String
+  PrimaryAddressLine2: String
+  PrimaryAddressPostalCode: String
+  PrimaryAddressState: String
+  PrimaryAddressType: String
+  PrimaryEmail: String
+  PrimaryPhone: String
   RootParentID: String
 
   """Current status: Active, Inactive, or Dissolved"""
@@ -25346,9 +25549,13 @@ type mjBizAppsCommonOrganization_ {
 type mjBizAppsCommonPerson_ {
   """Biographical text or notes about this person"""
   Bio: String
+  CurrentJobTitle: String
+  CurrentOrganizationID: String
+  CurrentOrganizationName: String
 
   """Date of birth"""
   DateOfBirth: Timestamp
+  DisplayName: String
 
   """Primary email address for this person"""
   Email: String
@@ -25379,6 +25586,17 @@ type mjBizAppsCommonPerson_ {
 
   """Name prefix such as Dr., Mr., Ms., Rev."""
   Prefix: String
+  PrimaryAddressCity: String
+  PrimaryAddressCountry: String
+  PrimaryAddressLatitude: Float
+  PrimaryAddressLine1: String
+  PrimaryAddressLine2: String
+  PrimaryAddressLongitude: Float
+  PrimaryAddressPostalCode: String
+  PrimaryAddressState: String
+  PrimaryAddressType: String
+  PrimaryEmail: String
+  PrimaryPhone: String
 
   """Current status: Active, Inactive, or Deceased"""
   Status: String!
@@ -25414,6 +25632,11 @@ type mjBizAppsCommonRelationshipType_ {
   ID: String!
 
   """
+  Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records
+  """
+  IsActive: Boolean!
+
+  """
   Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner
   """
   IsDirectional: Boolean!
@@ -25436,6 +25659,7 @@ type mjBizAppsCommonRelationship_ {
   EndDate: Timestamp
   FromOrganization: String
   FromOrganizationID: String
+  FromPerson: String
   FromPersonID: String
   ID: String!
 
@@ -25456,6 +25680,7 @@ type mjBizAppsCommonRelationship_ {
   Title: String
   ToOrganization: String
   ToOrganizationID: String
+  ToPerson: String
   ToPersonID: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!

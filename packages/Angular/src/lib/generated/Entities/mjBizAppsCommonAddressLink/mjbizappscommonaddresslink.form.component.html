@@ -8,11 +8,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Address Assignment Section -->
+    <!-- Linkage Details Section -->
     <mj-collapsible-panel
-        SectionKey="addressAssignment"
-        SectionName="Address Assignment"
-        Icon="fa fa-map-marker-alt"
+        SectionKey="linkageDetails"
+        SectionName="Linkage Details"
+        Icon="fa fa-link"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -24,6 +24,33 @@
             [FormContext]="formContext"
             LinkType="Record"
         ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="EntityID"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+            LinkType="Record"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="RecordID"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Address Preferences Section -->
+    <mj-collapsible-panel
+        SectionKey="addressPreferences"
+        SectionName="Address Preferences"
+        Icon="fa fa-sliders-h"
+        [Form]="this"
+        [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
@@ -46,33 +73,6 @@
             [ShowLabel]="true"
             FieldName="Rank"
             Type="number"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
-
-    </mj-collapsible-panel>
-
-    <!-- Linked Record Details Section -->
-    <mj-collapsible-panel
-        SectionKey="linkedRecordDetails"
-        SectionName="Linked Record Details"
-        Icon="fa fa-database"
-        [Form]="this"
-        [FormContext]="formContext">
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="EntityID"
-            Type="textbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-            LinkType="Record"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="RecordID"
-            Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>

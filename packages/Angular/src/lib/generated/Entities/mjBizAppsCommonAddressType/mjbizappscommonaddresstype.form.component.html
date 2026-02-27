@@ -8,11 +8,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Address Type Details Section -->
+    <!-- Type Definition Section -->
     <mj-collapsible-panel
-        SectionKey="addressTypeDetails"
-        SectionName="Address Type Details"
-        Icon="fa fa-address-book"
+        SectionKey="typeDefinition"
+        SectionName="Type Definition"
+        Icon="fa fa-tag"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -28,6 +28,32 @@
             [ShowLabel]="true"
             FieldName="Description"
             Type="textarea"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="IsActive"
+            Type="checkbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Display and Sorting Section -->
+    <mj-collapsible-panel
+        SectionKey="displayAndSorting"
+        SectionName="Display and Sorting"
+        Icon="fa fa-sort-amount-down-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="IconClass"
+            Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
@@ -72,25 +98,25 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Common: Address Links Section -->
+    <!-- MJ.BizApps.Common: Address Links Section -->
     <mj-collapsible-panel
-        SectionKey="commonAddressLinks"
-        SectionName="Common: Address Links"
+        SectionKey="mJBizAppsCommonAddressLinks"
+        SectionName="MJ.BizApps.Common: Address Links"
         Icon="fa fa-link"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('commonAddressLinks')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonAddressLinks')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('Common: Address Links','AddressTypeID')"
-                [NewRecordValues]="NewRecordValues('Common: Address Links')"
-                [AllowLoad]="IsSectionExpanded('commonAddressLinks')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Address Links','AddressTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Address Links')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonAddressLinks')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('commonAddressLinks', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonAddressLinks', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
