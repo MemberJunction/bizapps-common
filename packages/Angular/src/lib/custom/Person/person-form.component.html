@@ -1,0 +1,181 @@
+<mj-record-form-container [Record]="record" [FormComponent]="this"
+    (Navigate)="OnFormNavigate($event)"
+    (DeleteRequested)="OnDeleteRequested()"
+    (FavoriteToggled)="OnFavoriteToggled()"
+    (HistoryRequested)="OnHistoryRequested()"
+    (ListManagementRequested)="OnListManagementRequested()">
+
+    <!-- ========================================
+         PERSONAL IDENTITY
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="personalIdentity"
+        SectionName="Personal Identity"
+        Icon="fa fa-user"
+        [Form]="this"
+        [FormContext]="formContext">
+
+        <!-- Name -->
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="FirstName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LastName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="MiddleName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PreferredName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+
+        <!-- Short fields -->
+        <div class="field-row-3">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Prefix"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Suffix"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Gender"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+
+        <!-- Date + Display -->
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="DateOfBirth"
+                Type="datepicker" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="DisplayName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         PROFESSIONAL & PROFILE
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="professional"
+        SectionName="Professional & Profile"
+        Icon="fa fa-briefcase"
+        [Form]="this"
+        [FormContext]="formContext">
+
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Title"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentJobTitle"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentOrganizationID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Email"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Phone"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PhotoURL"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="URL"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Bio"
+            Type="textarea" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         ADDRESSES (Custom Widget)
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="addresses"
+        SectionName="Addresses"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+            <bizapps-address-editor
+                EntityName="MJ.BizApps.Common: People"
+                [RecordID]="record.ID">
+            </bizapps-address-editor>
+        } @else {
+            <div class="widget-placeholder">
+                <i class="fa fa-info-circle"></i>
+                Save the record first to manage addresses.
+            </div>
+        }
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         CONTACT METHODS (Custom Widget)
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="contactMethods"
+        SectionName="Contact Methods"
+        Icon="fa fa-address-card"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+            <bizapps-contact-method-list
+                [PersonID]="record.ID">
+            </bizapps-contact-method-list>
+        } @else {
+            <div class="widget-placeholder">
+                <i class="fa fa-info-circle"></i>
+                Save the record first to manage contact methods.
+            </div>
+        }
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         RELATIONSHIPS (Custom Widget)
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="relationships"
+        SectionName="Relationships"
+        Icon="fa fa-handshake"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+            <bizapps-relationship-list
+                [PersonID]="record.ID"
+                (Navigate)="OnFormNavigate($event)">
+            </bizapps-relationship-list>
+        } @else {
+            <div class="widget-placeholder">
+                <i class="fa fa-info-circle"></i>
+                Save the record first to manage relationships.
+            </div>
+        }
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         ACCOUNT & STATUS
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="accountStatus"
+        SectionName="Account & Status"
+        Icon="fa fa-shield-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LinkedUserID"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Status"
+                Type="select" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         SYSTEM METADATA
+         ======================================== -->
+    <mj-collapsible-panel
+        SectionKey="systemMetadata"
+        SectionName="System Metadata"
+        Icon="fa fa-cog"
+        [Form]="this"
+        [FormContext]="formContext">
+        <div class="field-row-2">
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_CreatedAt"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_UpdatedAt"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        </div>
+    </mj-collapsible-panel>
+</mj-record-form-container>

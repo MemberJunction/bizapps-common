@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizApps Common - Relationship List Widget Mockups</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ============================================
+       RELATIONSHIP LIST WIDGET - DESIGN MOCKUPS
+       ============================================
+
+       Three design options for viewing/managing relationships
+       between People and Organizations.
+
+       INPUTS:
+       - PersonID or OrganizationID (auto-detects which side)
+
+       FEATURES:
+       - Groups by RelationshipType.Category
+       - Uses ForwardLabel/ReverseLabel for natural language
+       - Status badges (Active, Inactive, Ended)
+       - Title field for role context
+       - Date range display
+       - Add form with PersonPicker/OrgPicker based on Category
+    */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f7fa;
+      padding: 40px;
+      color: #333;
+    }
+
+    .mockup-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .mockup-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+
+    .mockup-description {
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .mockup-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .mockup-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mockup-section-title i { color: #1976d2; }
+
+    .design-note {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #795548;
+      line-height: 1.6;
+    }
+
+    .design-note strong { display: block; margin-bottom: 4px; }
+
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 48px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label i { color: #1976d2; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-active { background: #e8f5e9; color: #2e7d32; }
+    .badge-inactive { background: #fff3e0; color: #e65100; }
+    .badge-ended { background: #f5f5f5; color: #888; }
+    .badge-category { background: #e3f2fd; color: #1565c0; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary { background: #1976d2; color: white; }
+    .btn-primary:hover { background: #1565c0; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px dashed #ccc;
+      color: #666;
+    }
+
+    .btn-outline:hover {
+      border-color: #1976d2;
+      color: #1976d2;
+      background: #f5f9ff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #999;
+      padding: 6px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover { color: #333; background: #f5f5f5; }
+    .btn-ghost.danger:hover { color: #c62828; background: #ffebee; }
+
+    .btn-cancel {
+      background: #f5f5f5;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-field { flex: 1; }
+
+    .form-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+
+    /* ============================================
+       OPTION A: GROUPED TIMELINE
+       ============================================
+       Relationships grouped by Category with a
+       timeline-like layout. ForwardLabel creates
+       natural language sentences. Most informative.
+    */
+
+    .rel-category {
+      margin-bottom: 24px;
+    }
+
+    .rel-category:last-child {
+      margin-bottom: 0;
+    }
+
+    .rel-category-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #e8e8e8;
+    }
+
+    .rel-category-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .rel-category-icon.employment { background: #e3f2fd; color: #1565c0; }
+    .rel-category-icon.board { background: #f3e5f5; color: #7b1fa2; }
+    .rel-category-icon.personal { background: #fce4ec; color: #c62828; }
+    .rel-category-icon.business { background: #e8f5e9; color: #2e7d32; }
+
+    .rel-category-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      flex: 1;
+    }
+
+    .rel-category-count {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .rel-timeline-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .rel-timeline-item:hover {
+      border-color: #d0d0d0;
+      background: #fafafa;
+    }
+
+    .rel-timeline-item.active {
+      border-left: 3px solid #4caf50;
+    }
+
+    .rel-timeline-item.inactive {
+      border-left: 3px solid #ff9800;
+      opacity: 0.7;
+    }
+
+    .rel-timeline-item.ended {
+      border-left: 3px solid #bbb;
+      opacity: 0.5;
+    }
+
+    .rel-timeline-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #f0f4f8;
+      color: #555;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .rel-timeline-content {
+      flex: 1;
+    }
+
+    .rel-timeline-sentence {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.4;
+    }
+
+    .rel-timeline-label {
+      font-weight: 600;
+      color: #1976d2;
+    }
+
+    .rel-timeline-target {
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .rel-timeline-target:hover {
+      color: #1976d2;
+      text-decoration: underline;
+    }
+
+    .rel-timeline-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .rel-timeline-title {
+      font-style: italic;
+      color: #555;
+    }
+
+    .rel-timeline-dates {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .rel-timeline-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .rel-timeline-item:hover .rel-timeline-actions {
+      opacity: 1;
+    }
+
+    /* ============================================
+       OPTION B: COMPACT TABLE
+       ============================================
+       Relationships in a dense table format with
+       type, target, title, dates, and status columns.
+       Best for data-dense views.
+    */
+
+    .rel-table {
+      width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .rel-table-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      background: #f5f7fa;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      gap: 8px;
+    }
+
+    .rel-table-col-type { width: 140px; }
+    .rel-table-col-target { flex: 1; }
+    .rel-table-col-title { width: 150px; }
+    .rel-table-col-dates { width: 130px; }
+    .rel-table-col-status { width: 80px; }
+    .rel-table-col-actions { width: 60px; }
+
+    .rel-table-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 8px;
+      font-size: 13px;
+      transition: background 0.1s;
+    }
+
+    .rel-table-row:last-child {
+      border-bottom: none;
+    }
+
+    .rel-table-row:hover {
+      background: #fafafa;
+    }
+
+    .rel-table-row.ended {
+      opacity: 0.5;
+    }
+
+    .rel-table-type {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rel-table-type-icon {
+      font-size: 12px;
+      color: #1565c0;
+    }
+
+    .rel-table-type-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .rel-table-target-name {
+      font-weight: 500;
+      color: #1976d2;
+      cursor: pointer;
+    }
+
+    .rel-table-target-name:hover {
+      text-decoration: underline;
+    }
+
+    .rel-table-title {
+      color: #555;
+      font-style: italic;
+    }
+
+    .rel-table-dates {
+      color: #888;
+      font-size: 12px;
+    }
+
+    .rel-table-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .rel-table-row:hover .rel-table-actions {
+      opacity: 1;
+    }
+
+    .rel-table-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #e0e0e0;
+      background: #fafafa;
+    }
+
+    /* Category section divider in table */
+    .rel-table-section {
+      padding: 8px 16px;
+      background: #f0f4f8;
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rel-table-section i {
+      color: #1976d2;
+    }
+
+    /* ============================================
+       OPTION C: VISUAL CARDS
+       ============================================
+       Relationships as visual connection cards.
+       Shows the "from -> to" relationship visually.
+       Most engaging and scannable.
+    */
+
+    .rel-cards-category {
+      margin-bottom: 20px;
+    }
+
+    .rel-cards-category-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rel-cards-category-header i {
+      color: #1976d2;
+    }
+
+    .rel-card {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 10px;
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      overflow: hidden;
+      transition: all 0.15s;
+    }
+
+    .rel-card:hover {
+      border-color: #d0d0d0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .rel-card.active { border-left: 3px solid #4caf50; }
+    .rel-card.inactive { border-left: 3px solid #ff9800; opacity: 0.7; }
+    .rel-card.ended { border-left: 3px solid #bbb; opacity: 0.5; }
+
+    .rel-card-from {
+      padding: 12px 16px;
+      background: #f8f9ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
+    .rel-card-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #e3f2fd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1565c0;
+      flex-shrink: 0;
+    }
+
+    .rel-card-avatar.org {
+      border-radius: 8px;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .rel-card-connector {
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .rel-card-arrow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #bbb;
+      font-size: 18px;
+    }
+
+    .rel-card-label {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .rel-card-to {
+      flex: 1;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .rel-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .rel-card-name:hover {
+      color: #1976d2;
+    }
+
+    .rel-card-detail {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .rel-card-right {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .rel-card-title-text {
+      font-size: 12px;
+      color: #555;
+      font-style: italic;
+    }
+
+    .rel-card-date {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .rel-card-actions-overlay {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .rel-card:hover .rel-card-actions-overlay {
+      opacity: 1;
+    }
+
+    /* Add Relationship Form */
+    .rel-add-form {
+      border: 2px solid #1976d2;
+      border-radius: 10px;
+      padding: 20px;
+      background: white;
+      margin-top: 16px;
+    }
+
+    .rel-add-form-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1976d2;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Person/Org picker mockup */
+    .picker-field {
+      position: relative;
+    }
+
+    .picker-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .picker-input:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+
+    .picker-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 13px;
+    }
+
+    .picker-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #e3f2fd;
+      border-radius: 16px;
+      font-size: 13px;
+      color: #1565c0;
+      font-weight: 500;
+    }
+
+    .picker-chip-remove {
+      cursor: pointer;
+      color: #999;
+      font-size: 11px;
+    }
+
+    .picker-chip-remove:hover {
+      color: #c62828;
+    }
+
+    .picker-dropdown {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .picker-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .picker-dropdown-item:hover {
+      background: #f5f9ff;
+    }
+
+    .picker-dropdown-item.selected {
+      background: #e3f2fd;
+    }
+
+    .picker-dropdown-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .picker-dropdown-sub {
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-container">
+    <h1 class="mockup-title">Relationship List Widget - Design Options</h1>
+    <p class="mockup-description">
+      Reusable Angular component for viewing and managing relationships between People
+      and Organizations. Uses <code>ForwardLabel</code>/<code>ReverseLabel</code> from
+      RelationshipType for natural language display. Groups by Category
+      (PersonToPerson, PersonToOrganization, OrganizationToOrganization).
+    </p>
+
+    <!-- ============================================
+         OPTION A: GROUPED TIMELINE
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-timeline"></i>
+        Option A: Grouped Timeline
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-diagram-project"></i>
+          Relationships
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add Relationship
+        </button>
+      </div>
+
+      <!-- Employment Category -->
+      <div class="rel-category">
+        <div class="rel-category-header">
+          <div class="rel-category-icon employment"><i class="fa-solid fa-briefcase"></i></div>
+          <span class="rel-category-title">Employment</span>
+          <span class="rel-category-count">2 relationships</span>
+        </div>
+
+        <div class="rel-timeline-item active">
+          <div class="rel-timeline-icon"><i class="fa-solid fa-briefcase"></i></div>
+          <div class="rel-timeline-content">
+            <div class="rel-timeline-sentence">
+              <span class="rel-timeline-label">is employee of</span>
+              <span class="rel-timeline-target">Acme Corporation</span>
+            </div>
+            <div class="rel-timeline-meta">
+              <span class="rel-timeline-title">VP of Engineering</span>
+              <span class="rel-timeline-dates">
+                <i class="fa-regular fa-calendar"></i> Jan 2020 - Present
+              </span>
+              <span class="badge badge-active">Active</span>
+            </div>
+          </div>
+          <div class="rel-timeline-actions">
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="End"><i class="fa-solid fa-circle-xmark"></i></button>
+          </div>
+        </div>
+
+        <div class="rel-timeline-item ended">
+          <div class="rel-timeline-icon"><i class="fa-solid fa-briefcase"></i></div>
+          <div class="rel-timeline-content">
+            <div class="rel-timeline-sentence">
+              <span class="rel-timeline-label">was employee of</span>
+              <span class="rel-timeline-target">Beta Inc</span>
+            </div>
+            <div class="rel-timeline-meta">
+              <span class="rel-timeline-title">Senior Developer</span>
+              <span class="rel-timeline-dates">
+                <i class="fa-regular fa-calendar"></i> Mar 2016 - Dec 2019
+              </span>
+              <span class="badge badge-ended">Ended</span>
+            </div>
+          </div>
+          <div class="rel-timeline-actions">
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Board & Membership Category -->
+      <div class="rel-category">
+        <div class="rel-category-header">
+          <div class="rel-category-icon board"><i class="fa-solid fa-landmark"></i></div>
+          <span class="rel-category-title">Board & Membership</span>
+          <span class="rel-category-count">1 relationship</span>
+        </div>
+
+        <div class="rel-timeline-item active">
+          <div class="rel-timeline-icon"><i class="fa-solid fa-landmark"></i></div>
+          <div class="rel-timeline-content">
+            <div class="rel-timeline-sentence">
+              <span class="rel-timeline-label">is board member of</span>
+              <span class="rel-timeline-target">Austin Tech Council</span>
+            </div>
+            <div class="rel-timeline-meta">
+              <span class="rel-timeline-title">Advisory Board</span>
+              <span class="rel-timeline-dates">
+                <i class="fa-regular fa-calendar"></i> Mar 2022 - Present
+              </span>
+              <span class="badge badge-active">Active</span>
+            </div>
+          </div>
+          <div class="rel-timeline-actions">
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="End"><i class="fa-solid fa-circle-xmark"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Category -->
+      <div class="rel-category">
+        <div class="rel-category-header">
+          <div class="rel-category-icon personal"><i class="fa-solid fa-heart"></i></div>
+          <span class="rel-category-title">Personal</span>
+          <span class="rel-category-count">2 relationships</span>
+        </div>
+
+        <div class="rel-timeline-item active">
+          <div class="rel-timeline-icon"><i class="fa-solid fa-ring"></i></div>
+          <div class="rel-timeline-content">
+            <div class="rel-timeline-sentence">
+              <span class="rel-timeline-label">is spouse of</span>
+              <span class="rel-timeline-target">John Smith</span>
+            </div>
+            <div class="rel-timeline-meta">
+              <span class="rel-timeline-dates">
+                <i class="fa-regular fa-calendar"></i> Jun 2015 - Present
+              </span>
+              <span class="badge badge-active">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rel-timeline-item active">
+          <div class="rel-timeline-icon"><i class="fa-solid fa-child"></i></div>
+          <div class="rel-timeline-content">
+            <div class="rel-timeline-sentence">
+              <span class="rel-timeline-label">is parent of</span>
+              <span class="rel-timeline-target">Emma Smith</span>
+            </div>
+            <div class="rel-timeline-meta">
+              <span class="badge badge-active">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option A: Grouped Timeline</strong>
+        - Relationships grouped by Category with icon headers<br>
+        - ForwardLabel creates natural sentences: "is employee of Acme Corp"<br>
+        - Color-coded left border shows status (green=Active, orange=Inactive, gray=Ended)<br>
+        - Title (job role) shown in italics, dates with calendar icon<br>
+        - Clicking target name navigates to that Person/Org record<br>
+        - Best when: relationships are a key part of the form, want rich context<br>
+        - Trade-off: takes the most vertical space
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION B: COMPACT TABLE
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-table-list"></i>
+        Option B: Compact Table
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-diagram-project"></i>
+          Relationships
+          <span style="font-size: 12px; color: #888; font-weight: 400;">(5)</span>
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add
+        </button>
+      </div>
+
+      <div class="rel-table">
+        <!-- Header -->
+        <div class="rel-table-header">
+          <span class="rel-table-col-type">Relationship</span>
+          <span class="rel-table-col-target">With</span>
+          <span class="rel-table-col-title">Title / Role</span>
+          <span class="rel-table-col-dates">Dates</span>
+          <span class="rel-table-col-status">Status</span>
+          <span class="rel-table-col-actions"></span>
+        </div>
+
+        <!-- PersonToOrganization Section -->
+        <div class="rel-table-section">
+          <i class="fa-solid fa-briefcase"></i>
+          Person to Organization
+        </div>
+
+        <div class="rel-table-row">
+          <span class="rel-table-col-type">
+            <span class="rel-table-type">
+              <span class="rel-table-type-icon"><i class="fa-solid fa-briefcase"></i></span>
+              <span class="rel-table-type-name">Employee</span>
+            </span>
+          </span>
+          <span class="rel-table-col-target">
+            <span class="rel-table-target-name">Acme Corporation</span>
+          </span>
+          <span class="rel-table-col-title">
+            <span class="rel-table-title">VP of Engineering</span>
+          </span>
+          <span class="rel-table-col-dates">
+            <span class="rel-table-dates">Jan 2020 -</span>
+          </span>
+          <span class="rel-table-col-status">
+            <span class="badge badge-active">Active</span>
+          </span>
+          <span class="rel-table-col-actions">
+            <div class="rel-table-actions">
+              <button class="btn-ghost"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </span>
+        </div>
+
+        <div class="rel-table-row ended">
+          <span class="rel-table-col-type">
+            <span class="rel-table-type">
+              <span class="rel-table-type-icon"><i class="fa-solid fa-briefcase"></i></span>
+              <span class="rel-table-type-name">Employee</span>
+            </span>
+          </span>
+          <span class="rel-table-col-target">
+            <span class="rel-table-target-name">Beta Inc</span>
+          </span>
+          <span class="rel-table-col-title">
+            <span class="rel-table-title">Sr. Developer</span>
+          </span>
+          <span class="rel-table-col-dates">
+            <span class="rel-table-dates">2016 - 2019</span>
+          </span>
+          <span class="rel-table-col-status">
+            <span class="badge badge-ended">Ended</span>
+          </span>
+          <span class="rel-table-col-actions">
+            <div class="rel-table-actions">
+              <button class="btn-ghost"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </span>
+        </div>
+
+        <div class="rel-table-row">
+          <span class="rel-table-col-type">
+            <span class="rel-table-type">
+              <span class="rel-table-type-icon"><i class="fa-solid fa-landmark"></i></span>
+              <span class="rel-table-type-name">Board Member</span>
+            </span>
+          </span>
+          <span class="rel-table-col-target">
+            <span class="rel-table-target-name">Austin Tech Council</span>
+          </span>
+          <span class="rel-table-col-title">
+            <span class="rel-table-title">Advisory Board</span>
+          </span>
+          <span class="rel-table-col-dates">
+            <span class="rel-table-dates">Mar 2022 -</span>
+          </span>
+          <span class="rel-table-col-status">
+            <span class="badge badge-active">Active</span>
+          </span>
+          <span class="rel-table-col-actions">
+            <div class="rel-table-actions">
+              <button class="btn-ghost"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </span>
+        </div>
+
+        <!-- PersonToPerson Section -->
+        <div class="rel-table-section">
+          <i class="fa-solid fa-people-arrows"></i>
+          Person to Person
+        </div>
+
+        <div class="rel-table-row">
+          <span class="rel-table-col-type">
+            <span class="rel-table-type">
+              <span class="rel-table-type-icon"><i class="fa-solid fa-ring"></i></span>
+              <span class="rel-table-type-name">Spouse</span>
+            </span>
+          </span>
+          <span class="rel-table-col-target">
+            <span class="rel-table-target-name">John Smith</span>
+          </span>
+          <span class="rel-table-col-title">
+            <span class="rel-table-title"></span>
+          </span>
+          <span class="rel-table-col-dates">
+            <span class="rel-table-dates">Jun 2015 -</span>
+          </span>
+          <span class="rel-table-col-status">
+            <span class="badge badge-active">Active</span>
+          </span>
+          <span class="rel-table-col-actions">
+            <div class="rel-table-actions">
+              <button class="btn-ghost"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </span>
+        </div>
+
+        <div class="rel-table-row">
+          <span class="rel-table-col-type">
+            <span class="rel-table-type">
+              <span class="rel-table-type-icon"><i class="fa-solid fa-child"></i></span>
+              <span class="rel-table-type-name">Parent</span>
+            </span>
+          </span>
+          <span class="rel-table-col-target">
+            <span class="rel-table-target-name">Emma Smith</span>
+          </span>
+          <span class="rel-table-col-title">
+            <span class="rel-table-title"></span>
+          </span>
+          <span class="rel-table-col-dates">
+            <span class="rel-table-dates"></span>
+          </span>
+          <span class="rel-table-col-status">
+            <span class="badge badge-active">Active</span>
+          </span>
+          <span class="rel-table-col-actions">
+            <div class="rel-table-actions">
+              <button class="btn-ghost"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </span>
+        </div>
+
+        <div class="rel-table-footer">
+          <button class="btn btn-outline" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-plus"></i>
+            Add Relationship
+          </button>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option B: Compact Table</strong>
+        - Dense table with columns: Type, Target, Title, Dates, Status<br>
+        - Category section dividers within the table<br>
+        - Ended relationships shown at reduced opacity<br>
+        - Actions appear on row hover<br>
+        - Best when: many relationships, need to scan quickly, space is tight<br>
+        - Trade-off: loses the natural language feel, less visual warmth
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION C: VISUAL CONNECTION CARDS
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-diagram-project"></i>
+        Option C: Visual Connection Cards
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-diagram-project"></i>
+          Relationships
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add Relationship
+        </button>
+      </div>
+
+      <!-- Employment -->
+      <div class="rel-cards-category">
+        <div class="rel-cards-category-header">
+          <i class="fa-solid fa-briefcase"></i> Employment
+        </div>
+
+        <div class="rel-card active">
+          <div class="rel-card-from">
+            <div class="rel-card-avatar">JS</div>
+          </div>
+          <div class="rel-card-connector">
+            <div class="rel-card-label">is employee of</div>
+            <div class="rel-card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          </div>
+          <div class="rel-card-to">
+            <div class="rel-card-avatar org"><i class="fa-solid fa-building"></i></div>
+            <div>
+              <div class="rel-card-name">Acme Corporation</div>
+              <div class="rel-card-detail">Corporation</div>
+            </div>
+          </div>
+          <div class="rel-card-right">
+            <span class="badge badge-active">Active</span>
+            <span class="rel-card-title-text">VP of Engineering</span>
+            <span class="rel-card-date">Jan 2020 - Present</span>
+            <div class="rel-card-actions-overlay">
+              <button class="btn-ghost" style="padding: 4px;"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger" style="padding: 4px;"><i class="fa-solid fa-circle-xmark"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rel-card ended">
+          <div class="rel-card-from">
+            <div class="rel-card-avatar">JS</div>
+          </div>
+          <div class="rel-card-connector">
+            <div class="rel-card-label">was employee of</div>
+            <div class="rel-card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          </div>
+          <div class="rel-card-to">
+            <div class="rel-card-avatar org"><i class="fa-solid fa-building"></i></div>
+            <div>
+              <div class="rel-card-name">Beta Inc</div>
+              <div class="rel-card-detail">Corporation</div>
+            </div>
+          </div>
+          <div class="rel-card-right">
+            <span class="badge badge-ended">Ended</span>
+            <span class="rel-card-title-text">Sr. Developer</span>
+            <span class="rel-card-date">2016 - 2019</span>
+            <div class="rel-card-actions-overlay">
+              <button class="btn-ghost" style="padding: 4px;"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger" style="padding: 4px;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal -->
+      <div class="rel-cards-category">
+        <div class="rel-cards-category-header">
+          <i class="fa-solid fa-heart"></i> Personal
+        </div>
+
+        <div class="rel-card active">
+          <div class="rel-card-from">
+            <div class="rel-card-avatar">JS</div>
+          </div>
+          <div class="rel-card-connector">
+            <div class="rel-card-label">is spouse of</div>
+            <div class="rel-card-arrow"><i class="fa-solid fa-arrows-left-right"></i></div>
+          </div>
+          <div class="rel-card-to">
+            <div class="rel-card-avatar">JS</div>
+            <div>
+              <div class="rel-card-name">John Smith</div>
+              <div class="rel-card-detail">Person</div>
+            </div>
+          </div>
+          <div class="rel-card-right">
+            <span class="badge badge-active">Active</span>
+            <span class="rel-card-date">Jun 2015 - Present</span>
+          </div>
+        </div>
+
+        <div class="rel-card active">
+          <div class="rel-card-from">
+            <div class="rel-card-avatar">JS</div>
+          </div>
+          <div class="rel-card-connector">
+            <div class="rel-card-label">is parent of</div>
+            <div class="rel-card-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          </div>
+          <div class="rel-card-to">
+            <div class="rel-card-avatar">ES</div>
+            <div>
+              <div class="rel-card-name">Emma Smith</div>
+              <div class="rel-card-detail">Person</div>
+            </div>
+          </div>
+          <div class="rel-card-right">
+            <span class="badge badge-active">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Relationship Form -->
+      <div class="rel-add-form">
+        <div class="rel-add-form-title">
+          <i class="fa-solid fa-plus"></i>
+          Add Relationship
+        </div>
+
+        <div class="form-row">
+          <div class="form-field" style="max-width: 200px;">
+            <label>Relationship Type</label>
+            <select>
+              <option>-- Select --</option>
+              <option selected>Employee</option>
+              <option>Board Member</option>
+              <option>Consultant</option>
+              <option>Member</option>
+              <option>Spouse</option>
+              <option>Parent</option>
+            </select>
+          </div>
+          <div class="form-field" style="max-width: 200px;">
+            <label>Category</label>
+            <div style="padding: 8px 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; color: #666;">
+              <i class="fa-solid fa-lock" style="margin-right: 4px; font-size: 11px;"></i>
+              PersonToOrganization
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Organization</label>
+            <div class="picker-field">
+              <span class="picker-icon"><i class="fa-solid fa-search"></i></span>
+              <input type="text" class="picker-input" placeholder="Search organizations..." value="Gamma">
+            </div>
+            <!-- Dropdown results -->
+            <div class="picker-dropdown">
+              <div class="picker-dropdown-item">
+                <div class="rel-card-avatar org" style="width: 30px; height: 30px; font-size: 12px;"><i class="fa-solid fa-building"></i></div>
+                <div>
+                  <div class="picker-dropdown-name">Gamma Solutions</div>
+                  <div class="picker-dropdown-sub">LLC - Austin, TX</div>
+                </div>
+              </div>
+              <div class="picker-dropdown-item">
+                <div class="rel-card-avatar org" style="width: 30px; height: 30px; font-size: 12px;"><i class="fa-solid fa-building"></i></div>
+                <div>
+                  <div class="picker-dropdown-name">Gamma Tech Group</div>
+                  <div class="picker-dropdown-sub">Corporation - San Francisco, CA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Title / Role</label>
+            <input type="text" placeholder="e.g., CEO, Primary Contact">
+          </div>
+          <div class="form-field" style="max-width: 140px;">
+            <label>Start Date</label>
+            <input type="date">
+          </div>
+          <div class="form-field" style="max-width: 140px;">
+            <label>End Date</label>
+            <input type="date">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 4px;">
+          <button class="btn btn-primary">Save</button>
+          <button class="btn btn-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option C: Visual Connection Cards</strong>
+        - Each relationship shown as a visual "connection" card: From -> Label -> To<br>
+        - Avatars with initials (Person) or icons (Org) on each side<br>
+        - Arrow direction shows directionality; bidirectional for symmetric relationships (Spouse)<br>
+        - ForwardLabel text sits above the arrow connector<br>
+        - Right side shows status badge, title, and date range<br>
+        - Add form includes PersonPicker/OrgPicker with typeahead search<br>
+        - Category auto-fills based on selected RelationshipType<br>
+        - Best when: want a visually engaging, CRM-like feel<br>
+        - Trade-off: most horizontal space, cards can feel wide on narrow layouts
+      </div>
+    </div>
+  </div>
+</body>
+</html>

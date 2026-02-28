@@ -1,0 +1,236 @@
+<!-- RelationshipList - Grouped Timeline Design (Option A) -->
+
+<div class="section-header">
+    <span class="section-label">
+        <i class="fa-solid fa-diagram-project"></i>
+        Relationships
+    </span>
+    @if (!Loading) {
+        <button class="btn btn-outline" (click)="onShowAdd()">
+            <i class="fa-solid fa-plus"></i>
+            Add Relationship
+        </button>
+    }
+</div>
+
+@if (Loading) {
+    <div class="loading-state">
+        <i class="fa-solid fa-spinner"></i> Loading relationships...
+    </div>
+} @else {
+    @if (GroupedRelationships.length === 0 && !ShowAddForm) {
+        <div class="empty-state">
+            <i class="fa-solid fa-diagram-project"></i>
+            No relationships yet
+        </div>
+    }
+
+    @for (group of GroupedRelationships; track group.Category) {
+        <div class="rel-category">
+            <div class="rel-category-header">
+                <div class="rel-category-icon" [ngClass]="group.IconClass">
+                    <i [class]="group.Icon"></i>
+                </div>
+                <span class="rel-category-title">{{ group.Label }}</span>
+                <span class="rel-category-count">{{ group.Items.length }} {{ group.Items.length === 1 ? 'relationship' : 'relationships' }}</span>
+            </div>
+
+            @for (item of group.Items; track item.Relationship.ID) {
+                @if (EditingId === item.Relationship.ID) {
+                    <!-- Inline edit form -->
+                    <div class="rel-add-form" style="margin-bottom: 8px;">
+                        <div class="rel-add-form-title">
+                            <i class="fa-solid fa-pen"></i>
+                            Edit Relationship
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field type-field">
+                                <label>Relationship Type</label>
+                                <select [(ngModel)]="EditForm.TypeID" (ngModelChange)="onEditTypeChange()">
+                                    @for (t of RelationshipTypes; track t.ID) {
+                                        <option [value]="t.ID">{{ t.Name }}</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-field category-field">
+                                <label>Category</label>
+                                <div class="category-display">
+                                    <i class="fa-solid fa-lock"></i>
+                                    {{ getEditCategory() }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Title / Role</label>
+                                <input type="text" [(ngModel)]="EditForm.Title" placeholder="e.g., CEO, Primary Contact">
+                            </div>
+                            <div class="form-field date-field">
+                                <label>Start Date</label>
+                                <input type="date" [(ngModel)]="EditForm.StartDate">
+                            </div>
+                            <div class="form-field date-field">
+                                <label>End Date</label>
+                                <input type="date" [(ngModel)]="EditForm.EndDate">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Status</label>
+                                <select [(ngModel)]="EditForm.Status">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Ended">Ended</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" (click)="onSaveEdit()" [disabled]="Saving">
+                                @if (Saving) {
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                }
+                                Save
+                            </button>
+                            <button class="btn btn-cancel" (click)="onCancelEdit()">Cancel</button>
+                        </div>
+                    </div>
+                } @else {
+                    <div class="rel-timeline-item"
+                         [ngClass]="'status-' + item.Relationship.Status.toLowerCase()">
+                        <div class="rel-timeline-icon">
+                            <i [class]="group.Icon"></i>
+                        </div>
+                        <div class="rel-timeline-content">
+                            <div class="rel-timeline-sentence">
+                                <span class="rel-timeline-label">{{ item.DirectionLabel }}</span>
+                                @if (item.TargetEntityName && item.TargetID) {
+                                    <a class="rel-timeline-target" href="javascript:void(0)"
+                                       (click)="onNavigateToTarget(item, $event)">{{ item.TargetName }}</a>
+                                } @else {
+                                    <span class="rel-timeline-target">{{ item.TargetName }}</span>
+                                }
+                            </div>
+                            <div class="rel-timeline-meta">
+                                @if (item.Relationship.Title) {
+                                    <span class="rel-timeline-title">{{ item.Relationship.Title }}</span>
+                                }
+                                @if (item.DateDisplay) {
+                                    <span class="rel-timeline-dates">
+                                        <i class="fa-regular fa-calendar"></i> {{ item.DateDisplay }}
+                                    </span>
+                                }
+                                <span class="badge" [ngClass]="'badge-' + item.Relationship.Status.toLowerCase()">
+                                    {{ item.Relationship.Status }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="rel-timeline-actions">
+                            <button class="btn-ghost" title="Edit" (click)="onEdit(item.Relationship)">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            @if (item.Relationship.Status === 'Active') {
+                                <button class="btn-ghost danger" title="End Relationship" (click)="onEndRelationship(item.Relationship)">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                </button>
+                            } @else {
+                                <button class="btn-ghost danger" title="Delete" (click)="onDelete(item.Relationship)">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+
+    <!-- Add Relationship Form -->
+    @if (ShowAddForm) {
+        <div class="rel-add-form">
+            <div class="rel-add-form-title">
+                <i class="fa-solid fa-plus"></i>
+                Add Relationship
+            </div>
+
+            <div class="form-row">
+                <div class="form-field type-field">
+                    <label>Relationship Type</label>
+                    <select [(ngModel)]="AddForm.TypeID" (ngModelChange)="onAddTypeChange()">
+                        <option value="">-- Select --</option>
+                        @for (t of RelationshipTypes; track t.ID) {
+                            <option [value]="t.ID">{{ t.Name }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-field category-field">
+                    <label>Category</label>
+                    <div class="category-display">
+                        <i class="fa-solid fa-lock"></i>
+                        {{ getAddCategory() }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label>{{ getAddTargetLabel() }}</label>
+                    <input type="text" [(ngModel)]="AddForm.TargetSearch"
+                           [placeholder]="'Search ' + getAddTargetLabel().toLowerCase() + '...'"
+                           (input)="onTargetSearch()">
+                    <!-- Search results dropdown -->
+                    @if (TargetSearchResults.length > 0) {
+                        <div style="border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 4px; overflow: hidden; max-height: 200px; overflow-y: auto;">
+                            @for (result of TargetSearchResults; track result.ID) {
+                                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.1s;"
+                                     [style.background]="AddForm.TargetID === result.ID ? '#e3f2fd' : ''"
+                                     (click)="onSelectTarget(result)">
+                                    <div>
+                                        <div style="font-size: 14px; font-weight: 500; color: #333;">{{ result.Name }}</div>
+                                        @if (result.Detail) {
+                                            <div style="font-size: 12px; color: #888;">{{ result.Detail }}</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (AddForm.TargetID && AddForm.TargetName) {
+                        <div style="margin-top: 6px;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #e3f2fd; border-radius: 16px; font-size: 13px; color: #1565c0; font-weight: 500;">
+                                {{ AddForm.TargetName }}
+                                <span style="cursor: pointer; color: #999; font-size: 11px;" (click)="onClearTarget()">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </span>
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Title / Role</label>
+                    <input type="text" [(ngModel)]="AddForm.Title" placeholder="e.g., CEO, Primary Contact">
+                </div>
+                <div class="form-field date-field">
+                    <label>Start Date</label>
+                    <input type="date" [(ngModel)]="AddForm.StartDate">
+                </div>
+                <div class="form-field date-field">
+                    <label>End Date</label>
+                    <input type="date" [(ngModel)]="AddForm.EndDate">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" (click)="onSaveAdd()" [disabled]="Saving || !AddForm.TypeID || !AddForm.TargetID">
+                    @if (Saving) {
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    }
+                    Save
+                </button>
+                <button class="btn btn-cancel" (click)="onCancelAdd()">Cancel</button>
+            </div>
+        </div>
+    }
+}

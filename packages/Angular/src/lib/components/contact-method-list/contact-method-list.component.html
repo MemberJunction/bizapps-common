@@ -1,0 +1,150 @@
+<!-- ContactMethodList - Flat List with Icons Design (Option B) -->
+
+<div class="section-header">
+    <span class="section-label">
+        <i class="fa-solid fa-address-card"></i>
+        Contact Methods
+        @if (!Loading && ContactMethods.length > 0) {
+            <span class="count">({{ ContactMethods.length }})</span>
+        }
+    </span>
+</div>
+
+@if (Loading) {
+    <div class="cm-flat-list">
+        <div class="loading-row">
+            <i class="fa-solid fa-spinner"></i> Loading contacts...
+        </div>
+    </div>
+} @else {
+    <div class="cm-flat-list">
+        @if (ContactMethods.length === 0 && !ShowAddForm) {
+            <div class="empty-state">
+                <i class="fa-solid fa-address-card"></i>
+                No contact methods yet
+            </div>
+        }
+
+        @for (cm of ContactMethods; track cm.ID) {
+            <!-- Edit mode for this row -->
+            @if (EditingId === cm.ID) {
+                <div class="cm-flat-edit-row">
+                    <div class="form-row">
+                        <div class="form-field type-field">
+                            <label>Type</label>
+                            <select [(ngModel)]="EditForm.TypeID">
+                                @for (t of ContactTypes; track t.ID) {
+                                    <option [value]="t.ID">{{ t.Name }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-field flex-1">
+                            <label>Value</label>
+                            <input type="text" [(ngModel)]="EditForm.Value" [placeholder]="getPlaceholder(EditForm.TypeID)">
+                        </div>
+                        <div class="form-field label-field">
+                            <label>Label</label>
+                            <input type="text" [(ngModel)]="EditForm.Label" placeholder="e.g., Work">
+                        </div>
+                        <div class="checkbox-field">
+                            <input type="checkbox" [id]="'primary-edit-' + cm.ID" [(ngModel)]="EditForm.IsPrimary">
+                            <label [for]="'primary-edit-' + cm.ID">Primary</label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" (click)="onSaveEdit()" [disabled]="Saving">
+                                @if (Saving) {
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                }
+                                Save
+                            </button>
+                            <button class="btn btn-cancel btn-sm" (click)="onCancelEdit()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            } @else {
+                <!-- Display row -->
+                <div class="cm-flat-row" [class.primary]="cm.IsPrimary">
+                    <div class="cm-flat-icon" [ngClass]="getIconColorClass(cm.ContactTypeID)">
+                        <i [class]="getContactTypeIcon(cm.ContactTypeID)"></i>
+                    </div>
+                    <div class="cm-flat-content">
+                        <div class="cm-flat-value" (click)="onCopyValue(cm.Value)">{{ cm.Value }}</div>
+                        <div class="cm-flat-meta">{{ getContactMeta(cm) }}</div>
+                    </div>
+                    <div class="cm-flat-badges">
+                        @if (cm.IsPrimary) {
+                            <span class="badge badge-primary"><i class="fa-solid fa-star"></i></span>
+                        }
+                    </div>
+                    <div class="cm-flat-actions">
+                        @if (!cm.IsPrimary) {
+                            <button class="btn-ghost" title="Set Primary" (click)="onSetPrimary(cm)">
+                                <i class="fa-regular fa-star"></i>
+                            </button>
+                        }
+                        @if (isLinkType(cm.ContactTypeID)) {
+                            <button class="btn-ghost" title="Open" (click)="onOpenLink(cm.Value)">
+                                <i class="fa-solid fa-external-link"></i>
+                            </button>
+                        } @else {
+                            <button class="btn-ghost" title="Copy" (click)="onCopyValue(cm.Value)">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        }
+                        <button class="btn-ghost" title="Edit" (click)="onEdit(cm)">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-ghost danger" title="Remove" (click)="onDelete(cm)">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Add form -->
+        @if (ShowAddForm) {
+            <div class="cm-flat-add-form">
+                <div class="form-field type-field">
+                    <label>Type</label>
+                    <select [(ngModel)]="AddForm.TypeID">
+                        @for (t of ContactTypes; track t.ID) {
+                            <option [value]="t.ID">{{ t.Name }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-field flex-1">
+                    <label>Value</label>
+                    <input type="text" [(ngModel)]="AddForm.Value" [placeholder]="getPlaceholder(AddForm.TypeID)">
+                </div>
+                <div class="form-field label-field">
+                    <label>Label</label>
+                    <input type="text" [(ngModel)]="AddForm.Label" placeholder="e.g., Direct Line">
+                </div>
+                <div class="checkbox-field">
+                    <input type="checkbox" id="primary-add" [(ngModel)]="AddForm.IsPrimary">
+                    <label for="primary-add">Primary</label>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary btn-sm" (click)="onSaveAdd()" [disabled]="Saving">
+                        @if (Saving) {
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        }
+                        Add
+                    </button>
+                    <button class="btn btn-cancel btn-sm" (click)="onCancelAdd()">Cancel</button>
+                </div>
+            </div>
+        }
+
+        <!-- Add button footer -->
+        @if (!ShowAddForm && EditingId === null) {
+            <div class="cm-flat-footer">
+                <button class="btn btn-outline full-width" (click)="onShowAdd()">
+                    <i class="fa-solid fa-plus"></i>
+                    Add Contact
+                </button>
+            </div>
+        }
+    </div>
+}

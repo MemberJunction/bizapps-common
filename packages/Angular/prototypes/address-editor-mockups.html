@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizApps Common - Address Editor Widget Mockups</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ============================================
+       ADDRESS EDITOR WIDGET - DESIGN MOCKUPS
+       ============================================
+
+       Three design options for a reusable address management widget.
+       Abstracts the Address + AddressLink two-table pattern into
+       a single editing experience.
+
+       INPUTS:
+       - EntityName + RecordID (polymorphic - works for Person or Org)
+
+       FEATURES:
+       - List all linked addresses with type badges
+       - Primary toggle (one-click)
+       - Inline add/edit form with AddressType dropdown
+       - On save: creates/updates Address + AddressLink in one operation
+       - Handles EntityID lookup automatically
+    */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f7fa;
+      padding: 40px;
+      color: #333;
+    }
+
+    .mockup-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .mockup-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+
+    .mockup-description {
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .mockup-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .mockup-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mockup-section-title i {
+      color: #1976d2;
+    }
+
+    .design-note {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #795548;
+      line-height: 1.6;
+    }
+
+    .design-note strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 48px 0;
+    }
+
+    /* ============================================
+       SHARED STYLES
+       ============================================ */
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label i {
+      color: #1976d2;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-type {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .badge-primary {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: #1976d2;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1565c0;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px dashed #ccc;
+      color: #666;
+    }
+
+    .btn-outline:hover {
+      border-color: #1976d2;
+      color: #1976d2;
+      background: #f5f9ff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #999;
+      padding: 6px 8px;
+    }
+
+    .btn-ghost:hover {
+      color: #333;
+      background: #f5f5f5;
+    }
+
+    .btn-ghost.danger:hover {
+      color: #c62828;
+      background: #ffebee;
+    }
+
+    .btn-text {
+      background: none;
+      border: none;
+      color: #1976d2;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .btn-text:hover {
+      text-decoration: underline;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-field {
+      flex: 1;
+    }
+
+    .form-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 22px;
+    }
+
+    .checkbox-field input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+    }
+
+    .checkbox-field label {
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* ============================================
+       OPTION A: CARD LIST
+       ============================================
+       Each address is a self-contained card with
+       all details visible. Edit inline by clicking
+       the pencil icon. Best for forms where addresses
+       are a primary focus.
+    */
+
+    .addr-card {
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: #fafafa;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .addr-card:hover {
+      border-color: #d0d0d0;
+      background: #f5f5f5;
+    }
+
+    .addr-card.primary {
+      border-color: #a5d6a7;
+      background: #f1f8e9;
+    }
+
+    .addr-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .addr-card-body {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.6;
+      padding-left: 4px;
+    }
+
+    .addr-card-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .addr-card-line {
+      display: block;
+    }
+
+    /* Edit form embedded in card */
+    .addr-card-edit {
+      border: 2px solid #1976d2;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: white;
+    }
+
+    .addr-card-edit-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .addr-card-edit-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1976d2;
+    }
+
+    .addr-card-edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: flex-start;
+    }
+
+    .btn-cancel {
+      background: #f5f5f5;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-cancel:hover {
+      background: #eeeeee;
+    }
+
+    /* ============================================
+       OPTION B: COMPACT TABLE
+       ============================================
+       Addresses shown in a condensed table/list format.
+       Saves vertical space. Better when addresses are
+       secondary info on a dense form.
+    */
+
+    .addr-table {
+      width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .addr-table-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
+      transition: background 0.1s ease;
+    }
+
+    .addr-table-row:last-child {
+      border-bottom: none;
+    }
+
+    .addr-table-row:hover {
+      background: #fafafa;
+    }
+
+    .addr-table-row.primary {
+      background: #f1f8e9;
+    }
+
+    .addr-table-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: #e3f2fd;
+      color: #1565c0;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .addr-table-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .addr-table-main {
+      font-size: 14px;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .addr-table-sub {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .addr-table-badges {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .addr-table-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .addr-table-row:hover .addr-table-actions {
+      opacity: 1;
+    }
+
+    .addr-table-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #e0e0e0;
+      background: #fafafa;
+    }
+
+    /* Slide-down edit panel for table option */
+    .addr-table-edit-panel {
+      padding: 16px;
+      background: #f8f9ff;
+      border-bottom: 2px solid #1976d2;
+    }
+
+    /* ============================================
+       OPTION C: ACCORDION
+       ============================================
+       Addresses collapsed by default, expand to show
+       full details + inline editing. Good for space
+       conservation when there could be many addresses.
+    */
+
+    .addr-accordion {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .addr-accordion-item {
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .addr-accordion-item:last-child {
+      border-bottom: none;
+    }
+
+    .addr-accordion-header {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      gap: 12px;
+      transition: background 0.1s ease;
+    }
+
+    .addr-accordion-header:hover {
+      background: #fafafa;
+    }
+
+    .addr-accordion-chevron {
+      color: #999;
+      transition: transform 0.2s ease;
+      font-size: 12px;
+    }
+
+    .addr-accordion-chevron.open {
+      transform: rotate(90deg);
+    }
+
+    .addr-accordion-summary {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .addr-accordion-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .addr-accordion-preview {
+      font-size: 13px;
+      color: #888;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .addr-accordion-body {
+      padding: 0 16px 16px 44px;
+    }
+
+    .addr-accordion-body.editing {
+      padding: 16px;
+      background: #f8f9ff;
+    }
+
+    .addr-detail-grid {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 6px 12px;
+      font-size: 13px;
+    }
+
+    .addr-detail-label {
+      color: #888;
+      font-weight: 500;
+    }
+
+    .addr-detail-value {
+      color: #333;
+    }
+
+    .addr-accordion-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-container">
+    <h1 class="mockup-title">Address Editor Widget - Design Options</h1>
+    <p class="mockup-description">
+      Reusable Angular component for managing addresses linked to any entity via the
+      polymorphic AddressLink table. Inputs: <code>EntityName</code> + <code>RecordID</code>.
+      Handles Address + AddressLink creation/update in a single UX flow.
+    </p>
+
+    <!-- ============================================
+         OPTION A: CARD LIST
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-th-large"></i>
+        Option A: Card List
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-map-marker-alt"></i>
+          Addresses
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add Address
+        </button>
+      </div>
+
+      <!-- Primary Address Card -->
+      <div class="addr-card primary">
+        <div class="addr-card-header">
+          <span class="badge badge-type"><i class="fa-solid fa-house"></i> Home</span>
+          <span class="badge badge-primary"><i class="fa-solid fa-star"></i> Primary</span>
+        </div>
+        <div class="addr-card-body">
+          <span class="addr-card-line">123 Main Street, Apt 4B</span>
+          <span class="addr-card-line">Austin, TX 78701, US</span>
+        </div>
+        <div class="addr-card-actions">
+          <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <!-- Secondary Address Card -->
+      <div class="addr-card">
+        <div class="addr-card-header">
+          <span class="badge badge-type"><i class="fa-solid fa-building"></i> Work</span>
+        </div>
+        <div class="addr-card-body">
+          <span class="addr-card-line">456 Commerce Blvd, Suite 200</span>
+          <span class="addr-card-line">Austin, TX 78702, US</span>
+        </div>
+        <div class="addr-card-actions">
+          <button class="btn-ghost" title="Set as Primary"><i class="fa-regular fa-star"></i></button>
+          <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <!-- Inline Edit Form (shown when editing or adding) -->
+      <div class="addr-card-edit">
+        <div class="addr-card-edit-header">
+          <span class="addr-card-edit-title"><i class="fa-solid fa-plus"></i> Add New Address</span>
+        </div>
+        <div class="form-row">
+          <div class="form-field" style="max-width: 180px;">
+            <label>Type</label>
+            <select>
+              <option>Home</option>
+              <option>Work</option>
+              <option selected>Mailing</option>
+              <option>Billing</option>
+              <option>Shipping</option>
+              <option>Legal</option>
+            </select>
+          </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="primary-a">
+            <label for="primary-a">Set as primary</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Line 1</label>
+            <input type="text" placeholder="Street address">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Line 2</label>
+            <input type="text" placeholder="Apt, suite, unit, etc.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>City</label>
+            <input type="text" placeholder="City">
+          </div>
+          <div class="form-field" style="max-width: 100px;">
+            <label>State</label>
+            <input type="text" placeholder="ST">
+          </div>
+          <div class="form-field" style="max-width: 120px;">
+            <label>Postal Code</label>
+            <input type="text" placeholder="Zip">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field" style="max-width: 200px;">
+            <label>Country</label>
+            <select>
+              <option selected>US</option>
+              <option>CA</option>
+              <option>UK</option>
+              <option>Other...</option>
+            </select>
+          </div>
+        </div>
+        <div class="addr-card-edit-actions">
+          <button class="btn btn-primary">Save</button>
+          <button class="btn btn-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option A: Card List</strong>
+        - Each address is a full card with type badge and primary indicator<br>
+        - Primary address gets a green border/background highlight<br>
+        - Star icon on non-primary cards toggles primary status<br>
+        - Edit/Add opens an inline form below the cards<br>
+        - Best when: addresses are important and form has room to show them prominently<br>
+        - Trade-off: takes the most vertical space
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION B: COMPACT TABLE
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-table-list"></i>
+        Option B: Compact Table
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-map-marker-alt"></i>
+          Addresses
+          <span style="font-size: 12px; color: #888; font-weight: 400;">(2)</span>
+        </span>
+      </div>
+
+      <div class="addr-table">
+        <!-- Primary Row -->
+        <div class="addr-table-row primary">
+          <div class="addr-table-icon">
+            <i class="fa-solid fa-house"></i>
+          </div>
+          <div class="addr-table-content">
+            <div class="addr-table-main">123 Main Street, Apt 4B</div>
+            <div class="addr-table-sub">Austin, TX 78701, US</div>
+          </div>
+          <div class="addr-table-badges">
+            <span class="badge badge-type">Home</span>
+            <span class="badge badge-primary"><i class="fa-solid fa-star"></i> Primary</span>
+          </div>
+          <div class="addr-table-actions">
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- Secondary Row -->
+        <div class="addr-table-row">
+          <div class="addr-table-icon">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <div class="addr-table-content">
+            <div class="addr-table-main">456 Commerce Blvd, Suite 200</div>
+            <div class="addr-table-sub">Austin, TX 78702, US</div>
+          </div>
+          <div class="addr-table-badges">
+            <span class="badge badge-type">Work</span>
+          </div>
+          <div class="addr-table-actions">
+            <button class="btn-ghost" title="Set as Primary"><i class="fa-regular fa-star"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- Inline edit panel (slides down when editing) -->
+        <div class="addr-table-edit-panel">
+          <div class="form-row">
+            <div class="form-field" style="max-width: 150px;">
+              <label>Type</label>
+              <select>
+                <option selected>Home</option>
+                <option>Work</option>
+                <option>Mailing</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Line 1</label>
+              <input type="text" value="123 Main Street">
+            </div>
+            <div class="form-field" style="max-width: 150px;">
+              <label>Line 2</label>
+              <input type="text" value="Apt 4B">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>City</label>
+              <input type="text" value="Austin">
+            </div>
+            <div class="form-field" style="max-width: 80px;">
+              <label>State</label>
+              <input type="text" value="TX">
+            </div>
+            <div class="form-field" style="max-width: 100px;">
+              <label>Postal</label>
+              <input type="text" value="78701">
+            </div>
+            <div class="form-field" style="max-width: 80px;">
+              <label>Country</label>
+              <select><option selected>US</option></select>
+            </div>
+            <div class="checkbox-field">
+              <input type="checkbox" id="primary-b" checked>
+              <label for="primary-b">Primary</label>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;">Save</button>
+            <button class="btn btn-cancel" style="padding: 6px 14px; font-size: 12px;">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Add Row -->
+        <div class="addr-table-footer">
+          <button class="btn btn-outline" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-plus"></i>
+            Add Address
+          </button>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option B: Compact Table</strong>
+        - Rows are compact with icon, one-line address, type badge, and primary badge<br>
+        - Action buttons appear on hover (edit, star, delete)<br>
+        - Edit slides down as an inline panel within the table<br>
+        - Add button lives in the table footer<br>
+        - Best when: addresses are secondary info, form is already dense<br>
+        - Trade-off: less visual prominence, address preview is truncated
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION C: ACCORDION
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-bars-staggered"></i>
+        Option C: Accordion
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-map-marker-alt"></i>
+          Addresses
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add
+        </button>
+      </div>
+
+      <div class="addr-accordion">
+        <!-- Expanded Item (Primary) -->
+        <div class="addr-accordion-item">
+          <div class="addr-accordion-header" style="background: #f1f8e9;">
+            <i class="fa-solid fa-chevron-right addr-accordion-chevron open"></i>
+            <div class="addr-accordion-summary">
+              <span class="addr-accordion-label">
+                <i class="fa-solid fa-house" style="color: #1565c0; margin-right: 4px;"></i>
+                Home
+              </span>
+              <span class="badge badge-primary"><i class="fa-solid fa-star"></i> Primary</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="addr-accordion-body">
+            <div class="addr-detail-grid">
+              <span class="addr-detail-label">Line 1</span>
+              <span class="addr-detail-value">123 Main Street</span>
+              <span class="addr-detail-label">Line 2</span>
+              <span class="addr-detail-value">Apt 4B</span>
+              <span class="addr-detail-label">City</span>
+              <span class="addr-detail-value">Austin</span>
+              <span class="addr-detail-label">State</span>
+              <span class="addr-detail-value">TX</span>
+              <span class="addr-detail-label">Postal Code</span>
+              <span class="addr-detail-value">78701</span>
+              <span class="addr-detail-label">Country</span>
+              <span class="addr-detail-value">US</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsed Item -->
+        <div class="addr-accordion-item">
+          <div class="addr-accordion-header">
+            <i class="fa-solid fa-chevron-right addr-accordion-chevron"></i>
+            <div class="addr-accordion-summary">
+              <span class="addr-accordion-label">
+                <i class="fa-solid fa-building" style="color: #1565c0; margin-right: 4px;"></i>
+                Work
+              </span>
+              <span class="addr-accordion-preview">456 Commerce Blvd, Suite 200, Austin, TX</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-ghost" title="Set as Primary"><i class="fa-regular fa-star"></i></button>
+              <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsed Item -->
+        <div class="addr-accordion-item">
+          <div class="addr-accordion-header">
+            <i class="fa-solid fa-chevron-right addr-accordion-chevron"></i>
+            <div class="addr-accordion-summary">
+              <span class="addr-accordion-label">
+                <i class="fa-solid fa-mailbox" style="color: #1565c0; margin-right: 4px;"></i>
+                Mailing
+              </span>
+              <span class="addr-accordion-preview">PO Box 1234, Austin, TX 78701</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-ghost" title="Set as Primary"><i class="fa-regular fa-star"></i></button>
+              <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit mode inside accordion -->
+        <div class="addr-accordion-item">
+          <div class="addr-accordion-header" style="background: #e8eaf6; border-bottom: 2px solid #1976d2;">
+            <i class="fa-solid fa-chevron-right addr-accordion-chevron open"></i>
+            <div class="addr-accordion-summary">
+              <span class="addr-accordion-label" style="color: #1976d2;">
+                <i class="fa-solid fa-pen" style="margin-right: 4px;"></i>
+                Editing: Billing
+              </span>
+            </div>
+          </div>
+          <div class="addr-accordion-body editing">
+            <div class="form-row">
+              <div class="form-field" style="max-width: 150px;">
+                <label>Type</label>
+                <select><option selected>Billing</option></select>
+              </div>
+              <div class="checkbox-field">
+                <input type="checkbox" id="primary-c">
+                <label for="primary-c">Set as primary</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label>Line 1</label>
+                <input type="text" value="789 Invoice Lane">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label>City</label>
+                <input type="text" value="Austin">
+              </div>
+              <div class="form-field" style="max-width: 80px;">
+                <label>State</label>
+                <input type="text" value="TX">
+              </div>
+              <div class="form-field" style="max-width: 100px;">
+                <label>Postal</label>
+                <input type="text" value="78703">
+              </div>
+              <div class="form-field" style="max-width: 80px;">
+                <label>Country</label>
+                <select><option selected>US</option></select>
+              </div>
+            </div>
+            <div class="addr-accordion-actions">
+              <button class="btn btn-primary">Save</button>
+              <button class="btn btn-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option C: Accordion</strong>
+        - Collapsed items show type icon, label, and one-line preview<br>
+        - Expand to see full address details in a label:value grid<br>
+        - Edit mode replaces the detail grid with form fields inline<br>
+        - Primary gets green background on the header row<br>
+        - Best when: many addresses possible, space is at a premium<br>
+        - Trade-off: requires a click to see full details
+      </div>
+    </div>
+  </div>
+</body>
+</html>

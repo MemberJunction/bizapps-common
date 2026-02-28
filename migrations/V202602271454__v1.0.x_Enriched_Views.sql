@@ -3242,9 +3242,9 @@ AS
 SELECT
     r.*,
     mjBizAppsCommonRelationshipType_RelationshipTypeID.[Name] AS [RelationshipType],
-    mjBizAppsCommonPerson_FromPersonID.[LastName] AS [FromPerson],
+    mjBizAppsCommonPerson_FromPersonID.[DisplayName] AS [FromPerson],
     mjBizAppsCommonOrganization_FromOrganizationID.[Name] AS [FromOrganization],
-    mjBizAppsCommonPerson_ToPersonID.[LastName] AS [ToPerson],
+    mjBizAppsCommonPerson_ToPersonID.[DisplayName] AS [ToPerson],
     mjBizAppsCommonOrganization_ToOrganizationID.[Name] AS [ToOrganization]
 FROM
     [${flyway:defaultSchema}_BizAppsCommon].[Relationship] AS r
@@ -3253,7 +3253,7 @@ INNER JOIN
   ON
     [r].[RelationshipTypeID] = mjBizAppsCommonRelationshipType_RelationshipTypeID.[ID]
 LEFT OUTER JOIN
-    [${flyway:defaultSchema}_BizAppsCommon].[Person] AS mjBizAppsCommonPerson_FromPersonID
+    [${flyway:defaultSchema}_BizAppsCommon].[vwPeopleExtended] AS mjBizAppsCommonPerson_FromPersonID
   ON
     [r].[FromPersonID] = mjBizAppsCommonPerson_FromPersonID.[ID]
 LEFT OUTER JOIN
@@ -3261,7 +3261,7 @@ LEFT OUTER JOIN
   ON
     [r].[FromOrganizationID] = mjBizAppsCommonOrganization_FromOrganizationID.[ID]
 LEFT OUTER JOIN
-    [${flyway:defaultSchema}_BizAppsCommon].[Person] AS mjBizAppsCommonPerson_ToPersonID
+    [${flyway:defaultSchema}_BizAppsCommon].[vwPeopleExtended] AS mjBizAppsCommonPerson_ToPersonID
   ON
     [r].[ToPersonID] = mjBizAppsCommonPerson_ToPersonID.[ID]
 LEFT OUTER JOIN

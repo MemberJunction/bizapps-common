@@ -37,7 +37,6 @@ import { InteractionType } from '@azure/msal-browser';
 // Project stuff
 //***********************************************************
 import { AppComponent } from './app.component';
-import { GeneratedFormsModule } from '@mj-biz-apps/common-ng';
 import { environment } from '../environments/environment';
 import { NavigationItemDemoComponent } from './demo/navigation-item.component';
 import { HelloDashboardComponent } from './demo/hello-dashboard/hello-dashboard.component';
@@ -83,8 +82,6 @@ export function initializeAuth(authService: MJAuthBase): () => Promise<void> {
     // Explorer App Shell (includes login UI, validation, and mj-shell wrapper)
     MJExplorerAppModule.forRoot(environment),
 
-    // App-specific modules
-    GeneratedFormsModule
   ],
   providers: [
     SharedService,

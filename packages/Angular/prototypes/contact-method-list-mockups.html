@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizApps Common - Contact Method List Widget Mockups</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ============================================
+       CONTACT METHOD LIST WIDGET - DESIGN MOCKUPS
+       ============================================
+
+       Three design options for managing contact methods
+       (email, phone, social, etc.) for a Person or Org.
+
+       INPUTS:
+       - PersonID or OrganizationID
+
+       FEATURES:
+       - Shows all contact methods with type icons (from IconClass)
+       - Primary indicator per type
+       - Inline add/edit
+       - Click-to-copy values
+       - Validates format based on type (email, phone, URL)
+    */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f7fa;
+      padding: 40px;
+      color: #333;
+    }
+
+    .mockup-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .mockup-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+
+    .mockup-description {
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .mockup-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .mockup-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mockup-section-title i { color: #1976d2; }
+
+    .design-note {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #795548;
+      line-height: 1.6;
+    }
+
+    .design-note strong { display: block; margin-bottom: 4px; }
+
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 48px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label i { color: #1976d2; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-type { background: #e3f2fd; color: #1565c0; }
+    .badge-primary { background: #e8f5e9; color: #2e7d32; }
+    .badge-label { background: #f3e5f5; color: #7b1fa2; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary { background: #1976d2; color: white; }
+    .btn-primary:hover { background: #1565c0; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px dashed #ccc;
+      color: #666;
+    }
+
+    .btn-outline:hover {
+      border-color: #1976d2;
+      color: #1976d2;
+      background: #f5f9ff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #999;
+      padding: 6px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover { color: #333; background: #f5f5f5; }
+    .btn-ghost.danger:hover { color: #c62828; background: #ffebee; }
+
+    .btn-cancel {
+      background: #f5f5f5;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-field { flex: 1; }
+
+    .form-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 22px;
+    }
+
+    .checkbox-field input[type="checkbox"] { width: 16px; height: 16px; }
+    .checkbox-field label { font-size: 13px; color: #555; }
+
+    /* ============================================
+       OPTION A: GROUPED BY TYPE
+       ============================================
+       Contact methods grouped under type headers
+       (Email, Phone, Social). Each group shows its
+       items with the type icon. Most organized view.
+    */
+
+    .cm-group {
+      margin-bottom: 20px;
+    }
+
+    .cm-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .cm-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 8px;
+    }
+
+    .cm-group-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .cm-group-icon.email { background: #e3f2fd; color: #1565c0; }
+    .cm-group-icon.phone { background: #e8f5e9; color: #2e7d32; }
+    .cm-group-icon.social { background: #fce4ec; color: #c62828; }
+
+    .cm-group-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .cm-group-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      gap: 10px;
+      transition: background 0.1s;
+    }
+
+    .cm-group-item:hover {
+      background: #fafafa;
+    }
+
+    .cm-group-item.primary {
+      background: #f1f8e9;
+    }
+
+    .cm-value {
+      font-size: 14px;
+      color: #333;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .cm-value:hover {
+      color: #1976d2;
+      text-decoration: underline;
+    }
+
+    .cm-value-label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .cm-item-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .cm-group-item:hover .cm-item-actions {
+      opacity: 1;
+    }
+
+    .cm-add-inline {
+      display: flex;
+      gap: 8px;
+      padding: 8px 0;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .cm-add-inline input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .cm-add-inline input:focus {
+      outline: none;
+      border-color: #1976d2;
+    }
+
+    .cm-add-inline input::placeholder {
+      color: #bbb;
+    }
+
+    /* ============================================
+       OPTION B: FLAT LIST WITH ICONS
+       ============================================
+       All contact methods in a single flat list.
+       Each row has the type icon, value, label,
+       and action buttons. Simpler, more scannable.
+    */
+
+    .cm-flat-list {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .cm-flat-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
+      transition: background 0.1s;
+    }
+
+    .cm-flat-row:last-child {
+      border-bottom: none;
+    }
+
+    .cm-flat-row:hover {
+      background: #fafafa;
+    }
+
+    .cm-flat-row.primary {
+      background: #f1f8e9;
+    }
+
+    .cm-flat-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .cm-flat-icon.email { background: #e3f2fd; color: #1565c0; }
+    .cm-flat-icon.phone { background: #e8f5e9; color: #2e7d32; }
+    .cm-flat-icon.social-linkedin { background: #e3f2fd; color: #0077b5; }
+    .cm-flat-icon.social-twitter { background: #e8e8e8; color: #333; }
+    .cm-flat-icon.web { background: #fff3e0; color: #e65100; }
+    .cm-flat-icon.fax { background: #f3e5f5; color: #7b1fa2; }
+
+    .cm-flat-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cm-flat-value {
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .cm-flat-value:hover {
+      color: #1976d2;
+    }
+
+    .cm-flat-meta {
+      font-size: 12px;
+      color: #888;
+      margin-top: 1px;
+    }
+
+    .cm-flat-badges {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .cm-flat-actions {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .cm-flat-row:hover .cm-flat-actions {
+      opacity: 1;
+    }
+
+    .cm-flat-add {
+      padding: 12px 16px;
+      border-top: 1px solid #e0e0e0;
+      background: #fafafa;
+    }
+
+    /* Inline add form for flat list */
+    .cm-flat-add-form {
+      padding: 14px 16px;
+      background: #f8f9ff;
+      border-top: 2px solid #1976d2;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    /* ============================================
+       OPTION C: TWO-COLUMN GRID
+       ============================================
+       Contact methods shown as a compact two-column
+       grid with icon + value. Hover reveals actions.
+       Most space-efficient layout.
+    */
+
+    .cm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .cm-grid-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .cm-grid-item:hover {
+      border-color: #d0d0d0;
+      background: #fafafa;
+    }
+
+    .cm-grid-item.primary {
+      border-color: #a5d6a7;
+      background: #f1f8e9;
+    }
+
+    .cm-grid-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .cm-grid-icon.email { background: #e3f2fd; color: #1565c0; }
+    .cm-grid-icon.phone { background: #e8f5e9; color: #2e7d32; }
+    .cm-grid-icon.social-linkedin { background: #e3f2fd; color: #0077b5; }
+    .cm-grid-icon.social-twitter { background: #e8e8e8; color: #333; }
+    .cm-grid-icon.web { background: #fff3e0; color: #e65100; }
+    .cm-grid-icon.fax { background: #f3e5f5; color: #7b1fa2; }
+
+    .cm-grid-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cm-grid-value {
+      font-size: 13px;
+      color: #333;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cm-grid-value:hover {
+      color: #1976d2;
+    }
+
+    .cm-grid-meta {
+      font-size: 11px;
+      color: #888;
+      margin-top: 1px;
+    }
+
+    .cm-grid-star {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      color: #ffc107;
+      font-size: 10px;
+    }
+
+    .cm-grid-actions {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .cm-grid-item:hover .cm-grid-actions {
+      opacity: 1;
+    }
+
+    .cm-grid-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      color: #999;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+
+    .cm-grid-add:hover {
+      border-color: #1976d2;
+      color: #1976d2;
+      background: #f5f9ff;
+    }
+
+    /* Add form overlay for grid */
+    .cm-grid-form {
+      grid-column: 1 / -1;
+      border: 2px solid #1976d2;
+      border-radius: 8px;
+      padding: 16px;
+      background: white;
+    }
+
+    .cm-grid-form-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1976d2;
+      margin-bottom: 12px;
+    }
+
+    .copy-toast {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #333;
+      color: white;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-container">
+    <h1 class="mockup-title">Contact Method List Widget - Design Options</h1>
+    <p class="mockup-description">
+      Reusable Angular component for managing contact methods (emails, phones, social profiles)
+      for a Person or Organization. Inputs: <code>PersonID</code> or <code>OrganizationID</code>.
+      Icons come from the <code>ContactType.IconClass</code> field.
+    </p>
+
+    <!-- ============================================
+         OPTION A: GROUPED BY TYPE
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-layer-group"></i>
+        Option A: Grouped by Type
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-address-card"></i>
+          Contact Methods
+        </span>
+        <button class="btn btn-outline">
+          <i class="fa-solid fa-plus"></i>
+          Add Contact
+        </button>
+      </div>
+
+      <!-- Email Group -->
+      <div class="cm-group">
+        <div class="cm-group-header">
+          <div class="cm-group-icon email"><i class="fa-solid fa-envelope"></i></div>
+          <span class="cm-group-title">Email</span>
+        </div>
+        <div class="cm-group-item primary">
+          <span class="cm-value">jane.smith@acme.com</span>
+          <span class="cm-value-label">Work</span>
+          <span class="badge badge-primary" style="font-size: 10px;"><i class="fa-solid fa-star"></i></span>
+          <div class="cm-item-actions">
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <div class="cm-group-item">
+          <span class="cm-value">jane@gmail.com</span>
+          <span class="cm-value-label">Personal</span>
+          <div class="cm-item-actions">
+            <button class="btn-ghost" title="Set Primary"><i class="fa-regular fa-star"></i></button>
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <!-- Inline add for this type -->
+        <div class="cm-add-inline">
+          <input type="text" placeholder="Add email address...">
+          <input type="text" placeholder="Label" style="max-width: 120px;">
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">Add</button>
+        </div>
+      </div>
+
+      <!-- Phone Group -->
+      <div class="cm-group">
+        <div class="cm-group-header">
+          <div class="cm-group-icon phone"><i class="fa-solid fa-phone"></i></div>
+          <span class="cm-group-title">Phone</span>
+        </div>
+        <div class="cm-group-item primary">
+          <span class="cm-value">(555) 123-4567</span>
+          <span class="cm-value-label">Mobile</span>
+          <span class="badge badge-primary" style="font-size: 10px;"><i class="fa-solid fa-star"></i></span>
+          <div class="cm-item-actions">
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <div class="cm-group-item">
+          <span class="cm-value">(555) 000-1234 x501</span>
+          <span class="cm-value-label">Work</span>
+          <div class="cm-item-actions">
+            <button class="btn-ghost" title="Set Primary"><i class="fa-regular fa-star"></i></button>
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Social Group -->
+      <div class="cm-group">
+        <div class="cm-group-header">
+          <div class="cm-group-icon social"><i class="fa-solid fa-globe"></i></div>
+          <span class="cm-group-title">Social & Web</span>
+        </div>
+        <div class="cm-group-item">
+          <span class="cm-value">linkedin.com/in/janesmith</span>
+          <span class="cm-value-label">LinkedIn</span>
+          <div class="cm-item-actions">
+            <button class="btn-ghost" title="Open"><i class="fa-solid fa-external-link"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option A: Grouped by Type</strong>
+        - Contact methods organized under type headings (Email, Phone, Social)<br>
+        - Each group has its own inline "add" row at the bottom<br>
+        - Primary star within each type category<br>
+        - Click value to copy to clipboard, hover for action buttons<br>
+        - Best when: many contacts of different types, want clear organization<br>
+        - Trade-off: takes more vertical space, may over-organize small lists
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION B: FLAT LIST WITH ICONS
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-list"></i>
+        Option B: Flat List with Icons
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-address-card"></i>
+          Contact Methods
+          <span style="font-size: 12px; color: #888; font-weight: 400;">(6)</span>
+        </span>
+      </div>
+
+      <div class="cm-flat-list">
+        <div class="cm-flat-row primary">
+          <div class="cm-flat-icon email"><i class="fa-solid fa-envelope"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">jane.smith@acme.com</div>
+            <div class="cm-flat-meta">Work Email</div>
+          </div>
+          <div class="cm-flat-badges">
+            <span class="badge badge-primary"><i class="fa-solid fa-star"></i></span>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-flat-row">
+          <div class="cm-flat-icon email"><i class="fa-solid fa-envelope"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">jane@gmail.com</div>
+            <div class="cm-flat-meta">Personal Email</div>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Set Primary"><i class="fa-regular fa-star"></i></button>
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-flat-row primary">
+          <div class="cm-flat-icon phone"><i class="fa-solid fa-mobile-screen"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">(555) 123-4567</div>
+            <div class="cm-flat-meta">Mobile Phone</div>
+          </div>
+          <div class="cm-flat-badges">
+            <span class="badge badge-primary"><i class="fa-solid fa-star"></i></span>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-flat-row">
+          <div class="cm-flat-icon phone"><i class="fa-solid fa-phone-office"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">(555) 000-1234 x501</div>
+            <div class="cm-flat-meta">Work Phone</div>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Set Primary"><i class="fa-regular fa-star"></i></button>
+            <button class="btn-ghost" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-flat-row">
+          <div class="cm-flat-icon social-linkedin"><i class="fa-brands fa-linkedin"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">linkedin.com/in/janesmith</div>
+            <div class="cm-flat-meta">LinkedIn</div>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Open"><i class="fa-solid fa-external-link"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-flat-row">
+          <div class="cm-flat-icon web"><i class="fa-solid fa-globe"></i></div>
+          <div class="cm-flat-content">
+            <div class="cm-flat-value">janesmith.dev</div>
+            <div class="cm-flat-meta">Website</div>
+          </div>
+          <div class="cm-flat-actions">
+            <button class="btn-ghost" title="Open"><i class="fa-solid fa-external-link"></i></button>
+            <button class="btn-ghost" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-ghost danger" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- Inline add form -->
+        <div class="cm-flat-add-form">
+          <div class="form-field" style="max-width: 160px;">
+            <label>Type</label>
+            <select>
+              <option>Email</option>
+              <option>Mobile Phone</option>
+              <option selected>Work Phone</option>
+              <option>LinkedIn</option>
+              <option>Twitter / X</option>
+              <option>Website</option>
+              <option>Fax</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Value</label>
+            <input type="text" placeholder="Enter phone number...">
+          </div>
+          <div class="form-field" style="max-width: 140px;">
+            <label>Label</label>
+            <input type="text" placeholder="e.g., Direct Line">
+          </div>
+          <div class="checkbox-field" style="padding-top: 20px;">
+            <input type="checkbox" id="primary-flat">
+            <label for="primary-flat">Primary</label>
+          </div>
+          <div style="padding-top: 18px; display: flex; gap: 6px;">
+            <button class="btn btn-primary" style="padding: 7px 14px;">Add</button>
+            <button class="btn btn-cancel" style="padding: 7px 14px;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option B: Flat List with Icons</strong>
+        - Single flat list, each row has type-specific colored icon<br>
+        - Sub-text shows type name + label (e.g., "Work Email", "Mobile Phone")<br>
+        - Primary badge on far right, actions appear on hover<br>
+        - Add form slides in at the bottom with type dropdown + value + label<br>
+        - Best when: simple and scannable, moderate number of contacts<br>
+        - Trade-off: can get long with many contacts, no grouping hierarchy
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================
+         OPTION C: TWO-COLUMN GRID
+         ============================================ -->
+    <div class="mockup-section">
+      <div class="mockup-section-title">
+        <i class="fa-solid fa-grip"></i>
+        Option C: Two-Column Grid
+      </div>
+
+      <div class="section-header">
+        <span class="section-label">
+          <i class="fa-solid fa-address-card"></i>
+          Contact Methods
+        </span>
+      </div>
+
+      <div class="cm-grid">
+        <div class="cm-grid-item primary">
+          <span class="cm-grid-star"><i class="fa-solid fa-star"></i></span>
+          <div class="cm-grid-icon email"><i class="fa-solid fa-envelope"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">jane.smith@acme.com</div>
+            <div class="cm-grid-meta">Work Email</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-grid-item">
+          <div class="cm-grid-icon email"><i class="fa-solid fa-envelope"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">jane@gmail.com</div>
+            <div class="cm-grid-meta">Personal Email</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-grid-item primary">
+          <span class="cm-grid-star"><i class="fa-solid fa-star"></i></span>
+          <div class="cm-grid-icon phone"><i class="fa-solid fa-mobile-screen"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">(555) 123-4567</div>
+            <div class="cm-grid-meta">Mobile</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-grid-item">
+          <div class="cm-grid-icon phone"><i class="fa-solid fa-phone-office"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">(555) 000-1234 x501</div>
+            <div class="cm-grid-meta">Work Phone</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-grid-item">
+          <div class="cm-grid-icon social-linkedin"><i class="fa-brands fa-linkedin"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">linkedin.com/in/janesmith</div>
+            <div class="cm-grid-meta">LinkedIn</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;"><i class="fa-solid fa-external-link"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="cm-grid-item">
+          <div class="cm-grid-icon web"><i class="fa-solid fa-globe"></i></div>
+          <div class="cm-grid-content">
+            <div class="cm-grid-value">janesmith.dev</div>
+            <div class="cm-grid-meta">Website</div>
+          </div>
+          <div class="cm-grid-actions">
+            <button class="btn-ghost" style="padding: 4px 6px; font-size: 11px;"><i class="fa-solid fa-external-link"></i></button>
+            <button class="btn-ghost danger" style="padding: 4px 6px; font-size: 11px;" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- Add tile -->
+        <div class="cm-grid-add">
+          <i class="fa-solid fa-plus"></i>
+          Add Contact
+        </div>
+
+        <!-- Add form (spans full width when open) -->
+        <div class="cm-grid-form">
+          <div class="cm-grid-form-title"><i class="fa-solid fa-plus"></i> Add Contact Method</div>
+          <div class="form-row">
+            <div class="form-field" style="max-width: 160px;">
+              <label>Type</label>
+              <select>
+                <option selected>Email</option>
+                <option>Mobile Phone</option>
+                <option>Work Phone</option>
+                <option>LinkedIn</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Value</label>
+              <input type="text" placeholder="Enter email address...">
+            </div>
+            <div class="form-field" style="max-width: 120px;">
+              <label>Label</label>
+              <input type="text" placeholder="Label">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;">Add</button>
+            <button class="btn btn-cancel" style="padding: 6px 14px; font-size: 12px;">Cancel</button>
+            <div class="checkbox-field" style="padding-top: 0;">
+              <input type="checkbox" id="primary-grid">
+              <label for="primary-grid">Set as primary</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note">
+        <strong>Option C: Two-Column Grid</strong>
+        - Contact methods as compact cards in a 2-column grid<br>
+        - Primary indicator as small star in corner<br>
+        - Hover reveals copy/delete actions<br>
+        - "Add" tile is part of the grid flow<br>
+        - Add form expands to full width below the grid<br>
+        - Best when: embedding in a dense form, want compact visual impact<br>
+        - Trade-off: truncates long values (email, URLs), less room for labels
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -12,12 +12,21 @@ import '@mj-biz-apps/common-entities';
 // Import generated form components (triggers @RegisterClass for form components)
 import './lib/generated/generated-forms.module';
 
+// Import custom form components (must come AFTER generated to override via @RegisterClass priority)
+import './lib/custom/custom-forms.module';
+
 // Import class registrations manifest
 import { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
 
 // Re-export for consumers
 export { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
 export { GeneratedFormsModule } from './lib/generated/generated-forms.module';
+export { CustomFormsModule } from './lib/custom/custom-forms.module';
+
+// Reusable UI components
+export { AddressEditorComponent } from './lib/components/address-editor/address-editor.component';
+export { ContactMethodListComponent } from './lib/components/contact-method-list/contact-method-list.component';
+export { RelationshipListComponent } from './lib/components/relationship-list/relationship-list.component';
 
 /**
  * Bootstrap function called during MJExplorer initialization.

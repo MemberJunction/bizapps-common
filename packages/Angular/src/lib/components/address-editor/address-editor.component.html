@@ -1,0 +1,194 @@
+<!-- AddressEditor - Compact Table Design (Option B) -->
+
+<div class="section-header">
+    <span class="section-label">
+        <i class="fa-solid fa-map-marker-alt"></i>
+        Addresses
+        @if (!Loading && AddressItems.length > 0) {
+            <span class="count">({{ AddressItems.length }})</span>
+        }
+    </span>
+</div>
+
+@if (Loading) {
+    <div class="addr-table">
+        <div class="loading-row">
+            <i class="fa-solid fa-spinner"></i> Loading addresses...
+        </div>
+    </div>
+} @else {
+    <div class="addr-table">
+        @if (AddressItems.length === 0 && EditingIndex !== -1) {
+            <div class="empty-state">
+                <i class="fa-solid fa-map-marker-alt"></i>
+                No addresses linked yet
+            </div>
+        }
+
+        @for (item of AddressItems; track item.Link.ID; let i = $index) {
+            <!-- Address Row -->
+            <div class="addr-table-row" [class.primary]="item.Link.IsPrimary">
+                <div class="addr-table-icon">
+                    <i [class]="getAddressTypeIcon(item.Link.AddressTypeID)"></i>
+                </div>
+                <div class="addr-table-content">
+                    <div class="addr-table-main">{{ formatAddressLine1(item.Address) }}</div>
+                    <div class="addr-table-sub">{{ formatAddressLine2(item.Address) }}</div>
+                </div>
+                <div class="addr-table-badges">
+                    <span class="badge badge-type">{{ item.Link.AddressType }}</span>
+                    @if (item.Link.IsPrimary) {
+                        <span class="badge badge-primary"><i class="fa-solid fa-star"></i> Primary</span>
+                    }
+                </div>
+                <div class="addr-table-actions">
+                    @if (!item.Link.IsPrimary) {
+                        <button class="btn-ghost" title="Set as Primary" (click)="onSetPrimary(i)">
+                            <i class="fa-regular fa-star"></i>
+                        </button>
+                    }
+                    <button class="btn-ghost" title="Edit" (click)="onEdit(i)">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn-ghost danger" title="Remove" (click)="onDelete(i)">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inline Edit Panel (shown when editing this row) -->
+            @if (EditingIndex === i) {
+                <div class="addr-table-edit-panel">
+                    <div class="form-row">
+                        <div class="form-field type-field">
+                            <label>Type</label>
+                            <select [(ngModel)]="EditForm.TypeID">
+                                @for (t of AddressTypes; track t.ID) {
+                                    <option [value]="t.ID">{{ t.Name }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label>Line 1</label>
+                            <input type="text" [(ngModel)]="EditForm.Line1" placeholder="Street address">
+                        </div>
+                        <div class="form-field line2-field">
+                            <label>Line 2</label>
+                            <input type="text" [(ngModel)]="EditForm.Line2" placeholder="Apt, suite">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>City</label>
+                            <input type="text" [(ngModel)]="EditForm.City" placeholder="City">
+                        </div>
+                        <div class="form-field state-field">
+                            <label>State</label>
+                            <input type="text" [(ngModel)]="EditForm.StateProvince" placeholder="ST">
+                        </div>
+                        <div class="form-field postal-field">
+                            <label>Postal</label>
+                            <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip">
+                        </div>
+                        <div class="form-field country-field">
+                            <label>Country</label>
+                            <select [(ngModel)]="EditForm.Country">
+                                <option value="US">US</option>
+                                <option value="CA">CA</option>
+                                <option value="UK">UK</option>
+                                <option value="AU">AU</option>
+                                <option value="DE">DE</option>
+                                <option value="FR">FR</option>
+                            </select>
+                        </div>
+                        <div class="checkbox-field">
+                            <input type="checkbox" [id]="'primary-edit-' + i" [(ngModel)]="EditForm.IsPrimary">
+                            <label [for]="'primary-edit-' + i">Primary</label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary btn-sm" (click)="onSave()" [disabled]="Saving">
+                            @if (Saving) {
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                            }
+                            Save
+                        </button>
+                        <button class="btn btn-cancel btn-sm" (click)="onCancelEdit()">Cancel</button>
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Add New Panel (shown when EditingIndex === -1) -->
+        @if (EditingIndex === -1) {
+            <div class="addr-table-edit-panel">
+                <div class="form-row">
+                    <div class="form-field type-field">
+                        <label>Type</label>
+                        <select [(ngModel)]="EditForm.TypeID">
+                            @for (t of AddressTypes; track t.ID) {
+                                <option [value]="t.ID">{{ t.Name }}</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Line 1</label>
+                        <input type="text" [(ngModel)]="EditForm.Line1" placeholder="Street address">
+                    </div>
+                    <div class="form-field line2-field">
+                        <label>Line 2</label>
+                        <input type="text" [(ngModel)]="EditForm.Line2" placeholder="Apt, suite">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>City</label>
+                        <input type="text" [(ngModel)]="EditForm.City" placeholder="City">
+                    </div>
+                    <div class="form-field state-field">
+                        <label>State</label>
+                        <input type="text" [(ngModel)]="EditForm.StateProvince" placeholder="ST">
+                    </div>
+                    <div class="form-field postal-field">
+                        <label>Postal</label>
+                        <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip">
+                    </div>
+                    <div class="form-field country-field">
+                        <label>Country</label>
+                        <select [(ngModel)]="EditForm.Country">
+                            <option value="US">US</option>
+                            <option value="CA">CA</option>
+                            <option value="UK">UK</option>
+                            <option value="AU">AU</option>
+                            <option value="DE">DE</option>
+                            <option value="FR">FR</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-field">
+                        <input type="checkbox" id="primary-add" [(ngModel)]="EditForm.IsPrimary">
+                        <label for="primary-add">Primary</label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary btn-sm" (click)="onSave()" [disabled]="Saving">
+                        @if (Saving) {
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        }
+                        Save
+                    </button>
+                    <button class="btn btn-cancel btn-sm" (click)="onCancelEdit()">Cancel</button>
+                </div>
+            </div>
+        }
+
+        <!-- Add Button Footer -->
+        @if (EditingIndex === null) {
+            <div class="addr-table-footer">
+                <button class="btn btn-outline full-width" (click)="onAdd()">
+                    <i class="fa-solid fa-plus"></i>
+                    Add Address
+                </button>
+            </div>
+        }
+    </div>
+}
