@@ -4,14 +4,10 @@ import { FormsModule } from '@angular/forms';
 
 // MemberJunction Imports
 import { BaseFormsModule } from '@memberjunction/ng-base-forms';
-import { EntityViewerModule } from '@memberjunction/ng-entity-viewer';
-import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
-import { LayoutModule } from '@progress/kendo-angular-layout';
 
-// Standalone widget components (imported directly as standalone)
-import { AddressEditorComponent } from '../components/address-editor/address-editor.component';
-import { ContactMethodListComponent } from '../components/contact-method-list/contact-method-list.component';
-import { RelationshipListComponent } from '../components/relationship-list/relationship-list.component';
+// Standalone composed detail views (used directly in form templates)
+import { PersonDetailComponent } from '../components/person-detail/person-detail.component';
+import { OrgDetailComponent } from '../components/org-detail/org-detail.component';
 
 // Custom form components
 import { BizAppsPersonFormComponent } from './Person/person-form.component';
@@ -25,14 +21,10 @@ import { BizAppsOrganizationFormComponent } from './Organization/organization-fo
     imports: [
         CommonModule,
         FormsModule,
-        LayoutModule,
         BaseFormsModule,
-        EntityViewerModule,
-        LinkDirectivesModule,
-        // Standalone widget components
-        AddressEditorComponent,
-        ContactMethodListComponent,
-        RelationshipListComponent
+        // Standalone composed detail views
+        PersonDetailComponent,
+        OrgDetailComponent
     ],
     exports: [
         BizAppsPersonFormComponent,

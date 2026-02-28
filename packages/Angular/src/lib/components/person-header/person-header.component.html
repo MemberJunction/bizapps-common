@@ -1,0 +1,24 @@
+<!-- Dark gradient header bar with avatar, name, title, and org link -->
+<div class="person-header">
+    <div class="person-header__avatar">
+        {{ Initials }}
+    </div>
+    <div class="person-header__identity">
+        @if (Record) {
+            <div class="person-header__name">{{ Record.DisplayName || (Record.FirstName + ' ' + Record.LastName) }}</div>
+            <div class="person-header__title-line">
+                @if (Record.CurrentJobTitle) {
+                    {{ Record.CurrentJobTitle }}
+                }
+                @if (Record.CurrentJobTitle && Record.CurrentOrganizationName) {
+                    <span> at </span>
+                }
+                @if (Record.CurrentOrganizationName) {
+                    <a class="person-header__org-link"
+                       href="javascript:void(0)"
+                       (click)="onNavigateToOrg($event)">{{ Record.CurrentOrganizationName }}</a>
+                }
+            </div>
+        }
+    </div>
+</div>

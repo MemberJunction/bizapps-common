@@ -1,0 +1,43 @@
+<!-- Professional & Profile section card -->
+<div class="section-card">
+    <div class="section-card__header">
+        <i class="fa-solid fa-briefcase"></i> Professional
+    </div>
+    @if (Record) {
+        <div class="section-card__body">
+            <!-- Row 1: Title, CurrentJobTitle -->
+            <div class="field-grid-2">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Title"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="CurrentJobTitle"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+
+            <!-- Full-width: CurrentOrganizationID with record link -->
+            <div class="field-full">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="CurrentOrganizationID"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="Record"></mj-form-field>
+            </div>
+
+            <!-- Row 2: Email (with email link), Phone -->
+            <div class="field-grid-2">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Email"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="Email"></mj-form-field>
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Phone"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+
+            <!-- Full-width: PhotoURL with URL link -->
+            <div class="field-full">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PhotoURL"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+            </div>
+
+            <!-- Full-width: Bio textarea -->
+            <div class="field-full">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Bio"
+                    Type="textarea" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+        </div>
+    }
+</div>

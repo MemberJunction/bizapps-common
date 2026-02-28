@@ -1,0 +1,62 @@
+<!-- Person Command Center -->
+@if (Record) {
+    <!-- Dark gradient header -->
+    <bizapps-person-header
+        [Record]="Record"
+        (Navigate)="OnChildNavigate($event)">
+    </bizapps-person-header>
+
+    <!-- Summary metric cards -->
+    <bizapps-person-summary-cards
+        [Record]="Record">
+    </bizapps-person-summary-cards>
+
+    <!-- Two-column body -->
+    <div class="cmd-body">
+        <!-- Left column: Structured data -->
+        <div class="cmd-column">
+            <bizapps-person-identity-section
+                [Record]="Record"
+                [EditMode]="EditMode"
+                [FormContext]="FormContext">
+            </bizapps-person-identity-section>
+
+            <bizapps-person-professional-section
+                [Record]="Record"
+                [EditMode]="EditMode"
+                [FormContext]="FormContext">
+            </bizapps-person-professional-section>
+
+            @if (Record.IsSaved) {
+                <bizapps-address-editor
+                    EntityName="MJ.BizApps.Common: People"
+                    [RecordID]="Record.ID">
+                </bizapps-address-editor>
+            }
+        </div>
+
+        <!-- Right column: Relationships + Contacts + Account -->
+        <div class="cmd-column">
+            @if (Record.IsSaved) {
+                <bizapps-relationship-list
+                    [PersonID]="Record.ID"
+                    (Navigate)="OnChildNavigate($event)">
+                </bizapps-relationship-list>
+
+                <bizapps-contact-method-list
+                    [PersonID]="Record.ID">
+                </bizapps-contact-method-list>
+            }
+
+            <bizapps-person-account-section
+                [Record]="Record"
+                [EditMode]="EditMode"
+                [FormContext]="FormContext">
+            </bizapps-person-account-section>
+        </div>
+    </div>
+} @else {
+    <div class="cmd-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading person record...
+    </div>
+}

@@ -1,0 +1,46 @@
+<!-- Summary metric cards row -->
+<div class="summary-cards">
+    <!-- Email card -->
+    <div class="summary-card">
+        <div class="summary-card__icon summary-card__icon--email">
+            <i class="fa-solid fa-envelope"></i>
+        </div>
+        <div class="summary-card__content">
+            <div class="summary-card__label">EMAIL</div>
+            <div class="summary-card__value">{{ Record?.Email || '\u2014' }}</div>
+        </div>
+    </div>
+
+    <!-- Phone card -->
+    <div class="summary-card">
+        <div class="summary-card__icon summary-card__icon--phone">
+            <i class="fa-solid fa-phone"></i>
+        </div>
+        <div class="summary-card__content">
+            <div class="summary-card__label">PHONE</div>
+            <div class="summary-card__value">{{ Record?.Phone || '\u2014' }}</div>
+        </div>
+    </div>
+
+    <!-- Address card -->
+    <div class="summary-card">
+        <div class="summary-card__icon summary-card__icon--address">
+            <i class="fa-solid fa-location-dot"></i>
+        </div>
+        <div class="summary-card__content">
+            <div class="summary-card__label">ADDRESSES</div>
+            <div class="summary-card__value">{{ AddressCountDisplay }}</div>
+        </div>
+    </div>
+
+    <!-- Relationships card -->
+    <div class="summary-card">
+        <div class="summary-card__icon summary-card__icon--relationships">
+            <i class="fa-solid fa-handshake"></i>
+        </div>
+        <div class="summary-card__content">
+            <div class="summary-card__label">RELATIONSHIPS</div>
+            <div class="summary-card__value">{{ RelationshipCountDisplay }}</div>
+        </div>
+    </div>
+</div>

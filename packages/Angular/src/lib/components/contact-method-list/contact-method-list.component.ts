@@ -7,13 +7,54 @@ import {
     mjBizAppsCommonContactTypeEntity
 } from '@mj-biz-apps/common-entities';
 
+/**
+ * Form model for both adding and editing a contact method.
+ *
+ * Fields correspond directly to {@link mjBizAppsCommonContactMethodEntity}
+ * properties, enabling clean two-way binding in the template.
+ */
 interface ContactFormData {
+    /** The selected ContactType record ID. */
     TypeID: string;
+
+    /** The contact value (email address, phone number, URL, etc.). */
     Value: string;
+
+    /**
+     * An optional human-readable label for this contact method
+     * (e.g., `'Work'`, `'Direct Line'`).
+     */
     Label: string;
+
+    /** Whether this contact method should be flagged as the primary for its type. */
     IsPrimary: boolean;
 }
 
+/**
+ * Displays and manages contact methods (email, phone, social, etc.) for a
+ * Person or Organization record.
+ *
+ * Contact methods are loaded from the `MJ.BizApps.Common: Contact Methods`
+ * entity, filtered by either {@link PersonID} or {@link OrganizationID}.
+ * The component provides inline add, edit, delete, set-primary, copy-to-clipboard,
+ * and open-link functionality.
+ *
+ * Primary management is scoped per contact type -- setting a contact as primary
+ * only demotes other primaries of the **same** type.
+ *
+ * @example
+ * ```html
+ * <!-- For a Person -->
+ * <bizapps-contact-method-list
+ *     [PersonID]="person.ID">
+ * </bizapps-contact-method-list>
+ *
+ * <!-- For an Organization -->
+ * <bizapps-contact-method-list
+ *     [OrganizationID]="org.ID">
+ * </bizapps-contact-method-list>
+ * ```
+ */
 @Component({
     standalone: true,
     imports: [CommonModule, FormsModule],
@@ -27,6 +68,14 @@ export class ContactMethodListComponent {
     private _personID: string | null = null;
     private _organizationID: string | null = null;
 
+    /**
+     * The Person record ID whose contact methods should be displayed.
+     *
+     * Mutually exclusive with {@link OrganizationID}. Setting this triggers
+     * a data reload unless the value has not changed.
+     *
+     * @example `'A1B2C3D4-E5F6-7890-ABCD-EF1234567890'`
+     */
     @Input()
     set PersonID(value: string | null) {
         const prev = this._personID;
@@ -37,6 +86,14 @@ export class ContactMethodListComponent {
     }
     get PersonID(): string | null { return this._personID; }
 
+    /**
+     * The Organization record ID whose contact methods should be displayed.
+     *
+     * Mutually exclusive with {@link PersonID}. Setting this triggers
+     * a data reload unless the value has not changed.
+     *
+     * @example `'B2C3D4E5-F6A7-8901-BCDE-F12345678901'`
+     */
     @Input()
     set OrganizationID(value: string | null) {
         const prev = this._organizationID;
@@ -47,17 +104,55 @@ export class ContactMethodListComponent {
     }
     get OrganizationID(): string | null { return this._organizationID; }
 
+    /**
+     * The loaded contact method entities for the current Person or Organization,
+     * sorted with primaries first, then by contact type display rank.
+     */
     ContactMethods: mjBizAppsCommonContactMethodEntity[] = [];
+
+    /**
+     * All active contact types available for selection in type dropdowns.
+     * Loaded from `MJ.BizApps.Common: Contact Types`, sorted by `DisplayRank ASC`.
+     */
     ContactTypes: mjBizAppsCommonContactTypeEntity[] = [];
+
+    /**
+     * The ID of the contact method currently being edited, or `null` when
+     * not in edit mode.
+     */
     EditingId: string | null = null;
+
+    /**
+     * Controls visibility of the inline add form. When `true`, the add form
+     * is displayed at the bottom of the contact list.
+     */
     ShowAddForm = false;
+
+    /**
+     * Indicates whether the component is performing the initial data load.
+     * The template shows a loading spinner while this is `true`.
+     */
     Loading = false;
+
+    /**
+     * Indicates whether a save, delete, or set-primary operation is in progress.
+     * Used to disable action buttons and show spinner feedback while `true`.
+     */
     Saving = false;
 
+    /**
+     * The form model bound to the inline edit panel via two-way binding.
+     * Populated from the existing contact method record when editing begins.
+     */
     EditForm: ContactFormData = this.createEmptyForm();
+
+    /**
+     * The form model bound to the inline add panel via two-way binding.
+     * Reset to defaults each time the add form is opened.
+     */
     AddForm: ContactFormData = this.createEmptyForm();
 
-    // Map of ContactType name (lowercase) to icon color CSS class
+    /** Maps lowercase contact type names to CSS icon-color classes. */
     private iconColorMap: Record<string, string> = {
         'email': 'icon-email',
         'mobile phone': 'icon-mobile',
@@ -71,13 +166,18 @@ export class ContactMethodListComponent {
         'fax': 'icon-fax'
     };
 
-    // Contact types that are links (open in new tab rather than copy)
+    /** Contact type names (lowercase) that represent clickable URLs rather than copyable values. */
     private linkTypeNames = new Set(['linkedin', 'twitter', 'twitter / x', 'website']);
 
+    /** Creates a blank {@link ContactFormData} with empty defaults. */
     private createEmptyForm(): ContactFormData {
         return { TypeID: '', Value: '', Label: '', IsPrimary: false };
     }
 
+    /**
+     * Loads contact methods and contact types from the server.
+     * Resets editing state before loading.
+     */
     private async loadData(): Promise<void> {
         this.Loading = true;
         this.EditingId = null;
@@ -137,16 +237,35 @@ export class ContactMethodListComponent {
         }
     }
 
+    /** Returns the DisplayRank for a contact type, defaulting to 999 if not found. */
     private getTypeRank(typeID: string): number {
         const ct = this.ContactTypes.find(t => t.ID === typeID);
         return ct?.DisplayRank ?? 999;
     }
 
+    /**
+     * Resolves the Font Awesome icon class for a given contact type.
+     *
+     * Falls back to `'fa-solid fa-circle-info'` when the type is not found
+     * or has no icon configured.
+     *
+     * @param typeID - The ContactType record ID to look up
+     * @returns The CSS class string for the icon (e.g., `'fa-solid fa-envelope'`)
+     */
     getContactTypeIcon(typeID: string): string {
         const ct = this.ContactTypes.find(t => t.ID === typeID);
         return ct?.IconClass || 'fa-solid fa-circle-info';
     }
 
+    /**
+     * Returns a CSS class name that applies a theme color to the contact
+     * type icon based on the type name.
+     *
+     * Falls back to `'icon-default'` for unrecognized type names.
+     *
+     * @param typeID - The ContactType record ID to look up
+     * @returns A CSS class string such as `'icon-email'` or `'icon-linkedin'`
+     */
     getIconColorClass(typeID: string): string {
         const ct = this.ContactTypes.find(t => t.ID === typeID);
         if (!ct) return 'icon-default';
@@ -154,6 +273,13 @@ export class ContactMethodListComponent {
         return this.iconColorMap[key] || 'icon-default';
     }
 
+    /**
+     * Builds a display-friendly metadata string for a contact method row,
+     * combining the optional label and the contact type name.
+     *
+     * @param cm - The contact method entity to format
+     * @returns A string such as `'Work · Email'` or just `'Email'`
+     */
     getContactMeta(cm: mjBizAppsCommonContactMethodEntity): string {
         const parts: string[] = [];
         if (cm.Label) parts.push(cm.Label);
@@ -161,6 +287,13 @@ export class ContactMethodListComponent {
         return parts.join(' · ') || cm.ContactType;
     }
 
+    /**
+     * Returns a context-appropriate placeholder string for the value input
+     * field based on the selected contact type.
+     *
+     * @param typeID - The ContactType record ID to look up
+     * @returns A placeholder string such as `'Enter email address...'`
+     */
     getPlaceholder(typeID: string): string {
         const ct = this.ContactTypes.find(t => t.ID === typeID);
         if (!ct) return 'Enter value...';
@@ -171,18 +304,41 @@ export class ContactMethodListComponent {
         return 'Enter value...';
     }
 
+    /**
+     * Determines whether a contact type represents a URL that should be
+     * opened in a new browser tab rather than copied to the clipboard.
+     *
+     * @param typeID - The ContactType record ID to check
+     * @returns `true` for LinkedIn, Twitter/X, and Website types; `false` otherwise
+     */
     isLinkType(typeID: string): boolean {
         const ct = this.ContactTypes.find(t => t.ID === typeID);
         if (!ct) return false;
         return this.linkTypeNames.has(ct.Name.toLowerCase());
     }
 
+    /**
+     * Copies the given string value to the system clipboard.
+     *
+     * Silently ignores clipboard write failures (e.g., when the Clipboard
+     * API is not available).
+     *
+     * @param value - The text to copy to the clipboard
+     */
     onCopyValue(value: string): void {
         navigator.clipboard.writeText(value).catch(() => {
             // Fallback: silently fail
         });
     }
 
+    /**
+     * Opens the given URL in a new browser tab.
+     *
+     * Automatically prepends `'https://'` when the value does not already
+     * include a protocol prefix.
+     *
+     * @param value - The URL string to open
+     */
     onOpenLink(value: string): void {
         let url = value;
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -191,6 +347,12 @@ export class ContactMethodListComponent {
         window.open(url, '_blank');
     }
 
+    /**
+     * Opens the inline add form for creating a new contact method.
+     *
+     * Resets the add form to defaults and pre-selects the first available
+     * contact type.
+     */
     onShowAdd(): void {
         this.AddForm = this.createEmptyForm();
         if (this.ContactTypes.length > 0) {
@@ -200,11 +362,20 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
     }
 
+    /**
+     * Closes the inline add form without saving.
+     */
     onCancelAdd(): void {
         this.ShowAddForm = false;
         this.cdr.detectChanges();
     }
 
+    /**
+     * Persists the new contact method from the add form.
+     *
+     * When the "Primary" flag is set, other primaries of the same contact
+     * type are demoted first. The contact list is reloaded after saving.
+     */
     async onSaveAdd(): Promise<void> {
         if (!this.AddForm.Value) return;
 
@@ -241,6 +412,14 @@ export class ContactMethodListComponent {
         }
     }
 
+    /**
+     * Opens the inline edit form for an existing contact method, populating
+     * the form fields from the current entity data.
+     *
+     * Closes the add form if it is currently open.
+     *
+     * @param cm - The contact method entity to edit
+     */
     onEdit(cm: mjBizAppsCommonContactMethodEntity): void {
         this.EditForm = {
             TypeID: cm.ContactTypeID,
@@ -253,11 +432,20 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
     }
 
+    /**
+     * Cancels the current edit operation and returns to display mode.
+     */
     onCancelEdit(): void {
         this.EditingId = null;
         this.cdr.detectChanges();
     }
 
+    /**
+     * Persists the edited contact method from the edit form.
+     *
+     * When the "Primary" flag is newly set, other primaries of the same
+     * contact type are demoted first. The contact list is reloaded after saving.
+     */
     async onSaveEdit(): Promise<void> {
         if (!this.EditForm.Value || !this.EditingId) return;
 
@@ -288,6 +476,14 @@ export class ContactMethodListComponent {
         }
     }
 
+    /**
+     * Promotes the given contact method to primary for its contact type,
+     * demoting all other primaries of the same type.
+     *
+     * After the update, the contact list is reloaded.
+     *
+     * @param cm - The contact method entity to promote
+     */
     async onSetPrimary(cm: mjBizAppsCommonContactMethodEntity): Promise<void> {
         this.Saving = true;
         this.cdr.detectChanges();
@@ -308,6 +504,13 @@ export class ContactMethodListComponent {
         }
     }
 
+    /**
+     * Permanently deletes the given contact method record.
+     *
+     * After deletion, the contact list is reloaded.
+     *
+     * @param cm - The contact method entity to delete
+     */
     async onDelete(cm: mjBizAppsCommonContactMethodEntity): Promise<void> {
         this.Saving = true;
         this.cdr.detectChanges();
@@ -323,6 +526,7 @@ export class ContactMethodListComponent {
         }
     }
 
+    /** Removes the primary flag from all contact methods of the given type. */
     private async clearPrimariesForType(typeID: string): Promise<void> {
         const sameType = this.ContactMethods.filter(c => c.ContactTypeID === typeID && c.IsPrimary);
         for (const c of sameType) {

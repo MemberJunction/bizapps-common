@@ -1,0 +1,86 @@
+:host {
+    display: block;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px 28px;
+    background: #f8f9fc;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    cursor: default;
+}
+
+.summary-card:hover {
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
+}
+
+.summary-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 10px;
+    font-size: 15px;
+}
+
+.summary-card__icon--email {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.summary-card__icon--phone {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.summary-card__icon--address {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.summary-card__icon--relationships {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.summary-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.summary-card__label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #999999;
+    line-height: 1.2;
+}
+
+.summary-card__value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

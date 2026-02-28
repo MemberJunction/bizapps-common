@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Person Widget — 3 Design Options</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ==========================================
+   SHARED RESET & PAGE LAYOUT
+   ========================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #eef1f5;
+    color: #333;
+    padding: 40px;
+}
+h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+}
+.subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 48px;
+}
+.option-wrapper {
+    max-width: 1100px;
+    margin: 0 auto 64px;
+}
+.option-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 18px;
+    background: #1976d2;
+    color: white;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+.option-desc {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    max-width: 700px;
+}
+.option-desc strong { color: #333; }
+
+/* ==========================================
+   OPTION A — PROFILE HERO CARD
+   Inspired by LinkedIn profiles, HubSpot contacts
+   Large visual header, tabbed sections below
+   ========================================== */
+.person-hero {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* Cover / banner */
+.person-hero__banner {
+    height: 140px;
+    background: linear-gradient(135deg, #1565c0 0%, #1976d2 40%, #42a5f5 100%);
+    position: relative;
+}
+.person-hero__banner-pattern {
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Avatar */
+.person-hero__avatar-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding: 0 32px;
+    margin-top: -48px;
+    position: relative;
+    z-index: 1;
+}
+.person-hero__avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: 4px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: #1976d2;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.person-hero__identity {
+    padding-bottom: 8px;
+    flex: 1;
+}
+.person-hero__name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1.2;
+}
+.person-hero__title-line {
+    font-size: 14px;
+    color: #666;
+    margin-top: 2px;
+}
+.person-hero__title-line strong {
+    color: #1976d2;
+    cursor: pointer;
+}
+.person-hero__actions {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 12px;
+}
+.person-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+}
+.person-hero__btn--primary {
+    background: #1976d2;
+    color: white;
+}
+.person-hero__btn--primary:hover { background: #1565c0; }
+.person-hero__btn--ghost {
+    background: #f5f5f5;
+    color: #555;
+}
+.person-hero__btn--ghost:hover { background: #eee; }
+
+/* Quick stats row */
+.person-hero__stats {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    margin: 16px 0 0;
+}
+.person-hero__stat {
+    flex: 1;
+    text-align: center;
+    padding: 14px 8px;
+    border-right: 1px solid #f0f0f0;
+}
+.person-hero__stat:last-child { border-right: none; }
+.person-hero__stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.person-hero__stat-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+/* Tabs */
+.person-hero__tabs {
+    display: flex;
+    padding: 0 32px;
+    border-bottom: 2px solid #f0f0f0;
+}
+.person-hero__tab {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+}
+.person-hero__tab:hover { color: #555; }
+.person-hero__tab--active {
+    color: #1976d2;
+    border-bottom-color: #1976d2;
+}
+
+/* Tab content */
+.person-hero__content {
+    padding: 24px 32px 32px;
+}
+.person-hero__section {
+    margin-bottom: 28px;
+}
+.person-hero__section:last-child { margin-bottom: 0; }
+.person-hero__section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.person-hero__section-title i { color: #1976d2; font-size: 13px; }
+.person-hero__field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.person-hero__field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+}
+.person-hero__field-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+.person-hero__field-value a {
+    color: #1976d2;
+    text-decoration: none;
+}
+.person-hero__field-value a:hover { text-decoration: underline; }
+
+/* Embedded widget placeholder */
+.person-hero__widget {
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.person-hero__widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+}
+.person-hero__widget-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.person-hero__widget-title i { color: #1976d2; }
+.person-hero__widget-count {
+    font-size: 12px;
+    color: #999;
+}
+.person-hero__widget-body {
+    padding: 16px;
+}
+.person-hero__widget-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.person-hero__widget-item:last-child { border-bottom: none; }
+.person-hero__widget-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.person-hero__widget-icon--email { background: #e3f2fd; color: #1565c0; }
+.person-hero__widget-icon--phone { background: #e8f5e9; color: #2e7d32; }
+.person-hero__widget-icon--address { background: #fff3e0; color: #e65100; }
+.person-hero__widget-icon--rel { background: #f3e5f5; color: #7b1fa2; }
+.person-hero__widget-item-text {
+    flex: 1;
+}
+.person-hero__widget-item-primary {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+.person-hero__widget-item-secondary {
+    font-size: 12px;
+    color: #888;
+}
+
+
+/* ==========================================
+   OPTION B — SPLIT PANEL (Sidebar + Content)
+   Inspired by Salesforce detail views
+   Persistent summary on left, scrollable detail on right
+   ========================================== */
+.person-split {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    min-height: 700px;
+}
+
+/* Sidebar */
+.person-split__sidebar {
+    background: #f8f9fc;
+    border-right: 1px solid #e8e8e8;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.person-split__avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #3f51b5;
+    font-weight: 700;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(63,81,181,0.2);
+}
+.person-split__name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    text-align: center;
+}
+.person-split__title {
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+    margin-top: 4px;
+}
+.person-split__org {
+    font-size: 13px;
+    color: #1976d2;
+    font-weight: 500;
+    margin-top: 2px;
+    cursor: pointer;
+}
+.person-split__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 12px;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.person-split__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4caf50;
+}
+
+/* Quick contact buttons */
+.person-split__quick-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    width: 100%;
+    justify-content: center;
+}
+.person-split__quick-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.person-split__quick-btn:hover {
+    border-color: #1976d2;
+    color: #1976d2;
+    background: #f5f9ff;
+}
+
+/* Sidebar info list */
+.person-split__info {
+    width: 100%;
+    margin-top: 20px;
+}
+.person-split__info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.person-split__info-item:last-child { border-bottom: none; }
+.person-split__info-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f0f4f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.person-split__info-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.person-split__info-value {
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+    margin-top: 1px;
+}
+.person-split__info-value a {
+    color: #1976d2;
+    text-decoration: none;
+}
+
+/* Main content */
+.person-split__main {
+    padding: 28px 32px;
+    overflow-y: auto;
+}
+.person-split__section {
+    margin-bottom: 28px;
+}
+.person-split__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.person-split__section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.person-split__section-title i {
+    color: #1976d2;
+    font-size: 14px;
+}
+.person-split__section-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Card rows for detail fields */
+.person-split__card {
+    background: #fafbfd;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 20px;
+}
+.person-split__card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.person-split__card-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+}
+.person-split__card-field-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Embedded widget cards */
+.person-split__widget-card {
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.person-split__widget-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+.person-split__widget-card-body {
+    padding: 12px 16px;
+}
+.person-split__rel-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.person-split__rel-item:last-child { border-bottom: none; }
+.person-split__rel-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e3f2fd;
+    color: #1565c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+.person-split__rel-text { flex: 1; }
+.person-split__rel-label {
+    font-size: 13px;
+    color: #333;
+}
+.person-split__rel-label strong {
+    color: #1976d2;
+    cursor: pointer;
+}
+.person-split__rel-meta {
+    font-size: 11px;
+    color: #999;
+}
+.person-split__rel-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+
+/* ==========================================
+   OPTION C — COMMAND CENTER
+   Inspired by modern CRM dashboards
+   Summary cards at top, two-column detail layout
+   ========================================== */
+.person-cmd {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* Header bar */
+.person-cmd__header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+}
+.person-cmd__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    flex-shrink: 0;
+    backdrop-filter: blur(10px);
+}
+.person-cmd__identity { flex: 1; }
+.person-cmd__name {
+    font-size: 22px;
+    font-weight: 700;
+}
+.person-cmd__title-line {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 2px;
+}
+.person-cmd__title-line a {
+    color: #90caf9;
+    text-decoration: none;
+}
+.person-cmd__header-actions {
+    display: flex;
+    gap: 8px;
+}
+.person-cmd__header-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.person-cmd__header-btn--primary {
+    background: #42a5f5;
+    color: white;
+}
+.person-cmd__header-btn--ghost {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Summary cards */
+.person-cmd__cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px 32px;
+    background: #f8f9fc;
+    border-bottom: 1px solid #e8e8e8;
+}
+.person-cmd__card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e8e8e8;
+    transition: all 0.15s;
+    cursor: default;
+}
+.person-cmd__card:hover {
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.1);
+}
+.person-cmd__card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+.person-cmd__card-icon--email { background: #e3f2fd; color: #1565c0; }
+.person-cmd__card-icon--phone { background: #e8f5e9; color: #2e7d32; }
+.person-cmd__card-icon--address { background: #fff3e0; color: #e65100; }
+.person-cmd__card-icon--rel { background: #f3e5f5; color: #7b1fa2; }
+.person-cmd__card-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.person-cmd__card-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+}
+.person-cmd__card-value a {
+    color: #1976d2;
+    text-decoration: none;
+}
+.person-cmd__card-sub {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+}
+
+/* Two-column body */
+.person-cmd__body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px 32px 32px;
+}
+.person-cmd__column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.person-cmd__section {
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.person-cmd__section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #fafbfd;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.person-cmd__section-header i { color: #1976d2; }
+.person-cmd__section-body {
+    padding: 20px;
+}
+.person-cmd__detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.person-cmd__detail-item { }
+.person-cmd__detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+}
+.person-cmd__detail-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Timeline in right column */
+.person-cmd__timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.person-cmd__timeline-item:last-child { border-bottom: none; }
+.person-cmd__timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+.person-cmd__timeline-dot--active { background: #4caf50; }
+.person-cmd__timeline-dot--ended { background: #bbb; }
+.person-cmd__timeline-text { flex: 1; }
+.person-cmd__timeline-primary {
+    font-size: 13px;
+    color: #333;
+}
+.person-cmd__timeline-primary strong {
+    color: #1976d2;
+    cursor: pointer;
+}
+.person-cmd__timeline-secondary {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+}
+
+/* Separator */
+.page-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #d0d0d0, transparent);
+    margin: 64px auto;
+    max-width: 400px;
+}
+</style>
+</head>
+<body>
+
+<h1>Person Widget — Design Options</h1>
+<p class="subtitle">Reusable standalone component: <code>&lt;bizapps-person-detail [PersonID]="id"&gt;</code></p>
+
+<!-- ============================================================
+     OPTION A — PROFILE HERO CARD
+     ============================================================ -->
+<div class="option-wrapper">
+    <div class="option-label"><i class="fa-solid fa-a"></i> Profile Hero Card</div>
+    <p class="option-desc">
+        <strong>LinkedIn-inspired profile layout.</strong> Prominent visual header with avatar and name,
+        horizontal tab bar for section switching, and embedded widgets for addresses/contacts/relationships.
+        Best for: <strong>full-page detail views</strong> where the person is the primary focus.
+    </p>
+
+    <div class="person-hero">
+        <!-- Banner -->
+        <div class="person-hero__banner">
+            <div class="person-hero__banner-pattern"></div>
+        </div>
+
+        <!-- Avatar + Identity -->
+        <div class="person-hero__avatar-row">
+            <div class="person-hero__avatar">AN</div>
+            <div class="person-hero__identity">
+                <div class="person-hero__name">Amith Nagarajan</div>
+                <div class="person-hero__title-line">Chairman at <strong>rasa.io</strong></div>
+            </div>
+            <div class="person-hero__actions">
+                <button class="person-hero__btn person-hero__btn--primary">
+                    <i class="fa-solid fa-envelope"></i> Email
+                </button>
+                <button class="person-hero__btn person-hero__btn--ghost">
+                    <i class="fa-solid fa-phone"></i> Call
+                </button>
+                <button class="person-hero__btn person-hero__btn--ghost">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="person-hero__stats">
+            <div class="person-hero__stat">
+                <div class="person-hero__stat-value">3</div>
+                <div class="person-hero__stat-label">Addresses</div>
+            </div>
+            <div class="person-hero__stat">
+                <div class="person-hero__stat-value">5</div>
+                <div class="person-hero__stat-label">Contacts</div>
+            </div>
+            <div class="person-hero__stat">
+                <div class="person-hero__stat-value">4</div>
+                <div class="person-hero__stat-label">Relationships</div>
+            </div>
+            <div class="person-hero__stat">
+                <div class="person-hero__stat-value" style="color: #4caf50;">Active</div>
+                <div class="person-hero__stat-label">Status</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="person-hero__tabs">
+            <div class="person-hero__tab person-hero__tab--active">Overview</div>
+            <div class="person-hero__tab">Addresses</div>
+            <div class="person-hero__tab">Contacts</div>
+            <div class="person-hero__tab">Relationships</div>
+            <div class="person-hero__tab">History</div>
+        </div>
+
+        <!-- Content: Overview tab shown -->
+        <div class="person-hero__content">
+            <!-- Personal Details -->
+            <div class="person-hero__section">
+                <div class="person-hero__section-title">
+                    <i class="fa-solid fa-user"></i> Personal Details
+                </div>
+                <div class="person-hero__field-grid">
+                    <div>
+                        <div class="person-hero__field-label">Full Name</div>
+                        <div class="person-hero__field-value">Amith Nagarajan</div>
+                    </div>
+                    <div>
+                        <div class="person-hero__field-label">Preferred Name</div>
+                        <div class="person-hero__field-value">Amith</div>
+                    </div>
+                    <div>
+                        <div class="person-hero__field-label">Date of Birth</div>
+                        <div class="person-hero__field-value">—</div>
+                    </div>
+                    <div>
+                        <div class="person-hero__field-label">Gender</div>
+                        <div class="person-hero__field-value">Male</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Highlights -->
+            <div class="person-hero__section">
+                <div class="person-hero__section-title">
+                    <i class="fa-solid fa-address-card"></i> Contact Highlights
+                </div>
+                <div class="person-hero__widget">
+                    <div class="person-hero__widget-body">
+                        <div class="person-hero__widget-item">
+                            <div class="person-hero__widget-icon person-hero__widget-icon--email"><i class="fa-solid fa-envelope"></i></div>
+                            <div class="person-hero__widget-item-text">
+                                <div class="person-hero__widget-item-primary">amith@rasa.io</div>
+                                <div class="person-hero__widget-item-secondary">Work Email · Primary</div>
+                            </div>
+                        </div>
+                        <div class="person-hero__widget-item">
+                            <div class="person-hero__widget-icon person-hero__widget-icon--phone"><i class="fa-solid fa-phone"></i></div>
+                            <div class="person-hero__widget-item-text">
+                                <div class="person-hero__widget-item-primary">(555) 123-4567</div>
+                                <div class="person-hero__widget-item-secondary">Mobile · Primary</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationships Preview -->
+            <div class="person-hero__section">
+                <div class="person-hero__section-title">
+                    <i class="fa-solid fa-diagram-project"></i> Key Relationships
+                </div>
+                <div class="person-hero__widget">
+                    <div class="person-hero__widget-body">
+                        <div class="person-hero__widget-item">
+                            <div class="person-hero__widget-icon person-hero__widget-icon--rel"><i class="fa-solid fa-briefcase"></i></div>
+                            <div class="person-hero__widget-item-text">
+                                <div class="person-hero__widget-item-primary">Chairman at <strong style="color: #1976d2; cursor: pointer;">rasa.io</strong></div>
+                                <div class="person-hero__widget-item-secondary">Jan 2019 - Present · Active</div>
+                            </div>
+                        </div>
+                        <div class="person-hero__widget-item">
+                            <div class="person-hero__widget-icon person-hero__widget-icon--rel"><i class="fa-solid fa-briefcase"></i></div>
+                            <div class="person-hero__widget-item-text">
+                                <div class="person-hero__widget-item-primary">CEO at <strong style="color: #1976d2; cursor: pointer;">Blue Cypress</strong></div>
+                                <div class="person-hero__widget-item-secondary">Mar 2020 - Present · Active</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-divider"></div>
+
+<!-- ============================================================
+     OPTION B — SPLIT PANEL
+     ============================================================ -->
+<div class="option-wrapper">
+    <div class="option-label"><i class="fa-solid fa-b"></i> Split Panel</div>
+    <p class="option-desc">
+        <strong>Salesforce-inspired sidebar + content layout.</strong> Persistent left sidebar shows
+        avatar, key contact info, and quick actions. Right panel scrolls through detailed sections
+        with embedded widgets. Best for: <strong>CRM-style detail views</strong> where quick reference
+        info should always be visible.
+    </p>
+
+    <div class="person-split">
+        <!-- Sidebar -->
+        <div class="person-split__sidebar">
+            <div class="person-split__avatar">AN</div>
+            <div class="person-split__name">Amith Nagarajan</div>
+            <div class="person-split__title">Chairman</div>
+            <div class="person-split__org">rasa.io</div>
+            <div class="person-split__status">
+                <span class="person-split__status-dot"></span>
+                Active
+            </div>
+
+            <div class="person-split__quick-actions">
+                <button class="person-split__quick-btn" title="Email">
+                    <i class="fa-solid fa-envelope"></i>
+                </button>
+                <button class="person-split__quick-btn" title="Call">
+                    <i class="fa-solid fa-phone"></i>
+                </button>
+                <button class="person-split__quick-btn" title="Map">
+                    <i class="fa-solid fa-map-marker-alt"></i>
+                </button>
+                <button class="person-split__quick-btn" title="More">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+            </div>
+
+            <div class="person-split__info">
+                <div class="person-split__info-item">
+                    <div class="person-split__info-icon"><i class="fa-solid fa-envelope"></i></div>
+                    <div>
+                        <div class="person-split__info-label">Email</div>
+                        <div class="person-split__info-value"><a href="#">amith@rasa.io</a></div>
+                    </div>
+                </div>
+                <div class="person-split__info-item">
+                    <div class="person-split__info-icon"><i class="fa-solid fa-phone"></i></div>
+                    <div>
+                        <div class="person-split__info-label">Phone</div>
+                        <div class="person-split__info-value">(555) 123-4567</div>
+                    </div>
+                </div>
+                <div class="person-split__info-item">
+                    <div class="person-split__info-icon"><i class="fa-solid fa-map-marker-alt"></i></div>
+                    <div>
+                        <div class="person-split__info-label">Primary Address</div>
+                        <div class="person-split__info-value">Nashville, TN 37203</div>
+                    </div>
+                </div>
+                <div class="person-split__info-item">
+                    <div class="person-split__info-icon"><i class="fa-solid fa-calendar"></i></div>
+                    <div>
+                        <div class="person-split__info-label">Member Since</div>
+                        <div class="person-split__info-value">January 2019</div>
+                    </div>
+                </div>
+                <div class="person-split__info-item">
+                    <div class="person-split__info-icon"><i class="fa-solid fa-link"></i></div>
+                    <div>
+                        <div class="person-split__info-label">Linked User</div>
+                        <div class="person-split__info-value"><a href="#">amith.nag</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="person-split__main">
+            <!-- Identity Section -->
+            <div class="person-split__section">
+                <div class="person-split__section-header">
+                    <div class="person-split__section-title">
+                        <i class="fa-solid fa-user"></i> Personal Identity
+                    </div>
+                </div>
+                <div class="person-split__card">
+                    <div class="person-split__card-grid">
+                        <div>
+                            <div class="person-split__card-field-label">First Name</div>
+                            <div class="person-split__card-field-value">Amith</div>
+                        </div>
+                        <div>
+                            <div class="person-split__card-field-label">Last Name</div>
+                            <div class="person-split__card-field-value">Nagarajan</div>
+                        </div>
+                        <div>
+                            <div class="person-split__card-field-label">Preferred Name</div>
+                            <div class="person-split__card-field-value">Amith</div>
+                        </div>
+                        <div>
+                            <div class="person-split__card-field-label">Display Name</div>
+                            <div class="person-split__card-field-value">Amith Nagarajan</div>
+                        </div>
+                        <div>
+                            <div class="person-split__card-field-label">Gender</div>
+                            <div class="person-split__card-field-value">Male</div>
+                        </div>
+                        <div>
+                            <div class="person-split__card-field-label">Date of Birth</div>
+                            <div class="person-split__card-field-value">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Addresses Widget -->
+            <div class="person-split__section">
+                <div class="person-split__section-header">
+                    <div class="person-split__section-title">
+                        <i class="fa-solid fa-map-marker-alt"></i> Addresses
+                    </div>
+                    <div class="person-split__section-badge">3</div>
+                </div>
+                <div class="person-split__widget-card">
+                    <div class="person-split__widget-card-header">
+                        <span style="font-size: 12px; color: #888;">Sorted by type · Primary highlighted</span>
+                        <button style="border: 1px dashed #ccc; background: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; color: #666; cursor: pointer;">+ Add</button>
+                    </div>
+                    <div class="person-split__widget-card-body" style="color: #888; font-size: 13px; text-align: center; padding: 24px;">
+                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                        &lt;bizapps-address-editor&gt; embedded here
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationships Widget -->
+            <div class="person-split__section">
+                <div class="person-split__section-header">
+                    <div class="person-split__section-title">
+                        <i class="fa-solid fa-diagram-project"></i> Relationships
+                    </div>
+                    <div class="person-split__section-badge">4</div>
+                </div>
+                <div class="person-split__widget-card">
+                    <div class="person-split__widget-card-body">
+                        <div class="person-split__rel-item">
+                            <div class="person-split__rel-icon"><i class="fa-solid fa-briefcase"></i></div>
+                            <div class="person-split__rel-text">
+                                <div class="person-split__rel-label">employs at <strong>rasa.io</strong></div>
+                                <div class="person-split__rel-meta">Chairman · Jan 2019 - Present</div>
+                            </div>
+                            <div class="person-split__rel-badge">Active</div>
+                        </div>
+                        <div class="person-split__rel-item">
+                            <div class="person-split__rel-icon"><i class="fa-solid fa-briefcase"></i></div>
+                            <div class="person-split__rel-text">
+                                <div class="person-split__rel-label">employs at <strong>Blue Cypress</strong></div>
+                                <div class="person-split__rel-meta">CEO · Mar 2020 - Present</div>
+                            </div>
+                            <div class="person-split__rel-badge">Active</div>
+                        </div>
+                        <div class="person-split__rel-item">
+                            <div class="person-split__rel-icon" style="background: #fce4ec; color: #c62828;"><i class="fa-solid fa-heart"></i></div>
+                            <div class="person-split__rel-text">
+                                <div class="person-split__rel-label">spouse of <strong>Jane Nagarajan</strong></div>
+                                <div class="person-split__rel-meta">2005 - Present</div>
+                            </div>
+                            <div class="person-split__rel-badge">Active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Methods Widget -->
+            <div class="person-split__section">
+                <div class="person-split__section-header">
+                    <div class="person-split__section-title">
+                        <i class="fa-solid fa-address-card"></i> Contact Methods
+                    </div>
+                    <div class="person-split__section-badge">5</div>
+                </div>
+                <div class="person-split__widget-card">
+                    <div class="person-split__widget-card-body" style="color: #888; font-size: 13px; text-align: center; padding: 24px;">
+                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                        &lt;bizapps-contact-method-list&gt; embedded here
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-divider"></div>
+
+<!-- ============================================================
+     OPTION C — COMMAND CENTER
+     ============================================================ -->
+<div class="option-wrapper">
+    <div class="option-label"><i class="fa-solid fa-c"></i> Command Center</div>
+    <p class="option-desc">
+        <strong>Modern dashboard-inspired layout.</strong> Dark header with identity, summary metric cards
+        for at-a-glance info, then a two-column layout with structured data on the left and
+        relationships/activity timeline on the right. Best for: <strong>power users and data-heavy contexts</strong>
+        where information density matters.
+    </p>
+
+    <div class="person-cmd">
+        <!-- Dark Header -->
+        <div class="person-cmd__header">
+            <div class="person-cmd__avatar">AN</div>
+            <div class="person-cmd__identity">
+                <div class="person-cmd__name">Amith Nagarajan</div>
+                <div class="person-cmd__title-line">Chairman at <a href="#">rasa.io</a> · Nashville, TN</div>
+            </div>
+            <div class="person-cmd__header-actions">
+                <button class="person-cmd__header-btn person-cmd__header-btn--primary">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </button>
+                <button class="person-cmd__header-btn person-cmd__header-btn--ghost">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="person-cmd__cards">
+            <div class="person-cmd__card">
+                <div class="person-cmd__card-icon person-cmd__card-icon--email"><i class="fa-solid fa-envelope"></i></div>
+                <div class="person-cmd__card-label">Primary Email</div>
+                <div class="person-cmd__card-value"><a href="#">amith@rasa.io</a></div>
+                <div class="person-cmd__card-sub">Work Email</div>
+            </div>
+            <div class="person-cmd__card">
+                <div class="person-cmd__card-icon person-cmd__card-icon--phone"><i class="fa-solid fa-phone"></i></div>
+                <div class="person-cmd__card-label">Primary Phone</div>
+                <div class="person-cmd__card-value">(555) 123-4567</div>
+                <div class="person-cmd__card-sub">Mobile</div>
+            </div>
+            <div class="person-cmd__card">
+                <div class="person-cmd__card-icon person-cmd__card-icon--address"><i class="fa-solid fa-map-marker-alt"></i></div>
+                <div class="person-cmd__card-label">Primary Address</div>
+                <div class="person-cmd__card-value">Nashville, TN</div>
+                <div class="person-cmd__card-sub">Office · 37203</div>
+            </div>
+            <div class="person-cmd__card">
+                <div class="person-cmd__card-icon person-cmd__card-icon--rel"><i class="fa-solid fa-diagram-project"></i></div>
+                <div class="person-cmd__card-label">Relationships</div>
+                <div class="person-cmd__card-value">4 Active</div>
+                <div class="person-cmd__card-sub">2 Employment · 1 Personal · 1 Board</div>
+            </div>
+        </div>
+
+        <!-- Two-Column Body -->
+        <div class="person-cmd__body">
+            <!-- Left Column: Structured Data -->
+            <div class="person-cmd__column">
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-user"></i> Personal Identity
+                    </div>
+                    <div class="person-cmd__section-body">
+                        <div class="person-cmd__detail-grid">
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">First Name</div>
+                                <div class="person-cmd__detail-value">Amith</div>
+                            </div>
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Last Name</div>
+                                <div class="person-cmd__detail-value">Nagarajan</div>
+                            </div>
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Preferred Name</div>
+                                <div class="person-cmd__detail-value">Amith</div>
+                            </div>
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Gender</div>
+                                <div class="person-cmd__detail-value">Male</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-briefcase"></i> Professional
+                    </div>
+                    <div class="person-cmd__section-body">
+                        <div class="person-cmd__detail-grid">
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Title</div>
+                                <div class="person-cmd__detail-value">Mr.</div>
+                            </div>
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Job Title</div>
+                                <div class="person-cmd__detail-value">Chairman</div>
+                            </div>
+                            <div class="person-cmd__detail-item" style="grid-column: 1 / -1;">
+                                <div class="person-cmd__detail-label">Organization</div>
+                                <div class="person-cmd__detail-value" style="color: #1976d2; cursor: pointer;">rasa.io</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-map-marker-alt"></i> Addresses
+                    </div>
+                    <div class="person-cmd__section-body" style="color: #888; font-size: 13px; text-align: center; padding: 20px;">
+                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                        &lt;bizapps-address-editor&gt; embedded here
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Relationships + Contacts -->
+            <div class="person-cmd__column">
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-diagram-project"></i> Relationships
+                    </div>
+                    <div class="person-cmd__section-body">
+                        <div class="person-cmd__timeline-item">
+                            <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
+                            <div class="person-cmd__timeline-text">
+                                <div class="person-cmd__timeline-primary">employs at <strong>rasa.io</strong></div>
+                                <div class="person-cmd__timeline-secondary">Chairman · Jan 2019 - Present</div>
+                            </div>
+                        </div>
+                        <div class="person-cmd__timeline-item">
+                            <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
+                            <div class="person-cmd__timeline-text">
+                                <div class="person-cmd__timeline-primary">employs at <strong>Blue Cypress</strong></div>
+                                <div class="person-cmd__timeline-secondary">CEO · Mar 2020 - Present</div>
+                            </div>
+                        </div>
+                        <div class="person-cmd__timeline-item">
+                            <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
+                            <div class="person-cmd__timeline-text">
+                                <div class="person-cmd__timeline-primary">board member of <strong>ASAE</strong></div>
+                                <div class="person-cmd__timeline-secondary">Board Member · 2021 - Present</div>
+                            </div>
+                        </div>
+                        <div class="person-cmd__timeline-item">
+                            <div class="person-cmd__timeline-dot person-cmd__timeline-dot--ended"></div>
+                            <div class="person-cmd__timeline-text">
+                                <div class="person-cmd__timeline-primary" style="opacity: 0.6;">employee of <strong>Aptify</strong></div>
+                                <div class="person-cmd__timeline-secondary">CTO · 2001 - 2018 · Ended</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-address-card"></i> Contact Methods
+                    </div>
+                    <div class="person-cmd__section-body" style="color: #888; font-size: 13px; text-align: center; padding: 20px;">
+                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                        &lt;bizapps-contact-method-list&gt; embedded here
+                    </div>
+                </div>
+
+                <div class="person-cmd__section">
+                    <div class="person-cmd__section-header">
+                        <i class="fa-solid fa-shield-alt"></i> Account & Status
+                    </div>
+                    <div class="person-cmd__section-body">
+                        <div class="person-cmd__detail-grid">
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Status</div>
+                                <div class="person-cmd__detail-value">
+                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">Active</span>
+                                </div>
+                            </div>
+                            <div class="person-cmd__detail-item">
+                                <div class="person-cmd__detail-label">Linked User</div>
+                                <div class="person-cmd__detail-value" style="color: #1976d2; cursor: pointer;">amith.nag</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

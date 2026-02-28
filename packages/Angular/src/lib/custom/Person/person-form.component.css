@@ -1,44 +1,5 @@
-/* ============================================
-   Person Form - Custom Layout
-   Logical field groupings with responsive grids
-   ============================================ */
-
-/* 2-column row for paired fields (name, date+display, etc.) */
-.field-row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 24px;
-}
-
-/* 3-column row for short-value fields (prefix, suffix, gender) */
-.field-row-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0 24px;
-}
-
-/* Placeholder for unsaved records */
-.widget-placeholder {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 20px 16px;
-    color: #888;
-    font-size: 13px;
-    background: #fafafa;
-    border-radius: 6px;
-    border: 1px dashed #e0e0e0;
-}
-
-.widget-placeholder i {
-    color: #1976d2;
-    font-size: 15px;
-}
-
-/* Responsive breakpoints */
-@media (max-width: 768px) {
-    .field-row-2,
-    .field-row-3 {
-        grid-template-columns: 1fr;
-    }
+/* Person form wraps PersonDetailComponent inside mj-record-form-container.
+   All visual styling is handled by the detail component and its child widgets. */
+:host {
+    display: block;
 }

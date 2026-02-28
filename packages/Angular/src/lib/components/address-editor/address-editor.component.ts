@@ -8,22 +8,75 @@ import {
     mjBizAppsCommonAddressTypeEntity
 } from '@mj-biz-apps/common-entities';
 
+/**
+ * Represents a single address row in the editor, pairing the physical
+ * address record with its entity-specific link record.
+ *
+ * MemberJunction uses a two-table pattern for addresses:
+ * - **Address** holds the street/city/state data (reusable across entities).
+ * - **AddressLink** binds an Address to a specific entity record and carries
+ *   the address type and primary flag.
+ */
 interface AddressItem {
+    /** The AddressLink entity that ties the address to the parent record. */
     Link: mjBizAppsCommonAddressLinkEntity;
+
+    /** The Address entity containing the physical location data. */
     Address: mjBizAppsCommonAddressEntity;
 }
 
+/**
+ * Form model used for both creating and editing an address.
+ *
+ * All fields map directly to the corresponding Address and AddressLink
+ * entity properties so that two-way binding in the template works cleanly.
+ */
 interface AddressEditForm {
+    /** The selected AddressType record ID. */
     TypeID: string;
+
+    /** Whether this address should be marked as the primary address for the parent record. */
     IsPrimary: boolean;
+
+    /** Street address line 1 (required). */
     Line1: string;
+
+    /** Street address line 2 (apartment, suite, etc.). Optional. */
     Line2: string;
+
+    /** City name (required). */
     City: string;
+
+    /** State or province abbreviation (e.g., `'CA'`, `'ON'`). */
     StateProvince: string;
+
+    /** Postal or ZIP code. */
     PostalCode: string;
+
+    /** ISO country code (e.g., `'US'`, `'CA'`). Defaults to `'US'`. */
     Country: string;
 }
 
+/**
+ * Manages CRUD operations for addresses linked to any MemberJunction entity record.
+ *
+ * This component implements the MJ two-table address pattern:
+ * - **Address** stores the physical location data (line 1, city, country, etc.).
+ * - **AddressLink** binds an address to a specific entity and record, and carries
+ *   the address type (Home, Work, etc.) and the primary flag.
+ *
+ * The component automatically loads addresses and address types when both
+ * {@link EntityName} and {@link RecordID} inputs are set, and provides
+ * inline add/edit/delete functionality with primary-address management.
+ *
+ * @example
+ * ```html
+ * <bizapps-address-editor
+ *     EntityName="MJ.BizApps.Common: People"
+ *     [RecordID]="personId">
+ * </bizapps-address-editor>
+ * ```
+ */
 @Component({
     standalone: true,
     imports: [CommonModule, FormsModule],
@@ -37,6 +90,15 @@ export class AddressEditorComponent {
     private _entityName = '';
     private _recordID = '';
 
+    /**
+     * The MemberJunction entity name (schema-qualified) of the parent record
+     * whose addresses are being managed.
+     *
+     * Setting this property triggers a data reload when {@link RecordID} is
+     * also available, unless the value has not changed.
+     *
+     * @example `'MJ.BizApps.Common: People'`
+     */
     @Input()
     set EntityName(value: string) {
         const prev = this._entityName;
@@ -47,6 +109,14 @@ export class AddressEditorComponent {
     }
     get EntityName(): string { return this._entityName; }
 
+    /**
+     * The primary key (ID) of the parent record whose addresses are being managed.
+     *
+     * Setting this property triggers a data reload when {@link EntityName} is
+     * also available, unless the value has not changed.
+     *
+     * @example `'A1B2C3D4-E5F6-7890-ABCD-EF1234567890'`
+     */
     @Input()
     set RecordID(value: string) {
         const prev = this._recordID;
@@ -57,15 +127,51 @@ export class AddressEditorComponent {
     }
     get RecordID(): string { return this._recordID; }
 
+    /**
+     * The list of address items currently displayed, each pairing an
+     * AddressLink with its corresponding Address entity. Sorted with
+     * primary addresses first.
+     */
     AddressItems: AddressItem[] = [];
+
+    /**
+     * All active address types available for selection in the type dropdown.
+     * Loaded from the `MJ.BizApps.Common: Address Types` entity, sorted by
+     * `DefaultRank ASC`.
+     */
     AddressTypes: mjBizAppsCommonAddressTypeEntity[] = [];
-    EditingIndex: number | null = null; // null=not editing, -1=adding new, >=0=editing that index
+
+    /**
+     * Tracks the current editing state:
+     * - `null` -- not editing (display mode)
+     * - `-1` -- adding a new address
+     * - `>= 0` -- editing the address at that array index
+     */
+    EditingIndex: number | null = null;
+
+    /**
+     * The form model bound to the inline add/edit panel via two-way binding.
+     * Reset to defaults when adding, or populated from the existing record
+     * when editing.
+     */
     EditForm: AddressEditForm = this.createEmptyForm();
+
+    /**
+     * Indicates whether the component is performing the initial data load.
+     * The template shows a loading spinner while this is `true`.
+     */
     Loading = false;
+
+    /**
+     * Indicates whether a save, delete, or set-primary operation is in progress.
+     * Used to disable action buttons and show spinner feedback while `true`.
+     */
     Saving = false;
 
+    /** The resolved MJ EntityID for the current {@link EntityName}. */
     private resolvedEntityID = '';
 
+    /** Creates a blank {@link AddressEditForm} with sensible defaults. */
     private createEmptyForm(): AddressEditForm {
         return {
             TypeID: '',
@@ -79,6 +185,10 @@ export class AddressEditorComponent {
         };
     }
 
+    /**
+     * Loads address links, their associated addresses, and available address
+     * types from the server. Resets editing state before loading.
+     */
     private async loadData(): Promise<void> {
         this.Loading = true;
         this.EditingIndex = null;
@@ -87,7 +197,7 @@ export class AddressEditorComponent {
         try {
             const md = new Metadata();
 
-            // Resolve EntityName → EntityID
+            // Resolve EntityName -> EntityID
             const entity = md.Entities.find(e => e.Name === this._entityName);
             if (!entity) {
                 console.error(`AddressEditor: Entity "${this._entityName}" not found`);
@@ -160,17 +270,43 @@ export class AddressEditorComponent {
         }
     }
 
+    /**
+     * Resolves the Font Awesome icon class for a given address type.
+     *
+     * Falls back to `'fa-solid fa-location-dot'` when the type is not found
+     * or has no icon configured.
+     *
+     * @param typeID - The AddressType record ID to look up
+     * @returns The CSS class string for the icon (e.g., `'fa-solid fa-home'`)
+     */
     getAddressTypeIcon(typeID: string): string {
         const addrType = this.AddressTypes.find(t => t.ID === typeID);
         return addrType?.IconClass || 'fa-solid fa-location-dot';
     }
 
+    /**
+     * Formats the first line of an address display string.
+     *
+     * Combines Line1 and Line2 (if present) with a comma separator.
+     *
+     * @param address - The Address entity to format
+     * @returns A formatted string such as `'123 Main St, Suite 200'`
+     */
     formatAddressLine1(address: mjBizAppsCommonAddressEntity): string {
         const parts = [address.Line1];
         if (address.Line2) parts.push(address.Line2);
         return parts.join(', ');
     }
 
+    /**
+     * Formats the second line of an address display string.
+     *
+     * Combines City, StateProvince, PostalCode, and Country into a standard
+     * comma-separated format.
+     *
+     * @param address - The Address entity to format
+     * @returns A formatted string such as `'San Francisco, CA, 94105, US'`
+     */
     formatAddressLine2(address: mjBizAppsCommonAddressEntity): string {
         const parts: string[] = [];
         if (address.City) parts.push(address.City);
@@ -182,6 +318,13 @@ export class AddressEditorComponent {
         return line;
     }
 
+    /**
+     * Opens the inline add form for creating a new address.
+     *
+     * Resets the edit form to defaults, pre-selects the first available
+     * address type, and auto-checks the "Primary" flag when no addresses
+     * exist yet.
+     */
     onAdd(): void {
         this.EditForm = this.createEmptyForm();
         if (this.AddressTypes.length > 0) {
@@ -195,6 +338,12 @@ export class AddressEditorComponent {
         this.cdr.detectChanges();
     }
 
+    /**
+     * Opens the inline edit form for an existing address, populating the
+     * form fields from the current address and link data.
+     *
+     * @param index - The zero-based index of the address item in {@link AddressItems}
+     */
     onEdit(index: number): void {
         const item = this.AddressItems[index];
         this.EditForm = {
@@ -211,11 +360,21 @@ export class AddressEditorComponent {
         this.cdr.detectChanges();
     }
 
+    /**
+     * Cancels the current add or edit operation and returns to display mode.
+     */
     onCancelEdit(): void {
         this.EditingIndex = null;
         this.cdr.detectChanges();
     }
 
+    /**
+     * Persists the current form data, handling both new address creation and
+     * existing address updates.
+     *
+     * When the "Primary" flag is set, all other addresses for the same
+     * parent record are demoted. After saving, the address list is reloaded.
+     */
     async onSave(): Promise<void> {
         if (!this.EditForm.Line1 || !this.EditForm.City) return;
 
@@ -248,6 +407,7 @@ export class AddressEditorComponent {
         }
     }
 
+    /** Updates an existing Address and its AddressLink with form data. */
     private async saveExisting(md: Metadata): Promise<void> {
         const item = this.AddressItems[this.EditingIndex!];
 
@@ -266,6 +426,7 @@ export class AddressEditorComponent {
         await item.Link.Save();
     }
 
+    /** Creates a new Address record and its associated AddressLink. */
     private async saveNew(md: Metadata): Promise<void> {
         // Create new Address
         const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ.BizApps.Common: Addresses');
@@ -296,6 +457,7 @@ export class AddressEditorComponent {
         }
     }
 
+    /** Removes the primary flag from all other address links for this record. */
     private async clearOtherPrimaries(): Promise<void> {
         const currentEditingLinkID = this.EditingIndex !== null && this.EditingIndex >= 0
             ? this.AddressItems[this.EditingIndex].Link.ID
@@ -309,6 +471,14 @@ export class AddressEditorComponent {
         }
     }
 
+    /**
+     * Promotes the address at the given index to primary, demoting all others.
+     *
+     * After the update, the address list is reloaded so that sort order
+     * reflects the new primary designation.
+     *
+     * @param index - The zero-based index of the address item in {@link AddressItems}
+     */
     async onSetPrimary(index: number): Promise<void> {
         this.Saving = true;
         this.cdr.detectChanges();
@@ -335,6 +505,14 @@ export class AddressEditorComponent {
         }
     }
 
+    /**
+     * Deletes the address at the given index, removing both the AddressLink
+     * and the orphaned Address record.
+     *
+     * After deletion, the address list is reloaded.
+     *
+     * @param index - The zero-based index of the address item in {@link AddressItems}
+     */
     async onDelete(index: number): Promise<void> {
         const item = this.AddressItems[index];
 

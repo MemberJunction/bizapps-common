@@ -1,0 +1,64 @@
+:host {
+    display: block;
+}
+
+.person-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #ffffff;
+    border-radius: 12px 12px 0 0;
+}
+
+.person-header__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #ffffff;
+    user-select: none;
+}
+
+.person-header__identity {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.person-header__name {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.person-header__title-line {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+}
+
+.person-header__org-link {
+    color: #90caf9;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.person-header__org-link:hover {
+    color: #bbdefb;
+    text-decoration: underline;
+}

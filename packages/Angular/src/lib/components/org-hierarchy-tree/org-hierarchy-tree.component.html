@@ -1,0 +1,46 @@
+@if (Loading) {
+    <div class="loading-state">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading hierarchy...
+    </div>
+} @else {
+    @if (!ParentNode && ChildNodes.length === 0) {
+        <div class="empty-state">
+            <i class="fa-solid fa-sitemap"></i> No hierarchy data
+        </div>
+    } @else {
+        <div class="hierarchy-tree">
+            <!-- Parent organization (if exists) -->
+            @if (ParentNode) {
+                <div class="tree-item" (click)="OnNavigateToOrg(ParentNode, $event)">
+                    <div class="tree-icon"><i class="fa-solid fa-building"></i></div>
+                    <div>
+                        <div class="tree-name">{{ ParentNode.Name }}</div>
+                        <div class="tree-type">Parent · {{ ParentNode.OrganizationType || '' }}</div>
+                    </div>
+                </div>
+            }
+
+            <!-- Current organization (highlighted) -->
+            <div class="tree-item tree-item--current" [class.tree-indent]="ParentNode !== null">
+                <div class="tree-icon"><i class="fa-solid fa-building"></i></div>
+                <div>
+                    <div class="tree-name">{{ CurrentNode?.Name }}</div>
+                    <div class="tree-type">Current · {{ CurrentNode?.OrganizationType || '' }}</div>
+                </div>
+            </div>
+
+            <!-- Child organizations -->
+            @for (child of ChildNodes; track child.ID) {
+                <div class="tree-item tree-indent-child"
+                    [class.tree-indent-deep]="ParentNode !== null"
+                    (click)="OnNavigateToOrg(child, $event)">
+                    <div class="tree-icon"><i class="fa-solid fa-building"></i></div>
+                    <div>
+                        <div class="tree-name">{{ child.Name }}</div>
+                        <div class="tree-type">Child · {{ child.OrganizationType || '' }}</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
