@@ -4,10 +4,164 @@
     (FavoriteToggled)="OnFavoriteToggled()"
     (HistoryRequested)="OnHistoryRequested()"
     (ListManagementRequested)="OnListManagementRequested()">
-    <bizapps-person-detail
-        [Record]="record"
-        [EditMode]="EditMode"
-        [FormContext]="formContext"
-        (Navigate)="OnFormNavigate($event)">
-    </bizapps-person-detail>
+
+    <!-- ========================================
+         FIELD PANELS
+         ======================================== -->
+    <!-- Personal Identity Section -->
+    <mj-collapsible-panel
+        SectionKey="personalIdentity"
+        SectionName="Personal Identity"
+        Icon="fa fa-user"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="FirstName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LastName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="MiddleName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Prefix"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Suffix"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PreferredName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="DateOfBirth"
+            Type="datepicker" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Gender"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="DisplayName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Professional and Profile Section -->
+    <mj-collapsible-panel
+        SectionKey="professionalAndProfile"
+        SectionName="Professional and Profile"
+        Icon="fa fa-info-circle"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Title"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Email"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Phone"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PhotoURL"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="URL"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Bio"
+            Type="textarea" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryEmail"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryPhone"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentOrganizationID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentOrganizationName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentJobTitle"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Account and Status Section -->
+    <mj-collapsible-panel
+        SectionKey="accountAndStatus"
+        SectionName="Account and Status"
+        Icon="fa fa-flag"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LinkedUserID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Status"
+            Type="select" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Primary Address Section -->
+    <mj-collapsible-panel
+        SectionKey="primaryAddress"
+        SectionName="Primary Address"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLine1"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLine2"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressCity"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressState"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressPostalCode"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressCountry"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLatitude"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLongitude"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressType"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- System Metadata Section -->
+    <mj-collapsible-panel
+        SectionKey="systemMetadata"
+        SectionName="System Metadata"
+        Icon="fa fa-cog"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_CreatedAt"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_UpdatedAt"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         CUSTOM WIDGET PANELS
+         ======================================== -->
+
+    <!-- Addresses Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="addresses"
+        SectionName="Addresses"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-address-editor
+            EntityName="MJ.BizApps.Common: People"
+            [RecordID]="record.ID">
+        </bizapps-address-editor>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Contact Methods Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="contactMethods"
+        SectionName="Contact Methods"
+        Icon="fa fa-address-book"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-contact-method-list
+            [PersonID]="record.ID">
+        </bizapps-contact-method-list>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Relationships Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="relationships"
+        SectionName="Relationships"
+        Icon="fa fa-handshake"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-relationship-list
+            [PersonID]="record.ID"
+            (Navigate)="OnFormNavigate($event)">
+        </bizapps-relationship-list>
+        }
+    </mj-collapsible-panel>
 </mj-record-form-container>

@@ -8,12 +8,9 @@ import { mjBizAppsCommonOrganizationFormComponent } from '../../generated/Entiti
 /**
  * Custom Organization form component that overrides the CodeGen-generated form.
  *
- * Uses the {@link OrgDetailComponent} "HQ View" composed layout wrapped
- * inside `mj-record-form-container` for the standard MJ form chrome
- * (save/delete toolbar, navigation events, favorites, history).
- *
- * All field rendering, CRUD widgets, sidebar navigation, and navigation
- * events are delegated to the standalone OrgDetailComponent and its child widgets.
+ * Preserves the standard MJ form layout with collapsible field panels
+ * and replaces the generic related-entity data grids with richer CRUD
+ * widgets for hierarchy tree, addresses, contact methods, and relationships.
  */
 @RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Organizations')
 @Component({
@@ -24,4 +21,19 @@ import { mjBizAppsCommonOrganizationFormComponent } from '../../generated/Entiti
 })
 export class BizAppsOrganizationFormComponent extends mjBizAppsCommonOrganizationFormComponent {
     public declare record: mjBizAppsCommonOrganizationEntity;
+
+    override async ngOnInit() {
+        await super.ngOnInit();
+        this.initSections([
+            { sectionKey: 'organizationIdentity', sectionName: 'Organization Identity', isExpanded: true },
+            { sectionKey: 'hierarchyAndStructure', sectionName: 'Hierarchy and Structure', isExpanded: true },
+            { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: false },
+            { sectionKey: 'primaryAddress', sectionName: 'Primary Address', isExpanded: false },
+            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'organizationHierarchy', sectionName: 'Organization Hierarchy', isExpanded: true },
+            { sectionKey: 'addresses', sectionName: 'Addresses', isExpanded: true },
+            { sectionKey: 'contactMethods', sectionName: 'Contact Methods', isExpanded: true },
+            { sectionKey: 'relationships', sectionName: 'Relationships', isExpanded: true }
+        ]);
+    }
 }

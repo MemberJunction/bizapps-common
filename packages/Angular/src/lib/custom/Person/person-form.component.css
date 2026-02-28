@@ -1,5 +1,4 @@
-/* Person form wraps PersonDetailComponent inside mj-record-form-container.
-   All visual styling is handled by the detail component and its child widgets. */
 :host {
     display: block;
+    height: 100%;
 }

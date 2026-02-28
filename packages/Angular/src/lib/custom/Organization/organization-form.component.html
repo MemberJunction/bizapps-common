@@ -4,10 +4,167 @@
     (FavoriteToggled)="OnFavoriteToggled()"
     (HistoryRequested)="OnHistoryRequested()"
     (ListManagementRequested)="OnListManagementRequested()">
-    <bizapps-org-detail
-        [Record]="record"
-        [EditMode]="EditMode"
-        [FormContext]="formContext"
-        (Navigate)="OnFormNavigate($event)">
-    </bizapps-org-detail>
+
+    <!-- ========================================
+         FIELD PANELS
+         ======================================== -->
+    <!-- Organization Identity Section -->
+    <mj-collapsible-panel
+        SectionKey="organizationIdentity"
+        SectionName="Organization Identity"
+        Icon="fa fa-info-circle"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Name"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LegalName"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="OrganizationTypeID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Description"
+            Type="textarea" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="FoundedDate"
+            Type="datepicker" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="TaxID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Status"
+            Type="select" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="ActivePersonCount"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Hierarchy and Structure Section -->
+    <mj-collapsible-panel
+        SectionKey="hierarchyAndStructure"
+        SectionName="Hierarchy and Structure"
+        Icon="fa fa-sitemap"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="ParentID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="RootParentID"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="ChildOrgCount"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Contact Information Section -->
+    <mj-collapsible-panel
+        SectionKey="contactInformation"
+        SectionName="Contact Information"
+        Icon="fa fa-address-card"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Website"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="URL"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="LogoURL"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="URL"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Email"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Phone"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryEmail"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryPhone"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- Primary Address Section -->
+    <mj-collapsible-panel
+        SectionKey="primaryAddress"
+        SectionName="Primary Address"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLine1"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressLine2"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressCity"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressState"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressPostalCode"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressCountry"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressType"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- System Metadata Section -->
+    <mj-collapsible-panel
+        SectionKey="systemMetadata"
+        SectionName="System Metadata"
+        Icon="fa fa-cog"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_CreatedAt"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_UpdatedAt"
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+    </mj-collapsible-panel>
+
+    <!-- ========================================
+         CUSTOM WIDGET PANELS
+         ======================================== -->
+
+    <!-- Organization Hierarchy Section (custom tree widget) -->
+    <mj-collapsible-panel
+        SectionKey="organizationHierarchy"
+        SectionName="Organization Hierarchy"
+        Icon="fa fa-sitemap"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-org-hierarchy-tree
+            [OrganizationID]="record.ID"
+            (Navigate)="OnFormNavigate($event)">
+        </bizapps-org-hierarchy-tree>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Addresses Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="addresses"
+        SectionName="Addresses"
+        Icon="fa fa-map-marker-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-address-editor
+            EntityName="MJ.BizApps.Common: Organizations"
+            [RecordID]="record.ID">
+        </bizapps-address-editor>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Contact Methods Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="contactMethods"
+        SectionName="Contact Methods"
+        Icon="fa fa-address-book"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-contact-method-list
+            [OrganizationID]="record.ID">
+        </bizapps-contact-method-list>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Relationships Section (custom CRUD widget) -->
+    <mj-collapsible-panel
+        SectionKey="relationships"
+        SectionName="Relationships"
+        Icon="fa fa-handshake"
+        [Form]="this"
+        [FormContext]="formContext">
+        @if (record.IsSaved) {
+        <bizapps-relationship-list
+            [OrganizationID]="record.ID"
+            (Navigate)="OnFormNavigate($event)">
+        </bizapps-relationship-list>
+        }
+    </mj-collapsible-panel>
 </mj-record-form-container>

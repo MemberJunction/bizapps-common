@@ -8,12 +8,9 @@ import { mjBizAppsCommonPersonFormComponent } from '../../generated/Entities/mjB
 /**
  * Custom Person form component that overrides the CodeGen-generated form.
  *
- * Uses the {@link PersonDetailComponent} "Command Center" composed layout
- * wrapped inside `mj-record-form-container` for the standard MJ form chrome
- * (save/delete toolbar, navigation events, favorites, history).
- *
- * All field rendering, CRUD widgets, and navigation are delegated to
- * the standalone PersonDetailComponent and its child widgets.
+ * Preserves the standard MJ form layout with collapsible field panels
+ * and replaces the generic related-entity data grids with richer CRUD
+ * widgets for addresses, contact methods, and relationships.
  */
 @RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: People')
 @Component({
@@ -24,4 +21,18 @@ import { mjBizAppsCommonPersonFormComponent } from '../../generated/Entities/mjB
 })
 export class BizAppsPersonFormComponent extends mjBizAppsCommonPersonFormComponent {
     public declare record: mjBizAppsCommonPersonEntity;
+
+    override async ngOnInit() {
+        await super.ngOnInit();
+        this.initSections([
+            { sectionKey: 'personalIdentity', sectionName: 'Personal Identity', isExpanded: true },
+            { sectionKey: 'professionalAndProfile', sectionName: 'Professional and Profile', isExpanded: true },
+            { sectionKey: 'accountAndStatus', sectionName: 'Account and Status', isExpanded: false },
+            { sectionKey: 'primaryAddress', sectionName: 'Primary Address', isExpanded: false },
+            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'addresses', sectionName: 'Addresses', isExpanded: true },
+            { sectionKey: 'contactMethods', sectionName: 'Contact Methods', isExpanded: true },
+            { sectionKey: 'relationships', sectionName: 'Relationships', isExpanded: true }
+        ]);
+    }
 }
