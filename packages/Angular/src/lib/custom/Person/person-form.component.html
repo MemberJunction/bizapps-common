@@ -31,8 +31,10 @@
             Type="datepicker" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Gender"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        @if (!EditMode) {
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="DisplayName"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        }
     </mj-collapsible-panel>
 
     <!-- Professional and Profile Section -->
@@ -52,16 +54,18 @@
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="URL"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="Bio"
             Type="textarea" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        @if (!EditMode) {
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryEmail"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Email"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryPhone"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentOrganizationID"
-            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+            Type="textbox" [EditMode]="EditMode" [FormContext]="formContext" LinkType="Record"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentOrganizationName"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="CurrentJobTitle"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
+        }
     </mj-collapsible-panel>
 
     <!-- Account and Status Section -->
@@ -77,7 +81,8 @@
             Type="select" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
     </mj-collapsible-panel>
 
-    <!-- Primary Address Section -->
+    <!-- Primary Address Section (read-only summary from enriched view, hidden in edit mode) -->
+    @if (!EditMode) {
     <mj-collapsible-panel
         SectionKey="primaryAddress"
         SectionName="Primary Address"
@@ -103,8 +108,10 @@
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="PrimaryAddressType"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
     </mj-collapsible-panel>
+    }
 
-    <!-- System Metadata Section -->
+    <!-- System Metadata Section (read-only, hidden in edit mode) -->
+    @if (!EditMode) {
     <mj-collapsible-panel
         SectionKey="systemMetadata"
         SectionName="System Metadata"
@@ -116,6 +123,7 @@
         <mj-form-field [Record]="record" [ShowLabel]="true" FieldName="__mj_UpdatedAt"
             Type="textbox" [EditMode]="EditMode" [FormContext]="formContext"></mj-form-field>
     </mj-collapsible-panel>
+    }
 
     <!-- ========================================
          CUSTOM WIDGET PANELS
