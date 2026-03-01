@@ -208,6 +208,13 @@ export class RelationshipListComponent {
      */
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
 
+    /**
+     * Controls whether add, edit, delete, and end-relationship actions are available.
+     * When `false`, the component renders in read-only display mode.
+     * Navigation links to related entities remain available regardless of this setting.
+     */
+    @Input() EditMode = false;
+
     private _personID: string | null = null;
     private _organizationID: string | null = null;
 

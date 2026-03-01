@@ -87,6 +87,13 @@ interface AddressEditForm {
 export class AddressEditorComponent {
     private cdr = inject(ChangeDetectorRef);
 
+    /**
+     * Controls whether add, edit, delete, and set-primary actions are available.
+     * When `false`, the component renders in read-only display mode.
+     * Typically bound to the parent form's `EditMode` property.
+     */
+    @Input() EditMode = false;
+
     private _entityName = '';
     private _recordID = '';
 

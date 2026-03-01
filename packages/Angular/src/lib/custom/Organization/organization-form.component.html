@@ -134,7 +134,8 @@
         @if (record.IsSaved) {
         <bizapps-address-editor
             EntityName="MJ.BizApps.Common: Organizations"
-            [RecordID]="record.ID">
+            [RecordID]="record.ID"
+            [EditMode]="EditMode">
         </bizapps-address-editor>
         }
     </mj-collapsible-panel>
@@ -148,7 +149,8 @@
         [FormContext]="formContext">
         @if (record.IsSaved) {
         <bizapps-contact-method-list
-            [OrganizationID]="record.ID">
+            [OrganizationID]="record.ID"
+            [EditMode]="EditMode">
         </bizapps-contact-method-list>
         }
     </mj-collapsible-panel>
@@ -163,6 +165,7 @@
         @if (record.IsSaved) {
         <bizapps-relationship-list
             [OrganizationID]="record.ID"
+            [EditMode]="EditMode"
             (Navigate)="OnFormNavigate($event)">
         </bizapps-relationship-list>
         }

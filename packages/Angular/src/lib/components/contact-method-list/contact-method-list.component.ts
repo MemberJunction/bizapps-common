@@ -65,6 +65,13 @@ interface ContactFormData {
 export class ContactMethodListComponent {
     private cdr = inject(ChangeDetectorRef);
 
+    /**
+     * Controls whether add, edit, delete, and set-primary actions are available.
+     * When `false`, the component renders in read-only display mode.
+     * Copy and open-link actions remain available regardless of this setting.
+     */
+    @Input() EditMode = false;
+
     private _personID: string | null = null;
     private _organizationID: string | null = null;
 

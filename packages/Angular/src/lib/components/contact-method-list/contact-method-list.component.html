@@ -77,7 +77,7 @@
                         }
                     </div>
                     <div class="cm-flat-actions">
-                        @if (!cm.IsPrimary) {
+                        @if (EditMode && !cm.IsPrimary) {
                             <button class="btn-ghost" title="Set Primary" (click)="onSetPrimary(cm)">
                                 <i class="fa-regular fa-star"></i>
                             </button>
@@ -91,12 +91,14 @@
                                 <i class="fa-solid fa-copy"></i>
                             </button>
                         }
+                        @if (EditMode) {
                         <button class="btn-ghost" title="Edit" (click)="onEdit(cm)">
                             <i class="fa-solid fa-pen"></i>
                         </button>
                         <button class="btn-ghost danger" title="Remove" (click)="onDelete(cm)">
                             <i class="fa-solid fa-trash"></i>
                         </button>
+                        }
                     </div>
                 </div>
             }
@@ -138,7 +140,7 @@
         }
 
         <!-- Add button footer -->
-        @if (!ShowAddForm && EditingId === null) {
+        @if (!ShowAddForm && EditingId === null && EditMode) {
             <div class="cm-flat-footer">
                 <button class="btn btn-outline full-width" (click)="onShowAdd()">
                     <i class="fa-solid fa-plus"></i>

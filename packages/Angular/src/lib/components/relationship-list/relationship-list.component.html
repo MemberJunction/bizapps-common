@@ -5,7 +5,7 @@
         <i class="fa-solid fa-diagram-project"></i>
         Relationships
     </span>
-    @if (!Loading) {
+    @if (!Loading && EditMode) {
         <button class="btn btn-outline" (click)="onShowAdd()">
             <i class="fa-solid fa-plus"></i>
             Add Relationship
@@ -124,6 +124,7 @@
                                 </span>
                             </div>
                         </div>
+                        @if (EditMode) {
                         <div class="rel-timeline-actions">
                             <button class="btn-ghost" title="Edit" (click)="onEdit(item.Relationship)">
                                 <i class="fa-solid fa-pen"></i>
@@ -138,6 +139,7 @@
                                 </button>
                             }
                         </div>
+                        }
                     </div>
                 }
             }

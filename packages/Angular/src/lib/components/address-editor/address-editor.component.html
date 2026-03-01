@@ -41,6 +41,7 @@
                         <span class="badge badge-primary"><i class="fa-solid fa-star"></i> Primary</span>
                     }
                 </div>
+                @if (EditMode) {
                 <div class="addr-table-actions">
                     @if (!item.Link.IsPrimary) {
                         <button class="btn-ghost" title="Set as Primary" (click)="onSetPrimary(i)">
@@ -54,6 +55,7 @@
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
+                }
             </div>
 
             <!-- Inline Edit Panel (shown when editing this row) -->
@@ -182,7 +184,7 @@
         }
 
         <!-- Add Button Footer -->
-        @if (EditingIndex === null) {
+        @if (EditingIndex === null && EditMode) {
             <div class="addr-table-footer">
                 <button class="btn btn-outline full-width" (click)="onAdd()">
                     <i class="fa-solid fa-plus"></i>
