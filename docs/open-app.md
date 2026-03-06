@@ -35,19 +35,19 @@ Each Open App:
 ## Installing BizApps Common
 
 ```bash
-mj app install https://github.com/MemberJunction/bizapps-common
+mj app install https://github.com/MemberJunction/mj-bizapps-common
 ```
 
 To install a specific version:
 
 ```bash
-mj app install https://github.com/MemberJunction/bizapps-common --version 1.0.0
+mj app install https://github.com/MemberJunction/mj-bizapps-common --version 1.0.0
 ```
 
 ### What Happens During Install
 
 ```
-GitHub Repository (bizapps-common)
+GitHub Repository (mj-bizapps-common)
   mj-app.json  |  migrations/  |  packages/
         |
         v
@@ -99,7 +99,7 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
 ```json
 {
   "manifestVersion": 1,
-  "name": "bizapps-common",
+  "name": "mj-bizapps-common",
   "displayName": "BizApps Common",
   "description": "Common business entities shared across MemberJunction business applications",
   "version": "1.0.0",
@@ -111,7 +111,7 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
     "url": "https://memberjunction.com"
   },
 
-  "repository": "https://github.com/MemberJunction/bizapps-common",
+  "repository": "https://github.com/MemberJunction/mj-bizapps-common",
   "mjVersionRange": ">=5.0.0 <6.0.0",
 
   "schema": {
@@ -154,7 +154,7 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
 
 | Field | Purpose |
 |-------|---------|
-| `name` | Unique app identifier used in CLI commands (`mj app info bizapps-common`) |
+| `name` | Unique app identifier used in CLI commands (`mj app info mj-bizapps-common`) |
 | `mjVersionRange` | Semver range -- CLI checks this before installation |
 | `schema.name` | Database schema created for this app's tables |
 | `packages.server` | Packages added to MJAPI; `bootstrap` role means `startupExport` is called at startup |
@@ -184,14 +184,14 @@ mj app list
 ### View App Details
 
 ```bash
-mj app info bizapps-common
+mj app info mj-bizapps-common
 ```
 
 ### Upgrade
 
 ```bash
-mj app upgrade bizapps-common                # Upgrade to latest
-mj app upgrade bizapps-common --version 2.0.0  # Upgrade to specific version
+mj app upgrade mj-bizapps-common                # Upgrade to latest
+mj app upgrade mj-bizapps-common --version 2.0.0  # Upgrade to specific version
 ```
 
 The upgrade flow:
@@ -203,8 +203,8 @@ The upgrade flow:
 ### Disable / Enable
 
 ```bash
-mj app disable bizapps-common  # Temporarily disable without removing
-mj app enable bizapps-common   # Re-enable
+mj app disable mj-bizapps-common  # Temporarily disable without removing
+mj app enable mj-bizapps-common   # Re-enable
 ```
 
 Disabling comments out the server config entry and client bootstrap import. The schema and data remain intact.
@@ -212,9 +212,9 @@ Disabling comments out the server config entry and client bootstrap import. The 
 ### Remove
 
 ```bash
-mj app remove bizapps-common              # Full removal (drops schema)
-mj app remove bizapps-common --keep-data   # Remove packages but keep database
-mj app remove bizapps-common --force       # Remove even if other apps depend on it
+mj app remove mj-bizapps-common              # Full removal (drops schema)
+mj app remove mj-bizapps-common --keep-data   # Remove packages but keep database
+mj app remove mj-bizapps-common --force       # Remove even if other apps depend on it
 ```
 
 The remove flow:
@@ -234,7 +234,7 @@ The remove flow:
      server: [{
        PackageName: '@mj-biz-apps/common-server',
        StartupExport: 'LoadBizAppsCommonServer',
-       AppName: 'bizapps-common',
+       AppName: 'mj-bizapps-common',
        Enabled: true
      }]
    }
@@ -253,7 +253,7 @@ The remove flow:
 
 1. The CLI adds a static import to `open-app-bootstrap.generated.ts`:
    ```typescript
-   // bizapps-common (v1.0.0)
+   // mj-bizapps-common (v1.0.0)
    import '@mj-biz-apps/common-ng';
    ```
 
@@ -274,9 +274,9 @@ If you're building your own MJ Open App that references BizApps Common entities,
 ```json
 {
   "dependencies": {
-    "bizapps-common": {
+    "mj-bizapps-common": {
       "version": ">=1.0.0",
-      "repository": "https://github.com/MemberJunction/bizapps-common"
+      "repository": "https://github.com/MemberJunction/mj-bizapps-common"
     }
   }
 }
