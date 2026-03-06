@@ -113,7 +113,7 @@ Every MJ Open App declares itself through an `mj-app.json` file at the repositor
 
 ```json
 {
-  "name": "bizapps-common",
+  "name": "mj-bizapps-common",
   "displayName": "BizApps Common",
   "mjVersionRange": ">=5.0.0 <6.0.0",
   "schema": {

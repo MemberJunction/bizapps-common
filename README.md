@@ -36,7 +36,7 @@ Other MJ applications (Committees, Events, Membership, etc.) depend on these sha
 BizApps Common is a [MemberJunction Open App](https://github.com/MemberJunction/MJ/tree/main/packages/OpenApp). Install it into any MJ environment using the [MJ CLI](https://github.com/MemberJunction/MJ/tree/main/packages/MJCLI):
 
 ```bash
-mj app install https://github.com/MemberJunction/bizapps-common
+mj app install https://github.com/MemberJunction/mj-bizapps-common
 ```
 
 This single command:
@@ -55,11 +55,11 @@ After installation, restart MJAPI and rebuild MJExplorer to activate.
 
 ```bash
 mj app list                    # See installed apps
-mj app info bizapps-common     # Show details and version
-mj app upgrade bizapps-common  # Upgrade to latest release
-mj app disable bizapps-common  # Temporarily disable
-mj app enable bizapps-common   # Re-enable
-mj app remove bizapps-common   # Uninstall (--keep-data to preserve schema)
+mj app info mj-bizapps-common     # Show details and version
+mj app upgrade mj-bizapps-common  # Upgrade to latest release
+mj app disable mj-bizapps-common  # Temporarily disable
+mj app enable mj-bizapps-common   # Re-enable
+mj app remove mj-bizapps-common   # Uninstall (--keep-data to preserve schema)
 ```
 
 See [Open App Installation Guide](docs/open-app.md) for full details on how the Open App lifecycle works.
@@ -231,9 +231,9 @@ If you're building your own MJ Open App that references these entities (e.g., a 
 ```json
 {
   "dependencies": {
-    "bizapps-common": {
+    "mj-bizapps-common": {
       "version": ">=1.0.0",
-      "repository": "https://github.com/MemberJunction/bizapps-common"
+      "repository": "https://github.com/MemberJunction/mj-bizapps-common"
     }
   }
 }
@@ -248,8 +248,8 @@ When users install your app, the MJ CLI will automatically install BizApps Commo
 To work on BizApps Common itself (not just use it), clone the repo and set up a local development environment:
 
 ```bash
-git clone https://github.com/MemberJunction/bizapps-common.git
-cd bizapps-common
+git clone https://github.com/MemberJunction/mj-bizapps-common.git
+cd mj-bizapps-common
 npm install
 ```
 
@@ -289,7 +289,7 @@ See [Development Guide](docs/development.md) for the full workflow including bui
 ## Repository Structure
 
 ```
-bizapps-common/
+mj-bizapps-common/
 ├── mj-app.json                    # MJ Open App manifest
 ├── apps/
 │   ├── MJAPI/                     # GraphQL API server (port 4101)
