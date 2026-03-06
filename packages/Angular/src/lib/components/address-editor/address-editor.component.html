@@ -81,7 +81,11 @@
                     </div>
                     <div class="form-row">
                         <div class="form-field">
-                            <label>City</label>
+                            <label>
+                                City
+                                @if (LookingUpPostalCode) { <i class="fa-solid fa-spinner fa-spin lookup-spinner"></i> }
+                                @if (PostalCodeNotFound) { <span class="lookup-not-found">not found</span> }
+                            </label>
                             <input type="text" [(ngModel)]="EditForm.City" placeholder="City">
                         </div>
                         <div class="form-field state-field">
@@ -90,17 +94,14 @@
                         </div>
                         <div class="form-field postal-field">
                             <label>Postal</label>
-                            <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip">
+                            <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip" (blur)="onPostalCodeBlur()">
                         </div>
                         <div class="form-field country-field">
                             <label>Country</label>
                             <select [(ngModel)]="EditForm.Country">
-                                <option value="US">US</option>
-                                <option value="CA">CA</option>
-                                <option value="UK">UK</option>
-                                <option value="AU">AU</option>
-                                <option value="DE">DE</option>
-                                <option value="FR">FR</option>
+                                @for (c of Countries; track c.Code) {
+                                    <option [value]="c.Code">{{ c.Code }} - {{ c.Name }}</option>
+                                }
                             </select>
                         </div>
                         <div class="checkbox-field">
@@ -144,7 +145,11 @@
                 </div>
                 <div class="form-row">
                     <div class="form-field">
-                        <label>City</label>
+                        <label>
+                            City
+                            @if (LookingUpPostalCode) { <i class="fa-solid fa-spinner fa-spin lookup-spinner"></i> }
+                            @if (PostalCodeNotFound) { <span class="lookup-not-found">not found</span> }
+                        </label>
                         <input type="text" [(ngModel)]="EditForm.City" placeholder="City">
                     </div>
                     <div class="form-field state-field">
@@ -153,17 +158,14 @@
                     </div>
                     <div class="form-field postal-field">
                         <label>Postal</label>
-                        <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip">
+                        <input type="text" [(ngModel)]="EditForm.PostalCode" placeholder="Zip" (blur)="onPostalCodeBlur()">
                     </div>
                     <div class="form-field country-field">
                         <label>Country</label>
                         <select [(ngModel)]="EditForm.Country">
-                            <option value="US">US</option>
-                            <option value="CA">CA</option>
-                            <option value="UK">UK</option>
-                            <option value="AU">AU</option>
-                            <option value="DE">DE</option>
-                            <option value="FR">FR</option>
+                            @for (c of Countries; track c.Code) {
+                                <option [value]="c.Code">{{ c.Code }} - {{ c.Name }}</option>
+                            }
                         </select>
                     </div>
                     <div class="checkbox-field">

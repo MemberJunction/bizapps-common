@@ -1,7 +1,9 @@
-import { Component, Input, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Metadata, RunView } from '@memberjunction/core';
+import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
+import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
     mjBizAppsCommonAddressEntity,
     mjBizAppsCommonAddressLinkEntity,
@@ -87,12 +89,55 @@ interface AddressEditForm {
 export class AddressEditorComponent {
     private cdr = inject(ChangeDetectorRef);
 
+    constructor() {
+        // Fire-and-forget to prewarm the ActionEngine cache so postal code lookup is fast
+        ActionEngineBase.Instance.Config(false);
+    }
+
+    /** ISO 3166-1 alpha-2 country codes for the country dropdown. */
+    readonly Countries: { Code: string; Name: string }[] = [
+        { Code: 'US', Name: 'United States' }, { Code: 'CA', Name: 'Canada' }, { Code: 'GB', Name: 'United Kingdom' },
+        { Code: 'AU', Name: 'Australia' }, { Code: 'DE', Name: 'Germany' }, { Code: 'FR', Name: 'France' },
+        { Code: 'ES', Name: 'Spain' }, { Code: 'IT', Name: 'Italy' }, { Code: 'NL', Name: 'Netherlands' },
+        { Code: 'BE', Name: 'Belgium' }, { Code: 'AT', Name: 'Austria' }, { Code: 'CH', Name: 'Switzerland' },
+        { Code: 'SE', Name: 'Sweden' }, { Code: 'NO', Name: 'Norway' }, { Code: 'DK', Name: 'Denmark' },
+        { Code: 'FI', Name: 'Finland' }, { Code: 'IE', Name: 'Ireland' }, { Code: 'PT', Name: 'Portugal' },
+        { Code: 'PL', Name: 'Poland' }, { Code: 'CZ', Name: 'Czech Republic' }, { Code: 'GR', Name: 'Greece' },
+        { Code: 'HU', Name: 'Hungary' }, { Code: 'RO', Name: 'Romania' }, { Code: 'BG', Name: 'Bulgaria' },
+        { Code: 'HR', Name: 'Croatia' }, { Code: 'SK', Name: 'Slovakia' }, { Code: 'SI', Name: 'Slovenia' },
+        { Code: 'LT', Name: 'Lithuania' }, { Code: 'LV', Name: 'Latvia' }, { Code: 'EE', Name: 'Estonia' },
+        { Code: 'LU', Name: 'Luxembourg' }, { Code: 'MT', Name: 'Malta' }, { Code: 'CY', Name: 'Cyprus' },
+        { Code: 'IS', Name: 'Iceland' }, { Code: 'JP', Name: 'Japan' }, { Code: 'KR', Name: 'South Korea' },
+        { Code: 'CN', Name: 'China' }, { Code: 'TW', Name: 'Taiwan' }, { Code: 'HK', Name: 'Hong Kong' },
+        { Code: 'SG', Name: 'Singapore' }, { Code: 'IN', Name: 'India' }, { Code: 'PK', Name: 'Pakistan' },
+        { Code: 'BD', Name: 'Bangladesh' }, { Code: 'PH', Name: 'Philippines' }, { Code: 'TH', Name: 'Thailand' },
+        { Code: 'VN', Name: 'Vietnam' }, { Code: 'MY', Name: 'Malaysia' }, { Code: 'ID', Name: 'Indonesia' },
+        { Code: 'NZ', Name: 'New Zealand' }, { Code: 'MX', Name: 'Mexico' }, { Code: 'BR', Name: 'Brazil' },
+        { Code: 'AR', Name: 'Argentina' }, { Code: 'CL', Name: 'Chile' }, { Code: 'CO', Name: 'Colombia' },
+        { Code: 'PE', Name: 'Peru' }, { Code: 'VE', Name: 'Venezuela' }, { Code: 'EC', Name: 'Ecuador' },
+        { Code: 'UY', Name: 'Uruguay' }, { Code: 'PY', Name: 'Paraguay' }, { Code: 'BO', Name: 'Bolivia' },
+        { Code: 'CR', Name: 'Costa Rica' }, { Code: 'PA', Name: 'Panama' }, { Code: 'DO', Name: 'Dominican Republic' },
+        { Code: 'GT', Name: 'Guatemala' }, { Code: 'HN', Name: 'Honduras' }, { Code: 'SV', Name: 'El Salvador' },
+        { Code: 'NI', Name: 'Nicaragua' }, { Code: 'CU', Name: 'Cuba' }, { Code: 'JM', Name: 'Jamaica' },
+        { Code: 'TT', Name: 'Trinidad and Tobago' }, { Code: 'PR', Name: 'Puerto Rico' },
+        { Code: 'ZA', Name: 'South Africa' }, { Code: 'NG', Name: 'Nigeria' }, { Code: 'KE', Name: 'Kenya' },
+        { Code: 'EG', Name: 'Egypt' }, { Code: 'MA', Name: 'Morocco' }, { Code: 'GH', Name: 'Ghana' },
+        { Code: 'TZ', Name: 'Tanzania' }, { Code: 'ET', Name: 'Ethiopia' }, { Code: 'UG', Name: 'Uganda' },
+        { Code: 'IL', Name: 'Israel' }, { Code: 'AE', Name: 'United Arab Emirates' }, { Code: 'SA', Name: 'Saudi Arabia' },
+        { Code: 'QA', Name: 'Qatar' }, { Code: 'KW', Name: 'Kuwait' }, { Code: 'BH', Name: 'Bahrain' },
+        { Code: 'OM', Name: 'Oman' }, { Code: 'JO', Name: 'Jordan' }, { Code: 'LB', Name: 'Lebanon' },
+        { Code: 'TR', Name: 'Turkey' }, { Code: 'RU', Name: 'Russia' }, { Code: 'UA', Name: 'Ukraine' },
+    ];
+
     /**
      * Controls whether add, edit, delete, and set-primary actions are available.
      * When `false`, the component renders in read-only display mode.
      * Typically bound to the parent form's `EditMode` property.
      */
     @Input() EditMode = false;
+
+    /** Emitted after any mutation (save, delete, set-primary) so the parent can refresh derived data. */
+    @Output() DataChanged = new EventEmitter<void>();
 
     private _entityName = '';
     private _recordID = '';
@@ -178,6 +223,18 @@ export class AddressEditorComponent {
     /** The resolved MJ EntityID for the current {@link EntityName}. */
     private resolvedEntityID = '';
 
+    /** Cached action ID for the Postal Code Lookup action. */
+    private postalCodeLookupActionID: string | null = null;
+
+    /** Whether a postal code lookup is currently in progress. */
+    LookingUpPostalCode = false;
+
+    /** Whether the last postal code lookup returned no results. */
+    PostalCodeNotFound = false;
+
+    /** The postal code value when the form was opened, used to detect changes. */
+    private originalPostalCode = '';
+
     /** Creates a blank {@link AddressEditForm} with sensible defaults. */
     private createEmptyForm(): AddressEditForm {
         return {
@@ -190,6 +247,79 @@ export class AddressEditorComponent {
             PostalCode: '',
             Country: 'US'
         };
+    }
+
+    /**
+     * Looks up city and state from a postal code using the Postal Code Lookup
+     * MJ Action (backed by Google Geocoding API). Called on blur of the postal
+     * code input field.
+     *
+     * For new addresses: triggers when City or State are empty.
+     * For edits: triggers when the postal code changed from the original value.
+     */
+    async onPostalCodeBlur(): Promise<void> {
+        const postalCode = this.EditForm.PostalCode?.trim();
+        if (!postalCode || postalCode.length < 3) return;
+
+        const postalCodeChanged = postalCode !== this.originalPostalCode.trim();
+        const cityOrStateEmpty = !this.EditForm.City || !this.EditForm.StateProvince;
+
+        // Skip if postal code hasn't changed and city/state are already filled
+        if (!postalCodeChanged && !cityOrStateEmpty) return;
+
+        this.LookingUpPostalCode = true;
+        this.PostalCodeNotFound = false;
+        this.cdr.detectChanges();
+
+        try {
+            const actionID = await this.getPostalCodeLookupActionID();
+            if (!actionID) return;
+
+            const provider = Metadata.Provider as GraphQLDataProvider;
+            const actionClient = new GraphQLActionClient(provider);
+            const params: ActionParam[] = [
+                { Name: 'PostalCode', Value: postalCode, Type: 'Input' },
+                { Name: 'Country', Value: this.EditForm.Country || 'US', Type: 'Both' },
+            ];
+
+            const result = await actionClient.RunAction(actionID, params);
+            if (result.Success && result.Message) {
+                // The action returns JSON-stringified address in Message
+                const address = JSON.parse(result.Message);
+                const city: string = address.City || '';
+                const state: string = address.State || '';
+
+                if (!city && !state) {
+                    // Google resolved the country but not a specific city/state for this postal code
+                    this.PostalCodeNotFound = true;
+                } else if (postalCodeChanged) {
+                    if (city) this.EditForm.City = city;
+                    if (state) this.EditForm.StateProvince = state;
+                    this.originalPostalCode = postalCode;
+                } else {
+                    if (!this.EditForm.City && city) this.EditForm.City = city;
+                    if (!this.EditForm.StateProvince && state) this.EditForm.StateProvince = state;
+                }
+            } else {
+                this.PostalCodeNotFound = true;
+            }
+        } catch (err) {
+            console.error('AddressEditor: Postal code lookup failed', err);
+            this.PostalCodeNotFound = true;
+        } finally {
+            this.LookingUpPostalCode = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    /** Resolves and caches the Action ID for "Postal Code Lookup" using ActionEngineBase metadata. */
+    private async getPostalCodeLookupActionID(): Promise<string | null> {
+        if (this.postalCodeLookupActionID) return this.postalCodeLookupActionID;
+
+        await ActionEngineBase.Instance.Config(false);
+        const action = ActionEngineBase.Instance.GetActionByName('Postal Code Lookup');
+        this.postalCodeLookupActionID = action?.ID ?? null;
+        return this.postalCodeLookupActionID;
     }
 
     /**
@@ -341,6 +471,7 @@ export class AddressEditorComponent {
         if (this.AddressItems.length === 0) {
             this.EditForm.IsPrimary = true;
         }
+        this.originalPostalCode = '';
         this.EditingIndex = -1;
         this.cdr.detectChanges();
     }
@@ -363,6 +494,7 @@ export class AddressEditorComponent {
             PostalCode: item.Address.PostalCode || '',
             Country: item.Address.Country
         };
+        this.originalPostalCode = this.EditForm.PostalCode;
         this.EditingIndex = index;
         this.cdr.detectChanges();
     }
@@ -406,6 +538,7 @@ export class AddressEditorComponent {
 
             // Reload data
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('AddressEditor: Error saving', err);
         } finally {
@@ -504,6 +637,7 @@ export class AddressEditorComponent {
             await this.AddressItems[index].Link.Save();
 
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('AddressEditor: Error setting primary', err);
         } finally {
@@ -534,6 +668,7 @@ export class AddressEditorComponent {
             await item.Address.Delete();
 
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('AddressEditor: Error deleting address', err);
         } finally {

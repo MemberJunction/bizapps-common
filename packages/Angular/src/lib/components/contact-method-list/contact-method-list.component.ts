@@ -1,4 +1,4 @@
-import { Component, Input, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Metadata, RunView } from '@memberjunction/core';
@@ -71,6 +71,9 @@ export class ContactMethodListComponent {
      * Copy and open-link actions remain available regardless of this setting.
      */
     @Input() EditMode = false;
+
+    /** Emitted after any mutation (save, delete, set-primary) so the parent can refresh derived data. */
+    @Output() DataChanged = new EventEmitter<void>();
 
     private _personID: string | null = null;
     private _organizationID: string | null = null;
@@ -411,6 +414,7 @@ export class ContactMethodListComponent {
 
             await cm.Save();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('ContactMethodList: Error adding contact', err);
         } finally {
@@ -475,6 +479,7 @@ export class ContactMethodListComponent {
             await cm.Save();
 
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('ContactMethodList: Error saving contact', err);
         } finally {
@@ -503,6 +508,7 @@ export class ContactMethodListComponent {
             await cm.Save();
 
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('ContactMethodList: Error setting primary', err);
         } finally {
@@ -525,6 +531,7 @@ export class ContactMethodListComponent {
         try {
             await cm.Delete();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('ContactMethodList: Error deleting contact', err);
         } finally {

@@ -140,7 +140,8 @@
         <bizapps-address-editor
             EntityName="MJ.BizApps.Common: People"
             [RecordID]="record.ID"
-            [EditMode]="EditMode">
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
         </bizapps-address-editor>
         }
     </mj-collapsible-panel>
@@ -155,7 +156,8 @@
         @if (record.IsSaved) {
         <bizapps-contact-method-list
             [PersonID]="record.ID"
-            [EditMode]="EditMode">
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
         </bizapps-contact-method-list>
         }
     </mj-collapsible-panel>
@@ -171,6 +173,7 @@
         <bizapps-relationship-list
             [PersonID]="record.ID"
             [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()"
             (Navigate)="OnFormNavigate($event)">
         </bizapps-relationship-list>
         }
