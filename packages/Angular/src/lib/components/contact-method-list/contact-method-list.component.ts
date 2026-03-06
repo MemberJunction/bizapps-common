@@ -5,7 +5,7 @@ import { Metadata, RunView } from '@memberjunction/core';
 import {
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
-} from '@mj-biz-apps/common-entities';
+} from '@memberjunction/bizapps-common-entities';
 
 /**
  * Form model for both adding and editing a contact method.

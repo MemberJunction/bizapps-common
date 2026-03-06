@@ -8,7 +8,7 @@ import {
     mjBizAppsCommonAddressEntity,
     mjBizAppsCommonAddressLinkEntity,
     mjBizAppsCommonAddressTypeEntity
-} from '@mj-biz-apps/common-entities';
+} from '@memberjunction/bizapps-common-entities';
 
 /**
  * Represents a single address row in the editor, pairing the physical

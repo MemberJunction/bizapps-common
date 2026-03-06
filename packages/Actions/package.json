@@ -1,5 +1,5 @@
 {
-  "name": "@mj-biz-apps/common-actions",
+  "name": "@memberjunction/bizapps-common-actions",
   "type": "module",
   "version": "5.4.0",
   "description": "Generated action subclasses maintained by the CodeGen utility.",

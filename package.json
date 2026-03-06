@@ -11,8 +11,8 @@
     "prebuild": "node -e \"try { require.resolve('turbo') } catch (e) { console.error('\\n❌ Dependencies not installed. Run: npm install\\n'); process.exit(1); }\"",
     "build": "npm run build:stream",
     "build:stream": "turbo --log-order=stream build",
-    "build:generated": "turbo --log-order=stream build --filter=\"@mj-biz-apps/common-entities\" --filter=\"@mj-biz-apps/common-actions\"",
-    "build:packages": "turbo --log-order=stream build --filter=\"@mj-biz-apps/common-*\"",
+    "build:generated": "turbo --log-order=stream build --filter=\"@memberjunction/bizapps-common-entities\" --filter=\"@memberjunction/bizapps-common-actions\"",
+    "build:packages": "turbo --log-order=stream build --filter=\"@memberjunction/bizapps-common-*\"",
     "build:api": "turbo --log-order=stream build --filter=\"mj_api\"",
     "build:explorer": "turbo --log-order=stream build --filter=\"mj_explorer\"",
     "start": "turbo start --filter=mj_explorer --filter=mj_api",
@@ -21,6 +21,11 @@
     "mj": "node apps/MJAPI/node_modules/@memberjunction/cli/bin/run.js",
     "mj:migrate": "node apps/MJAPI/node_modules/@memberjunction/cli/bin/run.js migrate",
     "mj:codegen": "node apps/MJAPI/node_modules/@memberjunction/cli/bin/run.js codegen",
+    "change": "changeset",
+    "version": "changeset version",
+    "commitpush": "node ci/commit_push.mjs",
+    "mergemain": "node ci/merge_main.mjs",
+    "mergemain:update-lock": "node ci/merge_main_and_update_lock.mjs",
     "install:deps": "npm install",
     "setup": "echo 'Please run: npm run mj:migrate && npm run mj:codegen && npm run build'"
   },
@@ -29,7 +34,11 @@
     "url": "https://github.com/MemberJunction/bizapps-common"
   },
   "packageManager": "npm@10.5.0",
+  "dependencies": {
+    "simple-git": "^3.27.0"
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.29.4",
     "beasties": "0.3.5",
     "mrmime": "2.0.1",
     "rolldown": "1.0.0-beta.58",

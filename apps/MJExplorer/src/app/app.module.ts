@@ -22,7 +22,7 @@ import { MJExplorerAppModule } from '@memberjunction/ng-explorer-app';
 import {CLASS_REGISTRATIONS} from '@memberjunction/ng-bootstrap';
 
 // Import supplemental manifest for BizApps Common classes
-import {CLASS_REGISTRATIONS as LOCAL_CLASSES} from '@mj-biz-apps/common-ng';
+import {CLASS_REGISTRATIONS as LOCAL_CLASSES} from '@memberjunction/bizapps-common-ng';
 
 // static code path builder
 const combinedClasses = [...CLASS_REGISTRATIONS, ...LOCAL_CLASSES];
