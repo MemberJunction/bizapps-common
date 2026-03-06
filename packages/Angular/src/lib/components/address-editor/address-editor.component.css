@@ -284,11 +284,11 @@
 }
 
 .form-field.postal-field {
-    max-width: 100px;
+    max-width: 130px;
 }
 
 .form-field.country-field {
-    max-width: 80px;
+    max-width: 180px;
 }
 
 .checkbox-field {
@@ -349,4 +349,17 @@
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.lookup-spinner {
+    font-size: 10px;
+    color: #1976d2;
+    margin-left: 4px;
+}
+
+.lookup-not-found {
+    font-size: 10px;
+    color: #e65100;
+    margin-left: 4px;
+    font-weight: 600;
 }

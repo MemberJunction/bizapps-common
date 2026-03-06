@@ -1472,12 +1472,46 @@ input CreateMJCompanyInput {
   Website: String
 }
 
+input CreateMJCompanyIntegrationEntityMapInput {
+  CompanyIntegrationID: String
+  Configuration: String
+  ConflictResolution: String
+  DeleteBehavior: String
+  EntityID: String
+  ExternalObjectLabel: String
+  ExternalObjectName: String
+  ID: String
+  MatchStrategy: String
+  Priority: Int
+  Status: String
+  SyncDirection: String
+  SyncEnabled: Boolean
+}
+
+input CreateMJCompanyIntegrationFieldMapInput {
+  DefaultValue: String
+  DestinationFieldLabel: String
+  DestinationFieldName: String
+  Direction: String
+  EntityMapID: String
+  ID: String
+  IsKeyField: Boolean
+  IsRequired: Boolean
+  Priority: Int
+  SourceFieldLabel: String
+  SourceFieldName: String
+  Status: String
+  TransformPipeline: String
+}
+
 input CreateMJCompanyIntegrationInput {
   APIKey: String
   AccessToken: String
   ClientID: String
   ClientSecret: String
   CompanyID: String
+  Configuration: String
+  CredentialID: String
   CustomAttribute1: String
   ExternalSystemID: String
   ID: String
@@ -1486,6 +1520,7 @@ input CreateMJCompanyIntegrationInput {
   IsExternalSystemReadOnly: Boolean
   Name: String
   RefreshToken: String
+  SourceTypeID: String
   TokenExpirationDate: Timestamp
 }
 
@@ -1528,6 +1563,16 @@ input CreateMJCompanyIntegrationRunInput {
   StartedAt: Timestamp
   Status: String
   TotalRecords: Int
+}
+
+input CreateMJCompanyIntegrationSyncWatermarkInput {
+  Direction: String
+  EntityMapID: String
+  ID: String
+  LastSyncAt: Timestamp
+  RecordsSynced: Int
+  WatermarkType: String
+  WatermarkValue: String
 }
 
 input CreateMJComponentDependencyInput {
@@ -2443,11 +2488,21 @@ input CreateMJIntegrationInput {
   BatchMaxRequestCount: Int
   BatchRequestWaitTime: Int
   ClassName: String
+  CredentialTypeID: String
   Description: String
   ID: String
   ImportPath: String
   Name: String
   NavigationBaseURL: String
+}
+
+input CreateMJIntegrationSourceTypeInput {
+  Description: String
+  DriverClass: String
+  ID: String
+  IconClass: String
+  Name: String
+  Status: String
 }
 
 input CreateMJIntegrationURLFormatInput {
@@ -2832,6 +2887,7 @@ input CreateMJQueryInput {
   OriginalSQL: String
   QualityRank: Int
   SQL: String
+  SQLDialectID: String
   Status: String
   TechnicalDescription: String
   UserQuestion: String
@@ -2856,6 +2912,13 @@ input CreateMJQueryPermissionInput {
   ID: String
   QueryID: String
   RoleID: String
+}
+
+input CreateMJQuerySQLInput {
+  ID: String
+  QueryID: String
+  SQL: String
+  SQLDialectID: String
 }
 
 input CreateMJQueueInput {
@@ -3088,6 +3151,18 @@ input CreateMJRowLevelSecurityFilterInput {
   FilterText: String
   ID: String
   Name: String
+}
+
+input CreateMJSQLDialectInput {
+  DatabaseName: String
+  Description: String
+  ID: String
+  Icon: String
+  LanguageName: String
+  Name: String
+  PlatformKey: String
+  VendorName: String
+  WebURL: String
 }
 
 input CreateMJScheduledActionInput {
@@ -5127,6 +5202,7 @@ type MJAIAgentRun_ {
   MJAIAgentNotes_SourceAIAgentRunIDArray: [MJAIAgentNote_!]!
   MJAIAgentRunMedias_AgentRunIDArray: [MJAIAgentRunMedia_!]!
   MJAIAgentRunSteps_AgentRunIDArray: [MJAIAgentRunStep_!]!
+  MJAIAgentRuns_LastRunIDArray: [MJAIAgentRun_!]!
   MJAIAgentRuns_ParentRunIDArray: [MJAIAgentRun_!]!
   MJAIPromptRuns_AgentRunIDArray: [MJAIPromptRun_!]!
 
@@ -6254,6 +6330,7 @@ type MJAIModel_ {
   MJAIModels_PriorVersionIDArray: [MJAIModel_!]!
   MJAIPromptModels_ModelIDArray: [MJAIPromptModel_!]!
   MJAIPromptRuns_ModelIDArray: [MJAIPromptRun_!]!
+  MJAIPromptRuns_OriginalModelIDArray: [MJAIPromptRun_!]!
   MJAIResultCache_AIModelIDArray: [MJAIResultCache_!]!
   MJContentTypes_AIModelIDArray: [MJContentType_!]!
   MJEntityAIActions_AIModelIDArray: [MJEntityAIAction_!]!
@@ -6542,6 +6619,7 @@ type MJAIPromptRun_ {
   LogProbs: Boolean
   MJAIPromptRunMedias_PromptRunIDArray: [MJAIPromptRunMedia_!]!
   MJAIPromptRuns_ParentIDArray: [MJAIPromptRun_!]!
+  MJAIPromptRuns_RerunFromPromptRunIDArray: [MJAIPromptRun_!]!
   MJAIResultCache_PromptRunIDArray: [MJAIResultCache_!]!
 
   """Maximum number of retries configured on the prompt"""
@@ -6871,6 +6949,8 @@ type MJAIPrompt_ {
   MJAIConfigurations_DefaultPromptForContextCompressionIDArray: [MJAIConfiguration_!]!
   MJAIConfigurations_DefaultPromptForContextSummarizationIDArray: [MJAIConfiguration_!]!
   MJAIPromptModels_PromptIDArray: [MJAIPromptModel_!]!
+  MJAIPromptRuns_ChildPromptIDArray: [MJAIPromptRun_!]!
+  MJAIPromptRuns_JudgeIDArray: [MJAIPromptRun_!]!
   MJAIPromptRuns_PromptIDArray: [MJAIPromptRun_!]!
   MJAIPrompts_ResultSelectorPromptIDArray: [MJAIPrompt_!]!
   MJAIResultCache_AIPromptIDArray: [MJAIResultCache_!]!
@@ -8080,7 +8160,6 @@ type MJArtifact_ {
   ID: String!
   MJArtifactPermissions_ArtifactIDArray: [MJArtifactPermission_!]!
   MJArtifactVersions_ArtifactIDArray: [MJArtifactVersion_!]!
-  MJCollectionArtifacts_ArtifactIDArray: [MJCollectionArtifact_!]!
 
   """Display name for the artifact"""
   Name: String!
@@ -8106,7 +8185,7 @@ type MJAuditLogType_ {
   Description: String
   ID: String!
   MJAuditLogTypes_ParentIDArray: [MJAuditLogType_!]!
-  MJAuditLogs_AuditLogTypeNameArray: [MJAuditLog_!]!
+  MJAuditLogs_AuditLogTypeIDArray: [MJAuditLog_!]!
   Name: String!
   Parent: String
   ParentID: String
@@ -8174,8 +8253,8 @@ type MJAuthorization_ {
   """
   IsActive: Boolean!
   MJActionAuthorizations_AuthorizationIDArray: [MJActionAuthorization_!]!
-  MJAuditLogTypes_AuthorizationNameArray: [MJAuditLogType_!]!
-  MJAuditLogs_AuthorizationNameArray: [MJAuditLog_!]!
+  MJAuditLogTypes_AuthorizationIDArray: [MJAuditLogType_!]!
+  MJAuditLogs_AuthorizationIDArray: [MJAuditLog_!]!
   MJAuthorizationRoles_AuthorizationIDArray: [MJAuthorizationRole_!]!
   MJAuthorizations_ParentIDArray: [MJAuthorization_!]!
   Name: String!
@@ -8415,6 +8494,110 @@ type MJCommunicationRun_ {
 }
 
 """
+Maps an external object from a company integration to a MemberJunction entity, controlling sync direction, matching, and conflict resolution.
+"""
+type MJCompanyIntegrationEntityMap_ {
+  CompanyIntegration: String!
+  CompanyIntegrationID: String!
+
+  """Optional JSON configuration specific to this entity mapping."""
+  Configuration: String
+
+  """
+  How to handle conflicts when both source and destination have been modified. SourceWins, DestWins, MostRecent, or Manual.
+  """
+  ConflictResolution: String!
+
+  """
+  How to handle records that no longer exist in the source. SoftDelete, DoNothing, or HardDelete.
+  """
+  DeleteBehavior: String!
+  Entity: String!
+  EntityID: String!
+
+  """Optional human-friendly label for the external object."""
+  ExternalObjectLabel: String
+
+  """
+  The name of the object in the external system (e.g. table name, API resource name).
+  """
+  ExternalObjectName: String!
+  ID: String!
+  MJCompanyIntegrationFieldMaps_EntityMapIDArray: [MJCompanyIntegrationFieldMap_!]!
+  MJCompanyIntegrationSyncWatermarks_EntityMapIDArray: [MJCompanyIntegrationSyncWatermark_!]!
+
+  """
+  JSON configuration for the match engine describing how to identify existing records (key fields, fuzzy thresholds, etc.).
+  """
+  MatchStrategy: String
+
+  """
+  Processing order when multiple entity maps exist. Lower numbers are processed first.
+  """
+  Priority: Int!
+
+  """Whether this entity map is Active or Inactive."""
+  Status: String!
+
+  """
+  Whether data flows from external to MJ (Pull), MJ to external (Push), or both.
+  """
+  SyncDirection: String!
+
+  """When true, this entity map is included in sync runs."""
+  SyncEnabled: Boolean!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+"""
+Maps individual fields between an external source object and a MemberJunction entity, with optional transform pipeline.
+"""
+type MJCompanyIntegrationFieldMap_ {
+  """Default value to use when the source field is null or missing."""
+  DefaultValue: String
+
+  """Optional human-friendly label for the destination field."""
+  DestinationFieldLabel: String
+
+  """The MJ entity field name this source field maps to."""
+  DestinationFieldName: String!
+
+  """Direction of field mapping: SourceToDest, DestToSource, or Both."""
+  Direction: String!
+  EntityMap: String!
+  EntityMapID: String!
+  ID: String!
+
+  """
+  When true, this field is used by the MatchEngine to find existing records during sync.
+  """
+  IsKeyField: Boolean!
+
+  """When true, a sync record is rejected if this field has no value."""
+  IsRequired: Boolean!
+
+  """Processing order for this field mapping within the entity map."""
+  Priority: Int!
+
+  """Optional human-friendly label for the source field."""
+  SourceFieldLabel: String
+
+  """The field/column name in the external source system."""
+  SourceFieldName: String!
+
+  """Whether this field mapping is Active or Inactive."""
+  Status: String!
+
+  """
+  JSON array of transform names to apply in order (e.g. ["trim", "uppercase"]). See FieldMappingEngine for available transforms.
+  """
+  TransformPipeline: String
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+"""
 Maps records between internal entities and external system identifiers, maintaining synchronization between MemberJunction and integrated platforms.
 """
 type MJCompanyIntegrationRecordMap_ {
@@ -8531,6 +8714,31 @@ type MJCompanyIntegrationRun_ {
   _mj__UpdatedAt: Timestamp!
 }
 
+"""
+Tracks incremental sync progress per entity map and direction using watermarks (timestamp, cursor, change token, or version).
+"""
+type MJCompanyIntegrationSyncWatermark_ {
+  """Sync direction this watermark tracks: Pull or Push."""
+  Direction: String!
+  EntityMap: String!
+  EntityMapID: String!
+  ID: String!
+
+  """Timestamp of the last successful sync for this watermark."""
+  LastSyncAt: Timestamp
+
+  """Cumulative count of records synced through this watermark."""
+  RecordsSynced: Int!
+
+  """The type of watermark: Timestamp, Cursor, ChangeToken, or Version."""
+  WatermarkType: String!
+
+  """The serialized watermark value used to resume incremental sync."""
+  WatermarkValue: String
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
 """Links individual company records to specific integrations"""
 type MJCompanyIntegration_ {
   """API key for systems using key-based authentication instead of OAuth."""
@@ -8546,6 +8754,16 @@ type MJCompanyIntegration_ {
   ClientSecret: String
   Company: String!
   CompanyID: String!
+
+  """
+  JSON configuration for the integration connection (server, database, credentials reference, etc.).
+  """
+  Configuration: String
+
+  """
+  Optional reference to a Credential record that stores encrypted authentication values for this company integration. Replaces the legacy inline auth fields (AccessToken, RefreshToken, APIKey, etc.).
+  """
+  CredentialID: String
 
   """
   Flexible field for storing integration-specific configuration or metadata.
@@ -8570,6 +8788,7 @@ type MJCompanyIntegration_ {
   LastRunEndedAt: Timestamp
   LastRunID: String
   LastRunStartedAt: Timestamp
+  MJCompanyIntegrationEntityMaps_CompanyIntegrationIDArray: [MJCompanyIntegrationEntityMap_!]!
   MJCompanyIntegrationRecordMaps_CompanyIntegrationIDArray: [MJCompanyIntegrationRecordMap_!]!
   MJCompanyIntegrationRuns_CompanyIntegrationIDArray: [MJCompanyIntegrationRun_!]!
   MJEmployeeCompanyIntegrations_CompanyIntegrationIDArray: [MJEmployeeCompanyIntegration_!]!
@@ -8582,6 +8801,11 @@ type MJCompanyIntegration_ {
 
   """OAuth refresh token used to obtain new access tokens when they expire."""
   RefreshToken: String
+
+  """
+  Links this integration to its source type (SaaS API, Database, File Feed, etc.).
+  """
+  SourceTypeID: String
 
   """
   Timestamp when the current access token expires and needs to be refreshed.
@@ -8607,10 +8831,9 @@ type MJCompany_ {
   LogoURL: String
   MJAIAgentExamples_CompanyIDArray: [MJAIAgentExample_!]!
   MJAIAgentNotes_CompanyIDArray: [MJAIAgentNote_!]!
-  MJCompanyIntegrations_CompanyNameArray: [MJCompanyIntegration_!]!
+  MJCompanyIntegrations_CompanyIDArray: [MJCompanyIntegration_!]!
   MJEmployees_CompanyIDArray: [MJEmployee_!]!
   MJMCPServerConnections_CompanyIDArray: [MJMCPServerConnection_!]!
-  MJWorkflows_CompanyNameArray: [MJWorkflow_!]!
   Name: String!
 
   """The primary website URL for this company or division."""
@@ -9504,6 +9727,7 @@ type MJCredentialType_ {
   IconClass: String
   MJAIVendors_CredentialTypeIDArray: [MJAIVendor_!]!
   MJCredentials_CredentialTypeIDArray: [MJCredential_!]!
+  MJIntegrations_CredentialTypeIDArray: [MJIntegration_!]!
   MJMCPServers_CredentialTypeIDArray: [MJMCPServer_!]!
 
   """Unique name for the credential type (e.g., OpenAI, SendGrid, AWS S3)."""
@@ -9558,6 +9782,7 @@ type MJCredential_ {
   """Timestamp of the last successful validation against the provider."""
   LastValidatedAt: Timestamp
   MJAICredentialBindings_CredentialIDArray: [MJAICredentialBinding_!]!
+  MJCompanyIntegrations_CredentialIDArray: [MJCompanyIntegration_!]!
   MJFileStorageAccounts_CredentialIDArray: [MJFileStorageAccount_!]!
   MJMCPServerConnections_CredentialIDArray: [MJMCPServerConnection_!]!
   MJOAuthTokens_CredentialIDArray: [MJOAuthToken_!]!
@@ -9932,7 +10157,7 @@ type MJDatasetItem_ {
 type MJDataset_ {
   Description: String
   ID: String!
-  MJDatasetItems_DatasetNameArray: [MJDatasetItem_!]!
+  MJDatasetItems_DatasetIDArray: [MJDatasetItem_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -11134,6 +11359,7 @@ type MJEntity_ {
   MJAccessControlRules_EntityIDArray: [MJAccessControlRule_!]!
   MJApplicationEntities_EntityIDArray: [MJApplicationEntity_!]!
   MJAuditLogs_EntityIDArray: [MJAuditLog_!]!
+  MJCompanyIntegrationEntityMaps_EntityIDArray: [MJCompanyIntegrationEntityMap_!]!
   MJCompanyIntegrationRecordMaps_EntityIDArray: [MJCompanyIntegrationRecordMap_!]!
   MJCompanyIntegrationRunDetails_EntityIDArray: [MJCompanyIntegrationRunDetail_!]!
   MJConversations_LinkedEntityIDArray: [MJConversation_!]!
@@ -11142,13 +11368,16 @@ type MJEntity_ {
   MJDuplicateRuns_EntityIDArray: [MJDuplicateRun_!]!
   MJEntities_ParentIDArray: [MJEntity_!]!
   MJEntityAIActions_EntityIDArray: [MJEntityAIAction_!]!
+  MJEntityAIActions_OutputEntityIDArray: [MJEntityAIAction_!]!
   MJEntityActions_EntityIDArray: [MJEntityAction_!]!
   MJEntityCommunicationMessageTypes_EntityIDArray: [MJEntityCommunicationMessageType_!]!
   MJEntityDocuments_EntityIDArray: [MJEntityDocument_!]!
   MJEntityFields_EntityIDArray: [MJEntityField_!]!
+  MJEntityFields_RelatedEntityIDArray: [MJEntityField_!]!
   MJEntityPermissions_EntityIDArray: [MJEntityPermission_!]!
   MJEntityRecordDocuments_EntityIDArray: [MJEntityRecordDocument_!]!
   MJEntityRelationships_EntityIDArray: [MJEntityRelationship_!]!
+  MJEntityRelationships_RelatedEntityIDArray: [MJEntityRelationship_!]!
   MJEntitySettings_EntityIDArray: [MJEntitySetting_!]!
   MJFileEntityRecordLinks_EntityIDArray: [MJFileEntityRecordLink_!]!
   MJGeneratedCodes_LinkedEntityIDArray: [MJGeneratedCode_!]!
@@ -11162,6 +11391,7 @@ type MJEntity_ {
   MJRecordLinks_SourceEntityIDArray: [MJRecordLink_!]!
   MJRecordLinks_TargetEntityIDArray: [MJRecordLink_!]!
   MJRecordMergeLogs_EntityIDArray: [MJRecordMergeLog_!]!
+  MJResourceTypes_CategoryEntityIDArray: [MJResourceType_!]!
   MJResourceTypes_EntityIDArray: [MJResourceType_!]!
   MJTaggedItems_EntityIDArray: [MJTaggedItem_!]!
   MJTemplateParams_EntityIDArray: [MJTemplateParam_!]!
@@ -11601,6 +11831,34 @@ type MJGeneratedCode_ {
 }
 
 """
+Defines categories of integration sources such as SaaS API, Relational Database, or File Feed.
+"""
+type MJIntegrationSourceType_ {
+  """Optional longer description of this source type."""
+  Description: String
+
+  """
+  Fully-qualified class name registered via @RegisterClass that implements BaseIntegrationConnector for this source type.
+  """
+  DriverClass: String!
+  ID: String!
+
+  """Font Awesome icon class for UI display."""
+  IconClass: String
+  MJCompanyIntegrations_SourceTypeIDArray: [MJCompanyIntegration_!]!
+
+  """
+  Display name for this source type (e.g. SaaS API, Relational Database, File Feed).
+  """
+  Name: String!
+
+  """Whether this source type is available for use. Active or Inactive."""
+  Status: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+"""
 Used to generate web links for end users to easily access resources in a source system. URL Formats support templating to inject various field values at run-time to take a user directly to a resource in a source system.
 """
 type MJIntegrationURLFormat_ {
@@ -11632,12 +11890,18 @@ type MJIntegration_ {
 
   """The TypeScript/JavaScript class name implementing this integration."""
   ClassName: String
+  CredentialType: String
+
+  """
+  Optional link to the credential type required by this integration. Used by the UI to pre-select the credential type when creating new credentials and to filter existing credentials.
+  """
+  CredentialTypeID: String
   Description: String
   ID: String!
 
   """Module import path for the integration class in the codebase."""
   ImportPath: String
-  MJCompanyIntegrations_IntegrationNameArray: [MJCompanyIntegration_!]!
+  MJCompanyIntegrations_IntegrationIDArray: [MJCompanyIntegration_!]!
   MJIntegrationURLFormats_IntegrationIDArray: [MJIntegrationURLFormat_!]!
   MJRecordChanges_IntegrationIDArray: [MJRecordChange_!]!
   Name: String!
@@ -12629,6 +12893,25 @@ type MJQueryPermission_ {
   _mj__UpdatedAt: Timestamp!
 }
 
+type MJQuerySQL_ {
+  ID: String!
+  Query: String!
+
+  """Foreign key to the query this SQL variant belongs to"""
+  QueryID: String!
+
+  """
+  The SQL query text in the specified dialect. May include Nunjucks template parameters.
+  """
+  SQL: String!
+  SQLDialect: String!
+
+  """Foreign key to the SQL dialect this SQL is written in"""
+  SQLDialectID: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
 """
 Catalog of stored queries. This is useful for any arbitrary query that is known to be performant and correct and can be reused. Queries can be viewed/run by a user, used programatically via RunQuery, and also used by AI systems for improved reliability instead of dynamically generated SQL. Queries can also improve security since they store the SQL instead of using dynamic SQL.
 """
@@ -12687,6 +12970,7 @@ type MJQuery_ {
   MJQueryFields_QueryIDArray: [MJQueryField_!]!
   MJQueryParameters_QueryIDArray: [MJQueryParameter_!]!
   MJQueryPermissions_QueryIDArray: [MJQueryPermission_!]!
+  MJQuerySQLs_QueryIDArray: [MJQuerySQL_!]!
   Name: String!
 
   """
@@ -12701,6 +12985,12 @@ type MJQuery_ {
 
   """The actual SQL query text to execute, may include parameters."""
   SQL: String
+  SQLDialect: String!
+
+  """
+  The SQL dialect that the SQL column is written in. Defaults to T-SQL for backward compatibility.
+  """
+  SQLDialectID: String!
   Status: String!
 
   """
@@ -13318,8 +13608,46 @@ type MJRowLevelSecurityFilter_ {
   """
   FilterText: String
   ID: String!
+  MJEntityPermissions_CreateRLSFilterIDArray: [MJEntityPermission_!]!
+  MJEntityPermissions_DeleteRLSFilterIDArray: [MJEntityPermission_!]!
   MJEntityPermissions_ReadRLSFilterIDArray: [MJEntityPermission_!]!
+  MJEntityPermissions_UpdateRLSFilterIDArray: [MJEntityPermission_!]!
   Name: String!
+  _mj__CreatedAt: Timestamp!
+  _mj__UpdatedAt: Timestamp!
+}
+
+type MJSQLDialect_ {
+  """Name of the database engine (e.g., SQL Server, PostgreSQL, MySQL)"""
+  DatabaseName: String!
+
+  """Detailed description of this SQL dialect and its characteristics"""
+  Description: String
+  ID: String!
+
+  """CSS class or icon reference for UI display"""
+  Icon: String
+
+  """Name of the SQL language variant (e.g., T-SQL, PL/pgSQL, SQL/PSM)"""
+  LanguageName: String!
+  MJQueries_SQLDialectIDArray: [MJQuery_!]!
+  MJQuerySQLs_SQLDialectIDArray: [MJQuerySQL_!]!
+
+  """Unique display name for the SQL dialect (e.g., T-SQL, PostgreSQL)"""
+  Name: String!
+
+  """
+  Lowercase identifier matching DatabasePlatform type in code (e.g., sqlserver, postgresql). Used by providers to find their dialect at runtime.
+  """
+  PlatformKey: String!
+
+  """
+  Primary vendor or organization behind this database (e.g., Microsoft, PostgreSQL Global Development Group)
+  """
+  VendorName: String
+
+  """URL to the database vendor or documentation website"""
+  WebURL: String
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
 }
@@ -14837,7 +15165,7 @@ type MJUserView_ {
   """Whether this view is shared with other users."""
   IsShared: Boolean!
   MJDataContextItems_ViewIDArray: [MJDataContextItem_!]!
-  MJEntityRelationships_DisplayUserViewGUIDArray: [MJEntityRelationship_!]!
+  MJEntityRelationships_DisplayUserViewIDArray: [MJEntityRelationship_!]!
   MJUserViewRuns_UserViewIDArray: [MJUserViewRun_!]!
   Name: String!
 
@@ -14938,6 +15266,7 @@ type MJUser_ {
   MJDashboardUserStates_UserIDArray: [MJDashboardUserState_!]!
   MJDashboards_UserIDArray: [MJDashboard_!]!
   MJDataContexts_UserIDArray: [MJDataContext_!]!
+  MJDuplicateRuns_ApprovedByUserIDArray: [MJDuplicateRun_!]!
   MJDuplicateRuns_StartedByUserIDArray: [MJDuplicateRun_!]!
   MJListCategories_UserIDArray: [MJListCategory_!]!
   MJListInvitations_CreatedByUserIDArray: [MJListInvitation_!]!
@@ -14953,6 +15282,7 @@ type MJUser_ {
   MJRecommendationRuns_RunByUserIDArray: [MJRecommendationRun_!]!
   MJRecordChangeReplayRuns_UserIDArray: [MJRecordChangeReplayRun_!]!
   MJRecordChanges_UserIDArray: [MJRecordChange_!]!
+  MJRecordMergeLogs_ApprovedByUserIDArray: [MJRecordMergeLog_!]!
   MJRecordMergeLogs_InitiatedByUserIDArray: [MJRecordMergeLog_!]!
   MJReportCategories_UserIDArray: [MJReportCategory_!]!
   MJReportSnapshots_UserIDArray: [MJReportSnapshot_!]!
@@ -15015,7 +15345,7 @@ type MJVectorDatabase_ {
   DefaultURL: String
   Description: String
   ID: String!
-  MJEntityDocuments_IDArray: [MJEntityDocument_!]!
+  MJEntityDocuments_VectorDatabaseIDArray: [MJEntityDocument_!]!
   MJVectorIndexes_VectorDatabaseIDArray: [MJVectorIndex_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
@@ -15218,7 +15548,7 @@ type MJWorkflowEngine_ {
   """Import path for the workflow engine driver."""
   DriverPath: String!
   ID: String!
-  MJWorkflows_WorkflowEngineNameArray: [MJWorkflow_!]!
+  MJWorkflows_WorkflowEngineIDArray: [MJWorkflow_!]!
   Name: String!
   _mj__CreatedAt: Timestamp!
   _mj__UpdatedAt: Timestamp!
@@ -15272,7 +15602,7 @@ type MJWorkflow_ {
   ExternalSystemRecordID: String!
   ID: String!
   MJReports_OutputWorkflowIDArray: [MJReport_!]!
-  MJWorkflowRuns_WorkflowNameArray: [MJWorkflowRun_!]!
+  MJWorkflowRuns_WorkflowIDArray: [MJWorkflowRun_!]!
   Name: String!
 
   """
@@ -15319,7 +15649,7 @@ type MJWorkspace_ {
   Configuration: String
   Description: String
   ID: String!
-  MJWorkspaceItems_WorkSpaceIDArray: [MJWorkspaceItem_!]!
+  MJWorkspaceItems_WorkspaceIDArray: [MJWorkspaceItem_!]!
   Name: String!
   User: String!
   UserID: String!
@@ -15432,10 +15762,13 @@ type Mutation {
   CreateMJCommunicationRun(input: CreateMJCommunicationRunInput!): MJCommunicationRun_!
   CreateMJCompany(input: CreateMJCompanyInput!): MJCompany_!
   CreateMJCompanyIntegration(input: CreateMJCompanyIntegrationInput!): MJCompanyIntegration_!
+  CreateMJCompanyIntegrationEntityMap(input: CreateMJCompanyIntegrationEntityMapInput!): MJCompanyIntegrationEntityMap_!
+  CreateMJCompanyIntegrationFieldMap(input: CreateMJCompanyIntegrationFieldMapInput!): MJCompanyIntegrationFieldMap_!
   CreateMJCompanyIntegrationRecordMap(input: CreateMJCompanyIntegrationRecordMapInput!): MJCompanyIntegrationRecordMap_!
   CreateMJCompanyIntegrationRun(input: CreateMJCompanyIntegrationRunInput!): MJCompanyIntegrationRun_!
   CreateMJCompanyIntegrationRunAPILog(input: CreateMJCompanyIntegrationRunAPILogInput!): MJCompanyIntegrationRunAPILog_!
   CreateMJCompanyIntegrationRunDetail(input: CreateMJCompanyIntegrationRunDetailInput!): MJCompanyIntegrationRunDetail_!
+  CreateMJCompanyIntegrationSyncWatermark(input: CreateMJCompanyIntegrationSyncWatermarkInput!): MJCompanyIntegrationSyncWatermark_!
   CreateMJComponent(input: CreateMJComponentInput!): MJComponent_!
   CreateMJComponentDependency(input: CreateMJComponentDependencyInput!): MJComponentDependency_!
   CreateMJComponentLibrary(input: CreateMJComponentLibraryInput!): MJComponentLibrary_!
@@ -15516,6 +15849,7 @@ type Mutation {
   CreateMJGeneratedCode(input: CreateMJGeneratedCodeInput!): MJGeneratedCode_!
   CreateMJGeneratedCodeCategory(input: CreateMJGeneratedCodeCategoryInput!): MJGeneratedCodeCategory_!
   CreateMJIntegration(input: CreateMJIntegrationInput!): MJIntegration_!
+  CreateMJIntegrationSourceType(input: CreateMJIntegrationSourceTypeInput!): MJIntegrationSourceType_!
   CreateMJIntegrationURLFormat(input: CreateMJIntegrationURLFormatInput!): MJIntegrationURLFormat_!
   CreateMJLibrary(input: CreateMJLibraryInput!): MJLibrary_!
   CreateMJLibraryItem(input: CreateMJLibraryItemInput!): MJLibraryItem_!
@@ -15548,6 +15882,7 @@ type Mutation {
   CreateMJQueryField(input: CreateMJQueryFieldInput!): MJQueryField_!
   CreateMJQueryParameter(input: CreateMJQueryParameterInput!): MJQueryParameter_!
   CreateMJQueryPermission(input: CreateMJQueryPermissionInput!): MJQueryPermission_!
+  CreateMJQuerySQL(input: CreateMJQuerySQLInput!): MJQuerySQL_!
   CreateMJQueue(input: CreateMJQueueInput!): MJQueue_!
   CreateMJQueueTask(input: CreateMJQueueTaskInput!): MJQueueTask_!
   CreateMJQueueType(input: CreateMJQueueTypeInput!): MJQueueType_!
@@ -15570,6 +15905,7 @@ type Mutation {
   CreateMJResourceType(input: CreateMJResourceTypeInput!): MJResourceType_!
   CreateMJRole(input: CreateMJRoleInput!): MJRole_!
   CreateMJRowLevelSecurityFilter(input: CreateMJRowLevelSecurityFilterInput!): MJRowLevelSecurityFilter_!
+  CreateMJSQLDialect(input: CreateMJSQLDialectInput!): MJSQLDialect_!
   CreateMJScheduledAction(input: CreateMJScheduledActionInput!): MJScheduledAction_!
   CreateMJScheduledActionParam(input: CreateMJScheduledActionParamInput!): MJScheduledActionParam_!
   CreateMJScheduledJob(input: CreateMJScheduledJobInput!): MJScheduledJob_!
@@ -15725,10 +16061,13 @@ type Mutation {
   DeleteMJCommunicationRun(ID: String!, options___: DeleteOptionsInput!): MJCommunicationRun_!
   DeleteMJCompany(ID: String!, options___: DeleteOptionsInput!): MJCompany_!
   DeleteMJCompanyIntegration(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegration_!
+  DeleteMJCompanyIntegrationEntityMap(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationEntityMap_!
+  DeleteMJCompanyIntegrationFieldMap(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationFieldMap_!
   DeleteMJCompanyIntegrationRecordMap(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationRecordMap_!
   DeleteMJCompanyIntegrationRun(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationRun_!
   DeleteMJCompanyIntegrationRunAPILog(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationRunAPILog_!
   DeleteMJCompanyIntegrationRunDetail(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationRunDetail_!
+  DeleteMJCompanyIntegrationSyncWatermark(ID: String!, options___: DeleteOptionsInput!): MJCompanyIntegrationSyncWatermark_!
   DeleteMJComponent(ID: String!, options___: DeleteOptionsInput!): MJComponent_!
   DeleteMJComponentDependency(ID: String!, options___: DeleteOptionsInput!): MJComponentDependency_!
   DeleteMJComponentLibrary(ID: String!, options___: DeleteOptionsInput!): MJComponentLibrary_!
@@ -15809,6 +16148,7 @@ type Mutation {
   DeleteMJGeneratedCode(ID: String!, options___: DeleteOptionsInput!): MJGeneratedCode_!
   DeleteMJGeneratedCodeCategory(ID: String!, options___: DeleteOptionsInput!): MJGeneratedCodeCategory_!
   DeleteMJIntegration(ID: String!, options___: DeleteOptionsInput!): MJIntegration_!
+  DeleteMJIntegrationSourceType(ID: String!, options___: DeleteOptionsInput!): MJIntegrationSourceType_!
   DeleteMJIntegrationURLFormat(ID: String!, options___: DeleteOptionsInput!): MJIntegrationURLFormat_!
   DeleteMJLibrary(ID: String!, options___: DeleteOptionsInput!): MJLibrary_!
   DeleteMJLibraryItem(ID: String!, options___: DeleteOptionsInput!): MJLibraryItem_!
@@ -15841,6 +16181,7 @@ type Mutation {
   DeleteMJQueryField(ID: String!, options___: DeleteOptionsInput!): MJQueryField_!
   DeleteMJQueryParameter(ID: String!, options___: DeleteOptionsInput!): MJQueryParameter_!
   DeleteMJQueryPermission(ID: String!, options___: DeleteOptionsInput!): MJQueryPermission_!
+  DeleteMJQuerySQL(ID: String!, options___: DeleteOptionsInput!): MJQuerySQL_!
   DeleteMJQueue(ID: String!, options___: DeleteOptionsInput!): MJQueue_!
   DeleteMJQueueTask(ID: String!, options___: DeleteOptionsInput!): MJQueueTask_!
   DeleteMJQueueType(ID: String!, options___: DeleteOptionsInput!): MJQueueType_!
@@ -15863,6 +16204,7 @@ type Mutation {
   DeleteMJResourceType(ID: String!, options___: DeleteOptionsInput!): MJResourceType_!
   DeleteMJRole(ID: String!, options___: DeleteOptionsInput!): MJRole_!
   DeleteMJRowLevelSecurityFilter(ID: String!, options___: DeleteOptionsInput!): MJRowLevelSecurityFilter_!
+  DeleteMJSQLDialect(ID: String!, options___: DeleteOptionsInput!): MJSQLDialect_!
   DeleteMJScheduledAction(ID: String!, options___: DeleteOptionsInput!): MJScheduledAction_!
   DeleteMJScheduledActionParam(ID: String!, options___: DeleteOptionsInput!): MJScheduledActionParam_!
   DeleteMJScheduledJob(ID: String!, options___: DeleteOptionsInput!): MJScheduledJob_!
@@ -16041,10 +16383,13 @@ type Mutation {
   UpdateMJCommunicationRun(input: UpdateMJCommunicationRunInput!): MJCommunicationRun_!
   UpdateMJCompany(input: UpdateMJCompanyInput!): MJCompany_!
   UpdateMJCompanyIntegration(input: UpdateMJCompanyIntegrationInput!): MJCompanyIntegration_!
+  UpdateMJCompanyIntegrationEntityMap(input: UpdateMJCompanyIntegrationEntityMapInput!): MJCompanyIntegrationEntityMap_!
+  UpdateMJCompanyIntegrationFieldMap(input: UpdateMJCompanyIntegrationFieldMapInput!): MJCompanyIntegrationFieldMap_!
   UpdateMJCompanyIntegrationRecordMap(input: UpdateMJCompanyIntegrationRecordMapInput!): MJCompanyIntegrationRecordMap_!
   UpdateMJCompanyIntegrationRun(input: UpdateMJCompanyIntegrationRunInput!): MJCompanyIntegrationRun_!
   UpdateMJCompanyIntegrationRunAPILog(input: UpdateMJCompanyIntegrationRunAPILogInput!): MJCompanyIntegrationRunAPILog_!
   UpdateMJCompanyIntegrationRunDetail(input: UpdateMJCompanyIntegrationRunDetailInput!): MJCompanyIntegrationRunDetail_!
+  UpdateMJCompanyIntegrationSyncWatermark(input: UpdateMJCompanyIntegrationSyncWatermarkInput!): MJCompanyIntegrationSyncWatermark_!
   UpdateMJComponent(input: UpdateMJComponentInput!): MJComponent_!
   UpdateMJComponentDependency(input: UpdateMJComponentDependencyInput!): MJComponentDependency_!
   UpdateMJComponentLibrary(input: UpdateMJComponentLibraryInput!): MJComponentLibrary_!
@@ -16125,6 +16470,7 @@ type Mutation {
   UpdateMJGeneratedCode(input: UpdateMJGeneratedCodeInput!): MJGeneratedCode_!
   UpdateMJGeneratedCodeCategory(input: UpdateMJGeneratedCodeCategoryInput!): MJGeneratedCodeCategory_!
   UpdateMJIntegration(input: UpdateMJIntegrationInput!): MJIntegration_!
+  UpdateMJIntegrationSourceType(input: UpdateMJIntegrationSourceTypeInput!): MJIntegrationSourceType_!
   UpdateMJIntegrationURLFormat(input: UpdateMJIntegrationURLFormatInput!): MJIntegrationURLFormat_!
   UpdateMJLibrary(input: UpdateMJLibraryInput!): MJLibrary_!
   UpdateMJLibraryItem(input: UpdateMJLibraryItemInput!): MJLibraryItem_!
@@ -16157,6 +16503,7 @@ type Mutation {
   UpdateMJQueryField(input: UpdateMJQueryFieldInput!): MJQueryField_!
   UpdateMJQueryParameter(input: UpdateMJQueryParameterInput!): MJQueryParameter_!
   UpdateMJQueryPermission(input: UpdateMJQueryPermissionInput!): MJQueryPermission_!
+  UpdateMJQuerySQL(input: UpdateMJQuerySQLInput!): MJQuerySQL_!
   UpdateMJQueue(input: UpdateMJQueueInput!): MJQueue_!
   UpdateMJQueueTask(input: UpdateMJQueueTaskInput!): MJQueueTask_!
   UpdateMJQueueType(input: UpdateMJQueueTypeInput!): MJQueueType_!
@@ -16179,6 +16526,7 @@ type Mutation {
   UpdateMJResourceType(input: UpdateMJResourceTypeInput!): MJResourceType_!
   UpdateMJRole(input: UpdateMJRoleInput!): MJRole_!
   UpdateMJRowLevelSecurityFilter(input: UpdateMJRowLevelSecurityFilterInput!): MJRowLevelSecurityFilter_!
+  UpdateMJSQLDialect(input: UpdateMJSQLDialectInput!): MJSQLDialect_!
   UpdateMJScheduledAction(input: UpdateMJScheduledActionInput!): MJScheduledAction_!
   UpdateMJScheduledActionParam(input: UpdateMJScheduledActionParamInput!): MJScheduledActionParam_!
   UpdateMJScheduledJob(input: UpdateMJScheduledJobInput!): MJScheduledJob_!
@@ -16433,10 +16781,13 @@ type Query {
   MJCommunicationRun(ID: String!): MJCommunicationRun_
   MJCompany(ID: String!): MJCompany_
   MJCompanyIntegration(ID: String!): MJCompanyIntegration_
+  MJCompanyIntegrationEntityMap(ID: String!): MJCompanyIntegrationEntityMap_
+  MJCompanyIntegrationFieldMap(ID: String!): MJCompanyIntegrationFieldMap_
   MJCompanyIntegrationRecordMap(ID: String!): MJCompanyIntegrationRecordMap_
   MJCompanyIntegrationRun(ID: String!): MJCompanyIntegrationRun_
   MJCompanyIntegrationRunAPILog(ID: String!): MJCompanyIntegrationRunAPILog_
   MJCompanyIntegrationRunDetail(ID: String!): MJCompanyIntegrationRunDetail_
+  MJCompanyIntegrationSyncWatermark(ID: String!): MJCompanyIntegrationSyncWatermark_
   MJComponent(ID: String!): MJComponent_
   MJComponentDependency(ID: String!): MJComponentDependency_
   MJComponentLibrary(ID: String!): MJComponentLibrary_
@@ -16517,6 +16868,7 @@ type Query {
   MJGeneratedCode(ID: String!): MJGeneratedCode_
   MJGeneratedCodeCategory(ID: String!): MJGeneratedCodeCategory_
   MJIntegration(ID: String!): MJIntegration_
+  MJIntegrationSourceType(ID: String!): MJIntegrationSourceType_
   MJIntegrationURLFormat(ID: String!): MJIntegrationURLFormat_
   MJLibrary(ID: String!): MJLibrary_
   MJLibraryItem(ID: String!): MJLibraryItem_
@@ -16549,6 +16901,7 @@ type Query {
   MJQueryField(ID: String!): MJQueryField_
   MJQueryParameter(ID: String!): MJQueryParameter_
   MJQueryPermission(ID: String!): MJQueryPermission_
+  MJQuerySQL(ID: String!): MJQuerySQL_
   MJQueue(ID: String!): MJQueue_
   MJQueueTask(ID: String!): MJQueueTask_
   MJQueueType(ID: String!): MJQueueType_
@@ -16571,6 +16924,7 @@ type Query {
   MJResourceType(ID: String!): MJResourceType_
   MJRole(ID: String!): MJRole_
   MJRowLevelSecurityFilter(ID: String!): MJRowLevelSecurityFilter_
+  MJSQLDialect(ID: String!): MJSQLDialect_
   MJScheduledAction(ID: String!): MJScheduledAction_
   MJScheduledActionParam(ID: String!): MJScheduledActionParam_
   MJScheduledJob(ID: String!): MJScheduledJob_
@@ -16886,6 +17240,12 @@ type Query {
   RunMJCommunicationRunViewByName(input: RunViewByNameInput!): RunMJCommunicationRunViewResult!
   RunMJCompanyDynamicView(input: RunDynamicViewInput!): RunMJCompanyViewResult!
   RunMJCompanyIntegrationDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationViewResult!
+  RunMJCompanyIntegrationEntityMapDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationEntityMapViewResult!
+  RunMJCompanyIntegrationEntityMapViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationEntityMapViewResult!
+  RunMJCompanyIntegrationEntityMapViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationEntityMapViewResult!
+  RunMJCompanyIntegrationFieldMapDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationFieldMapViewResult!
+  RunMJCompanyIntegrationFieldMapViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationFieldMapViewResult!
+  RunMJCompanyIntegrationFieldMapViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationFieldMapViewResult!
   RunMJCompanyIntegrationRecordMapDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationRecordMapViewResult!
   RunMJCompanyIntegrationRecordMapViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationRecordMapViewResult!
   RunMJCompanyIntegrationRecordMapViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationRecordMapViewResult!
@@ -16898,6 +17258,9 @@ type Query {
   RunMJCompanyIntegrationRunDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationRunViewResult!
   RunMJCompanyIntegrationRunViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationRunViewResult!
   RunMJCompanyIntegrationRunViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationRunViewResult!
+  RunMJCompanyIntegrationSyncWatermarkDynamicView(input: RunDynamicViewInput!): RunMJCompanyIntegrationSyncWatermarkViewResult!
+  RunMJCompanyIntegrationSyncWatermarkViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationSyncWatermarkViewResult!
+  RunMJCompanyIntegrationSyncWatermarkViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationSyncWatermarkViewResult!
   RunMJCompanyIntegrationViewByID(input: RunViewByIDInput!): RunMJCompanyIntegrationViewResult!
   RunMJCompanyIntegrationViewByName(input: RunViewByNameInput!): RunMJCompanyIntegrationViewResult!
   RunMJCompanyViewByID(input: RunViewByIDInput!): RunMJCompanyViewResult!
@@ -17140,6 +17503,9 @@ type Query {
   RunMJGeneratedCodeViewByID(input: RunViewByIDInput!): RunMJGeneratedCodeViewResult!
   RunMJGeneratedCodeViewByName(input: RunViewByNameInput!): RunMJGeneratedCodeViewResult!
   RunMJIntegrationDynamicView(input: RunDynamicViewInput!): RunMJIntegrationViewResult!
+  RunMJIntegrationSourceTypeDynamicView(input: RunDynamicViewInput!): RunMJIntegrationSourceTypeViewResult!
+  RunMJIntegrationSourceTypeViewByID(input: RunViewByIDInput!): RunMJIntegrationSourceTypeViewResult!
+  RunMJIntegrationSourceTypeViewByName(input: RunViewByNameInput!): RunMJIntegrationSourceTypeViewResult!
   RunMJIntegrationURLFormatDynamicView(input: RunDynamicViewInput!): RunMJIntegrationURLFormatViewResult!
   RunMJIntegrationURLFormatViewByID(input: RunViewByIDInput!): RunMJIntegrationURLFormatViewResult!
   RunMJIntegrationURLFormatViewByName(input: RunViewByNameInput!): RunMJIntegrationURLFormatViewResult!
@@ -17236,6 +17602,9 @@ type Query {
   RunMJQueryPermissionDynamicView(input: RunDynamicViewInput!): RunMJQueryPermissionViewResult!
   RunMJQueryPermissionViewByID(input: RunViewByIDInput!): RunMJQueryPermissionViewResult!
   RunMJQueryPermissionViewByName(input: RunViewByNameInput!): RunMJQueryPermissionViewResult!
+  RunMJQuerySQLDynamicView(input: RunDynamicViewInput!): RunMJQuerySQLViewResult!
+  RunMJQuerySQLViewByID(input: RunViewByIDInput!): RunMJQuerySQLViewResult!
+  RunMJQuerySQLViewByName(input: RunViewByNameInput!): RunMJQuerySQLViewResult!
   RunMJQueryViewByID(input: RunViewByIDInput!): RunMJQueryViewResult!
   RunMJQueryViewByName(input: RunViewByNameInput!): RunMJQueryViewResult!
   RunMJQueueDynamicView(input: RunDynamicViewInput!): RunMJQueueViewResult!
@@ -17304,6 +17673,9 @@ type Query {
   RunMJRowLevelSecurityFilterDynamicView(input: RunDynamicViewInput!): RunMJRowLevelSecurityFilterViewResult!
   RunMJRowLevelSecurityFilterViewByID(input: RunViewByIDInput!): RunMJRowLevelSecurityFilterViewResult!
   RunMJRowLevelSecurityFilterViewByName(input: RunViewByNameInput!): RunMJRowLevelSecurityFilterViewResult!
+  RunMJSQLDialectDynamicView(input: RunDynamicViewInput!): RunMJSQLDialectViewResult!
+  RunMJSQLDialectViewByID(input: RunViewByIDInput!): RunMJSQLDialectViewResult!
+  RunMJSQLDialectViewByName(input: RunViewByNameInput!): RunMJSQLDialectViewResult!
   RunMJScheduledActionDynamicView(input: RunDynamicViewInput!): RunMJScheduledActionViewResult!
   RunMJScheduledActionParamDynamicView(input: RunDynamicViewInput!): RunMJScheduledActionParamViewResult!
   RunMJScheduledActionParamViewByID(input: RunViewByIDInput!): RunMJScheduledActionParamViewResult!
@@ -18582,6 +18954,26 @@ type RunMJCommunicationRunViewResult {
   UserViewRunID: String
 }
 
+type RunMJCompanyIntegrationEntityMapViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJCompanyIntegrationEntityMap_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJCompanyIntegrationFieldMapViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJCompanyIntegrationFieldMap_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
 type RunMJCompanyIntegrationRecordMapViewResult {
   ErrorMessage: String
   ExecutionTime: Int
@@ -18616,6 +19008,16 @@ type RunMJCompanyIntegrationRunViewResult {
   ErrorMessage: String
   ExecutionTime: Int
   Results: [MJCompanyIntegrationRun_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJCompanyIntegrationSyncWatermarkViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJCompanyIntegrationSyncWatermark_!]!
   RowCount: Int
   Success: Boolean!
   TotalRowCount: Int
@@ -19432,6 +19834,16 @@ type RunMJGeneratedCodeViewResult {
   UserViewRunID: String
 }
 
+type RunMJIntegrationSourceTypeViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJIntegrationSourceType_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
 type RunMJIntegrationURLFormatViewResult {
   ErrorMessage: String
   ExecutionTime: Int
@@ -19752,6 +20164,16 @@ type RunMJQueryPermissionViewResult {
   UserViewRunID: String
 }
 
+type RunMJQuerySQLViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJQuerySQL_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
 type RunMJQueryViewResult {
   ErrorMessage: String
   ExecutionTime: Int
@@ -19976,6 +20398,16 @@ type RunMJRowLevelSecurityFilterViewResult {
   ErrorMessage: String
   ExecutionTime: Int
   Results: [MJRowLevelSecurityFilter_!]!
+  RowCount: Int
+  Success: Boolean!
+  TotalRowCount: Int
+  UserViewRunID: String
+}
+
+type RunMJSQLDialectViewResult {
+  ErrorMessage: String
+  ExecutionTime: Int
+  Results: [MJSQLDialect_!]!
   RowCount: Int
   Success: Boolean!
   TotalRowCount: Int
@@ -20774,7 +21206,11 @@ input RunViewGenericInput {
   if provided and either ForceAuditLog is set, or the entity's property settings for logging view runs are set to true, this will be used as the Audit Log Description.
   """
   AuditLogDescription: String
-  EntityName: String!
+
+  """
+  The entity name for a dynamic view. Provide either ViewID, ViewName, or EntityName.
+  """
+  EntityName: String
 
   """
   if set to true, the resulting data will filter out ANY records that were ever returned by this view, when the SaveViewResults property was set to true. This is useful if you want to run a particular view over time and make sure the results returned each time are new to the view.
@@ -20836,6 +21272,16 @@ input RunViewGenericInput {
   """
   StartRow: Int
   UserSearchString: String
+
+  """
+  The ID of a saved User View to run. Provide either ViewID, ViewName, or EntityName.
+  """
+  ViewID: String
+
+  """
+  The name of a saved User View to run. Provide either ViewID, ViewName, or EntityName.
+  """
+  ViewName: String
 }
 
 type RunViewGenericResult {
@@ -22682,12 +23128,48 @@ input UpdateMJCompanyInput {
   Website: String
 }
 
+input UpdateMJCompanyIntegrationEntityMapInput {
+  CompanyIntegrationID: String
+  Configuration: String
+  ConflictResolution: String
+  DeleteBehavior: String
+  EntityID: String
+  ExternalObjectLabel: String
+  ExternalObjectName: String
+  ID: String!
+  MatchStrategy: String
+  OldValues___: [KeyValuePairInput!]
+  Priority: Int
+  Status: String
+  SyncDirection: String
+  SyncEnabled: Boolean
+}
+
+input UpdateMJCompanyIntegrationFieldMapInput {
+  DefaultValue: String
+  DestinationFieldLabel: String
+  DestinationFieldName: String
+  Direction: String
+  EntityMapID: String
+  ID: String!
+  IsKeyField: Boolean
+  IsRequired: Boolean
+  OldValues___: [KeyValuePairInput!]
+  Priority: Int
+  SourceFieldLabel: String
+  SourceFieldName: String
+  Status: String
+  TransformPipeline: String
+}
+
 input UpdateMJCompanyIntegrationInput {
   APIKey: String
   AccessToken: String
   ClientID: String
   ClientSecret: String
   CompanyID: String
+  Configuration: String
+  CredentialID: String
   CustomAttribute1: String
   ExternalSystemID: String
   ID: String!
@@ -22697,6 +23179,7 @@ input UpdateMJCompanyIntegrationInput {
   Name: String
   OldValues___: [KeyValuePairInput!]
   RefreshToken: String
+  SourceTypeID: String
   TokenExpirationDate: Timestamp
 }
 
@@ -22743,6 +23226,17 @@ input UpdateMJCompanyIntegrationRunInput {
   StartedAt: Timestamp
   Status: String
   TotalRecords: Int
+}
+
+input UpdateMJCompanyIntegrationSyncWatermarkInput {
+  Direction: String
+  EntityMapID: String
+  ID: String!
+  LastSyncAt: Timestamp
+  OldValues___: [KeyValuePairInput!]
+  RecordsSynced: Int
+  WatermarkType: String
+  WatermarkValue: String
 }
 
 input UpdateMJComponentDependencyInput {
@@ -23737,12 +24231,23 @@ input UpdateMJIntegrationInput {
   BatchMaxRequestCount: Int
   BatchRequestWaitTime: Int
   ClassName: String
+  CredentialTypeID: String
   Description: String
   ID: String!
   ImportPath: String
   Name: String
   NavigationBaseURL: String
   OldValues___: [KeyValuePairInput!]
+}
+
+input UpdateMJIntegrationSourceTypeInput {
+  Description: String
+  DriverClass: String
+  ID: String!
+  IconClass: String
+  Name: String
+  OldValues___: [KeyValuePairInput!]
+  Status: String
 }
 
 input UpdateMJIntegrationURLFormatInput {
@@ -24157,6 +24662,7 @@ input UpdateMJQueryInput {
   OriginalSQL: String
   QualityRank: Int
   SQL: String
+  SQLDialectID: String
   Status: String
   TechnicalDescription: String
   UserQuestion: String
@@ -24183,6 +24689,14 @@ input UpdateMJQueryPermissionInput {
   OldValues___: [KeyValuePairInput!]
   QueryID: String
   RoleID: String
+}
+
+input UpdateMJQuerySQLInput {
+  ID: String!
+  OldValues___: [KeyValuePairInput!]
+  QueryID: String
+  SQL: String
+  SQLDialectID: String
 }
 
 input UpdateMJQueueInput {
@@ -24437,6 +24951,19 @@ input UpdateMJRowLevelSecurityFilterInput {
   ID: String!
   Name: String
   OldValues___: [KeyValuePairInput!]
+}
+
+input UpdateMJSQLDialectInput {
+  DatabaseName: String
+  Description: String
+  ID: String!
+  Icon: String
+  LanguageName: String
+  Name: String
+  OldValues___: [KeyValuePairInput!]
+  PlatformKey: String
+  VendorName: String
+  WebURL: String
 }
 
 input UpdateMJScheduledActionInput {

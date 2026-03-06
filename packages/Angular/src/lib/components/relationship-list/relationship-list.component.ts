@@ -215,6 +215,9 @@ export class RelationshipListComponent {
      */
     @Input() EditMode = false;
 
+    /** Emitted after any mutation (save, delete, end-relationship) so the parent can refresh derived data. */
+    @Output() DataChanged = new EventEmitter<void>();
+
     private _personID: string | null = null;
     private _organizationID: string | null = null;
 
@@ -750,6 +753,7 @@ export class RelationshipListComponent {
 
             await rel.Save();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('RelationshipList: Error adding relationship', err);
         } finally {
@@ -842,6 +846,7 @@ export class RelationshipListComponent {
 
             await rel.Save();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('RelationshipList: Error saving edit', err);
         } finally {
@@ -865,6 +870,7 @@ export class RelationshipListComponent {
             rel.EndDate = new Date();
             await rel.Save();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('RelationshipList: Error ending relationship', err);
         } finally {
@@ -887,6 +893,7 @@ export class RelationshipListComponent {
         try {
             await rel.Delete();
             await this.loadData();
+            this.DataChanged.emit();
         } catch (err) {
             console.error('RelationshipList: Error deleting relationship', err);
         } finally {

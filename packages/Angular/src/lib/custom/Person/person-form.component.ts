@@ -35,4 +35,17 @@ export class BizAppsPersonFormComponent extends mjBizAppsCommonPersonFormCompone
             { sectionKey: 'relationships', sectionName: 'Relationships', isExpanded: true }
         ]);
     }
+
+    /**
+     * Called when a CRUD widget (address, contact method, relationship) mutates
+     * related data. Reloads the record from the database to refresh virtual
+     * fields (PrimaryAddress*, PrimaryEmail, CurrentOrganization*, etc.)
+     * only when the form has no pending edits.
+     */
+    async OnWidgetDataChanged(): Promise<void> {
+        if (!this.record.Dirty) {
+            await this.record.InnerLoad(this.record.PrimaryKey);
+            this.cdr.detectChanges();
+        }
+    }
 }
