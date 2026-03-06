@@ -1,140 +1,357 @@
-# BizApps Common
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MemberJunction/MJ/main/logo.png" alt="MemberJunction" width="120" />
+</p>
 
-Common business application entities (Person, Organization, Address, ContactMethod, Relationship) built as a reusable foundation on the [MemberJunction](https://github.com/MemberJunction/MJ) platform.
+<h1 align="center">BizApps Common</h1>
 
-## The Problem
+<p align="center">
+  <strong>Foundational business entities for the <a href="https://github.com/MemberJunction/MJ">MemberJunction</a> platform</strong>
+</p>
 
-Business applications repeatedly implement the same foundational entities -- people, organizations, addresses, contact information, and relationships. Each implementation creates maintenance burden and prevents data sharing across applications.
+<p align="center">
+  <a href="#installation">Install</a> &middot;
+  <a href="#entity-model">Entity Model</a> &middot;
+  <a href="#angular-components">Components</a> &middot;
+  <a href="docs/">Documentation</a>
+</p>
 
-## What This Provides
+<p align="center">
+  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-5.8.0-blue?style=flat-square" />
+  <img alt="Angular" src="https://img.shields.io/badge/Angular-21-DD0031?style=flat-square&logo=angular&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/License-ISC-green?style=flat-square" />
+  <img alt="Node" src="https://img.shields.io/badge/Node-18%2B-339933?style=flat-square&logo=node.js&logoColor=white" />
+</p>
 
-| Entity | Description |
-|---|---|
-| **Person** | Individual people with demographics, optionally linked to MJ system users |
-| **Organization** | Companies, associations, government bodies with hierarchy support |
-| **Address** | Polymorphic address records linkable to any entity |
-| **ContactMethod** | Additional contact information (phone, email, social media, etc.) |
-| **Relationship** | Typed, directional links between people and organizations |
+---
 
-## Schema Overview
+Business applications repeatedly implement the same foundational entities -- people, organizations, addresses, contact information, and relationships. BizApps Common solves this by providing a production-ready, schema-complete, fully-typed set of reusable business entities as a **MemberJunction Open App**.
 
-All tables live in the `__mj_BizAppsCommon` SQL schema (11 tables):
+Other MJ applications (Committees, Events, Membership, etc.) depend on these shared entities rather than building their own, eliminating duplication and enabling cross-application data sharing.
 
-**Core Entities** -- Person, Organization, Address, ContactMethod, Relationship
-**Type Tables** -- OrganizationType, AddressType, ContactType, RelationshipType
-**Linking** -- AddressLink (polymorphic address linker)
+---
 
-## Prerequisites
+## Installation
 
-- **MemberJunction** v4.x or higher
-- **Node.js** 22+
-- **SQL Server** 2019+ or Azure SQL
-- A configured MJ environment with database access
-
-## Quick Start
-
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Configure Environment
-
-Copy or edit `.env` with your database connection settings. See MemberJunction docs for required environment variables (DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD, auth provider settings).
-
-### 3. Run Migrations
+BizApps Common is a [MemberJunction Open App](https://github.com/MemberJunction/MJ/tree/main/packages/OpenApp). Install it into any MJ environment using the [MJ CLI](https://github.com/MemberJunction/MJ/tree/main/packages/MJCLI):
 
 ```bash
-npm run mj:migrate
+mj app install https://github.com/MemberJunction/bizapps-common
 ```
 
-This creates the `__mj_BizAppsCommon` schema and all tables.
+This single command:
 
-### 4. Sync Metadata
+1. Fetches the `mj-app.json` manifest from this repository
+2. Validates MJ version compatibility (`>=5.0.0 <6.0.0`)
+3. Creates the `__mj_BizAppsCommon` database schema
+4. Runs Skyway migrations to create all 11 tables
+5. Installs npm packages into your MJAPI and MJExplorer workspaces
+6. Configures server bootstrap (`@mj-biz-apps/common-server`) in `mj.config.cjs`
+7. Adds client bootstrap (`@mj-biz-apps/common-ng`) to `open-app-bootstrap.generated.ts`
+
+After installation, restart MJAPI and rebuild MJExplorer to activate.
+
+### Manage the App
 
 ```bash
-npx mj-sync push --dir ./metadata
+mj app list                    # See installed apps
+mj app info bizapps-common     # Show details and version
+mj app upgrade bizapps-common  # Upgrade to latest release
+mj app disable bizapps-common  # Temporarily disable
+mj app enable bizapps-common   # Re-enable
+mj app remove bizapps-common   # Uninstall (--keep-data to preserve schema)
 ```
 
-This loads seed data for organization types, address types, contact types, and relationship types.
+See [Open App Installation Guide](docs/open-app.md) for full details on how the Open App lifecycle works.
 
-### 5. Run Code Generation
+---
 
-```bash
-npm run mj:codegen
+## What You Get
+
+### 11 Database Tables
+
+All tables live in the `__mj_BizAppsCommon` SQL schema, deployed via migrations.
+
+| Category | Tables | Purpose |
+|----------|--------|---------|
+| **Core Entities** | Person, Organization, Address, ContactMethod, Relationship | The business objects themselves |
+| **Type Lookups** | OrganizationType, AddressType, ContactType, RelationshipType | Configurable categorization |
+| **Linking** | AddressLink | Polymorphic address attachment to any entity |
+
+### 4 TypeScript Packages
+
+| Package | NPM Name | Role |
+|---------|----------|------|
+| **Entities** | `@mj-biz-apps/common-entities` | Strongly-typed entity classes with Zod validation |
+| **Actions** | `@mj-biz-apps/common-actions` | Server-side action handlers (e.g., postal code lookup) |
+| **Server** | `@mj-biz-apps/common-server` | GraphQL resolvers and server bootstrap |
+| **Angular** | `@mj-biz-apps/common-ng` | UI components, form overrides, CRUD widgets |
+
+### 4 Reusable Angular Components
+
+Production-ready, standalone Angular widgets that handle their own data loading, editing, and saving:
+
+| Component | Selector | Features |
+|-----------|----------|----------|
+| **Address Editor** | `<bizapps-address-editor>` | Two-table CRUD, postal code autocomplete via Google Geocoding, primary management, inline editing |
+| **Contact Method List** | `<bizapps-contact-method-list>` | Type-based icons, copy-to-clipboard, primary-per-type, open links |
+| **Relationship List** | `<bizapps-relationship-list>` | Grouped timeline, directional labels, typeahead search, date ranges |
+| **Org Hierarchy Tree** | `<bizapps-org-hierarchy-tree>` | Parent/child tree, click-to-navigate, batch loading |
+
+### Custom Form Layouts
+
+Polished form overrides for Person and Organization records with sectioned layouts and embedded CRUD widgets.
+
+---
+
+## Entity Model
+
+```
+                        ┌──────────────────┐
+                        │  OrganizationType │
+                        └────────┬─────────┘
+                                 │
+┌──────────┐            ┌────────┴─────────┐           ┌──────────────┐
+│  Person  │◄──────────►│  Organization    │◄─────────►│ Organization │
+│          │            │                  │  (parent)  │  (children)  │
+└────┬─────┘            └────────┬─────────┘           └──────────────┘
+     │                           │
+     │    ┌──────────────────────┐│
+     ├───►│   ContactMethod     │◄┘
+     │    │  (PersonID or       │
+     │    │   OrganizationID)   │──────► ContactType
+     │    └──────────────────────┘
+     │
+     │    ┌──────────────────────┐       ┌─────────────┐
+     ├───►│   AddressLink       │──────►│   Address    │
+     │    │  (EntityID+RecordID)│       └─────────────┘
+     │    │                     │──────► AddressType
+     │    └──────────────────────┘
+     │
+     │    ┌──────────────────────┐
+     ├───►│   Relationship      │──────► RelationshipType
+     │    │  (From/To Person    │         (ForwardLabel,
+     └───►│   or Organization)  │          ReverseLabel,
+          └──────────────────────┘          IsDirectional)
 ```
 
-Generates TypeScript entity classes, GraphQL resolvers, and Angular components.
+### Key Design Patterns
 
-### 6. Build & Run
+**Polymorphic Address Linking** -- Addresses are standalone records joined to any entity via `AddressLink(EntityID, RecordID)`. This means any entity in the system can have addresses without schema changes.
 
-```bash
-npm run build
-npm start
-```
+**Directional Relationships** -- Each RelationshipType defines `ForwardLabel` and `ReverseLabel` (e.g., "is employee of" / "employs"). The UI automatically selects the correct label based on perspective.
 
-## Directory Structure
+**Contact Method Flexibility** -- ContactMethods attach to either a Person or Organization via nullable FKs. Primary flags are scoped per ContactType, so a person can have a primary email AND a primary phone.
 
-```
-.
-├── apps/
-│   ├── MJAPI/                 # GraphQL API server
-│   └── MJExplorer/            # Angular UI
-├── Demos/                     # Demo datasets (sample SQL data)
-├── metadata/                  # Seed data (types and lookup values)
-├── migrations/                # Flyway database migrations
-├── packages/
-│   ├── GeneratedEntities/     # Auto-generated entity classes
-│   └── GeneratedActions/      # Auto-generated action classes
-├── SQL Scripts/               # SQL views and stored procedures
-├── mj.config.cjs              # MemberJunction configuration
-└── turbo.json                 # Turbo build configuration
-```
+See [Entity Model Reference](docs/entity-model.md) for the complete schema documentation.
 
-## Seed Data
+---
 
-Managed via the `metadata/` folder using `mj-sync`. Includes:
+## Using BizApps Common in Your Code
 
-- **Organization Types**: Company, Non-Profit, Association, Government
-- **Address Types**: Home, Work, Mailing, Billing
-- **Contact Types**: Phone, Mobile, Email, LinkedIn, Website
-- **Relationship Types**: Employment, Family, Professional relationships with directionality
-
-## Using in Your Application
-
-Once installed, you can reference and extend these entities in your own MemberJunction applications:
+### Referencing Entities
 
 ```typescript
-import { PersonEntity, OrganizationEntity } from '@memberjunction/generatedentities';
+import { Metadata } from '@memberjunction/core';
+import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
 
-// Create a person record
 const md = new Metadata();
-const person = await md.GetEntityObject<PersonEntity>('Person', contextUser);
-person.FirstName = 'John';
-person.LastName = 'Doe';
-person.Email = 'john@example.com';
+const person = await md.GetEntityObject<mjBizAppsCommonPersonEntity>(
+    'MJ.BizApps.Common: People'
+);
+person.FirstName = 'Jane';
+person.LastName = 'Smith';
+person.Email = 'jane@example.com';
 await person.Save();
 ```
 
-## Development
+### Querying Data
 
-### After Database Changes
+```typescript
+import { RunView } from '@memberjunction/core';
 
-```bash
-npm run mj:migrate     # Run new migrations
-npm run mj:codegen     # Regenerate TypeScript/GraphQL/Angular code
-npm run build          # Rebuild all packages
+const rv = new RunView();
+const result = await rv.RunView<mjBizAppsCommonPersonEntity>({
+    EntityName: 'MJ.BizApps.Common: People',
+    ExtraFilter: "LastName = 'Smith'",
+    OrderBy: 'FirstName ASC',
+    ResultType: 'entity_object'
+});
+
+if (result.Success) {
+    for (const person of result.Results) {
+        console.log(`${person.FirstName} ${person.LastName}`);
+    }
+}
 ```
 
-### Updating MemberJunction Packages
+### Embedding Widgets in Your Angular Components
+
+```html
+<bizapps-address-editor
+    [EntityName]="'MJ.BizApps.Common: People'"
+    [RecordID]="person.ID"
+    [EditMode]="true"
+    (DataChanged)="onRefresh()">
+</bizapps-address-editor>
+
+<bizapps-contact-method-list
+    [PersonID]="person.ID"
+    [EditMode]="true"
+    (DataChanged)="onRefresh()">
+</bizapps-contact-method-list>
+
+<bizapps-relationship-list
+    [PersonID]="person.ID"
+    [EntityName]="'MJ.BizApps.Common: People'"
+    [EditMode]="true"
+    (Navigate)="onNavigate($event)">
+</bizapps-relationship-list>
+```
+
+---
+
+## Seed Data
+
+Deployed via migrations. Fully customizable per deployment.
+
+| Type Table | Included Records |
+|------------|-----------------|
+| **OrganizationType** | Company, Non-Profit, Association, Government, Educational Institution, Healthcare |
+| **AddressType** | Home, Work, Mailing, Billing, Shipping, Legal |
+| **ContactType** | Phone, Mobile, Email, LinkedIn, Website, Fax, Twitter/X |
+| **RelationshipType** | Spouse, Parent/Child, Sibling, Friend, Employee, Board Member, Member, Volunteer, Customer, Consultant, Subsidiary, Partner, Vendor, Affiliate |
+
+---
+
+## Building an App That Depends on BizApps Common
+
+If you're building your own MJ Open App that references these entities (e.g., a Committees app that links members to Person records), declare the dependency in your `mj-app.json`:
+
+```json
+{
+  "dependencies": {
+    "bizapps-common": {
+      "version": ">=1.0.0",
+      "repository": "https://github.com/MemberJunction/bizapps-common"
+    }
+  }
+}
+```
+
+When users install your app, the MJ CLI will automatically install BizApps Common first if it isn't already present.
+
+---
+
+## Contributing (Developer Setup)
+
+To work on BizApps Common itself (not just use it), clone the repo and set up a local development environment:
 
 ```bash
-./Update_MemberJunction_Packages_To_Latest.ps1
+git clone https://github.com/MemberJunction/bizapps-common.git
+cd bizapps-common
 npm install
-npm run build
 ```
+
+### Configure Environment
+
+Create a `.env` file at the repo root:
+
+```env
+DB_HOST=localhost
+DB_PORT=1433
+DB_DATABASE=YourDatabase
+DB_USERNAME=sa
+DB_PASSWORD=yourpassword
+GRAPHQL_PORT=4101
+```
+
+### Deploy and Build
+
+```bash
+npm run mj:migrate                    # Create schema and tables
+npx mj-sync push --dir ./metadata    # Load seed data
+npm run mj:codegen                    # Generate TypeScript/GraphQL/Angular code
+npm run build                         # Build all packages (Turborepo)
+```
+
+### Run Development Servers
+
+```bash
+npm run start:api      # GraphQL server at localhost:4101
+npm run start:explorer # Angular app at localhost:4301
+```
+
+See [Development Guide](docs/development.md) for the full workflow including build commands, code generation, debugging, and conventions.
+
+---
+
+## Repository Structure
+
+```
+bizapps-common/
+├── mj-app.json                    # MJ Open App manifest
+├── apps/
+│   ├── MJAPI/                     # GraphQL API server (port 4101)
+│   └── MJExplorer/                # Angular UI application (port 4301)
+├── packages/
+│   ├── Entities/                   # @mj-biz-apps/common-entities
+│   ├── Actions/                    # @mj-biz-apps/common-actions
+│   ├── Server/                     # @mj-biz-apps/common-server
+│   └── Angular/                    # @mj-biz-apps/common-ng
+├── migrations/                     # Skyway SQL migrations
+├── metadata/                       # Seed data (synced via mj-sync)
+├── Demos/                          # Sample SQL data
+└── docs/                           # Documentation
+```
+
+### Build Dependency Graph
+
+```
+Entities ──► Actions ──► Server ──► MJAPI
+    │                      │
+    └──────► Angular ──────┴──► MJExplorer
+```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Open App Installation](docs/open-app.md) | How the MJ Open App lifecycle works -- install, upgrade, remove |
+| [Getting Started (Contributors)](docs/getting-started.md) | Full local dev setup with prerequisites and troubleshooting |
+| [Architecture](docs/architecture.md) | System architecture, Open App pattern, data flow, and design decisions |
+| [Entity Model](docs/entity-model.md) | Complete schema reference, ER diagram, relationships, and access patterns |
+| [Angular Components](docs/angular-components.md) | Component API reference, usage examples, and styling guide |
+| [Development Guide](docs/development.md) | Build system, code generation, TypeScript conventions, and Git workflow |
+| [API & Server](docs/api-server.md) | GraphQL API, server bootstrap, actions system, and deployment |
+| [Configuration](docs/configuration.md) | Environment variables, manifest files, and port reference |
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| **Platform** | [MemberJunction](https://github.com/MemberJunction/MJ) | 5.8.0 |
+| **Runtime** | Node.js | 18+ |
+| **Language** | TypeScript | 5.9 |
+| **Database** | SQL Server / Azure SQL | 2019+ |
+| **API** | GraphQL (Apollo Server) | -- |
+| **UI Framework** | Angular | 21 |
+| **Build** | Turborepo | 2.7 |
+| **Validation** | Zod | 3.24 |
+| **Auth** | MSAL / Auth0 | -- |
+
+---
 
 ## License
 
 ISC
+
+---
+
+<p align="center">
+  Built on <a href="https://github.com/MemberJunction/MJ">MemberJunction</a> -- the open-source metadata-driven application platform.
+</p>
