@@ -23,7 +23,7 @@ import {
     mjBizAppsCommonPersonEntity,
     mjBizAppsCommonRelationshipEntity,
     mjBizAppsCommonRelationshipTypeEntity,
-} from '@memberjunction/bizapps-common-entities';
+} from '@memberjunction-bizapps/common-entities';
 
 /**
  * Runtime references to every @RegisterClass decorated class.
@@ -51,5 +51,5 @@ export const CLASS_REGISTRATIONS_COUNT = 10;
 
 /** Packages imported by this manifest */
 export const CLASS_REGISTRATIONS_PACKAGES = [
-    '@memberjunction/bizapps-common-entities',
+    '@memberjunction-bizapps/common-entities',
 ] as const;

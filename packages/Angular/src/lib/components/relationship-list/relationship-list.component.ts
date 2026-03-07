@@ -8,7 +8,7 @@ import {
     mjBizAppsCommonRelationshipTypeEntity,
     mjBizAppsCommonPersonEntity,
     mjBizAppsCommonOrganizationEntity
-} from '@memberjunction/bizapps-common-entities';
+} from '@memberjunction-bizapps/common-entities';
 
 /**
  * View model for a single relationship row, enriched with display-friendly

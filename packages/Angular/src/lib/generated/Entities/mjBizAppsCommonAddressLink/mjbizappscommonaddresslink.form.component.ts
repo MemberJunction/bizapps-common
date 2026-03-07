@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { mjBizAppsCommonAddressLinkEntity } from '@memberjunction/bizapps-common-entities';
+import { mjBizAppsCommonAddressLinkEntity } from '@memberjunction-bizapps/common-entities';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 

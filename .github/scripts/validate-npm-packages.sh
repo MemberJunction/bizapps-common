@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validates that all @memberjunction/bizapps-common-* packages exist on npm
+# Validates that all @memberjunction-bizapps/common-* packages exist on npm
 
 echo "Checking for new packages that need npm placeholders..."
 
@@ -11,7 +11,7 @@ RETRY_DELAY=2
 for pkg_json in $(find packages -name "package.json" -maxdepth 2 -not -path "*/node_modules/*"); do
   name=$(jq -r '.name // ""' "$pkg_json")
 
-  if [[ "$name" != @memberjunction/bizapps-common-* ]]; then
+  if [[ "$name" != @memberjunction-bizapps/common-* ]]; then
     continue
   fi
 
@@ -48,4 +48,4 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   exit 1
 fi
 
-echo "All $CHECKED @memberjunction/bizapps-common-* packages exist on npm"
+echo "All $CHECKED @memberjunction-bizapps/common-* packages exist on npm"

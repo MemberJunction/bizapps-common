@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validates repository.url in all @memberjunction/bizapps-common-* packages
+# Validates repository.url in all @memberjunction-bizapps/common-* packages
 
 EXPECTED_URL="https://github.com/MemberJunction/bizapps-common"
 ERRORS=0
@@ -9,7 +9,7 @@ echo "Checking repository.url in all publishable packages..."
 for pkg_json in $(find packages -name "package.json" -maxdepth 2 -not -path "*/node_modules/*" -not -path "*/dist/*"); do
   name=$(jq -r '.name // ""' "$pkg_json")
 
-  if [[ "$name" != @memberjunction/bizapps-common-* ]]; then
+  if [[ "$name" != @memberjunction-bizapps/common-* ]]; then
     continue
   fi
 

@@ -7,7 +7,7 @@
  */
 
 // Import entity package to trigger @RegisterClass decorators for entity subclasses
-import '@memberjunction/bizapps-common-entities';
+import '@memberjunction-bizapps/common-entities';
 
 // Import generated form components (triggers @RegisterClass for form components)
 import './lib/generated/generated-forms.module';

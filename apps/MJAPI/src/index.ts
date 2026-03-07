@@ -5,7 +5,7 @@
 import { createMJServer } from '@memberjunction/server-bootstrap';
 
 // Import the BizApps Common server bootstrap (registers entities, actions, and resolvers)
-import { RESOLVER_PATHS } from '@memberjunction/bizapps-common-server';
+import { RESOLVER_PATHS } from '@memberjunction-bizapps/common-server';
 
 // Import pre-built MJ class registrations manifest (covers all @memberjunction/* packages)
 import '@memberjunction/server-bootstrap/mj-class-registrations';

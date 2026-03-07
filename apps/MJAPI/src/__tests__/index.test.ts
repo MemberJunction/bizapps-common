@@ -7,7 +7,7 @@ vi.mock('@memberjunction/server-bootstrap', () => ({
   createMJServer: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@memberjunction/bizapps-common-server', () => ({
+vi.mock('@memberjunction-bizapps/common-server', () => ({
   RESOLVER_PATHS: [],
   LoadBizAppsCommonServer: vi.fn(),
   CLASS_REGISTRATIONS: [],

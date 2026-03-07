@@ -1,5 +1,5 @@
 {
-  "name": "@memberjunction/bizapps-common-entities",
+  "name": "@memberjunction-bizapps/common-entities",
   "type": "module",
   "version": "5.4.0",
   "description": "MJ BizApps Common Entity Subclasses",

@@ -27,25 +27,25 @@
   "packages": {
     "server": [
       {
-        "name": "@memberjunction/bizapps-common-server",
+        "name": "@memberjunction-bizapps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
       }
     ],
     "client": [
       {
-        "name": "@memberjunction/bizapps-common-ng",
+        "name": "@memberjunction-bizapps/common-ng",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonClient"
       }
     ],
     "shared": [
       {
-        "name": "@memberjunction/bizapps-common-entities",
+        "name": "@memberjunction-bizapps/common-entities",
         "role": "library"
       },
       {
-        "name": "@memberjunction/bizapps-common-actions",
+        "name": "@memberjunction-bizapps/common-actions",
         "role": "library"
       }
     ]
