@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.memberjunction.org/mj-app/v1.json",
   "manifestVersion": 1,
-  "name": "mj-bizapps-common",
+  "name": "memberjunction-bizapps",
   "displayName": "BizApps Common",
   "description": "Common business entities (Person, Organization, Address, ContactMethod, Relationship) shared across MemberJunction business applications",
   "version": "1.0.0",

@@ -1,5 +1,5 @@
 {
-  "name": "mj-bizapps-common",
+  "name": "memberjunction-bizapps",
   "version": "1.0.0",
   "license": "ISC",
   "description": "BizApps Common - Common business application entities (Person, Organization, Address, ContactMethod, Relationship) built on MemberJunction",
