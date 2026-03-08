@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.memberjunction.org/mj-app/v1.json",
   "manifestVersion": 1,
-  "name": "mj-bizapps-common",
+  "name": "memberjunction-bizapps",
   "displayName": "BizApps Common",
   "description": "Common business entities (Person, Organization, Address, ContactMethod, Relationship) shared across MemberJunction business applications",
   "version": "1.0.0",
@@ -27,25 +27,25 @@
   "packages": {
     "server": [
       {
-        "name": "@mj-biz-apps/common-server",
+        "name": "@memberjunction-bizapps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
       }
     ],
     "client": [
       {
-        "name": "@mj-biz-apps/common-ng",
+        "name": "@memberjunction-bizapps/common-ng",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonClient"
       }
     ],
     "shared": [
       {
-        "name": "@mj-biz-apps/common-entities",
+        "name": "@memberjunction-bizapps/common-entities",
         "role": "library"
       },
       {
-        "name": "@mj-biz-apps/common-actions",
+        "name": "@memberjunction-bizapps/common-actions",
         "role": "library"
       }
     ]

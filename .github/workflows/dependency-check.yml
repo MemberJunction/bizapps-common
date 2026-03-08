@@ -1,0 +1,90 @@
+name: Check Dependencies
+
+on:
+  pull_request:
+    branches: [next]
+    paths:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/package.json'
+
+concurrency:
+  group: deps-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Knip
+        run: |
+          NO_COLOR=1 npx knip --include unlisted --reporter compact > knip-report.txt 2>&1 || true
+          cat knip-report.txt
+
+      - name: Check for missing dependencies
+        id: check
+        run: |
+          if grep -qE 'Found \*\*[1-9][0-9]* missing dependencies\*\*' knip-report.txt 2>/dev/null; then
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('knip-report.txt', 'utf8');
+            const hasIssues = '${{ steps.check.outputs.has_issues }}' === 'true';
+            const emoji = hasIssues ? ':x:' : ':white_check_mark:';
+            const body = `## ${emoji} Dependency Check\n\n\`\`\`\n${report}\n\`\`\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Dependency Check')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if missing dependencies
+        if: steps.check.outputs.has_issues == 'true'
+        run: |
+          echo "::error::Missing dependencies detected. See PR comment for details."
+          exit 1

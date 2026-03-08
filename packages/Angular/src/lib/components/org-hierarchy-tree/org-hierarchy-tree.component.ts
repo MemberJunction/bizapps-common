@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { CompositeKey, RunView } from '@memberjunction/core';
 import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
-import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities';
+import { mjBizAppsCommonOrganizationEntity } from '@memberjunction-bizapps/common-entities';
 
 /**
  * Represents a single node in the organization hierarchy tree.

@@ -1,0 +1,177 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      targetVersion:
+        description: 'Target version (e.g., 5.5.0). Leave empty for auto-detection.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: "publish"
+  cancel-in-progress: false
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate migration filenames
+        run: |
+          chmod +x ./.github/scripts/validate-migration-filenames.sh
+          ./.github/scripts/validate-migration-filenames.sh
+
+      - name: Create docker network
+        run: docker network create -d bridge local-net
+
+      - name: Create SQL Server container
+        run: docker run --rm -d --network local-net --name sql -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=VeryStr0ngP@ssw0rd" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+
+      - name: Wait for SQL Server to be ready
+        run: sleep 20
+
+      - name: Create SQL database
+        run: docker run --rm --network local-net mcr.microsoft.com/mssql-tools /opt/mssql-tools/bin/sqlcmd -S sql -U SA -P 'VeryStr0ngP@ssw0rd' -Q "CREATE DATABASE [test];"
+
+      - name: Set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install MJ CLI globally
+        run: npm install --global @memberjunction/cli
+
+      - name: Run mj migrate locally
+        run: mj migrate
+        env:
+          DB_HOST: localhost
+          DB_DATABASE: test
+          DB_USERNAME: sa
+          DB_PASSWORD: VeryStr0ngP@ssw0rd
+          CODEGEN_DB_USERNAME: sa
+          CODEGEN_DB_PASSWORD: VeryStr0ngP@ssw0rd
+          DB_TRUST_SERVER_CERTIFICATE: 'true'
+
+  build-and-publish:
+    needs: test-migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Validate package-lock.json case-sensitivity
+        run: |
+          chmod +x ./.github/scripts/validate-package-lock-case.sh
+          ./.github/scripts/validate-package-lock-case.sh
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate all packages exist on npm
+        if: github.ref == 'refs/heads/main'
+        run: |
+          chmod +x ./.github/scripts/validate-npm-packages.sh
+          ./.github/scripts/validate-npm-packages.sh
+
+      - name: Validate repository.url for npm provenance
+        run: |
+          chmod +x ./.github/scripts/validate-package-repository.sh
+          ./.github/scripts/validate-package-repository.sh
+
+      - name: Configure git credentials
+        env:
+          REPO_PAT: ${{ secrets.MJ_GH_BOT_GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git remote set-url origin "https://$REPO_PAT@github.com/MemberJunction/bizapps-common"
+
+      - name: Determine next expected version
+        if: github.ref == 'refs/heads/main' && !github.event.inputs.targetVersion
+        id: version_check
+        run: |
+          git fetch --tags
+          CURRENT_VERSION=$(jq -r .version packages/Entities/package.json)
+          echo "Current version: $CURRENT_VERSION"
+
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          NEXT_MINOR_VERSION="${VERSION_PARTS[0]}.$(( ${VERSION_PARTS[1]} + 1 )).0"
+          NEXT_PATCH_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$(( ${VERSION_PARTS[2]} + 1 ))"
+
+          if git rev-parse "v${CURRENT_VERSION}" >/dev/null 2>&1; then
+            NEW_MIGRATION_FILES=$(git --no-pager diff --name-only "v${CURRENT_VERSION}" "${{ github.sha }}" -- migrations/ || true)
+          else
+            NEW_MIGRATION_FILES=""
+          fi
+
+          if [ -n "$NEW_MIGRATION_FILES" ]; then
+            echo "New migrations found - bumping minor version"
+            echo "EXPECTED_NEXT_VERSION=$NEXT_MINOR_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new migrations - bumping patch version"
+            echo "EXPECTED_NEXT_VERSION=$NEXT_PATCH_VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          EXPECTED_NEXT_VERSION="${{ github.event.inputs.targetVersion || steps.version_check.outputs.EXPECTED_NEXT_VERSION }}"
+          echo "Expected next version: $EXPECTED_NEXT_VERSION"
+
+          npm run version
+
+          NEXT_VERSION=$(jq -r .version packages/Entities/package.json)
+          echo "::notice::Version to be published: $NEXT_VERSION"
+
+          if [ -n "$EXPECTED_NEXT_VERSION" ] && [ "$NEXT_VERSION" != "$EXPECTED_NEXT_VERSION" ]; then
+            echo "::error::Version mismatch! Expected $EXPECTED_NEXT_VERSION but got $NEXT_VERSION"
+            exit 1
+          fi
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Publish to npm
+        run: npx changeset publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get version and create tag
+        if: github.ref == 'refs/heads/main'
+        id: get_version
+        run: |
+          git pull
+          VERSION="v$(jq -r .version packages/Entities/package.json)"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "## Published $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push
+        if: github.ref == 'refs/heads/main'
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: npm run commitpush
+
+      - name: Merge main into next and update lockfile
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git checkout next
+          npm run mergemain:update-lock
