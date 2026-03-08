@@ -103,7 +103,7 @@ Declares the app to MJ's dynamic package loader:
 
 ```json
 {
-    "name": "mj-bizapps-common",
+    "name": "memberjunction-bizapps",
     "displayName": "BizApps Common",
     "schema": {
         "name": "__mj_BizAppsCommon",
