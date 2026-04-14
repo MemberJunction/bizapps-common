@@ -14,7 +14,7 @@
   "repository": "https://github.com/MemberJunction/bizapps-common",
   "mjVersionRange": ">=5.0.0 <6.0.0",
   "schema": {
-    "name": "__mj_BizAppsCommon",
+    "name": "__mj_bizapps_common",
     "createIfNotExists": true
   },
   "migrations": {
