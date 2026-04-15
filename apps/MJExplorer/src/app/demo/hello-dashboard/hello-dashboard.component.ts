@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseDashboard } from '@memberjunction/ng-shared';
 import { CompositeKey, KeyValuePair, RunView } from '@memberjunction/core';
-import { Subject, BehaviorSubject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ResourceData } from '@memberjunction/core-entities';
 
@@ -322,14 +322,6 @@ export class HelloDashboardComponent extends BaseDashboard implements OnInit, On
   // REACTIVE STATE MANAGEMENT PROPERTIES
   // ═══════════════════════════════════════════════════════════════════════════════════════
   
-  /**
-   * RxJS Subject for managing component destruction and cleanup.
-   * Used with takeUntil operator to automatically unsubscribe from observables.
-   * 
-   * @private
-   * @type {Subject<void>}
-   */
-  private destroy$ = new Subject<void>();
 
   /**
    * RxJS BehaviorSubject for debounced user state updates.
@@ -433,8 +425,6 @@ export class HelloDashboardComponent extends BaseDashboard implements OnInit, On
     
     
     super.ngOnDestroy();
-    this.destroy$.next();
-    this.destroy$.complete();
     this.stopAnimation();
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('keydown', this.onKeyDown);

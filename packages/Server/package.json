@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-server",
   "type": "module",
-  "version": "5.17.0",
+  "version": "5.26.0",
   "description": "BizApps Common server bootstrap - GraphQL resolvers and class registrations for the Common business entities Open App",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,12 +21,12 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.17.0",
-    "@mj-biz-apps/common-actions": "5.17.0",
-    "@memberjunction/core": "5.17.0",
-    "@memberjunction/global": "5.17.0",
-    "@memberjunction/server": "5.17.0",
-    "@memberjunction/sqlserver-dataprovider": "5.17.0",
+    "@mj-biz-apps/common-entities": "5.26.0",
+    "@mj-biz-apps/common-actions": "5.26.0",
+    "@memberjunction/core": "5.26.0",
+    "@memberjunction/global": "5.26.0",
+    "@memberjunction/server": "5.26.0",
+    "@memberjunction/sqlserver-dataprovider": "5.26.0",
     "class-validator": "^0.14.3"
   },
   "repository": {
