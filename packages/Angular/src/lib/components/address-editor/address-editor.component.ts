@@ -149,7 +149,7 @@ export class AddressEditorComponent {
      * Setting this property triggers a data reload when {@link RecordID} is
      * also available, unless the value has not changed.
      *
-     * @example `'MJ.BizApps.Common: People'`
+     * @example `'BAC: People'`
      */
     @Input()
     set EntityName(value: string) {
@@ -347,12 +347,12 @@ export class AddressEditorComponent {
             // Load address links and address types in parallel
             const [linksResult, typesResult] = await rv.RunViews([
                 {
-                    EntityName: 'MJ.BizApps.Common: Address Links',
+                    EntityName: 'BAC: Address Links',
                     ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
                     ResultType: 'entity_object'
                 },
                 {
-                    EntityName: 'MJ.BizApps.Common: Address Types',
+                    EntityName: 'BAC: Address Types',
                     ExtraFilter: 'IsActive=1',
                     OrderBy: 'DefaultRank ASC',
                     ResultType: 'entity_object'
@@ -366,7 +366,7 @@ export class AddressEditorComponent {
             if (links.length > 0) {
                 const addressIDs = links.map(l => `'${l.AddressID}'`).join(',');
                 const addressResult = await rv.RunView<mjBizAppsCommonAddressEntity>({
-                    EntityName: 'MJ.BizApps.Common: Addresses',
+                    EntityName: 'BAC: Addresses',
                     ExtraFilter: `ID IN (${addressIDs})`,
                     ResultType: 'entity_object'
                 });
@@ -569,7 +569,7 @@ export class AddressEditorComponent {
     /** Creates a new Address record and its associated AddressLink. */
     private async saveNew(md: Metadata): Promise<void> {
         // Create new Address
-        const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ.BizApps.Common: Addresses');
+        const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('BAC: Addresses');
         address.NewRecord();
         address.Line1 = this.EditForm.Line1;
         address.Line2 = this.EditForm.Line2 || null;
@@ -584,7 +584,7 @@ export class AddressEditorComponent {
         }
 
         // Create AddressLink
-        const link = await md.GetEntityObject<mjBizAppsCommonAddressLinkEntity>('MJ.BizApps.Common: Address Links');
+        const link = await md.GetEntityObject<mjBizAppsCommonAddressLinkEntity>('BAC: Address Links');
         link.NewRecord();
         link.AddressID = address.ID;
         link.EntityID = this.resolvedEntityID;

@@ -209,12 +209,12 @@ export class ContactMethodListComponent {
 
             const [methodsResult, typesResult] = await rv.RunViews([
                 {
-                    EntityName: 'MJ.BizApps.Common: Contact Methods',
+                    EntityName: 'BAC: Contact Methods',
                     ExtraFilter: filter,
                     ResultType: 'entity_object'
                 },
                 {
-                    EntityName: 'MJ.BizApps.Common: Contact Types',
+                    EntityName: 'BAC: Contact Types',
                     ExtraFilter: 'IsActive=1',
                     OrderBy: 'DisplayRank ASC',
                     ResultType: 'entity_object'
@@ -394,7 +394,7 @@ export class ContactMethodListComponent {
 
         try {
             const md = new Metadata();
-            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ.BizApps.Common: Contact Methods');
+            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('BAC: Contact Methods');
             cm.NewRecord();
             cm.ContactTypeID = this.AddForm.TypeID;
             cm.Value = this.AddForm.Value;

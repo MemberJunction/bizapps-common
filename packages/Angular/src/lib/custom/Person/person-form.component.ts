@@ -12,7 +12,7 @@ import { mjBizAppsCommonPersonFormComponent } from '../../generated/Entities/mjB
  * and replaces the generic related-entity data grids with richer CRUD
  * widgets for addresses, contact methods, and relationships.
  */
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: People')
+@RegisterClass(BaseFormComponent, 'BAC: People')
 @Component({
     standalone: false,
     selector: 'bizapps-person-form',

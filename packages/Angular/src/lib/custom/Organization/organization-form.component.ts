@@ -12,7 +12,7 @@ import { mjBizAppsCommonOrganizationFormComponent } from '../../generated/Entiti
  * and replaces the generic related-entity data grids with richer CRUD
  * widgets for hierarchy tree, addresses, contact methods, and relationships.
  */
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Organizations')
+@RegisterClass(BaseFormComponent, 'BAC: Organizations')
 @Component({
     standalone: false,
     selector: 'bizapps-organization-form',

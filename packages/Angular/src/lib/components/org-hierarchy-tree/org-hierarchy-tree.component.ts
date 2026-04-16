@@ -122,7 +122,7 @@ export class OrgHierarchyTreeComponent {
 
             // First, load the current organization
             const currentResult = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
-                EntityName: 'MJ.BizApps.Common: Organizations',
+                EntityName: 'BAC: Organizations',
                 ExtraFilter: `ID='${this._organizationID}'`,
                 ResultType: 'entity_object'
             });
@@ -163,14 +163,14 @@ export class OrgHierarchyTreeComponent {
 
         if (parentID) {
             queries.push({
-                EntityName: 'MJ.BizApps.Common: Organizations',
+                EntityName: 'BAC: Organizations',
                 ExtraFilter: `ID='${parentID}'`,
                 ResultType: 'entity_object'
             });
         }
 
         queries.push({
-            EntityName: 'MJ.BizApps.Common: Organizations',
+            EntityName: 'BAC: Organizations',
             ExtraFilter: `ParentID='${this._organizationID}'`,
             ResultType: 'entity_object'
         });
@@ -233,7 +233,7 @@ export class OrgHierarchyTreeComponent {
 
         const navEvent: RecordNavigationEvent = {
             Kind: 'record',
-            EntityName: 'MJ.BizApps.Common: Organizations',
+            EntityName: 'BAC: Organizations',
             PrimaryKey: CompositeKey.FromKeyValuePair('ID', node.ID),
             OpenInNewTab: event.ctrlKey || event.metaKey
         };

@@ -132,7 +132,7 @@ module.exports = {
   //
   // Using defaults - Core entities (__mj schema) should not be modified by distributions.
   // Uncomment only if you need different exclusions than the defaults.
-  // excludeSchemas: ['sys', 'staging', '__mj'],
+  excludeSchemas: ['sys', 'staging', '__mj', 'Izzy', '__BCSaaS'],
   // excludeTables: [
   //   { schema: '%', table: 'sys%' },
   //   { schema: '%', table: 'flyway_schema_history' }
