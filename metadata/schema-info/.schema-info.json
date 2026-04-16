@@ -4,7 +4,7 @@
       "SchemaName": "__mj_BizAppsCommon",
       "EntityIDMin": 1,
       "EntityIDMax": 1000000,
-      "EntityNamePrefix": "BAC: ",
+      "EntityNamePrefix": "MJ_BizApps_Common: ",
       "Description": "MemberJunction: Common Business App Data"
     },
     "primaryKey": {
