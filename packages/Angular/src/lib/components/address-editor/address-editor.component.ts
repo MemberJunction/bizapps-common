@@ -74,7 +74,7 @@ interface AddressEditForm {
  * @example
  * ```html
  * <bizapps-address-editor
- *     EntityName="MJ.BizApps.Common: People"
+ *     EntityName="MJ_BizApps_Common: People"
  *     [RecordID]="personId">
  * </bizapps-address-editor>
  * ```
@@ -149,7 +149,7 @@ export class AddressEditorComponent {
      * Setting this property triggers a data reload when {@link RecordID} is
      * also available, unless the value has not changed.
      *
-     * @example `'MJ.BizApps.Common: People'`
+     * @example `'MJ_BizApps_Common: People'`
      */
     @Input()
     set EntityName(value: string) {
@@ -188,7 +188,7 @@ export class AddressEditorComponent {
 
     /**
      * All active address types available for selection in the type dropdown.
-     * Loaded from the `MJ.BizApps.Common: Address Types` entity, sorted by
+     * Loaded from the `MJ_BizApps_Common: Address Types` entity, sorted by
      * `DefaultRank ASC`.
      */
     AddressTypes: mjBizAppsCommonAddressTypeEntity[] = [];
@@ -347,12 +347,12 @@ export class AddressEditorComponent {
             // Load address links and address types in parallel
             const [linksResult, typesResult] = await rv.RunViews([
                 {
-                    EntityName: 'MJ.BizApps.Common: Address Links',
+                    EntityName: 'MJ_BizApps_Common: Address Links',
                     ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
                     ResultType: 'entity_object'
                 },
                 {
-                    EntityName: 'MJ.BizApps.Common: Address Types',
+                    EntityName: 'MJ_BizApps_Common: Address Types',
                     ExtraFilter: 'IsActive=1',
                     OrderBy: 'DefaultRank ASC',
                     ResultType: 'entity_object'
@@ -366,7 +366,7 @@ export class AddressEditorComponent {
             if (links.length > 0) {
                 const addressIDs = links.map(l => `'${l.AddressID}'`).join(',');
                 const addressResult = await rv.RunView<mjBizAppsCommonAddressEntity>({
-                    EntityName: 'MJ.BizApps.Common: Addresses',
+                    EntityName: 'MJ_BizApps_Common: Addresses',
                     ExtraFilter: `ID IN (${addressIDs})`,
                     ResultType: 'entity_object'
                 });
@@ -569,7 +569,7 @@ export class AddressEditorComponent {
     /** Creates a new Address record and its associated AddressLink. */
     private async saveNew(md: Metadata): Promise<void> {
         // Create new Address
-        const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ.BizApps.Common: Addresses');
+        const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ_BizApps_Common: Addresses');
         address.NewRecord();
         address.Line1 = this.EditForm.Line1;
         address.Line2 = this.EditForm.Line2 || null;
@@ -584,7 +584,7 @@ export class AddressEditorComponent {
         }
 
         // Create AddressLink
-        const link = await md.GetEntityObject<mjBizAppsCommonAddressLinkEntity>('MJ.BizApps.Common: Address Links');
+        const link = await md.GetEntityObject<mjBizAppsCommonAddressLinkEntity>('MJ_BizApps_Common: Address Links');
         link.NewRecord();
         link.AddressID = address.ID;
         link.EntityID = this.resolvedEntityID;

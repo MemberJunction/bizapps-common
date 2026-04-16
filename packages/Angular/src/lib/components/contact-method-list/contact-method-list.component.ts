@@ -34,7 +34,7 @@ interface ContactFormData {
  * Displays and manages contact methods (email, phone, social, etc.) for a
  * Person or Organization record.
  *
- * Contact methods are loaded from the `MJ.BizApps.Common: Contact Methods`
+ * Contact methods are loaded from the `MJ_BizApps_Common: Contact Methods`
  * entity, filtered by either {@link PersonID} or {@link OrganizationID}.
  * The component provides inline add, edit, delete, set-primary, copy-to-clipboard,
  * and open-link functionality.
@@ -122,7 +122,7 @@ export class ContactMethodListComponent {
 
     /**
      * All active contact types available for selection in type dropdowns.
-     * Loaded from `MJ.BizApps.Common: Contact Types`, sorted by `DisplayRank ASC`.
+     * Loaded from `MJ_BizApps_Common: Contact Types`, sorted by `DisplayRank ASC`.
      */
     ContactTypes: mjBizAppsCommonContactTypeEntity[] = [];
 
@@ -209,12 +209,12 @@ export class ContactMethodListComponent {
 
             const [methodsResult, typesResult] = await rv.RunViews([
                 {
-                    EntityName: 'MJ.BizApps.Common: Contact Methods',
+                    EntityName: 'MJ_BizApps_Common: Contact Methods',
                     ExtraFilter: filter,
                     ResultType: 'entity_object'
                 },
                 {
-                    EntityName: 'MJ.BizApps.Common: Contact Types',
+                    EntityName: 'MJ_BizApps_Common: Contact Types',
                     ExtraFilter: 'IsActive=1',
                     OrderBy: 'DisplayRank ASC',
                     ResultType: 'entity_object'
@@ -394,7 +394,7 @@ export class ContactMethodListComponent {
 
         try {
             const md = new Metadata();
-            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ.BizApps.Common: Contact Methods');
+            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
             cm.NewRecord();
             cm.ContactTypeID = this.AddForm.TypeID;
             cm.Value = this.AddForm.Value;

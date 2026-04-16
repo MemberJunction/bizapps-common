@@ -33,7 +33,7 @@ interface RelationshipDisplayItem {
 
     /**
      * The MemberJunction entity name for the target, used for navigation
-     * (e.g., `'MJ.BizApps.Common: People'` or `'MJ.BizApps.Common: Organizations'`).
+     * (e.g., `'MJ_BizApps_Common: People'` or `'MJ_BizApps_Common: Organizations'`).
      */
     TargetEntityName: string;
 
@@ -266,7 +266,7 @@ export class RelationshipListComponent {
 
     /**
      * All active relationship types available for selection in type dropdowns.
-     * Loaded from `MJ.BizApps.Common: Relationship Types`, filtered to `IsActive=1`.
+     * Loaded from `MJ_BizApps_Common: Relationship Types`, filtered to `IsActive=1`.
      */
     RelationshipTypes: mjBizAppsCommonRelationshipTypeEntity[] = [];
 
@@ -353,13 +353,13 @@ export class RelationshipListComponent {
 
             const [relsResult, typesResult] = await rv.RunViews([
                 {
-                    EntityName: 'MJ.BizApps.Common: Relationships',
+                    EntityName: 'MJ_BizApps_Common: Relationships',
                     ExtraFilter: filter,
                     OrderBy: 'Status ASC, StartDate DESC',
                     ResultType: 'entity_object'
                 },
                 {
-                    EntityName: 'MJ.BizApps.Common: Relationship Types',
+                    EntityName: 'MJ_BizApps_Common: Relationship Types',
                     ExtraFilter: 'IsActive=1',
                     ResultType: 'entity_object'
                 }
@@ -493,15 +493,15 @@ export class RelationshipListComponent {
 
     /** Returns the entity name and ID for the "To" side. */
     private getToSideTarget(rel: mjBizAppsCommonRelationshipEntity): { entityName: string; id: string } {
-        if (rel.ToPersonID) return { entityName: 'MJ.BizApps.Common: People', id: rel.ToPersonID };
-        if (rel.ToOrganizationID) return { entityName: 'MJ.BizApps.Common: Organizations', id: rel.ToOrganizationID };
+        if (rel.ToPersonID) return { entityName: 'MJ_BizApps_Common: People', id: rel.ToPersonID };
+        if (rel.ToOrganizationID) return { entityName: 'MJ_BizApps_Common: Organizations', id: rel.ToOrganizationID };
         return { entityName: '', id: '' };
     }
 
     /** Returns the entity name and ID for the "From" side. */
     private getFromSideTarget(rel: mjBizAppsCommonRelationshipEntity): { entityName: string; id: string } {
-        if (rel.FromPersonID) return { entityName: 'MJ.BizApps.Common: People', id: rel.FromPersonID };
-        if (rel.FromOrganizationID) return { entityName: 'MJ.BizApps.Common: Organizations', id: rel.FromOrganizationID };
+        if (rel.FromPersonID) return { entityName: 'MJ_BizApps_Common: People', id: rel.FromPersonID };
+        if (rel.FromOrganizationID) return { entityName: 'MJ_BizApps_Common: Organizations', id: rel.FromOrganizationID };
         return { entityName: '', id: '' };
     }
 
@@ -649,7 +649,7 @@ export class RelationshipListComponent {
         try {
             if (category === 'PersonToPerson') {
                 const result = await rv.RunView<mjBizAppsCommonPersonEntity>({
-                    EntityName: 'MJ.BizApps.Common: People',
+                    EntityName: 'MJ_BizApps_Common: People',
                     ExtraFilter: `(FirstName LIKE '%${escapedQuery}%' OR LastName LIKE '%${escapedQuery}%' OR DisplayName LIKE '%${escapedQuery}%')`,
                     MaxRows: 10,
                     ResultType: 'entity_object'
@@ -657,13 +657,13 @@ export class RelationshipListComponent {
                 this.TargetSearchResults = result.Success
                     ? result.Results.map(p => ({
                         ID: p.ID,
-                        Name: p.DisplayName || `${p.FirstName} ${p.LastName}`,
+                        Name: `${p.FirstName} ${p.LastName}`.trim(),
                         Detail: p.Title || ''
                     }))
                     : [];
             } else {
                 const result = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
-                    EntityName: 'MJ.BizApps.Common: Organizations',
+                    EntityName: 'MJ_BizApps_Common: Organizations',
                     ExtraFilter: `Name LIKE '%${escapedQuery}%'`,
                     MaxRows: 10,
                     ResultType: 'entity_object'
@@ -722,7 +722,7 @@ export class RelationshipListComponent {
 
         try {
             const md = new Metadata();
-            const rel = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ.BizApps.Common: Relationships');
+            const rel = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ_BizApps_Common: Relationships');
             rel.NewRecord();
             rel.RelationshipTypeID = this.AddForm.TypeID;
             rel.Title = this.AddForm.Title || null;
