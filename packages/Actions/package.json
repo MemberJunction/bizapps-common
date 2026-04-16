@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-actions",
   "type": "module",
-  "version": "5.26.1",
+  "version": "5.26.2",
   "description": "Generated action subclasses maintained by the CodeGen utility.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

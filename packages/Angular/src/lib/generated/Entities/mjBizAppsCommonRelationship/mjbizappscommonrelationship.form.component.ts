@@ -3,7 +3,7 @@ import { mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities'
 import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Relationships') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ_BizApps_Common: Relationships') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommonrelationship-form',
@@ -17,6 +17,7 @@ export class mjBizAppsCommonRelationshipFormComponent extends BaseFormComponent 
         this.initSections([
             { sectionKey: 'relationshipParticipants', sectionName: 'Relationship Participants', isExpanded: true },
             { sectionKey: 'relationshipDetails', sectionName: 'Relationship Details', isExpanded: true },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: false },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

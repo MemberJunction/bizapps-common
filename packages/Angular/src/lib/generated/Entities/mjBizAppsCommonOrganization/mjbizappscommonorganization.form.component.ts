@@ -4,7 +4,7 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 import {  } from "@memberjunction/ng-entity-viewer"
 
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Organizations') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ_BizApps_Common: Organizations') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommonorganization-form',
@@ -19,12 +19,11 @@ export class mjBizAppsCommonOrganizationFormComponent extends BaseFormComponent 
             { sectionKey: 'organizationIdentity', sectionName: 'Organization Identity', isExpanded: true },
             { sectionKey: 'hierarchyAndStructure', sectionName: 'Hierarchy and Structure', isExpanded: true },
             { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: false },
-            { sectionKey: 'primaryAddress', sectionName: 'Primary Address', isExpanded: false },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ.BizApps.Common: Organizations', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonRelationships', sectionName: 'MJ.BizApps.Common: Relationships', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ.BizApps.Common: Contact Methods', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonRelationships1', sectionName: 'MJ.BizApps.Common: Relationships', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ_BizApps_Common: Organizations', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonRelationshipsToOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonRelationshipsFromOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false }
         ]);
     }
 }

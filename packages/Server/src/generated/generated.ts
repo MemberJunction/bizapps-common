@@ -10,8 +10,7 @@
 import { Arg, Ctx, Int, Query, Resolver, Field, Float, ObjectType, FieldResolver, Root, InputType, Mutation,
             PubSub, PubSubEngine, ResolverBase, RunViewByIDInput, RunViewByNameInput, RunDynamicViewInput,
             AppContext, KeyValuePairInput, DeleteOptionsInput, GraphQLTimestamp as Timestamp,
-            GetReadOnlyDataSource, GetReadWriteDataSource, GetReadOnlyProvider, GetReadWriteProvider } from '@memberjunction/server';
-import { SQLServerDataProvider } from '@memberjunction/sqlserver-dataprovider';
+            GetReadOnlyProvider, GetReadWriteProvider } from '@memberjunction/server';
 import { Metadata, EntityPermissionType, CompositeKey, UserInfo } from '@memberjunction/core'
 
 import { MaxLength } from 'class-validator';
@@ -22,28 +21,28 @@ import { mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjB
     
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Address Links
+// ENTITY CLASS for MJ_BizApps_Common: Address Links
 //****************************************************************************
 @ObjectType({ description: `Polymorphic link table connecting Address records to any entity record in the system via EntityID and RecordID` })
 export class mjBizAppsCommonAddressLink_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     AddressID: string;
         
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     EntityID: string;
         
     @Field({description: `Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys`}) 
-    @MaxLength(1400)
+    @MaxLength(700)
     RecordID: string;
         
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     AddressTypeID: string;
         
     @Field(() => Boolean, {description: `Whether this is the primary address for the linked record. Only one address per entity record should be marked primary`}) 
@@ -53,29 +52,27 @@ export class mjBizAppsCommonAddressLink_ {
     Rank?: number;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field() 
-    @MaxLength(510)
+    @MaxLength(255)
     Address: string;
         
     @Field() 
-    @MaxLength(510)
+    @MaxLength(255)
     Entity: string;
         
     @Field() 
-    @MaxLength(200)
+    @MaxLength(100)
     AddressType: string;
         
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Address Links
+// INPUT TYPE for MJ_BizApps_Common: Address Links
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonAddressLinkInput {
@@ -103,7 +100,7 @@ export class CreatemjBizAppsCommonAddressLinkInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Address Links
+// INPUT TYPE for MJ_BizApps_Common: Address Links
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonAddressLinkInput {
@@ -133,7 +130,7 @@ export class UpdatemjBizAppsCommonAddressLinkInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Address Links
+// RESOLVER for MJ_BizApps_Common: Address Links
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonAddressLinkViewResult {
@@ -176,17 +173,16 @@ export class mjBizAppsCommonAddressLinkResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonAddressLinkViewResult)
     async RunmjBizAppsCommonAddressLinkDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Address Links';
+        input.EntityName = 'MJ_BizApps_Common: Address Links';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonAddressLink_, { nullable: true })
-    async mjBizAppsCommonAddressLink(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddressLink_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Address Links', userPayload);
+    async mjBizAppsCommonAddressLink(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddressLink_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Address Links', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwAddressLinks] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Address Links', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwAddressLinks')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Address Links', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
@@ -197,7 +193,7 @@ export class mjBizAppsCommonAddressLinkResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Address Links', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Address Links', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonAddressLink_)
@@ -207,36 +203,36 @@ export class mjBizAppsCommonAddressLinkResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Address Links', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Address Links', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonAddressLink_)
     async DeletemjBizAppsCommonAddressLink(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Address Links', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Address Links', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Address Types
+// ENTITY CLASS for MJ_BizApps_Common: Address Types
 //****************************************************************************
 @ObjectType({ description: `Categories of addresses such as Home, Work, Mailing, Billing` })
 export class mjBizAppsCommonAddressType_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Display name for the address type`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Name: string;
         
     @Field({nullable: true, description: `Detailed description of this address type`}) 
     Description?: string;
         
     @Field({nullable: true, description: `Font Awesome icon class for UI display`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     IconClass?: string;
         
     @Field(() => Int, {description: `Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank`}) 
@@ -246,11 +242,9 @@ export class mjBizAppsCommonAddressType_ {
     IsActive: boolean;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field(() => [mjBizAppsCommonAddressLink_])
@@ -259,7 +253,7 @@ export class mjBizAppsCommonAddressType_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Address Types
+// INPUT TYPE for MJ_BizApps_Common: Address Types
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonAddressTypeInput {
@@ -284,7 +278,7 @@ export class CreatemjBizAppsCommonAddressTypeInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Address Types
+// INPUT TYPE for MJ_BizApps_Common: Address Types
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonAddressTypeInput {
@@ -311,7 +305,7 @@ export class UpdatemjBizAppsCommonAddressTypeInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Address Types
+// RESOLVER for MJ_BizApps_Common: Address Types
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonAddressTypeViewResult {
@@ -354,28 +348,26 @@ export class mjBizAppsCommonAddressTypeResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonAddressTypeViewResult)
     async RunmjBizAppsCommonAddressTypeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Address Types';
+        input.EntityName = 'MJ_BizApps_Common: Address Types';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonAddressType_, { nullable: true })
-    async mjBizAppsCommonAddressType(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddressType_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Address Types', userPayload);
+    async mjBizAppsCommonAddressType(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddressType_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Address Types', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwAddressTypes] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Address Types', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Address Types', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwAddressTypes')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Address Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Address Types', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonAddressLink_])
-    async mjBizAppsCommonAddressLinks_AddressTypeIDArray(@Root() mjbizappscommonaddresstype_: mjBizAppsCommonAddressType_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Address Links', userPayload);
+    async mjBizAppsCommonAddressLinks_AddressTypeIDArray(@Root() mjbizappscommonaddresstype_: mjBizAppsCommonAddressType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Address Links', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwAddressLinks] WHERE [AddressTypeID]='${mjbizappscommonaddresstype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Address Links', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwAddressLinks')} WHERE ${provider.QuoteIdentifier('AddressTypeID')}='${mjbizappscommonaddresstype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Address Links', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -386,7 +378,7 @@ export class mjBizAppsCommonAddressTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Address Types', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Address Types', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonAddressType_)
@@ -396,53 +388,53 @@ export class mjBizAppsCommonAddressTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Address Types', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Address Types', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonAddressType_)
     async DeletemjBizAppsCommonAddressType(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Address Types', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Address Types', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Addresses
+// ENTITY CLASS for MJ_BizApps_Common: Addresses
 //****************************************************************************
 @ObjectType({ description: `Standalone physical address records linked to entities via AddressLink for sharing across people and organizations` })
 export class mjBizAppsCommonAddress_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Street address line 1`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Line1: string;
         
     @Field({nullable: true, description: `Street address line 2 (suite, apt, etc.)`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Line2?: string;
         
     @Field({nullable: true, description: `Street address line 3 (additional detail)`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Line3?: string;
         
     @Field({description: `City or locality name`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     City: string;
         
     @Field({nullable: true, description: `State, province, or region`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     StateProvince?: string;
         
     @Field({nullable: true, description: `Postal or ZIP code`}) 
-    @MaxLength(40)
+    @MaxLength(20)
     PostalCode?: string;
         
     @Field({description: `Country code or name, defaults to US`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Country: string;
         
     @Field(() => Float, {nullable: true, description: `Geographic latitude for mapping`}) 
@@ -452,11 +444,9 @@ export class mjBizAppsCommonAddress_ {
     Longitude?: number;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field(() => [mjBizAppsCommonAddressLink_])
@@ -465,7 +455,7 @@ export class mjBizAppsCommonAddress_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Addresses
+// INPUT TYPE for MJ_BizApps_Common: Addresses
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonAddressInput {
@@ -502,7 +492,7 @@ export class CreatemjBizAppsCommonAddressInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Addresses
+// INPUT TYPE for MJ_BizApps_Common: Addresses
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonAddressInput {
@@ -541,7 +531,7 @@ export class UpdatemjBizAppsCommonAddressInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Addresses
+// RESOLVER for MJ_BizApps_Common: Addresses
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonAddressViewResult {
@@ -584,28 +574,26 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonAddressViewResult)
     async RunmjBizAppsCommonAddressDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Addresses';
+        input.EntityName = 'MJ_BizApps_Common: Addresses';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonAddress_, { nullable: true })
-    async mjBizAppsCommonAddress(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddress_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Addresses', userPayload);
+    async mjBizAppsCommonAddress(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonAddress_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Addresses', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwAddresses] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Addresses', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Addresses', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwAddresses')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Addresses', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Addresses', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonAddressLink_])
-    async mjBizAppsCommonAddressLinks_AddressIDArray(@Root() mjbizappscommonaddress_: mjBizAppsCommonAddress_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Address Links', userPayload);
+    async mjBizAppsCommonAddressLinks_AddressIDArray(@Root() mjbizappscommonaddress_: mjBizAppsCommonAddress_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Address Links', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwAddressLinks] WHERE [AddressID]='${mjbizappscommonaddress_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Address Links', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwAddressLinks')} WHERE ${provider.QuoteIdentifier('AddressID')}='${mjbizappscommonaddress_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Address Links', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Address Links', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -616,7 +604,7 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Addresses', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Addresses', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonAddress_)
@@ -626,74 +614,72 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Addresses', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Addresses', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonAddress_)
     async DeletemjBizAppsCommonAddress(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Addresses', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Addresses', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Contact Methods
+// ENTITY CLASS for MJ_BizApps_Common: Contact Methods
 //****************************************************************************
 @ObjectType({ description: `Additional contact methods for people and organizations beyond the primary email and phone fields` })
 export class mjBizAppsCommonContactMethod_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     PersonID?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     OrganizationID?: string;
         
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ContactTypeID: string;
         
     @Field({description: `The contact value: phone number, email address, URL, social media handle, etc.`}) 
-    @MaxLength(1000)
+    @MaxLength(500)
     Value: string;
         
     @Field({nullable: true, description: `Descriptive label such as Work cell, Personal Gmail, Corporate LinkedIn`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Label?: string;
         
     @Field(() => Boolean, {description: `Whether this is the primary contact method of its type for the linked person or organization`}) 
     IsPrimary: boolean;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Person?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Organization?: string;
         
     @Field() 
-    @MaxLength(200)
+    @MaxLength(100)
     ContactType: string;
         
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Contact Methods
+// INPUT TYPE for MJ_BizApps_Common: Contact Methods
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonContactMethodInput {
@@ -721,7 +707,7 @@ export class CreatemjBizAppsCommonContactMethodInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Contact Methods
+// INPUT TYPE for MJ_BizApps_Common: Contact Methods
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonContactMethodInput {
@@ -751,7 +737,7 @@ export class UpdatemjBizAppsCommonContactMethodInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Contact Methods
+// RESOLVER for MJ_BizApps_Common: Contact Methods
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonContactMethodViewResult {
@@ -794,17 +780,16 @@ export class mjBizAppsCommonContactMethodResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonContactMethodViewResult)
     async RunmjBizAppsCommonContactMethodDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Contact Methods';
+        input.EntityName = 'MJ_BizApps_Common: Contact Methods';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonContactMethod_, { nullable: true })
-    async mjBizAppsCommonContactMethod(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactMethod_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Contact Methods', userPayload);
+    async mjBizAppsCommonContactMethod(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactMethod_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Methods', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwContactMethods] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Contact Methods', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethods')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Methods', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
@@ -815,7 +800,7 @@ export class mjBizAppsCommonContactMethodResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Contact Methods', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Contact Methods', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonContactMethod_)
@@ -825,36 +810,36 @@ export class mjBizAppsCommonContactMethodResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Contact Methods', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Contact Methods', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonContactMethod_)
     async DeletemjBizAppsCommonContactMethod(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Contact Methods', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Contact Methods', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Contact Types
+// ENTITY CLASS for MJ_BizApps_Common: Contact Types
 //****************************************************************************
 @ObjectType({ description: `Categories of contact methods such as Phone, Mobile, Email, LinkedIn, Website` })
 export class mjBizAppsCommonContactType_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Display name for the contact type`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Name: string;
         
     @Field({nullable: true, description: `Detailed description of this contact type`}) 
     Description?: string;
         
     @Field({nullable: true, description: `Font Awesome icon class for UI display`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     IconClass?: string;
         
     @Field(() => Int, {description: `Sort order in dropdown lists. Lower values appear first`}) 
@@ -864,11 +849,9 @@ export class mjBizAppsCommonContactType_ {
     IsActive: boolean;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field(() => [mjBizAppsCommonContactMethod_])
@@ -877,7 +860,7 @@ export class mjBizAppsCommonContactType_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Contact Types
+// INPUT TYPE for MJ_BizApps_Common: Contact Types
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonContactTypeInput {
@@ -902,7 +885,7 @@ export class CreatemjBizAppsCommonContactTypeInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Contact Types
+// INPUT TYPE for MJ_BizApps_Common: Contact Types
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonContactTypeInput {
@@ -929,7 +912,7 @@ export class UpdatemjBizAppsCommonContactTypeInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Contact Types
+// RESOLVER for MJ_BizApps_Common: Contact Types
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonContactTypeViewResult {
@@ -972,28 +955,26 @@ export class mjBizAppsCommonContactTypeResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonContactTypeViewResult)
     async RunmjBizAppsCommonContactTypeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Contact Types';
+        input.EntityName = 'MJ_BizApps_Common: Contact Types';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonContactType_, { nullable: true })
-    async mjBizAppsCommonContactType(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactType_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Contact Types', userPayload);
+    async mjBizAppsCommonContactType(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactType_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Types', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwContactTypes] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Contact Types', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Contact Types', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactTypes')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Types', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonContactMethod_])
-    async mjBizAppsCommonContactMethods_ContactTypeIDArray(@Root() mjbizappscommoncontacttype_: mjBizAppsCommonContactType_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Contact Methods', userPayload);
+    async mjBizAppsCommonContactMethods_ContactTypeIDArray(@Root() mjbizappscommoncontacttype_: mjBizAppsCommonContactType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Methods', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwContactMethods] WHERE [ContactTypeID]='${mjbizappscommoncontacttype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethods')} WHERE ${provider.QuoteIdentifier('ContactTypeID')}='${mjbizappscommoncontacttype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -1004,7 +985,7 @@ export class mjBizAppsCommonContactTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Contact Types', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Contact Types', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonContactType_)
@@ -1014,36 +995,36 @@ export class mjBizAppsCommonContactTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Contact Types', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Contact Types', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonContactType_)
     async DeletemjBizAppsCommonContactType(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Contact Types', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Contact Types', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Organization Types
+// ENTITY CLASS for MJ_BizApps_Common: Organization Types
 //****************************************************************************
 @ObjectType({ description: `Categories of organizations such as Company, Non-Profit, Association, Government` })
 export class mjBizAppsCommonOrganizationType_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Display name for the organization type`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Name: string;
         
     @Field({nullable: true, description: `Detailed description of this organization type`}) 
     Description?: string;
         
     @Field({nullable: true, description: `Font Awesome icon class for UI display`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     IconClass?: string;
         
     @Field(() => Int, {description: `Sort order in dropdown lists. Lower values appear first`}) 
@@ -1053,11 +1034,9 @@ export class mjBizAppsCommonOrganizationType_ {
     IsActive: boolean;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field(() => [mjBizAppsCommonOrganization_])
@@ -1066,7 +1045,7 @@ export class mjBizAppsCommonOrganizationType_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Organization Types
+// INPUT TYPE for MJ_BizApps_Common: Organization Types
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonOrganizationTypeInput {
@@ -1091,7 +1070,7 @@ export class CreatemjBizAppsCommonOrganizationTypeInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Organization Types
+// INPUT TYPE for MJ_BizApps_Common: Organization Types
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonOrganizationTypeInput {
@@ -1118,7 +1097,7 @@ export class UpdatemjBizAppsCommonOrganizationTypeInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Organization Types
+// RESOLVER for MJ_BizApps_Common: Organization Types
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonOrganizationTypeViewResult {
@@ -1161,28 +1140,26 @@ export class mjBizAppsCommonOrganizationTypeResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonOrganizationTypeViewResult)
     async RunmjBizAppsCommonOrganizationTypeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Organization Types';
+        input.EntityName = 'MJ_BizApps_Common: Organization Types';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonOrganizationType_, { nullable: true })
-    async mjBizAppsCommonOrganizationType(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonOrganizationType_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Organization Types', userPayload);
+    async mjBizAppsCommonOrganizationType(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonOrganizationType_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Organization Types', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwOrganizationTypes] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Organization Types', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Organization Types', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwOrganizationTypes')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Organization Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Organization Types', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonOrganization_])
-    async mjBizAppsCommonOrganizations_OrganizationTypeIDArray(@Root() mjbizappscommonorganizationtype_: mjBizAppsCommonOrganizationType_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Organizations', userPayload);
+    async mjBizAppsCommonOrganizations_OrganizationTypeIDArray(@Root() mjbizappscommonorganizationtype_: mjBizAppsCommonOrganizationType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Organizations', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwOrganizationsExtended] WHERE [OrganizationTypeID]='${mjbizappscommonorganizationtype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Organizations', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwOrganizations')} WHERE ${provider.QuoteIdentifier('OrganizationTypeID')}='${mjbizappscommonorganizationtype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Organizations', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -1193,7 +1170,7 @@ export class mjBizAppsCommonOrganizationTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Organization Types', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Organization Types', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonOrganizationType_)
@@ -1203,135 +1180,90 @@ export class mjBizAppsCommonOrganizationTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Organization Types', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Organization Types', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonOrganizationType_)
     async DeletemjBizAppsCommonOrganizationType(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Organization Types', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Organization Types', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Organizations
+// ENTITY CLASS for MJ_BizApps_Common: Organizations
 //****************************************************************************
 @ObjectType({ description: `Companies, associations, government bodies, and other organizations with hierarchy support` })
 export class mjBizAppsCommonOrganization_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Common or display name of the organization`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Name: string;
         
     @Field({nullable: true, description: `Full legal name if different from display name`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     LegalName?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     OrganizationTypeID?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     ParentID?: string;
         
     @Field({nullable: true, description: `Primary website URL`}) 
-    @MaxLength(2000)
+    @MaxLength(1000)
     Website?: string;
         
     @Field({nullable: true, description: `URL to organization logo image`}) 
-    @MaxLength(2000)
+    @MaxLength(1000)
     LogoURL?: string;
         
     @Field({nullable: true, description: `Description of the organization purpose and scope`}) 
     Description?: string;
         
     @Field({nullable: true, description: `Primary contact email address`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Email?: string;
         
     @Field({nullable: true, description: `Primary phone number`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Phone?: string;
         
     @Field({nullable: true, description: `Date the organization was founded or incorporated`}) 
-    @MaxLength(3)
     FoundedDate?: Date;
         
     @Field({nullable: true, description: `Tax identification number such as EIN`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     TaxID?: string;
         
     @Field({description: `Current status: Active, Inactive, or Dissolved`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Status: string;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
+    @MaxLength(100)
     OrganizationType?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Parent?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     RootParentID?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    PrimaryAddressLine1?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    PrimaryAddressLine2?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressCity?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressState?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(40)
-    PrimaryAddressPostalCode?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressCountry?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressType?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(1000)
-    PrimaryEmail?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(1000)
-    PrimaryPhone?: string;
-        
-    @Field(() => Int, {nullable: true}) 
-    ActivePersonCount?: number;
-        
-    @Field(() => Int, {nullable: true}) 
-    ChildOrgCount?: number;
         
     @Field(() => [mjBizAppsCommonOrganization_])
     mjBizAppsCommonOrganizations_ParentIDArray: mjBizAppsCommonOrganization_[]; // Link to mjBizAppsCommonOrganizations
@@ -1348,7 +1280,7 @@ export class mjBizAppsCommonOrganization_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Organizations
+// INPUT TYPE for MJ_BizApps_Common: Organizations
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonOrganizationInput {
@@ -1394,7 +1326,7 @@ export class CreatemjBizAppsCommonOrganizationInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Organizations
+// INPUT TYPE for MJ_BizApps_Common: Organizations
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonOrganizationInput {
@@ -1442,7 +1374,7 @@ export class UpdatemjBizAppsCommonOrganizationInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Organizations
+// RESOLVER for MJ_BizApps_Common: Organizations
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonOrganizationViewResult {
@@ -1485,61 +1417,56 @@ export class mjBizAppsCommonOrganizationResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonOrganizationViewResult)
     async RunmjBizAppsCommonOrganizationDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Organizations';
+        input.EntityName = 'MJ_BizApps_Common: Organizations';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonOrganization_, { nullable: true })
-    async mjBizAppsCommonOrganization(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonOrganization_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Organizations', userPayload);
+    async mjBizAppsCommonOrganization(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonOrganization_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Organizations', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwOrganizationsExtended] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Organizations', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwOrganizations')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Organizations', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonOrganization_])
-    async mjBizAppsCommonOrganizations_ParentIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Organizations', userPayload);
+    async mjBizAppsCommonOrganizations_ParentIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Organizations', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwOrganizationsExtended] WHERE [ParentID]='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Organizations', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwOrganizations')} WHERE ${provider.QuoteIdentifier('ParentID')}='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Organizations', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Organizations', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
-    async mjBizAppsCommonRelationships_ToOrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationships_ToOrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [ToOrganizationID]='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('ToOrganizationID')}='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
     @FieldResolver(() => [mjBizAppsCommonContactMethod_])
-    async mjBizAppsCommonContactMethods_OrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Contact Methods', userPayload);
+    async mjBizAppsCommonContactMethods_OrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Methods', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwContactMethods] WHERE [OrganizationID]='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethods')} WHERE ${provider.QuoteIdentifier('OrganizationID')}='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
-    async mjBizAppsCommonRelationships_FromOrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationships_FromOrganizationIDArray(@Root() mjbizappscommonorganization_: mjBizAppsCommonOrganization_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [FromOrganizationID]='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('FromOrganizationID')}='${mjbizappscommonorganization_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -1550,7 +1477,7 @@ export class mjBizAppsCommonOrganizationResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Organizations', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Organizations', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonOrganization_)
@@ -1560,155 +1487,94 @@ export class mjBizAppsCommonOrganizationResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Organizations', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Organizations', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonOrganization_)
     async DeletemjBizAppsCommonOrganization(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Organizations', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Organizations', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: People
+// ENTITY CLASS for MJ_BizApps_Common: People
 //****************************************************************************
 @ObjectType({ description: `Individual people, optionally linked to MJ system user accounts` })
 export class mjBizAppsCommonPerson_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `First (given) name`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     FirstName: string;
         
     @Field({description: `Last (family) name`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     LastName: string;
         
     @Field({nullable: true, description: `Middle name or initial`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     MiddleName?: string;
         
     @Field({nullable: true, description: `Name prefix such as Dr., Mr., Ms., Rev.`}) 
-    @MaxLength(40)
+    @MaxLength(20)
     Prefix?: string;
         
     @Field({nullable: true, description: `Name suffix such as Jr., III, PhD, Esq.`}) 
-    @MaxLength(40)
+    @MaxLength(20)
     Suffix?: string;
         
     @Field({nullable: true, description: `Nickname or preferred name the person goes by`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     PreferredName?: string;
         
     @Field({nullable: true, description: `Professional or job title, e.g. VP of Engineering, Board Director`}) 
-    @MaxLength(400)
+    @MaxLength(200)
     Title?: string;
         
     @Field({nullable: true, description: `Primary email address for this person`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Email?: string;
         
     @Field({nullable: true, description: `Primary phone number for this person`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Phone?: string;
         
     @Field({nullable: true, description: `Date of birth`}) 
-    @MaxLength(3)
     DateOfBirth?: Date;
         
     @Field({nullable: true, description: `Gender identity`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Gender?: string;
         
     @Field({nullable: true, description: `URL to profile photo or avatar image`}) 
-    @MaxLength(2000)
+    @MaxLength(1000)
     PhotoURL?: string;
         
     @Field({nullable: true, description: `Biographical text or notes about this person`}) 
     Bio?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     LinkedUserID?: string;
         
     @Field({description: `Current status: Active, Inactive, or Deceased`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Status: string;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
+    @MaxLength(100)
     LinkedUser?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(488)
-    DisplayName?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    PrimaryAddressLine1?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    PrimaryAddressLine2?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressCity?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressState?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(40)
-    PrimaryAddressPostalCode?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressCountry?: string;
-        
-    @Field(() => Float, {nullable: true}) 
-    PrimaryAddressLatitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    PrimaryAddressLongitude?: number;
-        
-    @Field({nullable: true}) 
-    @MaxLength(200)
-    PrimaryAddressType?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(1000)
-    PrimaryEmail?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(1000)
-    PrimaryPhone?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(16)
-    CurrentOrganizationID?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    CurrentOrganizationName?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(510)
-    CurrentJobTitle?: string;
         
     @Field(() => [mjBizAppsCommonContactMethod_])
     mjBizAppsCommonContactMethods_PersonIDArray: mjBizAppsCommonContactMethod_[]; // Link to mjBizAppsCommonContactMethods
@@ -1722,7 +1588,7 @@ export class mjBizAppsCommonPerson_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: People
+// INPUT TYPE for MJ_BizApps_Common: People
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonPersonInput {
@@ -1777,7 +1643,7 @@ export class CreatemjBizAppsCommonPersonInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: People
+// INPUT TYPE for MJ_BizApps_Common: People
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonPersonInput {
@@ -1834,7 +1700,7 @@ export class UpdatemjBizAppsCommonPersonInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: People
+// RESOLVER for MJ_BizApps_Common: People
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonPersonViewResult {
@@ -1877,50 +1743,46 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonPersonViewResult)
     async RunmjBizAppsCommonPersonDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: People';
+        input.EntityName = 'MJ_BizApps_Common: People';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonPerson_, { nullable: true })
-    async mjBizAppsCommonPerson(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonPerson_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: People', userPayload);
+    async mjBizAppsCommonPerson(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonPerson_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: People', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwPeopleExtended] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: People', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: People', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwPeople')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: People', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: People', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonContactMethod_])
-    async mjBizAppsCommonContactMethods_PersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Contact Methods', userPayload);
+    async mjBizAppsCommonContactMethods_PersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Methods', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwContactMethods] WHERE [PersonID]='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethods')} WHERE ${provider.QuoteIdentifier('PersonID')}='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Methods', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Methods', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
-    async mjBizAppsCommonRelationships_ToPersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationships_ToPersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [ToPersonID]='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('ToPersonID')}='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
-    async mjBizAppsCommonRelationships_FromPersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationships_FromPersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [FromPersonID]='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('FromPersonID')}='${mjbizappscommonperson_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -1931,7 +1793,7 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: People', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: People', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonPerson_)
@@ -1941,58 +1803,56 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: People', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: People', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonPerson_)
     async DeletemjBizAppsCommonPerson(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: People', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: People', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Relationship Types
+// ENTITY CLASS for MJ_BizApps_Common: Relationship Types
 //****************************************************************************
 @ObjectType({ description: `Defines types of relationships between people and organizations with directionality and labeling` })
 export class mjBizAppsCommonRelationshipType_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field({description: `Display name for the relationship type, e.g. Employee, Spouse, Partner`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     Name: string;
         
     @Field({nullable: true, description: `Detailed description of this relationship type`}) 
     Description?: string;
         
     @Field({description: `Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Category: string;
         
     @Field(() => Boolean, {description: `Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner`}) 
     IsDirectional: boolean;
         
     @Field({nullable: true, description: `Label describing the From-to-To direction, e.g. is employee of, is parent of`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     ForwardLabel?: string;
         
     @Field({nullable: true, description: `Label describing the To-to-From direction, e.g. employs, is child of`}) 
-    @MaxLength(200)
+    @MaxLength(100)
     ReverseLabel?: string;
         
     @Field(() => Boolean, {description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
     IsActive: boolean;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field(() => [mjBizAppsCommonRelationship_])
@@ -2001,7 +1861,7 @@ export class mjBizAppsCommonRelationshipType_ {
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Relationship Types
+// INPUT TYPE for MJ_BizApps_Common: Relationship Types
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonRelationshipTypeInput {
@@ -2032,7 +1892,7 @@ export class CreatemjBizAppsCommonRelationshipTypeInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Relationship Types
+// INPUT TYPE for MJ_BizApps_Common: Relationship Types
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonRelationshipTypeInput {
@@ -2065,7 +1925,7 @@ export class UpdatemjBizAppsCommonRelationshipTypeInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Relationship Types
+// RESOLVER for MJ_BizApps_Common: Relationship Types
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonRelationshipTypeViewResult {
@@ -2108,28 +1968,26 @@ export class mjBizAppsCommonRelationshipTypeResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonRelationshipTypeViewResult)
     async RunmjBizAppsCommonRelationshipTypeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Relationship Types';
+        input.EntityName = 'MJ_BizApps_Common: Relationship Types';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonRelationshipType_, { nullable: true })
-    async mjBizAppsCommonRelationshipType(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonRelationshipType_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationship Types', userPayload);
+    async mjBizAppsCommonRelationshipType(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonRelationshipType_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationship Types', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationshipTypes] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationship Types', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Relationship Types', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationshipTypes')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationship Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Relationship Types', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
-    async mjBizAppsCommonRelationships_RelationshipTypeIDArray(@Root() mjbizappscommonrelationshiptype_: mjBizAppsCommonRelationshipType_, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationships_RelationshipTypeIDArray(@Root() mjbizappscommonrelationshiptype_: mjBizAppsCommonRelationshipType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [RelationshipTypeID]='${mjbizappscommonrelationshiptype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.ArrayMapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('RelationshipTypeID')}='${mjbizappscommonrelationshiptype_.ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
         
@@ -2140,7 +1998,7 @@ export class mjBizAppsCommonRelationshipTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Relationship Types', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Relationship Types', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonRelationshipType_)
@@ -2150,98 +2008,94 @@ export class mjBizAppsCommonRelationshipTypeResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Relationship Types', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Relationship Types', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonRelationshipType_)
     async DeletemjBizAppsCommonRelationshipType(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Relationship Types', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Relationship Types', key, options, provider, userPayload, pubSub);
     }
     
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ.BizApps.Common: Relationships
+// ENTITY CLASS for MJ_BizApps_Common: Relationships
 //****************************************************************************
 @ObjectType({ description: `Typed, directional links between people and organizations supporting Person-to-Person, Person-to-Organization, and Organization-to-Organization relationships` })
 export class mjBizAppsCommonRelationship_ {
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     ID: string;
         
     @Field() 
-    @MaxLength(16)
+    @MaxLength(36)
     RelationshipTypeID: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     FromPersonID?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     FromOrganizationID?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     ToPersonID?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(16)
+    @MaxLength(36)
     ToOrganizationID?: string;
         
     @Field({nullable: true, description: `Contextual title for this specific relationship, e.g. CEO, Primary Contact, Founding Member`}) 
-    @MaxLength(510)
+    @MaxLength(255)
     Title?: string;
         
     @Field({nullable: true, description: `Date the relationship began`}) 
-    @MaxLength(3)
     StartDate?: Date;
         
     @Field({nullable: true, description: `Date the relationship ended, if applicable`}) 
-    @MaxLength(3)
     EndDate?: Date;
         
     @Field({description: `Current status: Active, Inactive, or Ended`}) 
-    @MaxLength(100)
+    @MaxLength(50)
     Status: string;
         
     @Field({nullable: true, description: `Additional notes about this relationship`}) 
     Notes?: string;
         
     @Field() 
-    @MaxLength(10)
     _mj__CreatedAt: Date;
         
     @Field() 
-    @MaxLength(10)
     _mj__UpdatedAt: Date;
         
     @Field() 
-    @MaxLength(200)
+    @MaxLength(100)
     RelationshipType: string;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
+    @MaxLength(100)
     FromPerson?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(510)
+    @MaxLength(255)
     FromOrganization?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
+    @MaxLength(100)
     ToPerson?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(510)
+    @MaxLength(255)
     ToOrganization?: string;
         
 }
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Relationships
+// INPUT TYPE for MJ_BizApps_Common: Relationships
 //****************************************************************************
 @InputType()
 export class CreatemjBizAppsCommonRelationshipInput {
@@ -2281,7 +2135,7 @@ export class CreatemjBizAppsCommonRelationshipInput {
     
 
 //****************************************************************************
-// INPUT TYPE for MJ.BizApps.Common: Relationships
+// INPUT TYPE for MJ_BizApps_Common: Relationships
 //****************************************************************************
 @InputType()
 export class UpdatemjBizAppsCommonRelationshipInput {
@@ -2323,7 +2177,7 @@ export class UpdatemjBizAppsCommonRelationshipInput {
 }
     
 //****************************************************************************
-// RESOLVER for MJ.BizApps.Common: Relationships
+// RESOLVER for MJ_BizApps_Common: Relationships
 //****************************************************************************
 @ObjectType()
 export class RunmjBizAppsCommonRelationshipViewResult {
@@ -2366,17 +2220,16 @@ export class mjBizAppsCommonRelationshipResolver extends ResolverBase {
     @Query(() => RunmjBizAppsCommonRelationshipViewResult)
     async RunmjBizAppsCommonRelationshipDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ.BizApps.Common: Relationships';
+        input.EntityName = 'MJ_BizApps_Common: Relationships';
         return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
     }
     @Query(() => mjBizAppsCommonRelationship_, { nullable: true })
-    async mjBizAppsCommonRelationship(@Arg('ID', () => String) ID: string, @Ctx() { dataSources, userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonRelationship_ | null> {
-        this.CheckUserReadPermissions('MJ.BizApps.Common: Relationships', userPayload);
+    async mjBizAppsCommonRelationship(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonRelationship_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
         const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const connPool = GetReadOnlyDataSource(dataSources, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM [__mj_BizAppsCommon].[vwRelationships] WHERE [ID]='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ.BizApps.Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await SQLServerDataProvider.ExecuteSQLWithPool(connPool, sSQL, undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ.BizApps.Common: Relationships', rows && rows.length > 0 ? rows[0] : {}, this.GetUserFromPayload(userPayload));
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwRelationships')} WHERE ${provider.QuoteIdentifier('ID')}='${ID}' ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Relationships', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, undefined, undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
     
@@ -2387,7 +2240,7 @@ export class mjBizAppsCommonRelationshipResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ.BizApps.Common: Relationships', input, provider, userPayload, pubSub)
+        return this.CreateRecord('MJ_BizApps_Common: Relationships', input, provider, userPayload, pubSub)
     }
         
     @Mutation(() => mjBizAppsCommonRelationship_)
@@ -2397,14 +2250,14 @@ export class mjBizAppsCommonRelationshipResolver extends ResolverBase {
         @PubSub() pubSub: PubSubEngine
     ) {
         const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ.BizApps.Common: Relationships', input, provider, userPayload, pubSub);
+        return this.UpdateRecord('MJ_BizApps_Common: Relationships', input, provider, userPayload, pubSub);
     }
     
     @Mutation(() => mjBizAppsCommonRelationship_)
     async DeletemjBizAppsCommonRelationship(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ.BizApps.Common: Relationships', key, options, provider, userPayload, pubSub);
+        return this.DeleteRecord('MJ_BizApps_Common: Relationships', key, options, provider, userPayload, pubSub);
     }
     
 }

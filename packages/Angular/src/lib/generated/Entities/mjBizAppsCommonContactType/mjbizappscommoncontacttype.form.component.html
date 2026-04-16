@@ -98,10 +98,10 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- MJ.BizApps.Common: Contact Methods Section -->
+    <!-- MJ_BizApps_Common: Contact Methods Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonContactMethods"
-        SectionName="MJ.BizApps.Common: Contact Methods"
+        SectionName="MJ_BizApps_Common: Contact Methods"
         Icon="fa fa-address-book"
         Variant="related-entity"
         [Form]="this"
@@ -111,8 +111,8 @@
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Contact Methods','ContactTypeID')"
-                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Contact Methods')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Contact Methods','ContactTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Contact Methods')"
                 [AllowLoad]="IsSectionExpanded('mJBizAppsCommonContactMethods')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"

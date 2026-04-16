@@ -4,7 +4,7 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 import {  } from "@memberjunction/ng-entity-viewer"
 
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Organization Types') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ_BizApps_Common: Organization Types') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommonorganizationtype-form',
@@ -18,7 +18,7 @@ export class mjBizAppsCommonOrganizationTypeFormComponent extends BaseFormCompon
         this.initSections([
             { sectionKey: 'organizationTypeDetails', sectionName: 'Organization Type Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ.BizApps.Common: Organizations', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ_BizApps_Common: Organizations', isExpanded: false }
         ]);
     }
 }

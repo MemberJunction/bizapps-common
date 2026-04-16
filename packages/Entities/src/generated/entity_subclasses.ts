@@ -9,7 +9,7 @@ export const loadModule = () => {
      
  
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Address Links
+ * zod schema definition for the entity MJ_BizApps_Common: Address Links
  */
 export const mjBizAppsCommonAddressLinkSchema = z.object({
     ID: z.string().describe(`
@@ -21,7 +21,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
         * * Field Name: AddressID
         * * Display Name: Address
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Addresses (vwAddresses.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)`),
     EntityID: z.string().describe(`
         * * Field Name: EntityID
         * * Display Name: Entity
@@ -36,7 +36,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
         * * Field Name: AddressTypeID
         * * Display Name: Address Type
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Address Types (vwAddressTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Address Types (vwAddressTypes.ID)`),
     IsPrimary: z.boolean().describe(`
         * * Field Name: IsPrimary
         * * Display Name: Is Primary
@@ -60,7 +60,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
         * * Default Value: getutcdate()`),
     Address: z.string().describe(`
         * * Field Name: Address
-        * * Display Name: Address Summary
+        * * Display Name: Address
         * * SQL Data Type: nvarchar(255)`),
     Entity: z.string().describe(`
         * * Field Name: Entity
@@ -75,7 +75,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
 export type mjBizAppsCommonAddressLinkEntityType = z.infer<typeof mjBizAppsCommonAddressLinkSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Address Types
+ * zod schema definition for the entity MJ_BizApps_Common: Address Types
  */
 export const mjBizAppsCommonAddressTypeSchema = z.object({
     ID: z.string().describe(`
@@ -125,7 +125,7 @@ export const mjBizAppsCommonAddressTypeSchema = z.object({
 export type mjBizAppsCommonAddressTypeEntityType = z.infer<typeof mjBizAppsCommonAddressTypeSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Addresses
+ * zod schema definition for the entity MJ_BizApps_Common: Addresses
  */
 export const mjBizAppsCommonAddressSchema = z.object({
     ID: z.string().describe(`
@@ -194,7 +194,7 @@ export const mjBizAppsCommonAddressSchema = z.object({
 export type mjBizAppsCommonAddressEntityType = z.infer<typeof mjBizAppsCommonAddressSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Contact Methods
+ * zod schema definition for the entity MJ_BizApps_Common: Contact Methods
  */
 export const mjBizAppsCommonContactMethodSchema = z.object({
     ID: z.string().describe(`
@@ -206,17 +206,17 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
         * * Field Name: PersonID
         * * Display Name: Person
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
     OrganizationID: z.string().nullable().describe(`
         * * Field Name: OrganizationID
         * * Display Name: Organization
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     ContactTypeID: z.string().describe(`
         * * Field Name: ContactTypeID
         * * Display Name: Contact Type
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Contact Types (vwContactTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Types (vwContactTypes.ID)`),
     Value: z.string().describe(`
         * * Field Name: Value
         * * Display Name: Contact Value
@@ -245,7 +245,7 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
         * * Default Value: getutcdate()`),
     Person: z.string().nullable().describe(`
         * * Field Name: Person
-        * * Display Name: Person Name
+        * * Display Name: Person
         * * SQL Data Type: nvarchar(100)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
@@ -260,7 +260,7 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
 export type mjBizAppsCommonContactMethodEntityType = z.infer<typeof mjBizAppsCommonContactMethodSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Contact Types
+ * zod schema definition for the entity MJ_BizApps_Common: Contact Types
  */
 export const mjBizAppsCommonContactTypeSchema = z.object({
     ID: z.string().describe(`
@@ -310,7 +310,7 @@ export const mjBizAppsCommonContactTypeSchema = z.object({
 export type mjBizAppsCommonContactTypeEntityType = z.infer<typeof mjBizAppsCommonContactTypeSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Organization Types
+ * zod schema definition for the entity MJ_BizApps_Common: Organization Types
  */
 export const mjBizAppsCommonOrganizationTypeSchema = z.object({
     ID: z.string().describe(`
@@ -360,7 +360,7 @@ export const mjBizAppsCommonOrganizationTypeSchema = z.object({
 export type mjBizAppsCommonOrganizationTypeEntityType = z.infer<typeof mjBizAppsCommonOrganizationTypeSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Organizations
+ * zod schema definition for the entity MJ_BizApps_Common: Organizations
  */
 export const mjBizAppsCommonOrganizationSchema = z.object({
     ID: z.string().describe(`
@@ -380,14 +380,14 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Description: Full legal name if different from display name`),
     OrganizationTypeID: z.string().nullable().describe(`
         * * Field Name: OrganizationTypeID
-        * * Display Name: Organization Type
+        * * Display Name: Organization Type ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Organization Types (vwOrganizationTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)`),
     ParentID: z.string().nullable().describe(`
         * * Field Name: ParentID
-        * * Display Name: Parent
+        * * Display Name: Parent ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     Website: z.string().nullable().describe(`
         * * Field Name: Website
         * * Display Name: Website
@@ -446,7 +446,7 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Default Value: getutcdate()`),
     OrganizationType: z.string().nullable().describe(`
         * * Field Name: OrganizationType
-        * * Display Name: Organization Type Name
+        * * Display Name: Organization Type
         * * SQL Data Type: nvarchar(100)`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
@@ -454,58 +454,14 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: nvarchar(255)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
-        * * Display Name: Root Parent
+        * * Display Name: Root Parent ID
         * * SQL Data Type: uniqueidentifier`),
-    PrimaryAddressLine1: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressLine1
-        * * Display Name: Primary Address Line 1
-        * * SQL Data Type: nvarchar(255)`),
-    PrimaryAddressLine2: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressLine2
-        * * Display Name: Primary Address Line 2
-        * * SQL Data Type: nvarchar(255)`),
-    PrimaryAddressCity: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressCity
-        * * Display Name: Primary City
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressState: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressState
-        * * Display Name: Primary State
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressPostalCode: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressPostalCode
-        * * Display Name: Primary Postal Code
-        * * SQL Data Type: nvarchar(20)`),
-    PrimaryAddressCountry: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressCountry
-        * * Display Name: Primary Country
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressType: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressType
-        * * Display Name: Primary Address Type
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryEmail: z.string().nullable().describe(`
-        * * Field Name: PrimaryEmail
-        * * Display Name: Primary Email
-        * * SQL Data Type: nvarchar(500)`),
-    PrimaryPhone: z.string().nullable().describe(`
-        * * Field Name: PrimaryPhone
-        * * Display Name: Primary Phone
-        * * SQL Data Type: nvarchar(500)`),
-    ActivePersonCount: z.number().nullable().describe(`
-        * * Field Name: ActivePersonCount
-        * * Display Name: Active Person Count
-        * * SQL Data Type: int`),
-    ChildOrgCount: z.number().nullable().describe(`
-        * * Field Name: ChildOrgCount
-        * * Display Name: Child Organization Count
-        * * SQL Data Type: int`),
 });
 
 export type mjBizAppsCommonOrganizationEntityType = z.infer<typeof mjBizAppsCommonOrganizationSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: People
+ * zod schema definition for the entity MJ_BizApps_Common: People
  */
 export const mjBizAppsCommonPersonSchema = z.object({
     ID: z.string().describe(`
@@ -545,17 +501,17 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Description: Nickname or preferred name the person goes by`),
     Title: z.string().nullable().describe(`
         * * Field Name: Title
-        * * Display Name: Title
+        * * Display Name: Job Title
         * * SQL Data Type: nvarchar(200)
         * * Description: Professional or job title, e.g. VP of Engineering, Board Director`),
     Email: z.string().nullable().describe(`
         * * Field Name: Email
-        * * Display Name: Email
+        * * Display Name: Email Address
         * * SQL Data Type: nvarchar(255)
         * * Description: Primary email address for this person`),
     Phone: z.string().nullable().describe(`
         * * Field Name: Phone
-        * * Display Name: Phone
+        * * Display Name: Phone Number
         * * SQL Data Type: nvarchar(50)
         * * Description: Primary phone number for this person`),
     DateOfBirth: z.date().nullable().describe(`
@@ -606,74 +562,14 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Default Value: getutcdate()`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
-        * * Display Name: Linked User Account
+        * * Display Name: Linked User Name
         * * SQL Data Type: nvarchar(100)`),
-    DisplayName: z.string().nullable().describe(`
-        * * Field Name: DisplayName
-        * * Display Name: Display Name
-        * * SQL Data Type: nvarchar(244)`),
-    PrimaryAddressLine1: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressLine1
-        * * Display Name: Primary Address Line 1
-        * * SQL Data Type: nvarchar(255)`),
-    PrimaryAddressLine2: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressLine2
-        * * Display Name: Primary Address Line 2
-        * * SQL Data Type: nvarchar(255)`),
-    PrimaryAddressCity: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressCity
-        * * Display Name: Primary City
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressState: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressState
-        * * Display Name: Primary State
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressPostalCode: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressPostalCode
-        * * Display Name: Primary Postal Code
-        * * SQL Data Type: nvarchar(20)`),
-    PrimaryAddressCountry: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressCountry
-        * * Display Name: Primary Country
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryAddressLatitude: z.number().nullable().describe(`
-        * * Field Name: PrimaryAddressLatitude
-        * * Display Name: Primary Latitude
-        * * SQL Data Type: decimal(9, 6)`),
-    PrimaryAddressLongitude: z.number().nullable().describe(`
-        * * Field Name: PrimaryAddressLongitude
-        * * Display Name: Primary Longitude
-        * * SQL Data Type: decimal(9, 6)`),
-    PrimaryAddressType: z.string().nullable().describe(`
-        * * Field Name: PrimaryAddressType
-        * * Display Name: Address Type
-        * * SQL Data Type: nvarchar(100)`),
-    PrimaryEmail: z.string().nullable().describe(`
-        * * Field Name: PrimaryEmail
-        * * Display Name: Primary Email
-        * * SQL Data Type: nvarchar(500)`),
-    PrimaryPhone: z.string().nullable().describe(`
-        * * Field Name: PrimaryPhone
-        * * Display Name: Primary Phone
-        * * SQL Data Type: nvarchar(500)`),
-    CurrentOrganizationID: z.string().nullable().describe(`
-        * * Field Name: CurrentOrganizationID
-        * * Display Name: Current Organization
-        * * SQL Data Type: uniqueidentifier`),
-    CurrentOrganizationName: z.string().nullable().describe(`
-        * * Field Name: CurrentOrganizationName
-        * * Display Name: Current Organization Name
-        * * SQL Data Type: nvarchar(255)`),
-    CurrentJobTitle: z.string().nullable().describe(`
-        * * Field Name: CurrentJobTitle
-        * * Display Name: Current Job Title
-        * * SQL Data Type: nvarchar(255)`),
 });
 
 export type mjBizAppsCommonPersonEntityType = z.infer<typeof mjBizAppsCommonPersonSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Relationship Types
+ * zod schema definition for the entity MJ_BizApps_Common: Relationship Types
  */
 export const mjBizAppsCommonRelationshipTypeSchema = z.object({
     ID: z.string().describe(`
@@ -738,7 +634,7 @@ export const mjBizAppsCommonRelationshipTypeSchema = z.object({
 export type mjBizAppsCommonRelationshipTypeEntityType = z.infer<typeof mjBizAppsCommonRelationshipTypeSchema>;
 
 /**
- * zod schema definition for the entity MJ.BizApps.Common: Relationships
+ * zod schema definition for the entity MJ_BizApps_Common: Relationships
  */
 export const mjBizAppsCommonRelationshipSchema = z.object({
     ID: z.string().describe(`
@@ -748,29 +644,29 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * Default Value: newsequentialid()`),
     RelationshipTypeID: z.string().describe(`
         * * Field Name: RelationshipTypeID
-        * * Display Name: Relationship Type
+        * * Display Name: Relationship Type ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Relationship Types (vwRelationshipTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Relationship Types (vwRelationshipTypes.ID)`),
     FromPersonID: z.string().nullable().describe(`
         * * Field Name: FromPersonID
         * * Display Name: From Person
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
     FromOrganizationID: z.string().nullable().describe(`
         * * Field Name: FromOrganizationID
         * * Display Name: From Organization
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     ToPersonID: z.string().nullable().describe(`
         * * Field Name: ToPersonID
         * * Display Name: To Person
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
     ToOrganizationID: z.string().nullable().describe(`
         * * Field Name: ToOrganizationID
         * * Display Name: To Organization
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     Title: z.string().nullable().describe(`
         * * Field Name: Title
         * * Display Name: Title
@@ -822,7 +718,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     FromOrganization: z.string().nullable().describe(`
         * * Field Name: FromOrganization
-        * * Display Name: From Organization
+        * * Display Name: From Organization Name
         * * SQL Data Type: nvarchar(255)`),
     ToPerson: z.string().nullable().describe(`
         * * Field Name: ToPerson
@@ -830,7 +726,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     ToOrganization: z.string().nullable().describe(`
         * * Field Name: ToOrganization
-        * * Display Name: To Organization
+        * * Display Name: To Organization Name
         * * SQL Data Type: nvarchar(255)`),
 });
 
@@ -839,7 +735,7 @@ export type mjBizAppsCommonRelationshipEntityType = z.infer<typeof mjBizAppsComm
  
 
 /**
- * MJ.BizApps.Common: Address Links - strongly typed entity sub-class
+ * MJ_BizApps_Common: Address Links - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: AddressLink
  * * Base View: vwAddressLinks
@@ -849,11 +745,11 @@ export type mjBizAppsCommonRelationshipEntityType = z.infer<typeof mjBizAppsComm
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Address Links')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Address Links')
 export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommonAddressLinkEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Address Links record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Address Links record.
+    * Loads the MJ_BizApps_Common: Address Links record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Address Links record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -885,7 +781,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: AddressID
     * * Display Name: Address
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Addresses (vwAddresses.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)
     */
     get AddressID(): string {
         return this.Get('AddressID');
@@ -924,7 +820,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: AddressTypeID
     * * Display Name: Address Type
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Address Types (vwAddressTypes.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Address Types (vwAddressTypes.ID)
     */
     get AddressTypeID(): string {
         return this.Get('AddressTypeID');
@@ -982,7 +878,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
 
     /**
     * * Field Name: Address
-    * * Display Name: Address Summary
+    * * Display Name: Address
     * * SQL Data Type: nvarchar(255)
     */
     get Address(): string {
@@ -1010,7 +906,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
 
 
 /**
- * MJ.BizApps.Common: Address Types - strongly typed entity sub-class
+ * MJ_BizApps_Common: Address Types - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: AddressType
  * * Base View: vwAddressTypes
@@ -1020,11 +916,11 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Address Types')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Address Types')
 export class mjBizAppsCommonAddressTypeEntity extends BaseEntity<mjBizAppsCommonAddressTypeEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Address Types record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Address Types record.
+    * Loads the MJ_BizApps_Common: Address Types record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Address Types record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1142,7 +1038,7 @@ export class mjBizAppsCommonAddressTypeEntity extends BaseEntity<mjBizAppsCommon
 
 
 /**
- * MJ.BizApps.Common: Addresses - strongly typed entity sub-class
+ * MJ_BizApps_Common: Addresses - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: Address
  * * Base View: vwAddresses
@@ -1152,11 +1048,11 @@ export class mjBizAppsCommonAddressTypeEntity extends BaseEntity<mjBizAppsCommon
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Addresses')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Addresses')
 export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddressEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Addresses record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Addresses record.
+    * Loads the MJ_BizApps_Common: Addresses record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Addresses record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1325,7 +1221,7 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
 
 
 /**
- * MJ.BizApps.Common: Contact Methods - strongly typed entity sub-class
+ * MJ_BizApps_Common: Contact Methods - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: ContactMethod
  * * Base View: vwContactMethods
@@ -1335,11 +1231,11 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Contact Methods')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Contact Methods')
 export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsCommonContactMethodEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Contact Methods record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Contact Methods record.
+    * Loads the MJ_BizApps_Common: Contact Methods record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Contact Methods record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1355,7 +1251,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     }
 
     /**
-    * Validate() method override for MJ.BizApps.Common: Contact Methods entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * Validate() method override for MJ_BizApps_Common: Contact Methods entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
     * * Table-Level: Each record must be linked to either a person or an organization. This ensures that contact information is correctly attributed to exactly one entity and prevents data ambiguity caused by having both or neither assigned.
     * @public
     * @method
@@ -1414,7 +1310,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     * * Field Name: PersonID
     * * Display Name: Person
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
     */
     get PersonID(): string | null {
         return this.Get('PersonID');
@@ -1427,7 +1323,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     * * Field Name: OrganizationID
     * * Display Name: Organization
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
     get OrganizationID(): string | null {
         return this.Get('OrganizationID');
@@ -1440,7 +1336,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     * * Field Name: ContactTypeID
     * * Display Name: Contact Type
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Contact Types (vwContactTypes.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Types (vwContactTypes.ID)
     */
     get ContactTypeID(): string {
         return this.Get('ContactTypeID');
@@ -1511,7 +1407,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
     /**
     * * Field Name: Person
-    * * Display Name: Person Name
+    * * Display Name: Person
     * * SQL Data Type: nvarchar(100)
     */
     get Person(): string | null {
@@ -1539,7 +1435,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
 
 /**
- * MJ.BizApps.Common: Contact Types - strongly typed entity sub-class
+ * MJ_BizApps_Common: Contact Types - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: ContactType
  * * Base View: vwContactTypes
@@ -1549,11 +1445,11 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Contact Types')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Contact Types')
 export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommonContactTypeEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Contact Types record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Contact Types record.
+    * Loads the MJ_BizApps_Common: Contact Types record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Contact Types record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1671,7 +1567,7 @@ export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommon
 
 
 /**
- * MJ.BizApps.Common: Organization Types - strongly typed entity sub-class
+ * MJ_BizApps_Common: Organization Types - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: OrganizationType
  * * Base View: vwOrganizationTypes
@@ -1681,11 +1577,11 @@ export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommon
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Organization Types')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Organization Types')
 export class mjBizAppsCommonOrganizationTypeEntity extends BaseEntity<mjBizAppsCommonOrganizationTypeEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Organization Types record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Organization Types record.
+    * Loads the MJ_BizApps_Common: Organization Types record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Organization Types record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1803,21 +1699,21 @@ export class mjBizAppsCommonOrganizationTypeEntity extends BaseEntity<mjBizAppsC
 
 
 /**
- * MJ.BizApps.Common: Organizations - strongly typed entity sub-class
+ * MJ_BizApps_Common: Organizations - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: Organization
- * * Base View: vwOrganizationsExtended
+ * * Base View: vwOrganizations
  * * @description Companies, associations, government bodies, and other organizations with hierarchy support
  * * Primary Key: ID
  * @extends {BaseEntity}
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Organizations')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Organizations')
 export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommonOrganizationEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Organizations record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Organizations record.
+    * Loads the MJ_BizApps_Common: Organizations record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Organizations record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -1873,9 +1769,9 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationTypeID
-    * * Display Name: Organization Type
+    * * Display Name: Organization Type ID
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Organization Types (vwOrganizationTypes.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)
     */
     get OrganizationTypeID(): string | null {
         return this.Get('OrganizationTypeID');
@@ -1886,9 +1782,9 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentID
-    * * Display Name: Parent
+    * * Display Name: Parent ID
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
     get ParentID(): string | null {
         return this.Get('ParentID');
@@ -2029,7 +1925,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationType
-    * * Display Name: Organization Type Name
+    * * Display Name: Organization Type
     * * SQL Data Type: nvarchar(100)
     */
     get OrganizationType(): string | null {
@@ -2047,130 +1943,31 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: RootParentID
-    * * Display Name: Root Parent
+    * * Display Name: Root Parent ID
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentID(): string | null {
         return this.Get('RootParentID');
     }
-
-    /**
-    * * Field Name: PrimaryAddressLine1
-    * * Display Name: Primary Address Line 1
-    * * SQL Data Type: nvarchar(255)
-    */
-    get PrimaryAddressLine1(): string | null {
-        return this.Get('PrimaryAddressLine1');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressLine2
-    * * Display Name: Primary Address Line 2
-    * * SQL Data Type: nvarchar(255)
-    */
-    get PrimaryAddressLine2(): string | null {
-        return this.Get('PrimaryAddressLine2');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressCity
-    * * Display Name: Primary City
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressCity(): string | null {
-        return this.Get('PrimaryAddressCity');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressState
-    * * Display Name: Primary State
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressState(): string | null {
-        return this.Get('PrimaryAddressState');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressPostalCode
-    * * Display Name: Primary Postal Code
-    * * SQL Data Type: nvarchar(20)
-    */
-    get PrimaryAddressPostalCode(): string | null {
-        return this.Get('PrimaryAddressPostalCode');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressCountry
-    * * Display Name: Primary Country
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressCountry(): string | null {
-        return this.Get('PrimaryAddressCountry');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressType
-    * * Display Name: Primary Address Type
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressType(): string | null {
-        return this.Get('PrimaryAddressType');
-    }
-
-    /**
-    * * Field Name: PrimaryEmail
-    * * Display Name: Primary Email
-    * * SQL Data Type: nvarchar(500)
-    */
-    get PrimaryEmail(): string | null {
-        return this.Get('PrimaryEmail');
-    }
-
-    /**
-    * * Field Name: PrimaryPhone
-    * * Display Name: Primary Phone
-    * * SQL Data Type: nvarchar(500)
-    */
-    get PrimaryPhone(): string | null {
-        return this.Get('PrimaryPhone');
-    }
-
-    /**
-    * * Field Name: ActivePersonCount
-    * * Display Name: Active Person Count
-    * * SQL Data Type: int
-    */
-    get ActivePersonCount(): number | null {
-        return this.Get('ActivePersonCount');
-    }
-
-    /**
-    * * Field Name: ChildOrgCount
-    * * Display Name: Child Organization Count
-    * * SQL Data Type: int
-    */
-    get ChildOrgCount(): number | null {
-        return this.Get('ChildOrgCount');
-    }
 }
 
 
 /**
- * MJ.BizApps.Common: People - strongly typed entity sub-class
+ * MJ_BizApps_Common: People - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: Person
- * * Base View: vwPeopleExtended
+ * * Base View: vwPeople
  * * @description Individual people, optionally linked to MJ system user accounts
  * * Primary Key: ID
  * @extends {BaseEntity}
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: People')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
 export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPersonEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: People record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: People record.
+    * Loads the MJ_BizApps_Common: People record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: People record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -2278,7 +2075,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Title
-    * * Display Name: Title
+    * * Display Name: Job Title
     * * SQL Data Type: nvarchar(200)
     * * Description: Professional or job title, e.g. VP of Engineering, Board Director
     */
@@ -2291,7 +2088,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Email
-    * * Display Name: Email
+    * * Display Name: Email Address
     * * SQL Data Type: nvarchar(255)
     * * Description: Primary email address for this person
     */
@@ -2304,7 +2101,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Phone
-    * * Display Name: Phone
+    * * Display Name: Phone Number
     * * SQL Data Type: nvarchar(50)
     * * Description: Primary phone number for this person
     */
@@ -2421,152 +2218,17 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: LinkedUser
-    * * Display Name: Linked User Account
+    * * Display Name: Linked User Name
     * * SQL Data Type: nvarchar(100)
     */
     get LinkedUser(): string | null {
         return this.Get('LinkedUser');
     }
-
-    /**
-    * * Field Name: DisplayName
-    * * Display Name: Display Name
-    * * SQL Data Type: nvarchar(244)
-    */
-    get DisplayName(): string | null {
-        return this.Get('DisplayName');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressLine1
-    * * Display Name: Primary Address Line 1
-    * * SQL Data Type: nvarchar(255)
-    */
-    get PrimaryAddressLine1(): string | null {
-        return this.Get('PrimaryAddressLine1');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressLine2
-    * * Display Name: Primary Address Line 2
-    * * SQL Data Type: nvarchar(255)
-    */
-    get PrimaryAddressLine2(): string | null {
-        return this.Get('PrimaryAddressLine2');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressCity
-    * * Display Name: Primary City
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressCity(): string | null {
-        return this.Get('PrimaryAddressCity');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressState
-    * * Display Name: Primary State
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressState(): string | null {
-        return this.Get('PrimaryAddressState');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressPostalCode
-    * * Display Name: Primary Postal Code
-    * * SQL Data Type: nvarchar(20)
-    */
-    get PrimaryAddressPostalCode(): string | null {
-        return this.Get('PrimaryAddressPostalCode');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressCountry
-    * * Display Name: Primary Country
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressCountry(): string | null {
-        return this.Get('PrimaryAddressCountry');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressLatitude
-    * * Display Name: Primary Latitude
-    * * SQL Data Type: decimal(9, 6)
-    */
-    get PrimaryAddressLatitude(): number | null {
-        return this.Get('PrimaryAddressLatitude');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressLongitude
-    * * Display Name: Primary Longitude
-    * * SQL Data Type: decimal(9, 6)
-    */
-    get PrimaryAddressLongitude(): number | null {
-        return this.Get('PrimaryAddressLongitude');
-    }
-
-    /**
-    * * Field Name: PrimaryAddressType
-    * * Display Name: Address Type
-    * * SQL Data Type: nvarchar(100)
-    */
-    get PrimaryAddressType(): string | null {
-        return this.Get('PrimaryAddressType');
-    }
-
-    /**
-    * * Field Name: PrimaryEmail
-    * * Display Name: Primary Email
-    * * SQL Data Type: nvarchar(500)
-    */
-    get PrimaryEmail(): string | null {
-        return this.Get('PrimaryEmail');
-    }
-
-    /**
-    * * Field Name: PrimaryPhone
-    * * Display Name: Primary Phone
-    * * SQL Data Type: nvarchar(500)
-    */
-    get PrimaryPhone(): string | null {
-        return this.Get('PrimaryPhone');
-    }
-
-    /**
-    * * Field Name: CurrentOrganizationID
-    * * Display Name: Current Organization
-    * * SQL Data Type: uniqueidentifier
-    */
-    get CurrentOrganizationID(): string | null {
-        return this.Get('CurrentOrganizationID');
-    }
-
-    /**
-    * * Field Name: CurrentOrganizationName
-    * * Display Name: Current Organization Name
-    * * SQL Data Type: nvarchar(255)
-    */
-    get CurrentOrganizationName(): string | null {
-        return this.Get('CurrentOrganizationName');
-    }
-
-    /**
-    * * Field Name: CurrentJobTitle
-    * * Display Name: Current Job Title
-    * * SQL Data Type: nvarchar(255)
-    */
-    get CurrentJobTitle(): string | null {
-        return this.Get('CurrentJobTitle');
-    }
 }
 
 
 /**
- * MJ.BizApps.Common: Relationship Types - strongly typed entity sub-class
+ * MJ_BizApps_Common: Relationship Types - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: RelationshipType
  * * Base View: vwRelationshipTypes
@@ -2576,11 +2238,11 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Relationship Types')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Relationship Types')
 export class mjBizAppsCommonRelationshipTypeEntity extends BaseEntity<mjBizAppsCommonRelationshipTypeEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Relationship Types record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Relationship Types record.
+    * Loads the MJ_BizApps_Common: Relationship Types record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Relationship Types record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -2729,7 +2391,7 @@ export class mjBizAppsCommonRelationshipTypeEntity extends BaseEntity<mjBizAppsC
 
 
 /**
- * MJ.BizApps.Common: Relationships - strongly typed entity sub-class
+ * MJ_BizApps_Common: Relationships - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: Relationship
  * * Base View: vwRelationships
@@ -2739,11 +2401,11 @@ export class mjBizAppsCommonRelationshipTypeEntity extends BaseEntity<mjBizAppsC
  * @class
  * @public
  */
-@RegisterClass(BaseEntity, 'MJ.BizApps.Common: Relationships')
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Relationships')
 export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommonRelationshipEntityType> {
     /**
-    * Loads the MJ.BizApps.Common: Relationships record from the database
-    * @param ID: string - primary key value to load the MJ.BizApps.Common: Relationships record.
+    * Loads the MJ_BizApps_Common: Relationships record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Relationships record.
     * @param EntityRelationshipsToLoad - (optional) the relationships to load
     * @returns {Promise<boolean>} - true if successful, false otherwise
     * @public
@@ -2759,7 +2421,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     }
 
     /**
-    * Validate() method override for MJ.BizApps.Common: Relationships entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * Validate() method override for MJ_BizApps_Common: Relationships entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
     * * Table-Level: A relationship must be linked to exactly one source: either a person or an organization. This ensures that the origin of the relationship is clearly defined and prevents data where both or neither are specified.
     * * Table-Level: A relationship must be linked to exactly one target: either a person or an organization. This ensures that the destination of the relationship is clearly defined and prevents ambiguous or missing links.
     * @public
@@ -2831,9 +2493,9 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: RelationshipTypeID
-    * * Display Name: Relationship Type
+    * * Display Name: Relationship Type ID
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Relationship Types (vwRelationshipTypes.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Relationship Types (vwRelationshipTypes.ID)
     */
     get RelationshipTypeID(): string {
         return this.Get('RelationshipTypeID');
@@ -2846,7 +2508,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     * * Field Name: FromPersonID
     * * Display Name: From Person
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
     */
     get FromPersonID(): string | null {
         return this.Get('FromPersonID');
@@ -2859,7 +2521,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     * * Field Name: FromOrganizationID
     * * Display Name: From Organization
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
     get FromOrganizationID(): string | null {
         return this.Get('FromOrganizationID');
@@ -2872,7 +2534,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     * * Field Name: ToPersonID
     * * Display Name: To Person
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: People (vwPeopleExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
     */
     get ToPersonID(): string | null {
         return this.Get('ToPersonID');
@@ -2885,7 +2547,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     * * Field Name: ToOrganizationID
     * * Display Name: To Organization
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ.BizApps.Common: Organizations (vwOrganizationsExtended.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
     get ToOrganizationID(): string | null {
         return this.Get('ToOrganizationID');
@@ -3005,7 +2667,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: FromOrganization
-    * * Display Name: From Organization
+    * * Display Name: From Organization Name
     * * SQL Data Type: nvarchar(255)
     */
     get FromOrganization(): string | null {
@@ -3023,7 +2685,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ToOrganization
-    * * Display Name: To Organization
+    * * Display Name: To Organization Name
     * * SQL Data Type: nvarchar(255)
     */
     get ToOrganization(): string | null {

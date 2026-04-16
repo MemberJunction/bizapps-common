@@ -88,10 +88,10 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- MJ.BizApps.Common: Organizations Section -->
+    <!-- MJ_BizApps_Common: Organizations Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonOrganizations"
-        SectionName="MJ.BizApps.Common: Organizations"
+        SectionName="MJ_BizApps_Common: Organizations"
         Icon="fa fa-building"
         Variant="related-entity"
         [Form]="this"
@@ -101,8 +101,8 @@
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ.BizApps.Common: Organizations','OrganizationTypeID')"
-                [NewRecordValues]="NewRecordValues('MJ.BizApps.Common: Organizations')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Organizations','OrganizationTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Organizations')"
                 [AllowLoad]="IsSectionExpanded('mJBizAppsCommonOrganizations')"
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"

@@ -3,7 +3,7 @@ import { mjBizAppsCommonContactMethodEntity } from '@mj-biz-apps/common-entities
 import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Contact Methods') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ_BizApps_Common: Contact Methods') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommoncontactmethod-form',
@@ -17,6 +17,7 @@ export class mjBizAppsCommonContactMethodFormComponent extends BaseFormComponent
         this.initSections([
             { sectionKey: 'linkedRecord', sectionName: 'Linked Record', isExpanded: true },
             { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: true },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: false },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

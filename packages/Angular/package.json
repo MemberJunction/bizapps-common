@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-ng",
   "type": "module",
-  "version": "5.26.1",
+  "version": "5.26.2",
   "description": "BizApps Common Angular bootstrap - form components and module for the Common business entities Open App",
   "main": "dist/public-api.js",
   "types": "dist/public-api.d.ts",

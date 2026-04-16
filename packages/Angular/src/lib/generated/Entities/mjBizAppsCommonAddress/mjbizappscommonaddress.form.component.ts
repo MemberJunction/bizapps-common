@@ -4,7 +4,7 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseFormComponent } from '@memberjunction/ng-base-forms';
 import {  } from "@memberjunction/ng-entity-viewer"
 
-@RegisterClass(BaseFormComponent, 'MJ.BizApps.Common: Addresses') // Tell MemberJunction about this class
+@RegisterClass(BaseFormComponent, 'MJ_BizApps_Common: Addresses') // Tell MemberJunction about this class
 @Component({
     standalone: false,
     selector: 'gen-mjbizappscommonaddress-form',
@@ -19,7 +19,7 @@ export class mjBizAppsCommonAddressFormComponent extends BaseFormComponent {
             { sectionKey: 'addressDetails', sectionName: 'Address Details', isExpanded: true },
             { sectionKey: 'geographicLocation', sectionName: 'Geographic Location', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonAddressLinks', sectionName: 'MJ.BizApps.Common: Address Links', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonAddressLinks', sectionName: 'MJ_BizApps_Common: Address Links', isExpanded: false }
         ]);
     }
 }
