@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-ng",
   "type": "module",
-  "version": "5.26.2",
+  "version": "5.27.0",
   "description": "BizApps Common Angular bootstrap - form components and module for the Common business entities Open App",
   "main": "dist/public-api.js",
   "types": "dist/public-api.d.ts",
@@ -18,7 +18,7 @@
   "author": "MemberJunction.com",
   "license": "ISC",
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.26.2",
+    "@mj-biz-apps/common-entities": "5.27.0",
     "@memberjunction/global": "5.27.1",
     "@memberjunction/actions-base": "5.27.1",
     "@memberjunction/graphql-dataprovider": "5.27.1",
