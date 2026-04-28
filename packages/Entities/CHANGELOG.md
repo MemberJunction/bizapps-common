@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.27.1
+
+### Patch Changes
+
+- fa421da: Move `@memberjunction/*` and `@angular/*` deps to peerDependencies so consuming MJ apps resolve a single instance and avoid duplicate singletons.
+
 This log was last generated on Sun, 14 Apr 2024 15:50:05 GMT and should not be manually modified.
 
 <!-- Start content -->
