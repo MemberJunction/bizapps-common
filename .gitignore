@@ -4,6 +4,7 @@ node_modules/
 .turbo/
 .angular/
 codegen.output.log
+migrations/codegen/
 dist/
 SQL Scripts/
 Schema Files/

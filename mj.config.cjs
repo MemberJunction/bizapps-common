@@ -132,7 +132,7 @@ module.exports = {
   //
   // Using defaults - Core entities (__mj schema) should not be modified by distributions.
   // Uncomment only if you need different exclusions than the defaults.
-  excludeSchemas: ['sys', 'staging', '__mj', 'Izzy', '__BCSaaS'],
+  excludeSchemas: ['sys', 'staging', 'dbo', '__mj'],
   // excludeTables: [
   //   { schema: '%', table: 'sys%' },
   //   { schema: '%', table: 'flyway_schema_history' }
@@ -159,13 +159,21 @@ module.exports = {
   // SQL Output (for migrations)
   // ---------------------------------------------------------------------------
   // Default v3.x: enabled: true, folderPath: './migrations/v3/'
-  // SQLOutput: {
-  //   enabled: true,
-  //   folderPath: './migrations/v3/',
-  //   appendToFile: true,
-  //   convertCoreSchemaToFlywayMigrationFile: true,
-  //   omitRecurringScriptsFromLog: true,
-  // },
+  SQLOutput: {
+    enabled: true,
+    folderPath: './migrations/codegen/',
+    appendToFile: false,
+    convertCoreSchemaToFlywayMigrationFile: true,
+    omitRecurringScriptsFromLog: false,
+    schemaPlaceholders: [
+      // Order matters: more-specific schemas must come first because
+      // substitution is run sequentially with a greedy regex. If '__mj'
+      // were listed first, it would also match the '__mj' prefix of
+      // '__mj_BizAppsCommon', producing '${mjSchema}_BizAppsCommon'.
+      { schema: '__mj_BizAppsCommon', placeholder: '${flyway:defaultSchema}' },
+      { schema: '__mj', placeholder: '${mjSchema}' }
+    ]
+  },
 
   // ---------------------------------------------------------------------------
   // Force Regeneration Options

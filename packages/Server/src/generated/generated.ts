@@ -10,7 +10,7 @@
 import { Arg, Ctx, Int, Query, Resolver, Field, Float, ObjectType, FieldResolver, Root, InputType, Mutation,
             PubSub, PubSubEngine, ResolverBase, RunViewByIDInput, RunViewByNameInput, RunDynamicViewInput,
             AppContext, KeyValuePairInput, DeleteOptionsInput, GraphQLTimestamp as Timestamp,
-            GetReadOnlyProvider, GetReadWriteProvider } from '@memberjunction/server';
+            GetReadOnlyProvider, GetReadWriteProvider, RestoreContextInput } from '@memberjunction/server';
 import { Metadata, EntityPermissionType, CompositeKey, UserInfo } from '@memberjunction/core'
 
 import { MaxLength } from 'class-validator';
@@ -96,6 +96,9 @@ export class CreatemjBizAppsCommonAddressLinkInput {
 
     @Field(() => Int, { nullable: true })
     Rank: number | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -127,6 +130,9 @@ export class UpdatemjBizAppsCommonAddressLinkInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -274,6 +280,9 @@ export class CreatemjBizAppsCommonAddressTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -302,6 +311,9 @@ export class UpdatemjBizAppsCommonAddressTypeInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -488,6 +500,9 @@ export class CreatemjBizAppsCommonAddressInput {
 
     @Field(() => Float, { nullable: true })
     Longitude: number | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -528,6 +543,9 @@ export class UpdatemjBizAppsCommonAddressInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -703,6 +721,9 @@ export class CreatemjBizAppsCommonContactMethodInput {
 
     @Field(() => Boolean, { nullable: true })
     IsPrimary?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -734,6 +755,9 @@ export class UpdatemjBizAppsCommonContactMethodInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -881,6 +905,9 @@ export class CreatemjBizAppsCommonContactTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -909,6 +936,9 @@ export class UpdatemjBizAppsCommonContactTypeInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -1066,6 +1096,9 @@ export class CreatemjBizAppsCommonOrganizationTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -1094,6 +1127,9 @@ export class UpdatemjBizAppsCommonOrganizationTypeInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -1322,6 +1358,9 @@ export class CreatemjBizAppsCommonOrganizationInput {
 
     @Field({ nullable: true })
     Status?: string;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -1371,6 +1410,9 @@ export class UpdatemjBizAppsCommonOrganizationInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -1639,6 +1681,9 @@ export class CreatemjBizAppsCommonPersonInput {
 
     @Field({ nullable: true })
     Status?: string;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -1697,6 +1742,9 @@ export class UpdatemjBizAppsCommonPersonInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -1888,6 +1936,9 @@ export class CreatemjBizAppsCommonRelationshipTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -1922,6 +1973,9 @@ export class UpdatemjBizAppsCommonRelationshipTypeInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************
@@ -2131,6 +2185,9 @@ export class CreatemjBizAppsCommonRelationshipInput {
 
     @Field({ nullable: true })
     Notes: string | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 
@@ -2174,6 +2231,9 @@ export class UpdatemjBizAppsCommonRelationshipInput {
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
 }
     
 //****************************************************************************

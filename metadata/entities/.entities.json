@@ -48,7 +48,7 @@
       ]
     },
     "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ.BizApps.Common: People"
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
       "lastModified": "2026-02-27T21:33:46.734Z",
@@ -58,14 +58,11 @@
   {
     "fields": {
       "BaseView": "vwOrganizationsExtended",
-      "BaseViewGenerated": false
+      "BaseViewGenerated": false,
+      "CascadeDeletes": true
     },
     "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ.BizApps.Common: Organizations"
-    },
-    "sync": {
-      "lastModified": "2026-02-27T21:33:46.758Z",
-      "checksum": "247f441645cb491005fc8cedf372457b7e8e54d345cfdf00a883b9c39a06f2a7"
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     }
   }
 ]
