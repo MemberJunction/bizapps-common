@@ -148,3 +148,9 @@ jobs:
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: npm run commitpush
+
+      - name: Merge main into next and update lockfile
+        if: steps.changeset_check.outputs.pending != '0'
+        run: |
+          git checkout next
+          npm run mergemain:update-lock
