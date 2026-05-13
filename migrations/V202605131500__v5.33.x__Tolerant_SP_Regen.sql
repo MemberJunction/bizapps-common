@@ -255,7 +255,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Address Types */
 
@@ -474,7 +474,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Address Links */
 
@@ -697,7 +697,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Contact Methods */
 
@@ -947,7 +947,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Addresses */
 
@@ -1161,7 +1161,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Contact Types */
 
@@ -1440,7 +1440,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Organizations */
 
@@ -1659,7 +1659,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Relationships */
 
@@ -1963,7 +1963,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: People */
 
@@ -2177,7 +2177,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Organization Types */
 
@@ -2407,7 +2407,7 @@ BEGIN
         INSERTED AS I ON
         _organicTable.[ID] = I.[ID];
 END;
-GO;
+GO
 
 /* spUpdate Permissions for MJ_BizApps_Common: Relationship Types */
 
