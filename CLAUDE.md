@@ -74,7 +74,7 @@ MemberJunction supports both standalone and NgModule-declared components. Choose
 ---
 
 ## IMPORTANT
-- Before starting a new line of work always check the local branch we're on and see if it is (a) separate from the default branch in the remote repo - we always want to work in local feature branches and (b) if we aren't in such a feature branch that is named for the work being requested and empty, cut a new one but ask first and then switch to it
+- Before starting a new line of work always check the local branch we're on. Feature branches should be cut from `next` (the integration branch), not from `main` (the release branch). If we aren't already in an appropriately-named, empty feature branch tracking `origin/<same-name>`, ask before creating a new one. See "Branching Model" below for the full release flow.
 
 **VERY IMPORTANT** We want you to be a high performance agent. Therefore whenever you need to spin up tasks - if they do not require interaction with the user and if they are not interdependent in any way, ALWAYS spin up multiple parallel tasks to work together for faster responses. **NEVER** process tasks sequentially if they are candidates for parallelization
 
@@ -98,6 +98,30 @@ git checkout -b my-feature-branch
 1. Run `git branch -vv` to verify tracking
 2. Ensure your branch tracks `origin/<same-branch-name>`
 3. If tracking is wrong, fix it before pushing
+
+### Branching Model: `next` → `main` Release Flow
+BAC uses a two-tier branching model (matching BCSaaS and MJ):
+
+- **`next`** — integration branch. All feature work merges here.
+- **`main`** — release branch. Only updated by a single coordinating PR from `next`. Pushes to `main` trigger the publish workflow.
+
+**Feature work flow:**
+1. Cut feature branch from `next` (not from `main`): `git checkout next && git pull && git checkout -b <feature-name>`
+2. Make changes, commit, push, open PR → `next`
+3. `changes.yml` + `build.yml` run validation on the PR
+4. Merge to `next`
+
+**Release flow:**
+1. Open a single PR from `next` → `main` ("Release vX.Y.Z" coordinating PR)
+2. Merge to `main` triggers `publish.yml`:
+   - Validates, builds, runs `changeset version`, publishes to npm, tags the release, commits the version bump back to `main`
+   - Then automatically: checks out `next`, merges main into it, runs `npm install --package-lock-only`, commits the updated lockfile as `chore: Update package-lock.json with vX.Y.Z dependencies`, and pushes to `next`
+3. `next` is now ready for the next round of feature work, with a lockfile matching the just-published versions
+
+**Rules:**
+- **Never commit directly to `main`.** Always go through `next` first (except for the release coordinating PR itself).
+- **Never hand-author the `chore: Update package-lock.json with vX.Y.Z dependencies` commit on `next`.** That commit is created automatically by the publish workflow. If you find yourself wanting to write one manually, something is wrong upstream.
+- **Hotfixes that genuinely must bypass `next`** still go through a PR to `main`, but the next release-coordinating PR from `next` will need to merge main's hotfix commit back into next before merging next → main again. The publish workflow's automated merge-back handles this for you; you should rarely need to do it manually.
 
 ---
 
@@ -326,8 +350,10 @@ Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/Entiti
 
 ## GitHub Repository
 - Repository: https://github.com/MemberJunction/bizapps-common
-- Default branch: `main`
-- PRs target `main`
+- Default branch: `main` (release branch — publishes on push)
+- Integration branch: `next` (where feature PRs land)
+- Feature PRs target `next`. Release PRs target `main`.
+- See "Branching Model" section above for the full flow.
 
 ## Purpose
 

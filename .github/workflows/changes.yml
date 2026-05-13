@@ -2,7 +2,7 @@ name: Validate Changes
 
 on:
   pull_request:
-    branches: [main]
+    branches: [next, main]
 
 concurrency:
   group: changes-${{ github.ref }}
@@ -57,8 +57,10 @@ jobs:
           done
           echo "All new migration timestamps are valid"
 
-      - name: Check for changeset (PRs with migrations)
-        if: steps.migration_check.outputs.has_migrations == 'true'
+      - name: Check for changeset (PRs to next with migrations)
+        if: |
+          steps.migration_check.outputs.has_migrations == 'true' &&
+          github.base_ref == 'next'
         run: |
           CHANGESET_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '^\.changeset/.*\.md$' | grep -v 'README.md' || true)
           if [ -z "$CHANGESET_FILES" ]; then
