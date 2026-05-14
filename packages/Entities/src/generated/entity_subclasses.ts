@@ -246,7 +246,7 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
     Person: z.string().nullable().describe(`
         * * Field Name: Person
         * * Display Name: Person
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
         * * Display Name: Organization Name
@@ -560,6 +560,10 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    DisplayName: z.string().describe(`
+        * * Field Name: DisplayName
+        * * Display Name: Display Name
+        * * SQL Data Type: nvarchar(201)`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
         * * Display Name: Linked User Name
@@ -715,7 +719,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     FromPerson: z.string().nullable().describe(`
         * * Field Name: FromPerson
         * * Display Name: From Person
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     FromOrganization: z.string().nullable().describe(`
         * * Field Name: FromOrganization
         * * Display Name: From Organization Name
@@ -723,7 +727,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     ToPerson: z.string().nullable().describe(`
         * * Field Name: ToPerson
         * * Display Name: To Person
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     ToOrganization: z.string().nullable().describe(`
         * * Field Name: ToOrganization
         * * Display Name: To Organization Name
@@ -1408,7 +1412,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     /**
     * * Field Name: Person
     * * Display Name: Person
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get Person(): string | null {
         return this.Get('Person');
@@ -2252,6 +2256,15 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     }
 
     /**
+    * * Field Name: DisplayName
+    * * Display Name: Display Name
+    * * SQL Data Type: nvarchar(201)
+    */
+    get DisplayName(): string {
+        return this.Get('DisplayName');
+    }
+
+    /**
     * * Field Name: LinkedUser
     * * Display Name: Linked User Name
     * * SQL Data Type: nvarchar(100)
@@ -2694,7 +2707,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: FromPerson
     * * Display Name: From Person
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get FromPerson(): string | null {
         return this.Get('FromPerson');
@@ -2712,7 +2725,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: ToPerson
     * * Display Name: To Person
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get ToPerson(): string | null {
         return this.Get('ToPerson');

@@ -4,7 +4,7 @@
   "name": "mj-bizapps-common",
   "displayName": "BizApps Common",
   "description": "Common business entities (Person, Organization, Address, ContactMethod, Relationship) shared across MemberJunction business applications",
-  "version": "1.0.0",
+  "version": "5.29.0",
   "license": "ISC",
   "icon": "fa-solid fa-building-columns",
   "publisher": {
@@ -12,9 +12,9 @@
     "url": "https://memberjunction.com"
   },
   "repository": "https://github.com/MemberJunction/bizapps-common",
-  "mjVersionRange": ">=5.0.0 <6.0.0",
+  "mjVersionRange": ">=5.33.0 <6.0.0",
   "schema": {
-    "name": "__mj_bizapps_common",
+    "name": "__mj_BizAppsCommon",
     "createIfNotExists": true
   },
   "migrations": {
