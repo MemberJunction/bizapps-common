@@ -1,5 +1,5 @@
 {
-  "entity": "MJ.BizApps.Common: Relationship Types",
+  "entity": "MJ_BizApps_Common: Relationship Types",
   "filePattern": "**/.*.json",
   "pull": {
     "createNewFileIfNotFound": true,
