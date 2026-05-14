@@ -1,9 +1,6 @@
 [
   {
-    "fields": {
-      "BaseView": "vwPeopleExtended",
-      "BaseViewGenerated": false
-    },
+    "fields": {},
     "relatedEntities": {
       "MJ: Entity Fields": [
         {
@@ -15,7 +12,7 @@
             "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-05-14T07:27:13.172Z",
+            "lastModified": "2026-05-14T15:55:52.243Z",
             "checksum": "7eed61d7e6b053a30e312c82208b59beeffaa35465e6bbaf1ce6e42980f9884d"
           }
         },
@@ -28,7 +25,7 @@
             "ID": "@lookup:MJ: Entity Fields.Name=LastName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-05-14T07:27:13.226Z",
+            "lastModified": "2026-05-14T15:55:52.299Z",
             "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
           }
         }
@@ -38,22 +35,20 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-05-14T07:27:12.924Z",
-      "checksum": "7f3d78b92d13e18c9f39b6fddf8c373c892a4e8535cb106da5424315846edfa7"
+      "lastModified": "2026-05-14T15:55:52.064Z",
+      "checksum": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     }
   },
   {
     "fields": {
-      "BaseView": "vwOrganizationsExtended",
-      "BaseViewGenerated": false,
       "CascadeDeletes": true
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
-      "lastModified": "2026-05-14T07:27:12.987Z",
-      "checksum": "67eeab396a366516692103887074d03bf20edd1a462c941afbe5e228684c5ad3"
+      "lastModified": "2026-05-14T15:55:52.071Z",
+      "checksum": "425dd92a5b811a9ebafffb35ad173eeb2777ed3bf7ef3c25b29cbbaf08252d46"
     }
   }
 ]
