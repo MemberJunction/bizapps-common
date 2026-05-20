@@ -1,8 +1,8 @@
 {
-  "name": "@mj-biz-apps/common-server",
+  "name": "@mj-biz-apps/common-core-entities-server",
   "type": "module",
   "version": "5.29.0",
-  "description": "BizApps Common server bootstrap - GraphQL resolvers and class registrations for the Common business entities Open App",
+  "description": "Server-side entity subclasses for BizApps Common — lifecycle hooks for People, Organizations, etc.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
@@ -21,15 +21,12 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mj-biz-apps/common-core-entities-server": "5.29.0",
-    "@mj-biz-apps/common-entities": "5.29.0",
-    "@mj-biz-apps/common-actions": "5.29.0",
-    "class-validator": "^0.14.3"
+    "@mj-biz-apps/common-entities": "5.29.0"
   },
   "peerDependencies": {
     "@memberjunction/core": "^5.33.0",
+    "@memberjunction/core-entities": "^5.33.0",
     "@memberjunction/global": "^5.33.0",
-    "@memberjunction/server": "^5.33.0",
     "@memberjunction/sqlserver-dataprovider": "^5.33.0"
   },
   "repository": {
