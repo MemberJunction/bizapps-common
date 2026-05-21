@@ -10,6 +10,10 @@
 import '@mj-biz-apps/common-entities';
 import '@mj-biz-apps/common-actions';
 
+// Server-side entity subclasses — must come after common-entities so
+// @RegisterClass auto-increment gives these higher priority
+import '@mj-biz-apps/common-core-entities-server';
+
 // Import generated GraphQL resolvers
 import './generated/generated.js';
 
