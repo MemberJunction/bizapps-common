@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.30.0
+
+### Patch Changes
+
+- 49d5b9c: Add CoreEntitiesServer package with PersonEntityServer and LinkedUserID unique constraint
+
 ## 5.29.0
 
 ### Minor Changes

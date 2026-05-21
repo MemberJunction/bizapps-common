@@ -1,5 +1,15 @@
 # @mj-biz-apps/common-server
 
+## 5.30.0
+
+### Patch Changes
+
+- 49d5b9c: Add CoreEntitiesServer package with PersonEntityServer and LinkedUserID unique constraint
+- Updated dependencies [49d5b9c]
+  - @mj-biz-apps/common-core-entities-server@5.30.0
+  - @mj-biz-apps/common-entities@5.30.0
+  - @mj-biz-apps/common-actions@5.30.0
+
 ## 5.29.0
 
 ### Minor Changes
