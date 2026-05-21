@@ -1,4 +1,4 @@
-import { BaseEntity, EntitySaveOptions, LogError, Metadata, UserInfo } from '@memberjunction/core';
+import { BaseEntity, EntityDeleteOptions, EntitySaveOptions, LogError, Metadata, UserInfo } from '@memberjunction/core';
 import { RegisterClass } from '@memberjunction/global';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
 import { MJUserEntity, MJUserRoleEntity } from '@memberjunction/core-entities';
@@ -46,7 +46,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
         return true;
     }
 
-    override async Delete(options?: EntitySaveOptions): Promise<boolean> {
+    override async Delete(options?: EntityDeleteOptions): Promise<boolean> {
         // Pre-delete: deactivate linked User (don't delete — audit history)
         if (this.LinkedUserID) {
             await this.deactivateLinkedUser();
@@ -159,18 +159,15 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
 
     /**
      * Sync Person name/email changes to the linked MJ User record.
-     * Called post-save — only updates if fields actually changed.
+     * Called post-save — updates name/email fields and ensures the
+     * bidirectional back-pointer (LinkedEntityID / LinkedEntityRecordID) is set.
      */
     private async syncUserRecord(isNewRecord: boolean, emailChanged: boolean): Promise<void> {
-        // On new records, the User was just created with current values — no sync needed
-        if (isNewRecord) {
-            return;
-        }
-
         const nameFields = ['FirstName', 'LastName', 'MiddleName', 'Prefix', 'Suffix'];
         const nameChanged = nameFields.some(f => this.GetFieldByName(f)?.Dirty === true);
 
-        if (!nameChanged && !emailChanged) {
+        // For existing records with no field changes and no back-pointer work, skip
+        if (!isNewRecord && !nameChanged && !emailChanged) {
             return;
         }
 
@@ -183,7 +180,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
                 return;
             }
 
-            if (nameChanged) {
+            if (nameChanged || isNewRecord) {
                 user.Name = this.buildFullName();
                 user.FirstName = this.FirstName;
                 user.LastName = this.LastName;
@@ -193,6 +190,9 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
                 user.Email = this.Email;
             }
 
+            // Ensure bidirectional link: User → Person
+            this.setUserBackPointer(user);
+
             const saved = await user.Save();
             if (!saved) {
                 LogError(`PersonEntityServer: Failed to sync User ${this.LinkedUserID} after Person update`);
@@ -201,6 +201,20 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
             LogError(`PersonEntityServer: Error syncing User record: ${error}`);
             // Don't block — sync is best-effort
         }
+    }
+
+    /**
+     * Set the back-pointer fields on the User so the User → Person
+     * relationship is bidirectional. Only sets fields if not already populated.
+     */
+    private setUserBackPointer(user: MJUserEntity): void {
+        if (user.LinkedEntityRecordID) {
+            return; // Already linked — nothing to do
+        }
+
+        user.LinkedRecordType = 'Person';
+        user.LinkedEntityID = this.EntityInfo.ID;
+        user.LinkedEntityRecordID = this.ID;
     }
 
     /**
