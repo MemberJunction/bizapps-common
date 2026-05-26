@@ -127,6 +127,28 @@ jobs:
             exit 1
           fi
 
+      - name: Sync mj-app.json version and MJ version range
+        if: steps.changeset_check.outputs.pending != '0'
+        run: |
+          # Sync app version from entities package
+          VERSION=$(jq -r .version packages/Entities/package.json)
+          jq --arg v "$VERSION" '.version = $v' mj-app.json > mj-app.json.tmp
+          mv mj-app.json.tmp mj-app.json
+          echo "Updated mj-app.json version to $VERSION"
+
+          # Derive mjVersionRange from the @memberjunction/core dependency
+          MJ_DEP=$(jq -r '.dependencies["@memberjunction/core"] // .peerDependencies["@memberjunction/core"] // empty' packages/Entities/package.json)
+          if [ -n "$MJ_DEP" ]; then
+            # Strip semver range prefix (^, ~, >=, etc.) to get the base version
+            MJ_MIN=$(echo "$MJ_DEP" | sed 's/^[^0-9]*//')
+            # Next major = current major + 1
+            MJ_NEXT_MAJOR="$(( $(echo "$MJ_MIN" | cut -d. -f1) + 1 )).0.0"
+            MJ_RANGE=">=${MJ_MIN} <${MJ_NEXT_MAJOR}"
+            jq --arg r "$MJ_RANGE" '.mjVersionRange = $r' mj-app.json > mj-app.json.tmp
+            mv mj-app.json.tmp mj-app.json
+            echo "Updated mj-app.json mjVersionRange to $MJ_RANGE"
+          fi
+
       - name: Build all packages
         run: npm run build:packages
 
