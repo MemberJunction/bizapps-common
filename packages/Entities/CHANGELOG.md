@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.30.1
+
+### Patch Changes
+
+- a46ab44: Fix publish CI/CD to sync mj-app.json version and mjVersionRange automatically during release
+
 ## 5.30.0
 
 ### Patch Changes

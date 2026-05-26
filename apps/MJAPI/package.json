@@ -32,7 +32,7 @@
     "@memberjunction/templates": "5.33.0",
     "axios": "^1.13.4",
     "class-validator": "^0.14.3",
-    "@mj-biz-apps/common-server": "5.30.0"
+    "@mj-biz-apps/common-server": "5.30.1"
   },
   "repository": {
     "type": "git",
