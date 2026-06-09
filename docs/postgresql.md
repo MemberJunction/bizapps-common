@@ -33,7 +33,7 @@ On SQL Server the flow is identical without `DB_PLATFORM` (defaults to `sqlserve
 
 ## How platform selection works (inherited from the MJ CLI — no custom code)
 
-The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.37.0). BizApps Common does
+The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.40.1). BizApps Common does
 **not** reimplement any of it:
 
 - **`DB_PLATFORM`** (`sqlserver` | `postgresql`) is read by the CLI. There is no new config key to set
@@ -105,9 +105,11 @@ finalize step neutralizes those sections rather than attempting a faithful T‑S
 why the type-table seed data is applied by `mj sync push` after codegen has created the CRUD
 functions.
 
-`advancedGeneration` is disabled in `mj.config.cjs` so the app installs without AI-provider
-credentials; it is an optional enrichment (AI form layouts) that does not affect schema, CRUD, or
-sync. Enable it in an environment that has AI model credentials.
+`advancedGeneration` is left at its MemberJunction default in `mj.config.cjs`. It is an optional AI
+enrichment (e.g. form-layout generation) that does **not** affect schema, CRUD, or sync. On a keyless
+environment its AI calls fail **non-fatally** — CodeGen logs `No valid API credentials` warnings and
+completes successfully (verified on 5.40.1) — so the app still installs without AI-provider
+credentials. Configure AI model credentials to enable the enrichment and silence those warnings.
 
 ---
 
@@ -122,11 +124,28 @@ CodeGen-generated CRUD functions), the read path (FK-join base views), the polym
 its own test rows) and exits non-zero on any failure. Requires a PG instance with the app installed
 (migrate → codegen → sync). Currently 17/17 passing.
 
+## Version note — why MJ 5.40.1
+
+BizApps Common pins `@memberjunction/*` at **5.40.1**. Two things make this the right floor for
+PostgreSQL:
+
+- **App-schema `mj sync push` works.** Seeding the reference tables (AddressTypes, etc.) calls the
+  app-schema `spCreate*` functions. In MJ ≤ 5.37.0 the PostgreSQL data provider hardcoded the **core**
+  `__mj` schema for every CRUD-function call, so an app-schema seed resolved to a non-existent
+  `__mj.spCreateAddressType` and silently seeded nothing. That was fixed in 5.39.0+
+  (`PostgreSQLDataProvider` now qualifies the call with the entity's own schema). The full
+  `migrate → codegen → sync push → object-model` flow is verified end-to-end on 5.40.1.
+
 ## Known limitations
 
-- **`mj app install` (the OpenApp installer) is SQL-Server-only in MJ 5.37.0.** It reads
+- **`mj app install` (the OpenApp installer) is SQL-Server-only in published MemberJunction.** It reads
   `mj-app.json`'s `migrations.directory` literally and uses the SQL Server Skyway provider, with no
   platform folder-swap. Installing onto a PostgreSQL MJ instance therefore uses the developer flow
-  above (`mj migrate` / `mj codegen` / `mj sync push`), which is fully platform-aware. Reaching PG
-  through `mj app install` requires a MemberJunction-core enhancement to the installer (platform-aware
-  provider + `migrations-pg` selection) and is tracked as a framework follow-up.
+  above (`mj migrate` / `mj codegen` / `mj sync push`), which is fully platform-aware. Platform-aware
+  `mj app install` (PG provider + `migrations-pg` selection + app-schema create/drop) is implemented in
+  the MemberJunction-core PR that accompanies this work and ships on a future MJ release.
+- **A *fresh* MemberJunction-core install on PostgreSQL is a separate, MJ-core concern.** BizApps Common
+  installs *into* an existing MJ instance and runs only its own `migrations-pg`, which are
+  platform-independent of the core baselines. The MJ-core PostgreSQL baseline regeneration (so a brand-new
+  PG core CodeGens cleanly on current releases) is tracked upstream and is orthogonal to installing BizApps
+  Common onto a working PG core.
