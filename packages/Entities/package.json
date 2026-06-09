@@ -23,11 +23,11 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "zod": "~3.24.4"
+    "zod": "^3.25.76"
   },
   "peerDependencies": {
-    "@memberjunction/core": "^5.33.0",
-    "@memberjunction/global": "^5.33.0"
+    "@memberjunction/core": "5.37.0",
+    "@memberjunction/global": "5.37.0"
   },
   "repository": {
     "type": "git",
