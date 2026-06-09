@@ -18,7 +18,7 @@
     "start": "turbo start --filter=mj_explorer --filter=mj_api",
     "start:api": "turbo start --filter=mj_api",
     "start:explorer": "turbo start --filter=mj_explorer",
-    "mj:migrate": "mj migrate --schema __mj_BizAppsCommon",
+    "mj:migrate": "mj migrate --schema __mj_BizAppsCommon --dir ./migrations",
     "mj:codegen": "mj codegen",
     "mj:migrate:convert": "mj migrate convert --source-dir ./migrations --output-dir ./migrations-pg --schema __mj_BizAppsCommon",
     "install:deps": "npm install",
