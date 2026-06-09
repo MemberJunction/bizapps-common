@@ -111,6 +111,17 @@ sync. Enable it in an environment that has AI model credentials.
 
 ---
 
+## Testing the object model
+
+`scripts/pg-objectmodel-test.mjs` (`npm run test:objectmodel:pg`) is a comprehensive functional
+test of the BizApps Common object model on PostgreSQL — it exercises the write path (the
+CodeGen-generated CRUD functions), the read path (FK-join base views), the polymorphic links
+(Person/Organization), directional relationships, and the distinctive model features
+(`Person.DisplayName` STORED generated column, the Organization root-parent recursive TVF, and the
+`UQ_Person_LinkedUserID` 1:1 constraint), with full CRUD round-trips. It is self-cleaning (deletes
+its own test rows) and exits non-zero on any failure. Requires a PG instance with the app installed
+(migrate → codegen → sync). Currently 17/17 passing.
+
 ## Known limitations
 
 - **`mj app install` (the OpenApp installer) is SQL-Server-only in MJ 5.37.0.** It reads
