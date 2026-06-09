@@ -141,13 +141,6 @@ module.exports = {
   // ---------------------------------------------------------------------------
   // AI-Powered Advanced Generation Features
   // ---------------------------------------------------------------------------
-  // advancedGeneration is DISABLED so the app installs into any MJ instance without AI provider
-  // credentials. Advanced generation (AI-driven form layouts, check-constraint validators) is an
-  // optional enrichment that does not affect schema correctness, CRUD, or sync. Enable it only in an
-  // environment that has AI model credentials configured.
-  advancedGeneration: {
-    enableAdvancedGeneration: false,
-  },
   // Default v3.x: Several features enabled by default
   // advancedGeneration: {
   //   enableAdvancedGeneration: true,

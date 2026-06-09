@@ -24,10 +24,10 @@
     "@mj-biz-apps/common-entities": "5.30.1"
   },
   "peerDependencies": {
-    "@memberjunction/core": "5.37.0",
-    "@memberjunction/core-entities": "5.37.0",
-    "@memberjunction/global": "5.37.0",
-    "@memberjunction/sqlserver-dataprovider": "5.37.0"
+    "@memberjunction/core": "^5.37.0",
+    "@memberjunction/core-entities": "^5.37.0",
+    "@memberjunction/global": "^5.37.0",
+    "@memberjunction/sqlserver-dataprovider": "^5.37.0"
   },
   "repository": {
     "type": "git",
