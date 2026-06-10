@@ -33,7 +33,7 @@ On SQL Server the flow is identical without `DB_PLATFORM` (defaults to `sqlserve
 
 ## How platform selection works (inherited from the MJ CLI — no custom code)
 
-The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.40.1). BizApps Common does
+The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.40.2). BizApps Common does
 **not** reimplement any of it:
 
 - **`DB_PLATFORM`** (`sqlserver` | `postgresql`) is read by the CLI. There is no new config key to set
@@ -108,7 +108,7 @@ functions.
 `advancedGeneration` is left at its MemberJunction default in `mj.config.cjs`. It is an optional AI
 enrichment (e.g. form-layout generation) that does **not** affect schema, CRUD, or sync. On a keyless
 environment its AI calls fail **non-fatally** — CodeGen logs `No valid API credentials` warnings and
-completes successfully (verified on 5.40.1) — so the app still installs without AI-provider
+completes successfully (verified on 5.40.2) — so the app still installs without AI-provider
 credentials. Configure AI model credentials to enable the enrichment and silence those warnings.
 
 ---
@@ -124,9 +124,9 @@ CodeGen-generated CRUD functions), the read path (FK-join base views), the polym
 its own test rows) and exits non-zero on any failure. Requires a PG instance with the app installed
 (migrate → codegen → sync). Currently 17/17 passing.
 
-## Version note — why MJ 5.40.1
+## Version note — why MJ 5.40.2
 
-BizApps Common pins `@memberjunction/*` at **5.40.1**. Two things make this the right floor for
+BizApps Common pins `@memberjunction/*` at **5.40.2**. Two things make this the right floor for
 PostgreSQL:
 
 - **App-schema `mj sync push` works.** Seeding the reference tables (AddressTypes, etc.) calls the
@@ -134,7 +134,7 @@ PostgreSQL:
   `__mj` schema for every CRUD-function call, so an app-schema seed resolved to a non-existent
   `__mj.spCreateAddressType` and silently seeded nothing. That was fixed in 5.39.0+
   (`PostgreSQLDataProvider` now qualifies the call with the entity's own schema). The full
-  `migrate → codegen → sync push → object-model` flow is verified end-to-end on 5.40.1.
+  `migrate → codegen → sync push → object-model` flow is verified end-to-end on 5.40.2.
 
 ## Known limitations
 
