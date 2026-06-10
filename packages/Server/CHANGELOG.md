@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-server
 
+## 5.31.0
+
+### Minor Changes
+
+- 64200c7: Added PG support and MJ upgrade to 5.40.2
+
+### Patch Changes
+
+- Updated dependencies [64200c7]
+  - @mj-biz-apps/common-core-entities-server@5.31.0
+  - @mj-biz-apps/common-entities@5.31.0
+  - @mj-biz-apps/common-actions@5.31.0
+
 ## 5.30.1
 
 ### Patch Changes

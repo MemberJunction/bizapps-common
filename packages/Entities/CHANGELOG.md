@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.31.0
+
+### Minor Changes
+
+- 64200c7: Added PG support and MJ upgrade to 5.40.2
+
 ## 5.30.1
 
 ### Patch Changes
