@@ -1,0 +1,13231 @@
+-- ============================================================================
+-- MemberJunction PostgreSQL Migration
+-- Converted from SQL Server using TypeScript conversion pipeline
+-- ============================================================================
+
+-- Extensions
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Schema
+CREATE SCHEMA IF NOT EXISTS __mj_BizAppsCommon;
+SET search_path TO __mj_BizAppsCommon, public;
+
+-- Ensure backslashes in string literals are treated literally (not as escape sequences)
+SET standard_conforming_strings = on;
+
+-- NOTE: Earlier converter versions made INTEGER to BOOLEAN cast implicit by
+-- modifying the system catalog so SS-style INSERT INTO bool_col VALUES (1)
+-- would work. That modification required pg_catalog write privileges, which
+-- managed PG (RDS, Aurora, Cloud SQL, Azure) does not grant. As of v5.30 all
+-- bulk INSERTs are emitted with native TRUE/FALSE values directly, so the
+-- cast modification is no longer needed. Removed to support managed-PG
+-- installs out of the box.
+
+
+-- ===================== DDL: Tables, PKs, Indexes =====================
+
+CREATE SCHEMA IF NOT EXISTS __mj_BizAppsCommon;
+
+---------------------------------------------------------------------------
+-- Organization Types: Company, Non-Profit, Association, etc.
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."OrganizationType" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Name" VARCHAR(100) NOT NULL,
+ "Description" TEXT,
+ "IconClass" VARCHAR(100),
+ "DisplayRank" INTEGER NOT NULL DEFAULT 100,
+ "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
+ CONSTRAINT PK_OrganizationType PRIMARY KEY ("ID"),
+ CONSTRAINT UQ_OrganizationType_Name UNIQUE ("Name")
+);
+
+---------------------------------------------------------------------------
+-- Address Types: Home, Work, Mailing, Billing, etc.
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."AddressType" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Name" VARCHAR(100) NOT NULL,
+ "Description" TEXT,
+ "IconClass" VARCHAR(100),
+ "DefaultRank" INTEGER NOT NULL DEFAULT 100,
+ "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
+ CONSTRAINT PK_AddressType PRIMARY KEY ("ID"),
+ CONSTRAINT UQ_AddressType_Name UNIQUE ("Name")
+);
+
+---------------------------------------------------------------------------
+-- Contact Types: Phone, Mobile, Email, LinkedIn, etc.
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."ContactType" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Name" VARCHAR(100) NOT NULL,
+ "Description" TEXT,
+ "IconClass" VARCHAR(100),
+ "DisplayRank" INTEGER NOT NULL DEFAULT 100,
+ "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
+ CONSTRAINT PK_ContactType PRIMARY KEY ("ID"),
+ CONSTRAINT UQ_ContactType_Name UNIQUE ("Name")
+);
+
+---------------------------------------------------------------------------
+-- Relationship Types with directionality and category
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."RelationshipType" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Name" VARCHAR(100) NOT NULL,
+ "Description" TEXT,
+ "Category" VARCHAR(50) NOT NULL,
+ "IsDirectional" BOOLEAN NOT NULL DEFAULT TRUE,
+ "ForwardLabel" VARCHAR(100),
+ "ReverseLabel" VARCHAR(100),
+ "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
+ CONSTRAINT PK_RelationshipType PRIMARY KEY ("ID"),
+ CONSTRAINT UQ_RelationshipType_Name UNIQUE ("Name"),
+ CONSTRAINT CK_RelationshipType_Category CHECK ("Category" IN ('PersonToPerson', 'PersonToOrganization', 'OrganizationToOrganization'))
+);
+
+---------------------------------------------------------------------------
+-- Person: individual people, optionally linked to MJ system users
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."Person" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "FirstName" VARCHAR(100) NOT NULL,
+ "LastName" VARCHAR(100) NOT NULL,
+ "MiddleName" VARCHAR(100),
+ "Prefix" VARCHAR(20),
+ "Suffix" VARCHAR(20),
+ "PreferredName" VARCHAR(100),
+ "Title" VARCHAR(200),
+ "Email" VARCHAR(255),
+ "Phone" VARCHAR(50),
+ "DateOfBirth" DATE,
+ "Gender" VARCHAR(50),
+ "PhotoURL" VARCHAR(1000),
+ "Bio" TEXT,
+ "LinkedUserID" UUID,
+ "Status" VARCHAR(50) NOT NULL DEFAULT 'Active',
+ CONSTRAINT PK_Person PRIMARY KEY ("ID"),
+ CONSTRAINT FK_Person_LinkedUser FOREIGN KEY ("LinkedUserID") REFERENCES __mj."User"("ID"),
+ CONSTRAINT CK_Person_Status CHECK ("Status" IN ('Active', 'Inactive', 'Deceased'))
+);
+
+---------------------------------------------------------------------------
+-- Organization: companies, associations, government bodies, etc.
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."Organization" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Name" VARCHAR(255) NOT NULL,
+ "LegalName" VARCHAR(255),
+ "OrganizationTypeID" UUID,
+ "ParentID" UUID,
+ "Website" VARCHAR(1000),
+ "LogoURL" VARCHAR(1000),
+ "Description" TEXT,
+ "Email" VARCHAR(255),
+ "Phone" VARCHAR(50),
+ "FoundedDate" DATE,
+ "TaxID" VARCHAR(50),
+ "Status" VARCHAR(50) NOT NULL DEFAULT 'Active',
+ CONSTRAINT PK_Organization PRIMARY KEY ("ID"),
+ CONSTRAINT FK_Organization_Type FOREIGN KEY ("OrganizationTypeID") REFERENCES __mj_BizAppsCommon."OrganizationType"("ID"),
+ CONSTRAINT FK_Organization_Parent FOREIGN KEY ("ParentID") REFERENCES __mj_BizAppsCommon."Organization"("ID"),
+ CONSTRAINT CK_Organization_Status CHECK ("Status" IN ('Active', 'Inactive', 'Dissolved'))
+);
+
+---------------------------------------------------------------------------
+-- Address: standalone physical location records, shared via AddressLink
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."Address" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "Line1" VARCHAR(255) NOT NULL,
+ "Line2" VARCHAR(255),
+ "Line3" VARCHAR(255),
+ "City" VARCHAR(100) NOT NULL,
+ "StateProvince" VARCHAR(100),
+ "PostalCode" VARCHAR(20),
+ "Country" VARCHAR(100) NOT NULL DEFAULT 'US',
+ "Latitude" DECIMAL(9,6),
+ "Longitude" DECIMAL(9,6),
+ CONSTRAINT PK_Address PRIMARY KEY ("ID")
+);
+
+---------------------------------------------------------------------------
+-- AddressLink: polymorphic link from Address to any entity record
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."AddressLink" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "AddressID" UUID NOT NULL,
+ "EntityID" UUID NOT NULL,
+ "RecordID" VARCHAR(700) NOT NULL,
+ "AddressTypeID" UUID NOT NULL,
+ "IsPrimary" BOOLEAN NOT NULL DEFAULT FALSE,
+ "Rank" INTEGER,
+ CONSTRAINT PK_AddressLink PRIMARY KEY ("ID"),
+ CONSTRAINT FK_AddressLink_Address FOREIGN KEY ("AddressID") REFERENCES __mj_BizAppsCommon."Address"("ID"),
+ CONSTRAINT FK_AddressLink_Entity FOREIGN KEY ("EntityID") REFERENCES __mj."Entity"("ID"),
+ CONSTRAINT FK_AddressLink_AddressType FOREIGN KEY ("AddressTypeID") REFERENCES __mj_BizAppsCommon."AddressType"("ID")
+);
+
+---------------------------------------------------------------------------
+-- ContactMethod: additional contact info beyond Person/Org primary fields
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."ContactMethod" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "PersonID" UUID,
+ "OrganizationID" UUID,
+ "ContactTypeID" UUID NOT NULL,
+ "Value" VARCHAR(500) NOT NULL,
+ "Label" VARCHAR(100),
+ "IsPrimary" BOOLEAN NOT NULL DEFAULT FALSE,
+ CONSTRAINT PK_ContactMethod PRIMARY KEY ("ID"),
+ CONSTRAINT FK_ContactMethod_Person FOREIGN KEY ("PersonID") REFERENCES __mj_BizAppsCommon."Person"("ID"),
+ CONSTRAINT FK_ContactMethod_Organization FOREIGN KEY ("OrganizationID") REFERENCES __mj_BizAppsCommon."Organization"("ID"),
+ CONSTRAINT FK_ContactMethod_ContactType FOREIGN KEY ("ContactTypeID") REFERENCES __mj_BizAppsCommon."ContactType"("ID"),
+ CONSTRAINT CK_ContactMethod_Owner CHECK (
+ ("PersonID" IS NOT NULL AND "OrganizationID" IS NULL) OR
+ ("PersonID" IS NULL AND "OrganizationID" IS NOT NULL)
+ )
+);
+
+---------------------------------------------------------------------------
+-- Relationship: typed links between Person/Org in any combination
+---------------------------------------------------------------------------
+CREATE TABLE __mj_BizAppsCommon."Relationship" (
+ "ID" UUID NOT NULL DEFAULT gen_random_uuid(),
+ "RelationshipTypeID" UUID NOT NULL,
+ "FromPersonID" UUID,
+ "FromOrganizationID" UUID,
+ "ToPersonID" UUID,
+ "ToOrganizationID" UUID,
+ "Title" VARCHAR(255),
+ "StartDate" DATE,
+ "EndDate" DATE,
+ "Status" VARCHAR(50) NOT NULL DEFAULT 'Active',
+ "Notes" TEXT,
+ CONSTRAINT PK_Relationship PRIMARY KEY ("ID"),
+ CONSTRAINT FK_Relationship_Type FOREIGN KEY ("RelationshipTypeID") REFERENCES __mj_BizAppsCommon."RelationshipType"("ID"),
+ CONSTRAINT FK_Relationship_FromPerson FOREIGN KEY ("FromPersonID") REFERENCES __mj_BizAppsCommon."Person"("ID"),
+ CONSTRAINT FK_Relationship_FromOrganization FOREIGN KEY ("FromOrganizationID") REFERENCES __mj_BizAppsCommon."Organization"("ID"),
+ CONSTRAINT FK_Relationship_ToPerson FOREIGN KEY ("ToPersonID") REFERENCES __mj_BizAppsCommon."Person"("ID"),
+ CONSTRAINT FK_Relationship_ToOrganization FOREIGN KEY ("ToOrganizationID") REFERENCES __mj_BizAppsCommon."Organization"("ID"),
+ CONSTRAINT CK_Relationship_Status CHECK ("Status" IN ('Active', 'Inactive', 'Ended')),
+ CONSTRAINT CK_Relationship_FromOwner CHECK (
+ ("FromPersonID" IS NOT NULL AND "FromOrganizationID" IS NULL) OR
+ ("FromPersonID" IS NULL AND "FromOrganizationID" IS NOT NULL)
+ ),
+ CONSTRAINT CK_Relationship_ToOwner CHECK (
+ ("ToPersonID" IS NOT NULL AND "ToOrganizationID" IS NULL) OR
+ ("ToPersonID" IS NULL AND "ToOrganizationID" IS NOT NULL)
+ )
+);
+
+---------------------------------------------------------------------------
+-- INDEXES: Unique filtered index on Person."LinkedUserID"
+---------------------------------------------------------------------------
+CREATE UNIQUE  INDEX IF NOT EXISTS UQ_Person_LinkedUserID
+    ON __mj_BizAppsCommon."Person" ("LinkedUserID")
+    WHERE "LinkedUserID" IS NOT NULL;
+
+---------------------------------------------------------------------------
+-- INDEXES: Composite indexes for enriched view query performance
+---------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS IX_AddressLink_EntityRecord_Primary
+    ON __mj_BizAppsCommon."AddressLink" ("EntityID", "RecordID", "IsPrimary");
+
+CREATE INDEX IF NOT EXISTS IX_ContactMethod_Person_Type_Primary
+    ON __mj_BizAppsCommon."ContactMethod" ("PersonID", "ContactTypeID", "IsPrimary")
+    WHERE "PersonID" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS IX_ContactMethod_Organization_Type_Primary
+    ON __mj_BizAppsCommon."ContactMethod" ("OrganizationID", "ContactTypeID", "IsPrimary")
+    WHERE "OrganizationID" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS IX_Relationship_FromPerson_Type_Status
+    ON __mj_BizAppsCommon."Relationship" ("FromPersonID", "RelationshipTypeID", "Status")
+    WHERE "FromPersonID" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS IX_Relationship_ToOrganization_Status
+    ON __mj_BizAppsCommon."Relationship" ("ToOrganizationID", "Status")
+    WHERE "ToOrganizationID" IS NOT NULL;
+
+ALTER TABLE __mj_BizAppsCommon."ContactMethod"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."ContactMethod" */
+
+ALTER TABLE __mj_BizAppsCommon."ContactMethod"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."AddressLink" */
+
+ALTER TABLE __mj_BizAppsCommon."AddressLink"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."AddressLink" */
+
+ALTER TABLE __mj_BizAppsCommon."AddressLink"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."ContactType" */
+
+ALTER TABLE __mj_BizAppsCommon."ContactType"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."ContactType" */
+
+ALTER TABLE __mj_BizAppsCommon."ContactType"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."Organization" */
+
+ALTER TABLE __mj_BizAppsCommon."Organization"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."Organization" */
+
+ALTER TABLE __mj_BizAppsCommon."Organization"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."RelationshipType" */
+
+ALTER TABLE __mj_BizAppsCommon."RelationshipType"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."RelationshipType" */
+
+ALTER TABLE __mj_BizAppsCommon."RelationshipType"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."AddressType" */
+
+ALTER TABLE __mj_BizAppsCommon."AddressType"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."AddressType" */
+
+ALTER TABLE __mj_BizAppsCommon."AddressType"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."Person" */
+
+ALTER TABLE __mj_BizAppsCommon."Person"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."Person" */
+
+ALTER TABLE __mj_BizAppsCommon."Person"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."Relationship" */
+
+ALTER TABLE __mj_BizAppsCommon."Relationship"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."Relationship" */
+
+ALTER TABLE __mj_BizAppsCommon."Relationship"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."OrganizationType" */
+
+ALTER TABLE __mj_BizAppsCommon."OrganizationType"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."OrganizationType" */
+
+ALTER TABLE __mj_BizAppsCommon."OrganizationType"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."Address" */
+
+ALTER TABLE __mj_BizAppsCommon."Address"
+ ADD COLUMN IF NOT EXISTS "__mj_CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to add special date field __mj_UpdatedAt to entity __mj_BizAppsCommon."Address" */
+
+ALTER TABLE __mj_BizAppsCommon."Address"
+ ADD COLUMN IF NOT EXISTS "__mj_UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW();
+/* SQL text to insert new entity field */
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_AddressLink_AddressID" ON __mj_BizAppsCommon."AddressLink" ("AddressID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_AddressLink_EntityID" ON __mj_BizAppsCommon."AddressLink" ("EntityID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_AddressLink_AddressTypeID" ON __mj_BizAppsCommon."AddressLink" ("AddressTypeID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_ContactMethod_PersonID" ON __mj_BizAppsCommon."ContactMethod" ("PersonID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_ContactMethod_OrganizationID" ON __mj_BizAppsCommon."ContactMethod" ("OrganizationID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_ContactMethod_ContactTypeID" ON __mj_BizAppsCommon."ContactMethod" ("ContactTypeID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Organization_OrganizationTypeID" ON __mj_BizAppsCommon."Organization" ("OrganizationTypeID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Organization_ParentID" ON __mj_BizAppsCommon."Organization" ("ParentID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Person_LinkedUserID" ON __mj_BizAppsCommon."Person" ("LinkedUserID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Relationship_RelationshipTypeID" ON __mj_BizAppsCommon."Relationship" ("RelationshipTypeID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Relationship_FromPersonID" ON __mj_BizAppsCommon."Relationship" ("FromPersonID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Relationship_FromOrganizationID" ON __mj_BizAppsCommon."Relationship" ("FromOrganizationID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Relationship_ToPersonID" ON __mj_BizAppsCommon."Relationship" ("ToPersonID");
+
+CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Relationship_ToOrganizationID" ON __mj_BizAppsCommon."Relationship" ("ToOrganizationID");
+
+
+-- ===================== Helper Functions (fn*) =====================
+
+CREATE OR REPLACE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetRootID"
+(
+    p_RecordID UUID,
+    p_ParentID UUID
+)
+RETURNS TABLE("RootID" UUID)
+LANGUAGE sql
+AS $fn$
+    WITH RECURSIVE CTE_RootParent AS (
+        -- Anchor: Start from p_ParentID if not null, otherwise start from p_RecordID
+        SELECT
+            "ID",
+            "ParentID",
+            "ID" AS "RootParentID",
+            0 AS "Depth"
+        FROM
+            __mj_BizAppsCommon."Organization"
+        WHERE
+            "ID" = COALESCE(p_ParentID, p_RecordID)
+
+        UNION ALL
+
+        -- Recursive: Keep going up the hierarchy until ParentID is NULL
+        -- Includes depth counter to prevent infinite loops from circular references
+        SELECT
+            c."ID",
+            c."ParentID",
+            c."ID" AS "RootParentID",
+            p."Depth" + 1 AS "Depth"
+        FROM
+            __mj_BizAppsCommon."Organization" c
+        INNER JOIN
+            CTE_RootParent p ON c."ID" = p."ParentID"
+        WHERE
+            p."Depth" < 100  -- Prevent infinite loops, max 100 levels
+    )
+    SELECT "RootParentID" AS "RootID"
+    FROM
+        CTE_RootParent
+    WHERE
+        "ParentID" IS NULL
+    ORDER BY
+        "RootParentID"
+    LIMIT 1
+$fn$;
+
+
+-- ===================== Views =====================
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressTypes" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwAddressTypes';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwAddressTypes"
+AS SELECT
+    a.*
+FROM
+    __mj_BizAppsCommon."AddressType" AS a$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddresses" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddresses" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddresses" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddresses" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddresses" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwAddresses';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwAddresses"
+AS SELECT
+    a.*
+FROM
+    __mj_BizAppsCommon."Address" AS a$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactTypes" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwContactTypes';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwContactTypes"
+AS SELECT
+    c.*
+FROM
+    __mj_BizAppsCommon."ContactType" AS c$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactMethods" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactMethods" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactMethods" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactMethods" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwContactMethods" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwContactMethods';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwContactMethods"
+AS SELECT
+    c.*,
+    "mjBizAppsCommonOrganization_OrganizationID"."Name" AS "Organization",
+    "mjBizAppsCommonContactType_ContactTypeID"."Name" AS "ContactType"
+FROM
+    __mj_BizAppsCommon."ContactMethod" AS c
+LEFT OUTER JOIN
+    __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_OrganizationID"
+  ON
+    c."OrganizationID" = "mjBizAppsCommonOrganization_OrganizationID"."ID"
+INNER JOIN
+    __mj_BizAppsCommon."ContactType" AS "mjBizAppsCommonContactType_ContactTypeID"
+  ON
+    c."ContactTypeID" = "mjBizAppsCommonContactType_ContactTypeID"."ID"$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressLinks" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressLinks" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressLinks" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressLinks" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwAddressLinks" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwAddressLinks';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwAddressLinks"
+AS SELECT
+    a.*,
+    "MJEntity_EntityID"."Name" AS "Entity",
+    "mjBizAppsCommonAddressType_AddressTypeID"."Name" AS "AddressType"
+FROM
+    __mj_BizAppsCommon."AddressLink" AS a
+INNER JOIN
+    __mj."Entity" AS "MJEntity_EntityID"
+  ON
+    a."EntityID" = "MJEntity_EntityID"."ID"
+INNER JOIN
+    __mj_BizAppsCommon."AddressType" AS "mjBizAppsCommonAddressType_AddressTypeID"
+  ON
+    a."AddressTypeID" = "mjBizAppsCommonAddressType_AddressTypeID"."ID"$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationTypes" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwOrganizationTypes';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwOrganizationTypes"
+AS SELECT
+    o.*
+FROM
+    __mj_BizAppsCommon."OrganizationType" AS o$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationshipTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationshipTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationshipTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationshipTypes" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationshipTypes" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwRelationshipTypes';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwRelationshipTypes"
+AS SELECT
+    r.*
+FROM
+    __mj_BizAppsCommon."RelationshipType" AS r$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeople" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeople" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeople" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeople" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeople" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwPeople';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwPeople"
+AS SELECT
+    p.*,
+    "MJUser_LinkedUserID"."Name" AS "LinkedUser"
+FROM
+    __mj_BizAppsCommon."Person" AS p
+LEFT OUTER JOIN
+    __mj."User" AS "MJUser_LinkedUserID"
+  ON
+    p."LinkedUserID" = "MJUser_LinkedUserID"."ID"$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizations" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizations" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizations" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizations" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizations" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwOrganizations';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwOrganizations"
+AS SELECT
+    o.*,
+    "mjBizAppsCommonOrganizationType_OrganizationTypeID"."Name" AS "OrganizationType",
+    "mjBizAppsCommonOrganization_ParentID"."Name" AS "Parent",
+    "root_ParentID"."RootID" AS "RootParentID"
+FROM
+    __mj_BizAppsCommon."Organization" AS o
+LEFT OUTER JOIN
+    __mj_BizAppsCommon."OrganizationType" AS "mjBizAppsCommonOrganizationType_OrganizationTypeID"
+  ON
+    o."OrganizationTypeID" = "mjBizAppsCommonOrganizationType_OrganizationTypeID"."ID"
+LEFT OUTER JOIN
+    __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_ParentID"
+  ON
+    o."ParentID" = "mjBizAppsCommonOrganization_ParentID"."ID"
+LEFT JOIN LATERAL (SELECT * FROM __mj_BizAppsCommon."fnOrganizationParentID_GetRootID"(o."ID", o."ParentID")) AS "root_ParentID"
+    ON TRUE$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationships" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationships" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationships" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationships" CASCADE;
+DROP VIEW IF EXISTS __mj_BizAppsCommon."vwRelationships" CASCADE;
+DO $do$
+DECLARE
+  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+  v_target_name CONSTANT TEXT := 'vwRelationships';
+  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwRelationships"
+AS SELECT
+    r.*,
+    "mjBizAppsCommonRelationshipType_RelationshipTypeID"."Name" AS "RelationshipType",
+    "mjBizAppsCommonOrganization_FromOrganizationID"."Name" AS "FromOrganization",
+    "mjBizAppsCommonOrganization_ToOrganizationID"."Name" AS "ToOrganization"
+FROM
+    __mj_BizAppsCommon."Relationship" AS r
+INNER JOIN
+    __mj_BizAppsCommon."RelationshipType" AS "mjBizAppsCommonRelationshipType_RelationshipTypeID"
+  ON
+    r."RelationshipTypeID" = "mjBizAppsCommonRelationshipType_RelationshipTypeID"."ID"
+LEFT OUTER JOIN
+    __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_FromOrganizationID"
+  ON
+    r."FromOrganizationID" = "mjBizAppsCommonOrganization_FromOrganizationID"."ID"
+LEFT OUTER JOIN
+    __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_ToOrganizationID"
+  ON
+    r."ToOrganizationID" = "mjBizAppsCommonOrganization_ToOrganizationID"."ID"$vsql$;
+  v_target_oid OID;
+  v_dep RECORD;
+  v_captured JSONB[] := ARRAY[]::JSONB[];
+  v_n INTEGER;
+BEGIN
+  EXECUTE vsql;
+EXCEPTION WHEN invalid_table_definition THEN
+  -- Column list changed; need CASCADE. Preserve dependent views first.
+  SELECT c.oid INTO v_target_oid
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+  IF v_target_oid IS NOT NULL THEN
+    FOR v_dep IN
+      WITH RECURSIVE deps AS (
+        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+        FROM pg_rewrite r
+        JOIN pg_depend d ON d.objid = r.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+          AND c.oid <> v_target_oid AND c.relkind = 'v'
+        UNION
+        SELECT c.oid, c.relname, n.nspname, p.depth + 1
+        FROM deps p
+        JOIN pg_rewrite r ON TRUE
+        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+        JOIN pg_class c ON c.oid = r.ev_class
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'v' AND c.oid <> p.oid
+      )
+      SELECT oid, name, schema, MAX(depth) AS max_depth,
+             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+      FROM deps GROUP BY oid, name, schema
+      ORDER BY MAX(depth) ASC
+    LOOP
+      v_captured := v_captured || jsonb_build_object(
+        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+    END LOOP;
+  END IF;
+  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+  EXECUTE vsql;
+  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+    FOR v_n IN 1..array_length(v_captured, 1) LOOP
+      BEGIN
+        EXECUTE format('CREATE VIEW %I.%I AS %s',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+      EXCEPTION WHEN others THEN
+        RAISE WARNING 'Could not restore dependent view %.%: %',
+          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+      END;
+    END LOOP;
+  END IF;
+END;
+$do$;
+
+
+-- ===================== Stored Procedures (sp*) =====================
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddressType"
+--     @ID UUID = NULL,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DefaultRank INTEGER...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddressType"
+--     @ID UUID,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DefaultRank INTEGER,
+--     @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddress"
+--     @ID UUID = NULL,
+--     @Line1 VARCHAR(255),
+--     @Line2 VARCHAR(255),
+--     @Line3 VARCHAR(255),
+--     @City VARCHAR(100),
+--     @Sta...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddress"
+--     @ID UUID,
+--     @Line1 VARCHAR(255),
+--     @Line2 VARCHAR(255),
+--     @Line3 VARCHAR(255),
+--     @City VARCHAR(100),
+--     @StateProvi...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateContactType"
+--     @ID UUID = NULL,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DisplayRank INTEGER...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateContactType"
+--     @ID UUID,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DisplayRank INTEGER,
+--     @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddressType"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."AddressType"
+--     WHERE
+--         "ID" = @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddress"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."Address"
+--     WHERE
+--         "ID" = @ID
+-- 
+-- 
+--    ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteContactType"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."ContactType"
+--     WHERE
+--         "ID" = @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateContactMethod"
+--     @ID UUID = NULL,
+--     @PersonID UUID,
+--     @OrganizationID UUID,
+--     @ContactTypeID UUID...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateContactMethod"
+--     @ID UUID,
+--     @PersonID UUID,
+--     @OrganizationID UUID,
+--     @ContactTypeID UUID,
+--     @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteContactMethod"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."ContactMethod"
+--     WHERE
+--         "ID"...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddressLink"
+--     @ID UUID = NULL,
+--     @AddressID UUID,
+--     @EntityID UUID,
+--     @RecordID VARCHAR(700),
+--     @AddressT...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddressLink"
+--     @ID UUID,
+--     @AddressID UUID,
+--     @EntityID UUID,
+--     @RecordID VARCHAR(700),
+--     @AddressTypeID u...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddressLink"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."AddressLink"
+--     WHERE
+--         "ID" = @...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateOrganizationType"
+--     @ID UUID = NULL,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DisplayRan...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateOrganizationType"
+--     @ID UUID,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @IconClass VARCHAR(100),
+--     @DisplayRank INTEGER,
+-- ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateRelationshipType"
+--     @ID UUID = NULL,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @Category VARCHAR(50),
+--     @IsDirectiona...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateRelationshipType"
+--     @ID UUID,
+--     @Name VARCHAR(100),
+--     @Description TEXT,
+--     @Category VARCHAR(50),
+--     @IsDirectional bit,
+-- ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteOrganizationType"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."OrganizationType"
+--     WHERE
+--       ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteRelationshipType"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."RelationshipType"
+--     WHERE
+--       ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreatePerson"
+--     @ID UUID = NULL,
+--     @FirstName VARCHAR(100),
+--     @LastName VARCHAR(100),
+--     @MiddleName VARCHAR(100),
+--     @Prefix TEXT(2...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdatePerson"
+--     @ID UUID,
+--     @FirstName VARCHAR(100),
+--     @LastName VARCHAR(100),
+--     @MiddleName VARCHAR(100),
+--     @Prefix VARCHAR(20),
+--    ...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeletePerson"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."Person"
+--     WHERE
+--         "ID" = @ID
+-- 
+-- 
+--     -...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateOrganization"
+--     @ID UUID = NULL,
+--     @Name VARCHAR(255),
+--     @LegalName VARCHAR(255),
+--     @OrganizationTypeID UUID,
+--     @Pare...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateOrganization"
+--     @ID UUID,
+--     @Name VARCHAR(255),
+--     @LegalName VARCHAR(255),
+--     @OrganizationTypeID UUID,
+--     @ParentID un...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteOrganization"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."Organization"
+--     WHERE
+--         "ID" =...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spCreateRelationship"
+--     @ID UUID = NULL,
+--     @RelationshipTypeID UUID,
+--     @FromPersonID UUID,
+--     @FromOrganizationID uniq...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateRelationship"
+--     @ID UUID,
+--     @RelationshipTypeID UUID,
+--     @FromPersonID UUID,
+--     @FromOrganizationID uniqueident...
+
+-- SKIPPED: procedure (auto-conversion not supported)
+-- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteRelationship"
+--     @ID UUID
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+-- 
+--     DELETE FROM
+--         __mj_BizAppsCommon."Relationship"
+--     WHERE
+--         "ID" =...
+
+
+-- ===================== Triggers =====================
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddressType
+-- ON __mj_BizAppsCommon."AddressType"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."AddressType"
+--     SET
+ 
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddress
+-- ON __mj_BizAppsCommon."Address"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Address"
+--     SET
+--         __mj_
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateContactType
+-- ON __mj_BizAppsCommon."ContactType"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."ContactType"
+--     SET
+ 
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateContactMethod
+-- ON __mj_BizAppsCommon."ContactMethod"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."ContactMethod"
+   
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddressLink
+-- ON __mj_BizAppsCommon."AddressLink"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."AddressLink"
+--     SET
+ 
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateOrganizationType
+-- ON __mj_BizAppsCommon."OrganizationType"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Organization
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER [__mj_BizAppsCommon".trgUpdateRelationshipType
+-- ON __mj_BizAppsCommon."RelationshipType"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Relationship
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER [__mj_BizAppsCommon".trgUpdatePerson
+-- ON __mj_BizAppsCommon."Person"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Person"
+--     SET
+--         __mj_Upd
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateOrganization
+-- ON __mj_BizAppsCommon."Organization"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Organization"
+--     SE
+
+-- SKIPPED: trigger (auto-conversion not supported)
+-- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateRelationship
+-- ON __mj_BizAppsCommon."Relationship"
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     UPDATE
+--         __mj_BizAppsCommon."Relationship"
+--     SE
+
+
+-- ===================== Data (INSERT/UPDATE/DELETE) =====================
+
+INSERT INTO __mj."SchemaInfo" 
+(
+  "ID",
+  "SchemaName",
+  "EntityIDMin", "EntityIDMax",
+  "Comments",
+  "Description",
+  "EntityNamePrefix", "EntityNameSuffix"
+)
+VALUES
+(
+  '0A9F0FDD-CD4D-4892-BA45-85722B982032',
+  '__mj_BizAppsCommon',
+  1, 1000000,
+  NULL,
+  'MemberJunction: Common Business App Data',
+  'MJ_BizApps_Common: ', NULL
+);
+-- CODE GEN RUN
+/* SQL generated to create new entity MJ_BizApps_Common: Organization Types */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         'a77d9725-4871-484b-99f0-f65461d7abee',
+         'MJ_BizApps_Common: Organization Types',
+         'Organization Types',
+         NULL,
+         NULL,
+         'OrganizationType',
+         'vwOrganizationTypes',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to create new application __mj_BizAppsCommon */
+
+INSERT INTO "__mj"."Application" ("ID", "Name", "Description", "SchemaAutoAddNewEntities", "Path", "AutoUpdatePath")
+                       VALUES ('b479eb79-1260-40af-a5ea-f8aa0b71384f', '__mj_BizAppsCommon', 'Generated for schema', '__mj_BizAppsCommon', 'mjbizappscommon', TRUE);
+/* SQL generated to add new entity MJ_BizApps_Common: Organization Types to application ID: 'b479eb79-1260-40af-a5ea-f8aa0b71384f' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('b479eb79-1260-40af-a5ea-f8aa0b71384f', 'a77d9725-4871-484b-99f0-f65461d7abee', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'b479eb79-1260-40af-a5ea-f8aa0b71384f'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organization Types for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organization Types for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organization Types for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('a77d9725-4871-484b-99f0-f65461d7abee', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Address Types */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '7a7245d1-2316-44a4-b147-a50ff19f5942',
+         'MJ_BizApps_Common: Address Types',
+         'Address Types',
+         NULL,
+         NULL,
+         'AddressType',
+         'vwAddressTypes',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Address Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7a7245d1-2316-44a4-b147-a50ff19f5942', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Types for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Types for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Types for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a7245d1-2316-44a4-b147-a50ff19f5942', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Contact Types */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5',
+         'MJ_BizApps_Common: Contact Types',
+         'Contact Types',
+         NULL,
+         NULL,
+         'ContactType',
+         'vwContactTypes',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Contact Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Types for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Types for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Types for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7355a5ef-b3be-4d6d-b48b-5f8fd76f97b5', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Relationship Types */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '5f214f43-109c-407d-b505-7b0b3b72acb5',
+         'MJ_BizApps_Common: Relationship Types',
+         'Relationship Types',
+         NULL,
+         NULL,
+         'RelationshipType',
+         'vwRelationshipTypes',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Relationship Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '5f214f43-109c-407d-b505-7b0b3b72acb5', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationship Types for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationship Types for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationship Types for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('5f214f43-109c-407d-b505-7b0b3b72acb5', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: People */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '7a94ada9-7880-4fae-97d8-db0e934c3f5f',
+         'MJ_BizApps_Common: People',
+         'People',
+         NULL,
+         NULL,
+         'Person',
+         'vwPeople',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: People to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7a94ada9-7880-4fae-97d8-db0e934c3f5f', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: People for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: People for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: People for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('7a94ada9-7880-4fae-97d8-db0e934c3f5f', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Organizations */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         'c70448f9-9792-41d7-a82c-784b66429d54',
+         'MJ_BizApps_Common: Organizations',
+         'Organizations',
+         NULL,
+         NULL,
+         'Organization',
+         'vwOrganizations',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Organizations to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'c70448f9-9792-41d7-a82c-784b66429d54', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organizations for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organizations for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Organizations for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('c70448f9-9792-41d7-a82c-784b66429d54', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Addresses */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '61b5c6fb-7317-46d1-8e05-f669b7bc6f3e',
+         'MJ_BizApps_Common: Addresses',
+         'Addresses',
+         NULL,
+         NULL,
+         'Address',
+         'vwAddresses',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Addresses to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Addresses for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Addresses for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Addresses for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('61b5c6fb-7317-46d1-8e05-f669b7bc6f3e', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Address Links */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         'f2fc2e85-b210-43a9-8565-290ad9d0c6e7',
+         'MJ_BizApps_Common: Address Links',
+         'Address Links',
+         NULL,
+         NULL,
+         'AddressLink',
+         'vwAddressLinks',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Address Links to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'f2fc2e85-b210-43a9-8565-290ad9d0c6e7', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Links for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Links for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Address Links for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('f2fc2e85-b210-43a9-8565-290ad9d0c6e7', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Contact Methods */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '32c45078-d33b-4760-9be5-0df7f483f591',
+         'MJ_BizApps_Common: Contact Methods',
+         'Contact Methods',
+         NULL,
+         NULL,
+         'ContactMethod',
+         'vwContactMethods',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Contact Methods to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '32c45078-d33b-4760-9be5-0df7f483f591', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Methods for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Methods for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Methods for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('32c45078-d33b-4760-9be5-0df7f483f591', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL generated to create new entity MJ_BizApps_Common: Relationships */
+
+INSERT INTO "__mj"."Entity" (
+         "ID",
+         "Name",
+         "DisplayName",
+         "Description",
+         "NameSuffix",
+         "BaseTable",
+         "BaseView",
+         "SchemaName",
+         "IncludeInAPI",
+         "AllowUserSearchAPI"
+         , "TrackRecordChanges"
+         , "AuditRecordAccess"
+         , "AuditViewRuns"
+         , "AllowAllRowsAPI"
+         , "AllowCreateAPI"
+         , "AllowUpdateAPI"
+         , "AllowDeleteAPI"
+         , "UserViewMaxRows"
+      )
+      VALUES (
+         '709ca9da-b124-4155-be39-e857ef672d82',
+         'MJ_BizApps_Common: Relationships',
+         'Relationships',
+         NULL,
+         NULL,
+         'Relationship',
+         'vwRelationships',
+         '__mj_BizAppsCommon',
+         TRUE,
+         FALSE
+         , TRUE
+         , FALSE
+         , FALSE
+         , FALSE
+         , TRUE
+         , TRUE
+         , TRUE
+         , 1000
+      );
+/* SQL generated to add new entity MJ_BizApps_Common: Relationships to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
+
+INSERT INTO __mj."ApplicationEntity"
+                                       ("ApplicationID", "EntityID", "Sequence") VALUES
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '709ca9da-b124-4155-be39-e857ef672d82', (SELECT COALESCE(MAX("Sequence"),0)+1 FROM __mj."ApplicationEntity" WHERE "ApplicationID" = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'));
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationships for role UI */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, FALSE, FALSE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationships for role Developer */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, FALSE);
+/* SQL generated to add new permission for entity MJ_BizApps_Common: Relationships for role Integration */
+
+INSERT INTO __mj."EntityPermission"
+                                                   ("EntityID", "RoleID", "CanRead", "CanCreate", "CanUpdate", "CanDelete") VALUES
+                                                   ('709ca9da-b124-4155-be39-e857ef672d82', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', TRUE, TRUE, TRUE, TRUE);
+/* SQL text to add special date field __mj_CreatedAt to entity __mj_BizAppsCommon."ContactMethod" */
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'c66b3740-b4b9-4ba4-b53d-9cdc6a64dafb'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'c66b3740-b4b9-4ba4-b53d-9cdc6a64dafb',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b6b5a623-f308-496e-8845-0cf1e92e9d00'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'PersonID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b6b5a623-f308-496e-8845-0cf1e92e9d00',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100002,
+        'PersonID',
+        'Person ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '0ec64524-99cd-484d-bf82-0e422d0c9903'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'OrganizationID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '0ec64524-99cd-484d-bf82-0e422d0c9903',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100003,
+        'OrganizationID',
+        'Organization ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '5c42f4d1-4abd-4cc6-b5da-a164d5cba7a1'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'ContactTypeID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '5c42f4d1-4abd-4cc6-b5da-a164d5cba7a1',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100004,
+        'ContactTypeID',
+        'Contact Type ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '77c20975-15e3-4a89-9414-3a829a5ea249'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'Value')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '77c20975-15e3-4a89-9414-3a829a5ea249',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100005,
+        'Value',
+        'Value',
+        'The contact value: phone number, email address, URL, social media handle, etc.',
+        'TEXT',
+        1000,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'cba68064-c466-460e-ad1b-89256634a753'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'Label')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'cba68064-c466-460e-ad1b-89256634a753',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100006,
+        'Label',
+        'Label',
+        'Descriptive label such as Work cell, Personal Gmail, Corporate LinkedIn',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9aaa02e5-c378-43be-a1b3-6ef7355cdf22'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'IsPrimary')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9aaa02e5-c378-43be-a1b3-6ef7355cdf22',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100007,
+        'IsPrimary',
+        'Is Primary',
+        'Whether this is the primary contact method of its type for the linked person or organization',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(0)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'da376286-2631-4fa3-88da-1d7be44312cc'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'da376286-2631-4fa3-88da-1d7be44312cc',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100008,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'fc8dc59a-e1b5-4136-9000-99643e602806'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'fc8dc59a-e1b5-4136-9000-99643e602806',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100009,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'c7ef895a-84e9-4388-8f9d-4e60a73ce67d'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'c7ef895a-84e9-4388-8f9d-4e60a73ce67d',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'effa8dd0-9fce-4504-83a8-a1415c912621'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'AddressID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'effa8dd0-9fce-4504-83a8-a1415c912621',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100002,
+        'AddressID',
+        'Address ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '63d14e61-c4be-4369-a775-7a93a14a6432'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'EntityID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '63d14e61-c4be-4369-a775-7a93a14a6432',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100003,
+        'EntityID',
+        'Entity ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'E0238F34-2837-EF11-86D4-6045BDEE16E6',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8e6c198e-773e-4582-b020-7c7a9716b2c8'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'RecordID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8e6c198e-773e-4582-b020-7c7a9716b2c8',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100004,
+        'RecordID',
+        'Record ID',
+        'Primary key value(s) of the linked record. VARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys',
+        'TEXT',
+        1400,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '633eab3f-8828-4db0-9b19-6ad04a75cb83'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'AddressTypeID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '633eab3f-8828-4db0-9b19-6ad04a75cb83',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100005,
+        'AddressTypeID',
+        'Address Type ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '7A7245D1-2316-44A4-B147-A50FF19F5942',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '80d85088-71d2-42f1-a9a3-086ee3f96b3d'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'IsPrimary')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '80d85088-71d2-42f1-a9a3-086ee3f96b3d',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100006,
+        'IsPrimary',
+        'Is Primary',
+        'Whether this is the primary address for the linked record. Only one address per entity record should be marked primary',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(0)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'cf61a8c5-2f33-4756-ad71-257504e7b4e3'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'Rank')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'cf61a8c5-2f33-4756-ad71-257504e7b4e3',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100007,
+        'Rank',
+        'Rank',
+        'Sort order override for this specific link. When NULL, falls back to AddressType."DefaultRank". Lower values appear first',
+        'INTEGER',
+        4,
+        10,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8d738e18-a0ba-45ef-88c0-d8bc29d8d877'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8d738e18-a0ba-45ef-88c0-d8bc29d8d877',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100008,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b3518e84-62ff-488b-963b-4e7076932a8f'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b3518e84-62ff-488b-963b-4e7076932a8f',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100009,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'c40c2682-a2fa-4676-833b-75030293220c'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'c40c2682-a2fa-4676-833b-75030293220c',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '1d142a23-e13c-4852-9dd9-a896774c3bda'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'Name')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '1d142a23-e13c-4852-9dd9-a896774c3bda',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100002,
+        'Name',
+        'Name',
+        'Display name for the contact type',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        TRUE,
+        TRUE,
+        FALSE,
+        TRUE,
+        FALSE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8096a2bd-684f-44e0-b26b-424f52619220'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'Description')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8096a2bd-684f-44e0-b26b-424f52619220',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100003,
+        'Description',
+        'Description',
+        'Detailed description of this contact type',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '00865ed9-b98d-4f58-8c5d-022ac87ff8e7'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'IconClass')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '00865ed9-b98d-4f58-8c5d-022ac87ff8e7',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100004,
+        'IconClass',
+        'Icon Class',
+        'Font Awesome icon class for UI display',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '45829cd8-c67d-4527-b25e-4390889eeb85'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'DisplayRank')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '45829cd8-c67d-4527-b25e-4390889eeb85',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100005,
+        'DisplayRank',
+        'Display Rank',
+        'Sort order in dropdown lists. Lower values appear first',
+        'INTEGER',
+        4,
+        10,
+        0,
+        FALSE,
+        '(100)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9fff0788-f1a4-4971-9b53-2fef0407880a'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = 'IsActive')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9fff0788-f1a4-4971-9b53-2fef0407880a',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100006,
+        'IsActive',
+        'Is Active',
+        'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(1)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '86c73c1a-89cd-4326-a8bb-145e6b0b2f4a'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '86c73c1a-89cd-4326-a8bb-145e6b0b2f4a',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100007,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'a005a7db-76ec-4ddf-8482-7951be69b165'  OR
+        ("EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'a005a7db-76ec-4ddf-8482-7951be69b165',
+        '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- "Entity": "MJ_BizApps_Common": "Contact" "Types"
+        100008,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b194ee44-85db-4d2a-a76f-9feb0b5f1aeb'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b194ee44-85db-4d2a-a76f-9feb0b5f1aeb',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9f465e98-0614-4987-bed8-90b8a1450685'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Name')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9f465e98-0614-4987-bed8-90b8a1450685',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100002,
+        'Name',
+        'Name',
+        'Common or display name of the organization',
+        'TEXT',
+        510,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        TRUE,
+        TRUE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '28daa78c-fabd-438d-8f24-055987b58b60'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'LegalName')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '28daa78c-fabd-438d-8f24-055987b58b60',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100003,
+        'LegalName',
+        'Legal Name',
+        'Full legal name if different from display name',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9e6fcd82-bcdf-443a-a87d-e16eef761068'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'OrganizationTypeID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9e6fcd82-bcdf-443a-a87d-e16eef761068',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100004,
+        'OrganizationTypeID',
+        'Organization Type ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'A77D9725-4871-484B-99F0-F65461D7ABEE',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'd78a9db0-2ed9-4d73-a408-24b0e03981c9'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'ParentID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'd78a9db0-2ed9-4d73-a408-24b0e03981c9',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100005,
+        'ParentID',
+        'Parent ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'c8c255e3-d3c1-4f3d-84aa-07b30981fb3e'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Website')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'c8c255e3-d3c1-4f3d-84aa-07b30981fb3e',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100006,
+        'Website',
+        'Website',
+        'Primary website URL',
+        'TEXT',
+        2000,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '428426b8-70e5-409e-ba30-8aad6dfaf08e'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'LogoURL')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '428426b8-70e5-409e-ba30-8aad6dfaf08e',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100007,
+        'LogoURL',
+        'Logo URL',
+        'URL to organization logo BYTEA',
+        'TEXT',
+        2000,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'e1f4b6bc-8465-429b-922c-353f6d1b547c'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Description')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'e1f4b6bc-8465-429b-922c-353f6d1b547c',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100008,
+        'Description',
+        'Description',
+        'Description of the organization purpose and scope',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '46b9d67f-3365-47b4-bfe1-6bb932392ae3'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Email')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '46b9d67f-3365-47b4-bfe1-6bb932392ae3',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100009,
+        'Email',
+        'Email',
+        'Primary contact email address',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9a9b834c-1d11-4a4e-98b3-904d048f89dc'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Phone')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9a9b834c-1d11-4a4e-98b3-904d048f89dc',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100010,
+        'Phone',
+        'Phone',
+        'Primary phone number',
+        'TEXT',
+        100,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '012ce6d0-f4dc-4921-90d6-c56be2f3d1b3'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'FoundedDate')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '012ce6d0-f4dc-4921-90d6-c56be2f3d1b3',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100011,
+        'FoundedDate',
+        'Founded Date',
+        'Date the organization was founded or incorporated',
+        'date',
+        3,
+        10,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '3a676695-4dee-4a2e-95e5-00a96de43dad'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'TaxID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '3a676695-4dee-4a2e-95e5-00a96de43dad',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100012,
+        'TaxID',
+        'Tax ID',
+        'Tax identification number such as EIN',
+        'TEXT',
+        100,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8620f795-6511-4715-a823-d3c905af3ecc'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Status')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8620f795-6511-4715-a823-d3c905af3ecc',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100013,
+        'Status',
+        'Status',
+        'Current status: Active, Inactive, or Dissolved',
+        'TEXT',
+        100,
+        0,
+        0,
+        FALSE,
+        'Active',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '36566057-63b7-49b2-a7f2-928c0d798c02'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '36566057-63b7-49b2-a7f2-928c0d798c02',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100014,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'e219f8e5-5247-425e-bd32-abd41f8615bd'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'e219f8e5-5247-425e-bd32-abd41f8615bd',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100015,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '2b7f56c2-c197-45e1-9c79-af1bfde094d4'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '2b7f56c2-c197-45e1-9c79-af1bfde094d4',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b0c9f62f-cd73-4eeb-87a8-1f55ade79539'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'Name')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b0c9f62f-cd73-4eeb-87a8-1f55ade79539',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100002,
+        'Name',
+        'Name',
+        'Display name for the relationship type, e.g. Employee, Spouse, Partner',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        TRUE,
+        TRUE,
+        FALSE,
+        TRUE,
+        FALSE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8f51e66c-379d-4e06-acf6-75f98e690782'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'Description')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8f51e66c-379d-4e06-acf6-75f98e690782',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100003,
+        'Description',
+        'Description',
+        'Detailed description of this relationship type',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'acaec8f6-49f4-47c0-983d-33bb4fb29e7b'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'Category')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'acaec8f6-49f4-47c0-983d-33bb4fb29e7b',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100004,
+        'Category',
+        'Category',
+        'Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization',
+        'TEXT',
+        100,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b66f18b2-77da-4f8e-b9e3-44e9bc6cfc54'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'IsDirectional')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b66f18b2-77da-4f8e-b9e3-44e9bc6cfc54',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100005,
+        'IsDirectional',
+        'Is Directional',
+        'Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(1)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '7b610118-fb6d-4ce0-886f-23881c4647e3'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'ForwardLabel')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '7b610118-fb6d-4ce0-886f-23881c4647e3',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100006,
+        'ForwardLabel',
+        'Forward Label',
+        'Label describing the From-to-To direction, e.g. is employee of, is parent of',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8221fa5a-6288-48ea-9f5c-92dbbb9020cf'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'ReverseLabel')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8221fa5a-6288-48ea-9f5c-92dbbb9020cf',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100007,
+        'ReverseLabel',
+        'Reverse Label',
+        'Label describing the To-to-From direction, e.g. employs, is child of',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '60d162bd-2934-4ad7-a74e-f27ef47656d7'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = 'IsActive')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '60d162bd-2934-4ad7-a74e-f27ef47656d7',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100008,
+        'IsActive',
+        'Is Active',
+        'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(1)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8c67deb3-e9ba-412d-9875-dd29a5523fce'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8c67deb3-e9ba-412d-9875-dd29a5523fce',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100009,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'f28625fd-5f8f-429c-8100-9b9c54205ab0'  OR
+        ("EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'f28625fd-5f8f-429c-8100-9b9c54205ab0',
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5', -- "Entity": "MJ_BizApps_Common": "Relationship" "Types"
+        100010,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '85492901-7593-46e0-8d3d-d50ed60346d5'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '85492901-7593-46e0-8d3d-d50ed60346d5',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b93aa266-faa5-461d-b32b-a0f26c698b2c'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'Name')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b93aa266-faa5-461d-b32b-a0f26c698b2c',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100002,
+        'Name',
+        'Name',
+        'Display name for the address type',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        TRUE,
+        TRUE,
+        FALSE,
+        TRUE,
+        FALSE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '255fcd46-e0e2-4b77-ab45-0ccdf6181e36'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'Description')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '255fcd46-e0e2-4b77-ab45-0ccdf6181e36',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100003,
+        'Description',
+        'Description',
+        'Detailed description of this address type',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b0408d09-cf61-4d1d-b951-8e0c5490bd29'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'IconClass')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b0408d09-cf61-4d1d-b951-8e0c5490bd29',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100004,
+        'IconClass',
+        'Icon Class',
+        'Font Awesome icon class for UI display',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '971c65dd-9f0c-4b46-ab06-8d5a3e47cbc3'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'DefaultRank')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '971c65dd-9f0c-4b46-ab06-8d5a3e47cbc3',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100005,
+        'DefaultRank',
+        'Default Rank',
+        'Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink."Rank"',
+        'INTEGER',
+        4,
+        10,
+        0,
+        FALSE,
+        '(100)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'f70d2734-af27-4969-9c8b-b51259e71f8f'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = 'IsActive')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'f70d2734-af27-4969-9c8b-b51259e71f8f',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100006,
+        'IsActive',
+        'Is Active',
+        'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(1)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '236794a4-9f6f-472e-9d9f-c77383cf48f5'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '236794a4-9f6f-472e-9d9f-c77383cf48f5',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100007,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'bca9babd-e370-4376-89ac-dcf9340e5734'  OR
+        ("EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'bca9babd-e370-4376-89ac-dcf9340e5734',
+        '7A7245D1-2316-44A4-B147-A50FF19F5942', -- "Entity": "MJ_BizApps_Common": "Address" "Types"
+        100008,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '2a0b54f1-94f8-466c-86c2-931e200258c1'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '2a0b54f1-94f8-466c-86c2-931e200258c1',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '4942cbcc-6d0b-44f5-be38-9d697d02b463'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'FirstName')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '4942cbcc-6d0b-44f5-be38-9d697d02b463',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100002,
+        'FirstName',
+        'First Name',
+        'First (given) name',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '09ad91da-42c7-44f4-ae71-5ac6e50d7657'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'LastName')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '09ad91da-42c7-44f4-ae71-5ac6e50d7657',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100003,
+        'LastName',
+        'Last Name',
+        'Last (family) name',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '528500f1-1bb8-4564-a46d-5d45362f3e05'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'MiddleName')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '528500f1-1bb8-4564-a46d-5d45362f3e05',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100004,
+        'MiddleName',
+        'Middle Name',
+        'Middle name or initial',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '31733eb2-a6cb-4433-8fac-f278676855dc'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Prefix')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '31733eb2-a6cb-4433-8fac-f278676855dc',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100005,
+        'Prefix',
+        'Prefix',
+        'Name prefix such as Dr., Mr., Ms., Rev.',
+        'TEXT',
+        40,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9f22ee0d-ac30-4805-89ec-e2c8576615be'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Suffix')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9f22ee0d-ac30-4805-89ec-e2c8576615be',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100006,
+        'Suffix',
+        'Suffix',
+        'Name suffix such as Jr., III, PhD, Esq.',
+        'TEXT',
+        40,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '27375f71-8f8f-4dab-8803-96ae73ea28ce'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'PreferredName')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '27375f71-8f8f-4dab-8803-96ae73ea28ce',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100007,
+        'PreferredName',
+        'Preferred Name',
+        'Nickname or preferred name the person goes by',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '0b992115-7c59-4d6e-a49e-ddae2d7e9056'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Title')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '0b992115-7c59-4d6e-a49e-ddae2d7e9056',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100008,
+        'Title',
+        'Title',
+        'Professional or job title, e.g. VP of Engineering, Board Director',
+        'TEXT',
+        400,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'f6b2a29b-cfe9-410d-9732-3ae2acf44dc0'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Email')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'f6b2a29b-cfe9-410d-9732-3ae2acf44dc0',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100009,
+        'Email',
+        'Email',
+        'Primary email address for this person',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '1b312aa3-5ccc-48e6-b034-a8bf437c9a4d'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Phone')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '1b312aa3-5ccc-48e6-b034-a8bf437c9a4d',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100010,
+        'Phone',
+        'Phone',
+        'Primary phone number for this person',
+        'TEXT',
+        100,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '45090e40-2e5c-4359-b14d-b3d902685c11'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'DateOfBirth')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '45090e40-2e5c-4359-b14d-b3d902685c11',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100011,
+        'DateOfBirth',
+        'Date Of Birth',
+        'Date of birth',
+        'date',
+        3,
+        10,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '69b0d1a5-c5f5-4f21-9f39-4dcb1c46f76f'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Gender')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '69b0d1a5-c5f5-4f21-9f39-4dcb1c46f76f',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100012,
+        'Gender',
+        'Gender',
+        'Gender identity',
+        'TEXT',
+        100,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '6bd597e1-05b9-46f6-80fd-5a98d35c4fdd'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'PhotoURL')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '6bd597e1-05b9-46f6-80fd-5a98d35c4fdd',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100013,
+        'PhotoURL',
+        'Photo URL',
+        'URL to profile photo or avatar BYTEA',
+        'TEXT',
+        2000,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '152f8f83-767b-4b4f-af92-ef786126dec0'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Bio')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '152f8f83-767b-4b4f-af92-ef786126dec0',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100014,
+        'Bio',
+        'Bio',
+        'Biographical text or notes about this person',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '79f1eeab-367e-4b45-a9b8-75639f6410cb'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'LinkedUserID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '79f1eeab-367e-4b45-a9b8-75639f6410cb',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100015,
+        'LinkedUserID',
+        'Linked User ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'E1238F34-2837-EF11-86D4-6045BDEE16E6',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '57f78065-e9db-4d2c-a2f8-524d4f15d902'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'Status')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '57f78065-e9db-4d2c-a2f8-524d4f15d902',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100016,
+        'Status',
+        'Status',
+        'Current status: Active, Inactive, or Deceased',
+        'TEXT',
+        100,
+        0,
+        0,
+        FALSE,
+        'Active',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '86c714e8-b200-4f9f-817a-baf052aeee3d'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '86c714e8-b200-4f9f-817a-baf052aeee3d',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100017,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'cc25d06a-8f7e-433d-9658-500f225d55ec'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'cc25d06a-8f7e-433d-9658-500f225d55ec',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100018,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'fefdad15-7ba5-470a-a689-147d9303ab34'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'fefdad15-7ba5-470a-a689-147d9303ab34',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '4bffafbd-bf4e-4907-963b-95733c670b7e'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'RelationshipTypeID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '4bffafbd-bf4e-4907-963b-95733c670b7e',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100002,
+        'RelationshipTypeID',
+        'Relationship Type ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '5F214F43-109C-407D-B505-7B0B3B72ACB5',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8974264b-dc82-4276-b89e-c65e14f078f8'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'FromPersonID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8974264b-dc82-4276-b89e-c65e14f078f8',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100003,
+        'FromPersonID',
+        'From Person ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '6d46f59f-ff3f-4351-a697-e7db414a1e3e'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'FromOrganizationID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '6d46f59f-ff3f-4351-a697-e7db414a1e3e',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100004,
+        'FromOrganizationID',
+        'From Organization ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'ad3ecdaa-e2be-40d9-b83e-1868ab68c778'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'ToPersonID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'ad3ecdaa-e2be-40d9-b83e-1868ab68c778',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100005,
+        'ToPersonID',
+        'To Person ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '42eba3ce-7ddb-4149-be93-e245f351b963'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'ToOrganizationID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '42eba3ce-7ddb-4149-be93-e245f351b963',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100006,
+        'ToOrganizationID',
+        'To Organization ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        'ID',
+        FALSE,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '2acbd16a-2a78-4807-8b8d-d0920382eae6'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'Title')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '2acbd16a-2a78-4807-8b8d-d0920382eae6',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100007,
+        'Title',
+        'Title',
+        'Contextual title for this specific relationship, e.g. CEO, Primary Contact, Founding Member',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '62d8a345-e8ac-4ee6-88a9-1959f6258657'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'StartDate')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '62d8a345-e8ac-4ee6-88a9-1959f6258657',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100008,
+        'StartDate',
+        'Start Date',
+        'Date the relationship began',
+        'date',
+        3,
+        10,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '0afc293d-e93d-4bd2-a71c-acb2631ca278'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'EndDate')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '0afc293d-e93d-4bd2-a71c-acb2631ca278',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100009,
+        'EndDate',
+        'End Date',
+        'Date the relationship ended, if applicable',
+        'date',
+        3,
+        10,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '80b0c5c4-915a-4e72-9978-74cb33902f08'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'Status')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '80b0c5c4-915a-4e72-9978-74cb33902f08',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100010,
+        'Status',
+        'Status',
+        'Current status: Active, Inactive, or Ended',
+        'TEXT',
+        100,
+        0,
+        0,
+        FALSE,
+        'Active',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'cd66c882-d041-46f1-8de2-3807b1bd8b5a'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'Notes')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'cd66c882-d041-46f1-8de2-3807b1bd8b5a',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100011,
+        'Notes',
+        'Notes',
+        'Additional notes about this relationship',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '5f0be392-8f9c-4995-bc97-344d361c9706'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '5f0be392-8f9c-4995-bc97-344d361c9706',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100012,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b15ae830-4bcb-4aa3-847e-916885287462'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b15ae830-4bcb-4aa3-847e-916885287462',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100013,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '665481ad-fc97-49be-a98c-ab58aa509f59'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '665481ad-fc97-49be-a98c-ab58aa509f59',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '82f2cdbc-8793-4fe4-bfca-380a8a22f41f'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'Name')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '82f2cdbc-8793-4fe4-bfca-380a8a22f41f',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100002,
+        'Name',
+        'Name',
+        'Display name for the organization type',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        TRUE,
+        TRUE,
+        FALSE,
+        TRUE,
+        FALSE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'e6f5450e-c909-426c-8ea6-968a3a68b6ca'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'Description')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'e6f5450e-c909-426c-8ea6-968a3a68b6ca',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100003,
+        'Description',
+        'Description',
+        'Detailed description of this organization type',
+        'TEXT',
+        -1,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '1d7e13df-447a-49b8-9a07-1fa0cc058115'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'IconClass')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '1d7e13df-447a-49b8-9a07-1fa0cc058115',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100004,
+        'IconClass',
+        'Icon Class',
+        'Font Awesome icon class for UI display',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8686f717-72ac-4ecb-b3ff-200da50df000'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'DisplayRank')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8686f717-72ac-4ecb-b3ff-200da50df000',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100005,
+        'DisplayRank',
+        'Display Rank',
+        'Sort order in dropdown lists. Lower values appear first',
+        'INTEGER',
+        4,
+        10,
+        0,
+        FALSE,
+        '(100)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'a6aaf1ab-1212-4066-9a84-2f0dae43b5be'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = 'IsActive')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'a6aaf1ab-1212-4066-9a84-2f0dae43b5be',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100006,
+        'IsActive',
+        'Is Active',
+        'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records',
+        'BOOLEAN',
+        1,
+        1,
+        0,
+        FALSE,
+        '(1)',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '7c026948-1d22-4d12-b839-a8af848811ba'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '7c026948-1d22-4d12-b839-a8af848811ba',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100007,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'a2efb1da-409f-40fa-be98-02e394a0f965'  OR
+        ("EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'a2efb1da-409f-40fa-be98-02e394a0f965',
+        'A77D9725-4871-484B-99F0-F65461D7ABEE', -- "Entity": "MJ_BizApps_Common": "Organization" "Types"
+        100008,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'ba3e4fae-198f-48e4-bd9f-774d8584e259'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'ID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'ba3e4fae-198f-48e4-bd9f-774d8584e259',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100001,
+        'ID',
+        'ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        FALSE,
+        'gen_random_uuid()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        TRUE,
+        FALSE,
+        FALSE,
+        TRUE,
+        TRUE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8c5ed1b2-107e-4195-9e05-ac25c452971d'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Line1')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8c5ed1b2-107e-4195-9e05-ac25c452971d',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100002,
+        'Line1',
+        'Line 1',
+        'Street address line 1',
+        'TEXT',
+        510,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'c6515a57-dace-4684-ad9d-03297e60cde4'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Line2')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'c6515a57-dace-4684-ad9d-03297e60cde4',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100003,
+        'Line2',
+        'Line 2',
+        'Street address line 2 (suite, apt, etc.)',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '9540ede1-741a-4b6f-b9f0-8de3c3edfc31'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Line3')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '9540ede1-741a-4b6f-b9f0-8de3c3edfc31',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100004,
+        'Line3',
+        'Line 3',
+        'Street address line 3 (additional detail)',
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '0c71e92a-d747-4302-b17f-78c92930d2ce'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'City')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '0c71e92a-d747-4302-b17f-78c92930d2ce',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100005,
+        'City',
+        'City',
+        'City or locality name',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'd43eca52-4b7a-434e-92ce-c3ff69824306'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'StateProvince')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'd43eca52-4b7a-434e-92ce-c3ff69824306',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100006,
+        'StateProvince',
+        'State Province',
+        'State, province, or region',
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '65acac26-5f6c-4a67-8559-bd7c0943a925'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'PostalCode')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '65acac26-5f6c-4a67-8559-bd7c0943a925',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100007,
+        'PostalCode',
+        'Postal Code',
+        'Postal or ZIP code',
+        'TEXT',
+        40,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '63bb48d1-67c2-4cd9-bdd9-f86f6154f77c'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Country')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '63bb48d1-67c2-4cd9-bdd9-f86f6154f77c',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100008,
+        'Country',
+        'Country',
+        'Country code or name, defaults to US',
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'US',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '66d63980-b9b5-47a0-ba8b-6b55977cb60c'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Latitude')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '66d63980-b9b5-47a0-ba8b-6b55977cb60c',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100009,
+        'Latitude',
+        'Latitude',
+        'Geographic latitude for mapping',
+        'decimal',
+        5,
+        9,
+        6,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'b03f710e-9199-4986-90bf-3ece5037d79a'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = 'Longitude')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'b03f710e-9199-4986-90bf-3ece5037d79a',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100010,
+        'Longitude',
+        'Longitude',
+        'Geographic longitude for mapping',
+        'decimal',
+        5,
+        9,
+        6,
+        TRUE,
+        'null',
+        FALSE,
+        TRUE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'cfe3572f-9b12-4d14-bba5-2f9a8a3b66f0'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = '__mj_CreatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'cfe3572f-9b12-4d14-bba5-2f9a8a3b66f0',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100011,
+        '__mj_CreatedAt',
+        'Created At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '2ff61a35-fb7c-455a-8883-6998b141b095'  OR
+        ("EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E' AND "Name" = '__mj_UpdatedAt')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '2ff61a35-fb7c-455a-8883-6998b141b095',
+        '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', -- "Entity": "MJ_BizApps_Common": "Addresses"
+        100012,
+        '__mj_UpdatedAt',
+        'Updated At',
+        NULL,
+        'TIMESTAMPTZ',
+        10,
+        34,
+        7,
+        FALSE,
+        'NOW()',
+        FALSE,
+        FALSE,
+        FALSE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('43ccc1f7-a27a-4bd1-8424-e29edefe48b0', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 1, 'OrganizationToOrganization', 'OrganizationToOrganization');
+/* SQL text to insert entity field value with ID 42cbe5a8-ac27-42aa-b0af-0218573d30dd */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('42cbe5a8-ac27-42aa-b0af-0218573d30dd', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 2, 'PersonToOrganization', 'PersonToOrganization');
+/* SQL text to insert entity field value with ID 1f80325c-a9f1-4eac-aff5-2d071efe77b7 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('1f80325c-a9f1-4eac-aff5-2d071efe77b7', 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B', 3, 'PersonToPerson', 'PersonToPerson');
+/* SQL text to update ValueListType for entity field ID ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B */
+
+UPDATE "__mj"."EntityField" SET "ValueListType"='List' WHERE "ID"='ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B';
+/* SQL text to insert entity field value with ID facaa0a3-9463-47ce-975c-e3d00717335c */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('facaa0a3-9463-47ce-975c-e3d00717335c', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 1, 'Active', 'Active');
+/* SQL text to insert entity field value with ID 51f1886c-560e-4321-a9bd-f7cb311a22ea */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('51f1886c-560e-4321-a9bd-f7cb311a22ea', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 2, 'Deceased', 'Deceased');
+/* SQL text to insert entity field value with ID 5d5c5c1c-8314-493a-a647-13eda26e4120 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('5d5c5c1c-8314-493a-a647-13eda26e4120', '57F78065-E9DB-4D2C-A2F8-524D4F15D902', 3, 'Inactive', 'Inactive');
+/* SQL text to update ValueListType for entity field ID 57F78065-E9DB-4D2C-A2F8-524D4F15D902 */
+
+UPDATE "__mj"."EntityField" SET "ValueListType"='List' WHERE "ID"='57F78065-E9DB-4D2C-A2F8-524D4F15D902';
+/* SQL text to insert entity field value with ID 615f2381-74ed-428f-91d5-f0d1272f5ad2 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('615f2381-74ed-428f-91d5-f0d1272f5ad2', '8620F795-6511-4715-A823-D3C905AF3ECC', 1, 'Active', 'Active');
+/* SQL text to insert entity field value with ID ebdcd22f-fb23-48fb-8905-7f66811f3532 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('ebdcd22f-fb23-48fb-8905-7f66811f3532', '8620F795-6511-4715-A823-D3C905AF3ECC', 2, 'Dissolved', 'Dissolved');
+/* SQL text to insert entity field value with ID 23179677-9fbd-4ad5-8374-895734b795b7 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('23179677-9fbd-4ad5-8374-895734b795b7', '8620F795-6511-4715-A823-D3C905AF3ECC', 3, 'Inactive', 'Inactive');
+/* SQL text to update ValueListType for entity field ID 8620F795-6511-4715-A823-D3C905AF3ECC */
+
+UPDATE "__mj"."EntityField" SET "ValueListType"='List' WHERE "ID"='8620F795-6511-4715-A823-D3C905AF3ECC';
+/* SQL text to insert entity field value with ID 6dcd32d9-9534-4295-9de1-204f961127e8 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('6dcd32d9-9534-4295-9de1-204f961127e8', '80B0C5C4-915A-4E72-9978-74CB33902F08', 1, 'Active', 'Active');
+/* SQL text to insert entity field value with ID 58ff360b-46f2-458d-b66c-95768c6e95e7 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('58ff360b-46f2-458d-b66c-95768c6e95e7', '80B0C5C4-915A-4E72-9978-74CB33902F08', 2, 'Ended', 'Ended');
+/* SQL text to insert entity field value with ID 71e4f1ea-0f72-4b43-befe-7a1de14eed47 */
+
+INSERT INTO "__mj"."EntityFieldValue"
+                                       ("ID", "EntityFieldID", "Sequence", "Value", "Code")
+                                    VALUES
+                                       ('71e4f1ea-0f72-4b43-befe-7a1de14eed47', '80B0C5C4-915A-4E72-9978-74CB33902F08', 3, 'Inactive', 'Inactive');
+/* SQL text to update ValueListType for entity field ID 80B0C5C4-915A-4E72-9978-74CB33902F08 */
+
+UPDATE "__mj"."EntityField" SET "ValueListType"='List' WHERE "ID"='80B0C5C4-915A-4E72-9978-74CB33902F08';
+/* Create Entity Relationship: MJ_BizApps_Common: Contact Types -> MJ_BizApps_Common: Contact Methods (One To Many via ContactTypeID) */
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '2d050398-8dba-49b2-848e-4a88a9191eff'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('2d050398-8dba-49b2-848e-4a88a9191eff', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'ContactTypeID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Contact Methods', 1);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '2a078d6b-5ef4-4eba-b166-57a295bb304d'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('2a078d6b-5ef4-4eba-b166-57a295bb304d', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'EntityID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Address Links', 1);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '4b115dcc-dbc1-4c6f-b45c-3ae939cde7b8'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('4b115dcc-dbc1-4c6f-b45c-3ae939cde7b8', 'E1238F34-2837-EF11-86D4-6045BDEE16E6', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'LinkedUserID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: People', 1);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '4d7a3d74-4e29-4fea-98f1-2d870a226a63'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('4d7a3d74-4e29-4fea-98f1-2d870a226a63', 'C70448F9-9792-41D7-A82C-784B66429D54', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'OrganizationID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Contact Methods', 2);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '9d170fc9-ece8-4a03-a857-54ccaf628836'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('9d170fc9-ece8-4a03-a857-54ccaf628836', 'C70448F9-9792-41D7-A82C-784B66429D54', 'C70448F9-9792-41D7-A82C-784B66429D54', 'ParentID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Organizations', 1);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = 'c1f0a217-026c-44c6-8724-ca4991dc0258'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('c1f0a217-026c-44c6-8724-ca4991dc0258', 'C70448F9-9792-41D7-A82C-784B66429D54', '709CA9DA-B124-4155-BE39-E857EF672D82', 'ToOrganizationID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Relationships', 1);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '1997a9d1-921a-4af2-9f04-a42bd22163a4'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('1997a9d1-921a-4af2-9f04-a42bd22163a4', 'C70448F9-9792-41D7-A82C-784B66429D54', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FromOrganizationID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Relationships', 2);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '978706e5-7e49-45de-b904-c917571f6f67'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('978706e5-7e49-45de-b904-c917571f6f67', '5F214F43-109C-407D-B505-7B0B3B72ACB5', '709CA9DA-B124-4155-BE39-E857EF672D82', 'RelationshipTypeID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Relationships', 3);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '9013b0db-bd0e-463a-9861-bd587744e75a'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('9013b0db-bd0e-463a-9861-bd587744e75a', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'AddressTypeID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Address Links', 2);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = 'e5d30b7e-fcbc-49eb-97a7-28e12bd604c9'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('e5d30b7e-fcbc-49eb-97a7-28e12bd604c9', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '709CA9DA-B124-4155-BE39-E857EF672D82', 'ToPersonID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Relationships', 4);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '1f63a0cf-3f16-4eac-a241-845c633779cc'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('1f63a0cf-3f16-4eac-a241-845c633779cc', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'PersonID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Contact Methods', 3);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = 'c37cbf7a-9f75-4210-b2c5-7b64f8e9480d'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('c37cbf7a-9f75-4210-b2c5-7b64f8e9480d', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FromPersonID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Relationships', 5);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = '654b6801-e8d4-4c42-bb6b-5a5784dbbd5b'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('654b6801-e8d4-4c42-bb6b-5a5784dbbd5b', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'C70448F9-9792-41D7-A82C-784B66429D54', 'OrganizationTypeID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Organizations', 2);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "__mj"."EntityRelationship"
+        WHERE "ID" = 'ce979efc-9636-4d0b-94f8-48e0ca9ff33b'
+    ) THEN
+        INSERT INTO __mj."EntityRelationship" ("ID", "EntityID", "RelatedEntityID", "RelatedEntityJoinField", "Type", "BundleInAPI", "DisplayInForm", "DisplayName", "Sequence")
+        VALUES ('ce979efc-9636-4d0b-94f8-48e0ca9ff33b', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'AddressID', 'One To Many', TRUE, TRUE, 'MJ_BizApps_Common: Address Links', 3);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '86227274-0d90-4f5e-b43f-8b303ebe4844'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'Organization')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '86227274-0d90-4f5e-b43f-8b303ebe4844',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100019,
+        'Organization',
+        'Organization',
+        NULL,
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'f261cf20-990d-44df-b604-a603a9892a90'  OR
+        ("EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591' AND "Name" = 'ContactType')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'f261cf20-990d-44df-b604-a603a9892a90',
+        '32C45078-D33B-4760-9BE5-0DF7F483F591', -- "Entity": "MJ_BizApps_Common": "Contact" "Methods"
+        100020,
+        'ContactType',
+        'Contact Type',
+        NULL,
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '311aec01-4c33-4cef-9898-bd3425834c3c'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'Entity')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '311aec01-4c33-4cef-9898-bd3425834c3c',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100019,
+        'Entity',
+        'Entity',
+        NULL,
+        'TEXT',
+        510,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'e79c20c4-b9d9-433f-bd0e-5134829f1a25'  OR
+        ("EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7' AND "Name" = 'AddressType')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'e79c20c4-b9d9-433f-bd0e-5134829f1a25',
+        'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', -- "Entity": "MJ_BizApps_Common": "Address" "Links"
+        100020,
+        'AddressType',
+        'Address Type',
+        NULL,
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'efd20ada-e18b-41dc-8f4f-f4ed58fe0165'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'OrganizationType')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'efd20ada-e18b-41dc-8f4f-f4ed58fe0165',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100031,
+        'OrganizationType',
+        'Organization Type',
+        NULL,
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '97844d3b-a436-4ce7-8246-976ba9ff9a87'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'Parent')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '97844d3b-a436-4ce7-8246-976ba9ff9a87',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100032,
+        'Parent',
+        'Parent',
+        NULL,
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '8f929c6b-ab7e-438c-839f-3cb4357bb69c'  OR
+        ("EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54' AND "Name" = 'RootParentID')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '8f929c6b-ab7e-438c-839f-3cb4357bb69c',
+        'C70448F9-9792-41D7-A82C-784B66429D54', -- "Entity": "MJ_BizApps_Common": "Organizations"
+        100033,
+        'RootParentID',
+        'Root Parent ID',
+        NULL,
+        'UUID',
+        16,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '5f857a6e-befc-4c29-bc2b-fd6876c269b2'  OR
+        ("EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F' AND "Name" = 'LinkedUser')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '5f857a6e-befc-4c29-bc2b-fd6876c269b2',
+        '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', -- "Entity": "MJ_BizApps_Common": "People"
+        100037,
+        'LinkedUser',
+        'Linked User',
+        NULL,
+        'TEXT',
+        200,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = '07c7d2b2-8916-4220-961f-076c298dd2c9'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'RelationshipType')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        '07c7d2b2-8916-4220-961f-076c298dd2c9',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100027,
+        'RelationshipType',
+        'Relationship Type',
+        NULL,
+        'TEXT',
+        200,
+        0,
+        0,
+        FALSE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'db499ee6-8fc5-4fc7-bc36-f758d5b76bcb'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'FromOrganization')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'db499ee6-8fc5-4fc7-bc36-f758d5b76bcb',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100028,
+        'FromOrganization',
+        'From Organization',
+        NULL,
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "__mj"."EntityField"
+        WHERE "ID" = 'e9b40366-4907-44c0-99b1-502e35d6e345'  OR
+        ("EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82' AND "Name" = 'ToOrganization')
+        -- check to make sure we're not inserting a duplicate entity field metadata record
+    ) THEN
+        INSERT INTO "__mj"."EntityField"
+        (
+        "ID",
+        "EntityID",
+        "Sequence",
+        "Name",
+        "DisplayName",
+        "Description",
+        "Type",
+        "Length",
+        "Precision",
+        "Scale",
+        "AllowsNull",
+        "DefaultValue",
+        "AutoIncrement",
+        "AllowUpdateAPI",
+        "IsVirtual",
+        "RelatedEntityID",
+        "RelatedEntityFieldName",
+        "IsNameField",
+        "IncludeInUserSearchAPI",
+        "IncludeRelatedEntityNameFieldInBaseView",
+        "DefaultInView",
+        "IsPrimaryKey",
+        "IsUnique",
+        "RelatedEntityDisplayType"
+        )
+        VALUES
+        (
+        'e9b40366-4907-44c0-99b1-502e35d6e345',
+        '709CA9DA-B124-4155-BE39-E857EF672D82', -- "Entity": "MJ_BizApps_Common": "Relationships"
+        100029,
+        'ToOrganization',
+        'To Organization',
+        NULL,
+        'TEXT',
+        510,
+        0,
+        0,
+        TRUE,
+        'null',
+        FALSE,
+        FALSE,
+        TRUE,
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        'Search'
+        );
+    END IF;
+END $$;
+
+UPDATE "__mj"."EntityField"
+            SET "IsNameField" = TRUE
+            WHERE "ID" = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
+            AND "AutoUpdateIsNameField" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '0C71E92A-D747-4302-B17F-78C92930D2CE'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'D43ECA52-4B7A-434E-92CE-C3FF69824306'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '65ACAC26-5F6C-4A67-8559-BD7C0943A925'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '63BB48D1-67C2-4CD9-BDD9-F86F6154F77C'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '8C5ED1B2-107E-4195-9E05-AC25C452971D'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'C6515A57-DACE-4684-AD9D-03297E60CDE4'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '0C71E92A-D747-4302-B17F-78C92930D2CE'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '65ACAC26-5F6C-4A67-8559-BD7C0943A925'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '971C65DD-9F0C-4B46-AB06-8D5A3E47CBC3'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'F70D2734-AF27-4969-9C8B-B51259E71F8F'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8096A2BD-684F-44E0-B26B-424F52619220'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '00865ED9-B98D-4F58-8C5D-022AC87FF8E7'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '45829CD8-C67D-4527-B25E-4390889EEB85'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '9FFF0788-F1A4-4971-9B53-2FEF0407880A'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '8096A2BD-684F-44E0-B26B-424F52619220'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+            SET "IsNameField" = TRUE
+            WHERE "ID" = '77C20975-15E3-4A89-9414-3A829A5EA249'
+            AND "AutoUpdateIsNameField" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '77C20975-15E3-4A89-9414-3A829A5EA249'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'CBA68064-C466-460E-AD1B-89256634A753'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '9AAA02E5-C378-43BE-A1B3-6EF7355CDF22'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'F261CF20-990D-44DF-B604-A603A9892A90'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '77C20975-15E3-4A89-9414-3A829A5EA249'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'CBA68064-C466-460E-AD1B-89256634A753'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '86227274-0D90-4F5E-B43F-8B303EBE4844'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'F261CF20-990D-44DF-B604-A603A9892A90'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+            SET "IsNameField" = TRUE
+            WHERE "ID" = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+            AND "AutoUpdateIsNameField" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8E6C198E-773E-4582-B020-7C7A9716B2C8'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '80D85088-71D2-42F1-A9A3-086EE3F96B3D'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'CF61A8C5-2F33-4756-AD71-257504E7B4E3'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '311AEC01-4C33-4CEF-9898-BD3425834C3C'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '8E6C198E-773E-4582-B020-7C7A9716B2C8'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '311AEC01-4C33-4CEF-9898-BD3425834C3C'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set categories for 11 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'C7EF895A-84E9-4388-8F9D-4E60A73CE67D' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."AddressID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linkage Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'EFFA8DD0-9FCE-4504-83A8-A1415C912621' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."EntityID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linkage Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Entity',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '63D14E61-C4BE-4369-A775-7A93A14A6432' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."RecordID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linkage Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8E6C198E-773E-4582-B020-7C7A9716B2C8' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."Entity"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linkage Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Entity Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '311AEC01-4C33-4CEF-9898-BD3425834C3C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."AddressTypeID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Preferences',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address Type',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '633EAB3F-8828-4DB0-9B19-6AD04A75CB83' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."AddressType"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Preferences',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address Type Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'E79C20C4-B9D9-433F-BD0E-5134829F1A25' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."IsPrimary"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Preferences',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '80D85088-71D2-42F1-A9A3-086EE3F96B3D' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links."Rank"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Preferences',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'CF61A8C5-2F33-4756-AD71-257504E7B4E3' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8D738E18-A0BA-45EF-88C0-D8BC29D8D877' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Links.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B3518E84-62FF-488B-963B-4E7076932A8F' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-link */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-link', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('7fd53db4-1494-48e2-898e-2e0dff273160', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'FieldCategoryInfo', '{"Linkage Details":{"icon":"fa fa-link","description":"Fields defining the connection between a specific record and an address record."},"Address Preferences":{"icon":"fa fa-sliders-h","description":"Settings for how this address is categorized and prioritized for the linked record."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields."}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('2cef1622-be9a-4935-928a-99acd5df2f79', 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7', 'FieldCategoryIcons', '{"Linkage Details":"fa fa-link","Address Preferences":"fa fa-sliders-h","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: junction, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = 'F2FC2E85-B210-43A9-8565-290AD9D0C6E7';
+/* Set categories for 8 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."Name"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '1D142A23-E13C-4852-9DD9-A896774C3BDA' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."Description"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8096A2BD-684F-44E0-B26B-424F52619220' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."IconClass"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'UI Configuration',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '00865ED9-B98D-4F58-8C5D-022AC87FF8E7' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."DisplayRank"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'UI Configuration',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '45829CD8-C67D-4527-B25E-4390889EEB85' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."IsActive"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'UI Configuration',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9FFF0788-F1A4-4971-9B53-2FEF0407880A' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'C40C2682-A2FA-4676-833B-75030293220C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '86C73C1A-89CD-4326-A8BB-145E6B0B2F4A' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'A005A7DB-76EC-4DDF-8482-7951BE69B165' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-address-card */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-address-card', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('449a8f9f-5278-41e7-b16b-8b3b44fb1d5b', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tag","description":"Core identification and descriptive information for the contact method"},"UI Configuration":{"icon":"fa fa-desktop","description":"Settings controlling the visual presentation, sorting, and availability in the application"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('5d6d1806-aa02-4e9f-b0be-04b1faa07d03', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tag","UI Configuration":"fa fa-desktop","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5';
+/* Set categories for 12 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'BA3E4FAE-198F-48E4-BD9F-774D8584E259' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Line1"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address Line 1',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8C5ED1B2-107E-4195-9E05-AC25C452971D' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Line2"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address Line 2',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'C6515A57-DACE-4684-AD9D-03297E60CDE4' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Line3"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Address Line 3',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9540EDE1-741A-4B6F-B9F0-8DE3C3EDFC31' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."City"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '0C71E92A-D747-4302-B17F-78C92930D2CE' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."StateProvince"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'State / Province',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'D43ECA52-4B7A-434E-92CE-C3FF69824306' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."PostalCode"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '65ACAC26-5F6C-4A67-8559-BD7C0943A925' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Country"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Address Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '63BB48D1-67C2-4CD9-BDD9-F86F6154F77C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Latitude"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Geographic Location',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'Geo',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '66D63980-B9B5-47A0-BA8B-6B55977CB60C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses."Longitude"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Geographic Location',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'Geo',
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B03F710E-9199-4986-90BF-3ECE5037D79A' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'CFE3572F-9B12-4D14-BBA5-2F9A8A3B66F0' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Addresses.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '2FF61A35-FB7C-455A-8883-6998B141B095' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-map-marker-alt */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-map-marker-alt', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('dd5d439c-a2ee-4880-973b-e2ac49de7913', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'FieldCategoryInfo', '{"Address Details":{"icon":"fa fa-home","description":"Physical street address, locality, and regional information"},"Geographic Location":{"icon":"fa fa-globe-americas","description":"Precise geospatial coordinates for mapping and location services"},"System Metadata":{"icon":"fa fa-cog","description":"Internal record identifiers and system-managed audit timestamps"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('fee02b31-8541-4c15-8ee8-4eb7c94e0aaf', '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E', 'FieldCategoryIcons', '{"Address Details":"fa fa-home","Geographic Location":"fa fa-globe-americas","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E';
+/* Set categories for 8 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '85492901-7593-46E0-8D3D-D50ED60346D5' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."Name"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B93AA266-FAA5-461D-B32B-A0F26C698B2C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."Description"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '255FCD46-E0E2-4B77-AB45-0CCDF6181E36' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."IsActive"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Active',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'F70D2734-AF27-4969-9C8B-B51259E71F8F' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."IconClass"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Display and Sorting',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B0408D09-CF61-4D1D-B951-8E0C5490BD29' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types."DefaultRank"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Display and Sorting',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '971C65DD-9F0C-4B46-AB06-8D5A3E47CBC3' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '236794A4-9F6F-472E-9D9F-C77383CF48F5' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Address Types.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'BCA9BABD-E370-4376-89AC-DCF9340E5734' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-map-signs */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-map-signs', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '7A7245D1-2316-44A4-B147-A50FF19F5942';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('885b5884-f599-4c9e-8686-0347959cafbc', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tag","description":"Core properties defining the address category and its availability status."},"Display and Sorting":{"icon":"fa fa-sort-amount-down-alt","description":"Visual configuration for how this type is represented and ordered in the user interface."},"System Metadata":{"icon":"fa fa-database","description":"Internal identifiers and system-managed audit timestamps."}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('70a2e738-3547-4283-98e0-b31659a5b1b4', '7A7245D1-2316-44A4-B147-A50FF19F5942', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tag","Display and Sorting":"fa fa-sort-amount-down-alt","System Metadata":"fa fa-database"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '7A7245D1-2316-44A4-B147-A50FF19F5942';
+/* Set categories for 11 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'C66B3740-B4B9-4BA4-B53D-9CDC6A64DAFB' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."PersonID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linked Record',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Person',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B6B5A623-F308-496E-8845-0CF1E92E9D00' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."OrganizationID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linked Record',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Organization',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '0EC64524-99CD-484D-BF82-0E422D0C9903' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."Organization"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Linked Record',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Organization Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '86227274-0D90-4F5E-B43F-8B303EBE4844' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."ContactTypeID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Contact Type',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '5C42F4D1-4ABD-4CC6-B5DA-A164D5CBA7A1' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."ContactType"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Contact Type Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'F261CF20-990D-44DF-B604-A603A9892A90' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."Value"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Contact Value',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '77C20975-15E3-4A89-9414-3A829A5EA249' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."Label"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'CBA68064-C466-460E-AD1B-89256634A753' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods."IsPrimary"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9AAA02E5-C378-43BE-A1B3-6EF7355CDF22' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'DA376286-2631-4FA3-88DA-1D7BE44312CC' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Methods.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'FC8DC59A-E1B5-4136-9000-99643E602806' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-address-book */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-address-book', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '32C45078-D33B-4760-9BE5-0DF7F483F591';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('84c0c552-a6b2-497b-ab9d-76e79ab4a6f8', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'FieldCategoryInfo', '{"Contact Information":{"icon":"fa fa-address-card","description":"Core details of the contact method including the value, type, and priority status."},"Linked Record":{"icon":"fa fa-link","description":"Information regarding the person or organization associated with this contact method."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit fields and internal identifiers."}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('0a789d66-d4b6-4db8-ab17-f86f350e4170', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'FieldCategoryIcons', '{"Contact Information":"fa fa-address-card","Linked Record":"fa fa-link","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '32C45078-D33B-4760-9BE5-0DF7F483F591';
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '46B9D67F-3365-47B4-BFE1-6BB932392AE3'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '9A9B834C-1D11-4A4E-98B3-904D048F89DC'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8620F795-6511-4715-A823-D3C905AF3ECC'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'EFD20ADA-E18B-41DC-8F4F-F4ED58FE0165'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '28DAA78C-FABD-438D-8F24-055987B58B60'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'C8C255E3-D3C1-4F3D-84AA-07B30981FB3E'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '46B9D67F-3365-47B4-BFE1-6BB932392AE3'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '9A9B834C-1D11-4A4E-98B3-904D048F89DC'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '3A676695-4DEE-4A2E-95E5-00A96DE43DAD'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'E6F5450E-C909-426C-8EA6-968A3A68B6CA'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8686F717-72AC-4ECB-B3FF-200DA50DF000'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'A6AAF1AB-1212-4066-9A84-2F0DAE43B5BE'
+               AND "AutoUpdateDefaultInView" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '7B610118-FB6D-4CE0-886F-23881C4647E3'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '60D162BD-2934-4AD7-A74E-F27EF47656D7'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '7B610118-FB6D-4CE0-886F-23881C4647E3'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+            SET "IsNameField" = TRUE
+            WHERE "ID" = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
+            AND "AutoUpdateIsNameField" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '4942CBCC-6D0B-44F5-BE38-9D697D02B463'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '57F78065-E9DB-4D2C-A2F8-524D4F15D902'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '5F857A6E-BEFC-4C29-BC2B-FD6876C269B2'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '4942CBCC-6D0B-44F5-BE38-9D697D02B463'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '528500F1-1BB8-4564-A46D-5D45362F3E05'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '27375F71-8F8F-4DAB-8803-96AE73EA28CE'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '1B312AA3-5CCC-48E6-B034-A8BF437C9A4D'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set field properties for entity */
+
+UPDATE "__mj"."EntityField"
+            SET "IsNameField" = TRUE
+            WHERE "ID" = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+            AND "AutoUpdateIsNameField" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '62D8A345-E8AC-4EE6-88A9-1959F6258657'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '80B0C5C4-915A-4E72-9978-74CB33902F08'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = '07C7D2B2-8916-4220-961F-076C298DD2C9'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+               SET "DefaultInView" = TRUE
+               WHERE "ID" = 'E9B40366-4907-44C0-99B1-502E35D6E345'
+               AND "AutoUpdateDefaultInView" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '80B0C5C4-915A-4E72-9978-74CB33902F08'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = '07C7D2B2-8916-4220-961F-076C298DD2C9'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+
+UPDATE "__mj"."EntityField"
+                  SET "IncludeInUserSearchAPI" = TRUE
+                  WHERE "ID" = 'E9B40366-4907-44C0-99B1-502E35D6E345'
+                  AND "AutoUpdateIncludeInUserSearchAPI" = TRUE;
+/* Set categories for 10 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '2B7F56C2-C197-45E1-9C79-AF1BFDE094D4' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."Name"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B0C9F62F-CD73-4EEB-87A8-1F55ADE79539' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."Description"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8F51E66C-379D-4E06-ACF6-75F98E690782' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."Category"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'ACAEC8F6-49F4-47C0-983D-33BB4FB29E7B' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."IsActive"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Type Definition',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Active',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '60D162BD-2934-4AD7-A74E-F27EF47656D7' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."IsDirectional"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Directionality and Labels',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B66F18B2-77DA-4F8E-B9E3-44E9BC6CFC54' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."ForwardLabel"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Directionality and Labels',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '7B610118-FB6D-4CE0-886F-23881C4647E3' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types."ReverseLabel"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Directionality and Labels',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8221FA5A-6288-48EA-9F5C-92DBBB9020CF' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8C67DEB3-E9BA-412D-9875-DD29A5523FCE' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationship Types.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'F28625FD-5F8F-429C-8100-9B9C54205AB0' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-project-diagram */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-project-diagram', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('53e9f46a-8aac-456f-8dcf-5c631cbec3de', '5F214F43-109C-407D-B505-7B0B3B72ACB5', 'FieldCategoryInfo', '{"Type Definition":{"icon":"fa fa-tags","description":"Basic identification, description, and classification of the relationship type"},"Directionality and Labels":{"icon":"fa fa-exchange-alt","description":"Configuration for how relationships are labeled and whether they have a specific direction"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit timestamps"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('30e7e163-24ac-44e9-80fd-061defd0e33b', '5F214F43-109C-407D-B505-7B0B3B72ACB5', 'FieldCategoryIcons', '{"Type Definition":"fa fa-tags","Directionality and Labels":"fa fa-exchange-alt","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '5F214F43-109C-407D-B505-7B0B3B72ACB5';
+/* Set categories for 8 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '665481AD-FC97-49BE-A98C-AB58AA509F59' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."Name"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Type Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '82F2CDBC-8793-4FE4-BFCA-380A8A22F41F' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."Description"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Type Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'E6F5450E-C909-426C-8EA6-968A3A68B6CA' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."IconClass"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Type Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '1D7E13DF-447A-49B8-9A07-1FA0CC058115' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."DisplayRank"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Type Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8686F717-72AC-4ECB-B3FF-200DA50DF000' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types."IsActive"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Type Details',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Active',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'A6AAF1AB-1212-4066-9A84-2F0DAE43B5BE' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '7C026948-1D22-4D12-B839-A8AF848811BA' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organization Types.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'A2EFB1DA-409F-40FA-BE98-02E394A0F965' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-building */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-building', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('5b1136b8-dd63-4fc0-a319-04b8349847da', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'FieldCategoryInfo', '{"Organization Type Details":{"icon":"fa fa-list-ul","description":"Configuration for organization categories including labels, descriptions, and UI display settings"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit fields and unique identifiers"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('e0b43043-9502-45c8-9eb4-72fd7adf5f22', 'A77D9725-4871-484B-99F0-F65461D7ABEE', 'FieldCategoryIcons', '{"Organization Type Details":"fa fa-list-ul","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: reference, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = 'A77D9725-4871-484B-99F0-F65461D7ABEE';
+/* Set categories for 18 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B194EE44-85DB-4D2A-A76F-9FEB0B5F1AEB' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Name"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9F465E98-0614-4987-BED8-90B8A1450685' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."LegalName"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '28DAA78C-FABD-438D-8F24-055987B58B60' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."OrganizationType"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'EFD20ADA-E18B-41DC-8F4F-F4ED58FE0165' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."OrganizationTypeID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9E6FCD82-BCDF-443A-A87D-E16EEF761068' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."FoundedDate"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '012CE6D0-F4DC-4921-90D6-C56BE2F3D1B3' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."TaxID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '3A676695-4DEE-4A2E-95E5-00A96DE43DAD' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Status"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8620F795-6511-4715-A823-D3C905AF3ECC' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Description"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Organization Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'E1F4B6BC-8465-429B-922C-353F6D1B547C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Website"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'URL',
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'C8C255E3-D3C1-4F3D-84AA-07B30981FB3E' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."LogoURL"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'URL',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '428426B8-70E5-409E-BA30-8AAD6DFAF08E' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Email"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'Email',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '46B9D67F-3365-47B4-BFE1-6BB932392AE3' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Phone"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Contact Information',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'Tel',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9A9B834C-1D11-4A4E-98B3-904D048F89DC' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."Parent"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Hierarchy and Structure',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Parent Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '97844D3B-A436-4CE7-8246-976BA9FF9A87' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."ParentID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Hierarchy and Structure',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'D78A9DB0-2ED9-4D73-A408-24B0E03981C9' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations."RootParentID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Hierarchy and Structure',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8F929C6B-AB7E-438C-839F-3CB4357BB69C' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '36566057-63B7-49B2-A7F2-928C0D798C02' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Organizations.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'E219F8E5-5247-425E-BD32-ABD41F8615BD' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-building */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-building', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = 'C70448F9-9792-41D7-A82C-784B66429D54';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('4c3a1db8-34e8-487c-9f87-c37187658d61', 'C70448F9-9792-41D7-A82C-784B66429D54', 'FieldCategoryInfo', '{"Organization Identity":{"icon":"fa fa-id-card","description":"Core identity details including legal names, types, and operational status"},"Contact Information":{"icon":"fa fa-address-book","description":"Communication channels including website, email, and phone details"},"Hierarchy and Structure":{"icon":"fa fa-sitemap","description":"Relationship details defining the organization''s position within a corporate hierarchy"},"System Metadata":{"icon":"fa fa-cog","description":"System-generated audit and identification fields"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('67187477-2498-46db-bf43-c9363ea694cf', 'C70448F9-9792-41D7-A82C-784B66429D54', 'FieldCategoryIcons', '{"Organization Identity":"fa fa-id-card","Contact Information":"fa fa-address-book","Hierarchy and Structure":"fa fa-sitemap","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=1 for NEW entity (category: primary, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = TRUE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = 'C70448F9-9792-41D7-A82C-784B66429D54';
+/* Set categories for 19 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '2A0B54F1-94F8-466C-86C2-931E200258C1' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."FirstName"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '4942CBCC-6D0B-44F5-BE38-9D697D02B463' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."LastName"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '09AD91DA-42C7-44F4-AE71-5AC6E50D7657' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."MiddleName"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '528500F1-1BB8-4564-A46D-5D45362F3E05' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Prefix"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '31733EB2-A6CB-4433-8FAC-F278676855DC' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Suffix"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '9F22EE0D-AC30-4805-89EC-E2C8576615BE' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."PreferredName"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '27375F71-8F8F-4DAB-8803-96AE73EA28CE' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."DateOfBirth"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Date of Birth',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '45090E40-2E5C-4359-B14D-B3D902685C11' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Gender"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Personal Identity',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '69B0D1A5-C5F5-4F21-9F39-4DCB1C46F76F' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Title"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Professional and Profile',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Job Title',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '0B992115-7C59-4D6E-A49E-DDAE2D7E9056' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Email"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Professional and Profile',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Email Address',
+   "ExtendedType" = 'Email',
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'F6B2A29B-CFE9-410D-9732-3AE2ACF44DC0' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Phone"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Professional and Profile',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Phone Number',
+   "ExtendedType" = 'Tel',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '1B312AA3-5CCC-48E6-B034-A8BF437C9A4D' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."PhotoURL"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Professional and Profile',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = 'URL',
+   "CodeType" = NULL
+WHERE 
+   "ID" = '6BD597E1-05B9-46F6-80FD-5A98D35C4FDD' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Bio"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Professional and Profile',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Biography',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '152F8F83-767B-4B4F-AF92-EF786126DEC0' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."LinkedUserID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Account and Status',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Linked User',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '79F1EEAB-367E-4B45-A9B8-75639F6410CB' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."LinkedUser"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Account and Status',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'Linked User Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '5F857A6E-BEFC-4C29-BC2B-FD6876C269B2' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People."Status"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Account and Status',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '57F78065-E9DB-4D2C-A2F8-524D4F15D902' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '86C714E8-B200-4F9F-817A-BAF052AEEE3D' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: People.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'CC25D06A-8F7E-433D-9658-500F225D55EC' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-users */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-users', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('1e69ca34-851b-4425-be26-94b9efeb7192', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'FieldCategoryInfo', '{"Personal Identity":{"icon":"fa fa-id-card","description":"Core identification details including name, date of birth, and gender"},"Professional and Profile":{"icon":"fa fa-user-tie","description":"Professional title, contact details, and biographical information"},"Account and Status":{"icon":"fa fa-user-check","description":"Current record status and links to system user accounts"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('c19bfff2-a14c-4e01-9550-809a42ee947f', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'FieldCategoryIcons', '{"Personal Identity":"fa fa-id-card","Professional and Profile":"fa fa-user-tie","Account and Status":"fa fa-user-check","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=1 for NEW entity (category: primary, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = TRUE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
+/* Set categories for 16 fields */
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."FromPersonID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'From Person',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '8974264B-DC82-4276-B89E-C65E14F078F8' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."FromOrganizationID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'From Organization',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '6D46F59F-FF3F-4351-A697-E7DB414A1E3E' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."FromOrganization"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'From Organization Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'DB499EE6-8FC5-4FC7-BC36-F758D5B76BCB' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."ToPersonID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'To Person',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'AD3ECDAA-E2BE-40D9-B83E-1868AB68C778' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."ToOrganizationID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'To Organization',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '42EBA3CE-7DDB-4149-BE93-E245F351B963' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."ToOrganization"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Participants',
+   "GeneratedFormSection" = 'Category',
+   "DisplayName" = 'To Organization Name',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'E9B40366-4907-44C0-99B1-502E35D6E345' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."RelationshipType"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '07C7D2B2-8916-4220-961F-076C298DD2C9' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."Title"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '2ACBD16A-2A78-4807-8B8D-D0920382EAE6' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."Status"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '80B0C5C4-915A-4E72-9978-74CB33902F08' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."StartDate"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '62D8A345-E8AC-4EE6-88A9-1959F6258657' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."EndDate"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '0AFC293D-E93D-4BD2-A71C-ACB2631CA278' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."Notes"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'Relationship Details',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'CD66C882-D041-46F1-8DE2-3807B1BD8B5A' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."ID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'FEFDAD15-7BA5-470A-A689-147D9303AB34' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships."RelationshipTypeID"
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '4BFFAFBD-BF4E-4907-963B-95733C670B7E' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships.__mj_CreatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = '5F0BE392-8F9C-4995-BC97-344D361C9706' AND "AutoUpdateCategory" = TRUE;
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Relationships.__mj_UpdatedAt
+
+UPDATE "__mj"."EntityField"
+SET 
+   "Category" = 'System Metadata',
+   "GeneratedFormSection" = 'Category',
+   "ExtendedType" = NULL,
+   "CodeType" = NULL
+WHERE 
+   "ID" = 'B15AE830-4BCB-4AA3-847E-916885287462' AND "AutoUpdateCategory" = TRUE;
+/* Set entity icon to fa fa-handshake */
+
+UPDATE "__mj"."Entity"
+               SET "Icon" = 'fa fa-handshake', "__mj_UpdatedAt" = NOW()
+               WHERE "ID" = '709CA9DA-B124-4155-BE39-E857EF672D82';
+/* Insert FieldCategoryInfo setting for entity */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('13263fbc-3148-4e07-912e-fe7853d85442', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FieldCategoryInfo', '{"Relationship Participants":{"icon":"fa fa-users","description":"The people and organizations being linked together in this relationship"},"Relationship Details":{"icon":"fa fa-info-circle","description":"Core attributes including the type, status, duration, and contextual title of the link"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed identifiers and audit tracking information"}}', NOW(), NOW());
+/* Insert FieldCategoryIcons setting (legacy) */
+
+INSERT INTO "__mj"."EntitySetting" ("ID", "EntityID", "Name", "Value", "__mj_CreatedAt", "__mj_UpdatedAt")
+               VALUES ('b475965c-2d9c-423f-9eb0-4827f5490909', '709CA9DA-B124-4155-BE39-E857EF672D82', 'FieldCategoryIcons', '{"Relationship Participants":"fa fa-users","Relationship Details":"fa fa-info-circle","System Metadata":"fa fa-cog"}', NOW(), NOW());
+/* Set DefaultForNewUser=0 for NEW entity (category: supporting, confidence: high) */
+
+UPDATE "__mj"."ApplicationEntity"
+         SET "DefaultForNewUser" = FALSE, "__mj_UpdatedAt" = NOW()
+         WHERE "EntityID" = '709CA9DA-B124-4155-BE39-E857EF672D82';
+/* Generated Validation Functions for MJ_BizApps_Common: Contact Methods */
+-- CHECK constraint for MJ_BizApps_Common: Contact Methods @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
+
+INSERT INTO __mj."GeneratedCode" ("CategoryID", "GeneratedByModelID", "GeneratedAt", "Language", "Status", "Source", "Code", "Description", "Name", "LinkedEntityID", "LinkedRecordPrimaryKey")
+                      VALUES ((SELECT "ID" FROM __mj."vwGeneratedCodeCategories" WHERE "Name"='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', NOW(), 'TypeScript','Approved', '([PersonID] IS NOT NULL AND [OrganizationID] IS NULL OR [PersonID] IS NULL AND [OrganizationID] IS NOT NULL)', 'public ValidatePersonIDOrOrganizationIDExclusivity(result: ValidationResult) {
+	// Check if both fields are null or if both fields are populated
+	const hasPerson = this."PersonID" != null;
+	const hasOrganization = this."OrganizationID" != null;
+
+	if (hasPerson === hasOrganization) {
+		const errorMessage = "Each record must be associated with either a person or an organization, but not both.";
+		result."Errors".push(new ValidationErrorInfo(
+			"PersonID",
+			errorMessage,
+			this."PersonID",
+			ValidationErrorType."Failure"
+		));
+		result."Errors".push(new ValidationErrorInfo(
+			"OrganizationID",
+			errorMessage,
+			this."OrganizationID",
+			ValidationErrorType."Failure"
+		));
+	}
+}', 'Each record must be linked to either a person or an organization. This ensures that contact information is correctly attributed to exactly one entity and prevents data ambiguity caused by having both or neither assigned.', 'ValidatePersonIDOrOrganizationIDExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '32C45078-D33B-4760-9BE5-0DF7F483F591');
+  
+            
+
+/* Generated Validation Functions for MJ_BizApps_Common: Relationships */
+-- CHECK constraint for MJ_BizApps_Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
+
+INSERT INTO __mj."GeneratedCode" ("CategoryID", "GeneratedByModelID", "GeneratedAt", "Language", "Status", "Source", "Code", "Description", "Name", "LinkedEntityID", "LinkedRecordPrimaryKey")
+                      VALUES ((SELECT "ID" FROM __mj."vwGeneratedCodeCategories" WHERE "Name"='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', NOW(), 'TypeScript','Approved', '([FromPersonID] IS NOT NULL AND [FromOrganizationID] IS NULL OR [FromPersonID] IS NULL AND [FromOrganizationID] IS NOT NULL)', 'public ValidateFromPersonOrFromOrganizationExclusivity(result: ValidationResult) {
+	const hasPerson = this."FromPersonID" != null;
+	const hasOrg = this."FromOrganizationID" != null;
+
+	if ((hasPerson && hasOrg) || (!hasPerson && !hasOrg)) {
+		result."Errors".push(new ValidationErrorInfo(
+			"FromPersonID",
+			"You must specify either a Person or an Organization as the source, but not both and not neither.",
+			this."FromPersonID",
+			ValidationErrorType."Failure"
+		));
+	}
+}', 'A relationship must be linked to exactly one source: either a person or an organization. This ensures that the origin of the relationship is clearly defined and prevents data where both or neither are specified.', 'ValidateFromPersonOrFromOrganizationExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '709CA9DA-B124-4155-BE39-E857EF672D82');
+  
+            -- CHECK constraint for MJ_BizApps_Common: Relationships @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function;
+
+INSERT INTO __mj."GeneratedCode" ("CategoryID", "GeneratedByModelID", "GeneratedAt", "Language", "Status", "Source", "Code", "Description", "Name", "LinkedEntityID", "LinkedRecordPrimaryKey")
+                      VALUES ((SELECT "ID" FROM __mj."vwGeneratedCodeCategories" WHERE "Name"='CodeGen: Validators'), '7B31F48E-EDA3-47B4-9602-D98B7EB1AF45', NOW(), 'TypeScript','Approved', '([ToPersonID] IS NOT NULL AND [ToOrganizationID] IS NULL OR [ToPersonID] IS NULL AND [ToOrganizationID] IS NOT NULL)', 'public ValidateToPersonOrToOrganizationExclusivity(result: ValidationResult) {
+	// Ensure that exactly one of ToPersonID or ToOrganizationID is populated
+	const hasPerson = this."ToPersonID" != null;
+	const hasOrganization = this."ToOrganizationID" != null;
+
+	if ((hasPerson && hasOrganization) || (!hasPerson && !hasOrganization)) {
+		result."Errors".push(new ValidationErrorInfo(
+			"ToPersonID",
+			"A relationship must be associated with either a person or an organization, but not both and not neither.",
+			this."ToPersonID",
+			ValidationErrorType."Failure"
+		));
+	}
+}', 'A relationship must be linked to exactly one target: either a person or an organization. This ensures that the destination of the relationship is clearly defined and prevents ambiguous or missing links.', 'ValidateToPersonOrToOrganizationExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '709CA9DA-B124-4155-BE39-E857EF672D82');
+
+
+-- ===================== Grants =====================
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddressTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Address Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Types
+-- Item: Permissions for vwAddressTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddressTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Address Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Types
+-- Item: spCreateAddressType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR AddressType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Address Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Address Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Types
+-- Item: spUpdateAddressType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR AddressType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View SQL for MJ_BizApps_Common: Addresses */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Addresses
+-- Item: vwAddresses
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Addresses
+-----               SCHEMA:      __mj_BizAppsCommon
+-----               BASE TABLE:  Address
+-----               PRIMARY KEY: ID
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddresses" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Addresses */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Addresses
+-- Item: Permissions for vwAddresses
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddresses" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Addresses */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Addresses
+-- Item: spCreateAddress
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR Address
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Addresses */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Addresses */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Addresses
+-- Item: spUpdateAddress
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR Address
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View SQL for MJ_BizApps_Common: Contact Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Types
+-- Item: vwContactTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Contact Types
+-----               SCHEMA:      __mj_BizAppsCommon
+-----               BASE TABLE:  ContactType
+-----               PRIMARY KEY: ID
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwContactTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Contact Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Types
+-- Item: Permissions for vwContactTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwContactTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Contact Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Types
+-- Item: spCreateContactType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ContactType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Contact Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Contact Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Types
+-- Item: spUpdateContactType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ContactType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Address Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Types
+-- Item: spDeleteAddressType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR AddressType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Address Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Addresses */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Addresses
+-- Item: spDeleteAddress
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR Address
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Addresses */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Contact Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Types
+-- Item: spDeleteContactType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ContactType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Contact Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* SQL text to update entity field related entity name field map for entity field ID 5C42F4D1-4ABD-4CC6-B5DA-A164D5CBA7A1 */
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwContactMethods" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Contact Methods */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Methods
+-- Item: Permissions for vwContactMethods
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwContactMethods" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Contact Methods */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Methods
+-- Item: spCreateContactMethod
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ContactMethod
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Contact Methods */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Contact Methods */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Methods
+-- Item: spUpdateContactMethod
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ContactMethod
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Contact Methods */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Methods
+-- Item: spDeleteContactMethod
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ContactMethod
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Contact Methods */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View SQL for MJ_BizApps_Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Links
+-- Item: vwAddressLinks
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Address Links
+-----               SCHEMA:      __mj_BizAppsCommon
+-----               BASE TABLE:  AddressLink
+-----               PRIMARY KEY: ID
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddressLinks" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Links
+-- Item: Permissions for vwAddressLinks
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwAddressLinks" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Links
+-- Item: spCreateAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR AddressLink
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Address Links */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Links
+-- Item: spUpdateAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR AddressLink
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Address Links */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Address Links
+-- Item: spDeleteAddressLink
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR AddressLink
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Address Links */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Index for Foreign Keys for OrganizationType */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organization Types
+-- Item: Index for Foreign Keys
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+
+/* Index for Foreign Keys for Organization */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organizations
+-- Item: Index for Foreign Keys
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+-- Index for foreign key OrganizationTypeID in table Organization;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwOrganizationTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Organization Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organization Types
+-- Item: Permissions for vwOrganizationTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwOrganizationTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Organization Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organization Types
+-- Item: spCreateOrganizationType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR OrganizationType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Organization Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Organization Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organization Types
+-- Item: spUpdateOrganizationType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR OrganizationType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View SQL for MJ_BizApps_Common: Relationship Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationship Types
+-- Item: vwRelationshipTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Relationship Types
+-----               SCHEMA:      __mj_BizAppsCommon
+-----               BASE TABLE:  RelationshipType
+-----               PRIMARY KEY: ID
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwRelationshipTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Relationship Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationship Types
+-- Item: Permissions for vwRelationshipTypes
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwRelationshipTypes" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Relationship Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationship Types
+-- Item: spCreateRelationshipType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR RelationshipType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Relationship Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Relationship Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationship Types
+-- Item: spUpdateRelationshipType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR RelationshipType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Organization Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organization Types
+-- Item: spDeleteOrganizationType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR OrganizationType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Organization Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Relationship Types */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationship Types
+-- Item: spDeleteRelationshipType
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR RelationshipType
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Relationship Types */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View SQL for MJ_BizApps_Common: People */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: People
+-- Item: vwPeople
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: People
+-----               SCHEMA:      __mj_BizAppsCommon
+-----               BASE TABLE:  Person
+-----               PRIMARY KEY: ID
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwPeople" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: People */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: People
+-- Item: Permissions for vwPeople
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwPeople" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: People */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: People
+-- Item: spCreatePerson
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR Person
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: People */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: People */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: People
+-- Item: spUpdatePerson
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR Person
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: People */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: People
+-- Item: spDeletePerson
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR Person
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: People */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* SQL text to update entity field related entity name field map for entity field ID D78A9DB0-2ED9-4D73-A408-24B0E03981C9 */
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwOrganizations" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Organizations */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organizations
+-- Item: Permissions for vwOrganizations
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwOrganizations" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Organizations */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organizations
+-- Item: spCreateOrganization
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR Organization
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Organizations */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Organizations */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organizations
+-- Item: spUpdateOrganization
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR Organization
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Organizations */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Organizations
+-- Item: spDeleteOrganization
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR Organization
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Organizations */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* SQL text to update entity field related entity name field map for entity field ID 42EBA3CE-7DDB-4149-BE93-E245F351B963 */
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwRelationships" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* Base View Permissions SQL for MJ_BizApps_Common: Relationships */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationships
+-- Item: Permissions for vwRelationships
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------;
+
+DO $$ BEGIN GRANT SELECT ON __mj_BizAppsCommon."vwRelationships" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate SQL for MJ_BizApps_Common: Relationships */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationships
+-- Item: spCreateRelationship
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR Relationship
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spCreate Permissions for MJ_BizApps_Common: Relationships */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spUpdate SQL for MJ_BizApps_Common: Relationships */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationships
+-- Item: spUpdateRelationship
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR Relationship
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete SQL for MJ_BizApps_Common: Relationships */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Relationships
+-- Item: spDeleteRelationship
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR Relationship
+------------------------------------------------------------;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* spDelete Permissions for MJ_BizApps_Common: Relationships */
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+/* SQL text to insert new entity field */
+
+
+-- ===================== Comments =====================
+
+-- Extended property (could not parse)
+-- ---------------------------------------------------------------------------
+-- -- EXTENDED PROPERTIES: Schema
+-- ---------------------------------------------------------------------------
+-- EXEC sp_addextendedproperty
+--     @name = N'MS_Description',
+--     @value = N'Common business application entities shared across apps: Person, Organization, Address, ContactMethod, Relationship',
+--     @level0type = N'SCHEMA', @level0name = N'__mj_BizAppsCommon';
+
+COMMENT ON TABLE __mj_BizAppsCommon."OrganizationType" IS 'Categories of organizations such as Company, Non-Profit, Association, Government';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."OrganizationType"."Name" IS 'Display name for the organization type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."OrganizationType"."Description" IS 'Detailed description of this organization type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."OrganizationType"."IconClass" IS 'Font Awesome icon class for UI display';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."OrganizationType"."DisplayRank" IS 'Sort order in dropdown lists. Lower values appear first';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."OrganizationType"."IsActive" IS 'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records';
+
+COMMENT ON TABLE __mj_BizAppsCommon."AddressType" IS 'Categories of addresses such as Home, Work, Mailing, Billing';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressType"."Name" IS 'Display name for the address type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressType"."Description" IS 'Detailed description of this address type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressType"."IconClass" IS 'Font Awesome icon class for UI display';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressType"."DefaultRank" IS 'Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink."Rank"';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressType"."IsActive" IS 'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records';
+
+COMMENT ON TABLE __mj_BizAppsCommon."ContactType" IS 'Categories of contact methods such as Phone, Mobile, Email, LinkedIn, Website';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactType"."Name" IS 'Display name for the contact type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactType"."Description" IS 'Detailed description of this contact type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactType"."IconClass" IS 'Font Awesome icon class for UI display';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactType"."DisplayRank" IS 'Sort order in dropdown lists. Lower values appear first';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactType"."IsActive" IS 'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records';
+
+COMMENT ON TABLE __mj_BizAppsCommon."RelationshipType" IS 'Defines types of relationships between people and organizations with directionality and labeling';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."Name" IS 'Display name for the relationship type, e.g. Employee, Spouse, Partner';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."Description" IS 'Detailed description of this relationship type';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."Category" IS 'Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."IsDirectional" IS 'Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."ForwardLabel" IS 'Label describing the From-to-To direction, e.g. is employee of, is parent of';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."ReverseLabel" IS 'Label describing the To-to-From direction, e.g. employs, is child of';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."RelationshipType"."IsActive" IS 'Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records';
+
+COMMENT ON TABLE __mj_BizAppsCommon."Person" IS 'Individual people, optionally linked to MJ system user accounts';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."FirstName" IS 'First (given) name';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."LastName" IS 'Last (family) name';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."MiddleName" IS 'Middle name or initial';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Prefix" IS 'Name prefix such as Dr., Mr., Ms., Rev.';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Suffix" IS 'Name suffix such as Jr., III, PhD, Esq.';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."PreferredName" IS 'Nickname or preferred name the person goes by';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Title" IS 'Professional or job title, e.g. VP of Engineering, Board Director';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Email" IS 'Primary email address for this person';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Phone" IS 'Primary phone number for this person';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."DateOfBirth" IS 'Date of birth';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Gender" IS 'Gender identity';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."PhotoURL" IS 'URL to profile photo or avatar image';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Bio" IS 'Biographical text or notes about this person';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Person"."Status" IS 'Current status: Active, Inactive, or Deceased';
+
+COMMENT ON TABLE __mj_BizAppsCommon."Organization" IS 'Companies, associations, government bodies, and other organizations with hierarchy support';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Name" IS 'Common or display name of the organization';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."LegalName" IS 'Full legal name if different from display name';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Website" IS 'Primary website URL';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."LogoURL" IS 'URL to organization logo image';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Description" IS 'Description of the organization purpose and scope';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Email" IS 'Primary contact email address';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Phone" IS 'Primary phone number';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."FoundedDate" IS 'Date the organization was founded or incorporated';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."TaxID" IS 'Tax identification number such as EIN';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Organization"."Status" IS 'Current status: Active, Inactive, or Dissolved';
+
+COMMENT ON TABLE __mj_BizAppsCommon."Address" IS 'Standalone physical address records linked to entities via AddressLink for sharing across people and organizations';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Line1" IS 'Street address line 1';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Line2" IS 'Street address line 2 (suite, apt, etc.)';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Line3" IS 'Street address line 3 (additional detail)';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."City" IS 'City or locality name';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."StateProvince" IS 'State, province, or region';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."PostalCode" IS 'Postal or ZIP code';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Country" IS 'Country code or name, defaults to US';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Latitude" IS 'Geographic latitude for mapping';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Address"."Longitude" IS 'Geographic longitude for mapping';
+
+COMMENT ON TABLE __mj_BizAppsCommon."AddressLink" IS 'Polymorphic link table connecting Address records to any entity record in the system via EntityID and RecordID';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressLink"."RecordID" IS 'Primary key value(s) of the linked record. VARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressLink"."IsPrimary" IS 'Whether this is the primary address for the linked record. Only one address per entity record should be marked primary';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."AddressLink"."Rank" IS 'Sort order override for this specific link. When NULL, falls back to AddressType."DefaultRank". Lower values appear first';
+
+COMMENT ON TABLE __mj_BizAppsCommon."ContactMethod" IS 'Additional contact methods for people and organizations beyond the primary email and phone fields';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactMethod"."Value" IS 'The contact value: phone number, email address, URL, social media handle, etc.';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactMethod"."Label" IS 'Descriptive label such as Work cell, Personal Gmail, Corporate LinkedIn';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."ContactMethod"."IsPrimary" IS 'Whether this is the primary contact method of its type for the linked person or organization';
+
+COMMENT ON TABLE __mj_BizAppsCommon."Relationship" IS 'Typed, directional links between people and organizations supporting Person-to-Person, Person-to-Organization, and Organization-to-Organization relationships';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Relationship"."Title" IS 'Contextual title for this specific relationship, e.g. CEO, Primary Contact, Founding Member';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Relationship"."StartDate" IS 'Date the relationship began';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Relationship"."EndDate" IS 'Date the relationship ended, if applicable';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Relationship"."Status" IS 'Current status: Active, Inactive, or Ended';
+
+COMMENT ON COLUMN __mj_BizAppsCommon."Relationship"."Notes" IS 'Additional notes about this relationship';
+
+
+-- ===================== Other =====================
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: OrganizationType
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: AddressType
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: ContactType
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: RelationshipType
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: Person
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: Organization
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: Address
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: AddressLink
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: ContactMethod
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- EXTENDED PROPERTIES: Relationship
+---------------------------------------------------------------------------
+
+-- MANUAL UPDATE OF SCHEMA INFO from metadata file to ensure we have things set for the codegeneration
+
+/* spUpdate Permissions for MJ_BizApps_Common: Address Types */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Addresses */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Contact Types */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Contact Methods */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Address Links */
+
+/* SQL text to update entity field related entity name field map for entity field ID 9E6FCD82-BCDF-443A-A87D-E16EEF761068 */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Organization Types */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Relationship Types */
+
+/* spUpdate Permissions for MJ_BizApps_Common: People */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Organizations */
+
+/* spUpdate Permissions for MJ_BizApps_Common: Relationships */
