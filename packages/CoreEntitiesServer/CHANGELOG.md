@@ -1,5 +1,12 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.31.1
+
+### Patch Changes
+
+- 6e0ea6c: Add system user guards to PersonEntityServer to prevent syncUserRecord and autoLinkUser from modifying the MJ system user record. Change method visibility from private to protected for downstream overridability.
+  - @mj-biz-apps/common-entities@5.31.1
+
 ## 5.31.0
 
 ### Minor Changes

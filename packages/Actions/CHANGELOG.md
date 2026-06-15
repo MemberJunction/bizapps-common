@@ -1,5 +1,7 @@
 # @mj-biz-apps/common-actions
 
+## 5.31.1
+
 ## 5.31.0
 
 ### Minor Changes
