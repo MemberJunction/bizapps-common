@@ -1,5 +1,5 @@
 import { BaseEntity, EntityDeleteOptions, EntitySaveOptions, LogError, Metadata, UserInfo } from '@memberjunction/core';
-import { RegisterClass } from '@memberjunction/global';
+import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
 import { MJUserEntity, MJUserRoleEntity } from '@memberjunction/core-entities';
 import { UserCache } from '@memberjunction/sqlserver-dataprovider';
@@ -59,11 +59,20 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Find an existing MJ User by email, or create a new one.
      * Sets LinkedUserID on the Person entity (pre-save, so it's persisted atomically).
      */
-    private async autoLinkUser(): Promise<void> {
+    protected async autoLinkUser(): Promise<void> {
         try {
             const existingUser = this.findCachedUserByEmail(this.Email!);
 
             if (existingUser) {
+                // Never link a Person to the system user — modifying the system
+                // user record via syncUserRecord would corrupt the MJ environment.
+                if (this.isSystemUser(existingUser.ID)) {
+                    LogError(
+                        `PersonEntityServer: Blocked auto-link of Person (email=${this.Email}) ` +
+                        `to the MJ system user — the system user must not be linked to a Person`
+                    );
+                    return;
+                }
                 this.LinkedUserID = existingUser.ID;
             } else {
                 const newUserID = await this.createUser();
@@ -81,7 +90,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Find an existing MJ User by email using the cached UserCache.
      * UserCache is populated at server startup and refreshed periodically.
      */
-    private findCachedUserByEmail(email: string): UserInfo | undefined {
+    protected findCachedUserByEmail(email: string): UserInfo | undefined {
         const normalizedEmail = email.toLowerCase();
         return UserCache.Users.find(
             u => u.Email.toLowerCase() === normalizedEmail
@@ -92,7 +101,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Create a new MJ User record from the Person's details.
      * Returns the new User ID, or null on failure.
      */
-    private async createUser(): Promise<string | null> {
+    protected async createUser(): Promise<string | null> {
         try {
             const md = new Metadata();
             const user = await md.GetEntityObject<MJUserEntity>('MJ: Users', this.ContextCurrentUser);
@@ -126,7 +135,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Assign the default MJ "UI" role to a User via the UserRole entity.
      * Uses Metadata.Roles (cached) for role lookup instead of a DB query.
      */
-    private async assignDefaultUserRole(userID: string): Promise<void> {
+    protected async assignDefaultUserRole(userID: string): Promise<void> {
         try {
             const md = new Metadata();
             const role = md.Roles.find(
@@ -162,7 +171,17 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Called post-save — updates name/email fields and ensures the
      * bidirectional back-pointer (LinkedEntityID / LinkedEntityRecordID) is set.
      */
-    private async syncUserRecord(isNewRecord: boolean, emailChanged: boolean): Promise<void> {
+    protected async syncUserRecord(isNewRecord: boolean, emailChanged: boolean): Promise<void> {
+        // SAFETY: Never modify the system user record. This prevents corruption
+        // of the MJ environment if a Person is accidentally linked to the system user.
+        if (this.LinkedUserID && this.isSystemUser(this.LinkedUserID)) {
+            LogError(
+                `PersonEntityServer: Blocked syncUserRecord for Person (email=${this.Email}) — ` +
+                `LinkedUserID points to the MJ system user, which must never be modified via Person sync`
+            );
+            return;
+        }
+
         const nameFields = ['FirstName', 'LastName', 'MiddleName', 'Prefix', 'Suffix'];
         const nameChanged = nameFields.some(f => this.GetFieldByName(f)?.Dirty === true);
 
@@ -207,7 +226,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Set the back-pointer fields on the User so the User → Person
      * relationship is bidirectional. Only sets fields if not already populated.
      */
-    private setUserBackPointer(user: MJUserEntity): void {
+    protected setUserBackPointer(user: MJUserEntity): void {
         if (user.LinkedEntityRecordID) {
             return; // Already linked — nothing to do
         }
@@ -221,7 +240,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
      * Deactivate the linked User on Person deletion.
      * Sets IsActive=false rather than deleting, to preserve audit history.
      */
-    private async deactivateLinkedUser(): Promise<void> {
+    protected async deactivateLinkedUser(): Promise<void> {
         try {
             const md = new Metadata();
             const user = await md.GetEntityObject<MJUserEntity>('MJ: Users', this.ContextCurrentUser);
@@ -245,10 +264,20 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
     /**
      * Build a display-friendly full name from Person fields.
      */
-    private buildFullName(): string {
+    protected buildFullName(): string {
         const parts: string[] = [];
         if (this.FirstName) parts.push(this.FirstName);
         if (this.LastName) parts.push(this.LastName);
         return parts.length > 0 ? parts.join(' ') : (this.Email ?? 'Unknown');
+    }
+
+    /**
+     * Check if the given user ID is the MJ system user.
+     * The system user is a special internal record that must never be modified
+     * by Person lifecycle hooks — doing so corrupts the entire MJ environment.
+     */
+    protected isSystemUser(userID: string): boolean {
+        const systemUserID = UserCache.Instance.SYSTEM_USER_ID;
+        return UUIDsEqual(userID, systemUserID);
     }
 }
