@@ -8,8 +8,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Schema
-CREATE SCHEMA IF NOT EXISTS __mj_BizAppsCommon;
-SET search_path TO __mj_BizAppsCommon, public;
+CREATE SCHEMA IF NOT EXISTS "__mj_BizAppsCommon";
+SET search_path TO "__mj_BizAppsCommon", public;
 
 -- Ensure backslashes in string literals are treated literally (not as escape sequences)
 SET standard_conforming_strings = on;
@@ -25,7 +25,7 @@ SET standard_conforming_strings = on;
 
 -- ===================== DDL: Tables, PKs, Indexes =====================
 
-CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Person_LinkedUserID" ON __mj_BizAppsCommon."Person" ("LinkedUserID") WHERE "LinkedUserID" IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Person_LinkedUserID" ON "__mj_BizAppsCommon"."Person" ("LinkedUserID") WHERE "LinkedUserID" IS NOT NULL;
 
 
 -- ===================== Other =====================
