@@ -95,6 +95,48 @@ the `Person.DisplayName` `PERSISTED` computed column — which have no analogue 
 
 ---
 
+## Schema name casing — lowercase on PostgreSQL (expands on Patch #9)
+
+On PostgreSQL the app schema is **physically lowercase** — `__mj_bizappscommon`, not
+`__mj_BizAppsCommon`. The schema name is the only identifier that folds; table, view, column, and
+constraint names stay **quoted PascalCase** (`__mj_bizappscommon."OrganizationType"`,
+`"ID"`).
+
+```sql
+-- ✅ correct                                    -- ❌ wrong (mixed-case physical schema)
+CREATE SCHEMA IF NOT EXISTS __mj_bizappscommon;   CREATE SCHEMA "__mj_BizAppsCommon";
+CREATE TABLE __mj_bizappscommon."OrganizationType" ( "ID" UUID NOT NULL, ... );
+```
+
+**Why.** PostgreSQL folds *unquoted* identifiers to lowercase, so unquoted
+`CREATE SCHEMA __mj_BizAppsCommon` produces a physical schema named `__mj_bizappscommon`. MJ's OpenApp
+engine canonicalizes the same way — `SQLDialect.CanonicalSchemaName` lowercases the schema on PG
+(identity on SQL Server), and `OpenApp/Engine/install/schema-manager.ts` (schema CREATE) and
+`migration-runner.ts` (Skyway `DefaultSchema` / `${flyway:defaultSchema}`) both route through it. So a
+mixed-case manifest name is accepted but the physical schema, the installer, and the runtime
+`QuoteSchema` (which emits a bare, unquoted schema) all converge on lowercase. Quoting the schema in
+the migrations would point at a mixed-case schema that doesn't physically exist — the exact
+mixed-case/lowercase **split** the canonicalization exists to prevent.
+
+**The CodeGen symptom this prevents.** If the physical schema (lowercase) and the seeded metadata
+`SchemaName` (`__mj.SchemaInfo` / `__mj.Entity.SchemaName`) disagree in case, `mj codegen` treats the
+discovered tables as *new* entities, collides with the already-seeded entities, and creates phantom
+duplicates suffixed with the schema name:
+
+```
+MJ_BizApps_Common: Organization Types____mj_bizappscommon → missing create routine: spCreateOrganizationType____mj_bizappscommon
+```
+
+So every `__mj_bizappscommon` reference in `migrations-pg/*.pg.sql` is lowercase — `CREATE SCHEMA` /
+`SET search_path`, schema-qualified object refs, `v_target_schema` PL/pgSQL constants, and the
+`SchemaName` values seeded into `SchemaInfo` / `Entity` rows — so the physical schema and the metadata
+agree. The core `__mj` schema never had this problem because it is already all-lowercase. The SQL
+Server migrations (`migrations/`) are unaffected (they use `${flyway:defaultSchema}` and SS is
+case-insensitive). A companion MemberJunction-core CodeGen fix makes its new-entity-detection schema
+comparison case-insensitive so the split can't recur even if the two ever diverge.
+
+---
+
 ## Why three stages on PostgreSQL
 
 MemberJunction's PostgreSQL model is **DDL via migrations → CRUD functions/views/triggers via
