@@ -57,15 +57,16 @@ companion CodeGen fix makes its new-entity-detection schema comparison
 case-insensitive so this can't recur even if the two ever diverge — tracked
 separately.)
 
-## What this means for these files
+## What this means for the PG migrations (`migrations-pg/`)
 
-Every `__mj_bizappscommon` reference is lowercase: `CREATE SCHEMA`,
-`SET search_path`, schema-qualified object refs (`__mj_bizappscommon."Table"`),
-`v_target_schema CONSTANT TEXT := '__mj_bizappscommon'` constants, and the
-`SchemaName` values seeded into `SchemaInfo` / `Entity` rows.
+Every `__mj_bizappscommon` reference in `migrations-pg/*.pg.sql` is lowercase:
+`CREATE SCHEMA`, `SET search_path`, schema-qualified object refs
+(`__mj_bizappscommon."Table"`), `v_target_schema CONSTANT TEXT :=
+'__mj_bizappscommon'` constants, and the `SchemaName` values seeded into
+`SchemaInfo` / `Entity` rows.
 
 References to the **core** schema `__mj` are unchanged — `__mj` is already
 all-lowercase, so it never had a casing problem.
 
-SQL Server migrations (`../migrations/`) are unaffected: they use
-`${flyway:defaultSchema}` and SS is case-insensitive.
+The SQL Server migrations (`migrations/`) are unaffected: they use
+`${flyway:defaultSchema}` and SQL Server is case-insensitive.
