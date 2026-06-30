@@ -8,8 +8,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Schema
-CREATE SCHEMA IF NOT EXISTS __mj_BizAppsCommon;
-SET search_path TO __mj_BizAppsCommon, public;
+CREATE SCHEMA IF NOT EXISTS __mj_bizappscommon;
+SET search_path TO __mj_bizappscommon, public;
 
 -- Ensure backslashes in string literals are treated literally (not as escape sequences)
 SET standard_conforming_strings = on;
@@ -26,7 +26,7 @@ SET standard_conforming_strings = on;
 -- ===================== Stored Procedures (sp*) =====================
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddressType"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateAddressType"
 --     @ID UUID = NULL,
 --     @Name VARCHAR(100),
 --     @Description_Clear bit = 0,
@@ -34,7 +34,7 @@ SET standard_conforming_strings = on;
 --     @IconCl...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddressType"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateAddressType"
 --     @ID UUID,
 --     @Name VARCHAR(100) = NULL,
 --     @Description_Clear bit = 0,
@@ -42,19 +42,19 @@ SET standard_conforming_strings = on;
 --     @IconCl...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddressType"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteAddressType"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."AddressType"
+--         __mj_bizappscommon."AddressType"
 --     WHERE
 --         "ID" = @...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddressLink"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateAddressLink"
 --     @ID UUID = NULL,
 --     @AddressID UUID,
 --     @EntityID UUID,
@@ -62,26 +62,26 @@ SET standard_conforming_strings = on;
 --     @AddressT...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddressLink"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateAddressLink"
 --     @ID UUID,
 --     @AddressID UUID = NULL,
 --     @EntityID UUID = NULL,
 --     @RecordID VARCHAR(700) = NULL,...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddressLink"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteAddressLink"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."AddressLink"
+--         __mj_bizappscommon."AddressLink"
 --     WHERE
 --         "ID" = @...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateContactMethod"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateContactMethod"
 --     @ID UUID = NULL,
 --     @PersonID_Clear bit = 0,
 --     @PersonID UUID = NULL,
@@ -89,7 +89,7 @@ SET standard_conforming_strings = on;
 --   ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateContactMethod"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateContactMethod"
 --     @ID UUID,
 --     @PersonID_Clear bit = 0,
 --     @PersonID UUID = NULL,
@@ -97,19 +97,19 @@ SET standard_conforming_strings = on;
 --     @Orga...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteContactMethod"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteContactMethod"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."ContactMethod"
+--         __mj_bizappscommon."ContactMethod"
 --     WHERE
 --         "ID"...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateAddress"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateAddress"
 --     @ID UUID = NULL,
 --     @Line1 VARCHAR(255),
 --     @Line2_Clear bit = 0,
@@ -118,7 +118,7 @@ SET standard_conforming_strings = on;
 -- ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateAddress"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateAddress"
 --     @ID UUID,
 --     @Line1 VARCHAR(255) = NULL,
 --     @Line2_Clear bit = 0,
@@ -127,14 +127,14 @@ SET standard_conforming_strings = on;
 -- ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteAddress"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteAddress"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."Address"
+--         __mj_bizappscommon."Address"
 --     WHERE
 --         "ID" = @ID
 -- 
@@ -142,7 +142,7 @@ SET standard_conforming_strings = on;
 --    ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateContactType"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateContactType"
 --     @ID UUID = NULL,
 --     @Name VARCHAR(100),
 --     @Description_Clear bit = 0,
@@ -150,7 +150,7 @@ SET standard_conforming_strings = on;
 --     @IconCl...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateContactType"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateContactType"
 --     @ID UUID,
 --     @Name VARCHAR(100) = NULL,
 --     @Description_Clear bit = 0,
@@ -158,19 +158,19 @@ SET standard_conforming_strings = on;
 --     @IconCl...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteContactType"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteContactType"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."ContactType"
+--         __mj_bizappscommon."ContactType"
 --     WHERE
 --         "ID" = @...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateOrganization"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateOrganization"
 --     @ID UUID = NULL,
 --     @Name VARCHAR(255),
 --     @LegalName_Clear bit = 0,
@@ -178,7 +178,7 @@ SET standard_conforming_strings = on;
 --     @Organizat...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateOrganization"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateOrganization"
 --     @ID UUID,
 --     @Name VARCHAR(255) = NULL,
 --     @LegalName_Clear bit = 0,
@@ -186,33 +186,33 @@ SET standard_conforming_strings = on;
 --     @Organizat...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateRelationship"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateRelationship"
 --     @ID UUID = NULL,
 --     @RelationshipTypeID UUID,
 --     @FromPersonID_Clear bit = 0,
 --     @FromPersonID uniqueidentif...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateRelationship"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateRelationship"
 --     @ID UUID,
 --     @RelationshipTypeID UUID = NULL,
 --     @FromPersonID_Clear bit = 0,
 --     @FromPersonID uniqueidentif...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteRelationship"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteRelationship"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."Relationship"
+--         __mj_bizappscommon."Relationship"
 --     WHERE
 --         "ID" =...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreatePerson"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreatePerson"
 --     @ID UUID = NULL,
 --     @FirstName VARCHAR(100),
 --     @LastName VARCHAR(100),
@@ -220,7 +220,7 @@ SET standard_conforming_strings = on;
 --     @MiddleName nvarch...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdatePerson"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdatePerson"
 --     @ID UUID,
 --     @FirstName VARCHAR(100) = NULL,
 --     @LastName VARCHAR(100) = NULL,
@@ -228,14 +228,14 @@ SET standard_conforming_strings = on;
 --     @MiddleName...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeletePerson"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeletePerson"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."Person"
+--         __mj_bizappscommon."Person"
 --     WHERE
 --         "ID" = @ID
 -- 
@@ -243,7 +243,7 @@ SET standard_conforming_strings = on;
 --     -...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateOrganizationType"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateOrganizationType"
 --     @ID UUID = NULL,
 --     @Name VARCHAR(100),
 --     @Description_Clear bit = 0,
@@ -251,7 +251,7 @@ SET standard_conforming_strings = on;
 --     @I...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateOrganizationType"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateOrganizationType"
 --     @ID UUID,
 --     @Name VARCHAR(100) = NULL,
 --     @Description_Clear bit = 0,
@@ -259,19 +259,19 @@ SET standard_conforming_strings = on;
 --     @I...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteOrganizationType"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteOrganizationType"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."OrganizationType"
+--         __mj_bizappscommon."OrganizationType"
 --     WHERE
 --       ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spCreateRelationshipType"
+-- CREATE PROCEDURE __mj_bizappscommon."spCreateRelationshipType"
 --     @ID UUID = NULL,
 --     @Name VARCHAR(100),
 --     @Description_Clear bit = 0,
@@ -279,7 +279,7 @@ SET standard_conforming_strings = on;
 --     @C...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spUpdateRelationshipType"
+-- CREATE PROCEDURE __mj_bizappscommon."spUpdateRelationshipType"
 --     @ID UUID,
 --     @Name VARCHAR(100) = NULL,
 --     @Description_Clear bit = 0,
@@ -287,19 +287,19 @@ SET standard_conforming_strings = on;
 --     @C...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteRelationshipType"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteRelationshipType"
 --     @ID UUID
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 -- 
 --     DELETE FROM
---         __mj_BizAppsCommon."RelationshipType"
+--         __mj_bizappscommon."RelationshipType"
 --     WHERE
 --       ...
 
 -- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_BizAppsCommon."spDeleteOrganization"
+-- CREATE PROCEDURE __mj_bizappscommon."spDeleteOrganization"
 --     @ID UUID
 -- AS
 -- BEGIN
@@ -311,117 +311,117 @@ SET standard_conforming_strings = on;
 -- ===================== Triggers =====================
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddressType
--- ON __mj_BizAppsCommon."AddressType"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateAddressType
+-- ON __mj_bizappscommon."AddressType"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."AddressType"
+--         __mj_bizappscommon."AddressType"
 --     SET
  
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddressLink
--- ON __mj_BizAppsCommon."AddressLink"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateAddressLink
+-- ON __mj_bizappscommon."AddressLink"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."AddressLink"
+--         __mj_bizappscommon."AddressLink"
 --     SET
  
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateContactMethod
--- ON __mj_BizAppsCommon."ContactMethod"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateContactMethod
+-- ON __mj_bizappscommon."ContactMethod"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."ContactMethod"
+--         __mj_bizappscommon."ContactMethod"
    
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateAddress
--- ON __mj_BizAppsCommon."Address"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateAddress
+-- ON __mj_bizappscommon."Address"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Address"
+--         __mj_bizappscommon."Address"
 --     SET
 --         __mj_
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateContactType
--- ON __mj_BizAppsCommon."ContactType"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateContactType
+-- ON __mj_bizappscommon."ContactType"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."ContactType"
+--         __mj_bizappscommon."ContactType"
 --     SET
  
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateOrganization
--- ON __mj_BizAppsCommon."Organization"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateOrganization
+-- ON __mj_bizappscommon."Organization"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Organization"
+--         __mj_bizappscommon."Organization"
 --     SE
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateRelationship
--- ON __mj_BizAppsCommon."Relationship"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateRelationship
+-- ON __mj_bizappscommon."Relationship"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Relationship"
+--         __mj_bizappscommon."Relationship"
 --     SE
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdatePerson
--- ON __mj_BizAppsCommon."Person"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdatePerson
+-- ON __mj_bizappscommon."Person"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Person"
+--         __mj_bizappscommon."Person"
 --     SET
 --         __mj_Upd
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_BizAppsCommon.trgUpdateOrganizationType
--- ON __mj_BizAppsCommon."OrganizationType"
+-- CREATE TRIGGER __mj_bizappscommon.trgUpdateOrganizationType
+-- ON __mj_bizappscommon."OrganizationType"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Organization
+--         __mj_bizappscommon."Organization
 
 -- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER [__mj_BizAppsCommon".trgUpdateRelationshipType
--- ON __mj_BizAppsCommon."RelationshipType"
+-- CREATE TRIGGER [__mj_bizappscommon".trgUpdateRelationshipType
+-- ON __mj_bizappscommon."RelationshipType"
 -- AFTER UPDATE
 -- AS
 -- BEGIN
 --     SET NOCOUNT ON;
 --     UPDATE
---         __mj_BizAppsCommon."Relationship
+--         __mj_bizappscommon."Relationship
 
 
 -- ===================== Data (INSERT/UPDATE/DELETE) =====================
@@ -437,10 +437,10 @@ WHERE  "Name" = 'MJ_BizApps_Common: Organizations';
 
 -- ===================== Grants =====================
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Address Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -455,8 +455,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressType" T
 ----- UPDATE PROCEDURE FOR AddressType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddressType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Address Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -471,10 +471,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressType" T
 ----- DELETE PROCEDURE FOR AddressType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Address Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddressType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Address Links */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -489,10 +489,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressType" T
 ----- CREATE PROCEDURE FOR AddressLink
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Address Links */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Address Links */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -507,8 +507,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddressLink" T
 ----- UPDATE PROCEDURE FOR AddressLink
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddressLink" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Address Links */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -523,10 +523,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddressLink" T
 ----- DELETE PROCEDURE FOR AddressLink
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Address Links */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddressLink" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -541,10 +541,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" T
 ----- CREATE PROCEDURE FOR ContactMethod
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Contact Methods */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -559,8 +559,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactMethod"
 ----- UPDATE PROCEDURE FOR ContactMethod
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateContactMethod" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Contact Methods */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -575,10 +575,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactMethod"
 ----- DELETE PROCEDURE FOR ContactMethod
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Contact Methods */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteContactMethod" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -593,10 +593,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactMethod"
 ----- CREATE PROCEDURE FOR Address
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Addresses */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -611,8 +611,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateAddress" TO "c
 ----- UPDATE PROCEDURE FOR Address
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateAddress" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Addresses */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -627,10 +627,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateAddress" TO "c
 ----- DELETE PROCEDURE FOR Address
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Addresses */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteAddress" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -645,10 +645,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddress" TO "c
 ----- CREATE PROCEDURE FOR ContactType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Contact Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -663,8 +663,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateContactType" T
 ----- UPDATE PROCEDURE FOR ContactType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateContactType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Contact Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -679,10 +679,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateContactType" T
 ----- DELETE PROCEDURE FOR ContactType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Contact Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteContactType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -697,10 +697,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteContactType" T
 ----- CREATE PROCEDURE FOR Organization
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Organizations */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -715,8 +715,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganization" 
 ----- UPDATE PROCEDURE FOR Organization
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateOrganization" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -731,10 +731,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganization" 
 ----- CREATE PROCEDURE FOR Relationship
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Relationships */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -749,8 +749,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationship" 
 ----- UPDATE PROCEDURE FOR Relationship
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateRelationship" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Relationships */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -765,10 +765,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationship" 
 ----- DELETE PROCEDURE FOR Relationship
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Relationships */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteRelationship" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -783,10 +783,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationship" 
 ----- CREATE PROCEDURE FOR Person
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: People */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -801,8 +801,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreatePerson" TO "cd
 ----- UPDATE PROCEDURE FOR Person
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: People */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -817,10 +817,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdatePerson" TO "cd
 ----- DELETE PROCEDURE FOR Person
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: People */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeletePerson" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -835,10 +835,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeletePerson" TO "cd
 ----- CREATE PROCEDURE FOR OrganizationType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Organization Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -853,8 +853,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateOrganizationTy
 ----- UPDATE PROCEDURE FOR OrganizationType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateOrganizationType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Organization Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -869,10 +869,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateOrganizationTy
 ----- DELETE PROCEDURE FOR OrganizationType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Organization Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteOrganizationType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate SQL for MJ_BizApps_Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -887,10 +887,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganizationTy
 ----- CREATE PROCEDURE FOR RelationshipType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spCreate Permissions for MJ_BizApps_Common: Relationship Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spUpdate SQL for MJ_BizApps_Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -905,8 +905,8 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spCreateRelationshipTy
 ----- UPDATE PROCEDURE FOR RelationshipType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdateRelationshipType" TO "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Relationship Types */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -921,10 +921,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spUpdateRelationshipTy
 ----- DELETE PROCEDURE FOR RelationshipType
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Relationship Types */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteRelationshipType" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete SQL for MJ_BizApps_Common: Organizations */
 -----------------------------------------------------------------
 -- SQL Code Generation
@@ -939,10 +939,10 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteRelationshipTy
 ----- DELETE PROCEDURE FOR Organization
 ------------------------------------------------------------;
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* spDelete Permissions for MJ_BizApps_Common: Organizations */
 
-DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spDeleteOrganization" TO "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
 /* SQL text to delete unneeded entity fields */
 
 
