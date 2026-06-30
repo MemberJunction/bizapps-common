@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-actions
 
+## 5.31.2
+
+### Patch Changes
+
+- 969954b: fix(common): lowercase PostgreSQL app schema name in migrations to match physical schema
+
 ## 5.31.1
 
 ## 5.31.0

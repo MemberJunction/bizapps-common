@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-core-entities-server",
   "type": "module",
-  "version": "5.31.1",
+  "version": "5.31.2",
   "description": "Server-side entity subclasses for BizApps Common — lifecycle hooks for People, Organizations, etc.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.31.1"
+    "@mj-biz-apps/common-entities": "5.31.2"
   },
   "peerDependencies": {
     "@memberjunction/core": "^5.40.2",
