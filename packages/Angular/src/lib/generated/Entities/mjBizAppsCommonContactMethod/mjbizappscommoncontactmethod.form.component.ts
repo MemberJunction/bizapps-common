@@ -17,7 +17,7 @@ export class mjBizAppsCommonContactMethodFormComponent extends BaseFormComponent
         this.initSections([
             { sectionKey: 'linkedRecord', sectionName: 'Linked Record', isExpanded: true },
             { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: true },
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: false },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
