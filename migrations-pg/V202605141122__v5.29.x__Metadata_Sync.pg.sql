@@ -73,745 +73,185 @@ BEGIN
   PERFORM __mj."spUpdateSchemaInfo"(p_SchemaName := p_SchemaName_008fdd64, p_EntityIDMin := p_EntityIDMin_008fdd64, p_EntityIDMax := p_EntityIDMax_008fdd64, p_Comments := p_Comments_008fdd64, p_Comments_Clear := TRUE, p_Description := p_Description_008fdd64, p_EntityNamePrefix := p_EntityNamePrefix_008fdd64, p_EntityNameSuffix := p_EntityNameSuffix_008fdd64, p_EntityNameSuffix_Clear := TRUE, p_ID := p_ID_008fdd64);
 END $mj$;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_d88511b1 UUID;
---   p_Name_d88511b1 VARCHAR(100);
---   p_Description_d88511b1 TEXT;
---   p_IconClass_d88511b1 VARCHAR(100);
---   p_DefaultRank_d88511b1 INTEGER;
---   p_IsActive_d88511b1 BOOLEAN;
--- BEGIN
---   p_ID_d88511b1 := '49183F91-F101-48F6-B2BE-AEC550B2CA0E';
---   p_Name_d88511b1 := 'Home';
---   p_Description_d88511b1 := 'Primary residential address';
---   p_IconClass_d88511b1 := 'fa-solid fa-house';
---   p_DefaultRank_d88511b1 := 10;
---   p_IsActive_d88511b1 := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_d88511b1, p_Name := p_Name_d88511b1, p_Description := p_Description_d88511b1, p_IconClass := p_IconClass_d88511b1, p_DefaultRank := p_DefaultRank_d88511b1, p_IsActive := p_IsActive_d88511b1);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('49183F91-F101-48F6-B2BE-AEC550B2CA0E', 'Home', 'Primary residential address', 'fa-solid fa-house', 10, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_597926f2 UUID;
---   p_Name_597926f2 VARCHAR(100);
---   p_Description_597926f2 TEXT;
---   p_IconClass_597926f2 VARCHAR(100);
---   p_DefaultRank_597926f2 INTEGER;
---   p_IsActive_597926f2 BOOLEAN;
--- BEGIN
---   p_ID_597926f2 := '0EFFA181-179B-4B68-ACC8-A57D55C4D73D';
---   p_Name_597926f2 := 'Work';
---   p_Description_597926f2 := 'Business or office address';
---   p_IconClass_597926f2 := 'fa-solid fa-building';
---   p_DefaultRank_597926f2 := 20;
---   p_IsActive_597926f2 := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_597926f2, p_Name := p_Name_597926f2, p_Description := p_Description_597926f2, p_IconClass := p_IconClass_597926f2, p_DefaultRank := p_DefaultRank_597926f2, p_IsActive := p_IsActive_597926f2);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('0EFFA181-179B-4B68-ACC8-A57D55C4D73D', 'Work', 'Business or office address', 'fa-solid fa-building', 20, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_4c512fdb UUID;
---   p_Name_4c512fdb VARCHAR(100);
---   p_Description_4c512fdb TEXT;
---   p_IconClass_4c512fdb VARCHAR(100);
---   p_DefaultRank_4c512fdb INTEGER;
---   p_IsActive_4c512fdb BOOLEAN;
--- BEGIN
---   p_ID_4c512fdb := '964C05C1-C947-467B-97B9-A7495BDDB7B0';
---   p_Name_4c512fdb := 'Mailing';
---   p_Description_4c512fdb := 'Preferred address for receiving mail and correspondence';
---   p_IconClass_4c512fdb := 'fa-solid fa-mailbox';
---   p_DefaultRank_4c512fdb := 30;
---   p_IsActive_4c512fdb := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_4c512fdb, p_Name := p_Name_4c512fdb, p_Description := p_Description_4c512fdb, p_IconClass := p_IconClass_4c512fdb, p_DefaultRank := p_DefaultRank_4c512fdb, p_IsActive := p_IsActive_4c512fdb);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('964C05C1-C947-467B-97B9-A7495BDDB7B0', 'Mailing', 'Preferred address for receiving mail and correspondence', 'fa-solid fa-mailbox', 30, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_b0182678 UUID;
---   p_Name_b0182678 VARCHAR(100);
---   p_Description_b0182678 TEXT;
---   p_IconClass_b0182678 VARCHAR(100);
---   p_DefaultRank_b0182678 INTEGER;
---   p_IsActive_b0182678 BOOLEAN;
--- BEGIN
---   p_ID_b0182678 := 'E2C28836-F2C2-4590-A519-BCAB0E864974';
---   p_Name_b0182678 := 'Billing';
---   p_Description_b0182678 := 'Address used for invoices and financial correspondence';
---   p_IconClass_b0182678 := 'fa-solid fa-file-invoice-dollar';
---   p_DefaultRank_b0182678 := 40;
---   p_IsActive_b0182678 := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_b0182678, p_Name := p_Name_b0182678, p_Description := p_Description_b0182678, p_IconClass := p_IconClass_b0182678, p_DefaultRank := p_DefaultRank_b0182678, p_IsActive := p_IsActive_b0182678);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('E2C28836-F2C2-4590-A519-BCAB0E864974', 'Billing', 'Address used for invoices and financial correspondence', 'fa-solid fa-file-invoice-dollar', 40, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_8ea20fa1 UUID;
---   p_Name_8ea20fa1 VARCHAR(100);
---   p_Description_8ea20fa1 TEXT;
---   p_IconClass_8ea20fa1 VARCHAR(100);
---   p_DefaultRank_8ea20fa1 INTEGER;
---   p_IsActive_8ea20fa1 BOOLEAN;
--- BEGIN
---   p_ID_8ea20fa1 := 'C466C5B0-35AE-46D6-B95E-88823E2E7EE5';
---   p_Name_8ea20fa1 := 'Shipping';
---   p_Description_8ea20fa1 := 'Address for physical deliveries';
---   p_IconClass_8ea20fa1 := 'fa-solid fa-truck';
---   p_DefaultRank_8ea20fa1 := 50;
---   p_IsActive_8ea20fa1 := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_8ea20fa1, p_Name := p_Name_8ea20fa1, p_Description := p_Description_8ea20fa1, p_IconClass := p_IconClass_8ea20fa1, p_DefaultRank := p_DefaultRank_8ea20fa1, p_IsActive := p_IsActive_8ea20fa1);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('C466C5B0-35AE-46D6-B95E-88823E2E7EE5', 'Shipping', 'Address for physical deliveries', 'fa-solid fa-truck', 50, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Address Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_49f28eee UUID;
---   p_Name_49f28eee VARCHAR(100);
---   p_Description_49f28eee TEXT;
---   p_IconClass_49f28eee VARCHAR(100);
---   p_DefaultRank_49f28eee INTEGER;
---   p_IsActive_49f28eee BOOLEAN;
--- BEGIN
---   p_ID_49f28eee := '4D1E1A1A-1CD1-4069-BF1E-198F838A0DFF';
---   p_Name_49f28eee := 'Legal';
---   p_Description_49f28eee := 'Registered legal or statutory address';
---   p_IconClass_49f28eee := 'fa-solid fa-scale-balanced';
---   p_DefaultRank_49f28eee := 60;
---   p_IsActive_49f28eee := 1;
---   PERFORM __mj_bizappscommon."spCreateAddressType"(p_ID := p_ID_49f28eee, p_Name := p_Name_49f28eee, p_Description := p_Description_49f28eee, p_IconClass := p_IconClass_49f28eee, p_DefaultRank := p_DefaultRank_49f28eee, p_IsActive := p_IsActive_49f28eee);
--- END $mj$;
+-- Save MJ_BizApps_Common: Address Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."AddressType" ("ID", "Name", "Description", "IconClass", "DefaultRank", "IsActive")
+VALUES ('4D1E1A1A-1CD1-4069-BF1E-198F838A0DFF', 'Legal', 'Registered legal or statutory address', 'fa-solid fa-scale-balanced', 60, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_b2f97eea UUID;
---   p_Name_b2f97eea VARCHAR(100);
---   p_Description_b2f97eea TEXT;
---   p_IconClass_b2f97eea VARCHAR(100);
---   p_DisplayRank_b2f97eea INTEGER;
---   p_IsActive_b2f97eea BOOLEAN;
--- BEGIN
---   p_ID_b2f97eea := 'FB4D3737-8479-44E5-AF91-2DB63311D293';
---   p_Name_b2f97eea := 'Email';
---   p_Description_b2f97eea := 'Email address';
---   p_IconClass_b2f97eea := 'fa-solid fa-envelope';
---   p_DisplayRank_b2f97eea := 10;
---   p_IsActive_b2f97eea := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_b2f97eea, p_Name := p_Name_b2f97eea, p_Description := p_Description_b2f97eea, p_IconClass := p_IconClass_b2f97eea, p_DisplayRank := p_DisplayRank_b2f97eea, p_IsActive := p_IsActive_b2f97eea);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('FB4D3737-8479-44E5-AF91-2DB63311D293', 'Email', 'Email address', 'fa-solid fa-envelope', 10, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_a3b84db6 UUID;
---   p_Name_a3b84db6 VARCHAR(100);
---   p_Description_a3b84db6 TEXT;
---   p_IconClass_a3b84db6 VARCHAR(100);
---   p_DisplayRank_a3b84db6 INTEGER;
---   p_IsActive_a3b84db6 BOOLEAN;
--- BEGIN
---   p_ID_a3b84db6 := '96421246-0F8F-4CDB-A5C5-BA6B190C1AFE';
---   p_Name_a3b84db6 := 'Mobile Phone';
---   p_Description_a3b84db6 := 'Mobile or cell phone number';
---   p_IconClass_a3b84db6 := 'fa-solid fa-mobile-screen';
---   p_DisplayRank_a3b84db6 := 20;
---   p_IsActive_a3b84db6 := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_a3b84db6, p_Name := p_Name_a3b84db6, p_Description := p_Description_a3b84db6, p_IconClass := p_IconClass_a3b84db6, p_DisplayRank := p_DisplayRank_a3b84db6, p_IsActive := p_IsActive_a3b84db6);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('96421246-0F8F-4CDB-A5C5-BA6B190C1AFE', 'Mobile Phone', 'Mobile or cell phone number', 'fa-solid fa-mobile-screen', 20, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_1bfa4816 UUID;
---   p_Name_1bfa4816 VARCHAR(100);
---   p_Description_1bfa4816 TEXT;
---   p_IconClass_1bfa4816 VARCHAR(100);
---   p_DisplayRank_1bfa4816 INTEGER;
---   p_IsActive_1bfa4816 BOOLEAN;
--- BEGIN
---   p_ID_1bfa4816 := 'BCDA98AC-06A4-40FC-A1CC-E44BB783FBC9';
---   p_Name_1bfa4816 := 'Work Phone';
---   p_Description_1bfa4816 := 'Business or office phone number';
---   p_IconClass_1bfa4816 := 'fa-solid fa-phone-office';
---   p_DisplayRank_1bfa4816 := 30;
---   p_IsActive_1bfa4816 := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_1bfa4816, p_Name := p_Name_1bfa4816, p_Description := p_Description_1bfa4816, p_IconClass := p_IconClass_1bfa4816, p_DisplayRank := p_DisplayRank_1bfa4816, p_IsActive := p_IsActive_1bfa4816);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('BCDA98AC-06A4-40FC-A1CC-E44BB783FBC9', 'Work Phone', 'Business or office phone number', 'fa-solid fa-phone-office', 30, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_ce15503f UUID;
---   p_Name_ce15503f VARCHAR(100);
---   p_Description_ce15503f TEXT;
---   p_IconClass_ce15503f VARCHAR(100);
---   p_DisplayRank_ce15503f INTEGER;
---   p_IsActive_ce15503f BOOLEAN;
--- BEGIN
---   p_ID_ce15503f := 'C3BA9432-8D05-4AFE-BF6D-61F976A466E6';
---   p_Name_ce15503f := 'Home Phone';
---   p_Description_ce15503f := 'Residential phone number';
---   p_IconClass_ce15503f := 'fa-solid fa-phone';
---   p_DisplayRank_ce15503f := 40;
---   p_IsActive_ce15503f := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_ce15503f, p_Name := p_Name_ce15503f, p_Description := p_Description_ce15503f, p_IconClass := p_IconClass_ce15503f, p_DisplayRank := p_DisplayRank_ce15503f, p_IsActive := p_IsActive_ce15503f);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('C3BA9432-8D05-4AFE-BF6D-61F976A466E6', 'Home Phone', 'Residential phone number', 'fa-solid fa-phone', 40, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_f5b6281b UUID;
---   p_Name_f5b6281b VARCHAR(100);
---   p_Description_f5b6281b TEXT;
---   p_IconClass_f5b6281b VARCHAR(100);
---   p_DisplayRank_f5b6281b INTEGER;
---   p_IsActive_f5b6281b BOOLEAN;
--- BEGIN
---   p_ID_f5b6281b := 'FDBFF502-CE06-456B-BCC3-8A2C23D16D45';
---   p_Name_f5b6281b := 'LinkedIn';
---   p_Description_f5b6281b := 'LinkedIn profile URL';
---   p_IconClass_f5b6281b := 'fa-brands fa-linkedin';
---   p_DisplayRank_f5b6281b := 50;
---   p_IsActive_f5b6281b := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_f5b6281b, p_Name := p_Name_f5b6281b, p_Description := p_Description_f5b6281b, p_IconClass := p_IconClass_f5b6281b, p_DisplayRank := p_DisplayRank_f5b6281b, p_IsActive := p_IsActive_f5b6281b);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('FDBFF502-CE06-456B-BCC3-8A2C23D16D45', 'LinkedIn', 'LinkedIn profile URL', 'fa-brands fa-linkedin', 50, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_d97f75bb UUID;
---   p_Name_d97f75bb VARCHAR(100);
---   p_Description_d97f75bb TEXT;
---   p_IconClass_d97f75bb VARCHAR(100);
---   p_DisplayRank_d97f75bb INTEGER;
---   p_IsActive_d97f75bb BOOLEAN;
--- BEGIN
---   p_ID_d97f75bb := '02A126F9-ED1B-4BBF-8479-8B10CC916150';
---   p_Name_d97f75bb := 'Twitter / X';
---   p_Description_d97f75bb := 'Twitter / X profile URL or handle';
---   p_IconClass_d97f75bb := 'fa-brands fa-x-twitter';
---   p_DisplayRank_d97f75bb := 60;
---   p_IsActive_d97f75bb := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_d97f75bb, p_Name := p_Name_d97f75bb, p_Description := p_Description_d97f75bb, p_IconClass := p_IconClass_d97f75bb, p_DisplayRank := p_DisplayRank_d97f75bb, p_IsActive := p_IsActive_d97f75bb);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('02A126F9-ED1B-4BBF-8479-8B10CC916150', 'Twitter / X', 'Twitter / X profile URL or handle', 'fa-brands fa-x-twitter', 60, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_22989bb6 UUID;
---   p_Name_22989bb6 VARCHAR(100);
---   p_Description_22989bb6 TEXT;
---   p_IconClass_22989bb6 VARCHAR(100);
---   p_DisplayRank_22989bb6 INTEGER;
---   p_IsActive_22989bb6 BOOLEAN;
--- BEGIN
---   p_ID_22989bb6 := 'F2DBF3EA-7ACF-4725-92D3-AB630B613293';
---   p_Name_22989bb6 := 'Website';
---   p_Description_22989bb6 := 'Personal or professional website URL';
---   p_IconClass_22989bb6 := 'fa-solid fa-globe';
---   p_DisplayRank_22989bb6 := 70;
---   p_IsActive_22989bb6 := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_22989bb6, p_Name := p_Name_22989bb6, p_Description := p_Description_22989bb6, p_IconClass := p_IconClass_22989bb6, p_DisplayRank := p_DisplayRank_22989bb6, p_IsActive := p_IsActive_22989bb6);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('F2DBF3EA-7ACF-4725-92D3-AB630B613293', 'Website', 'Personal or professional website URL', 'fa-solid fa-globe', 70, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Contact Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_38fe8ea8 UUID;
---   p_Name_38fe8ea8 VARCHAR(100);
---   p_Description_38fe8ea8 TEXT;
---   p_IconClass_38fe8ea8 VARCHAR(100);
---   p_DisplayRank_38fe8ea8 INTEGER;
---   p_IsActive_38fe8ea8 BOOLEAN;
--- BEGIN
---   p_ID_38fe8ea8 := 'A33D19DB-27FD-400C-A9C9-F3D3C4A12E8F';
---   p_Name_38fe8ea8 := 'Fax';
---   p_Description_38fe8ea8 := 'Fax number';
---   p_IconClass_38fe8ea8 := 'fa-solid fa-fax';
---   p_DisplayRank_38fe8ea8 := 80;
---   p_IsActive_38fe8ea8 := 1;
---   PERFORM __mj_bizappscommon."spCreateContactType"(p_ID := p_ID_38fe8ea8, p_Name := p_Name_38fe8ea8, p_Description := p_Description_38fe8ea8, p_IconClass := p_IconClass_38fe8ea8, p_DisplayRank := p_DisplayRank_38fe8ea8, p_IsActive := p_IsActive_38fe8ea8);
--- END $mj$;
+-- Save MJ_BizApps_Common: Contact Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."ContactType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('A33D19DB-27FD-400C-A9C9-F3D3C4A12E8F', 'Fax', 'Fax number', 'fa-solid fa-fax', 80, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_8fd097ef UUID;
---   p_Name_8fd097ef VARCHAR(100);
---   p_Description_8fd097ef TEXT;
---   p_IconClass_8fd097ef VARCHAR(100);
---   p_DisplayRank_8fd097ef INTEGER;
---   p_IsActive_8fd097ef BOOLEAN;
--- BEGIN
---   p_ID_8fd097ef := 'A8DB7343-DCC9-44D1-B99F-9E21024C3C2E';
---   p_Name_8fd097ef := 'Corporation';
---   p_Description_8fd097ef := 'Incorporated business entity (C-Corp, S-Corp)';
---   p_IconClass_8fd097ef := 'fa-solid fa-building';
---   p_DisplayRank_8fd097ef := 10;
---   p_IsActive_8fd097ef := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_8fd097ef, p_Name := p_Name_8fd097ef, p_Description := p_Description_8fd097ef, p_IconClass := p_IconClass_8fd097ef, p_DisplayRank := p_DisplayRank_8fd097ef, p_IsActive := p_IsActive_8fd097ef);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('A8DB7343-DCC9-44D1-B99F-9E21024C3C2E', 'Corporation', 'Incorporated business entity (C-Corp, S-Corp)', 'fa-solid fa-building', 10, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_5603028a UUID;
---   p_Name_5603028a VARCHAR(100);
---   p_Description_5603028a TEXT;
---   p_IconClass_5603028a VARCHAR(100);
---   p_DisplayRank_5603028a INTEGER;
---   p_IsActive_5603028a BOOLEAN;
--- BEGIN
---   p_ID_5603028a := '288B017D-60A4-48A7-A845-EF30B99BDBEF';
---   p_Name_5603028a := 'LLC';
---   p_Description_5603028a := 'Limited liability company';
---   p_IconClass_5603028a := 'fa-solid fa-briefcase';
---   p_DisplayRank_5603028a := 20;
---   p_IsActive_5603028a := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_5603028a, p_Name := p_Name_5603028a, p_Description := p_Description_5603028a, p_IconClass := p_IconClass_5603028a, p_DisplayRank := p_DisplayRank_5603028a, p_IsActive := p_IsActive_5603028a);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('288B017D-60A4-48A7-A845-EF30B99BDBEF', 'LLC', 'Limited liability company', 'fa-solid fa-briefcase', 20, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_c2c16009 UUID;
---   p_Name_c2c16009 VARCHAR(100);
---   p_Description_c2c16009 TEXT;
---   p_IconClass_c2c16009 VARCHAR(100);
---   p_DisplayRank_c2c16009 INTEGER;
---   p_IsActive_c2c16009 BOOLEAN;
--- BEGIN
---   p_ID_c2c16009 := 'BAAA53F4-A8AA-4EAA-B04E-1BA6F964B341';
---   p_Name_c2c16009 := 'Non-Profit';
---   p_Description_c2c16009 := 'Tax-exempt non-profit organization (501(c)(3), etc.)';
---   p_IconClass_c2c16009 := 'fa-solid fa-hand-holding-heart';
---   p_DisplayRank_c2c16009 := 30;
---   p_IsActive_c2c16009 := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_c2c16009, p_Name := p_Name_c2c16009, p_Description := p_Description_c2c16009, p_IconClass := p_IconClass_c2c16009, p_DisplayRank := p_DisplayRank_c2c16009, p_IsActive := p_IsActive_c2c16009);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('BAAA53F4-A8AA-4EAA-B04E-1BA6F964B341', 'Non-Profit', 'Tax-exempt non-profit organization (501(c)(3), etc.)', 'fa-solid fa-hand-holding-heart', 30, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_5041678d UUID;
---   p_Name_5041678d VARCHAR(100);
---   p_Description_5041678d TEXT;
---   p_IconClass_5041678d VARCHAR(100);
---   p_DisplayRank_5041678d INTEGER;
---   p_IsActive_5041678d BOOLEAN;
--- BEGIN
---   p_ID_5041678d := '1E61230B-0F48-458A-811B-66C9CF6B688E';
---   p_Name_5041678d := 'Government';
---   p_Description_5041678d := 'Government agency or department';
---   p_IconClass_5041678d := 'fa-solid fa-landmark';
---   p_DisplayRank_5041678d := 40;
---   p_IsActive_5041678d := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_5041678d, p_Name := p_Name_5041678d, p_Description := p_Description_5041678d, p_IconClass := p_IconClass_5041678d, p_DisplayRank := p_DisplayRank_5041678d, p_IsActive := p_IsActive_5041678d);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('1E61230B-0F48-458A-811B-66C9CF6B688E', 'Government', 'Government agency or department', 'fa-solid fa-landmark', 40, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_342531e2 UUID;
---   p_Name_342531e2 VARCHAR(100);
---   p_Description_342531e2 TEXT;
---   p_IconClass_342531e2 VARCHAR(100);
---   p_DisplayRank_342531e2 INTEGER;
---   p_IsActive_342531e2 BOOLEAN;
--- BEGIN
---   p_ID_342531e2 := '5CAB6265-CB87-4269-A321-2473160BD625';
---   p_Name_342531e2 := 'Partnership';
---   p_Description_342531e2 := 'General or limited partnership';
---   p_IconClass_342531e2 := 'fa-solid fa-handshake';
---   p_DisplayRank_342531e2 := 50;
---   p_IsActive_342531e2 := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_342531e2, p_Name := p_Name_342531e2, p_Description := p_Description_342531e2, p_IconClass := p_IconClass_342531e2, p_DisplayRank := p_DisplayRank_342531e2, p_IsActive := p_IsActive_342531e2);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('5CAB6265-CB87-4269-A321-2473160BD625', 'Partnership', 'General or limited partnership', 'fa-solid fa-handshake', 50, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_e2b3015d UUID;
---   p_Name_e2b3015d VARCHAR(100);
---   p_Description_e2b3015d TEXT;
---   p_IconClass_e2b3015d VARCHAR(100);
---   p_DisplayRank_e2b3015d INTEGER;
---   p_IsActive_e2b3015d BOOLEAN;
--- BEGIN
---   p_ID_e2b3015d := '042C63AF-93EB-4BB4-A469-F3C209F8936E';
---   p_Name_e2b3015d := 'Sole Proprietorship';
---   p_Description_e2b3015d := 'Unincorporated business owned by a single individual';
---   p_IconClass_e2b3015d := 'fa-solid fa-user-tie';
---   p_DisplayRank_e2b3015d := 60;
---   p_IsActive_e2b3015d := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_e2b3015d, p_Name := p_Name_e2b3015d, p_Description := p_Description_e2b3015d, p_IconClass := p_IconClass_e2b3015d, p_DisplayRank := p_DisplayRank_e2b3015d, p_IsActive := p_IsActive_e2b3015d);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('042C63AF-93EB-4BB4-A469-F3C209F8936E', 'Sole Proprietorship', 'Unincorporated business owned by a single individual', 'fa-solid fa-user-tie', 60, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_afa4b457 UUID;
---   p_Name_afa4b457 VARCHAR(100);
---   p_Description_afa4b457 TEXT;
---   p_IconClass_afa4b457 VARCHAR(100);
---   p_DisplayRank_afa4b457 INTEGER;
---   p_IsActive_afa4b457 BOOLEAN;
--- BEGIN
---   p_ID_afa4b457 := '7D6D1763-3198-42B2-A23C-F0FF76DAD8D2';
---   p_Name_afa4b457 := 'Association';
---   p_Description_afa4b457 := 'Professional or trade association';
---   p_IconClass_afa4b457 := 'fa-solid fa-people-group';
---   p_DisplayRank_afa4b457 := 70;
---   p_IsActive_afa4b457 := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_afa4b457, p_Name := p_Name_afa4b457, p_Description := p_Description_afa4b457, p_IconClass := p_IconClass_afa4b457, p_DisplayRank := p_DisplayRank_afa4b457, p_IsActive := p_IsActive_afa4b457);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('7D6D1763-3198-42B2-A23C-F0FF76DAD8D2', 'Association', 'Professional or trade association', 'fa-solid fa-people-group', 70, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Organization Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_ad167f7c UUID;
---   p_Name_ad167f7c VARCHAR(100);
---   p_Description_ad167f7c TEXT;
---   p_IconClass_ad167f7c VARCHAR(100);
---   p_DisplayRank_ad167f7c INTEGER;
---   p_IsActive_ad167f7c BOOLEAN;
--- BEGIN
---   p_ID_ad167f7c := '4BE0D87B-EFCB-447D-9410-FEF8EED23BC8';
---   p_Name_ad167f7c := 'Educational Institution';
---   p_Description_ad167f7c := 'School, college, university, or training organization';
---   p_IconClass_ad167f7c := 'fa-solid fa-graduation-cap';
---   p_DisplayRank_ad167f7c := 80;
---   p_IsActive_ad167f7c := 1;
---   PERFORM __mj_bizappscommon."spCreateOrganizationType"(p_ID := p_ID_ad167f7c, p_Name := p_Name_ad167f7c, p_Description := p_Description_ad167f7c, p_IconClass := p_IconClass_ad167f7c, p_DisplayRank := p_DisplayRank_ad167f7c, p_IsActive := p_IsActive_ad167f7c);
--- END $mj$;
+-- Save MJ_BizApps_Common: Organization Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."OrganizationType" ("ID", "Name", "Description", "IconClass", "DisplayRank", "IsActive")
+VALUES ('4BE0D87B-EFCB-447D-9410-FEF8EED23BC8', 'Educational Institution', 'School, college, university, or training organization', 'fa-solid fa-graduation-cap', 80, TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_cd3b0e64 UUID;
---   p_Name_cd3b0e64 VARCHAR(100);
---   p_Description_cd3b0e64 TEXT;
---   p_Category_cd3b0e64 VARCHAR(50);
---   p_IsDirectional_cd3b0e64 BOOLEAN;
---   p_ForwardLabel_cd3b0e64 VARCHAR(100);
---   p_ReverseLabel_cd3b0e64 VARCHAR(100);
---   p_IsActive_cd3b0e64 BOOLEAN;
--- BEGIN
---   p_ID_cd3b0e64 := 'FEB33819-FC85-4309-B1EC-A54EEA91DACF';
---   p_Name_cd3b0e64 := 'Spouse';
---   p_Description_cd3b0e64 := 'Married or domestic partner relationship';
---   p_Category_cd3b0e64 := 'PersonToPerson';
---   p_IsDirectional_cd3b0e64 := 0;
---   p_ForwardLabel_cd3b0e64 := 'is spouse of';
---   p_ReverseLabel_cd3b0e64 := 'is spouse of';
---   p_IsActive_cd3b0e64 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_cd3b0e64, p_Name := p_Name_cd3b0e64, p_Description := p_Description_cd3b0e64, p_Category := p_Category_cd3b0e64, p_IsDirectional := p_IsDirectional_cd3b0e64, p_ForwardLabel := p_ForwardLabel_cd3b0e64, p_ReverseLabel := p_ReverseLabel_cd3b0e64, p_IsActive := p_IsActive_cd3b0e64);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('FEB33819-FC85-4309-B1EC-A54EEA91DACF', 'Spouse', 'Married or domestic partner relationship', 'PersonToPerson', FALSE, 'is spouse of', 'is spouse of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_1c5f86d5 UUID;
---   p_Name_1c5f86d5 VARCHAR(100);
---   p_Description_1c5f86d5 TEXT;
---   p_Category_1c5f86d5 VARCHAR(50);
---   p_IsDirectional_1c5f86d5 BOOLEAN;
---   p_ForwardLabel_1c5f86d5 VARCHAR(100);
---   p_ReverseLabel_1c5f86d5 VARCHAR(100);
---   p_IsActive_1c5f86d5 BOOLEAN;
--- BEGIN
---   p_ID_1c5f86d5 := '431DBAF3-AC1D-47E6-B91E-264E8C76FC57';
---   p_Name_1c5f86d5 := 'Parent / Child';
---   p_Description_1c5f86d5 := 'Parent-child family relationship';
---   p_Category_1c5f86d5 := 'PersonToPerson';
---   p_IsDirectional_1c5f86d5 := 1;
---   p_ForwardLabel_1c5f86d5 := 'is parent of';
---   p_ReverseLabel_1c5f86d5 := 'is child of';
---   p_IsActive_1c5f86d5 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_1c5f86d5, p_Name := p_Name_1c5f86d5, p_Description := p_Description_1c5f86d5, p_Category := p_Category_1c5f86d5, p_IsDirectional := p_IsDirectional_1c5f86d5, p_ForwardLabel := p_ForwardLabel_1c5f86d5, p_ReverseLabel := p_ReverseLabel_1c5f86d5, p_IsActive := p_IsActive_1c5f86d5);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('431DBAF3-AC1D-47E6-B91E-264E8C76FC57', 'Parent / Child', 'Parent-child family relationship', 'PersonToPerson', TRUE, 'is parent of', 'is child of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_9dad4904 UUID;
---   p_Name_9dad4904 VARCHAR(100);
---   p_Description_9dad4904 TEXT;
---   p_Category_9dad4904 VARCHAR(50);
---   p_IsDirectional_9dad4904 BOOLEAN;
---   p_ForwardLabel_9dad4904 VARCHAR(100);
---   p_ReverseLabel_9dad4904 VARCHAR(100);
---   p_IsActive_9dad4904 BOOLEAN;
--- BEGIN
---   p_ID_9dad4904 := 'D471B007-0717-493E-AC0D-2F102A32BCC2';
---   p_Name_9dad4904 := 'Sibling';
---   p_Description_9dad4904 := 'Brother or sister relationship';
---   p_Category_9dad4904 := 'PersonToPerson';
---   p_IsDirectional_9dad4904 := 0;
---   p_ForwardLabel_9dad4904 := 'is sibling of';
---   p_ReverseLabel_9dad4904 := 'is sibling of';
---   p_IsActive_9dad4904 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_9dad4904, p_Name := p_Name_9dad4904, p_Description := p_Description_9dad4904, p_Category := p_Category_9dad4904, p_IsDirectional := p_IsDirectional_9dad4904, p_ForwardLabel := p_ForwardLabel_9dad4904, p_ReverseLabel := p_ReverseLabel_9dad4904, p_IsActive := p_IsActive_9dad4904);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('D471B007-0717-493E-AC0D-2F102A32BCC2', 'Sibling', 'Brother or sister relationship', 'PersonToPerson', FALSE, 'is sibling of', 'is sibling of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_f474b23e UUID;
---   p_Name_f474b23e VARCHAR(100);
---   p_Description_f474b23e TEXT;
---   p_Category_f474b23e VARCHAR(50);
---   p_IsDirectional_f474b23e BOOLEAN;
---   p_ForwardLabel_f474b23e VARCHAR(100);
---   p_ReverseLabel_f474b23e VARCHAR(100);
---   p_IsActive_f474b23e BOOLEAN;
--- BEGIN
---   p_ID_f474b23e := '6A17A929-8B23-4D73-9DF9-A368E7C1C1B9';
---   p_Name_f474b23e := 'Friend';
---   p_Description_f474b23e := 'Personal friendship';
---   p_Category_f474b23e := 'PersonToPerson';
---   p_IsDirectional_f474b23e := 0;
---   p_ForwardLabel_f474b23e := 'is friend of';
---   p_ReverseLabel_f474b23e := 'is friend of';
---   p_IsActive_f474b23e := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_f474b23e, p_Name := p_Name_f474b23e, p_Description := p_Description_f474b23e, p_Category := p_Category_f474b23e, p_IsDirectional := p_IsDirectional_f474b23e, p_ForwardLabel := p_ForwardLabel_f474b23e, p_ReverseLabel := p_ReverseLabel_f474b23e, p_IsActive := p_IsActive_f474b23e);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('6A17A929-8B23-4D73-9DF9-A368E7C1C1B9', 'Friend', 'Personal friendship', 'PersonToPerson', FALSE, 'is friend of', 'is friend of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_ba101160 UUID;
---   p_Name_ba101160 VARCHAR(100);
---   p_Description_ba101160 TEXT;
---   p_Category_ba101160 VARCHAR(50);
---   p_IsDirectional_ba101160 BOOLEAN;
---   p_ForwardLabel_ba101160 VARCHAR(100);
---   p_ReverseLabel_ba101160 VARCHAR(100);
---   p_IsActive_ba101160 BOOLEAN;
--- BEGIN
---   p_ID_ba101160 := '27CFD031-5663-4000-A7AB-8AC87DB88C1D';
---   p_Name_ba101160 := 'Employee';
---   p_Description_ba101160 := 'Employment relationship between a person and an organization';
---   p_Category_ba101160 := 'PersonToOrganization';
---   p_IsDirectional_ba101160 := 1;
---   p_ForwardLabel_ba101160 := 'is employee of';
---   p_ReverseLabel_ba101160 := 'employs';
---   p_IsActive_ba101160 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_ba101160, p_Name := p_Name_ba101160, p_Description := p_Description_ba101160, p_Category := p_Category_ba101160, p_IsDirectional := p_IsDirectional_ba101160, p_ForwardLabel := p_ForwardLabel_ba101160, p_ReverseLabel := p_ReverseLabel_ba101160, p_IsActive := p_IsActive_ba101160);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('27CFD031-5663-4000-A7AB-8AC87DB88C1D', 'Employee', 'Employment relationship between a person and an organization', 'PersonToOrganization', TRUE, 'is employee of', 'employs', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_335a03dc UUID;
---   p_Name_335a03dc VARCHAR(100);
---   p_Description_335a03dc TEXT;
---   p_Category_335a03dc VARCHAR(50);
---   p_IsDirectional_335a03dc BOOLEAN;
---   p_ForwardLabel_335a03dc VARCHAR(100);
---   p_ReverseLabel_335a03dc VARCHAR(100);
---   p_IsActive_335a03dc BOOLEAN;
--- BEGIN
---   p_ID_335a03dc := '2FE33D05-5FD0-4076-8EF2-A30A640651B4';
---   p_Name_335a03dc := 'Board Member';
---   p_Description_335a03dc := 'Person serves on the board of directors of an organization';
---   p_Category_335a03dc := 'PersonToOrganization';
---   p_IsDirectional_335a03dc := 1;
---   p_ForwardLabel_335a03dc := 'is board member of';
---   p_ReverseLabel_335a03dc := 'has board member';
---   p_IsActive_335a03dc := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_335a03dc, p_Name := p_Name_335a03dc, p_Description := p_Description_335a03dc, p_Category := p_Category_335a03dc, p_IsDirectional := p_IsDirectional_335a03dc, p_ForwardLabel := p_ForwardLabel_335a03dc, p_ReverseLabel := p_ReverseLabel_335a03dc, p_IsActive := p_IsActive_335a03dc);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('2FE33D05-5FD0-4076-8EF2-A30A640651B4', 'Board Member', 'Person serves on the board of directors of an organization', 'PersonToOrganization', TRUE, 'is board member of', 'has board member', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_72a30637 UUID;
---   p_Name_72a30637 VARCHAR(100);
---   p_Description_72a30637 TEXT;
---   p_Category_72a30637 VARCHAR(50);
---   p_IsDirectional_72a30637 BOOLEAN;
---   p_ForwardLabel_72a30637 VARCHAR(100);
---   p_ReverseLabel_72a30637 VARCHAR(100);
---   p_IsActive_72a30637 BOOLEAN;
--- BEGIN
---   p_ID_72a30637 := '5B8C871C-025B-410A-9D44-4D30C76534C7';
---   p_Name_72a30637 := 'Member';
---   p_Description_72a30637 := 'Person is a member of an organization or association';
---   p_Category_72a30637 := 'PersonToOrganization';
---   p_IsDirectional_72a30637 := 1;
---   p_ForwardLabel_72a30637 := 'is member of';
---   p_ReverseLabel_72a30637 := 'has member';
---   p_IsActive_72a30637 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_72a30637, p_Name := p_Name_72a30637, p_Description := p_Description_72a30637, p_Category := p_Category_72a30637, p_IsDirectional := p_IsDirectional_72a30637, p_ForwardLabel := p_ForwardLabel_72a30637, p_ReverseLabel := p_ReverseLabel_72a30637, p_IsActive := p_IsActive_72a30637);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('5B8C871C-025B-410A-9D44-4D30C76534C7', 'Member', 'Person is a member of an organization or association', 'PersonToOrganization', TRUE, 'is member of', 'has member', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_3fef8317 UUID;
---   p_Name_3fef8317 VARCHAR(100);
---   p_Description_3fef8317 TEXT;
---   p_Category_3fef8317 VARCHAR(50);
---   p_IsDirectional_3fef8317 BOOLEAN;
---   p_ForwardLabel_3fef8317 VARCHAR(100);
---   p_ReverseLabel_3fef8317 VARCHAR(100);
---   p_IsActive_3fef8317 BOOLEAN;
--- BEGIN
---   p_ID_3fef8317 := 'DF72DDBB-A829-41AC-8698-01FCCD21FEEF';
---   p_Name_3fef8317 := 'Volunteer';
---   p_Description_3fef8317 := 'Person volunteers for an organization';
---   p_Category_3fef8317 := 'PersonToOrganization';
---   p_IsDirectional_3fef8317 := 1;
---   p_ForwardLabel_3fef8317 := 'volunteers for';
---   p_ReverseLabel_3fef8317 := 'has volunteer';
---   p_IsActive_3fef8317 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_3fef8317, p_Name := p_Name_3fef8317, p_Description := p_Description_3fef8317, p_Category := p_Category_3fef8317, p_IsDirectional := p_IsDirectional_3fef8317, p_ForwardLabel := p_ForwardLabel_3fef8317, p_ReverseLabel := p_ReverseLabel_3fef8317, p_IsActive := p_IsActive_3fef8317);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('DF72DDBB-A829-41AC-8698-01FCCD21FEEF', 'Volunteer', 'Person volunteers for an organization', 'PersonToOrganization', TRUE, 'volunteers for', 'has volunteer', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_0e0a063a UUID;
---   p_Name_0e0a063a VARCHAR(100);
---   p_Description_0e0a063a TEXT;
---   p_Category_0e0a063a VARCHAR(50);
---   p_IsDirectional_0e0a063a BOOLEAN;
---   p_ForwardLabel_0e0a063a VARCHAR(100);
---   p_ReverseLabel_0e0a063a VARCHAR(100);
---   p_IsActive_0e0a063a BOOLEAN;
--- BEGIN
---   p_ID_0e0a063a := 'DC06CB0C-A6CE-437C-A19E-F615F949BC51';
---   p_Name_0e0a063a := 'Customer';
---   p_Description_0e0a063a := 'Person is a customer or client of an organization';
---   p_Category_0e0a063a := 'PersonToOrganization';
---   p_IsDirectional_0e0a063a := 1;
---   p_ForwardLabel_0e0a063a := 'is customer of';
---   p_ReverseLabel_0e0a063a := 'has customer';
---   p_IsActive_0e0a063a := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_0e0a063a, p_Name := p_Name_0e0a063a, p_Description := p_Description_0e0a063a, p_Category := p_Category_0e0a063a, p_IsDirectional := p_IsDirectional_0e0a063a, p_ForwardLabel := p_ForwardLabel_0e0a063a, p_ReverseLabel := p_ReverseLabel_0e0a063a, p_IsActive := p_IsActive_0e0a063a);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('DC06CB0C-A6CE-437C-A19E-F615F949BC51', 'Customer', 'Person is a customer or client of an organization', 'PersonToOrganization', TRUE, 'is customer of', 'has customer', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_4a8be5ec UUID;
---   p_Name_4a8be5ec VARCHAR(100);
---   p_Description_4a8be5ec TEXT;
---   p_Category_4a8be5ec VARCHAR(50);
---   p_IsDirectional_4a8be5ec BOOLEAN;
---   p_ForwardLabel_4a8be5ec VARCHAR(100);
---   p_ReverseLabel_4a8be5ec VARCHAR(100);
---   p_IsActive_4a8be5ec BOOLEAN;
--- BEGIN
---   p_ID_4a8be5ec := '6BF6959D-18B4-4615-AFCE-643963A87C1B';
---   p_Name_4a8be5ec := 'Consultant';
---   p_Description_4a8be5ec := 'Person provides consulting services to an organization';
---   p_Category_4a8be5ec := 'PersonToOrganization';
---   p_IsDirectional_4a8be5ec := 1;
---   p_ForwardLabel_4a8be5ec := 'consults for';
---   p_ReverseLabel_4a8be5ec := 'has consultant';
---   p_IsActive_4a8be5ec := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_4a8be5ec, p_Name := p_Name_4a8be5ec, p_Description := p_Description_4a8be5ec, p_Category := p_Category_4a8be5ec, p_IsDirectional := p_IsDirectional_4a8be5ec, p_ForwardLabel := p_ForwardLabel_4a8be5ec, p_ReverseLabel := p_ReverseLabel_4a8be5ec, p_IsActive := p_IsActive_4a8be5ec);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('6BF6959D-18B4-4615-AFCE-643963A87C1B', 'Consultant', 'Person provides consulting services to an organization', 'PersonToOrganization', TRUE, 'consults for', 'has consultant', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_f66e2095 UUID;
---   p_Name_f66e2095 VARCHAR(100);
---   p_Description_f66e2095 TEXT;
---   p_Category_f66e2095 VARCHAR(50);
---   p_IsDirectional_f66e2095 BOOLEAN;
---   p_ForwardLabel_f66e2095 VARCHAR(100);
---   p_ReverseLabel_f66e2095 VARCHAR(100);
---   p_IsActive_f66e2095 BOOLEAN;
--- BEGIN
---   p_ID_f66e2095 := '39373681-5C70-4845-896B-4BFE4343751F';
---   p_Name_f66e2095 := 'Subsidiary';
---   p_Description_f66e2095 := 'One organization is a subsidiary or division of another';
---   p_Category_f66e2095 := 'OrganizationToOrganization';
---   p_IsDirectional_f66e2095 := 1;
---   p_ForwardLabel_f66e2095 := 'is subsidiary of';
---   p_ReverseLabel_f66e2095 := 'has subsidiary';
---   p_IsActive_f66e2095 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_f66e2095, p_Name := p_Name_f66e2095, p_Description := p_Description_f66e2095, p_Category := p_Category_f66e2095, p_IsDirectional := p_IsDirectional_f66e2095, p_ForwardLabel := p_ForwardLabel_f66e2095, p_ReverseLabel := p_ReverseLabel_f66e2095, p_IsActive := p_IsActive_f66e2095);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('39373681-5C70-4845-896B-4BFE4343751F', 'Subsidiary', 'One organization is a subsidiary or division of another', 'OrganizationToOrganization', TRUE, 'is subsidiary of', 'has subsidiary', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_ae051323 UUID;
---   p_Name_ae051323 VARCHAR(100);
---   p_Description_ae051323 TEXT;
---   p_Category_ae051323 VARCHAR(50);
---   p_IsDirectional_ae051323 BOOLEAN;
---   p_ForwardLabel_ae051323 VARCHAR(100);
---   p_ReverseLabel_ae051323 VARCHAR(100);
---   p_IsActive_ae051323 BOOLEAN;
--- BEGIN
---   p_ID_ae051323 := 'CA9BBDBE-3595-4C3F-80FF-DA78D3389EA7';
---   p_Name_ae051323 := 'Partner';
---   p_Description_ae051323 := 'Strategic or business partnership between organizations';
---   p_Category_ae051323 := 'OrganizationToOrganization';
---   p_IsDirectional_ae051323 := 0;
---   p_ForwardLabel_ae051323 := 'is partner of';
---   p_ReverseLabel_ae051323 := 'is partner of';
---   p_IsActive_ae051323 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_ae051323, p_Name := p_Name_ae051323, p_Description := p_Description_ae051323, p_Category := p_Category_ae051323, p_IsDirectional := p_IsDirectional_ae051323, p_ForwardLabel := p_ForwardLabel_ae051323, p_ReverseLabel := p_ReverseLabel_ae051323, p_IsActive := p_IsActive_ae051323);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('CA9BBDBE-3595-4C3F-80FF-DA78D3389EA7', 'Partner', 'Strategic or business partnership between organizations', 'OrganizationToOrganization', FALSE, 'is partner of', 'is partner of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_3d8acb76 UUID;
---   p_Name_3d8acb76 VARCHAR(100);
---   p_Description_3d8acb76 TEXT;
---   p_Category_3d8acb76 VARCHAR(50);
---   p_IsDirectional_3d8acb76 BOOLEAN;
---   p_ForwardLabel_3d8acb76 VARCHAR(100);
---   p_ReverseLabel_3d8acb76 VARCHAR(100);
---   p_IsActive_3d8acb76 BOOLEAN;
--- BEGIN
---   p_ID_3d8acb76 := '190A8BBF-771E-4631-980A-84918311E5EC';
---   p_Name_3d8acb76 := 'Vendor';
---   p_Description_3d8acb76 := 'One organization supplies goods or services to another';
---   p_Category_3d8acb76 := 'OrganizationToOrganization';
---   p_IsDirectional_3d8acb76 := 1;
---   p_ForwardLabel_3d8acb76 := 'is vendor to';
---   p_ReverseLabel_3d8acb76 := 'has vendor';
---   p_IsActive_3d8acb76 := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_3d8acb76, p_Name := p_Name_3d8acb76, p_Description := p_Description_3d8acb76, p_Category := p_Category_3d8acb76, p_IsDirectional := p_IsDirectional_3d8acb76, p_ForwardLabel := p_ForwardLabel_3d8acb76, p_ReverseLabel := p_ReverseLabel_3d8acb76, p_IsActive := p_IsActive_3d8acb76);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('190A8BBF-771E-4631-980A-84918311E5EC', 'Vendor', 'One organization supplies goods or services to another', 'OrganizationToOrganization', TRUE, 'is vendor to', 'has vendor', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
--- Save MJ_BizApps_Common: Relationship Types (core SP call only)
--- -- -- DO $mj$
--- DECLARE
---   p_ID_61ce548b UUID;
---   p_Name_61ce548b VARCHAR(100);
---   p_Description_61ce548b TEXT;
---   p_Category_61ce548b VARCHAR(50);
---   p_IsDirectional_61ce548b BOOLEAN;
---   p_ForwardLabel_61ce548b VARCHAR(100);
---   p_ReverseLabel_61ce548b VARCHAR(100);
---   p_IsActive_61ce548b BOOLEAN;
--- BEGIN
---   p_ID_61ce548b := '2DBA78A6-DF6F-4A7E-B126-AE038BD3B6BA';
---   p_Name_61ce548b := 'Affiliate';
---   p_Description_61ce548b := 'Formal affiliation between two organizations';
---   p_Category_61ce548b := 'OrganizationToOrganization';
---   p_IsDirectional_61ce548b := 0;
---   p_ForwardLabel_61ce548b := 'is affiliate of';
---   p_ReverseLabel_61ce548b := 'is affiliate of';
---   p_IsActive_61ce548b := 1;
---   PERFORM __mj_bizappscommon."spCreateRelationshipType"(p_ID := p_ID_61ce548b, p_Name := p_Name_61ce548b, p_Description := p_Description_61ce548b, p_Category := p_Category_61ce548b, p_IsDirectional := p_IsDirectional_61ce548b, p_ForwardLabel := p_ForwardLabel_61ce548b, p_ReverseLabel := p_ReverseLabel_61ce548b, p_IsActive := p_IsActive_61ce548b);
--- END $mj$;
+-- Save MJ_BizApps_Common: Relationship Types (direct INSERT — on PG the CRUD functions are created later by CodeGen, so they do not exist at migration time)
+INSERT INTO __mj_bizappscommon."RelationshipType" ("ID", "Name", "Description", "Category", "IsDirectional", "ForwardLabel", "ReverseLabel", "IsActive")
+VALUES ('2DBA78A6-DF6F-4A7E-B126-AE038BD3B6BA', 'Affiliate', 'Formal affiliation between two organizations', 'OrganizationToOrganization', FALSE, 'is affiliate of', 'is affiliate of', TRUE)
+ON CONFLICT ("ID") DO NOTHING;
 
 -- Save MJ: Entity Fields (core SP call only)
 DO $mj$
