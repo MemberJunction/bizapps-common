@@ -1,5 +1,15 @@
 # @mj-biz-apps/common-server
 
+## 5.31.3
+
+### Patch Changes
+
+- 5346c70: Upgraded BAC to MJ 5.44; PostgreSQL install verified, seeds fixed.
+- Updated dependencies [5346c70]
+  - @mj-biz-apps/common-core-entities-server@5.31.3
+  - @mj-biz-apps/common-entities@5.31.3
+  - @mj-biz-apps/common-actions@5.31.3
+
 ## 5.31.2
 
 ### Patch Changes

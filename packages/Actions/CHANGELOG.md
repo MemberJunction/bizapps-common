@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-actions
 
+## 5.31.3
+
+### Patch Changes
+
+- 5346c70: Upgraded BAC to MJ 5.44; PostgreSQL install verified, seeds fixed.
+
 ## 5.31.2
 
 ### Patch Changes
