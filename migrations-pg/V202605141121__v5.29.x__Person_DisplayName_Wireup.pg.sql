@@ -60,25 +60,22 @@ DECLARE
   v_target_schema CONSTANT TEXT := '__mj_bizappscommon';
   v_target_name CONSTANT TEXT := 'vwAddressLinks';
   vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwAddressLinks"
-AS SELECT
-    a.*,
-    "mjBizAppsCommonAddress_AddressID"."Line1" AS "Address",
-    "MJEntity_EntityID"."Name" AS "Entity",
-    "mjBizAppsCommonAddressType_AddressTypeID"."Name" AS "AddressType"
-FROM
-    __mj_bizappscommon."AddressLink" AS a
-INNER JOIN
-    __mj_bizappscommon."Address" AS "mjBizAppsCommonAddress_AddressID"
-  ON
-    a."AddressID" = "mjBizAppsCommonAddress_AddressID"."ID"
-INNER JOIN
-    "${mjSchema}"."Entity" AS "MJEntity_EntityID"
-  ON
-    a."EntityID" = "MJEntity_EntityID"."ID"
-INNER JOIN
-    __mj_bizappscommon."AddressType" AS "mjBizAppsCommonAddressType_AddressTypeID"
-  ON
-    a."AddressTypeID" = "mjBizAppsCommonAddressType_AddressTypeID"."ID"$vsql$;
+AS SELECT a."ID",
+    a."AddressID",
+    a."EntityID",
+    a."RecordID",
+    a."AddressTypeID",
+    a."IsPrimary",
+    a."Rank",
+    a."__mj_CreatedAt",
+    a."__mj_UpdatedAt",
+    mjbizappscommonaddress_addressid."Line1" AS "Address",
+    mjentity_entityid."Name" AS "Entity",
+    mjbizappscommonaddresstype_addresstypeid."Name" AS "AddressType"
+   FROM __mj_bizappscommon."AddressLink" a
+     JOIN __mj_bizappscommon."Address" mjbizappscommonaddress_addressid ON a."AddressID" = mjbizappscommonaddress_addressid."ID"
+     JOIN "${mjSchema}"."Entity" mjentity_entityid ON a."EntityID" = mjentity_entityid."ID"
+     JOIN __mj_bizappscommon."AddressType" mjbizappscommonaddresstype_addresstypeid ON a."AddressTypeID" = mjbizappscommonaddresstype_addresstypeid."ID"$vsql$;
   v_target_oid OID;
   v_dep RECORD;
   v_captured JSONB[] := ARRAY[]::JSONB[];
@@ -144,25 +141,22 @@ DECLARE
   v_target_schema CONSTANT TEXT := '__mj_bizappscommon';
   v_target_name CONSTANT TEXT := 'vwContactMethods';
   vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwContactMethods"
-AS SELECT
-    c.*,
-    "mjBizAppsCommonPerson_PersonID"."DisplayName" AS "Person",
-    "mjBizAppsCommonOrganization_OrganizationID"."Name" AS "Organization",
-    "mjBizAppsCommonContactType_ContactTypeID"."Name" AS "ContactType"
-FROM
-    __mj_bizappscommon."ContactMethod" AS c
-LEFT OUTER JOIN
-    __mj_bizappscommon."vwPeople" AS "mjBizAppsCommonPerson_PersonID"
-  ON
-    c."PersonID" = "mjBizAppsCommonPerson_PersonID"."ID"
-LEFT OUTER JOIN
-    __mj_bizappscommon."Organization" AS "mjBizAppsCommonOrganization_OrganizationID"
-  ON
-    c."OrganizationID" = "mjBizAppsCommonOrganization_OrganizationID"."ID"
-INNER JOIN
-    __mj_bizappscommon."ContactType" AS "mjBizAppsCommonContactType_ContactTypeID"
-  ON
-    c."ContactTypeID" = "mjBizAppsCommonContactType_ContactTypeID"."ID"$vsql$;
+AS SELECT c."ID",
+    c."PersonID",
+    c."OrganizationID",
+    c."ContactTypeID",
+    c."Value",
+    c."Label",
+    c."IsPrimary",
+    c."__mj_CreatedAt",
+    c."__mj_UpdatedAt",
+    mjbizappscommonperson_personid."DisplayName" AS "Person",
+    mjbizappscommonorganization_organizationid."Name" AS "Organization",
+    mjbizappscommoncontacttype_contacttypeid."Name" AS "ContactType"
+   FROM __mj_bizappscommon."ContactMethod" c
+     LEFT JOIN __mj_bizappscommon."Person" mjbizappscommonperson_personid ON c."PersonID" = mjbizappscommonperson_personid."ID"
+     LEFT JOIN __mj_bizappscommon."Organization" mjbizappscommonorganization_organizationid ON c."OrganizationID" = mjbizappscommonorganization_organizationid."ID"
+     JOIN __mj_bizappscommon."ContactType" mjbizappscommoncontacttype_contacttypeid ON c."ContactTypeID" = mjbizappscommoncontacttype_contacttypeid."ID"$vsql$;
   v_target_oid OID;
   v_dep RECORD;
   v_captured JSONB[] := ARRAY[]::JSONB[];
@@ -228,35 +222,30 @@ DECLARE
   v_target_schema CONSTANT TEXT := '__mj_bizappscommon';
   v_target_name CONSTANT TEXT := 'vwRelationships';
   vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwRelationships"
-AS SELECT
-    r.*,
-    "mjBizAppsCommonRelationshipType_RelationshipTypeID"."Name" AS "RelationshipType",
-    "mjBizAppsCommonPerson_FromPersonID"."DisplayName" AS "FromPerson",
-    "mjBizAppsCommonOrganization_FromOrganizationID"."Name" AS "FromOrganization",
-    "mjBizAppsCommonPerson_ToPersonID"."DisplayName" AS "ToPerson",
-    "mjBizAppsCommonOrganization_ToOrganizationID"."Name" AS "ToOrganization"
-FROM
-    __mj_bizappscommon."Relationship" AS r
-INNER JOIN
-    __mj_bizappscommon."RelationshipType" AS "mjBizAppsCommonRelationshipType_RelationshipTypeID"
-  ON
-    r."RelationshipTypeID" = "mjBizAppsCommonRelationshipType_RelationshipTypeID"."ID"
-LEFT OUTER JOIN
-    __mj_bizappscommon."vwPeople" AS "mjBizAppsCommonPerson_FromPersonID"
-  ON
-    r."FromPersonID" = "mjBizAppsCommonPerson_FromPersonID"."ID"
-LEFT OUTER JOIN
-    __mj_bizappscommon."Organization" AS "mjBizAppsCommonOrganization_FromOrganizationID"
-  ON
-    r."FromOrganizationID" = "mjBizAppsCommonOrganization_FromOrganizationID"."ID"
-LEFT OUTER JOIN
-    __mj_bizappscommon."vwPeople" AS "mjBizAppsCommonPerson_ToPersonID"
-  ON
-    r."ToPersonID" = "mjBizAppsCommonPerson_ToPersonID"."ID"
-LEFT OUTER JOIN
-    __mj_bizappscommon."Organization" AS "mjBizAppsCommonOrganization_ToOrganizationID"
-  ON
-    r."ToOrganizationID" = "mjBizAppsCommonOrganization_ToOrganizationID"."ID"$vsql$;
+AS SELECT r."ID",
+    r."RelationshipTypeID",
+    r."FromPersonID",
+    r."FromOrganizationID",
+    r."ToPersonID",
+    r."ToOrganizationID",
+    r."Title",
+    r."StartDate",
+    r."EndDate",
+    r."Status",
+    r."Notes",
+    r."__mj_CreatedAt",
+    r."__mj_UpdatedAt",
+    mjbizappscommonrelationshiptype_relationshiptypeid."Name" AS "RelationshipType",
+    mjbizappscommonperson_frompersonid."DisplayName" AS "FromPerson",
+    mjbizappscommonorganization_fromorganizationid."Name" AS "FromOrganization",
+    mjbizappscommonperson_topersonid."DisplayName" AS "ToPerson",
+    mjbizappscommonorganization_toorganizationid."Name" AS "ToOrganization"
+   FROM __mj_bizappscommon."Relationship" r
+     JOIN __mj_bizappscommon."RelationshipType" mjbizappscommonrelationshiptype_relationshiptypeid ON r."RelationshipTypeID" = mjbizappscommonrelationshiptype_relationshiptypeid."ID"
+     LEFT JOIN __mj_bizappscommon."Person" mjbizappscommonperson_frompersonid ON r."FromPersonID" = mjbizappscommonperson_frompersonid."ID"
+     LEFT JOIN __mj_bizappscommon."Organization" mjbizappscommonorganization_fromorganizationid ON r."FromOrganizationID" = mjbizappscommonorganization_fromorganizationid."ID"
+     LEFT JOIN __mj_bizappscommon."Person" mjbizappscommonperson_topersonid ON r."ToPersonID" = mjbizappscommonperson_topersonid."ID"
+     LEFT JOIN __mj_bizappscommon."Organization" mjbizappscommonorganization_toorganizationid ON r."ToOrganizationID" = mjbizappscommonorganization_toorganizationid."ID"$vsql$;
   v_target_oid OID;
   v_dep RECORD;
   v_captured JSONB[] := ARRAY[]::JSONB[];
@@ -315,132 +304,415 @@ $do$;
 
 -- ===================== Stored Procedures (sp*) =====================
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spCreateAddressLink"
---     @ID UUID = NULL,
---     @AddressID UUID,
---     @EntityID UUID,
---     @RecordID VARCHAR(700),
---     @AddressT...
+-- spCreateAddressLink: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreateAddressLink"(p_id uuid DEFAULT NULL::uuid, p_addressid uuid DEFAULT NULL::uuid, p_entityid uuid DEFAULT NULL::uuid, p_recordid character varying DEFAULT NULL::character varying, p_addresstypeid uuid DEFAULT NULL::uuid, p_isprimary boolean DEFAULT NULL::boolean, p_rank_clear boolean DEFAULT false, p_rank integer DEFAULT NULL::integer)
+ RETURNS SETOF __mj_bizappscommon."vwAddressLinks"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_new_id UUID;
+BEGIN
+    v_new_id := COALESCE(p_id, gen_random_uuid());
+    INSERT INTO __mj_bizappscommon."AddressLink"
+        (
+            "ID",
+            "AddressID",
+                "EntityID",
+                "RecordID",
+                "AddressTypeID",
+                "IsPrimary",
+                "Rank"
+        )
+    VALUES
+        (
+            v_new_id,
+            p_addressid,
+                p_entityid,
+                p_recordid,
+                p_addresstypeid,
+                COALESCE(p_isprimary, FALSE),
+                CASE WHEN p_rank_clear = true THEN NULL ELSE COALESCE(p_rank, NULL) END
+        )
+    ;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spUpdateAddressLink"
---     @ID UUID,
---     @AddressID UUID = NULL,
---     @EntityID UUID = NULL,
---     @RecordID VARCHAR(700) = NULL,...
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwAddressLinks"
+    WHERE "ID" = v_new_id;
+END;
+$function$;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spCreateContactMethod"
---     @ID UUID = NULL,
---     @PersonID_Clear bit = 0,
---     @PersonID UUID = NULL,
---     @OrganizationID_Clear bit = 0,
---   ...
+-- spUpdateAddressLink: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdateAddressLink"(p_id uuid, p_addressid uuid DEFAULT NULL::uuid, p_entityid uuid DEFAULT NULL::uuid, p_recordid character varying DEFAULT NULL::character varying, p_addresstypeid uuid DEFAULT NULL::uuid, p_isprimary boolean DEFAULT NULL::boolean, p_rank_clear boolean DEFAULT false, p_rank integer DEFAULT NULL::integer)
+ RETURNS SETOF __mj_bizappscommon."vwAddressLinks"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_updated_count INTEGER;
+BEGIN
+    UPDATE __mj_bizappscommon."AddressLink"
+    SET
+        "AddressID" = COALESCE(p_addressid, "AddressID"),
+        "EntityID" = COALESCE(p_entityid, "EntityID"),
+        "RecordID" = COALESCE(p_recordid, "RecordID"),
+        "AddressTypeID" = COALESCE(p_addresstypeid, "AddressTypeID"),
+        "IsPrimary" = COALESCE(p_isprimary, "IsPrimary"),
+        "Rank" = CASE WHEN p_rank_clear = true THEN NULL ELSE COALESCE(p_rank, "Rank") END
+    WHERE
+        "ID" = p_id;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spUpdateContactMethod"
---     @ID UUID,
---     @PersonID_Clear bit = 0,
---     @PersonID UUID = NULL,
---     @OrganizationID_Clear bit = 0,
---     @Orga...
+    GET DIAGNOSTICS v_updated_count = ROW_COUNT;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spDeleteAddressLink"
---     @ID UUID
--- AS
--- BEGIN
---     SET NOCOUNT ON;
--- 
---     DELETE FROM
---         __mj_bizappscommon."AddressLink"
---     WHERE
---         "ID" = @...
+    IF v_updated_count = 0 THEN
+        -- Nothing was updated, return empty result set
+        RETURN;
+    END IF;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spDeleteContactMethod"
---     @ID UUID
--- AS
--- BEGIN
---     SET NOCOUNT ON;
--- 
---     DELETE FROM
---         __mj_bizappscommon."ContactMethod"
---     WHERE
---         "ID"...
+    -- Return the updated record from the base view
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwAddressLinks"
+    WHERE "ID" = p_id;
+END;
+$function$;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spCreateRelationship"
---     @ID UUID = NULL,
---     @RelationshipTypeID UUID,
---     @FromPersonID_Clear bit = 0,
---     @FromPersonID uniqueidentif...
+-- spCreateContactMethod: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreateContactMethod"(p_id uuid DEFAULT NULL::uuid, p_personid_clear boolean DEFAULT false, p_personid uuid DEFAULT NULL::uuid, p_organizationid_clear boolean DEFAULT false, p_organizationid uuid DEFAULT NULL::uuid, p_contacttypeid uuid DEFAULT NULL::uuid, p_value character varying DEFAULT NULL::character varying, p_label_clear boolean DEFAULT false, p_label character varying DEFAULT NULL::character varying, p_isprimary boolean DEFAULT NULL::boolean)
+ RETURNS SETOF __mj_bizappscommon."vwContactMethods"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_new_id UUID;
+BEGIN
+    v_new_id := COALESCE(p_id, gen_random_uuid());
+    INSERT INTO __mj_bizappscommon."ContactMethod"
+        (
+            "ID",
+            "PersonID",
+                "OrganizationID",
+                "ContactTypeID",
+                "Value",
+                "Label",
+                "IsPrimary"
+        )
+    VALUES
+        (
+            v_new_id,
+            CASE WHEN p_personid_clear = true THEN NULL ELSE COALESCE(p_personid, NULL) END,
+                CASE WHEN p_organizationid_clear = true THEN NULL ELSE COALESCE(p_organizationid, NULL) END,
+                p_contacttypeid,
+                p_value,
+                CASE WHEN p_label_clear = true THEN NULL ELSE COALESCE(p_label, NULL) END,
+                COALESCE(p_isprimary, FALSE)
+        )
+    ;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spUpdateRelationship"
---     @ID UUID,
---     @RelationshipTypeID UUID = NULL,
---     @FromPersonID_Clear bit = 0,
---     @FromPersonID uniqueidentif...
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwContactMethods"
+    WHERE "ID" = v_new_id;
+END;
+$function$;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spDeleteRelationship"
---     @ID UUID
--- AS
--- BEGIN
---     SET NOCOUNT ON;
--- 
---     DELETE FROM
---         __mj_bizappscommon."Relationship"
---     WHERE
---         "ID" =...
+-- spUpdateContactMethod: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdateContactMethod"(p_id uuid, p_personid_clear boolean DEFAULT false, p_personid uuid DEFAULT NULL::uuid, p_organizationid_clear boolean DEFAULT false, p_organizationid uuid DEFAULT NULL::uuid, p_contacttypeid uuid DEFAULT NULL::uuid, p_value character varying DEFAULT NULL::character varying, p_label_clear boolean DEFAULT false, p_label character varying DEFAULT NULL::character varying, p_isprimary boolean DEFAULT NULL::boolean)
+ RETURNS SETOF __mj_bizappscommon."vwContactMethods"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_updated_count INTEGER;
+BEGIN
+    UPDATE __mj_bizappscommon."ContactMethod"
+    SET
+        "PersonID" = CASE WHEN p_personid_clear = true THEN NULL ELSE COALESCE(p_personid, "PersonID") END,
+        "OrganizationID" = CASE WHEN p_organizationid_clear = true THEN NULL ELSE COALESCE(p_organizationid, "OrganizationID") END,
+        "ContactTypeID" = COALESCE(p_contacttypeid, "ContactTypeID"),
+        "Value" = COALESCE(p_value, "Value"),
+        "Label" = CASE WHEN p_label_clear = true THEN NULL ELSE COALESCE(p_label, "Label") END,
+        "IsPrimary" = COALESCE(p_isprimary, "IsPrimary")
+    WHERE
+        "ID" = p_id;
 
--- SKIPPED: procedure (auto-conversion not supported)
--- CREATE PROCEDURE __mj_bizappscommon."spDeleteOrganization"
---     @ID UUID
--- AS
--- BEGIN
---     SET NOCOUNT ON;
---     -- Cascade update on ContactMethod using cursor to call spUpdateContactMethod
---    ...
+    GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+    IF v_updated_count = 0 THEN
+        -- Nothing was updated, return empty result set
+        RETURN;
+    END IF;
+
+    -- Return the updated record from the base view
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwContactMethods"
+    WHERE "ID" = p_id;
+END;
+$function$;
+
+-- spDeleteAddressLink: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spDeleteAddressLink"(p_id uuid)
+ RETURNS TABLE("ID" uuid)
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_affected_count INTEGER;
+BEGIN
+
+    DELETE FROM __mj_bizappscommon."AddressLink"
+    WHERE "ID" = p_id;
+
+    GET DIAGNOSTICS v_affected_count = ROW_COUNT;
+
+    IF v_affected_count = 0 THEN
+        RETURN QUERY SELECT NULL::UUID AS "ID";
+    ELSE
+        RETURN QUERY SELECT p_id AS "ID";
+    END IF;
+END;
+$function$;
+
+-- spDeleteContactMethod: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spDeleteContactMethod"(p_id uuid)
+ RETURNS TABLE("ID" uuid)
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_affected_count INTEGER;
+BEGIN
+
+    DELETE FROM __mj_bizappscommon."ContactMethod"
+    WHERE "ID" = p_id;
+
+    GET DIAGNOSTICS v_affected_count = ROW_COUNT;
+
+    IF v_affected_count = 0 THEN
+        RETURN QUERY SELECT NULL::UUID AS "ID";
+    ELSE
+        RETURN QUERY SELECT p_id AS "ID";
+    END IF;
+END;
+$function$;
+
+-- spCreateRelationship: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreateRelationship"(p_id uuid DEFAULT NULL::uuid, p_relationshiptypeid uuid DEFAULT NULL::uuid, p_frompersonid_clear boolean DEFAULT false, p_frompersonid uuid DEFAULT NULL::uuid, p_fromorganizationid_clear boolean DEFAULT false, p_fromorganizationid uuid DEFAULT NULL::uuid, p_topersonid_clear boolean DEFAULT false, p_topersonid uuid DEFAULT NULL::uuid, p_toorganizationid_clear boolean DEFAULT false, p_toorganizationid uuid DEFAULT NULL::uuid, p_title_clear boolean DEFAULT false, p_title character varying DEFAULT NULL::character varying, p_startdate_clear boolean DEFAULT false, p_startdate date DEFAULT NULL::date, p_enddate_clear boolean DEFAULT false, p_enddate date DEFAULT NULL::date, p_status character varying DEFAULT NULL::character varying, p_notes_clear boolean DEFAULT false, p_notes text DEFAULT NULL::text)
+ RETURNS SETOF __mj_bizappscommon."vwRelationships"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_new_id UUID;
+BEGIN
+    v_new_id := COALESCE(p_id, gen_random_uuid());
+    INSERT INTO __mj_bizappscommon."Relationship"
+        (
+            "ID",
+            "RelationshipTypeID",
+                "FromPersonID",
+                "FromOrganizationID",
+                "ToPersonID",
+                "ToOrganizationID",
+                "Title",
+                "StartDate",
+                "EndDate",
+                "Status",
+                "Notes"
+        )
+    VALUES
+        (
+            v_new_id,
+            p_relationshiptypeid,
+                CASE WHEN p_frompersonid_clear = true THEN NULL ELSE COALESCE(p_frompersonid, NULL) END,
+                CASE WHEN p_fromorganizationid_clear = true THEN NULL ELSE COALESCE(p_fromorganizationid, NULL) END,
+                CASE WHEN p_topersonid_clear = true THEN NULL ELSE COALESCE(p_topersonid, NULL) END,
+                CASE WHEN p_toorganizationid_clear = true THEN NULL ELSE COALESCE(p_toorganizationid, NULL) END,
+                CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, NULL) END,
+                CASE WHEN p_startdate_clear = true THEN NULL ELSE COALESCE(p_startdate, NULL) END,
+                CASE WHEN p_enddate_clear = true THEN NULL ELSE COALESCE(p_enddate, NULL) END,
+                COALESCE(p_status, 'Active'),
+                CASE WHEN p_notes_clear = true THEN NULL ELSE COALESCE(p_notes, NULL) END
+        )
+    ;
+
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwRelationships"
+    WHERE "ID" = v_new_id;
+END;
+$function$;
+
+-- spUpdateRelationship: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdateRelationship"(p_id uuid, p_relationshiptypeid uuid DEFAULT NULL::uuid, p_frompersonid_clear boolean DEFAULT false, p_frompersonid uuid DEFAULT NULL::uuid, p_fromorganizationid_clear boolean DEFAULT false, p_fromorganizationid uuid DEFAULT NULL::uuid, p_topersonid_clear boolean DEFAULT false, p_topersonid uuid DEFAULT NULL::uuid, p_toorganizationid_clear boolean DEFAULT false, p_toorganizationid uuid DEFAULT NULL::uuid, p_title_clear boolean DEFAULT false, p_title character varying DEFAULT NULL::character varying, p_startdate_clear boolean DEFAULT false, p_startdate date DEFAULT NULL::date, p_enddate_clear boolean DEFAULT false, p_enddate date DEFAULT NULL::date, p_status character varying DEFAULT NULL::character varying, p_notes_clear boolean DEFAULT false, p_notes text DEFAULT NULL::text)
+ RETURNS SETOF __mj_bizappscommon."vwRelationships"
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_updated_count INTEGER;
+BEGIN
+    UPDATE __mj_bizappscommon."Relationship"
+    SET
+        "RelationshipTypeID" = COALESCE(p_relationshiptypeid, "RelationshipTypeID"),
+        "FromPersonID" = CASE WHEN p_frompersonid_clear = true THEN NULL ELSE COALESCE(p_frompersonid, "FromPersonID") END,
+        "FromOrganizationID" = CASE WHEN p_fromorganizationid_clear = true THEN NULL ELSE COALESCE(p_fromorganizationid, "FromOrganizationID") END,
+        "ToPersonID" = CASE WHEN p_topersonid_clear = true THEN NULL ELSE COALESCE(p_topersonid, "ToPersonID") END,
+        "ToOrganizationID" = CASE WHEN p_toorganizationid_clear = true THEN NULL ELSE COALESCE(p_toorganizationid, "ToOrganizationID") END,
+        "Title" = CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, "Title") END,
+        "StartDate" = CASE WHEN p_startdate_clear = true THEN NULL ELSE COALESCE(p_startdate, "StartDate") END,
+        "EndDate" = CASE WHEN p_enddate_clear = true THEN NULL ELSE COALESCE(p_enddate, "EndDate") END,
+        "Status" = COALESCE(p_status, "Status"),
+        "Notes" = CASE WHEN p_notes_clear = true THEN NULL ELSE COALESCE(p_notes, "Notes") END
+    WHERE
+        "ID" = p_id;
+
+    GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+    IF v_updated_count = 0 THEN
+        -- Nothing was updated, return empty result set
+        RETURN;
+    END IF;
+
+    -- Return the updated record from the base view
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwRelationships"
+    WHERE "ID" = p_id;
+END;
+$function$;
+
+-- spDeleteRelationship: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spDeleteRelationship"(p_id uuid)
+ RETURNS TABLE("ID" uuid)
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_affected_count INTEGER;
+BEGIN
+
+    DELETE FROM __mj_bizappscommon."Relationship"
+    WHERE "ID" = p_id;
+
+    GET DIAGNOSTICS v_affected_count = ROW_COUNT;
+
+    IF v_affected_count = 0 THEN
+        RETURN QUERY SELECT NULL::UUID AS "ID";
+    ELSE
+        RETURN QUERY SELECT p_id AS "ID";
+    END IF;
+END;
+$function$;
+
+-- spDeleteOrganization: native plpgsql as emitted by MJ CodeGen (replaces the skipped T-SQL procedure)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spDeleteOrganization"(p_id uuid)
+ RETURNS TABLE("ID" uuid)
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_affected_count INTEGER;
+    v_rec RECORD;
+BEGIN
+    -- Cascade: Set MJ_BizApps_Common: Contact Methods.OrganizationID to NULL
+    FOR v_rec IN
+        SELECT "ID"
+        FROM __mj_bizappscommon."ContactMethod"
+        WHERE "OrganizationID" = p_id
+    LOOP
+        -- Update related record to set FK to NULL
+        UPDATE __mj_bizappscommon."ContactMethod"
+        SET "OrganizationID" = NULL
+        WHERE "ID" = v_rec."ID";
+    END LOOP;
+
+        -- Cascade: Set MJ_BizApps_Common: Organizations.ParentID to NULL
+    FOR v_rec IN
+        SELECT "ID"
+        FROM __mj_bizappscommon."Organization"
+        WHERE "ParentID" = p_id
+    LOOP
+        -- Update related record to set FK to NULL
+        UPDATE __mj_bizappscommon."Organization"
+        SET "ParentID" = NULL
+        WHERE "ID" = v_rec."ID";
+    END LOOP;
+
+        -- Cascade: Set MJ_BizApps_Common: Relationships.FromOrganizationID to NULL
+    FOR v_rec IN
+        SELECT "ID"
+        FROM __mj_bizappscommon."Relationship"
+        WHERE "FromOrganizationID" = p_id
+    LOOP
+        -- Update related record to set FK to NULL
+        UPDATE __mj_bizappscommon."Relationship"
+        SET "FromOrganizationID" = NULL
+        WHERE "ID" = v_rec."ID";
+    END LOOP;
+
+        -- Cascade: Set MJ_BizApps_Common: Relationships.ToOrganizationID to NULL
+    FOR v_rec IN
+        SELECT "ID"
+        FROM __mj_bizappscommon."Relationship"
+        WHERE "ToOrganizationID" = p_id
+    LOOP
+        -- Update related record to set FK to NULL
+        UPDATE __mj_bizappscommon."Relationship"
+        SET "ToOrganizationID" = NULL
+        WHERE "ID" = v_rec."ID";
+    END LOOP;
+
+    
+    DELETE FROM __mj_bizappscommon."Organization"
+    WHERE "ID" = p_id;
+
+    GET DIAGNOSTICS v_affected_count = ROW_COUNT;
+
+    IF v_affected_count = 0 THEN
+        RETURN QUERY SELECT NULL::UUID AS "ID";
+    ELSE
+        RETURN QUERY SELECT p_id AS "ID";
+    END IF;
+END;
+$function$;
 
 
 -- ===================== Triggers =====================
 
--- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_bizappscommon.trgUpdateAddressLink
--- ON __mj_bizappscommon."AddressLink"
--- AFTER UPDATE
--- AS
--- BEGIN
---     SET NOCOUNT ON;
---     UPDATE
---         __mj_bizappscommon."AddressLink"
---     SET
+-- trg_update_address_link: native row-touch trigger as emitted by MJ CodeGen (replaces the skipped T-SQL trigger)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon.fn_trg_update_address_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW."__mj_UpdatedAt" := NOW() AT TIME ZONE 'UTC';
+    RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_update_address_link ON __mj_bizappscommon."AddressLink";
+CREATE TRIGGER trg_update_address_link BEFORE UPDATE ON __mj_bizappscommon."AddressLink" FOR EACH ROW EXECUTE FUNCTION __mj_bizappscommon.fn_trg_update_address_link();
  
 
--- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_bizappscommon.trgUpdateContactMethod
--- ON __mj_bizappscommon."ContactMethod"
--- AFTER UPDATE
--- AS
--- BEGIN
---     SET NOCOUNT ON;
---     UPDATE
---         __mj_bizappscommon."ContactMethod"
+-- trg_update_contact_method: native row-touch trigger as emitted by MJ CodeGen (replaces the skipped T-SQL trigger)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon.fn_trg_update_contact_method()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW."__mj_UpdatedAt" := NOW() AT TIME ZONE 'UTC';
+    RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_update_contact_method ON __mj_bizappscommon."ContactMethod";
+CREATE TRIGGER trg_update_contact_method BEFORE UPDATE ON __mj_bizappscommon."ContactMethod" FOR EACH ROW EXECUTE FUNCTION __mj_bizappscommon.fn_trg_update_contact_method();
    
 
--- SKIPPED: trigger (auto-conversion not supported)
--- CREATE TRIGGER __mj_bizappscommon.trgUpdateRelationship
--- ON __mj_bizappscommon."Relationship"
--- AFTER UPDATE
--- AS
--- BEGIN
---     SET NOCOUNT ON;
---     UPDATE
---         __mj_bizappscommon."Relationship"
---     SE
+-- trg_update_relationship: native row-touch trigger as emitted by MJ CodeGen (replaces the skipped T-SQL trigger)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon.fn_trg_update_relationship()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW."__mj_UpdatedAt" := NOW() AT TIME ZONE 'UTC';
+    RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_update_relationship ON __mj_bizappscommon."Relationship";
+CREATE TRIGGER trg_update_relationship BEFORE UPDATE ON __mj_bizappscommon."Relationship" FOR EACH ROW EXECUTE FUNCTION __mj_bizappscommon.fn_trg_update_relationship();
 
 
 -- ===================== Data (INSERT/UPDATE/DELETE) =====================
