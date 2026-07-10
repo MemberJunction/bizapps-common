@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.32.0
+
+### Minor Changes
+
+- b5f34d2: PG fixes for CanonicalSchema and CodeGen
+
 ## 5.31.3
 
 ### Patch Changes

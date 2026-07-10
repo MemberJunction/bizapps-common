@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-server
 
+## 5.32.0
+
+### Minor Changes
+
+- b5f34d2: PG fixes for CanonicalSchema and CodeGen
+
+### Patch Changes
+
+- Updated dependencies [b5f34d2]
+  - @mj-biz-apps/common-core-entities-server@5.32.0
+  - @mj-biz-apps/common-entities@5.32.0
+  - @mj-biz-apps/common-actions@5.32.0
+
 ## 5.31.3
 
 ### Patch Changes
