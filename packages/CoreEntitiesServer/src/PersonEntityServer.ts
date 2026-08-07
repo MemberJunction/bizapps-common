@@ -1,94 +1,41 @@
-import { BaseEntity, EntityDeleteOptions, EntitySaveOptions, LogError, Metadata, UserInfo } from '@memberjunction/core';
+import { BaseEntity, UserInfo } from '@memberjunction/core';
 import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
-import { MJUserEntity, MJUserRoleEntity } from '@memberjunction/core-entities';
 import { UserCache } from '@memberjunction/sqlserver-dataprovider';
-
-/**
- * The standard MJ "UI" role name — assigned as a default when creating
- * a new User linked to a Person. Downstream layers (e.g., BCSaaS) override
- * this with more specific roles.
- */
-const DEFAULT_MJ_ROLE_NAME = 'UI';
 
 /**
  * Server-side subclass of the BAC Person entity.
  *
- * Lifecycle hooks:
- * - **Save (pre):** Auto-links to an MJ User record (creates one if needed)
- * - **Save (post):** Syncs name/email changes to the linked User; assigns default "UI" UserRole
- * - **Delete:** Deactivates the linked User (does not delete — preserves audit history)
+ * ## v5.33.0 — MJ User decoupling
+ *
+ * Prior to v5.33.0 this class auto-provisioned MJ User accounts: saving a
+ * Person with an email created (or linked) an active `MJ: Users` record,
+ * granted it the default `'UI'` role, synced name/email changes to the User,
+ * wrote the User→Person back-pointer, and deactivated the User on delete.
+ *
+ * That behavior was wrong for a generic CRM layer — people recorded here
+ * (job applicants, CRM contacts, message senders) must not implicitly gain
+ * platform access. See https://github.com/MemberJunction/bizapps-common/issues/36.
+ *
+ * As of v5.33.0, saving or deleting a Person has **no MJ User side effects**.
+ * Platform layers that bind people to MJ Users (e.g., BCSaaS) do so through
+ * their own IS-A subtype of this entity (BCSaaS `BC: People`), where
+ * all provisioning/sync lifecycle behavior now lives. `Person.LinkedUserID`
+ * is deprecated (EntityField Status='Deprecated') and no longer read or
+ * written by bizapps-common.
+ *
+ * @deprecated This class is retained only so existing downstream subclasses
+ * (e.g., BCSaaS ≤1.7 `BCSaaSPersonEntityServer`) continue to load against
+ * BAC 5.33.x. It adds no behavior over the generated entity and will be
+ * removed in the next major release — extend `mjBizAppsCommonPersonEntity`
+ * directly instead.
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
 export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
 
-    override async Save(options?: EntitySaveOptions): Promise<boolean> {
-        const isNewRecord = !this.IsSaved;
-        const emailField = this.GetFieldByName('Email');
-        const emailChanged = emailField?.Dirty === true;
-        const needsUserLink = isNewRecord || emailChanged;
-
-        // Pre-save: auto-link to MJ User
-        if (needsUserLink && this.Email && !this.LinkedUserID) {
-            await this.autoLinkUser();
-        }
-
-        const saved = await super.Save(options);
-        if (!saved) {
-            return false;
-        }
-
-        // Post-save: sync person changes to linked User
-        if (this.LinkedUserID) {
-            await this.syncUserRecord(isNewRecord, emailChanged);
-        }
-
-        return true;
-    }
-
-    override async Delete(options?: EntityDeleteOptions): Promise<boolean> {
-        // Pre-delete: deactivate linked User (don't delete — audit history)
-        if (this.LinkedUserID) {
-            await this.deactivateLinkedUser();
-        }
-
-        return super.Delete(options);
-    }
-
-    /**
-     * Find an existing MJ User by email, or create a new one.
-     * Sets LinkedUserID on the Person entity (pre-save, so it's persisted atomically).
-     */
-    protected async autoLinkUser(): Promise<void> {
-        try {
-            const existingUser = this.findCachedUserByEmail(this.Email!);
-
-            if (existingUser) {
-                // Never link a Person to the system user — modifying the system
-                // user record via syncUserRecord would corrupt the MJ environment.
-                if (this.isSystemUser(existingUser.ID)) {
-                    LogError(
-                        `PersonEntityServer: Blocked auto-link of Person (email=${this.Email}) ` +
-                        `to the MJ system user — the system user must not be linked to a Person`
-                    );
-                    return;
-                }
-                this.LinkedUserID = existingUser.ID;
-            } else {
-                const newUserID = await this.createUser();
-                if (newUserID) {
-                    this.LinkedUserID = newUserID;
-                }
-            }
-        } catch (error: unknown) {
-            LogError(`PersonEntityServer: Failed to auto-link User for email ${this.Email}: ${error}`);
-            // Don't block save — User linking is best-effort
-        }
-    }
-
     /**
      * Find an existing MJ User by email using the cached UserCache.
-     * UserCache is populated at server startup and refreshed periodically.
+     * Retained as a helper for downstream subclasses; not called by this class.
      */
     protected findCachedUserByEmail(email: string): UserInfo | undefined {
         const normalizedEmail = email.toLowerCase();
@@ -98,171 +45,8 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
     }
 
     /**
-     * Create a new MJ User record from the Person's details.
-     * Returns the new User ID, or null on failure.
-     */
-    protected async createUser(): Promise<string | null> {
-        try {
-            const md = new Metadata();
-            const user = await md.GetEntityObject<MJUserEntity>('MJ: Users', this.ContextCurrentUser);
-            user.NewRecord();
-
-            const fullName = this.buildFullName();
-            user.Name = fullName;
-            user.FirstName = this.FirstName;
-            user.LastName = this.LastName;
-            user.Email = this.Email!;
-            user.Type = 'User';
-            user.IsActive = true;
-
-            const saved = await user.Save();
-            if (!saved) {
-                LogError(`PersonEntityServer: Failed to save new User for ${this.Email}`);
-                return null;
-            }
-
-            // Assign default "UI" role to the new user
-            await this.assignDefaultUserRole(user.ID);
-
-            return user.ID;
-        } catch (error: unknown) {
-            LogError(`PersonEntityServer: Error creating User for ${this.Email}: ${error}`);
-            return null;
-        }
-    }
-
-    /**
-     * Assign the default MJ "UI" role to a User via the UserRole entity.
-     * Uses Metadata.Roles (cached) for role lookup instead of a DB query.
-     */
-    protected async assignDefaultUserRole(userID: string): Promise<void> {
-        try {
-            const md = new Metadata();
-            const role = md.Roles.find(
-                r => r.Name.toLowerCase() === DEFAULT_MJ_ROLE_NAME.toLowerCase()
-            );
-            if (!role) {
-                LogError(`PersonEntityServer: MJ Role '${DEFAULT_MJ_ROLE_NAME}' not found in Metadata.Roles — cannot assign default UserRole`);
-                return;
-            }
-
-            // Check if the user already has this role via UserCache
-            const cachedUser = UserCache.Users.find(u => u.ID === userID);
-            if (cachedUser?.UserRoles?.find(ur => ur.RoleID === role.ID)) {
-                return; // Already has this role
-            }
-
-            const userRole = await md.GetEntityObject<MJUserRoleEntity>('MJ: User Roles', this.ContextCurrentUser);
-            userRole.NewRecord();
-            userRole.UserID = userID;
-            userRole.RoleID = role.ID;
-
-            const saved = await userRole.Save();
-            if (!saved) {
-                LogError(`PersonEntityServer: Failed to assign '${DEFAULT_MJ_ROLE_NAME}' role to User ${userID}`);
-            }
-        } catch (error: unknown) {
-            LogError(`PersonEntityServer: Error assigning default UserRole: ${error}`);
-        }
-    }
-
-    /**
-     * Sync Person name/email changes to the linked MJ User record.
-     * Called post-save — updates name/email fields and ensures the
-     * bidirectional back-pointer (LinkedEntityID / LinkedEntityRecordID) is set.
-     */
-    protected async syncUserRecord(isNewRecord: boolean, emailChanged: boolean): Promise<void> {
-        // SAFETY: Never modify the system user record. This prevents corruption
-        // of the MJ environment if a Person is accidentally linked to the system user.
-        if (this.LinkedUserID && this.isSystemUser(this.LinkedUserID)) {
-            LogError(
-                `PersonEntityServer: Blocked syncUserRecord for Person (email=${this.Email}) — ` +
-                `LinkedUserID points to the MJ system user, which must never be modified via Person sync`
-            );
-            return;
-        }
-
-        const nameFields = ['FirstName', 'LastName', 'MiddleName', 'Prefix', 'Suffix'];
-        const nameChanged = nameFields.some(f => this.GetFieldByName(f)?.Dirty === true);
-
-        // For existing records with no field changes and no back-pointer work, skip
-        if (!isNewRecord && !nameChanged && !emailChanged) {
-            return;
-        }
-
-        try {
-            const md = new Metadata();
-            const user = await md.GetEntityObject<MJUserEntity>('MJ: Users', this.ContextCurrentUser);
-            const loaded = await user.Load(this.LinkedUserID!);
-            if (!loaded) {
-                LogError(`PersonEntityServer: Could not load linked User ${this.LinkedUserID} for sync`);
-                return;
-            }
-
-            if (nameChanged || isNewRecord) {
-                user.Name = this.buildFullName();
-                user.FirstName = this.FirstName;
-                user.LastName = this.LastName;
-            }
-
-            if (emailChanged && this.Email) {
-                user.Email = this.Email;
-            }
-
-            // Ensure bidirectional link: User → Person
-            this.setUserBackPointer(user);
-
-            const saved = await user.Save();
-            if (!saved) {
-                LogError(`PersonEntityServer: Failed to sync User ${this.LinkedUserID} after Person update`);
-            }
-        } catch (error: unknown) {
-            LogError(`PersonEntityServer: Error syncing User record: ${error}`);
-            // Don't block — sync is best-effort
-        }
-    }
-
-    /**
-     * Set the back-pointer fields on the User so the User → Person
-     * relationship is bidirectional. Only sets fields if not already populated.
-     */
-    protected setUserBackPointer(user: MJUserEntity): void {
-        if (user.LinkedEntityRecordID) {
-            return; // Already linked — nothing to do
-        }
-
-        user.LinkedRecordType = 'Person';
-        user.LinkedEntityID = this.EntityInfo.ID;
-        user.LinkedEntityRecordID = this.ID;
-    }
-
-    /**
-     * Deactivate the linked User on Person deletion.
-     * Sets IsActive=false rather than deleting, to preserve audit history.
-     */
-    protected async deactivateLinkedUser(): Promise<void> {
-        try {
-            const md = new Metadata();
-            const user = await md.GetEntityObject<MJUserEntity>('MJ: Users', this.ContextCurrentUser);
-            const loaded = await user.Load(this.LinkedUserID!);
-            if (!loaded) {
-                return;
-            }
-
-            if (user.IsActive) {
-                user.IsActive = false;
-                const saved = await user.Save();
-                if (!saved) {
-                    LogError(`PersonEntityServer: Failed to deactivate User ${this.LinkedUserID}`);
-                }
-            }
-        } catch (error: unknown) {
-            LogError(`PersonEntityServer: Error deactivating linked User: ${error}`);
-        }
-    }
-
-    /**
      * Build a display-friendly full name from Person fields.
+     * Retained as a helper for downstream subclasses; not called by this class.
      */
     protected buildFullName(): string {
         const parts: string[] = [];
@@ -274,7 +58,7 @@ export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
     /**
      * Check if the given user ID is the MJ system user.
      * The system user is a special internal record that must never be modified
-     * by Person lifecycle hooks — doing so corrupts the entire MJ environment.
+     * by person-related lifecycle code — doing so corrupts the MJ environment.
      */
     protected isSystemUser(userID: string): boolean {
         const systemUserID = UserCache.Instance.SYSTEM_USER_ID;
