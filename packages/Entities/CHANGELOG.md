@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.33.0
+
+### Minor Changes
+
+- 1ffb2a5: Deprecate Person LinkedUserID
+
 ## 5.32.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.33.0
+
+### Minor Changes
+
+- 2c33643: Decouple Person from MJ User (fixes #36): saving a Person no longer provisions, links, syncs, or deactivates MJ User accounts. `PersonEntityServer` is reduced to a deprecated compatibility shell (protected helpers retained for downstream subclasses); the `LinkedUserID` EntityField is marked Status='Deprecated' via migration; the People entity is declared an overlapping IS-A parent (`AllowMultipleSubtypes=1`) so platform layers (e.g., BCSaaS 'BC: People') can own the person-to-user binding as an IS-A subtype. The LinkedUserID column remains physically in place; data disposition is owned by the platform layer's migration. The custom Person form no longer renders LinkedUserID.
+
+### Patch Changes
+
+- Updated dependencies [1ffb2a5]
+  - @mj-biz-apps/common-entities@5.33.0
+
 ## 5.32.0
 
 ### Minor Changes
