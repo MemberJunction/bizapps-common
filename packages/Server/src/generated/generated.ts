@@ -1600,7 +1600,7 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true, description: `Biographical text or notes about this person`}) 
     Bio?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: Platform Users'). Retained only for backward compatibility and scheduled for removal in the next major release.`}) 
     @MaxLength(36)
     LinkedUserID?: string;
         
