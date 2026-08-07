@@ -18,11 +18,12 @@
 --      Description re-syncs from the extended property every migrate cycle,
 --      so the deprecation text MUST live in the extended property (see MJ's
 --      V202606021427__v5.39.x deprecation migration for the precedent).
---   3. Sets AllowMultipleSubtypes=1 on the People entity, declaring it an
---      overlapping IS-A parent: a Person may be several subtypes at once
---      (e.g., a platform user AND an applicant), parent-side saves never
---      delegate to a subtype, and multiple products may layer their own
---      subtype entities on Person.
+--   3. Sets AllowMultipleSubtypes=1 on the People AND Organizations entities,
+--      declaring both as overlapping IS-A parents: a Person/Organization may
+--      be several subtypes at once (e.g., a platform user AND an applicant;
+--      a SalesAccount AND a CRM Account), parent-side saves never delegate
+--      to a subtype, and multiple products may layer their own subtype
+--      entities on either parent.
 --
 -- The column, FK_Person_LinkedUser, and UQ_Person_LinkedUserID remain
 -- physically in place for backward compatibility. Data disposition is owned
@@ -33,6 +34,7 @@
 -- =============================================================================
 
 DECLARE @PeopleEntityID UNIQUEIDENTIFIER = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
+DECLARE @OrganizationsEntityID UNIQUEIDENTIFIER = 'C70448F9-9792-41D7-A82C-784B66429D54';
 DECLARE @DeprecationText NVARCHAR(1000) = N'DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS ''BC: People''). Retained only for backward compatibility and scheduled for removal in the next major release.';
 
 -- -----------------------------------------------------------------------------
@@ -81,11 +83,11 @@ END
 IF @@ERROR <> 0 SET NOEXEC ON;
 
 -- -----------------------------------------------------------------------------
--- 3. Declare People as an overlapping IS-A parent
+-- 3. Declare People and Organizations as overlapping IS-A parents
 -- -----------------------------------------------------------------------------
 UPDATE [${mjSchema}].[Entity]
 SET AllowMultipleSubtypes = 1
-WHERE ID = @PeopleEntityID
+WHERE ID IN (@PeopleEntityID, @OrganizationsEntityID)
   AND AllowMultipleSubtypes = 0;
 
 IF @@ERROR <> 0 SET NOEXEC ON;
