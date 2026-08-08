@@ -1,5 +1,12 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.33.1
+
+### Patch Changes
+
+- Updated dependencies [6eae25b]
+  - @mj-biz-apps/common-entities@5.33.1
+
 ## 5.33.0
 
 ### Minor Changes
