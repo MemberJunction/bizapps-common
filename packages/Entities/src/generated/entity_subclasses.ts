@@ -539,7 +539,7 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Linked User
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-        * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: Platform Users'). Retained only for backward compatibility and scheduled for removal in the next major release.`),
+        * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.`),
     Status: z.union([z.literal('Active'), z.literal('Deceased'), z.literal('Inactive')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -2210,7 +2210,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     * * 
     * * @deprecated This field is deprecated and will be removed in a future version. Using it will result in console warnings.SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-    * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: Platform Users'). Retained only for backward compatibility and scheduled for removal in the next major release.
+    * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.
     */
     get LinkedUserID(): string | null {
         return this.Get('LinkedUserID');
