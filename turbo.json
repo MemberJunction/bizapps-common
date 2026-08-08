@@ -7,6 +7,12 @@
       "dependsOn": ["^build"],
       "persistent": false
     },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "persistent": false
+    },
     "start": {
       "cache": false,
       "persistent": true
