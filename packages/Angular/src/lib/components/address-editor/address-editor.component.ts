@@ -223,6 +223,13 @@ export class AddressEditorComponent {
     /** The resolved MJ EntityID for the current {@link EntityName}. */
     private resolvedEntityID = '';
 
+    /**
+     * Set when the component cannot operate — currently only when {@link EntityName}
+     * does not resolve to an entity. Rendered in the template and used to block saving,
+     * so a misconfiguration surfaces as a visible message instead of a failed INSERT.
+     */
+    LoadError: string | null = null;
+
     /** Cached action ID for the Postal Code Lookup action. */
     private postalCodeLookupActionID: string | null = null;
 
@@ -287,7 +294,11 @@ export class AddressEditorComponent {
                 // The action returns JSON-stringified address in Message
                 const address = JSON.parse(result.Message);
                 const city: string = address.City || '';
-                const state: string = address.State || '';
+                // The action's Message is the RAW ProviderGeocodeResult, which names the field
+                // StateProvinceCode/StateProvinceName — there is no `State` on it. (`State` exists
+                // only as a separate Output param.) Reading `address.State` was always undefined,
+                // which is why the postal lookup filled City but never the state box.
+                const state: string = address.StateProvinceCode || address.StateProvinceName || address.State || '';
 
                 if (!city && !state) {
                     // Google resolved the country but not a specific city/state for this postal code
@@ -334,12 +345,17 @@ export class AddressEditorComponent {
         try {
             const md = new Metadata();
 
-            // Resolve EntityName -> EntityID
-            const entity = md.Entities.find(e => e.Name === this._entityName);
+            // Resolve EntityName -> EntityID. EntityByName is case- and whitespace-insensitive and
+            // O(1); `Entities.find(e => e.Name === ...)` is neither, and its miss used to leave
+            // resolvedEntityID empty while still rendering an editable form — which then wrote
+            // empty-string GUIDs into AddressLink.EntityID and failed at the database.
+            const entity = md.EntityByName(this._entityName);
             if (!entity) {
+                this.LoadError = `Address editor misconfigured: entity "${this._entityName}" is not in metadata.`;
                 console.error(`AddressEditor: Entity "${this._entityName}" not found`);
                 return;
             }
+            this.LoadError = null;
             this.resolvedEntityID = entity.ID;
 
             const rv = new RunView();
@@ -418,7 +434,37 @@ export class AddressEditorComponent {
      */
     getAddressTypeIcon(typeID: string): string {
         const addrType = this.AddressTypes.find(t => t.ID === typeID);
-        return addrType?.IconClass || 'fa-solid fa-location-dot';
+        return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
+    }
+
+    /**
+     * Resolves an IconClass to something that will actually render, falling back to a
+     * generic location pin.
+     *
+     * A `?? fallback` is not enough on its own: the failure seen in the field was
+     * `fa-solid fa-mailbox`, a NON-EMPTY class that is Font Awesome **Pro**-only, so it
+     * passed every emptiness check and then rendered as a blank square (the browser
+     * reports `content: none` for its ::before — no rule matched). Since a component
+     * cannot ask the font whether a glyph exists, this verifies the icon is one the
+     * bundled Free set provides and substitutes the pin otherwise. Blank, whitespace-only
+     * and modifier-only values fall back too.
+     *
+     * The Pro list is deliberately small and explicit — only icons this app's seed data
+     * has actually used. It is a safety net; the real fix is correcting the seed
+     * (`metadata/address-types/.address-types.json`), which this change also does.
+     */
+    static resolveIconClass(iconClass: string | null | undefined): string {
+        const FALLBACK = 'fa-solid fa-location-dot';
+        const cls = (iconClass ?? '').trim();
+        if (!cls) return FALLBACK;
+        // Must name an actual icon, not just a style/modifier such as `fa-solid`.
+        const STYLE_ONLY = new Set(['fa-solid', 'fa-regular', 'fa-light', 'fa-thin', 'fa-duotone', 'fa-brands', 'fa', 'fas', 'far', 'fab']);
+        const names = cls.split(/\s+/).filter(t => t.startsWith('fa-') && !STYLE_ONLY.has(t));
+        if (names.length === 0) return FALLBACK;
+        // Font Awesome Pro-only icons seen in this app's seed data — they render blank on Free.
+        const PRO_ONLY = new Set(['fa-mailbox']);
+        if (names.some(n => PRO_ONLY.has(n))) return FALLBACK;
+        return cls;
     }
 
     /**
@@ -516,6 +562,16 @@ export class AddressEditorComponent {
      */
     async onSave(): Promise<void> {
         if (!this.EditForm.Line1 || !this.EditForm.City) return;
+        // Both are NOT NULL uniqueidentifier columns on AddressLink; saving without them
+        // produced "Conversion failed when converting from a character string to
+        // uniqueidentifier" at the database instead of anything actionable.
+        if (!this.resolvedEntityID || !this.EditForm.TypeID) {
+            this.LoadError = !this.resolvedEntityID
+                ? `Cannot save: entity "${this._entityName}" is not in metadata.`
+                : 'Cannot save: no address type is selected.';
+            this.cdr.detectChanges();
+            return;
+        }
 
         this.Saving = true;
         this.cdr.detectChanges();

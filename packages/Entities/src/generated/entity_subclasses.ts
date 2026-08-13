@@ -450,12 +450,64 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
-        * * Display Name: Parent Name
+        * * Display Name: Parent
         * * SQL Data Type: nvarchar(255)`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: Mj Latitude
+        * * SQL Data Type: decimal(10, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: Mj Longitude
+        * * SQL Data Type: decimal(10, 6)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
         * * Display Name: Root Parent ID
         * * SQL Data Type: uniqueidentifier`),
+    PrimaryAddressLine1: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressLine1
+        * * Display Name: Address Line 1
+        * * SQL Data Type: nvarchar(255)`),
+    PrimaryAddressLine2: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressLine2
+        * * Display Name: Address Line 2
+        * * SQL Data Type: nvarchar(255)`),
+    PrimaryAddressCity: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressCity
+        * * Display Name: City
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressState: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressState
+        * * Display Name: State
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressPostalCode: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressPostalCode
+        * * Display Name: Postal Code
+        * * SQL Data Type: nvarchar(20)`),
+    PrimaryAddressCountry: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressCountry
+        * * Display Name: Country
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressType: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressType
+        * * Display Name: Address Type
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryEmail: z.string().nullable().describe(`
+        * * Field Name: PrimaryEmail
+        * * Display Name: Primary Email
+        * * SQL Data Type: nvarchar(500)`),
+    PrimaryPhone: z.string().nullable().describe(`
+        * * Field Name: PrimaryPhone
+        * * Display Name: Primary Phone
+        * * SQL Data Type: nvarchar(500)`),
+    ActivePersonCount: z.number().nullable().describe(`
+        * * Field Name: ActivePersonCount
+        * * Display Name: Active Person Count
+        * * SQL Data Type: int`),
+    ChildOrgCount: z.number().nullable().describe(`
+        * * Field Name: ChildOrgCount
+        * * Display Name: Child Org Count
+        * * SQL Data Type: int`),
 });
 
 export type mjBizAppsCommonOrganizationEntityType = z.infer<typeof mjBizAppsCommonOrganizationSchema>;
@@ -501,17 +553,17 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Description: Nickname or preferred name the person goes by`),
     Title: z.string().nullable().describe(`
         * * Field Name: Title
-        * * Display Name: Job Title
+        * * Display Name: Title
         * * SQL Data Type: nvarchar(200)
         * * Description: Professional or job title, e.g. VP of Engineering, Board Director`),
     Email: z.string().nullable().describe(`
         * * Field Name: Email
-        * * Display Name: Email Address
+        * * Display Name: Email
         * * SQL Data Type: nvarchar(255)
         * * Description: Primary email address for this person`),
     Phone: z.string().nullable().describe(`
         * * Field Name: Phone
-        * * Display Name: Phone Number
+        * * Display Name: Phone
         * * SQL Data Type: nvarchar(50)
         * * Description: Primary phone number for this person`),
     DateOfBirth: z.date().nullable().describe(`
@@ -531,15 +583,14 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Description: URL to profile photo or avatar image`),
     Bio: z.string().nullable().describe(`
         * * Field Name: Bio
-        * * Display Name: Biography
+        * * Display Name: Bio
         * * SQL Data Type: nvarchar(MAX)
         * * Description: Biographical text or notes about this person`),
     LinkedUserID: z.string().nullable().describe(`
         * * Field Name: LinkedUserID
-        * * Display Name: Linked User
+        * * Display Name: Linked User ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-        * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.`),
+        * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)`),
     Status: z.union([z.literal('Active'), z.literal('Deceased'), z.literal('Inactive')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -567,8 +618,72 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * SQL Data Type: nvarchar(201)`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
-        * * Display Name: Linked User Name
+        * * Display Name: Linked User
         * * SQL Data Type: nvarchar(100)`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: Mj Latitude
+        * * SQL Data Type: decimal(10, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: Mj Longitude
+        * * SQL Data Type: decimal(10, 6)`),
+    PrimaryAddressLine1: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressLine1
+        * * Display Name: Address Line 1
+        * * SQL Data Type: nvarchar(255)`),
+    PrimaryAddressLine2: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressLine2
+        * * Display Name: Address Line 2
+        * * SQL Data Type: nvarchar(255)`),
+    PrimaryAddressCity: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressCity
+        * * Display Name: City
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressState: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressState
+        * * Display Name: State
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressPostalCode: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressPostalCode
+        * * Display Name: Postal Code
+        * * SQL Data Type: nvarchar(20)`),
+    PrimaryAddressCountry: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressCountry
+        * * Display Name: Country
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryAddressLatitude: z.number().nullable().describe(`
+        * * Field Name: PrimaryAddressLatitude
+        * * Display Name: Latitude
+        * * SQL Data Type: decimal(9, 6)`),
+    PrimaryAddressLongitude: z.number().nullable().describe(`
+        * * Field Name: PrimaryAddressLongitude
+        * * Display Name: Longitude
+        * * SQL Data Type: decimal(9, 6)`),
+    PrimaryAddressType: z.string().nullable().describe(`
+        * * Field Name: PrimaryAddressType
+        * * Display Name: Address Type
+        * * SQL Data Type: nvarchar(100)`),
+    PrimaryEmail: z.string().nullable().describe(`
+        * * Field Name: PrimaryEmail
+        * * Display Name: Primary Email
+        * * SQL Data Type: nvarchar(500)`),
+    PrimaryPhone: z.string().nullable().describe(`
+        * * Field Name: PrimaryPhone
+        * * Display Name: Primary Phone
+        * * SQL Data Type: nvarchar(500)`),
+    CurrentOrganizationID: z.string().nullable().describe(`
+        * * Field Name: CurrentOrganizationID
+        * * Display Name: Current Organization ID
+        * * SQL Data Type: uniqueidentifier`),
+    CurrentOrganizationName: z.string().nullable().describe(`
+        * * Field Name: CurrentOrganizationName
+        * * Display Name: Current Organization Name
+        * * SQL Data Type: nvarchar(255)`),
+    CurrentJobTitle: z.string().nullable().describe(`
+        * * Field Name: CurrentJobTitle
+        * * Display Name: Current Job Title
+        * * SQL Data Type: nvarchar(255)`),
 });
 
 export type mjBizAppsCommonPersonEntityType = z.infer<typeof mjBizAppsCommonPersonSchema>;
@@ -1974,11 +2089,29 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: Parent
-    * * Display Name: Parent Name
+    * * Display Name: Parent
     * * SQL Data Type: nvarchar(255)
     */
     get Parent(): string | null {
         return this.Get('Parent');
+    }
+
+    /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: Mj Latitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: Mj Longitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
     }
 
     /**
@@ -1988,6 +2121,105 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     */
     get RootParentID(): string | null {
         return this.Get('RootParentID');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLine1
+    * * Display Name: Address Line 1
+    * * SQL Data Type: nvarchar(255)
+    */
+    get PrimaryAddressLine1(): string | null {
+        return this.Get('PrimaryAddressLine1');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLine2
+    * * Display Name: Address Line 2
+    * * SQL Data Type: nvarchar(255)
+    */
+    get PrimaryAddressLine2(): string | null {
+        return this.Get('PrimaryAddressLine2');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressCity
+    * * Display Name: City
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressCity(): string | null {
+        return this.Get('PrimaryAddressCity');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressState
+    * * Display Name: State
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressState(): string | null {
+        return this.Get('PrimaryAddressState');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressPostalCode
+    * * Display Name: Postal Code
+    * * SQL Data Type: nvarchar(20)
+    */
+    get PrimaryAddressPostalCode(): string | null {
+        return this.Get('PrimaryAddressPostalCode');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressCountry
+    * * Display Name: Country
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressCountry(): string | null {
+        return this.Get('PrimaryAddressCountry');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressType
+    * * Display Name: Address Type
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressType(): string | null {
+        return this.Get('PrimaryAddressType');
+    }
+
+    /**
+    * * Field Name: PrimaryEmail
+    * * Display Name: Primary Email
+    * * SQL Data Type: nvarchar(500)
+    */
+    get PrimaryEmail(): string | null {
+        return this.Get('PrimaryEmail');
+    }
+
+    /**
+    * * Field Name: PrimaryPhone
+    * * Display Name: Primary Phone
+    * * SQL Data Type: nvarchar(500)
+    */
+    get PrimaryPhone(): string | null {
+        return this.Get('PrimaryPhone');
+    }
+
+    /**
+    * * Field Name: ActivePersonCount
+    * * Display Name: Active Person Count
+    * * SQL Data Type: int
+    */
+    get ActivePersonCount(): number | null {
+        return this.Get('ActivePersonCount');
+    }
+
+    /**
+    * * Field Name: ChildOrgCount
+    * * Display Name: Child Org Count
+    * * SQL Data Type: int
+    */
+    get ChildOrgCount(): number | null {
+        return this.Get('ChildOrgCount');
     }
 }
 
@@ -2115,7 +2347,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Title
-    * * Display Name: Job Title
+    * * Display Name: Title
     * * SQL Data Type: nvarchar(200)
     * * Description: Professional or job title, e.g. VP of Engineering, Board Director
     */
@@ -2128,7 +2360,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Email
-    * * Display Name: Email Address
+    * * Display Name: Email
     * * SQL Data Type: nvarchar(255)
     * * Description: Primary email address for this person
     */
@@ -2141,7 +2373,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Phone
-    * * Display Name: Phone Number
+    * * Display Name: Phone
     * * SQL Data Type: nvarchar(50)
     * * Description: Primary phone number for this person
     */
@@ -2193,7 +2425,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: Bio
-    * * Display Name: Biography
+    * * Display Name: Bio
     * * SQL Data Type: nvarchar(MAX)
     * * Description: Biographical text or notes about this person
     */
@@ -2206,11 +2438,9 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: LinkedUserID
-    * * Display Name: Linked User
-    * * 
-    * * @deprecated This field is deprecated and will be removed in a future version. Using it will result in console warnings.SQL Data Type: uniqueidentifier
+    * * Display Name: Linked User ID
+    * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-    * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.
     */
     get LinkedUserID(): string | null {
         return this.Get('LinkedUserID');
@@ -2269,11 +2499,155 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
     /**
     * * Field Name: LinkedUser
-    * * Display Name: Linked User Name
+    * * Display Name: Linked User
     * * SQL Data Type: nvarchar(100)
     */
     get LinkedUser(): string | null {
         return this.Get('LinkedUser');
+    }
+
+    /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: Mj Latitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: Mj Longitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLine1
+    * * Display Name: Address Line 1
+    * * SQL Data Type: nvarchar(255)
+    */
+    get PrimaryAddressLine1(): string | null {
+        return this.Get('PrimaryAddressLine1');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLine2
+    * * Display Name: Address Line 2
+    * * SQL Data Type: nvarchar(255)
+    */
+    get PrimaryAddressLine2(): string | null {
+        return this.Get('PrimaryAddressLine2');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressCity
+    * * Display Name: City
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressCity(): string | null {
+        return this.Get('PrimaryAddressCity');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressState
+    * * Display Name: State
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressState(): string | null {
+        return this.Get('PrimaryAddressState');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressPostalCode
+    * * Display Name: Postal Code
+    * * SQL Data Type: nvarchar(20)
+    */
+    get PrimaryAddressPostalCode(): string | null {
+        return this.Get('PrimaryAddressPostalCode');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressCountry
+    * * Display Name: Country
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressCountry(): string | null {
+        return this.Get('PrimaryAddressCountry');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLatitude
+    * * Display Name: Latitude
+    * * SQL Data Type: decimal(9, 6)
+    */
+    get PrimaryAddressLatitude(): number | null {
+        return this.Get('PrimaryAddressLatitude');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressLongitude
+    * * Display Name: Longitude
+    * * SQL Data Type: decimal(9, 6)
+    */
+    get PrimaryAddressLongitude(): number | null {
+        return this.Get('PrimaryAddressLongitude');
+    }
+
+    /**
+    * * Field Name: PrimaryAddressType
+    * * Display Name: Address Type
+    * * SQL Data Type: nvarchar(100)
+    */
+    get PrimaryAddressType(): string | null {
+        return this.Get('PrimaryAddressType');
+    }
+
+    /**
+    * * Field Name: PrimaryEmail
+    * * Display Name: Primary Email
+    * * SQL Data Type: nvarchar(500)
+    */
+    get PrimaryEmail(): string | null {
+        return this.Get('PrimaryEmail');
+    }
+
+    /**
+    * * Field Name: PrimaryPhone
+    * * Display Name: Primary Phone
+    * * SQL Data Type: nvarchar(500)
+    */
+    get PrimaryPhone(): string | null {
+        return this.Get('PrimaryPhone');
+    }
+
+    /**
+    * * Field Name: CurrentOrganizationID
+    * * Display Name: Current Organization ID
+    * * SQL Data Type: uniqueidentifier
+    */
+    get CurrentOrganizationID(): string | null {
+        return this.Get('CurrentOrganizationID');
+    }
+
+    /**
+    * * Field Name: CurrentOrganizationName
+    * * Display Name: Current Organization Name
+    * * SQL Data Type: nvarchar(255)
+    */
+    get CurrentOrganizationName(): string | null {
+        return this.Get('CurrentOrganizationName');
+    }
+
+    /**
+    * * Field Name: CurrentJobTitle
+    * * Display Name: Current Job Title
+    * * SQL Data Type: nvarchar(255)
+    */
+    get CurrentJobTitle(): string | null {
+        return this.Get('CurrentJobTitle');
     }
 }
 
