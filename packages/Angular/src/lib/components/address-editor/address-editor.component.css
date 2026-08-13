@@ -346,6 +346,18 @@
     animation: spin 1s linear infinite;
 }
 
+/* Misconfiguration (e.g. an EntityName that is not in metadata). Styled like .loading-row
+   so it sits in the same slot, but in the danger colour and left-aligned for readability. */
+.load-error-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px;
+    color: #b3261e;
+    font-size: 13px;
+    gap: 8px;
+}
+
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }

@@ -10,7 +10,13 @@
     </span>
 </div>
 
-@if (Loading) {
+@if (LoadError) {
+    <div class="addr-table">
+        <div class="load-error-row">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ LoadError }}
+        </div>
+    </div>
+} @else if (Loading) {
     <div class="addr-table">
         <div class="loading-row">
             <i class="fa-solid fa-spinner"></i> Loading addresses...

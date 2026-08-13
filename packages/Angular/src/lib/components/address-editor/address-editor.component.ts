@@ -223,6 +223,13 @@ export class AddressEditorComponent {
     /** The resolved MJ EntityID for the current {@link EntityName}. */
     private resolvedEntityID = '';
 
+    /**
+     * Set when the component cannot operate — currently only when {@link EntityName}
+     * does not resolve to an entity. Rendered in the template and used to block saving,
+     * so a misconfiguration surfaces as a visible message instead of a failed INSERT.
+     */
+    LoadError: string | null = null;
+
     /** Cached action ID for the Postal Code Lookup action. */
     private postalCodeLookupActionID: string | null = null;
 
@@ -334,12 +341,17 @@ export class AddressEditorComponent {
         try {
             const md = new Metadata();
 
-            // Resolve EntityName -> EntityID
-            const entity = md.Entities.find(e => e.Name === this._entityName);
+            // Resolve EntityName -> EntityID. EntityByName is case- and whitespace-insensitive and
+            // O(1); `Entities.find(e => e.Name === ...)` is neither, and its miss used to leave
+            // resolvedEntityID empty while still rendering an editable form — which then wrote
+            // empty-string GUIDs into AddressLink.EntityID and failed at the database.
+            const entity = md.EntityByName(this._entityName);
             if (!entity) {
+                this.LoadError = `Address editor misconfigured: entity "${this._entityName}" is not in metadata.`;
                 console.error(`AddressEditor: Entity "${this._entityName}" not found`);
                 return;
             }
+            this.LoadError = null;
             this.resolvedEntityID = entity.ID;
 
             const rv = new RunView();
@@ -516,6 +528,16 @@ export class AddressEditorComponent {
      */
     async onSave(): Promise<void> {
         if (!this.EditForm.Line1 || !this.EditForm.City) return;
+        // Both are NOT NULL uniqueidentifier columns on AddressLink; saving without them
+        // produced "Conversion failed when converting from a character string to
+        // uniqueidentifier" at the database instead of anything actionable.
+        if (!this.resolvedEntityID || !this.EditForm.TypeID) {
+            this.LoadError = !this.resolvedEntityID
+                ? `Cannot save: entity "${this._entityName}" is not in metadata.`
+                : 'Cannot save: no address type is selected.';
+            this.cdr.detectChanges();
+            return;
+        }
 
         this.Saving = true;
         this.cdr.detectChanges();
