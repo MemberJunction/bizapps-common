@@ -294,7 +294,11 @@ export class AddressEditorComponent {
                 // The action returns JSON-stringified address in Message
                 const address = JSON.parse(result.Message);
                 const city: string = address.City || '';
-                const state: string = address.State || '';
+                // The action's Message is the RAW ProviderGeocodeResult, which names the field
+                // StateProvinceCode/StateProvinceName — there is no `State` on it. (`State` exists
+                // only as a separate Output param.) Reading `address.State` was always undefined,
+                // which is why the postal lookup filled City but never the state box.
+                const state: string = address.StateProvinceCode || address.StateProvinceName || address.State || '';
 
                 if (!city && !state) {
                     // Google resolved the country but not a specific city/state for this postal code
@@ -430,7 +434,37 @@ export class AddressEditorComponent {
      */
     getAddressTypeIcon(typeID: string): string {
         const addrType = this.AddressTypes.find(t => t.ID === typeID);
-        return addrType?.IconClass || 'fa-solid fa-location-dot';
+        return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
+    }
+
+    /**
+     * Resolves an IconClass to something that will actually render, falling back to a
+     * generic location pin.
+     *
+     * A `?? fallback` is not enough on its own: the failure seen in the field was
+     * `fa-solid fa-mailbox`, a NON-EMPTY class that is Font Awesome **Pro**-only, so it
+     * passed every emptiness check and then rendered as a blank square (the browser
+     * reports `content: none` for its ::before — no rule matched). Since a component
+     * cannot ask the font whether a glyph exists, this verifies the icon is one the
+     * bundled Free set provides and substitutes the pin otherwise. Blank, whitespace-only
+     * and modifier-only values fall back too.
+     *
+     * The Pro list is deliberately small and explicit — only icons this app's seed data
+     * has actually used. It is a safety net; the real fix is correcting the seed
+     * (`metadata/address-types/.address-types.json`), which this change also does.
+     */
+    static resolveIconClass(iconClass: string | null | undefined): string {
+        const FALLBACK = 'fa-solid fa-location-dot';
+        const cls = (iconClass ?? '').trim();
+        if (!cls) return FALLBACK;
+        // Must name an actual icon, not just a style/modifier such as `fa-solid`.
+        const STYLE_ONLY = new Set(['fa-solid', 'fa-regular', 'fa-light', 'fa-thin', 'fa-duotone', 'fa-brands', 'fa', 'fas', 'far', 'fab']);
+        const names = cls.split(/\s+/).filter(t => t.startsWith('fa-') && !STYLE_ONLY.has(t));
+        if (names.length === 0) return FALLBACK;
+        // Font Awesome Pro-only icons seen in this app's seed data — they render blank on Free.
+        const PRO_ONLY = new Set(['fa-mailbox']);
+        if (names.some(n => PRO_ONLY.has(n))) return FALLBACK;
+        return cls;
     }
 
     /**
