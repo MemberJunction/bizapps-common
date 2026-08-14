@@ -33,15 +33,15 @@
     "fields": {
       "Name": "Mailing",
       "Description": "Preferred address for receiving mail and correspondence",
-      "IconClass": "fa-solid fa-mailbox",
+      "IconClass": "fa-solid fa-envelope",
       "DefaultRank": 30
     },
     "primaryKey": {
       "ID": "964C05C1-C947-467B-97B9-A7495BDDB7B0"
     },
     "sync": {
-      "lastModified": "2026-05-14T15:55:51.557Z",
-      "checksum": "89bb42c9e262f1bb31e3155695dfb02e1923fb89beab338199302e3cb18f9d85"
+      "lastModified": "2026-08-14T05:55:06.270Z",
+      "checksum": "10d45589af78406247c259409ebb9d25735a08b5898b8fa13fd3ac3d05b9bf26"
     }
   },
   {

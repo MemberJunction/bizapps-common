@@ -125,7 +125,23 @@ module.exports = {
   //
   // Using defaults - Core entities (__mj schema) should not be modified by distributions.
   // Uncomment only if you need different exclusions than the defaults.
-  excludeSchemas: ['sys', 'staging', 'dbo', '__mj'],
+  //
+  // The sibling app schemas are excluded for the same reason bizapps-orders excludes
+  // common/accounting/tasks and bizapps-tasks excludes common: each app owns exactly its
+  // own schema. Common is the base of the family so it has no dependencies to keep out —
+  // but a database can host SEVERAL of these apps at once (a joined dev workspace, or any
+  // host that installed more than one Open App). Without these entries CodeGen run from
+  // this repo registers the siblings' tables as entities and writes their generated classes
+  // into THIS repo's packages, which is silent and wrong. Listing consumers here is
+  // slightly backwards, but naming a schema that is absent is inert, and the alternative
+  // is a footgun that only fires on multi-app databases.
+  excludeSchemas: [
+    'sys', 'staging', 'dbo', '__mj',
+    '__mj_BizAppsOrders', '__mj_BizAppsAccounting', '__mj_BizAppsTasks',
+    '__mj_BizAppsIssues', '__mj_BizAppsForms', '__mj_BizAppsATS', '__mj_BizAppsCaliber',
+    '__mj_BizAppsCommittees', '__mj_BizAppsMarketing', '__mj_BizAppsSecureMessaging',
+    '__mj_BizAppsSonar', 'Committees', 'Sonar',
+  ],
   // excludeTables: [
   //   { schema: '%', table: 'sys%' },
   //   { schema: '%', table: 'flyway_schema_history' }

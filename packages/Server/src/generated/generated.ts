@@ -460,10 +460,13 @@ export class mjBizAppsCommonAddress_ {
         
     @Field() 
     _mj__UpdatedAt: Date;
-        
+        // Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+
     @Field(() => [mjBizAppsCommonAddressLink_])
     mjBizAppsCommonAddressLinks_AddressIDArray: mjBizAppsCommonAddressLink_[]; // Link to mjBizAppsCommonAddressLinks
-    
+    // Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Event Products not generated: its GraphQL type is not declared in this file.
+
 }
 
 //****************************************************************************
@@ -604,7 +607,8 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
         const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Addresses', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
         return result;
     }
-    
+    // Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+
     @FieldResolver(() => [mjBizAppsCommonAddressLink_])
     async mjBizAppsCommonAddressLinks_AddressIDArray(@Root() mjbizappscommonaddress_: mjBizAppsCommonAddress_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
         this.CheckUserReadPermissions('MJ_BizApps_Common: Address Links', userPayload);
@@ -614,7 +618,9 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
         const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Address Links', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
-        
+        // Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Event Products not generated: its GraphQL type is not declared in this file.
+
     @Mutation(() => mjBizAppsCommonAddress_)
     async CreatemjBizAppsCommonAddress(
         @Arg('input', () => CreatemjBizAppsCommonAddressInput) input: CreatemjBizAppsCommonAddressInput,
@@ -1297,9 +1303,57 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(255)
     Parent?: string;
         
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
     @Field({nullable: true}) 
     @MaxLength(36)
     RootParentID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    PrimaryAddressLine1?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    PrimaryAddressLine2?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressCity?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressState?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(20)
+    PrimaryAddressPostalCode?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressCountry?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressType?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    PrimaryEmail?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    PrimaryPhone?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    ActivePersonCount?: number;
+        
+    @Field(() => Int, {nullable: true}) 
+    ChildOrgCount?: number;
         
     @Field(() => [mjBizAppsCommonOrganization_])
     mjBizAppsCommonOrganizations_ParentIDArray: mjBizAppsCommonOrganization_[]; // Link to mjBizAppsCommonOrganizations
@@ -1312,7 +1366,19 @@ export class mjBizAppsCommonOrganization_ {
     
     @Field(() => [mjBizAppsCommonRelationship_])
     mjBizAppsCommonRelationships_FromOrganizationIDArray: mjBizAppsCommonRelationship_[]; // Link to mjBizAppsCommonRelationships
-    
+    // Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Price List Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Subscriptions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Promotion Codes not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
+
 }
 
 //****************************************************************************
@@ -1511,7 +1577,19 @@ export class mjBizAppsCommonOrganizationResolver extends ResolverBase {
         const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
-        
+        // Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Price List Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Subscriptions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Promotion Codes not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
+
     @Mutation(() => mjBizAppsCommonOrganization_)
     async CreatemjBizAppsCommonOrganization(
         @Arg('input', () => CreatemjBizAppsCommonOrganizationInput) input: CreatemjBizAppsCommonOrganizationInput,
@@ -1600,7 +1678,7 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true, description: `Biographical text or notes about this person`}) 
     Bio?: string;
         
-    @Field({nullable: true, description: `DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.`}) 
+    @Field({nullable: true}) 
     @MaxLength(36)
     LinkedUserID?: string;
         
@@ -1622,15 +1700,92 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(100)
     LinkedUser?: string;
         
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    PrimaryAddressLine1?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    PrimaryAddressLine2?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressCity?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressState?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(20)
+    PrimaryAddressPostalCode?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressCountry?: string;
+        
+    @Field(() => Float, {nullable: true}) 
+    PrimaryAddressLatitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    PrimaryAddressLongitude?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryAddressType?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    PrimaryEmail?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    PrimaryPhone?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    CurrentOrganizationID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    CurrentOrganizationName?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    CurrentJobTitle?: string;
+        
     @Field(() => [mjBizAppsCommonContactMethod_])
     mjBizAppsCommonContactMethods_PersonIDArray: mjBizAppsCommonContactMethod_[]; // Link to mjBizAppsCommonContactMethods
     
     @Field(() => [mjBizAppsCommonRelationship_])
     mjBizAppsCommonRelationships_ToPersonIDArray: mjBizAppsCommonRelationship_[]; // Link to mjBizAppsCommonRelationships
-    
+    // Relationship field to MJ_BizApps_Tasks: Task Comments not generated: its GraphQL type is not declared in this file.
+
     @Field(() => [mjBizAppsCommonRelationship_])
     mjBizAppsCommonRelationships_FromPersonIDArray: mjBizAppsCommonRelationship_[]; // Link to mjBizAppsCommonRelationships
-    
+    // Relationship field to MJ_BizApps_Tasks: Task Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Tasks: Task Activities not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Tasks: Tasks not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Tasks: Task Decisions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Promotion Codes not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Subscriptions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Price List Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+
 }
 
 //****************************************************************************
@@ -1827,7 +1982,8 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
         const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
-        
+        // Relationship to MJ_BizApps_Tasks: Task Comments not generated: its GraphQL type is not declared in this file.
+
     @FieldResolver(() => [mjBizAppsCommonRelationship_])
     async mjBizAppsCommonRelationships_FromPersonIDArray(@Root() mjbizappscommonperson_: mjBizAppsCommonPerson_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
         this.CheckUserReadPermissions('MJ_BizApps_Common: Relationships', userPayload);
@@ -1837,7 +1993,23 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
         const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Relationships', rows, this.GetUserFromPayload(userPayload));
         return result;
     }
-        
+        // Relationship to MJ_BizApps_Tasks: Task Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Tasks: Task Activities not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Tasks: Tasks not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Tasks: Task Decisions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Promotion Codes not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Subscriptions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Price List Assignments not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+
     @Mutation(() => mjBizAppsCommonPerson_)
     async CreatemjBizAppsCommonPerson(
         @Arg('input', () => CreatemjBizAppsCommonPersonInput) input: CreatemjBizAppsCommonPersonInput,

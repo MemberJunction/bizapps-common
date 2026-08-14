@@ -1,7 +1,7 @@
 import { BaseEntity, UserInfo } from '@memberjunction/core';
 import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
-import { UserCache } from '@memberjunction/sqlserver-dataprovider';
+import { UserCache } from '@memberjunction/generic-database-provider';
 
 /**
  * Server-side subclass of the BAC Person entity.

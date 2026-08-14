@@ -1,6 +1,9 @@
 [
   {
-    "fields": {},
+    "fields": {
+      "GeneratedBaseViewName": "vwPeopleGenerated",
+      "BaseViewGenerated": false
+    },
     "relatedEntities": {
       "MJ: Entity Fields": [
         {
@@ -35,20 +38,22 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-05-14T15:55:52.064Z",
-      "checksum": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      "lastModified": "2026-08-13T22:26:06.122Z",
+      "checksum": "11301aab86e06f6d2e9793a9a70534bd407db8e5af386c631c3a15245b435eab"
     }
   },
   {
     "fields": {
-      "CascadeDeletes": true
+      "CascadeDeletes": true,
+      "GeneratedBaseViewName": "vwOrganizationsGenerated",
+      "BaseViewGenerated": false
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
-      "lastModified": "2026-05-14T15:55:52.071Z",
-      "checksum": "425dd92a5b811a9ebafffb35ad173eeb2777ed3bf7ef3c25b29cbbaf08252d46"
+      "lastModified": "2026-08-13T22:26:06.152Z",
+      "checksum": "e5f91e1915462178def1a76daa6a7c2c9310ac8a0180a7ba1a8243f27c481e20"
     }
   }
 ]
