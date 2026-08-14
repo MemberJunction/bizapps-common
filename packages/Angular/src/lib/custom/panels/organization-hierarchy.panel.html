@@ -1,0 +1,15 @@
+<mj-collapsible-panel
+    SectionKey="organizationHierarchy"
+    SectionName="Organization Hierarchy"
+    Icon="fa fa-sitemap"
+    Variant="related-entity"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-org-hierarchy-tree
+            [OrganizationID]="Record.ID"
+            (Navigate)="FormComponent.OnFormNavigate($event)">
+        </bizapps-org-hierarchy-tree>
+    }
+</mj-collapsible-panel>

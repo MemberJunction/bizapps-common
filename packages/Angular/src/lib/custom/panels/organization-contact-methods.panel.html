@@ -1,0 +1,16 @@
+<mj-collapsible-panel
+    SectionKey="contactMethods"
+    SectionName="Contact Methods"
+    Icon="fa fa-address-book"
+    Variant="related-entity"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-contact-method-list
+            [OrganizationID]="Record.ID"
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
+        </bizapps-contact-method-list>
+    }
+</mj-collapsible-panel>

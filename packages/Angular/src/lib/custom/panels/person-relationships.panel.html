@@ -1,0 +1,17 @@
+<mj-collapsible-panel
+    SectionKey="relationships"
+    SectionName="Relationships"
+    Icon="fa fa-handshake"
+    Variant="related-entity"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-relationship-list
+            [PersonID]="Record.ID"
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()"
+            (Navigate)="FormComponent.OnFormNavigate($event)">
+        </bizapps-relationship-list>
+    }
+</mj-collapsible-panel>

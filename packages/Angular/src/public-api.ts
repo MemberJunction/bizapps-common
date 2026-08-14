@@ -12,7 +12,7 @@ import '@mj-biz-apps/common-entities';
 // Import generated form components (triggers @RegisterClass for form components)
 import './lib/generated/generated-forms.module';
 
-// Import custom form components (must come AFTER generated to override via @RegisterClass priority)
+// Import custom form panels so @RegisterClassEx contributions fire
 import './lib/custom/custom-forms.module';
 
 // Import class registrations manifest
@@ -28,6 +28,8 @@ export { AddressEditorComponent } from './lib/components/address-editor/address-
 export { ContactMethodListComponent } from './lib/components/contact-method-list/contact-method-list.component';
 export { RelationshipListComponent } from './lib/components/relationship-list/relationship-list.component';
 export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hierarchy-tree/org-hierarchy-tree.component';
+export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
+export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 
 /**
  * Bootstrap function called during MJExplorer initialization.
