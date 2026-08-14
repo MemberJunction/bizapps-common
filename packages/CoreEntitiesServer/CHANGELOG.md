@@ -1,5 +1,15 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.34.0
+
+### Patch Changes
+
+- e69c364: Import UserCache from @memberjunction/generic-database-provider — MJ #3734 moved it out of @memberjunction/sqlserver-dataprovider with no re-export, so this package failed to compile against MJ next. Peer dependency swapped accordingly (PersonEntityServer was the only sqlserver-dataprovider usage). Requires the first MJ edge release that carries #3734.
+- Updated dependencies [2c8c1bc]
+- Updated dependencies [ab9f88e]
+- Updated dependencies [2f8dd2b]
+  - @mj-biz-apps/common-entities@5.34.0
+
 ## 5.33.2
 
 ### Patch Changes
