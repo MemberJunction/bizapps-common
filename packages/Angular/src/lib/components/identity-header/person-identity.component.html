@@ -1,0 +1,88 @@
+<div class="biz-hero">
+    <div class="biz-hero__identity">
+        <div class="biz-hero__avatar" aria-hidden="true">
+            @if (Record.PhotoURL && !EditMode) {
+                <img [src]="Record.PhotoURL" [alt]="Record.DisplayName" (error)="OnPhotoError($event)">
+            } @else {
+                <span class="biz-hero__initials">{{ Initials }}</span>
+            }
+        </div>
+
+        <div class="biz-hero__copy">
+            <div class="biz-hero__title-row">
+                <h1 class="biz-hero__name">{{ Record.DisplayName || (Record.FirstName + ' ' + Record.LastName) }}</h1>
+            </div>
+            @if (PreferredDiffers) {
+                <div class="biz-hero__aka">Goes by {{ Record.PreferredName }}</div>
+            }
+            <div class="biz-hero__badges">
+                <span class="biz-hero__entity-chip">
+                    <i class="fa-solid fa-database"></i>
+                    People
+                </span>
+                <span class="biz-hero__chip" [attr.data-tone]="StatusTone">{{ Record.Status }}</span>
+            </div>
+        </div>
+    </div>
+
+    @if (DisplayTitle || Record.CurrentOrganizationName || Record.PrimaryEmail || Record.Email || LocationLine) {
+        <div class="biz-hero__summary">
+            @if (DisplayTitle) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Title</span>
+                    <span class="biz-hero__stat-val">{{ DisplayTitle }}</span>
+                </div>
+            }
+            @if (Record.CurrentOrganizationName) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Organization</span>
+                    @if (Record.CurrentOrganizationID) {
+                        <button type="button" class="biz-hero__stat-val" (click)="OnOrgClick($event)">
+                            {{ Record.CurrentOrganizationName }}
+                        </button>
+                    } @else {
+                        <span class="biz-hero__stat-val">{{ Record.CurrentOrganizationName }}</span>
+                    }
+                </div>
+            }
+            @if (Record.PrimaryEmail || Record.Email) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Email</span>
+                    <a class="biz-hero__stat-val is-link"
+                       [href]="'mailto:' + (Record.PrimaryEmail || Record.Email)">
+                        {{ Record.PrimaryEmail || Record.Email }}
+                    </a>
+                </div>
+            }
+            @if (LocationLine) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Location</span>
+                    <span class="biz-hero__stat-val">{{ LocationLine }}</span>
+                </div>
+            }
+        </div>
+    }
+
+    <ng-content></ng-content>
+
+    @if (EditMode) {
+        <div class="biz-hero__edit">
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="FirstName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LastName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PreferredName"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Prefix"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Suffix"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="DateOfBirth"
+                Type="datepicker" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Gender"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PhotoURL"
+                Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+        </div>
+    }
+</div>

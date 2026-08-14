@@ -1,0 +1,99 @@
+[
+  {
+    "_comments": [
+      "Form chrome: Contact Methods on a Person are a same-app child, always first-class.",
+      "Explicit Primary so the budgeted ranker cannot fold them if other apps install more grids."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "FormRole": "Primary"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=PersonID"
+    },
+    "sync": {
+      "lastModified": "2026-08-14T20:00:24.977Z",
+      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  },
+  {
+    "_comments": [
+      "Form chrome: outgoing Relationships (FromPerson) stay on the Person form as Primary.",
+      "The inverse ToPerson grid is left Auto so the ranker can park it in More on a busy hub."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "FormRole": "Primary"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromPersonID"
+    },
+    "sync": {
+      "lastModified": "2026-08-14T20:00:25.012Z",
+      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  },
+  {
+    "_comments": [
+      "Form chrome: Contact Methods on an Organization are a same-app child, always first-class."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "FormRole": "Primary"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=OrganizationID"
+    },
+    "sync": {
+      "lastModified": "2026-08-14T20:00:25.085Z",
+      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  },
+  {
+    "_comments": [
+      "Form chrome: outgoing Relationships (FromOrganization) stay first-class."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "FormRole": "Primary"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromOrganizationID"
+    },
+    "sync": {
+      "lastModified": "2026-08-14T20:00:25.051Z",
+      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  },
+  {
+    "_comments": [
+      "Form chrome: child Organizations (ParentID) stay first-class. The hierarchy widget claims this grid."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "FormRole": "Primary"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Organizations&RelatedEntityJoinField=ParentID"
+    },
+    "sync": {
+      "lastModified": "2026-08-14T20:00:25.108Z",
+      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  }
+]

@@ -1,0 +1,16 @@
+<mj-collapsible-panel
+    SectionKey="addresses"
+    SectionName="Addresses"
+    Icon="fa fa-map-marker-alt"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-address-editor
+            EntityName="MJ_BizApps_Common: People"
+            [RecordID]="Record.ID"
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
+        </bizapps-address-editor>
+    }
+</mj-collapsible-panel>
