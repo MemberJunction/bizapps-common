@@ -14,9 +14,13 @@
   "sqlLogging": {
     "enabled": true,
     "outputDirectory": "./sql_logging",
-    "filterPatterns": ["*spCreateAIPromptRun*", "*spUpdateAIPromptRun*"],
+    "filterPatterns": [
+      "*spCreateAIPromptRun*",
+      "*spUpdateAIPromptRun*"
+    ],
     "filterType": "exclude",
-    "formatAsMigration": false
+    "formatAsMigration": true,
+    "variableBatchThreshold": 200
   },
   "emitSyncNotes": false
 }
