@@ -1,6 +1,6 @@
 ---
-"@mj-biz-apps/common-ng": patch
-"@mj-biz-apps/common-entities": patch
+"@mj-biz-apps/common-ng": minor
+"@mj-biz-apps/common-entities": minor
 ---
 
 Address/contact widgets: MJ design tokens, two field-population bugs, and the layered base views that make the Primary Address panel work at all.
