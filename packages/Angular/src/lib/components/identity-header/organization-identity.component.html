@@ -11,66 +11,54 @@
         <div class="biz-hero__copy">
             <div class="biz-hero__title-row">
                 <h1 class="biz-hero__name">{{ Record.Name }}</h1>
-                <span class="biz-hero__chip" [attr.data-tone]="StatusTone">{{ Record.Status }}</span>
             </div>
-
             @if (LegalDiffers) {
                 <div class="biz-hero__aka">{{ Record.LegalName }}</div>
             }
-
-            <div class="biz-hero__sub">
-                @if (Record.OrganizationType) {
-                    <span>{{ Record.OrganizationType }}</span>
-                }
-                @if (Record.OrganizationType && Record.Parent) {
-                    <span class="biz-hero__dot" aria-hidden="true">·</span>
-                }
-                @if (Record.Parent) {
-                    <span>
-                        Child of
-                        @if (Record.ParentID) {
-                            <button type="button" class="biz-hero__link" (click)="OnParentClick($event)">
-                                {{ Record.Parent }}
-                            </button>
-                        } @else {
-                            {{ Record.Parent }}
-                        }
-                    </span>
-                }
-                @if (Record.ActivePersonCount != null) {
-                    <span class="biz-hero__dot" aria-hidden="true">·</span>
-                    <span>{{ Record.ActivePersonCount }} people</span>
-                }
-            </div>
-
-            <div class="biz-hero__meta">
-                @if (Record.PrimaryEmail || Record.Email) {
-                    <a class="biz-hero__pill" [href]="'mailto:' + (Record.PrimaryEmail || Record.Email)">
-                        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                        {{ Record.PrimaryEmail || Record.Email }}
-                    </a>
-                }
-                @if (Record.PrimaryPhone || Record.Phone) {
-                    <span class="biz-hero__pill">
-                        <i class="fa-solid fa-phone" aria-hidden="true"></i>
-                        {{ Record.PrimaryPhone || Record.Phone }}
-                    </span>
-                }
-                @if (Record.Website) {
-                    <a class="biz-hero__pill" [href]="Record.Website" target="_blank" rel="noopener">
-                        <i class="fa-solid fa-globe" aria-hidden="true"></i>
-                        {{ Record.Website }}
-                    </a>
-                }
-                @if (LocationLine) {
-                    <span class="biz-hero__pill">
-                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                        {{ LocationLine }}
-                    </span>
-                }
+            <div class="biz-hero__badges">
+                <span class="biz-hero__entity-chip">
+                    <i class="fa-solid fa-database"></i>
+                    Organizations
+                </span>
+                <span class="biz-hero__chip" [attr.data-tone]="StatusTone">{{ Record.Status }}</span>
             </div>
         </div>
     </div>
+
+    @if (Record.OrganizationType || Record.Parent || Record.ActivePersonCount != null || LocationLine) {
+        <div class="biz-hero__summary">
+            @if (Record.OrganizationType) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Type</span>
+                    <span class="biz-hero__stat-val">{{ Record.OrganizationType }}</span>
+                </div>
+            }
+            @if (Record.Parent) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Parent</span>
+                    @if (Record.ParentID) {
+                        <button type="button" class="biz-hero__stat-val" (click)="OnParentClick($event)">
+                            {{ Record.Parent }}
+                        </button>
+                    } @else {
+                        <span class="biz-hero__stat-val">{{ Record.Parent }}</span>
+                    }
+                </div>
+            }
+            @if (Record.ActivePersonCount != null) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">People</span>
+                    <span class="biz-hero__stat-val">{{ Record.ActivePersonCount }}</span>
+                </div>
+            }
+            @if (LocationLine) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Location</span>
+                    <span class="biz-hero__stat-val">{{ LocationLine }}</span>
+                </div>
+            }
+        </div>
+    }
 
     <ng-content></ng-content>
 
