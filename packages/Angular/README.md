@@ -34,6 +34,16 @@ export class AppModule {}
 
 ---
 
+## Explorer Directory
+
+`LoadBizAppsCommonClient()` also registers three `BaseResourceComponent` drivers so MJ Explorer can mount the Common application:
+
+- `CommonDirectoryResource` — operational dashboard (counts, gap queues, recent people)
+- `CommonPeopleResource` — searchable people list
+- `CommonOrganizationsResource` — searchable organization list
+
+See the root README and `docs/angular-components.md` for the information architecture.
+
 ## Architecture
 
 The package follows a three-tier component architecture:
@@ -56,7 +66,7 @@ Form Components (NgModule-declared, @RegisterClass)
 
 | Component | Selector | Description |
 |---|---|---|
-| `PersonHeaderComponent` | `<bizapps-person-header>` | Dark gradient header with avatar initials, name, job title, and organization navigation link |
+| `PersonHeaderComponent` | `<bizapps-person-header>` | Dark gradient header with avatar initials, name, job title, and organization navigation link. Edit mode stacks identity fields as labeled columns (wrap each `mj-form-field`); two-across only at `≥52rem` |
 | `PersonSummaryCardsComponent` | `<bizapps-person-summary-cards>` | Four metric cards showing email, phone, address count, and relationship count (lazy-loaded) |
 | `PersonIdentitySectionComponent` | `<bizapps-person-identity-section>` | Section card with identity fields: name, preferred name, prefix/suffix/gender, date of birth |
 | `PersonProfessionalSectionComponent` | `<bizapps-person-professional-section>` | Section card with professional fields: title, job title, organization link, email, phone, bio |
@@ -66,7 +76,7 @@ Form Components (NgModule-declared, @RegisterClass)
 
 | Component | Selector | Description |
 |---|---|---|
-| `OrgHeaderComponent` | `<bizapps-org-header>` | Top bar with logo initial, name, type badge, status, founded year, and website action |
+| `OrgHeaderComponent` | `<bizapps-org-header>` | Top bar with logo initial, name, type badge, status, founded year, and website action. Same edit-mode field wrapping and stacked / two-across layout as the Person header |
 | `OrgIdentitySectionComponent` | `<bizapps-org-identity-section>` | Panel card with all organization detail fields: name, legal name, type, status, contacts, parent, description |
 | `OrgHierarchyTreeComponent` | `<bizapps-org-hierarchy-tree>` | Self-loading tree view showing parent, current, and child organizations with navigation |
 
