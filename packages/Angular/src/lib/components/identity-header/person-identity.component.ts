@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey } from '@memberjunction/core';
+import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
@@ -16,11 +17,32 @@ import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
     templateUrl: './person-identity.component.html',
     styleUrls: ['./identity-header.css'],
 })
-export class PersonIdentityComponent {
+export class PersonIdentityComponent implements OnInit {
     @Input({ required: true }) Record!: mjBizAppsCommonPersonEntity;
     @Input() EditMode = false;
     @Input() FormContext?: FormContext;
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
+
+    public Collapsed = false;
+
+    public ngOnInit(): void {
+        const raw = UserInfoEngine.Instance.GetSetting('mj.identityHeader.collapsed.person');
+        if (raw) {
+            try {
+                this.Collapsed = JSON.parse(raw) === true;
+            } catch {
+                this.Collapsed = false;
+            }
+        }
+    }
+
+    public ToggleCollapsed(): void {
+        this.Collapsed = !this.Collapsed;
+        UserInfoEngine.Instance.SetSettingDebounced(
+            'mj.identityHeader.collapsed.person',
+            JSON.stringify(this.Collapsed),
+        );
+    }
 
     public get DisplayTitle(): string {
         return this.Record.CurrentJobTitle || this.Record.Title || '';

@@ -1,4 +1,4 @@
-<div class="biz-hero">
+<div class="biz-hero" [class.biz-hero--collapsed]="Collapsed">
     <div class="biz-hero__identity">
         <div class="biz-hero__avatar" aria-hidden="true">
             @if (Record.LogoURL && !EditMode) {
@@ -6,61 +6,81 @@
             } @else {
                 <span class="biz-hero__initials">{{ Initials }}</span>
             }
+            @if (!EditMode) {
+                <span class="biz-hero__presence" title="Active"></span>
+            }
         </div>
 
         <div class="biz-hero__copy">
             <div class="biz-hero__title-row">
                 <h1 class="biz-hero__name">{{ Record.Name }}</h1>
             </div>
-            @if (LegalDiffers) {
-                <div class="biz-hero__aka">{{ Record.LegalName }}</div>
+            @if (LegalDiffers && !Collapsed) {
+                <div class="biz-hero__aka">Legal name: {{ Record.LegalName }}</div>
             }
             <div class="biz-hero__badges">
                 <span class="biz-hero__entity-chip">
-                    <i class="fa-solid fa-database"></i>
+                    <i class="fa-solid fa-building"></i>
                     Organizations
                 </span>
                 <span class="biz-hero__chip" [attr.data-tone]="StatusTone">{{ Record.Status }}</span>
             </div>
         </div>
+
+        @if (!EditMode) {
+            <button type="button"
+                    class="biz-hero__toggle"
+                    [title]="Collapsed ? 'Expand header' : 'Collapse header'"
+                    [attr.aria-label]="Collapsed ? 'Expand header' : 'Collapse header'"
+                    (click)="ToggleCollapsed()">
+                <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'"></i>
+            </button>
+        }
     </div>
 
-    @if (!EditMode && (Record.OrganizationType || Record.Parent || Record.ActivePersonCount != null || LocationLine)) {
-        <div class="biz-hero__summary">
-            @if (Record.OrganizationType) {
-                <div class="biz-hero__stat">
-                    <span class="biz-hero__stat-label">Type</span>
-                    <span class="biz-hero__stat-val">{{ Record.OrganizationType }}</span>
-                </div>
-            }
-            @if (Record.Parent) {
-                <div class="biz-hero__stat">
-                    <span class="biz-hero__stat-label">Parent</span>
-                    @if (Record.ParentID) {
-                        <button type="button" class="biz-hero__stat-val" (click)="OnParentClick($event)">
-                            {{ Record.Parent }}
-                        </button>
-                    } @else {
-                        <span class="biz-hero__stat-val">{{ Record.Parent }}</span>
-                    }
-                </div>
-            }
-            @if (Record.ActivePersonCount != null) {
-                <div class="biz-hero__stat">
-                    <span class="biz-hero__stat-label">People</span>
-                    <span class="biz-hero__stat-val">{{ Record.ActivePersonCount }}</span>
-                </div>
-            }
-            @if (LocationLine) {
-                <div class="biz-hero__stat">
-                    <span class="biz-hero__stat-label">Location</span>
-                    <span class="biz-hero__stat-val">{{ LocationLine }}</span>
-                </div>
-            }
-        </div>
-    }
+    @if (!Collapsed) {
+        @if (!EditMode && (Record.Parent || Record.Website || Record.PrimaryEmail || Record.Email || LocationLine)) {
+            <div class="biz-hero__summary">
+                @if (Record.Parent) {
+                    <div class="biz-hero__stat">
+                        <span class="biz-hero__stat-label">Parent Org</span>
+                        @if (Record.ParentID) {
+                            <button type="button" class="biz-hero__stat-val" (click)="OnParentClick($event)">
+                                {{ Record.Parent }}
+                            </button>
+                        } @else {
+                            <span class="biz-hero__stat-val">{{ Record.Parent }}</span>
+                        }
+                    </div>
+                }
+                @if (Record.Website) {
+                    <div class="biz-hero__stat">
+                        <span class="biz-hero__stat-label">Website</span>
+                        <a class="biz-hero__stat-val is-link" [href]="Record.Website" target="_blank" rel="noopener noreferrer">
+                            {{ Record.Website }}
+                        </a>
+                    </div>
+                }
+                @if (Record.PrimaryEmail || Record.Email) {
+                    <div class="biz-hero__stat">
+                        <span class="biz-hero__stat-label">Email</span>
+                        <a class="biz-hero__stat-val is-link"
+                           [href]="'mailto:' + (Record.PrimaryEmail || Record.Email)">
+                            {{ Record.PrimaryEmail || Record.Email }}
+                        </a>
+                    </div>
+                }
+                @if (LocationLine) {
+                    <div class="biz-hero__stat">
+                        <span class="biz-hero__stat-label">Location</span>
+                        <span class="biz-hero__stat-val">{{ LocationLine }}</span>
+                    </div>
+                }
+            </div>
+        }
 
-    <ng-content></ng-content>
+        <ng-content></ng-content>
+    }
 
     @if (EditMode) {
         <div class="biz-hero__edit">
@@ -73,28 +93,12 @@
                     Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
             </div>
             <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="OrganizationTypeID"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="Record"></mj-form-field>
-            </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Status"
-                    Type="select" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-            </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="FoundedDate"
-                    Type="datepicker" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-            </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="TaxID"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-            </div>
-            <div class="biz-hero__field biz-hero__field--span">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Website"
                     Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
             </div>
-            <div class="biz-hero__field biz-hero__field--span">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Description"
-                    Type="textarea" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
             </div>
         </div>
     }
