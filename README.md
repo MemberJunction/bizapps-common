@@ -102,6 +102,13 @@ Production-ready, standalone Angular widgets that handle their own data loading,
 
 Polished form overrides for Person and Organization records with sectioned layouts and embedded CRUD widgets.
 
+The identity header (name, title, org / legal name, website) is the hero on
+those forms. In **edit** mode each field is a labeled column — wrapped so
+`mj-form-field`'s `display: contents` cannot leak into the parent grid —
+stacked vertically, then two-across only when the hero is at least `52rem`
+wide. URLs and description still span the full row. The read-only summary
+line is hidden while editing so it does not compete with the live fields.
+
 ---
 
 ## Entity Model

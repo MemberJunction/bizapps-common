@@ -164,7 +164,7 @@ These override the CodeGen-generated form components for Person and Organization
 
 | Section                        | Default State | Contents                                       |
 |--------------------------------|---------------|-------------------------------------------------|
-| Personal Identity              | Expanded      | Name fields, prefix, suffix                    |
+| Personal Identity              | Expanded      | Name fields, prefix, suffix. In edit, each `mj-form-field` is wrapped; fields stack as labeled columns and go two-across only when the hero is ≥52rem. The read-only summary is hidden while editing. |
 | Professional and Profile       | Expanded      | Title, company, bio                            |
 | Account and Status             | Collapsed     | User link, active flag                         |
 | Primary Address                | Collapsed     | Main address fields on Person record           |
@@ -190,7 +190,7 @@ These override the CodeGen-generated form components for Person and Organization
 
 | Section                        | Default State | Contents                                       |
 |--------------------------------|---------------|-------------------------------------------------|
-| Organization Identity          | Expanded      | Name and identifying fields                    |
+| Organization Identity          | Expanded      | Name and identifying fields. Same edit-mode wrapping and stacked / two-across layout as the Person identity header; URL and description stay full-width. |
 | Hierarchy and Structure        | Expanded      | Parent org, structure details                  |
 | Contact Information            | Collapsed     | Org-level contact info                         |
 | Primary Address                | Collapsed     | Main address fields on Organization record     |

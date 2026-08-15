@@ -8,6 +8,8 @@
     border: 1px solid var(--mj-border-default);
     border-radius: var(--mj-radius-lg);
     box-shadow: var(--mj-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+    container-type: inline-size;
+    container-name: biz-hero;
 }
 
 .biz-hero__identity {
@@ -179,12 +181,57 @@ button.biz-hero__stat-val:hover {
     text-decoration: underline;
 }
 
+/* mj-form-field is display:contents — never let its label/control become
+   siblings of a parent grid. Each field sits in a wrapping cell. */
 .biz-hero__edit {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: var(--mj-space-3);
     padding-top: var(--mj-space-3);
     border-top: 1px solid var(--mj-border-subtle);
+}
+
+.biz-hero__field {
+    min-width: 0;
+}
+
+/* Label above the control. The shared field is a 200px|1fr row — that
+   needs ~28rem per field and is why this card looked broken. */
+.biz-hero__field ::ng-deep .mj-forms-field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 0;
+}
+
+.biz-hero__field ::ng-deep .mj-forms-field-label {
+    font-size: var(--mj-text-xs);
+    font-weight: var(--mj-font-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mj-text-muted);
+}
+
+.biz-hero__field ::ng-deep .mj-forms-field--editing:hover {
+    margin: 0;
+    padding: 0;
+}
+
+.biz-hero__field ::ng-deep .mj-forms-field-control {
+    width: 100%;
+}
+
+@container biz-hero (min-width: 52rem) {
+    .biz-hero__edit {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--mj-space-3) var(--mj-space-4);
+    }
+
+    .biz-hero__field--span {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 720px) {
