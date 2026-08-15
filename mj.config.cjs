@@ -107,6 +107,10 @@ module.exports = {
   // New Entity Defaults Overrides
   // ---------------------------------------------------------------------------
   // Default v3.x settings for new entities
+  testing: {
+    checkModules: ['@mj-biz-apps/common-integration-tests'],
+  },
+
   newEntityDefaults: {
     NameRulesBySchema: [{ SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
 {
