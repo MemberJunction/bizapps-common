@@ -7,7 +7,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -15,8 +15,8 @@
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=PersonID"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:00:24.977Z",
-      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+      "lastModified": "2026-08-15T02:45:31.007Z",
+      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
     }
   },
   {
@@ -27,7 +27,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -35,8 +35,8 @@
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromPersonID"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:00:25.012Z",
-      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+      "lastModified": "2026-08-15T02:45:31.030Z",
+      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
     }
   },
   {
@@ -46,7 +46,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -54,8 +54,8 @@
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=OrganizationID"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:00:25.085Z",
-      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+      "lastModified": "2026-08-15T02:45:31.051Z",
+      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
     }
   },
   {
@@ -65,7 +65,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -73,8 +73,8 @@
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromOrganizationID"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:00:25.051Z",
-      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+      "lastModified": "2026-08-15T02:45:31.072Z",
+      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
     }
   },
   {
@@ -84,7 +84,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -92,8 +92,46 @@
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Organizations&RelatedEntityJoinField=ParentID"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:00:25.108Z",
-      "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+      "lastModified": "2026-08-15T02:45:31.108Z",
+      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+    }
+  },
+  {
+    "_comments": [
+      "Incoming Relationships (ToPerson) sit in More. Outgoing FromPerson is the first-class network."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "More"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=ToPersonID"
+    },
+    "sync": {
+      "lastModified": "2026-08-15T02:45:31.090Z",
+      "checksum": "58975efd1d9187857b888d0129194c7b3c6f8248bca208c86585ea58e2517426"
+    }
+  },
+  {
+    "_comments": [
+      "Incoming Relationships (ToOrganization) sit in More."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "More"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=ToOrganizationID"
+    },
+    "sync": {
+      "lastModified": "2026-08-15T02:45:31.124Z",
+      "checksum": "58975efd1d9187857b888d0129194c7b3c6f8248bca208c86585ea58e2517426"
     }
   }
 ]
