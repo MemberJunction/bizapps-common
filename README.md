@@ -98,9 +98,28 @@ Production-ready, standalone Angular widgets that handle their own data loading,
 | **Relationship List** | `<bizapps-relationship-list>` | Grouped timeline, directional labels, typeahead search, date ranges |
 | **Org Hierarchy Tree** | `<bizapps-org-hierarchy-tree>` | Parent/child tree, click-to-navigate, batch loading |
 
+### Explorer Directory
+
+The **Common** application is a first-class Explorer app with three tabs:
+
+| Tab | Driver class | What it is |
+|-----|--------------|------------|
+| **Directory** | `CommonDirectoryResource` | Operational home — active counts, gap queues (missing email / org / type / website), people added this week, organization-type mix, latest people, and named attention items |
+| **People** | `CommonPeopleResource` | Searchable people list; **New person** opens `/record/.../new` |
+| **Organizations** | `CommonOrganizationsResource` | Searchable organization list; **New organization** same pattern |
+
+Every figure on the dashboard is a cheap count over rows already loaded (one `RunViews` batch). Queues are clickable and open the matching tab. Tiles and rows open the person or organization record.
+
 ### Custom Form Layouts
 
 Polished form overrides for Person and Organization records with sectioned layouts and embedded CRUD widgets.
+
+The identity header (name, title, org / legal name, website) is the hero on
+those forms. In **edit** mode each field is a labeled column — wrapped so
+`mj-form-field`'s `display: contents` cannot leak into the parent grid —
+stacked vertically, then two-across only when the hero is at least `52rem`
+wide. URLs and description still span the full row. The read-only summary
+line is hidden while editing so it does not compete with the live fields.
 
 ---
 

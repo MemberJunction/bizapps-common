@@ -13,6 +13,20 @@
 
 ---
 
+## Explorer Directory
+
+The Common application (`metadata/applications/.common-application.json`) registers three Custom nav items:
+
+| Label | Driver class | Hosts |
+|-------|--------------|--------|
+| Directory | `CommonDirectoryResource` | `<bizapps-common-dashboard-page>` |
+| People | `CommonPeopleResource` | `<bizapps-common-people-page>` |
+| Organizations | `CommonOrganizationsResource` | `<bizapps-common-organizations-page>` |
+
+The dashboard loads People, Organizations, and Relationships in one `RunViews` batch and derives tiles, queues, the 7-day people chart, and organization-type mix in memory. **New person / New organization** open Explorer's `/record/:entity/new` sentinel.
+
+---
+
 ## Component Categories
 
 ### 1. Reusable CRUD Widget Components (Standalone)
@@ -164,7 +178,7 @@ These override the CodeGen-generated form components for Person and Organization
 
 | Section                        | Default State | Contents                                       |
 |--------------------------------|---------------|-------------------------------------------------|
-| Personal Identity              | Expanded      | Name fields, prefix, suffix                    |
+| Personal Identity              | Expanded      | Name fields, prefix, suffix. In edit, each `mj-form-field` is wrapped; fields stack as labeled columns and go two-across only when the hero is ≥52rem. The read-only summary is hidden while editing. |
 | Professional and Profile       | Expanded      | Title, company, bio                            |
 | Account and Status             | Collapsed     | User link, active flag                         |
 | Primary Address                | Collapsed     | Main address fields on Person record           |
@@ -190,7 +204,7 @@ These override the CodeGen-generated form components for Person and Organization
 
 | Section                        | Default State | Contents                                       |
 |--------------------------------|---------------|-------------------------------------------------|
-| Organization Identity          | Expanded      | Name and identifying fields                    |
+| Organization Identity          | Expanded      | Name and identifying fields. Same edit-mode wrapping and stacked / two-across layout as the Person identity header; URL and description stay full-width. |
 | Hierarchy and Structure        | Expanded      | Parent org, structure details                  |
 | Contact Information            | Collapsed     | Org-level contact info                         |
 | Primary Address                | Collapsed     | Main address fields on Organization record     |

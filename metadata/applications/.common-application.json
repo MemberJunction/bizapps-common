@@ -1,0 +1,47 @@
+[
+  {
+    "_comments": [
+      "The BizApps Common Application — the people and organization directory.",
+      "",
+      "DefaultNavItems is the top tab bar:",
+      "1. Directory (operational dashboard — counts, queues, recent, gaps)",
+      "2. People",
+      "3. Organizations",
+      "",
+      "Each item is ResourceType 'Custom' pointing at a DriverClass registered with",
+      "@RegisterClass(BaseResourceComponent, '<DriverClass>') in @mj-biz-apps/common-ng."
+    ],
+    "fields": {
+      "Name": "Common",
+      "Description": "People, organizations, addresses, and relationships — the shared party directory every Biz App hangs off.",
+      "Icon": "fa-solid fa-address-book",
+      "DefaultForNewUser": true,
+      "DefaultNavItems": [
+        {
+          "Label": "Directory",
+          "Icon": "fa-solid fa-gauge-high",
+          "ResourceType": "Custom",
+          "DriverClass": "CommonDirectoryResource",
+          "isDefault": true
+        },
+        {
+          "Label": "People",
+          "Icon": "fa-solid fa-user",
+          "ResourceType": "Custom",
+          "DriverClass": "CommonPeopleResource",
+          "isDefault": false
+        },
+        {
+          "Label": "Organizations",
+          "Icon": "fa-solid fa-building",
+          "ResourceType": "Custom",
+          "DriverClass": "CommonOrganizationsResource",
+          "isDefault": false
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "5CD45116-9CDB-4050-A6C2-755803478056"
+    }
+  }
+]
