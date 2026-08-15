@@ -34,6 +34,16 @@ export class AppModule {}
 
 ---
 
+## Explorer Directory
+
+`LoadBizAppsCommonClient()` also registers three `BaseResourceComponent` drivers so MJ Explorer can mount the Common application:
+
+- `CommonDirectoryResource` — operational dashboard (counts, gap queues, recent people)
+- `CommonPeopleResource` — searchable people list
+- `CommonOrganizationsResource` — searchable organization list
+
+See the root README and `docs/angular-components.md` for the information architecture.
+
 ## Architecture
 
 The package follows a three-tier component architecture:

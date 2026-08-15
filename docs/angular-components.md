@@ -13,6 +13,20 @@
 
 ---
 
+## Explorer Directory
+
+The Common application (`metadata/applications/.common-application.json`) registers three Custom nav items:
+
+| Label | Driver class | Hosts |
+|-------|--------------|--------|
+| Directory | `CommonDirectoryResource` | `<bizapps-common-dashboard-page>` |
+| People | `CommonPeopleResource` | `<bizapps-common-people-page>` |
+| Organizations | `CommonOrganizationsResource` | `<bizapps-common-organizations-page>` |
+
+The dashboard loads People, Organizations, and Relationships in one `RunViews` batch and derives tiles, queues, the 7-day people chart, and organization-type mix in memory. **New person / New organization** open Explorer's `/record/:entity/new` sentinel.
+
+---
+
 ## Component Categories
 
 ### 1. Reusable CRUD Widget Components (Standalone)
