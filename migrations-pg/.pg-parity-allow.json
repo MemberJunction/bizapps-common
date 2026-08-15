@@ -1,0 +1,10 @@
+{
+  "reason": "Layered base-view work (2026-08-13/14) landed on SQL Server without PostgreSQL counterparts. common is the head of the dependency chain — every other bizapp installs it first — so these are the highest-priority ports in the fleet.",
+  "note": "DEBT, recorded so it is visible rather than silent. Removing an entry means writing the port and replaying it against a real PostgreSQL instance. Adding one is not a way to skip that work.",
+  "unported": [
+    "V202608132239__v5.34.x__Layered_Base_Views_Metadata.sql",
+    "V202608132240__v5.34.x__Layered_Base_Views_People_Organizations.sql",
+    "V202608140700__v5.34.x__Layered_Base_Views_EntityFields.sql",
+    "V202608140800__v5.34.x__Metadata_Sync.sql"
+  ]
+}
