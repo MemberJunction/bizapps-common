@@ -58,7 +58,7 @@ The placeholder "BizApps Common" needs a real name. This name appears in the `mj
 
 **MJ Commons** is the strongest candidate. It communicates:
 - Shared infrastructure (the "commons" that all apps share)
-- Community ownership (open source, free)
+- Community ownership (source-available, free)
 - Not trying to be the whole product (it's the commons, not the city)
 
 The SQL schema `mj_commons` is clean. The package names (`@mj/commons-entities`, `@mj/commons-server`, `@mj/commons-ng`) read naturally.
