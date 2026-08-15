@@ -31,6 +31,21 @@ Other MJ applications (Committees, Events, Membership, etc.) depend on these sha
 
 ---
 
+## Integration tests
+
+The suite in `@mj-biz-apps/common-integration-tests` is **GraphQL-wire only**. It bootstraps
+`GraphQLDataProvider` against a running MJAPI and never opens a SQL pool. `common-world` (000)
+upserts COM-WORLD people / orgs / addresses / contacts / relationships on top of shipped type
+metadata; later bundles stress CRUD, filters, exclusivity, and hierarchy.
+
+```bash
+# MJAPI must be running (GRAPHQL_PORT + MJ_API_KEY)
+pnpm --filter @mj-biz-apps/common-integration-tests build
+pnpm run test:integration
+```
+
+See [`packages/IntegrationTests/README.md`](packages/IntegrationTests/README.md).
+
 ## Installation
 
 BizApps Common is a [MemberJunction Open App](https://github.com/MemberJunction/MJ/tree/main/packages/OpenApp). Install it into any MJ environment using the [MJ CLI](https://github.com/MemberJunction/MJ/tree/main/packages/MJCLI):
