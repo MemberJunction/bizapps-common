@@ -7,7 +7,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -27,7 +27,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -46,7 +46,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -65,7 +65,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -84,7 +84,7 @@
     "fields": {
       "Configuration": {
         "UI": {
-          "FormRole": "Primary"
+          "inclusion": "Primary"
         }
       }
     },
@@ -94,6 +94,36 @@
     "sync": {
       "lastModified": "2026-08-14T20:00:25.108Z",
       "checksum": "dfbee5e4d99c8f863047c61ab997e4357345b819e6934792df571d5ef7183eb9"
+    }
+  },
+  {
+    "_comments": [
+      "Incoming Relationships (ToPerson) sit in More. Outgoing FromPerson is the first-class network."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "More"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=ToPersonID"
+    }
+  },
+  {
+    "_comments": [
+      "Incoming Relationships (ToOrganization) sit in More."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "More"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=ToOrganizationID"
     }
   }
 ]
