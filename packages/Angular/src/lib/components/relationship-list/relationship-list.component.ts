@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
+import { NormalizeUUID } from '@memberjunction/global';
 import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     mjBizAppsCommonRelationshipEntity,
@@ -148,7 +149,8 @@ interface EditFormData {
 const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: string }> = {
     'PersonToOrganization': { label: 'Employment', icon: 'fa-solid fa-briefcase', iconClass: 'cat-employment' },
     'PersonToPerson': { label: 'Personal', icon: 'fa-solid fa-heart', iconClass: 'cat-personal' },
-    'OrganizationToOrganization': { label: 'Business', icon: 'fa-solid fa-building', iconClass: 'cat-business' }
+    'OrganizationToOrganization': { label: 'Business', icon: 'fa-solid fa-building', iconClass: 'cat-business' },
+    'Unknown': { label: 'Other', icon: 'fa-solid fa-link', iconClass: 'cat-default' },
 };
 
 /**
@@ -372,13 +374,11 @@ export class RelationshipListComponent {
                 ? typesResult.Results as mjBizAppsCommonRelationshipTypeEntity[]
                 : [];
 
-            // Build type lookup map
             this.relationshipTypeMap.clear();
             for (const rt of this.RelationshipTypes) {
-                this.relationshipTypeMap.set(rt.ID, rt);
+                this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
             }
 
-            // Group relationships by category
             this.GroupedRelationships = this.buildGroups(relationships);
         } catch (err) {
             console.error('RelationshipList: Error loading data', err);
@@ -393,10 +393,8 @@ export class RelationshipListComponent {
         const groupMap = new Map<string, CategoryGroup>();
 
         for (const rel of relationships) {
-            const relType = this.relationshipTypeMap.get(rel.RelationshipTypeID);
-            if (!relType) continue;
-
-            const category = relType.Category;
+            const relType = this.relationshipTypeMap.get(NormalizeUUID(rel.RelationshipTypeID));
+            const category = relType?.Category ?? 'Unknown';
             if (!groupMap.has(category)) {
                 const config = CATEGORY_CONFIG[category] || { label: category, icon: 'fa-solid fa-link', iconClass: 'cat-default' };
                 groupMap.set(category, {
@@ -412,17 +410,16 @@ export class RelationshipListComponent {
             groupMap.get(category)!.Items.push(displayItem);
         }
 
-        // Sort groups by a fixed order
-        const order = ['PersonToOrganization', 'OrganizationToOrganization', 'PersonToPerson'];
-        return order
-            .filter(cat => groupMap.has(cat))
-            .map(cat => groupMap.get(cat)!);
+        const order = ['PersonToOrganization', 'OrganizationToOrganization', 'PersonToPerson', 'Unknown'];
+        const known = order.filter((cat) => groupMap.has(cat)).map((cat) => groupMap.get(cat)!);
+        const extras = [...groupMap.values()].filter((group) => !order.includes(group.Category));
+        return [...known, ...extras];
     }
 
     /** Constructs a display item from a relationship and its type, resolving direction. */
     private buildDisplayItem(
         rel: mjBizAppsCommonRelationshipEntity,
-        relType: mjBizAppsCommonRelationshipTypeEntity
+        relType: mjBizAppsCommonRelationshipTypeEntity | undefined
     ): RelationshipDisplayItem {
         // Determine direction: is the current entity on the "From" or "To" side?
         const isFromSide = this.isCurrentEntityOnFromSide(rel);
@@ -432,8 +429,13 @@ export class RelationshipListComponent {
         let targetEntityName: string;
         let targetID: string;
 
-        if (!relType.IsDirectional) {
-            // Symmetric relationship (e.g., Spouse) -- always use ForwardLabel
+        if (!relType) {
+            directionLabel = 'Related to';
+            targetName = this.getOtherSideName(rel, isFromSide);
+            const target = this.getOtherSideTarget(rel, isFromSide);
+            targetEntityName = target.entityName;
+            targetID = target.id;
+        } else if (!relType.IsDirectional) {
             directionLabel = relType.ForwardLabel || relType.Name;
             targetName = this.getOtherSideName(rel, isFromSide);
             const target = this.getOtherSideTarget(rel, isFromSide);
