@@ -7,6 +7,7 @@ import { AddressEditorComponent } from '../components/address-editor/address-edi
 import { ContactMethodListComponent } from '../components/contact-method-list/contact-method-list.component';
 import { RelationshipListComponent } from '../components/relationship-list/relationship-list.component';
 import { OrgHierarchyTreeComponent } from '../components/org-hierarchy-tree/org-hierarchy-tree.component';
+import { CommonRelationshipGraphComponent } from '../components/relationship-graph/common-relationship-graph.component';
 
 import { PersonIdentityComponent } from '../components/identity-header/person-identity.component';
 import { OrganizationIdentityComponent } from '../components/identity-header/organization-identity.component';
@@ -45,6 +46,7 @@ const PANELS = [
         ContactMethodListComponent,
         RelationshipListComponent,
         OrgHierarchyTreeComponent,
+        CommonRelationshipGraphComponent,
         PersonIdentityComponent,
         OrganizationIdentityComponent,
     ],

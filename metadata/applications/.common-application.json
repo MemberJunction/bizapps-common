@@ -7,6 +7,7 @@
       "1. Directory (operational dashboard — counts, queues, recent, gaps)",
       "2. People",
       "3. Organizations",
+      "4. Relationship Graph (interactive network graph visualization)",
       "",
       "Each item is ResourceType 'Custom' pointing at a DriverClass registered with",
       "@RegisterClass(BaseResourceComponent, '<DriverClass>') in @mj-biz-apps/common-ng."
@@ -37,11 +38,22 @@
           "ResourceType": "Custom",
           "DriverClass": "CommonOrganizationsResource",
           "isDefault": false
+        },
+        {
+          "Label": "Relationship Graph",
+          "Icon": "fa-solid fa-circle-nodes",
+          "ResourceType": "Custom",
+          "DriverClass": "CommonRelationshipGraphResource",
+          "isDefault": false
         }
       ]
     },
     "primaryKey": {
       "ID": "5CD45116-9CDB-4050-A6C2-755803478056"
+    },
+    "sync": {
+      "lastModified": "2026-08-16T01:51:28.954Z",
+      "checksum": "b8862efe2867b6474e09f7c10ae62100ee7ff5472f16e53bac873ede78367848"
     }
   }
 ]

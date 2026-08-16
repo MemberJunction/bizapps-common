@@ -1,0 +1,32 @@
+[
+  {
+    "fields": {
+      "ApplicationID": "@lookup:MJ: Applications.Name=Common",
+      "RoleID": "@lookup:MJ: Roles.Name=UI",
+      "CanAccess": true,
+      "CanAdmin": false
+    },
+    "primaryKey": {
+      "ID": "D48291A7-331B-4712-B647-19034E571A11"
+    },
+    "sync": {
+      "lastModified": "2026-08-16T01:51:29.122Z",
+      "checksum": "a1748a93119df454769326731a70ee61d452e3725d2718b575551d05f8eaaf80"
+    }
+  },
+  {
+    "fields": {
+      "ApplicationID": "@lookup:MJ: Applications.Name=Common",
+      "RoleID": "@lookup:MJ: Roles.Name=Developer",
+      "CanAccess": true,
+      "CanAdmin": true
+    },
+    "primaryKey": {
+      "ID": "E59302B8-442C-4823-C758-20145F682B22"
+    },
+    "sync": {
+      "lastModified": "2026-08-16T01:51:29.146Z",
+      "checksum": "277a03077141909a5d0218fc4ad348856a805d45b481a8a3f45121f0eda4f75b"
+    }
+  }
+]

@@ -5,8 +5,8 @@ import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities'
 import { BizAppsFormPanel } from './bizapps-form-panel';
 
 /**
- * Organization form contribution that replaces both FromOrganizationID and
- * ToOrganizationID relationship grids with a single directional widget.
+ * Organizations form contribution that replaces both FromOrganizationID and
+ * ToOrganizationID relationship grids with a directional relationship widget and interactive graph.
  */
 @RegisterClassEx(BaseFormPanel, {
     key: 'form-panel:Organizations:related:Relationships',
@@ -22,4 +22,10 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
     selector: 'bizapps-organization-relationships-panel',
     templateUrl: './organization-relationships.panel.html',
 })
-export class OrganizationRelationshipsPanel extends BizAppsFormPanel<mjBizAppsCommonOrganizationEntity> {}
+export class OrganizationRelationshipsPanel extends BizAppsFormPanel<mjBizAppsCommonOrganizationEntity> {
+    public ViewMode: 'list' | 'graph' = 'list';
+
+    public SetViewMode(mode: 'list' | 'graph'): void {
+        this.ViewMode = mode;
+    }
+}

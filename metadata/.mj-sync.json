@@ -5,11 +5,13 @@
   },
   "directoryOrder": [
     "schema-info",
+    "applications",
     "address-types",
     "contact-types",
     "organization-types",
     "relationship-types",
-    "entities"
+    "entities",
+    "application-roles"
   ],
   "sqlLogging": {
     "enabled": true,

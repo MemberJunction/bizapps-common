@@ -7,11 +7,35 @@
     [FormContext]="FormContext"
     [DefaultExpanded]="true">
     @if (Record.IsSaved) {
-        <bizapps-relationship-list
-            [OrganizationID]="Record.ID"
-            [EditMode]="EditMode"
-            (DataChanged)="OnWidgetDataChanged()"
-            (Navigate)="FormComponent.OnFormNavigate($event)">
-        </bizapps-relationship-list>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px; gap: 6px;">
+            <button
+                type="button"
+                [class.active]="ViewMode === 'list'"
+                class="mj-btn mj-btn-sm"
+                (click)="SetViewMode('list')">
+                <i class="fa-solid fa-list"></i> Table
+            </button>
+            <button
+                type="button"
+                [class.active]="ViewMode === 'graph'"
+                class="mj-btn mj-btn-sm"
+                (click)="SetViewMode('graph')">
+                <i class="fa-solid fa-circle-nodes"></i> Relationship Graph
+            </button>
+        </div>
+
+        @if (ViewMode === 'list') {
+            <bizapps-relationship-list
+                [OrganizationID]="Record.ID"
+                [EditMode]="EditMode"
+                (DataChanged)="OnWidgetDataChanged()"
+                (Navigate)="FormComponent.OnFormNavigate($event)">
+            </bizapps-relationship-list>
+        } @else {
+            <bizapps-relationship-graph
+                [OrganizationID]="Record.ID"
+                [Height]="'420px'">
+            </bizapps-relationship-graph>
+        }
     }
 </mj-collapsible-panel>
