@@ -11,6 +11,7 @@
     "organization-types",
     "relationship-types",
     "entities",
+    "entity-relationships",
     "application-roles"
   ],
   "sqlLogging": {

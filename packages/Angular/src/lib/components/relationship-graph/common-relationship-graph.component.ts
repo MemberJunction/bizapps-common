@@ -19,6 +19,7 @@ import {
     type GraphNode,
     type GraphEdge,
     type GraphLayoutMode,
+    type GraphCategoryConfig,
     type HopExpandedEventArgs,
     type NodeSelectedEventArgs,
     type NodeNavigatedEventArgs,
@@ -55,6 +56,7 @@ import type { DirectoryRelationshipRow } from '../../data/directory-types';
                 <mj-graph-view
                     [Nodes]="Nodes"
                     [Edges]="Edges"
+                    [Categories]="GraphCategories"
                     [FocalNodeId]="FocalNodeID"
                     [LayoutMode]="LayoutMode"
                     (LayoutChanged)="OnLayoutChanged($event)"
@@ -111,6 +113,11 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     public FocalNodeID?: string;
     public LayoutMode: GraphLayoutMode = 'force';
     public IsLoading = false;
+
+    public readonly GraphCategories: GraphCategoryConfig[] = [
+        { Category: 'person', Label: 'Person', Color: '#10b981', IconClass: 'fa-solid fa-user' },
+        { Category: 'organization', Label: 'Organization', Color: '#38bdf8', IconClass: 'fa-solid fa-building' }
+    ];
 
     private static graphCache = new Map<string, { nodes: GraphNode[]; edges: GraphEdge[] }>();
 

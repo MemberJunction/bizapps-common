@@ -527,6 +527,31 @@
         }
     </mj-collapsible-panel>
 
+    <!-- Issue Comments Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsIssuesIssueComments"
+        SectionName="Issue Comments"
+        Icon="fa fa-table"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsIssuesIssueComments')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Issues: Issue Comments','AuthorPersonID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Issues: Issue Comments')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsIssuesIssueComments')"
+                [ShowToolbar]="false"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsIssuesIssueComments', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
     <!-- Task Decisions Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsTasksTaskDecisions"
@@ -546,6 +571,31 @@
                 [ShowToolbar]="false"
                 (Navigate)="OnFormNavigate($event)"
                 (AfterDataLoad)="SetSectionRowCount('mJBizAppsTasksTaskDecisions', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Issues (Reporter Person ID) Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsIssuesIssuesReporterPersonID"
+        SectionName="Issues (Reporter Person ID)"
+        Icon="fa fa-table"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsIssuesIssuesReporterPersonID')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Issues: Issues','ReporterPersonID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Issues: Issues')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsIssuesIssuesReporterPersonID')"
+                [ShowToolbar]="false"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsIssuesIssuesReporterPersonID', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
@@ -577,6 +627,31 @@
         }
     </mj-collapsible-panel>
 
+    <!-- Issues (Created By Person ID) Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsIssuesIssuesCreatedByPersonID"
+        SectionName="Issues (Created By Person ID)"
+        Icon="fa fa-table"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsIssuesIssuesCreatedByPersonID')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Issues: Issues','CreatedByPersonID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Issues: Issues')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsIssuesIssuesCreatedByPersonID')"
+                [ShowToolbar]="false"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsIssuesIssuesCreatedByPersonID', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
     <!-- Stored Value Accounts Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsOrdersStoredValueAccounts"
@@ -602,35 +677,10 @@
         }
     </mj-collapsible-panel>
 
-    <!-- Order Lines Section -->
-    <mj-collapsible-panel
-        SectionKey="mJBizAppsOrdersOrderLines"
-        SectionName="Order Lines"
-        Icon="fa fa-list-ol"
-        Variant="related-entity"
-        [Form]="this"
-        [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsOrdersOrderLines')"
-        [DefaultExpanded]="false">
-        @if (record.IsSaved) {
-        <div>
-            <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Orders: Order Lines','ShipToPersonID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Orders: Order Lines')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsOrdersOrderLines')"
-                [ShowToolbar]="false"
-                (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsOrdersOrderLines', $event.totalRowCount)"
-                >
-            </mj-explorer-entity-data-grid>
-        </div>
-        }
-    </mj-collapsible-panel>
-
-    <!-- Payment Headers Section -->
+    <!-- Payments Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsOrdersPaymentHeaders"
-        SectionName="Payment Headers"
+        SectionName="Payments"
         Icon="fa fa-money-bill-wave"
         Variant="related-entity"
         [Form]="this"
@@ -677,10 +727,10 @@
         }
     </mj-collapsible-panel>
 
-    <!-- Order Headers (Bill To Person) Section -->
+    <!-- Orders Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsOrdersOrderHeadersBillToPersonID"
-        SectionName="Order Headers (Bill To Person)"
+        SectionName="Orders"
         Icon="fa fa-shopping-cart"
         Variant="related-entity"
         [Form]="this"

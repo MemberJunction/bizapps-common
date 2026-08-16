@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Metadata, RunView } from '@memberjunction/core';
+import { Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
 import {
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
@@ -35,7 +35,8 @@ interface ContactFormData {
  * Person or Organization record.
  *
  * Contact methods are loaded from the `MJ_BizApps_Common: Contact Methods`
- * entity, filtered by either {@link PersonID} or {@link OrganizationID}.
+ * entity, filtered by either {@link PersonID}, {@link OrganizationID}, or
+ * bound directly via a strongly-typed {@link Collection} (`RelatedRecordCollection`).
  * The component provides inline add, edit, delete, set-primary, copy-to-clipboard,
  * and open-link functionality.
  *
@@ -44,14 +45,10 @@ interface ContactFormData {
  *
  * @example
  * ```html
- * <!-- For a Person -->
+ * <!-- Bound to RelatedRecordCollection on a Person -->
  * <bizapps-contact-method-list
- *     [PersonID]="person.ID">
- * </bizapps-contact-method-list>
- *
- * <!-- For an Organization -->
- * <bizapps-contact-method-list
- *     [OrganizationID]="org.ID">
+ *     [Collection]="person.ContactMethods"
+ *     [EditMode]="true">
  * </bizapps-contact-method-list>
  * ```
  */
@@ -75,8 +72,25 @@ export class ContactMethodListComponent {
     /** Emitted after any mutation (save, delete, set-primary) so the parent can refresh derived data. */
     @Output() DataChanged = new EventEmitter<void>();
 
+    private _collection?: RelatedRecordCollection<mjBizAppsCommonContactMethodEntity>;
     private _personID: string | null = null;
     private _organizationID: string | null = null;
+
+    /**
+     * Optional strongly-typed RelatedRecordCollection from the parent Person or Organization entity.
+     * When provided, contact methods are managed directly in the collection and persist atomically
+     * when the parent entity is saved.
+     */
+    @Input()
+    set Collection(value: RelatedRecordCollection<mjBizAppsCommonContactMethodEntity> | undefined) {
+        this._collection = value;
+        if (value) {
+            this.loadData();
+        }
+    }
+    get Collection(): RelatedRecordCollection<mjBizAppsCommonContactMethodEntity> | undefined {
+        return this._collection;
+    }
 
     /**
      * The Person record ID whose contact methods should be displayed.
@@ -185,7 +199,7 @@ export class ContactMethodListComponent {
     }
 
     /**
-     * Loads contact methods and contact types from the server.
+     * Loads contact methods and contact types from the server or collection.
      * Resets editing state before loading.
      */
     private async loadData(): Promise<void> {
@@ -197,7 +211,32 @@ export class ContactMethodListComponent {
         try {
             const rv = new RunView();
 
-            // Build filter
+            // Always ensure contact types are loaded
+            if (this.ContactTypes.length === 0) {
+                const typesResult = await rv.RunView<mjBizAppsCommonContactTypeEntity>({
+                    EntityName: 'MJ_BizApps_Common: Contact Types',
+                    ExtraFilter: 'IsActive=1',
+                    OrderBy: 'DisplayRank ASC',
+                    ResultType: 'entity_object'
+                });
+                if (typesResult.Success && typesResult.Results) {
+                    this.ContactTypes = typesResult.Results;
+                }
+            }
+
+            if (this._collection) {
+                if (!this._collection.IsLoaded) {
+                    await this._collection.Load();
+                }
+                this.ContactMethods = [...this._collection.Items];
+                this.sortContactMethods();
+                if (this.ContactTypes.length > 0 && !this.AddForm.TypeID) {
+                    this.AddForm.TypeID = this.ContactTypes[0].ID;
+                }
+                return;
+            }
+
+            // Build filter for standalone mode
             let filter = '';
             if (this._personID) {
                 filter = `PersonID='${this._personID}'`;
@@ -207,33 +246,17 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            const [methodsResult, typesResult] = await rv.RunViews([
-                {
-                    EntityName: 'MJ_BizApps_Common: Contact Methods',
-                    ExtraFilter: filter,
-                    ResultType: 'entity_object'
-                },
-                {
-                    EntityName: 'MJ_BizApps_Common: Contact Types',
-                    ExtraFilter: 'IsActive=1',
-                    OrderBy: 'DisplayRank ASC',
-                    ResultType: 'entity_object'
-                }
-            ]);
+            const methodsResult = await rv.RunView<mjBizAppsCommonContactMethodEntity>({
+                EntityName: 'MJ_BizApps_Common: Contact Methods',
+                ExtraFilter: filter,
+                ResultType: 'entity_object'
+            });
 
             this.ContactMethods = methodsResult.Success
-                ? methodsResult.Results as mjBizAppsCommonContactMethodEntity[]
-                : [];
-            this.ContactTypes = typesResult.Success
-                ? typesResult.Results as mjBizAppsCommonContactTypeEntity[]
+                ? (methodsResult.Results as mjBizAppsCommonContactMethodEntity[])
                 : [];
 
-            // Sort: primary first, then by type rank
-            this.ContactMethods.sort((a, b) => {
-                if (a.IsPrimary && !b.IsPrimary) return -1;
-                if (!a.IsPrimary && b.IsPrimary) return 1;
-                return this.getTypeRank(a.ContactTypeID) - this.getTypeRank(b.ContactTypeID);
-            });
+            this.sortContactMethods();
 
             // Set default type for add form
             if (this.ContactTypes.length > 0) {
@@ -245,6 +268,14 @@ export class ContactMethodListComponent {
             this.Loading = false;
             this.cdr.detectChanges();
         }
+    }
+
+    private sortContactMethods(): void {
+        this.ContactMethods.sort((a, b) => {
+            if (a.IsPrimary && !b.IsPrimary) return -1;
+            if (!a.IsPrimary && b.IsPrimary) return 1;
+            return this.getTypeRank(a.ContactTypeID) - this.getTypeRank(b.ContactTypeID);
+        });
     }
 
     /** Returns the DisplayRank for a contact type, defaulting to 999 if not found. */
@@ -393,6 +424,24 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
+            if (this._collection) {
+                const cm = await this._collection.Create();
+                cm.ContactTypeID = this.AddForm.TypeID;
+                cm.Value = this.AddForm.Value;
+                cm.Label = this.AddForm.Label || null;
+                cm.IsPrimary = this.AddForm.IsPrimary;
+
+                if (this.AddForm.IsPrimary) {
+                    await this.clearPrimariesForType(this.AddForm.TypeID);
+                }
+
+                this.ContactMethods = [...this._collection.Items];
+                this.sortContactMethods();
+                this.ShowAddForm = false;
+                this.DataChanged.emit();
+                return;
+            }
+
             const md = new Metadata();
             const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
             cm.NewRecord();
@@ -476,8 +525,16 @@ export class ContactMethodListComponent {
             cm.Value = this.EditForm.Value;
             cm.Label = this.EditForm.Label || null;
             cm.IsPrimary = this.EditForm.IsPrimary;
-            await cm.Save();
 
+            if (this._collection) {
+                this.ContactMethods = [...this._collection.Items];
+                this.sortContactMethods();
+                this.EditingId = null;
+                this.DataChanged.emit();
+                return;
+            }
+
+            await cm.Save();
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
@@ -505,8 +562,15 @@ export class ContactMethodListComponent {
             await this.clearPrimariesForType(cm.ContactTypeID);
 
             cm.IsPrimary = true;
-            await cm.Save();
 
+            if (this._collection) {
+                this.ContactMethods = [...this._collection.Items];
+                this.sortContactMethods();
+                this.DataChanged.emit();
+                return;
+            }
+
+            await cm.Save();
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
@@ -529,6 +593,14 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
+            if (this._collection) {
+                this._collection.Remove(cm);
+                this.ContactMethods = [...this._collection.Items];
+                this.sortContactMethods();
+                this.DataChanged.emit();
+                return;
+            }
+
             await cm.Delete();
             await this.loadData();
             this.DataChanged.emit();
@@ -545,7 +617,9 @@ export class ContactMethodListComponent {
         const sameType = this.ContactMethods.filter(c => c.ContactTypeID === typeID && c.IsPrimary);
         for (const c of sameType) {
             c.IsPrimary = false;
-            await c.Save();
+            if (!this._collection) {
+                await c.Save();
+            }
         }
     }
 }
