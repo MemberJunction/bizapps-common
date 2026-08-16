@@ -4,8 +4,11 @@
    ============================================ */
 
 :host {
-    display: block;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    font-family: var(--mj-font-family);
     color: var(--mj-text-primary);
 }
 
@@ -14,6 +17,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .section-label {
@@ -399,9 +403,26 @@ span.rel-timeline-target {
 /* Empty state */
 .empty-state {
     text-align: center;
-    padding: 32px 16px;
+    padding: 40px 20px;
     color: var(--mj-text-muted);
     font-size: 14px;
+    border: 1px dashed var(--mj-border-default);
+    border-radius: var(--mj-radius-md, 8px);
+    background: var(--mj-bg-surface);
+}
+
+.empty-state__title {
+    margin: 8px 0 4px;
+    font-weight: 600;
+    color: var(--mj-text-primary);
+}
+
+.empty-state__hint {
+    margin: 0;
+    color: var(--mj-text-muted);
+    font-size: 13px;
+    max-width: 28rem;
+    margin-inline: auto;
 }
 
 .empty-state i {

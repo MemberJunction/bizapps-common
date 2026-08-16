@@ -21,7 +21,14 @@
     @if (GroupedRelationships.length === 0 && !ShowAddForm) {
         <div class="empty-state">
             <i class="fa-solid fa-diagram-project"></i>
-            No relationships yet
+            <p class="empty-state__title">No relationships</p>
+            <p class="empty-state__hint">
+                @if (EditMode) {
+                    This record has no relationship links yet. Add one to connect it to a person or organization.
+                } @else {
+                    This record has no relationship links yet.
+                }
+            </p>
         </div>
     }
 

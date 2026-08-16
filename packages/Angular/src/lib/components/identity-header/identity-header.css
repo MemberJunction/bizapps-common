@@ -2,14 +2,26 @@
     display: flex;
     flex-direction: column;
     gap: var(--mj-space-4);
-    padding: var(--mj-space-4) var(--mj-space-5);
+    padding: 20px 24px;
     margin-bottom: var(--mj-space-4);
     background: var(--mj-bg-surface-card);
     border: 1px solid var(--mj-border-default);
-    border-radius: var(--mj-radius-lg);
-    box-shadow: var(--mj-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+    border-radius: var(--mj-radius-xl, 16px);
+    box-shadow: var(--mj-shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
+    position: relative;
+    overflow: hidden;
     container-type: inline-size;
     container-name: biz-hero;
+}
+
+.biz-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3.5px;
+    background: linear-gradient(90deg, #38bdf8 0%, #6366f1 50%, #10b981 100%);
 }
 
 .biz-hero__identity {
@@ -21,28 +33,41 @@
 
 .biz-hero__avatar {
     flex: none;
-    width: 52px;
-    height: 52px;
-    border-radius: var(--mj-radius-md);
-    overflow: hidden;
+    width: 60px;
+    height: 60px;
+    border-radius: var(--mj-radius-lg, 14px);
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--mj-brand-primary) 18%, var(--mj-bg-surface));
-    color: var(--mj-text-inverse, var(--mj-bg-surface));
-    box-shadow: 0 4px 10px color-mix(in srgb, var(--mj-brand-primary) 28%, transparent);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--mj-brand-primary) 30%, var(--mj-bg-surface)) 0%, color-mix(in srgb, var(--mj-brand-accent, #6366f1) 25%, var(--mj-bg-surface)) 100%);
+    color: var(--mj-text-inverse, #ffffff);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--mj-brand-primary) 25%, transparent);
+    border: 2px solid color-mix(in srgb, var(--mj-brand-primary) 35%, transparent);
 }
 
 .biz-hero__avatar img {
     width: 100%;
     height: 100%;
+    border-radius: inherit;
     object-fit: cover;
 }
 
+.biz-hero__presence {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--mj-status-success, #10b981);
+    border: 2.5px solid var(--mj-bg-surface-card);
+}
+
 .biz-hero__initials {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
     color: var(--mj-brand-primary);
 }
 
@@ -242,4 +267,49 @@ button.biz-hero__stat-val:hover {
     .biz-hero__summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
+
+/* ── Collapsed State & Toggle Button ── */
+.biz-hero__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--mj-radius-md, 8px);
+    background: var(--mj-bg-surface-sunken, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--mj-border-default);
+    color: var(--mj-text-secondary);
+    cursor: pointer;
+    padding: 0;
+    font-size: 12px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.biz-hero__toggle:hover {
+    color: var(--mj-text-primary);
+    background: var(--mj-bg-hover, rgba(255, 255, 255, 0.08));
+    border-color: var(--mj-brand-primary);
+}
+
+.biz-hero--collapsed {
+    padding: 12px 20px;
+    gap: 0;
+    margin-bottom: var(--mj-space-3);
+}
+
+.biz-hero--collapsed .biz-hero__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--mj-radius-md, 10px);
+}
+
+.biz-hero--collapsed .biz-hero__initials {
+    font-size: 0.95rem;
+}
+
+.biz-hero--collapsed .biz-hero__name {
+    font-size: 1.15rem;
 }
