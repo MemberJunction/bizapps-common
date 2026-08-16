@@ -2,8 +2,8 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
-import { NormalizeUUID } from '@memberjunction/global';
-import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
+import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     mjBizAppsCommonRelationshipEntity,
     mjBizAppsCommonRelationshipTypeEntity,
@@ -182,13 +182,16 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: 
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, BaseFormsModule],
     selector: 'bizapps-relationship-list',
     templateUrl: './relationship-list.component.html',
     styleUrls: ['./relationship-list.component.css']
 })
 export class RelationshipListComponent {
     private cdr = inject(ChangeDetectorRef);
+
+    /** Active draft relationship object used for the Add form link fields. */
+    public DraftRelationship: mjBizAppsCommonRelationshipEntity | null = null;
 
     /**
      * Emitted when the user clicks a relationship target name to navigate
@@ -308,17 +311,8 @@ export class RelationshipListComponent {
      */
     EditForm: EditFormData = this.createEmptyEditForm();
 
-    /**
-     * Search results from the target entity typeahead, displayed as a
-     * dropdown below the search input in the add form.
-     */
-    TargetSearchResults: SearchResult[] = [];
-
     /** Lookup map from RelationshipType ID to entity for quick access. */
     private relationshipTypeMap = new Map<string, mjBizAppsCommonRelationshipTypeEntity>();
-
-    /** Handle for the debounce timer used in target search. */
-    private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     /** Creates a blank {@link AddFormData} with empty defaults. */
     private createEmptyAddForm(): AddFormData {
@@ -558,204 +552,130 @@ export class RelationshipListComponent {
     /**
      * Opens the "Add Relationship" form panel.
      *
-     * Resets the add form to defaults, clears any previous search results,
+     * Resets the add form to defaults, creates a new draft relationship entity,
      * and closes any active inline edit.
      */
-    onShowAdd(): void {
+    async onShowAdd(): Promise<void> {
         this.AddForm = this.createEmptyAddForm();
-        this.TargetSearchResults = [];
         this.ShowAddForm = true;
         this.EditingId = null;
+
+        try {
+            const md = new Metadata();
+            this.DraftRelationship = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ_BizApps_Common: Relationships');
+            this.DraftRelationship.NewRecord();
+            if (this._personID) {
+                this.DraftRelationship.FromPersonID = this._personID;
+            } else if (this._organizationID) {
+                this.DraftRelationship.FromOrganizationID = this._organizationID;
+            }
+        } catch (err) {
+            console.error('RelationshipList: Error initializing draft relationship', err);
+        }
+
         this.cdr.detectChanges();
     }
 
     /**
-     * Closes the "Add Relationship" form panel without saving, and clears
-     * the target search results.
+     * Closes the "Add Relationship" form panel without saving.
      */
     onCancelAdd(): void {
         this.ShowAddForm = false;
-        this.TargetSearchResults = [];
+        this.DraftRelationship = null;
         this.cdr.detectChanges();
     }
 
     /**
      * Handles a change to the relationship type in the add form.
-     *
-     * Clears the currently selected target because the category (and
-     * therefore the target entity type) may have changed.
+     * Clears any selected target so the link field resets for the new category.
      */
     onAddTypeChange(): void {
-        // Clear target when type changes (category may differ)
-        this.AddForm.TargetID = '';
-        this.AddForm.TargetName = '';
-        this.AddForm.TargetSearch = '';
-        this.TargetSearchResults = [];
+        if (this.DraftRelationship) {
+            this.DraftRelationship.ToPersonID = null;
+            this.DraftRelationship.ToOrganizationID = null;
+        }
         this.cdr.detectChanges();
     }
 
     /**
      * Returns the category key of the currently selected relationship type
      * in the add form (e.g., `'PersonToOrganization'`).
-     *
-     * @returns The category string, or `'--'` if no type is selected
      */
     getAddCategory(): string {
         if (!this.AddForm.TypeID) return '—';
-        const rt = this.relationshipTypeMap.get(this.AddForm.TypeID);
+        const normalized = NormalizeUUID(this.AddForm.TypeID);
+        const rt = this.relationshipTypeMap.get(normalized) ||
+                   this.RelationshipTypes.find(t => UUIDsEqual(t.ID, this.AddForm.TypeID));
         return rt?.Category || '—';
     }
 
     /**
-     * Returns a user-facing label for the target entity search field based
-     * on the current add form's relationship category.
-     *
-     * @returns `'Organization'`, `'Person'`, or `'Target'` depending on category
+     * Returns true if the target entity for the selected relationship category is a Person.
      */
-    getAddTargetLabel(): string {
+    get IsPersonTarget(): boolean {
         const category = this.getAddCategory();
-        if (category === 'PersonToOrganization') return 'Organization';
-        if (category === 'OrganizationToOrganization') return 'Organization';
-        if (category === 'PersonToPerson') return 'Person';
-        return 'Target';
+        return category === 'PersonToPerson' || category === 'OrganizationToPerson';
     }
 
     /**
-     * Debounces the target search input and triggers a server-side search
-     * after a 300ms pause in typing.
-     *
-     * Called on each keystroke in the target search field.
+     * Returns true if the target entity for the selected relationship category is an Organization.
      */
-    onTargetSearch(): void {
-        if (this.searchDebounceTimer) {
-            clearTimeout(this.searchDebounceTimer);
-        }
-        this.searchDebounceTimer = setTimeout(() => {
-            this.performTargetSearch();
-        }, 300);
-    }
-
-    /** Executes the debounced target search against Person or Organization entities. */
-    private async performTargetSearch(): Promise<void> {
-        const query = this.AddForm.TargetSearch?.trim();
-        if (!query || query.length < 2) {
-            this.TargetSearchResults = [];
-            this.cdr.detectChanges();
-            return;
-        }
-
+    get IsOrgTarget(): boolean {
         const category = this.getAddCategory();
-        const escapedQuery = query.replace(/'/g, "''");
-        const rv = new RunView();
+        return category === 'PersonToOrganization' || category === 'OrganizationToOrganization';
+    }
 
-        try {
-            if (category === 'PersonToPerson') {
-                const result = await rv.RunView<mjBizAppsCommonPersonEntity>({
-                    EntityName: 'MJ_BizApps_Common: People',
-                    ExtraFilter: `(FirstName LIKE '%${escapedQuery}%' OR LastName LIKE '%${escapedQuery}%' OR DisplayName LIKE '%${escapedQuery}%')`,
-                    MaxRows: 10,
-                    ResultType: 'entity_object'
-                });
-                this.TargetSearchResults = result.Success
-                    ? result.Results.map(p => ({
-                        ID: p.ID,
-                        Name: `${p.FirstName} ${p.LastName}`.trim(),
-                        Detail: p.Title || ''
-                    }))
-                    : [];
-            } else {
-                const result = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
-                    EntityName: 'MJ_BizApps_Common: Organizations',
-                    ExtraFilter: `Name LIKE '%${escapedQuery}%'`,
-                    MaxRows: 10,
-                    ResultType: 'entity_object'
-                });
-                this.TargetSearchResults = result.Success
-                    ? result.Results.map(o => ({
-                        ID: o.ID,
-                        Name: o.Name,
-                        Detail: o.OrganizationType || ''
-                    }))
-                    : [];
-            }
-        } catch (err) {
-            console.error('RelationshipList: Search error', err);
-            this.TargetSearchResults = [];
+    /**
+     * Converts raw category keys into friendly display labels.
+     */
+    getCategoryFriendlyName(category: string): string {
+        switch (category) {
+            case 'PersonToPerson': return 'Person to Person';
+            case 'PersonToOrganization': return 'Person to Organization';
+            case 'OrganizationToOrganization': return 'Organization to Organization';
+            case 'OrganizationToPerson': return 'Organization to Person';
+            default: return category || '—';
         }
-        this.cdr.detectChanges();
     }
 
     /**
-     * Selects a target entity from the search results dropdown, populating
-     * the add form's target fields and clearing the search input.
-     *
-     * @param result - The selected search result to use as the relationship target
+     * Checks if the add form has a valid target selected.
      */
-    onSelectTarget(result: SearchResult): void {
-        this.AddForm.TargetID = result.ID;
-        this.AddForm.TargetName = result.Name;
-        this.AddForm.TargetSearch = '';
-        this.TargetSearchResults = [];
-        this.cdr.detectChanges();
-    }
-
-    /**
-     * Clears the currently selected target entity from the add form,
-     * allowing the user to search for a different target.
-     */
-    onClearTarget(): void {
-        this.AddForm.TargetID = '';
-        this.AddForm.TargetName = '';
-        this.cdr.detectChanges();
+    get HasValidAddTarget(): boolean {
+        if (!this.DraftRelationship) return false;
+        if (this.IsPersonTarget) return !!this.DraftRelationship.ToPersonID;
+        if (this.IsOrgTarget) return !!this.DraftRelationship.ToOrganizationID;
+        return false;
     }
 
     /**
      * Persists the new relationship from the add form.
-     *
-     * Determines which From/To fields to populate based on the current
-     * entity type (Person or Organization) and the relationship category.
-     * After saving, the relationship list is reloaded.
      */
     async onSaveAdd(): Promise<void> {
-        if (!this.AddForm.TypeID || !this.AddForm.TargetID) return;
+        if (!this.DraftRelationship || !this.AddForm.TypeID || !this.HasValidAddTarget) return;
 
         this.Saving = true;
         this.cdr.detectChanges();
 
         try {
-            const md = new Metadata();
-            const rel = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ_BizApps_Common: Relationships');
-            rel.NewRecord();
-            rel.RelationshipTypeID = this.AddForm.TypeID;
-            rel.Title = this.AddForm.Title || null;
-            rel.Status = 'Active';
+            this.DraftRelationship.RelationshipTypeID = this.AddForm.TypeID;
+            this.DraftRelationship.Title = this.AddForm.Title || null;
+            this.DraftRelationship.Status = 'Active';
 
             if (this.AddForm.StartDate) {
-                rel.StartDate = new Date(this.AddForm.StartDate);
+                this.DraftRelationship.StartDate = new Date(this.AddForm.StartDate);
             }
             if (this.AddForm.EndDate) {
-                rel.EndDate = new Date(this.AddForm.EndDate);
+                this.DraftRelationship.EndDate = new Date(this.AddForm.EndDate);
             }
 
-            // Set From/To based on which side we're on and category
-            const rt = this.relationshipTypeMap.get(this.AddForm.TypeID);
-            if (!rt) return;
-
-            if (this._personID) {
-                rel.FromPersonID = this._personID;
-                if (rt.Category === 'PersonToOrganization') {
-                    rel.ToOrganizationID = this.AddForm.TargetID;
-                } else if (rt.Category === 'PersonToPerson') {
-                    rel.ToPersonID = this.AddForm.TargetID;
-                }
-            } else if (this._organizationID) {
-                rel.FromOrganizationID = this._organizationID;
-                rel.ToOrganizationID = this.AddForm.TargetID;
+            const saved = await this.DraftRelationship.Save();
+            if (saved) {
+                this.ShowAddForm = false;
+                this.DraftRelationship = null;
+                await this.loadData();
+                this.DataChanged.emit();
             }
-
-            await rel.Save();
-            await this.loadData();
-            this.DataChanged.emit();
         } catch (err) {
             console.error('RelationshipList: Error adding relationship', err);
         } finally {
@@ -807,12 +727,12 @@ export class RelationshipListComponent {
     /**
      * Returns the category key of the currently selected relationship type
      * in the edit form (e.g., `'PersonToOrganization'`).
-     *
-     * @returns The category string, or `'--'` if no type is selected
      */
     getEditCategory(): string {
         if (!this.EditForm.TypeID) return '—';
-        const rt = this.relationshipTypeMap.get(this.EditForm.TypeID);
+        const normalized = NormalizeUUID(this.EditForm.TypeID);
+        const rt = this.relationshipTypeMap.get(normalized) ||
+                   this.RelationshipTypes.find(t => UUIDsEqual(t.ID, this.EditForm.TypeID));
         return rt?.Category || '—';
     }
 

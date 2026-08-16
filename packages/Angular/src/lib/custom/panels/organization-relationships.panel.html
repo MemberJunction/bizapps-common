@@ -2,26 +2,29 @@
     SectionKey="relationships"
     SectionName="Relationships"
     Icon="fa fa-handshake"
-    Variant="related-entity"
     [Form]="FormComponent"
     [FormContext]="FormContext"
     [DefaultExpanded]="true">
     @if (Record.IsSaved) {
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px; gap: 6px;">
-            <button
-                type="button"
-                [class.active]="ViewMode === 'list'"
-                class="mj-btn mj-btn-sm"
-                (click)="SetViewMode('list')">
-                <i class="fa-solid fa-list"></i> Table
-            </button>
-            <button
-                type="button"
-                [class.active]="ViewMode === 'graph'"
-                class="mj-btn mj-btn-sm"
-                (click)="SetViewMode('graph')">
-                <i class="fa-solid fa-circle-nodes"></i> Relationship Graph
-            </button>
+        <div class="bizapps-view-switcher-bar">
+            <div class="bizapps-view-segmented-group" role="group" aria-label="Relationship view mode">
+                <button
+                    type="button"
+                    class="bizapps-view-segment-btn"
+                    [class.active]="ViewMode === 'list'"
+                    (click)="SetViewMode('list')">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>Table</span>
+                </button>
+                <button
+                    type="button"
+                    class="bizapps-view-segment-btn"
+                    [class.active]="ViewMode === 'graph'"
+                    (click)="SetViewMode('graph')">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                    <span>Relationship Graph</span>
+                </button>
+            </div>
         </div>
 
         @if (ViewMode === 'list') {
@@ -34,7 +37,8 @@
         } @else {
             <bizapps-relationship-graph
                 [OrganizationID]="Record.ID"
-                [Height]="'420px'">
+                [Height]="'420px'"
+                (Navigate)="FormComponent.OnFormNavigate($event)">
             </bizapps-relationship-graph>
         }
     }

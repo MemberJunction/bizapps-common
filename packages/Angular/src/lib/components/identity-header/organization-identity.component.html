@@ -27,15 +27,13 @@
             </div>
         </div>
 
-        @if (!EditMode) {
-            <button type="button"
-                    class="biz-hero__toggle"
-                    [title]="Collapsed ? 'Expand header' : 'Collapse header'"
-                    [attr.aria-label]="Collapsed ? 'Expand header' : 'Collapse header'"
-                    (click)="ToggleCollapsed()">
-                <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'"></i>
-            </button>
-        }
+        <button type="button"
+                class="biz-hero__toggle"
+                [title]="Collapsed ? 'Expand header' : 'Collapse header'"
+                [attr.aria-label]="Collapsed ? 'Expand header' : 'Collapse header'"
+                (click)="ToggleCollapsed()">
+            <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'"></i>
+        </button>
     </div>
 
     @if (!Collapsed) {
@@ -80,26 +78,26 @@
         }
 
         <ng-content></ng-content>
-    }
 
-    @if (EditMode) {
-        <div class="biz-hero__edit">
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Name"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+        @if (EditMode) {
+            <div class="biz-hero__edit">
+                <div class="biz-hero__field">
+                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Name"
+                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+                </div>
+                <div class="biz-hero__field">
+                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LegalName"
+                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+                </div>
+                <div class="biz-hero__field">
+                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Website"
+                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+                </div>
+                <div class="biz-hero__field">
+                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
+                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+                </div>
             </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LegalName"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-            </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Website"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
-            </div>
-            <div class="biz-hero__field">
-                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
-                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
-            </div>
-        </div>
+        }
     }
 </div>
