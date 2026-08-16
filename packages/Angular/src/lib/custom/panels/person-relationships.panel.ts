@@ -6,7 +6,7 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
 
 /**
  * People form contribution that replaces both FromPersonID and ToPersonID
- * relationship grids with a single directional relationship widget.
+ * relationship grids with a directional relationship widget and interactive graph.
  */
 @RegisterClassEx(BaseFormPanel, {
     key: 'form-panel:People:related:Relationships',
@@ -22,4 +22,10 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
     selector: 'bizapps-person-relationships-panel',
     templateUrl: './person-relationships.panel.html',
 })
-export class PersonRelationshipsPanel extends BizAppsFormPanel<mjBizAppsCommonPersonEntity> {}
+export class PersonRelationshipsPanel extends BizAppsFormPanel<mjBizAppsCommonPersonEntity> {
+    public ViewMode: 'list' | 'graph' = 'list';
+
+    public SetViewMode(mode: 'list' | 'graph'): void {
+        this.ViewMode = mode;
+    }
+}
