@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
+import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
 import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
@@ -223,8 +223,26 @@ export class RelationshipListComponent {
     /** Emitted after any mutation (save, delete, end-relationship) so the parent can refresh derived data. */
     @Output() DataChanged = new EventEmitter<void>();
 
+    private _collection?: RelatedRecordCollection<mjBizAppsCommonRelationshipEntity>;
+    private _incomingRelationships: mjBizAppsCommonRelationshipEntity[] = [];
     private _personID: string | null = null;
     private _organizationID: string | null = null;
+
+    /**
+     * Optional strongly-typed RelatedRecordCollection from the parent Person or Organization entity.
+     * When provided, outgoing relationships are managed directly in the collection and persist atomically
+     * when the parent entity is saved.
+     */
+    @Input()
+    set Collection(value: RelatedRecordCollection<mjBizAppsCommonRelationshipEntity> | undefined) {
+        this._collection = value;
+        if (value) {
+            this.loadData();
+        }
+    }
+    get Collection(): RelatedRecordCollection<mjBizAppsCommonRelationshipEntity> | undefined {
+        return this._collection;
+    }
 
     /**
      * The Person record ID whose relationships should be displayed.
@@ -337,40 +355,68 @@ export class RelationshipListComponent {
         try {
             const rv = new RunView();
 
-            // Build filter for relationships
-            let filter = '';
-            if (this._personID) {
-                filter = `FromPersonID='${this._personID}' OR ToPersonID='${this._personID}'`;
-            } else if (this._organizationID) {
-                filter = `FromOrganizationID='${this._organizationID}' OR ToOrganizationID='${this._organizationID}'`;
-            } else {
-                return;
+            // Ensure relationship types are loaded
+            if (this.RelationshipTypes.length === 0) {
+                const typesResult = await rv.RunView<mjBizAppsCommonRelationshipTypeEntity>({
+                    EntityName: 'MJ_BizApps_Common: Relationship Types',
+                    ExtraFilter: 'IsActive=1',
+                    ResultType: 'entity_object'
+                });
+                if (typesResult.Success && typesResult.Results) {
+                    this.RelationshipTypes = typesResult.Results;
+                    this.relationshipTypeMap.clear();
+                    for (const rt of this.RelationshipTypes) {
+                        this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
+                    }
+                }
             }
 
-            const [relsResult, typesResult] = await rv.RunViews([
-                {
+            let relationships: mjBizAppsCommonRelationshipEntity[] = [];
+
+            if (this._collection) {
+                if (!this._collection.IsLoaded) {
+                    await this._collection.Load();
+                }
+
+                // Load incoming relationships to show complete 360-degree timeline
+                let incomingFilter = '';
+                if (this._personID) {
+                    incomingFilter = `ToPersonID='${this._personID}'`;
+                } else if (this._organizationID) {
+                    incomingFilter = `ToOrganizationID='${this._organizationID}'`;
+                }
+
+                if (incomingFilter) {
+                    const incResult = await rv.RunView<mjBizAppsCommonRelationshipEntity>({
+                        EntityName: 'MJ_BizApps_Common: Relationships',
+                        ExtraFilter: incomingFilter,
+                        OrderBy: 'Status ASC, StartDate DESC',
+                        ResultType: 'entity_object'
+                    });
+                    this._incomingRelationships = incResult.Success ? (incResult.Results as mjBizAppsCommonRelationshipEntity[]) : [];
+                } else {
+                    this._incomingRelationships = [];
+                }
+
+                relationships = [...this._collection.Items, ...this._incomingRelationships];
+            } else {
+                // Standalone mode: query both from and to
+                let filter = '';
+                if (this._personID) {
+                    filter = `FromPersonID='${this._personID}' OR ToPersonID='${this._personID}'`;
+                } else if (this._organizationID) {
+                    filter = `FromOrganizationID='${this._organizationID}' OR ToOrganizationID='${this._organizationID}'`;
+                } else {
+                    return;
+                }
+
+                const relsResult = await rv.RunView<mjBizAppsCommonRelationshipEntity>({
                     EntityName: 'MJ_BizApps_Common: Relationships',
                     ExtraFilter: filter,
                     OrderBy: 'Status ASC, StartDate DESC',
                     ResultType: 'entity_object'
-                },
-                {
-                    EntityName: 'MJ_BizApps_Common: Relationship Types',
-                    ExtraFilter: 'IsActive=1',
-                    ResultType: 'entity_object'
-                }
-            ]);
-
-            const relationships = relsResult.Success
-                ? relsResult.Results as mjBizAppsCommonRelationshipEntity[]
-                : [];
-            this.RelationshipTypes = typesResult.Success
-                ? typesResult.Results as mjBizAppsCommonRelationshipTypeEntity[]
-                : [];
-
-            this.relationshipTypeMap.clear();
-            for (const rt of this.RelationshipTypes) {
-                this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
+                });
+                relationships = relsResult.Success ? (relsResult.Results as mjBizAppsCommonRelationshipEntity[]) : [];
             }
 
             this.GroupedRelationships = this.buildGroups(relationships);
@@ -561,13 +607,22 @@ export class RelationshipListComponent {
         this.EditingId = null;
 
         try {
-            const md = new Metadata();
-            this.DraftRelationship = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ_BizApps_Common: Relationships');
-            this.DraftRelationship.NewRecord();
-            if (this._personID) {
-                this.DraftRelationship.FromPersonID = this._personID;
-            } else if (this._organizationID) {
-                this.DraftRelationship.FromOrganizationID = this._organizationID;
+            if (this._collection) {
+                this.DraftRelationship = await this._collection.Create();
+                if (this._personID) {
+                    this.DraftRelationship.FromPersonID = this._personID;
+                } else if (this._organizationID) {
+                    this.DraftRelationship.FromOrganizationID = this._organizationID;
+                }
+            } else {
+                const md = new Metadata();
+                this.DraftRelationship = await md.GetEntityObject<mjBizAppsCommonRelationshipEntity>('MJ_BizApps_Common: Relationships');
+                this.DraftRelationship.NewRecord();
+                if (this._personID) {
+                    this.DraftRelationship.FromPersonID = this._personID;
+                } else if (this._organizationID) {
+                    this.DraftRelationship.FromOrganizationID = this._organizationID;
+                }
             }
         } catch (err) {
             console.error('RelationshipList: Error initializing draft relationship', err);
@@ -580,6 +635,9 @@ export class RelationshipListComponent {
      * Closes the "Add Relationship" form panel without saving.
      */
     onCancelAdd(): void {
+        if (this._collection && this.DraftRelationship) {
+            this._collection.Remove(this.DraftRelationship);
+        }
         this.ShowAddForm = false;
         this.DraftRelationship = null;
         this.cdr.detectChanges();
@@ -667,6 +725,14 @@ export class RelationshipListComponent {
             }
             if (this.AddForm.EndDate) {
                 this.DraftRelationship.EndDate = new Date(this.AddForm.EndDate);
+            }
+
+            if (this._collection) {
+                this.ShowAddForm = false;
+                this.DraftRelationship = null;
+                this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
+                this.DataChanged.emit();
+                return;
             }
 
             const saved = await this.DraftRelationship.Save();
@@ -766,6 +832,13 @@ export class RelationshipListComponent {
             rel.StartDate = this.EditForm.StartDate ? new Date(this.EditForm.StartDate) : null;
             rel.EndDate = this.EditForm.EndDate ? new Date(this.EditForm.EndDate) : null;
 
+            if (this._collection && this._collection.Items.some(i => i.ID === rel!.ID)) {
+                this.EditingId = null;
+                this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
+                this.DataChanged.emit();
+                return;
+            }
+
             await rel.Save();
             await this.loadData();
             this.DataChanged.emit();
@@ -790,6 +863,13 @@ export class RelationshipListComponent {
         try {
             rel.Status = 'Ended';
             rel.EndDate = new Date();
+
+            if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
+                this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
+                this.DataChanged.emit();
+                return;
+            }
+
             await rel.Save();
             await this.loadData();
             this.DataChanged.emit();
@@ -813,6 +893,13 @@ export class RelationshipListComponent {
         this.cdr.detectChanges();
 
         try {
+            if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
+                this._collection.Remove(rel);
+                this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
+                this.DataChanged.emit();
+                return;
+            }
+
             await rel.Delete();
             await this.loadData();
             this.DataChanged.emit();
