@@ -9,14 +9,19 @@
         "UI": {
           "inclusion": "Primary"
         }
+      },
+      "RelatedRecordCollection": {
+        "Name": "ContactMethods",
+        "Load": "explicit",
+        "OnRemove": "delete"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=PersonID"
     },
     "sync": {
-      "lastModified": "2026-08-15T02:45:31.007Z",
-      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+      "lastModified": "2026-08-16T23:06:05.996Z",
+      "checksum": "89891f05b47f026267b66b206d086356e80f095a8ab16a199f881343df0e1109"
     }
   },
   {
@@ -29,14 +34,19 @@
         "UI": {
           "inclusion": "Primary"
         }
+      },
+      "RelatedRecordCollection": {
+        "Name": "OutgoingRelationships",
+        "Load": "explicit",
+        "OnRemove": "delete"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: People&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromPersonID"
     },
     "sync": {
-      "lastModified": "2026-08-15T02:45:31.030Z",
-      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+      "lastModified": "2026-08-16T23:06:05.967Z",
+      "checksum": "1026199f55eba9635a184e41017d32928a8573532f486b2569d144cf1d380e4d"
     }
   },
   {
@@ -48,14 +58,19 @@
         "UI": {
           "inclusion": "Primary"
         }
+      },
+      "RelatedRecordCollection": {
+        "Name": "ContactMethods",
+        "Load": "explicit",
+        "OnRemove": "delete"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Contact Methods&RelatedEntityJoinField=OrganizationID"
     },
     "sync": {
-      "lastModified": "2026-08-15T02:45:31.051Z",
-      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+      "lastModified": "2026-08-16T23:06:06.068Z",
+      "checksum": "89891f05b47f026267b66b206d086356e80f095a8ab16a199f881343df0e1109"
     }
   },
   {
@@ -67,14 +82,19 @@
         "UI": {
           "inclusion": "Primary"
         }
+      },
+      "RelatedRecordCollection": {
+        "Name": "OutgoingRelationships",
+        "Load": "explicit",
+        "OnRemove": "delete"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Relationships&RelatedEntityJoinField=FromOrganizationID"
     },
     "sync": {
-      "lastModified": "2026-08-15T02:45:31.072Z",
-      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+      "lastModified": "2026-08-16T23:06:06.020Z",
+      "checksum": "1026199f55eba9635a184e41017d32928a8573532f486b2569d144cf1d380e4d"
     }
   },
   {
@@ -86,14 +106,19 @@
         "UI": {
           "inclusion": "Primary"
         }
+      },
+      "RelatedRecordCollection": {
+        "Name": "ChildOrganizations",
+        "Load": "explicit",
+        "OnRemove": "orphan"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Organizations&RelatedEntity=MJ_BizApps_Common: Organizations&RelatedEntityJoinField=ParentID"
     },
     "sync": {
-      "lastModified": "2026-08-15T02:45:31.108Z",
-      "checksum": "ffcadf6a38dea7ba00c49040ba5c94475c9266e21b9bc382278ef1da715e8086"
+      "lastModified": "2026-08-16T23:06:06.046Z",
+      "checksum": "56ead930b4aa6fa7a4a3cea02b56b9123432ac6431ff5317520d33d213a81604"
     }
   },
   {

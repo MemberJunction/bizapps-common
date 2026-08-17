@@ -132,9 +132,9 @@
         <div>
             <mj-explorer-entity-data-grid
                 [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Relationships','RelationshipTypeID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Relationships')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Relationships','RelationshipTypeID')"
                 [AllowLoad]="IsSectionExpanded('mJBizAppsCommonRelationships')"
-                [ShowToolbar]="false"
+                [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
                 (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonRelationships', $event.totalRowCount)"
                 >

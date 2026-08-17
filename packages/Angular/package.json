@@ -18,6 +18,7 @@
   "author": "MemberJunction.com",
   "license": "ISC",
   "dependencies": {
+    "@memberjunction/ng-graph-view": "6.1.0-edge.2",
     "@mj-biz-apps/common-entities": "5.34.0"
   },
   "peerDependencies": {
@@ -32,6 +33,7 @@
     "@memberjunction/core-entities": "^6.1.0-edge.2",
     "@memberjunction/ng-base-forms": "^6.1.0-edge.2",
     "@memberjunction/ng-entity-viewer": "^6.1.0-edge.2",
+    "@memberjunction/ng-graph-view": "^6.1.0-edge.2",
     "@memberjunction/ng-link-directives": "^6.1.0-edge.2",
     "@memberjunction/ng-shared": "^6.1.0-edge.2",
     "@memberjunction/ng-ui-components": "^6.1.0-edge.2"

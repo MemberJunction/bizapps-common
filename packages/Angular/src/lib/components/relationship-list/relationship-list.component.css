@@ -271,7 +271,7 @@ span.rel-timeline-target {
     gap: 6px;
     padding: 8px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--mj-radius-sm, 6px);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -279,125 +279,294 @@ span.rel-timeline-target {
 }
 
 .btn-primary {
-    background: var(--mj-brand-primary);
-    color: var(--mj-brand-on-primary);
+    background: var(--mj-brand-primary, #0284c7);
+    color: #fff;
 }
 
-.btn-primary:hover {
-    background: var(--mj-brand-primary-hover);
+.btn-primary:hover:not(:disabled) {
+    background: var(--mj-brand-primary-hover, #0369a1);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .btn-outline {
     background: transparent;
-    border: 1px dashed var(--mj-border-strong);
-    color: var(--mj-text-secondary);
+    border: 1px dashed var(--mj-border-strong, #334155);
+    color: var(--mj-text-secondary, #94a3b8);
 }
 
 .btn-outline:hover {
-    border-color: var(--mj-brand-primary);
-    color: var(--mj-brand-primary);
-    background: color-mix(in srgb, var(--mj-brand-primary) 6%, var(--mj-bg-surface));
+    border-color: var(--mj-brand-primary, #0284c7);
+    color: var(--mj-brand-primary, #38bdf8);
+    background: color-mix(in srgb, var(--mj-brand-primary, #0284c7) 8%, transparent);
 }
 
 .btn-cancel {
-    background: var(--mj-bg-surface-card);
-    color: var(--mj-text-secondary);
-    border: 1px solid var(--mj-border-default);
+    background: var(--mj-bg-surface-card, #141f36);
+    color: var(--mj-text-secondary, #94a3b8);
+    border: 1px solid var(--mj-border-default, #223254);
 }
 
 .btn-cancel:hover {
-    background: var(--mj-border-subtle);
+    background: var(--mj-border-subtle, #1e293b);
+    color: var(--mj-text-primary, #f1f5f9);
 }
 
-/* Add form */
-.rel-add-form {
-    border: 2px solid var(--mj-brand-primary);
-    border-radius: 10px;
-    padding: 20px;
-    background: var(--mj-bg-surface);
-    margin-top: 16px;
+/* ============================================
+   OVERLAY SLIDE-IN PANEL
+/* ============================================
+   RELATIONSHIP FORM CARD (ADD / EDIT)
+   ============================================ */
+.rel-widget-root {
+    position: relative;
+    width: 100%;
 }
 
-.rel-add-form-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--mj-brand-primary);
-    margin-bottom: 16px;
+.rel-timeline-container {
+    transition: opacity 0.2s ease;
+}
+
+.rel-form-card {
+    width: 100%;
+    background: var(--mj-bg-surface-card, #141f36);
+    border: 1px solid var(--mj-border-default, #223254);
+    border-radius: var(--mj-radius-lg, 10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: relFadeIn 0.18s ease-out;
+    margin-bottom: 12px;
+}
+
+@keyframes relFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rel-form-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--mj-border-default, #223254);
+    background: color-mix(in srgb, var(--mj-brand-primary, #0284c7) 8%, var(--mj-bg-surface-card, #141f36));
+}
+
+.rel-form-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rel-form-header-title i {
+    font-size: 20px;
+    color: var(--mj-brand-primary, #38bdf8);
+}
+
+.rel-form-header-title h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--mj-text-primary, #f1f5f9);
+}
+
+.rel-form-header-subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--mj-text-secondary, #94a3b8);
+}
+
+.rel-form-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: var(--mj-text-muted, #64748b);
+    cursor: pointer;
+    border-radius: var(--mj-radius-sm, 6px);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.rel-form-close-btn:hover {
+    color: var(--mj-text-primary, #f1f5f9);
+    background: var(--mj-bg-surface-sunken, #0b1220);
+}
+
+.rel-form-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .form-row {
     display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.form-row--target {
+    display: block;
+    width: 100%;
 }
 
 .form-field {
     flex: 1;
+    min-width: 0;
+}
+
+.form-field--target {
+    width: 100%;
 }
 
 .form-field label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--mj-text-secondary);
-    margin-bottom: 4px;
+    color: var(--mj-text-secondary, #94a3b8);
+    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
 }
 
 .form-field input,
 .form-field select {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--mj-border-default);
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--mj-border-default, #223254);
+    border-radius: var(--mj-radius-sm, 6px);
+    font-size: 13px;
     font-family: inherit;
-    background: var(--mj-bg-surface);
+    background: var(--mj-bg-surface-sunken, #0b1220);
+    color: var(--mj-text-primary, #f1f5f9);
+    box-sizing: border-box;
+}
+
+.form-field select option {
+    background: var(--mj-bg-surface-card, #141f36);
+    color: var(--mj-text-primary, #f1f5f9);
 }
 
 .form-field input:focus,
 .form-field select:focus {
     outline: none;
-    border-color: var(--mj-brand-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mj-brand-primary) 10%, transparent);
+    border-color: var(--mj-brand-primary, #0284c7);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mj-brand-primary, #0284c7) 15%, transparent);
 }
 
 .form-field.type-field {
-    max-width: 200px;
+    flex: 1;
+    min-width: 200px;
 }
 
 .form-field.category-field {
-    max-width: 200px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-field.status-field {
+    max-width: 160px;
 }
 
 .form-field.date-field {
-    max-width: 140px;
+    max-width: 180px;
+}
+
+.form-field.title-field {
+    flex: 2;
 }
 
 /* Category auto-fill display */
 .category-display {
-    padding: 8px 12px;
-    background: var(--mj-bg-surface-card);
-    border-radius: 6px;
+    padding: 9px 12px;
+    background: var(--mj-bg-surface-sunken, #0b1220);
+    border: 1px solid var(--mj-border-default, #223254);
+    border-radius: var(--mj-radius-sm, 6px);
     font-size: 13px;
-    color: var(--mj-text-secondary);
+    color: var(--mj-text-secondary, #94a3b8);
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
+    min-height: 38px;
+    box-sizing: border-box;
 }
 
 .category-display i {
-    font-size: 11px;
+    font-size: 12px;
+    color: var(--mj-brand-primary, #38bdf8);
 }
 
-.form-actions {
-    display: flex;
-    gap: 8px;
+/* Target Search Field Wrapper (Full Width) */
+.target-field-wrapper {
+    width: 100%;
+    min-width: 0;
+}
+
+.target-field-wrapper ::ng-deep mj-form-field {
+    width: 100%;
+    display: block;
+}
+
+.target-field-wrapper ::ng-deep .mj-forms-field {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+.target-field-wrapper ::ng-deep .mj-forms-field-control {
+    width: 100% !important;
+}
+
+.target-field-wrapper ::ng-deep .mj-fk-search {
+    width: 100% !important;
+}
+
+.target-field-wrapper ::ng-deep .mj-forms-input-wrapper {
+    width: 100% !important;
+    min-height: 40px !important;
+    border-radius: var(--mj-radius-sm, 6px) !important;
+    background: var(--mj-bg-surface-sunken, #0b1220) !important;
+    border: 1px solid var(--mj-border-default, #223254) !important;
+}
+
+.target-field-wrapper ::ng-deep input.mj-forms-field-input {
+    font-size: 13px !important;
+    padding: 9px 12px !important;
+    color: var(--mj-text-primary, #f1f5f9) !important;
+}
+
+.target-field-wrapper ::ng-deep .mj-fk-dropdown {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+.field-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--mj-text-muted, #64748b);
     margin-top: 4px;
+}
+
+.required-star {
+    color: var(--mj-status-error, #ef4444);
+    font-weight: 700;
+}
+
+.rel-form-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--mj-border-default, #223254);
+    background: var(--mj-bg-surface-sunken, #0b1220);
 }
 
 /* Empty state */

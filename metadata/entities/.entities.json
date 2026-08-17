@@ -34,6 +34,19 @@
             "AutoUpdateIsNameField": false
           },
           "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=FirstName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-08-17T03:17:37.620Z",
+            "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
+          }
+        },
+        {
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=LastName&EntityID=@parent:ID"
           },
           "sync": {

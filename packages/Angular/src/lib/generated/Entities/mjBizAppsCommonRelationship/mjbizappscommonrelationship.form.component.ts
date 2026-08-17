@@ -17,7 +17,6 @@ export class mjBizAppsCommonRelationshipFormComponent extends BaseFormComponent 
         this.initSections([
             { sectionKey: 'relationshipParticipants', sectionName: 'Relationship Participants', isExpanded: true },
             { sectionKey: 'relationshipDetails', sectionName: 'Relationship Details', isExpanded: true },
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

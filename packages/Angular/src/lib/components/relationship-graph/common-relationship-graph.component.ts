@@ -3,19 +3,28 @@ import {
     ChangeDetectorRef,
     Component,
     Input,
+    Output,
+    EventEmitter,
     OnInit,
     OnChanges,
     SimpleChanges,
     inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RunView } from '@memberjunction/core';
+import { RunView, CompositeKey } from '@memberjunction/core';
+import { UserInfoEngine } from '@memberjunction/core-entities';
+import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     GraphViewComponent,
     type GraphNode,
     type GraphEdge,
+    type GraphLayoutMode,
+    type GraphCategoryConfig,
     type HopExpandedEventArgs,
-    type NodeSelectedEventArgs
+    type NodeSelectedEventArgs,
+    type NodeNavigatedEventArgs,
+    type LayoutChangedEventArgs,
+    type ViewportTransformEventArgs
 } from '@memberjunction/ng-graph-view';
 import { COMMON_ENTITIES } from '../../data/entity-names';
 import type { DirectoryRelationshipRow } from '../../data/directory-types';
@@ -47,10 +56,14 @@ import type { DirectoryRelationshipRow } from '../../data/directory-types';
                 <mj-graph-view
                     [Nodes]="Nodes"
                     [Edges]="Edges"
-                    [SelectedNodeId]="FocalNodeID"
-                    [LayoutMode]="'force'"
+                    [Categories]="GraphCategories"
+                    [FocalNodeId]="FocalNodeID"
+                    [LayoutMode]="LayoutMode"
+                    (LayoutChanged)="OnLayoutChanged($event)"
+                    (ViewportTransform)="OnViewportTransform($event)"
                     (HopExpanded)="OnHopExpanded($event)"
-                    (NodeSelected)="OnNodeSelected($event)">
+                    (NodeSelected)="OnNodeSelected($event)"
+                    (NodeNavigated)="OnNodeNavigated($event)">
                 </mj-graph-view>
             }
         </div>
@@ -93,13 +106,61 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     @Input() public OrganizationID?: string;
     @Input() public Height = '100%';
 
+    @Output() public Navigate = new EventEmitter<FormNavigationEvent>();
+
     public Nodes: GraphNode[] = [];
     public Edges: GraphEdge[] = [];
     public FocalNodeID?: string;
+    public LayoutMode: GraphLayoutMode = 'force';
     public IsLoading = false;
 
+    public readonly GraphCategories: GraphCategoryConfig[] = [
+        { Category: 'person', Label: 'Person', Color: '#10b981', IconClass: 'fa-solid fa-user' },
+        { Category: 'organization', Label: 'Organization', Color: '#38bdf8', IconClass: 'fa-solid fa-building' }
+    ];
+
+    private static graphCache = new Map<string, { nodes: GraphNode[]; edges: GraphEdge[] }>();
+
+    private get PrefsKey(): string {
+        return this.PersonID
+            ? 'mj.bizapps.common.person.graphPrefs'
+            : 'mj.bizapps.common.organization.graphPrefs';
+    }
+
     public ngOnInit(): void {
+        this.LoadPrefs();
         this.LoadGraphData();
+    }
+
+    private LoadPrefs(): void {
+        const raw = UserInfoEngine.Instance.GetSetting(this.PrefsKey);
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed.LayoutMode === 'force' || parsed.LayoutMode === 'circular') {
+                    this.LayoutMode = parsed.LayoutMode;
+                }
+            } catch (e) {
+                // Keep default
+            }
+        }
+    }
+
+    public OnLayoutChanged(event: LayoutChangedEventArgs): void {
+        this.LayoutMode = event.NewMode;
+        this.SavePrefs();
+    }
+
+    public OnViewportTransform(event: ViewportTransformEventArgs): void {
+        this.SavePrefs(event.Transform);
+    }
+
+    private SavePrefs(transform?: { Scale: number; PanX: number; PanY: number }): void {
+        const prefs = {
+            LayoutMode: this.LayoutMode,
+            ...(transform ? { Scale: transform.Scale, PanX: transform.PanX, PanY: transform.PanY } : {})
+        };
+        UserInfoEngine.Instance.SetSettingDebounced(this.PrefsKey, JSON.stringify(prefs));
     }
 
     public ngOnChanges(changes: SimpleChanges): void {
@@ -109,6 +170,16 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     }
 
     public async LoadGraphData(): Promise<void> {
+        const cacheKey = this.PersonID ? `person:${this.PersonID}` : (this.OrganizationID ? `org:${this.OrganizationID}` : '');
+        if (cacheKey && CommonRelationshipGraphComponent.graphCache.has(cacheKey)) {
+            const cached = CommonRelationshipGraphComponent.graphCache.get(cacheKey)!;
+            this.Nodes = [...cached.nodes];
+            this.Edges = [...cached.edges];
+            this.FocalNodeID = cacheKey;
+            this.cdr.markForCheck();
+            return;
+        }
+
         this.IsLoading = true;
         this.cdr.markForCheck();
 
@@ -127,6 +198,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             const result = await rv.RunView<DirectoryRelationshipRow>({
                 EntityName: COMMON_ENTITIES.Relationship,
                 ExtraFilter: filter || undefined,
+                Fields: ['ID', 'FromPersonID', 'ToPersonID', 'FromOrganizationID', 'ToOrganizationID', 'FromPerson', 'ToPerson', 'FromOrganization', 'ToOrganization', 'RelationshipType', 'Title'],
                 OrderBy: '__mj_CreatedAt DESC',
                 MaxRows: 60,
                 ResultType: 'simple'
@@ -134,6 +206,12 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
 
             if (result.Success && result.Results) {
                 this.BuildGraphFromRelationships(result.Results);
+                if (cacheKey) {
+                    CommonRelationshipGraphComponent.graphCache.set(cacheKey, {
+                        nodes: [...this.Nodes],
+                        edges: [...this.Edges]
+                    });
+                }
             }
         } catch (e) {
             console.error('Failed to load relationship graph:', e);
@@ -147,11 +225,25 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
         const nodeMap = new Map<string, GraphNode>();
         const edges: GraphEdge[] = [];
 
+        // Determine focal label from rows if available
+        let focalLabel = this.PersonID ? 'Person' : 'Organization';
+        if (this.PersonID) {
+            const match = rows.find(r => r.FromPersonID === this.PersonID || r.ToPersonID === this.PersonID);
+            if (match) {
+                focalLabel = (match.FromPersonID === this.PersonID ? match.FromPerson : match.ToPerson) || 'Person';
+            }
+        } else if (this.OrganizationID) {
+            const match = rows.find(r => r.FromOrganizationID === this.OrganizationID || r.ToOrganizationID === this.OrganizationID);
+            if (match) {
+                focalLabel = (match.FromOrganizationID === this.OrganizationID ? match.FromOrganization : match.ToOrganization) || 'Organization';
+            }
+        }
+
         // Ensure focal node exists if specified
         if (this.PersonID && !nodeMap.has(this.FocalNodeID!)) {
             nodeMap.set(this.FocalNodeID!, {
                 ID: this.FocalNodeID!,
-                Label: 'Current Person',
+                Label: focalLabel,
                 Category: 'person',
                 Radius: 30,
                 HopDistance: 0,
@@ -160,7 +252,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
         } else if (this.OrganizationID && !nodeMap.has(this.FocalNodeID!)) {
             nodeMap.set(this.FocalNodeID!, {
                 ID: this.FocalNodeID!,
-                Label: 'Current Organization',
+                Label: focalLabel,
                 Category: 'organization',
                 Radius: 30,
                 HopDistance: 0,
@@ -336,5 +428,16 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
 
     public OnNodeSelected(_event: NodeSelectedEventArgs): void {
         // Telemetry or UI hook if needed
+    }
+
+    public OnNodeNavigated(event: NodeNavigatedEventArgs): void {
+        const entityName = event.EntityName || (event.Node?.Category === 'person' ? COMMON_ENTITIES.Person : COMMON_ENTITIES.Organization);
+        const pk = CompositeKey.FromID(event.RecordID);
+        this.Navigate.emit({
+            Kind: 'record',
+            EntityName: entityName,
+            PrimaryKey: pk,
+            OpenInNewTab: false
+        });
     }
 }

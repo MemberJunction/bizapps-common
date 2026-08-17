@@ -689,7 +689,7 @@ export class mjBizAppsCommonContactMethod_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     Person?: string;
         
     @Field({nullable: true}) 
@@ -1772,8 +1772,11 @@ export class mjBizAppsCommonPerson_ {
     // Relationship field to MJ_BizApps_Tasks: Task Assignments not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Tasks: Task Activities not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Tasks: Tasks not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Issues: Issue Comments not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Tasks: Task Decisions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Issues: Issues not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Issues: Issues not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
@@ -1785,6 +1788,7 @@ export class mjBizAppsCommonPerson_ {
 // Relationship field to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+// Relationship field to MJ_BizApps_Orders: Event Order Lines not generated: its GraphQL type is not declared in this file.
 
 }
 
@@ -1996,8 +2000,11 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
         // Relationship to MJ_BizApps_Tasks: Task Assignments not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Tasks: Task Activities not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Tasks: Tasks not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Issues: Issue Comments not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Tasks: Task Decisions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Issues: Issues not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Customer Tax Exemptions not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Issues: Issues not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Stored Value Accounts not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Order Lines not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Payment Headers not generated: its GraphQL type is not declared in this file.
@@ -2009,6 +2016,7 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
 // Relationship to MJ_BizApps_Orders: Payment Intents not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Customer Payment Methods not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Entitlement Grants not generated: its GraphQL type is not declared in this file.
+// Relationship to MJ_BizApps_Orders: Event Order Lines not generated: its GraphQL type is not declared in this file.
 
     @Mutation(() => mjBizAppsCommonPerson_)
     async CreatemjBizAppsCommonPerson(
@@ -2307,7 +2315,7 @@ export class mjBizAppsCommonRelationship_ {
     RelationshipType: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     FromPerson?: string;
         
     @Field({nullable: true}) 
@@ -2315,7 +2323,7 @@ export class mjBizAppsCommonRelationship_ {
     FromOrganization?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     ToPerson?: string;
         
     @Field({nullable: true}) 
