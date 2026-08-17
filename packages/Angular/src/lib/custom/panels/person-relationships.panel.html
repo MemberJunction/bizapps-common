@@ -30,6 +30,7 @@
         @if (ViewMode === 'list') {
             <bizapps-relationship-list
                 [PersonID]="Record.ID"
+                [Collection]="Record.OutgoingRelationships"
                 [EditMode]="EditMode"
                 (DataChanged)="OnWidgetDataChanged()"
                 (Navigate)="FormComponent.OnFormNavigate($event)">
