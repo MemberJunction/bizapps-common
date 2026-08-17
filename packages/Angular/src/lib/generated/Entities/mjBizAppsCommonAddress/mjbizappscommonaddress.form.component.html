@@ -134,31 +134,6 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Order Headers (Ship To Address) Section -->
-    <mj-collapsible-panel
-        SectionKey="mJBizAppsOrdersOrderHeadersShipToAddressID"
-        SectionName="Order Headers (Ship To Address)"
-        Icon="fa fa-shopping-cart"
-        Variant="related-entity"
-        [Form]="this"
-        [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsOrdersOrderHeadersShipToAddressID')"
-        [DefaultExpanded]="false">
-        @if (record.IsSaved) {
-        <div>
-            <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Orders: Order Headers','ShipToAddressID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Orders: Order Headers')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsOrdersOrderHeadersShipToAddressID')"
-                [ShowToolbar]="false"
-                (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsOrdersOrderHeadersShipToAddressID', $event.totalRowCount)"
-                >
-            </mj-explorer-entity-data-grid>
-        </div>
-        }
-    </mj-collapsible-panel>
-
     <!-- MJ_BizApps_Common: Address Links Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonAddressLinks"
@@ -173,61 +148,11 @@
         <div>
             <mj-explorer-entity-data-grid
                 [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Address Links','AddressID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Address Links')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Address Links','AddressID')"
                 [AllowLoad]="IsSectionExpanded('mJBizAppsCommonAddressLinks')"
-                [ShowToolbar]="false"
+                [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
                 (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonAddressLinks', $event.totalRowCount)"
-                >
-            </mj-explorer-entity-data-grid>
-        </div>
-        }
-    </mj-collapsible-panel>
-
-    <!-- Order Headers (Bill To Address) Section -->
-    <mj-collapsible-panel
-        SectionKey="mJBizAppsOrdersOrderHeadersBillToAddressID"
-        SectionName="Order Headers (Bill To Address)"
-        Icon="fa fa-shopping-cart"
-        Variant="related-entity"
-        [Form]="this"
-        [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsOrdersOrderHeadersBillToAddressID')"
-        [DefaultExpanded]="false">
-        @if (record.IsSaved) {
-        <div>
-            <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Orders: Order Headers','BillToAddressID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Orders: Order Headers')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsOrdersOrderHeadersBillToAddressID')"
-                [ShowToolbar]="false"
-                (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsOrdersOrderHeadersBillToAddressID', $event.totalRowCount)"
-                >
-            </mj-explorer-entity-data-grid>
-        </div>
-        }
-    </mj-collapsible-panel>
-
-    <!-- Event Products Section -->
-    <mj-collapsible-panel
-        SectionKey="mJBizAppsOrdersEventProducts"
-        SectionName="Event Products"
-        Icon="fa fa-calendar-alt"
-        Variant="related-entity"
-        [Form]="this"
-        [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsOrdersEventProducts')"
-        [DefaultExpanded]="false">
-        @if (record.IsSaved) {
-        <div>
-            <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Orders: Event Products','VenueAddressID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Orders: Event Products')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsOrdersEventProducts')"
-                [ShowToolbar]="false"
-                (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsOrdersEventProducts', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

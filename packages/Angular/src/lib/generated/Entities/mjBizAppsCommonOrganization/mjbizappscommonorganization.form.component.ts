@@ -26,18 +26,7 @@ export class mjBizAppsCommonOrganizationFormComponent extends BaseFormComponent 
             { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ_BizApps_Common: Organizations', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsToOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonRelationshipsFromOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersOrderHeadersBillToOrganizationID', sectionName: 'Orders', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersOrderHeadersShipToOrganizationID', sectionName: 'Order Headers (Ship To Organization)', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersCustomerPaymentMethods', sectionName: 'Customer Payment Methods', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersPaymentHeaders', sectionName: 'Payments', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersStoredValueAccounts', sectionName: 'Stored Value Accounts', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersEntitlementGrants', sectionName: 'Entitlement Grants', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersPriceListAssignments', sectionName: 'Price List Assignments', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersSubscriptions', sectionName: 'Subscriptions', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersPromotionCodes', sectionName: 'Promotion Codes', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersPaymentIntents', sectionName: 'Payment Intents', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersCustomerTaxExemptions', sectionName: 'Customer Tax Exemptions', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonRelationshipsFromOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false }
         ]);
     }
 }

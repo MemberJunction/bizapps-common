@@ -209,12 +209,12 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
         * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
     OrganizationID: z.string().nullable().describe(`
         * * Field Name: OrganizationID
-        * * Display Name: Organization
+        * * Display Name: Organization ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     ContactTypeID: z.string().describe(`
         * * Field Name: ContactTypeID
-        * * Display Name: Contact Type
+        * * Display Name: Contact Type ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Types (vwContactTypes.ID)`),
     Value: z.string().describe(`
@@ -245,15 +245,15 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
         * * Default Value: getutcdate()`),
     Person: z.string().nullable().describe(`
         * * Field Name: Person
-        * * Display Name: Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * Display Name: Person Name
+        * * SQL Data Type: nvarchar(100)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
         * * Display Name: Organization Name
         * * SQL Data Type: nvarchar(255)`),
     ContactType: z.string().describe(`
         * * Field Name: ContactType
-        * * Display Name: Contact Type Name
+        * * Display Name: Contact Type
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -834,16 +834,16 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     FromPerson: z.string().nullable().describe(`
         * * Field Name: FromPerson
-        * * Display Name: From Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * Display Name: From Person Name
+        * * SQL Data Type: nvarchar(100)`),
     FromOrganization: z.string().nullable().describe(`
         * * Field Name: FromOrganization
         * * Display Name: From Organization Name
         * * SQL Data Type: nvarchar(255)`),
     ToPerson: z.string().nullable().describe(`
         * * Field Name: ToPerson
-        * * Display Name: To Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * Display Name: To Person Name
+        * * SQL Data Type: nvarchar(100)`),
     ToOrganization: z.string().nullable().describe(`
         * * Field Name: ToOrganization
         * * Display Name: To Organization Name
@@ -1441,7 +1441,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
     /**
     * * Field Name: OrganizationID
-    * * Display Name: Organization
+    * * Display Name: Organization ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
@@ -1454,7 +1454,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
     /**
     * * Field Name: ContactTypeID
-    * * Display Name: Contact Type
+    * * Display Name: Contact Type ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Types (vwContactTypes.ID)
     */
@@ -1527,8 +1527,8 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
     /**
     * * Field Name: Person
-    * * Display Name: Person
-    * * SQL Data Type: nvarchar(201)
+    * * Display Name: Person Name
+    * * SQL Data Type: nvarchar(100)
     */
     get Person(): string | null {
         return this.Get('Person');
@@ -1545,7 +1545,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
 
     /**
     * * Field Name: ContactType
-    * * Display Name: Contact Type Name
+    * * Display Name: Contact Type
     * * SQL Data Type: nvarchar(100)
     */
     get ContactType(): string {
@@ -1831,6 +1831,57 @@ export class mjBizAppsCommonOrganizationTypeEntity extends BaseEntity<mjBizAppsC
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: Organizations')
 export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommonOrganizationEntityType> {
+
+  /**
+  * Related records: MJ_BizApps_Common: Organizations
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Organizations record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Organizations → MJ_BizApps_Common: Organizations' relationship; edit that row, not this file.
+  *
+  */
+  public readonly ChildOrganizations = this.DeclareRelatedRecords<mjBizAppsCommonOrganizationEntity>({
+      Name: 'ChildOrganizations',
+        RelatedEntity: 'MJ_BizApps_Common: Organizations',
+        RelatedEntityJoinField: 'ParentID',
+        Load: 'explicit',
+        OnRemove: 'orphan',
+  });
+
+
+  /**
+  * Related records: MJ_BizApps_Common: Contact Methods
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Organizations record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Organizations → MJ_BizApps_Common: Contact Methods' relationship; edit that row, not this file.
+  *
+  */
+  public readonly ContactMethods = this.DeclareRelatedRecords<mjBizAppsCommonContactMethodEntity>({
+      Name: 'ContactMethods',
+        RelatedEntity: 'MJ_BizApps_Common: Contact Methods',
+        RelatedEntityJoinField: 'OrganizationID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+
+  /**
+  * Related records: MJ_BizApps_Common: Relationships
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Organizations record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Organizations → MJ_BizApps_Common: Relationships' relationship; edit that row, not this file.
+  *
+  */
+  public readonly OutgoingRelationships = this.DeclareRelatedRecords<mjBizAppsCommonRelationshipEntity>({
+      Name: 'OutgoingRelationships',
+        RelatedEntity: 'MJ_BizApps_Common: Relationships',
+        RelatedEntityJoinField: 'FromOrganizationID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
     /**
     * Loads the MJ_BizApps_Common: Organizations record from the database
     * @param ID: string - primary key value to load the MJ_BizApps_Common: Organizations record.
@@ -2237,6 +2288,40 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
 export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPersonEntityType> {
+
+  /**
+  * Related records: MJ_BizApps_Common: Contact Methods
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: People record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: People → MJ_BizApps_Common: Contact Methods' relationship; edit that row, not this file.
+  *
+  */
+  public readonly ContactMethods = this.DeclareRelatedRecords<mjBizAppsCommonContactMethodEntity>({
+      Name: 'ContactMethods',
+        RelatedEntity: 'MJ_BizApps_Common: Contact Methods',
+        RelatedEntityJoinField: 'PersonID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+
+  /**
+  * Related records: MJ_BizApps_Common: Relationships
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: People record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: People → MJ_BizApps_Common: Relationships' relationship; edit that row, not this file.
+  *
+  */
+  public readonly OutgoingRelationships = this.DeclareRelatedRecords<mjBizAppsCommonRelationshipEntity>({
+      Name: 'OutgoingRelationships',
+        RelatedEntity: 'MJ_BizApps_Common: Relationships',
+        RelatedEntityJoinField: 'FromPersonID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
     /**
     * Loads the MJ_BizApps_Common: People record from the database
     * @param ID: string - primary key value to load the MJ_BizApps_Common: People record.
@@ -3083,8 +3168,8 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: FromPerson
-    * * Display Name: From Person
-    * * SQL Data Type: nvarchar(201)
+    * * Display Name: From Person Name
+    * * SQL Data Type: nvarchar(100)
     */
     get FromPerson(): string | null {
         return this.Get('FromPerson');
@@ -3101,8 +3186,8 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ToPerson
-    * * Display Name: To Person
-    * * SQL Data Type: nvarchar(201)
+    * * Display Name: To Person Name
+    * * SQL Data Type: nvarchar(100)
     */
     get ToPerson(): string | null {
         return this.Get('ToPerson');

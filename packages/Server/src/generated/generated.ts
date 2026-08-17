@@ -689,7 +689,7 @@ export class mjBizAppsCommonContactMethod_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     Person?: string;
         
     @Field({nullable: true}) 
@@ -2315,7 +2315,7 @@ export class mjBizAppsCommonRelationship_ {
     RelationshipType: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     FromPerson?: string;
         
     @Field({nullable: true}) 
@@ -2323,7 +2323,7 @@ export class mjBizAppsCommonRelationship_ {
     FromOrganization?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(100)
     ToPerson?: string;
         
     @Field({nullable: true}) 

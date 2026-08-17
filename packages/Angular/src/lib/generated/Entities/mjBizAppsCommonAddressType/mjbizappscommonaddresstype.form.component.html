@@ -116,9 +116,9 @@
         <div>
             <mj-explorer-entity-data-grid
                 [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Address Links','AddressTypeID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Address Links')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Address Links','AddressTypeID')"
                 [AllowLoad]="IsSectionExpanded('mJBizAppsCommonAddressLinks')"
-                [ShowToolbar]="false"
+                [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
                 (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonAddressLinks', $event.totalRowCount)"
                 >

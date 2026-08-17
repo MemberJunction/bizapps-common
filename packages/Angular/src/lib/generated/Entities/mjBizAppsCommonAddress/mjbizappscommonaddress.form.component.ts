@@ -19,10 +19,7 @@ export class mjBizAppsCommonAddressFormComponent extends BaseFormComponent {
             { sectionKey: 'addressDetails', sectionName: 'Address Details', isExpanded: true },
             { sectionKey: 'geographicLocation', sectionName: 'Geographic Location', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersOrderHeadersShipToAddressID', sectionName: 'Order Headers (Ship To Address)', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonAddressLinks', sectionName: 'MJ_BizApps_Common: Address Links', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersOrderHeadersBillToAddressID', sectionName: 'Order Headers (Bill To Address)', isExpanded: false },
-            { sectionKey: 'mJBizAppsOrdersEventProducts', sectionName: 'Event Products', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonAddressLinks', sectionName: 'MJ_BizApps_Common: Address Links', isExpanded: false }
         ]);
     }
 }
