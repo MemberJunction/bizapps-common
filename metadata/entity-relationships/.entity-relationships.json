@@ -158,5 +158,96 @@
       "lastModified": "2026-08-15T02:45:31.124Z",
       "checksum": "58975efd1d9187857b888d0129194c7b3c6f8248bca208c86585ea58e2517426"
     }
+  },
+  {
+    "_comments": [
+      "Activity owns its links. Graph save + cascade delete. First-class on the Activity form."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "Primary"
+        }
+      },
+      "RelatedRecordCollection": {
+        "Name": "Links",
+        "Load": "explicit",
+        "OnRemove": "delete"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Activities&RelatedEntity=MJ_BizApps_Common: Activity Links&RelatedEntityJoinField=ActivityID"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.066Z",
+      "checksum": "d7d0a76cae2fe20c34322bee7c9d2a6d7ecc24b932dda4414908e9872449c42d"
+    }
+  },
+  {
+    "_comments": [
+      "Activity owns its file joins. The MJ File row is not deleted with the join."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "Primary"
+        }
+      },
+      "RelatedRecordCollection": {
+        "Name": "Files",
+        "Load": "explicit",
+        "OnRemove": "delete"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Activities&RelatedEntity=MJ_BizApps_Common: Activity Files&RelatedEntityJoinField=ActivityID"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.087Z",
+      "checksum": "028fbe5f04aaba1a8e9772dbdf203569911ac60ff24a190ac1ea84353b94a4f1"
+    }
+  },
+  {
+    "_comments": [
+      "A sync connection owns its include/exclude rules."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "Primary"
+        }
+      },
+      "RelatedRecordCollection": {
+        "Name": "Rules",
+        "Load": "explicit",
+        "OnRemove": "delete"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Activity Sync Connections&RelatedEntity=MJ_BizApps_Common: Activity Sync Rules&RelatedEntityJoinField=ActivitySyncConnectionID"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.104Z",
+      "checksum": "33efe815a397d4b6e19249d352539c1561f4a25d27f6a99ffe3c36b959898eff"
+    }
+  },
+  {
+    "_comments": [
+      "Activities hanging off an Address via optional AddressID sit in More — not a primary address concern."
+    ],
+    "fields": {
+      "Configuration": {
+        "UI": {
+          "inclusion": "More"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Addresses&RelatedEntity=MJ_BizApps_Common: Activities&RelatedEntityJoinField=AddressID"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.128Z",
+      "checksum": "58975efd1d9187857b888d0129194c7b3c6f8248bca208c86585ea58e2517426"
+    }
   }
 ]

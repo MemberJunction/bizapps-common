@@ -1,4 +1,9 @@
 export * from './generated/entity_subclasses'
+export type {
+    ActivityDetails,
+    ActivitySyncConnectionSettings,
+    ActivitySyncRuleFilter,
+} from './activity-json-types';
 
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.

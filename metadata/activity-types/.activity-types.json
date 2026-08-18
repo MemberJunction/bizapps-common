@@ -1,0 +1,110 @@
+[
+  {
+    "fields": {
+      "Code": "Email",
+      "Name": "Email",
+      "Description": "Email message. Direction (Inbound/Outbound) lives on the Activity.",
+      "IconClass": "fa-solid fa-envelope",
+      "Sequence": 10,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "5C0674D6-A07B-447B-8755-66BE48B38303"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.165Z",
+      "checksum": "3fcdc6271f8226bdcf586f28334dc45703d7e34b4a1c9064bab1882a663310e6"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Call",
+      "Name": "Call",
+      "Description": "Phone or voice call. Outcome (Connected, LeftVoicemail, NoAnswer) lives on the Activity.",
+      "IconClass": "fa-solid fa-phone",
+      "Sequence": 20,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "09233D7A-5A96-4F39-B2BF-177D8B55B220"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.180Z",
+      "checksum": "ef8434247c67b470e9219fa6a8739a1f837b7571d501832546ae1f60a45355ce"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Meeting",
+      "Name": "Meeting",
+      "Description": "In-person or virtual meeting. Organizer/Attendee roles live on ActivityLink.",
+      "IconClass": "fa-solid fa-calendar",
+      "Sequence": 30,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "40E239B0-20C0-4A12-8014-D82EBCE240DC"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.193Z",
+      "checksum": "175d32afa614618b2d72512239c416af4e6da6e20cf38c3bd4affd9e05d6e583"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Note",
+      "Name": "Note",
+      "Description": "Free-form note logged against one or more records.",
+      "IconClass": "fa-solid fa-note-sticky",
+      "Sequence": 40,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "3569BFCA-CF4D-4F3A-ADE8-FE29F2F30A65"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.205Z",
+      "checksum": "6ad65410378e8f2e5f4bc5ae6d57856a70c714c2cbb1a57b0874baf4f7b02d57"
+    }
+  },
+  {
+    "fields": {
+      "Code": "SMS",
+      "Name": "SMS",
+      "Description": "SMS or text message. Direction lives on the Activity.",
+      "IconClass": "fa-solid fa-comment-sms",
+      "Sequence": 50,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "1C6F6220-7C39-4E71-95AD-AB554F48F1AA"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.217Z",
+      "checksum": "ae9490bde535fde0e62e690f88c52098c818cefcf34246c037314a3854037d6f"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Chat",
+      "Name": "Chat",
+      "Description": "Instant message or chat transcript excerpt.",
+      "IconClass": "fa-solid fa-comments",
+      "Sequence": 60,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "F051065B-EBA1-4EA6-B95D-3BCCC2597EBA"
+    },
+    "sync": {
+      "lastModified": "2026-08-18T00:34:50.228Z",
+      "checksum": "52f8d7315a4bd83cecb4b0e407ba6b696a91f9534d1a0bc597fc259b8660e037"
+    }
+  }
+]
