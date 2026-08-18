@@ -111,6 +111,10 @@ export class mjBizAppsCommonActivity_ {
     @MaxLength(100)
     ActivityType: string;
         
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    ParentActivity?: string;
+        
     @Field() 
     @MaxLength(100)
     LoggedByUser: string;
@@ -123,9 +127,27 @@ export class mjBizAppsCommonActivity_ {
     @MaxLength(200)
     ActivitySyncConnection?: string;
         
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
     @Field({nullable: true}) 
     @MaxLength(36)
     RootParentActivityID?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentActivityIDDepth?: number;
+        
+    @Field({nullable: true}) 
+    ParentActivityIDPath?: string;
+        
+    @Field(() => Boolean, {nullable: true}) 
+    ParentActivityIDIsLeaf?: boolean;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentActivityIDChildCount?: number;
         
     @Field(() => [mjBizAppsCommonActivity_])
     mjBizAppsCommonActivities_ParentActivityIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
@@ -1329,6 +1351,18 @@ export class mjBizAppsCommonActivityType_ {
     @Field({nullable: true}) 
     @MaxLength(36)
     RootParentID?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentIDDepth?: number;
+        
+    @Field({nullable: true}) 
+    ParentIDPath?: string;
+        
+    @Field(() => Boolean, {nullable: true}) 
+    ParentIDIsLeaf?: boolean;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentIDChildCount?: number;
         
     @Field(() => [mjBizAppsCommonActivity_])
     mjBizAppsCommonActivities_ActivityTypeIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
@@ -2844,6 +2878,18 @@ export class mjBizAppsCommonOrganization_ {
     @Field({nullable: true}) 
     @MaxLength(36)
     RootParentID?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentIDDepth?: number;
+        
+    @Field({nullable: true}) 
+    ParentIDPath?: string;
+        
+    @Field(() => Boolean, {nullable: true}) 
+    ParentIDIsLeaf?: boolean;
+        
+    @Field(() => Int, {nullable: true}) 
+    ParentIDChildCount?: number;
         
     @Field({nullable: true}) 
     @MaxLength(255)

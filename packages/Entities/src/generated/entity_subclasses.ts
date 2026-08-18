@@ -1,4 +1,4 @@
-import { BaseEntity, EntitySaveOptions, EntityDeleteOptions, CompositeKey, ValidationResult, ValidationErrorInfo, ValidationErrorType, Metadata, ProviderType, DatabaseProviderBase } from "@memberjunction/core";
+import { BaseEntity, EntitySaveOptions, EntityDeleteOptions, CompositeKey, ValidationResult, ValidationErrorInfo, ValidationErrorType, Metadata, ProviderType, DatabaseProviderBase, RunView } from "@memberjunction/core";
 import { RegisterClass } from "@memberjunction/global";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Default Value: newsequentialid()`),
     ActivityTypeID: z.string().describe(`
         * * Field Name: ActivityTypeID
-        * * Display Name: Activity Type ID
+        * * Display Name: Activity Type
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)`),
     StartedAt: z.date().describe(`
@@ -117,12 +117,12 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Description: Email or calendar thread id used to group replies.`),
     ParentActivityID: z.string().nullable().describe(`
         * * Field Name: ParentActivityID
-        * * Display Name: Parent Activity ID
+        * * Display Name: Parent Activity
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)`),
     LoggedByUserID: z.string().describe(`
         * * Field Name: LoggedByUserID
-        * * Display Name: Logged By User ID
+        * * Display Name: Logged By User
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)`),
     Location: z.string().nullable().describe(`
@@ -132,12 +132,12 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Description: Meeting place as text. Optional AddressID is the structured location.`),
     AddressID: z.string().nullable().describe(`
         * * Field Name: AddressID
-        * * Display Name: Address ID
+        * * Display Name: Address
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)`),
     ActivitySyncConnectionID: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnectionID
-        * * Display Name: Activity Sync Connection ID
+        * * Display Name: Sync Connection
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)`),
     Details: z.string().nullable().describe(`
@@ -157,24 +157,52 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Default Value: getutcdate()`),
     ActivityType: z.string().describe(`
         * * Field Name: ActivityType
-        * * Display Name: Activity Type
+        * * Display Name: Activity Type Name
         * * SQL Data Type: nvarchar(100)`),
+    ParentActivity: z.string().nullable().describe(`
+        * * Field Name: ParentActivity
+        * * Display Name: Parent Activity
+        * * SQL Data Type: nvarchar(500)`),
     LoggedByUser: z.string().describe(`
         * * Field Name: LoggedByUser
-        * * Display Name: Logged By User
+        * * Display Name: Logged By User Name
         * * SQL Data Type: nvarchar(100)`),
     Address: z.string().nullable().describe(`
         * * Field Name: Address
-        * * Display Name: Address
+        * * Display Name: Address Text
         * * SQL Data Type: nvarchar(255)`),
     ActivitySyncConnection: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnection
-        * * Display Name: Activity Sync Connection
+        * * Display Name: Sync Connection Name
         * * SQL Data Type: nvarchar(200)`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: Mj Latitude
+        * * SQL Data Type: decimal(10, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: Mj Longitude
+        * * SQL Data Type: decimal(10, 6)`),
     RootParentActivityID: z.string().nullable().describe(`
         * * Field Name: RootParentActivityID
-        * * Display Name: Root Parent Activity ID
+        * * Display Name: Root Parent Activity
         * * SQL Data Type: uniqueidentifier`),
+    ParentActivityIDDepth: z.number().nullable().describe(`
+        * * Field Name: ParentActivityIDDepth
+        * * Display Name: Parent Depth
+        * * SQL Data Type: int`),
+    ParentActivityIDPath: z.string().nullable().describe(`
+        * * Field Name: ParentActivityIDPath
+        * * Display Name: Parent Path
+        * * SQL Data Type: nvarchar(MAX)`),
+    ParentActivityIDIsLeaf: z.boolean().nullable().describe(`
+        * * Field Name: ParentActivityIDIsLeaf
+        * * Display Name: Is Leaf Node
+        * * SQL Data Type: bit`),
+    ParentActivityIDChildCount: z.number().nullable().describe(`
+        * * Field Name: ParentActivityIDChildCount
+        * * Display Name: Child Count
+        * * SQL Data Type: int`),
 });
 
 export type mjBizAppsCommonActivityEntityType = z.infer<typeof mjBizAppsCommonActivitySchema>;
@@ -532,7 +560,7 @@ export const mjBizAppsCommonActivityTypeSchema = z.object({
         * * Description: Optional longer description of the type.`),
     ParentID: z.string().nullable().describe(`
         * * Field Name: ParentID
-        * * Display Name: Parent ID
+        * * Display Name: Parent
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)`),
     IconClass: z.string().nullable().describe(`
@@ -575,12 +603,28 @@ export const mjBizAppsCommonActivityTypeSchema = z.object({
         * * Default Value: getutcdate()`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
-        * * Display Name: Parent
+        * * Display Name: Parent Name
         * * SQL Data Type: nvarchar(100)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
-        * * Display Name: Root Parent ID
+        * * Display Name: Root Parent
         * * SQL Data Type: uniqueidentifier`),
+    ParentIDDepth: z.number().nullable().describe(`
+        * * Field Name: ParentIDDepth
+        * * Display Name: Depth
+        * * SQL Data Type: int`),
+    ParentIDPath: z.string().nullable().describe(`
+        * * Field Name: ParentIDPath
+        * * Display Name: Path
+        * * SQL Data Type: nvarchar(MAX)`),
+    ParentIDIsLeaf: z.boolean().nullable().describe(`
+        * * Field Name: ParentIDIsLeaf
+        * * Display Name: Is Leaf
+        * * SQL Data Type: bit`),
+    ParentIDChildCount: z.number().nullable().describe(`
+        * * Field Name: ParentIDChildCount
+        * * Display Name: Child Count
+        * * SQL Data Type: int`),
 });
 
 export type mjBizAppsCommonActivityTypeEntityType = z.infer<typeof mjBizAppsCommonActivityTypeSchema>;
@@ -962,7 +1006,7 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)`),
     ParentID: z.string().nullable().describe(`
         * * Field Name: ParentID
-        * * Display Name: Parent ID
+        * * Display Name: Parent
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     Website: z.string().nullable().describe(`
@@ -1027,20 +1071,36 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
-        * * Display Name: Parent
+        * * Display Name: Parent Name
         * * SQL Data Type: nvarchar(255)`),
     __mj_Latitude: z.number().nullable().describe(`
         * * Field Name: __mj_Latitude
-        * * Display Name: Mj Latitude
+        * * Display Name: Latitude
         * * SQL Data Type: decimal(10, 6)`),
     __mj_Longitude: z.number().nullable().describe(`
         * * Field Name: __mj_Longitude
-        * * Display Name: Mj Longitude
+        * * Display Name: Longitude
         * * SQL Data Type: decimal(10, 6)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
-        * * Display Name: Root Parent ID
+        * * Display Name: Root Parent
         * * SQL Data Type: uniqueidentifier`),
+    ParentIDDepth: z.number().nullable().describe(`
+        * * Field Name: ParentIDDepth
+        * * Display Name: Hierarchy Depth
+        * * SQL Data Type: int`),
+    ParentIDPath: z.string().nullable().describe(`
+        * * Field Name: ParentIDPath
+        * * Display Name: Hierarchy Path
+        * * SQL Data Type: nvarchar(MAX)`),
+    ParentIDIsLeaf: z.boolean().nullable().describe(`
+        * * Field Name: ParentIDIsLeaf
+        * * Display Name: Is Leaf Node
+        * * SQL Data Type: bit`),
+    ParentIDChildCount: z.number().nullable().describe(`
+        * * Field Name: ParentIDChildCount
+        * * Display Name: Child Count
+        * * SQL Data Type: int`),
     PrimaryAddressLine1: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine1
         * * Display Name: Address Line 1
@@ -1083,7 +1143,7 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: int`),
     ChildOrgCount: z.number().nullable().describe(`
         * * Field Name: ChildOrgCount
-        * * Display Name: Child Org Count
+        * * Display Name: Child Organization Count
         * * SQL Data Type: int`),
 });
 
@@ -1496,6 +1556,64 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
+    * Validate() method override for MJ_BizApps_Common: Activities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: The end date and time of an activity must be after or equal to its start date and time.
+    * * Table-Level: External ID and Source System must either both be provided together or both be left empty. You cannot specify one without the other.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateEndedAtAfterStartedAt(result);
+        this.ValidateExternalIDAndSourceSystemCoexistence(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The end date and time of an activity must be after or equal to its start date and time.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEndedAtAfterStartedAt(result: ValidationResult) {
+    	if (this.EndedAt != null && this.StartedAt != null) {
+    		const endedTime = new Date(this.EndedAt).getTime();
+    		const startedTime = new Date(this.StartedAt).getTime();
+    		if (endedTime < startedTime) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"EndedAt",
+    				"The end date and time must be after or equal to the start date and time.",
+    				this.EndedAt,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
+    }
+
+    /**
+    * External ID and Source System must either both be provided together or both be left empty. You cannot specify one without the other.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateExternalIDAndSourceSystemCoexistence(result: ValidationResult) {
+        const hasExternalID = this.ExternalID != null && this.ExternalID !== "";
+        const hasSourceSystem = this.SourceSystem != null && this.SourceSystem !== "";
+    
+        if (hasExternalID !== hasSourceSystem) {
+            result.Errors.push(new ValidationErrorInfo(
+                "ExternalID",
+                "External ID and Source System must either both be provided or both be left blank.",
+                this.ExternalID,
+                ValidationErrorType.Failure
+            ));
+        }
+    }
+
+    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -1510,7 +1628,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: ActivityTypeID
-    * * Display Name: Activity Type ID
+    * * Display Name: Activity Type
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)
     */
@@ -1712,7 +1830,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: ParentActivityID
-    * * Display Name: Parent Activity ID
+    * * Display Name: Parent Activity
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)
     */
@@ -1725,7 +1843,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: LoggedByUserID
-    * * Display Name: Logged By User ID
+    * * Display Name: Logged By User
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
     */
@@ -1751,7 +1869,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: AddressID
-    * * Display Name: Address ID
+    * * Display Name: Address
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)
     */
@@ -1764,7 +1882,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: ActivitySyncConnectionID
-    * * Display Name: Activity Sync Connection ID
+    * * Display Name: Sync Connection
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)
     */
@@ -1810,7 +1928,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: ActivityType
-    * * Display Name: Activity Type
+    * * Display Name: Activity Type Name
     * * SQL Data Type: nvarchar(100)
     */
     get ActivityType(): string {
@@ -1818,8 +1936,17 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
+    * * Field Name: ParentActivity
+    * * Display Name: Parent Activity
+    * * SQL Data Type: nvarchar(500)
+    */
+    get ParentActivity(): string | null {
+        return this.Get('ParentActivity');
+    }
+
+    /**
     * * Field Name: LoggedByUser
-    * * Display Name: Logged By User
+    * * Display Name: Logged By User Name
     * * SQL Data Type: nvarchar(100)
     */
     get LoggedByUser(): string {
@@ -1828,7 +1955,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: Address
-    * * Display Name: Address
+    * * Display Name: Address Text
     * * SQL Data Type: nvarchar(255)
     */
     get Address(): string | null {
@@ -1837,7 +1964,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * * Field Name: ActivitySyncConnection
-    * * Display Name: Activity Sync Connection
+    * * Display Name: Sync Connection Name
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncConnection(): string | null {
@@ -1845,12 +1972,66 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: Mj Latitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: Mj Longitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
+    }
+
+    /**
     * * Field Name: RootParentActivityID
-    * * Display Name: Root Parent Activity ID
+    * * Display Name: Root Parent Activity
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentActivityID(): string | null {
         return this.Get('RootParentActivityID');
+    }
+
+    /**
+    * * Field Name: ParentActivityIDDepth
+    * * Display Name: Parent Depth
+    * * SQL Data Type: int
+    */
+    get ParentActivityIDDepth(): number | null {
+        return this.Get('ParentActivityIDDepth');
+    }
+
+    /**
+    * * Field Name: ParentActivityIDPath
+    * * Display Name: Parent Path
+    * * SQL Data Type: nvarchar(MAX)
+    */
+    get ParentActivityIDPath(): string | null {
+        return this.Get('ParentActivityIDPath');
+    }
+
+    /**
+    * * Field Name: ParentActivityIDIsLeaf
+    * * Display Name: Is Leaf Node
+    * * SQL Data Type: bit
+    */
+    get ParentActivityIDIsLeaf(): boolean | null {
+        return this.Get('ParentActivityIDIsLeaf');
+    }
+
+    /**
+    * * Field Name: ParentActivityIDChildCount
+    * * Display Name: Child Count
+    * * SQL Data Type: int
+    */
+    get ParentActivityIDChildCount(): number | null {
+        return this.Get('ParentActivityIDChildCount');
     }
 }
 
@@ -2015,6 +2196,46 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Activity Links entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: The record must be identified either by an Entity ID and Record ID pair, or by an Identity Kind and Identity Value pair. It cannot have both pairs specified, nor can it have a partial combination of these fields.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateEntityOrIdentityPair(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The record must be identified either by an Entity ID and Record ID pair, or by an Identity Kind and Identity Value pair. It cannot have both pairs specified, nor can it have a partial combination of these fields.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEntityOrIdentityPair(result: ValidationResult) {
+    	const hasEntity = this.EntityID != null;
+    	const hasRecord = this.RecordID != null;
+    	const hasIdentityKind = this.IdentityKind != null;
+    	const hasIdentityValue = this.IdentityValue != null;
+    
+    	const isValidEntityPair = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
+    	const isValidIdentityPair = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
+    
+    	if (!isValidEntityPair && !isValidIdentityPair) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EntityID",
+    			"You must provide either both EntityID and RecordID, or both IdentityKind and IdentityValue, but not both pairs or a partial mix.",
+    			this.EntityID,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
@@ -2440,6 +2661,40 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     }
 
     /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Rules entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: The end date (DateTo) must be on or after the start date (DateFrom) when both dates are specified.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateDateToAfterOrEqualDateFrom(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The end date (DateTo) must be on or after the start date (DateFrom) when both dates are specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateDateToAfterOrEqualDateFrom(result: ValidationResult) {
+    	if (this.DateFrom != null && this.DateTo != null) {
+    		if (this.DateTo < this.DateFrom) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"DateTo",
+    				"The end date (DateTo) must be on or after the start date (DateFrom).",
+    				this.DateTo,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
+    }
+
+    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -2732,7 +2987,7 @@ export class mjBizAppsCommonActivityTypeEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentID
-    * * Display Name: Parent ID
+    * * Display Name: Parent
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)
     */
@@ -2833,7 +3088,7 @@ export class mjBizAppsCommonActivityTypeEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: Parent
-    * * Display Name: Parent
+    * * Display Name: Parent Name
     * * SQL Data Type: nvarchar(100)
     */
     get Parent(): string | null {
@@ -2842,11 +3097,47 @@ export class mjBizAppsCommonActivityTypeEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: RootParentID
-    * * Display Name: Root Parent ID
+    * * Display Name: Root Parent
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentID(): string | null {
         return this.Get('RootParentID');
+    }
+
+    /**
+    * * Field Name: ParentIDDepth
+    * * Display Name: Depth
+    * * SQL Data Type: int
+    */
+    get ParentIDDepth(): number | null {
+        return this.Get('ParentIDDepth');
+    }
+
+    /**
+    * * Field Name: ParentIDPath
+    * * Display Name: Path
+    * * SQL Data Type: nvarchar(MAX)
+    */
+    get ParentIDPath(): string | null {
+        return this.Get('ParentIDPath');
+    }
+
+    /**
+    * * Field Name: ParentIDIsLeaf
+    * * Display Name: Is Leaf
+    * * SQL Data Type: bit
+    */
+    get ParentIDIsLeaf(): boolean | null {
+        return this.Get('ParentIDIsLeaf');
+    }
+
+    /**
+    * * Field Name: ParentIDChildCount
+    * * Display Name: Child Count
+    * * SQL Data Type: int
+    */
+    get ParentIDChildCount(): number | null {
+        return this.Get('ParentIDChildCount');
     }
 }
 
@@ -3985,7 +4276,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentID
-    * * Display Name: Parent ID
+    * * Display Name: Parent
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
@@ -4137,7 +4428,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: Parent
-    * * Display Name: Parent
+    * * Display Name: Parent Name
     * * SQL Data Type: nvarchar(255)
     */
     get Parent(): string | null {
@@ -4146,7 +4437,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: __mj_Latitude
-    * * Display Name: Mj Latitude
+    * * Display Name: Latitude
     * * SQL Data Type: decimal(10, 6)
     */
     get __mj_Latitude(): number | null {
@@ -4155,7 +4446,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: __mj_Longitude
-    * * Display Name: Mj Longitude
+    * * Display Name: Longitude
     * * SQL Data Type: decimal(10, 6)
     */
     get __mj_Longitude(): number | null {
@@ -4164,11 +4455,47 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: RootParentID
-    * * Display Name: Root Parent ID
+    * * Display Name: Root Parent
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentID(): string | null {
         return this.Get('RootParentID');
+    }
+
+    /**
+    * * Field Name: ParentIDDepth
+    * * Display Name: Hierarchy Depth
+    * * SQL Data Type: int
+    */
+    get ParentIDDepth(): number | null {
+        return this.Get('ParentIDDepth');
+    }
+
+    /**
+    * * Field Name: ParentIDPath
+    * * Display Name: Hierarchy Path
+    * * SQL Data Type: nvarchar(MAX)
+    */
+    get ParentIDPath(): string | null {
+        return this.Get('ParentIDPath');
+    }
+
+    /**
+    * * Field Name: ParentIDIsLeaf
+    * * Display Name: Is Leaf Node
+    * * SQL Data Type: bit
+    */
+    get ParentIDIsLeaf(): boolean | null {
+        return this.Get('ParentIDIsLeaf');
+    }
+
+    /**
+    * * Field Name: ParentIDChildCount
+    * * Display Name: Child Count
+    * * SQL Data Type: int
+    */
+    get ParentIDChildCount(): number | null {
+        return this.Get('ParentIDChildCount');
     }
 
     /**
@@ -4263,7 +4590,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ChildOrgCount
-    * * Display Name: Child Org Count
+    * * Display Name: Child Organization Count
     * * SQL Data Type: int
     */
     get ChildOrgCount(): number | null {

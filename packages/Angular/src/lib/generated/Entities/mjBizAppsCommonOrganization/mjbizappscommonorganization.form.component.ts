@@ -19,7 +19,6 @@ export class mjBizAppsCommonOrganizationFormComponent extends BaseFormComponent 
             { sectionKey: 'organizationIdentity', sectionName: 'Organization Identity', isExpanded: true },
             { sectionKey: 'hierarchyAndStructure', sectionName: 'Hierarchy and Structure', isExpanded: true },
             { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: true },
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'addressInformation', sectionName: 'Address Information', isExpanded: true },
             { sectionKey: 'organizationalMetrics', sectionName: 'Organizational Metrics', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
