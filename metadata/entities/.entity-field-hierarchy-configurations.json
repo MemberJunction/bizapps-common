@@ -1,0 +1,95 @@
+[
+  {
+    "_comments": [
+      "Seeds Hierarchy.IsHierarchy=true in EntityField.Configuration for Organization.ParentID."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Organizations"
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "Configuration": {
+              "Hierarchy": {
+                "IsHierarchy": true
+              }
+            }
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations&Name=ParentID"
+          },
+          "sync": {
+            "lastModified": "2026-08-18T21:32:15.367Z",
+            "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
+    }
+  },
+  {
+    "_comments": [
+      "Seeds Hierarchy.IsHierarchy=true in EntityField.Configuration for ActivityType.ParentID."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Types"
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "Configuration": {
+              "Hierarchy": {
+                "IsHierarchy": true
+              }
+            }
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Types&Name=ParentID"
+          },
+          "sync": {
+            "lastModified": "2026-08-18T21:32:15.396Z",
+            "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Types"
+    }
+  },
+  {
+    "_comments": [
+      "Seeds Hierarchy.IsHierarchy=true in EntityField.Configuration for Activity.ParentActivityID."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activities"
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "Configuration": {
+              "Hierarchy": {
+                "IsHierarchy": true
+              }
+            }
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities&Name=ParentActivityID"
+          },
+          "sync": {
+            "lastModified": "2026-08-18T21:32:15.420Z",
+            "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities"
+    }
+  }
+]
