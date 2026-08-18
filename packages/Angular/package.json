@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "author": "MemberJunction.com",
-  "license": "ISC",
+  "license": "BUSL-1.1",
   "dependencies": {
     "@memberjunction/ng-graph-view": "6.1.0-edge.2",
     "@mj-biz-apps/common-entities": "5.34.0"
