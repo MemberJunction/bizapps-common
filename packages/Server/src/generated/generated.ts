@@ -17,8 +17,1527 @@ import { MaxLength } from 'class-validator';
 import * as mj_core_schema_server_object_types from '@memberjunction/server'
 
 
-import { mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities';
+import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities';
     
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activities
+//****************************************************************************
+@ObjectType({ description: `One interaction that happened between people, about records. Timeline card — not a blob store, not a task, not field-level audit. Duration is derived from StartedAt/EndedAt.` })
+export class mjBizAppsCommonActivity_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field() 
+    @MaxLength(36)
+    ActivityTypeID: string;
+        
+    @Field({description: `Sort key for every timeline. Instant events use the date/time of the event.`}) 
+    StartedAt: Date;
+        
+    @Field({nullable: true, description: `End of a meeting/call. Leave null for a point-in-time log. Must be >= StartedAt when set. Duration is derived; do not store it.`}) 
+    EndedAt?: Date;
+        
+    @Field({description: `Subject / one-line card title (e.g. Called Jane about renewal).`}) 
+    @MaxLength(500)
+    Title: string;
+        
+    @Field({nullable: true, description: `Notes or a short excerpt. Not the full email body — that lives on an ActivityFile of Kind Body.`}) 
+    Description?: string;
+        
+    @Field({description: `Inbound, Outbound, or Internal. Channel lives on ActivityType; direction lives here so inbound email is a filter, not a type explosion.`}) 
+    @MaxLength(20)
+    Direction: string;
+        
+    @Field({description: `Logged (default for a past event), Scheduled, Completed, Cancelled, or Failed.`}) 
+    @MaxLength(20)
+    Status: string;
+        
+    @Field({nullable: true, description: `Optional disposition: Connected, LeftVoicemail, NoAnswer, NoShow, Bounced, Interested, NotInterested. A filter, not a type.`}) 
+    @MaxLength(40)
+    Outcome?: string;
+        
+    @Field({description: `Internal (anyone who can read a Regarding record) or Private (LoggedByUserID only, until a PermissionEngine domain exists). Manual default is Internal; synced mail should default Private in the engine.`}) 
+    @MaxLength(20)
+    Visibility: string;
+        
+    @Field({description: `How the row was written: Manual, System, or Integration.`}) 
+    @MaxLength(20)
+    Source: string;
+        
+    @Field({nullable: true, description: `Provider name for idempotent sync (Microsoft365, Gmail, Zoom). Required when ExternalID is set.`}) 
+    @MaxLength(80)
+    SourceSystem?: string;
+        
+    @Field({nullable: true, description: `Provider message/event id. Unique with SourceSystem where set — never dedup by subject.`}) 
+    @MaxLength(400)
+    ExternalID?: string;
+        
+    @Field({nullable: true, description: `Email or calendar thread id used to group replies.`}) 
+    @MaxLength(400)
+    ExternalThreadID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ParentActivityID?: string;
+        
+    @Field() 
+    @MaxLength(36)
+    LoggedByUserID: string;
+        
+    @Field({nullable: true, description: `Meeting place as text. Optional AddressID is the structured location.`}) 
+    @MaxLength(500)
+    Location?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    AddressID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ActivitySyncConnectionID?: string;
+        
+    @Field({nullable: true, description: `JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`}) 
+    Details?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field() 
+    @MaxLength(100)
+    ActivityType: string;
+        
+    @Field() 
+    @MaxLength(100)
+    LoggedByUser: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    Address?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(200)
+    ActivitySyncConnection?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    RootParentActivityID?: string;
+        
+    @Field(() => [mjBizAppsCommonActivity_])
+    mjBizAppsCommonActivities_ParentActivityIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
+    
+    @Field(() => [mjBizAppsCommonActivityFile_])
+    mjBizAppsCommonActivityFiles_ActivityIDArray: mjBizAppsCommonActivityFile_[]; // Link to mjBizAppsCommonActivityFiles
+    
+    @Field(() => [mjBizAppsCommonActivityLink_])
+    mjBizAppsCommonActivityLinks_ActivityIDArray: mjBizAppsCommonActivityLink_[]; // Link to mjBizAppsCommonActivityLinks
+    
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activities
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivityInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ActivityTypeID?: string;
+
+    @Field({ nullable: true })
+    StartedAt?: Date;
+
+    @Field({ nullable: true })
+    EndedAt: Date | null;
+
+    @Field({ nullable: true })
+    Title?: string;
+
+    @Field({ nullable: true })
+    Description: string | null;
+
+    @Field({ nullable: true })
+    Direction?: string;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field({ nullable: true })
+    Outcome: string | null;
+
+    @Field({ nullable: true })
+    Visibility?: string;
+
+    @Field({ nullable: true })
+    Source?: string;
+
+    @Field({ nullable: true })
+    SourceSystem: string | null;
+
+    @Field({ nullable: true })
+    ExternalID: string | null;
+
+    @Field({ nullable: true })
+    ExternalThreadID: string | null;
+
+    @Field({ nullable: true })
+    ParentActivityID: string | null;
+
+    @Field({ nullable: true })
+    LoggedByUserID?: string;
+
+    @Field({ nullable: true })
+    Location: string | null;
+
+    @Field({ nullable: true })
+    AddressID: string | null;
+
+    @Field({ nullable: true })
+    ActivitySyncConnectionID: string | null;
+
+    @Field({ nullable: true })
+    Details: string | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activities
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivityInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ActivityTypeID?: string;
+
+    @Field({ nullable: true })
+    StartedAt?: Date;
+
+    @Field({ nullable: true })
+    EndedAt?: Date | null;
+
+    @Field({ nullable: true })
+    Title?: string;
+
+    @Field({ nullable: true })
+    Description?: string | null;
+
+    @Field({ nullable: true })
+    Direction?: string;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field({ nullable: true })
+    Outcome?: string | null;
+
+    @Field({ nullable: true })
+    Visibility?: string;
+
+    @Field({ nullable: true })
+    Source?: string;
+
+    @Field({ nullable: true })
+    SourceSystem?: string | null;
+
+    @Field({ nullable: true })
+    ExternalID?: string | null;
+
+    @Field({ nullable: true })
+    ExternalThreadID?: string | null;
+
+    @Field({ nullable: true })
+    ParentActivityID?: string | null;
+
+    @Field({ nullable: true })
+    LoggedByUserID?: string;
+
+    @Field({ nullable: true })
+    Location?: string | null;
+
+    @Field({ nullable: true })
+    AddressID?: string | null;
+
+    @Field({ nullable: true })
+    ActivitySyncConnectionID?: string | null;
+
+    @Field({ nullable: true })
+    Details?: string | null;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activities
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivityViewResult {
+    @Field(() => [mjBizAppsCommonActivity_])
+    Results: mjBizAppsCommonActivity_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivity_)
+export class mjBizAppsCommonActivityResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivityViewResult)
+    async RunmjBizAppsCommonActivityViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityViewResult)
+    async RunmjBizAppsCommonActivityViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityViewResult)
+    async RunmjBizAppsCommonActivityDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activities';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivity_, { nullable: true })
+    async mjBizAppsCommonActivity(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivity_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activities', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivities')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activities', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activities', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @FieldResolver(() => [mjBizAppsCommonActivity_])
+    async mjBizAppsCommonActivities_ParentActivityIDArray(@Root() mjbizappscommonactivity_: mjBizAppsCommonActivity_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activities', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivities')} WHERE ${provider.QuoteIdentifier('ParentActivityID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activities', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivity_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activities', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @FieldResolver(() => [mjBizAppsCommonActivityFile_])
+    async mjBizAppsCommonActivityFiles_ActivityIDArray(@Root() mjbizappscommonactivity_: mjBizAppsCommonActivity_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Files', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityFiles')} WHERE ${provider.QuoteIdentifier('ActivityID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Files', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivity_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Files', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @FieldResolver(() => [mjBizAppsCommonActivityLink_])
+    async mjBizAppsCommonActivityLinks_ActivityIDArray(@Root() mjbizappscommonactivity_: mjBizAppsCommonActivity_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Links', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityLinks')} WHERE ${provider.QuoteIdentifier('ActivityID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Links', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivity_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Links', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivity_)
+    async CreatemjBizAppsCommonActivity(
+        @Arg('input', () => CreatemjBizAppsCommonActivityInput) input: CreatemjBizAppsCommonActivityInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activities', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivity_)
+    async UpdatemjBizAppsCommonActivity(
+        @Arg('input', () => UpdatemjBizAppsCommonActivityInput) input: UpdatemjBizAppsCommonActivityInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activities', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivity_)
+    async DeletemjBizAppsCommonActivity(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activities', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activity Files
+//****************************************************************************
+@ObjectType({ description: `Join from an Activity to an MJ File. Kind Body is the full MIME/HTML (at most one per activity); Attachment and Ics are extras. Deleting the activity drops the join, not the File.` })
+export class mjBizAppsCommonActivityFile_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field() 
+    @MaxLength(36)
+    ActivityID: string;
+        
+    @Field() 
+    @MaxLength(36)
+    FileID: string;
+        
+    @Field({description: `Body (full MIME/HTML, at most one per activity), Attachment, or Ics.`}) 
+    @MaxLength(20)
+    Kind: string;
+        
+    @Field(() => Int, {description: `Display order of attachments.`}) 
+    Sequence: number;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field() 
+    @MaxLength(500)
+    File: string;
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Files
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivityFileInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ActivityID?: string;
+
+    @Field({ nullable: true })
+    FileID?: string;
+
+    @Field({ nullable: true })
+    Kind?: string;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Files
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivityFileInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ActivityID?: string;
+
+    @Field({ nullable: true })
+    FileID?: string;
+
+    @Field({ nullable: true })
+    Kind?: string;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activity Files
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivityFileViewResult {
+    @Field(() => [mjBizAppsCommonActivityFile_])
+    Results: mjBizAppsCommonActivityFile_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivityFile_)
+export class mjBizAppsCommonActivityFileResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivityFileViewResult)
+    async RunmjBizAppsCommonActivityFileViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityFileViewResult)
+    async RunmjBizAppsCommonActivityFileViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityFileViewResult)
+    async RunmjBizAppsCommonActivityFileDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activity Files';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivityFile_, { nullable: true })
+    async mjBizAppsCommonActivityFile(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivityFile_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Files', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityFiles')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Files', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Files', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivityFile_)
+    async CreatemjBizAppsCommonActivityFile(
+        @Arg('input', () => CreatemjBizAppsCommonActivityFileInput) input: CreatemjBizAppsCommonActivityFileInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activity Files', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivityFile_)
+    async UpdatemjBizAppsCommonActivityFile(
+        @Arg('input', () => UpdatemjBizAppsCommonActivityFileInput) input: UpdatemjBizAppsCommonActivityFileInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activity Files', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivityFile_)
+    async DeletemjBizAppsCommonActivityFile(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activity Files', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activity Links
+//****************************************************************************
+@ObjectType({ description: `Attaches an Activity to a resolved MJ record (EntityID + RecordID) or an unresolved identity (email/phone/external user) the matcher has not stamped yet. Role says whether the link is Regarding, a participant, or an email/meeting mailbox role.` })
+export class mjBizAppsCommonActivityLink_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field() 
+    @MaxLength(36)
+    ActivityID: string;
+        
+    @Field({description: `Why this record is on the activity: Regarding (what it is about), Participant, From/To/Cc/Bcc, Organizer/Attendee, or LoggedFor (the mailbox it was filed under).`}) 
+    @MaxLength(30)
+    Role: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    EntityID?: string;
+        
+    @Field({nullable: true, description: `Primary key of the resolved record. NVARCHAR so composite keys work. Required with EntityID; must be null when the link is an unresolved identity.`}) 
+    @MaxLength(450)
+    RecordID?: string;
+        
+    @Field({nullable: true, description: `Email, Phone, or ExternalUser. Set with IdentityValue when the participant has not been matched to a Person/Org yet.`}) 
+    @MaxLength(20)
+    IdentityKind?: string;
+        
+    @Field({nullable: true, description: `The unmatched address, phone, or provider user id. A later matcher stamps EntityID/RecordID from ContactMethod.Value and clears these.`}) 
+    @MaxLength(320)
+    IdentityValue?: string;
+        
+    @Field(() => Int, {description: `Display order within a role (To, then Cc, …).`}) 
+    Sequence: number;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    Entity?: string;
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Links
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivityLinkInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ActivityID?: string;
+
+    @Field({ nullable: true })
+    Role?: string;
+
+    @Field({ nullable: true })
+    EntityID: string | null;
+
+    @Field({ nullable: true })
+    RecordID: string | null;
+
+    @Field({ nullable: true })
+    IdentityKind: string | null;
+
+    @Field({ nullable: true })
+    IdentityValue: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Links
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivityLinkInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ActivityID?: string;
+
+    @Field({ nullable: true })
+    Role?: string;
+
+    @Field({ nullable: true })
+    EntityID?: string | null;
+
+    @Field({ nullable: true })
+    RecordID?: string | null;
+
+    @Field({ nullable: true })
+    IdentityKind?: string | null;
+
+    @Field({ nullable: true })
+    IdentityValue?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activity Links
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivityLinkViewResult {
+    @Field(() => [mjBizAppsCommonActivityLink_])
+    Results: mjBizAppsCommonActivityLink_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivityLink_)
+export class mjBizAppsCommonActivityLinkResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivityLinkViewResult)
+    async RunmjBizAppsCommonActivityLinkViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityLinkViewResult)
+    async RunmjBizAppsCommonActivityLinkViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityLinkViewResult)
+    async RunmjBizAppsCommonActivityLinkDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activity Links';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivityLink_, { nullable: true })
+    async mjBizAppsCommonActivityLink(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivityLink_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Links', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityLinks')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Links', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Links', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivityLink_)
+    async CreatemjBizAppsCommonActivityLink(
+        @Arg('input', () => CreatemjBizAppsCommonActivityLinkInput) input: CreatemjBizAppsCommonActivityLinkInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activity Links', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivityLink_)
+    async UpdatemjBizAppsCommonActivityLink(
+        @Arg('input', () => UpdatemjBizAppsCommonActivityLinkInput) input: UpdatemjBizAppsCommonActivityLinkInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activity Links', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivityLink_)
+    async DeletemjBizAppsCommonActivityLink(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activity Links', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activity Sync Connections
+//****************************************************************************
+@ObjectType({ description: `A mailbox, calendar, or other provider connection that writes Activities. CredentialsRef is an MJ Credentials engine key — never a secret at rest.` })
+export class mjBizAppsCommonActivitySyncConnection_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({description: `Display name of the connection (e.g. Amith / Microsoft 365).`}) 
+    @MaxLength(200)
+    Name: string;
+        
+    @Field({description: `Microsoft365, Gmail, Zoom, or Generic. Widen the CHECK when a new first-class provider lands.`}) 
+    @MaxLength(40)
+    Provider: string;
+        
+    @Field({description: `Active, Paused, Error, or Disabled.`}) 
+    @MaxLength(20)
+    Status: string;
+        
+    @Field({description: `Inbound (pull into CRM), Outbound, or Bidirectional.`}) 
+    @MaxLength(20)
+    Direction: string;
+        
+    @Field() 
+    @MaxLength(36)
+    OwnerUserID: string;
+        
+    @Field({nullable: true, description: `MJ Credentials engine key. NEVER a secret value at rest.`}) 
+    @MaxLength(200)
+    CredentialsRef?: string;
+        
+    @Field({nullable: true, description: `Mailbox address this connection reads (jane@acme.com).`}) 
+    @MaxLength(320)
+    Mailbox?: string;
+        
+    @Field({nullable: true, description: `When the engine last completed a sync for this connection.`}) 
+    LastSyncAt?: Date;
+        
+    @Field({nullable: true, description: `Most recent sync error, if Status is Error.`}) 
+    LastError?: string;
+        
+    @Field({nullable: true, description: `JSON provider extras (TenantID, MailboxFolder, CalendarID, IncludeCalendar, IncludeMail). See ActivitySyncConnectionSettings.`}) 
+    Settings?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field() 
+    @MaxLength(100)
+    OwnerUser: string;
+        
+    @Field(() => [mjBizAppsCommonActivitySyncRule_])
+    mjBizAppsCommonActivitySyncRules_ActivitySyncConnectionIDArray: mjBizAppsCommonActivitySyncRule_[]; // Link to mjBizAppsCommonActivitySyncRules
+    
+    @Field(() => [mjBizAppsCommonActivity_])
+    mjBizAppsCommonActivities_ActivitySyncConnectionIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
+    
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Sync Connections
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivitySyncConnectionInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Provider?: string;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field({ nullable: true })
+    Direction?: string;
+
+    @Field({ nullable: true })
+    OwnerUserID?: string;
+
+    @Field({ nullable: true })
+    CredentialsRef: string | null;
+
+    @Field({ nullable: true })
+    Mailbox: string | null;
+
+    @Field({ nullable: true })
+    LastSyncAt: Date | null;
+
+    @Field({ nullable: true })
+    LastError: string | null;
+
+    @Field({ nullable: true })
+    Settings: string | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Sync Connections
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivitySyncConnectionInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Provider?: string;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field({ nullable: true })
+    Direction?: string;
+
+    @Field({ nullable: true })
+    OwnerUserID?: string;
+
+    @Field({ nullable: true })
+    CredentialsRef?: string | null;
+
+    @Field({ nullable: true })
+    Mailbox?: string | null;
+
+    @Field({ nullable: true })
+    LastSyncAt?: Date | null;
+
+    @Field({ nullable: true })
+    LastError?: string | null;
+
+    @Field({ nullable: true })
+    Settings?: string | null;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activity Sync Connections
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivitySyncConnectionViewResult {
+    @Field(() => [mjBizAppsCommonActivitySyncConnection_])
+    Results: mjBizAppsCommonActivitySyncConnection_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivitySyncConnection_)
+export class mjBizAppsCommonActivitySyncConnectionResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivitySyncConnectionViewResult)
+    async RunmjBizAppsCommonActivitySyncConnectionViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivitySyncConnectionViewResult)
+    async RunmjBizAppsCommonActivitySyncConnectionViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivitySyncConnectionViewResult)
+    async RunmjBizAppsCommonActivitySyncConnectionDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activity Sync Connections';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivitySyncConnection_, { nullable: true })
+    async mjBizAppsCommonActivitySyncConnection(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivitySyncConnection_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Sync Connections', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivitySyncConnections')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Sync Connections', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Sync Connections', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @FieldResolver(() => [mjBizAppsCommonActivitySyncRule_])
+    async mjBizAppsCommonActivitySyncRules_ActivitySyncConnectionIDArray(@Root() mjbizappscommonactivitysyncconnection_: mjBizAppsCommonActivitySyncConnection_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Sync Rules', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivitySyncRules')} WHERE ${provider.QuoteIdentifier('ActivitySyncConnectionID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Sync Rules', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivitysyncconnection_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Sync Rules', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @FieldResolver(() => [mjBizAppsCommonActivity_])
+    async mjBizAppsCommonActivities_ActivitySyncConnectionIDArray(@Root() mjbizappscommonactivitysyncconnection_: mjBizAppsCommonActivitySyncConnection_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activities', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivities')} WHERE ${provider.QuoteIdentifier('ActivitySyncConnectionID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activities', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivitysyncconnection_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activities', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivitySyncConnection_)
+    async CreatemjBizAppsCommonActivitySyncConnection(
+        @Arg('input', () => CreatemjBizAppsCommonActivitySyncConnectionInput) input: CreatemjBizAppsCommonActivitySyncConnectionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activity Sync Connections', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivitySyncConnection_)
+    async UpdatemjBizAppsCommonActivitySyncConnection(
+        @Arg('input', () => UpdatemjBizAppsCommonActivitySyncConnectionInput) input: UpdatemjBizAppsCommonActivitySyncConnectionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activity Sync Connections', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivitySyncConnection_)
+    async DeletemjBizAppsCommonActivitySyncConnection(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activity Sync Connections', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activity Sync Rules
+//****************************************************************************
+@ObjectType({ description: `Include/exclude rule for an ActivitySyncConnection: type, direction, date window, attachments, plus a JSON Filter (folders, domains, participant-must-match-ContactMethod).` })
+export class mjBizAppsCommonActivitySyncRule_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field() 
+    @MaxLength(36)
+    ActivitySyncConnectionID: string;
+        
+    @Field({description: `Display name of the rule.`}) 
+    @MaxLength(200)
+    Name: string;
+        
+    @Field(() => Boolean, {description: `0 skips the rule without deleting it.`}) 
+    IsEnabled: boolean;
+        
+    @Field(() => Int, {description: `Evaluation order within the connection. Lower first.`}) 
+    Sequence: number;
+        
+    @Field({description: `Include or Exclude matching items. With no rules, the engine syncs everything the connection can see.`}) 
+    @MaxLength(20)
+    Action: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ActivityTypeID?: string;
+        
+    @Field({nullable: true, description: `Optional direction filter (Inbound / Outbound / Internal). Null = any.`}) 
+    @MaxLength(20)
+    Direction?: string;
+        
+    @Field({nullable: true, description: `Inclusive lower bound of the sync window. Null = no lower bound.`}) 
+    DateFrom?: Date;
+        
+    @Field({nullable: true, description: `Inclusive upper bound of the sync window. Null = no upper bound.`}) 
+    DateTo?: Date;
+        
+    @Field(() => Boolean, {description: `1 = also pull attachments into ActivityFile rows.`}) 
+    IncludeAttachments: boolean;
+        
+    @Field({nullable: true, description: `JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.`}) 
+    Filter?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field() 
+    @MaxLength(200)
+    ActivitySyncConnection: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    ActivityType?: string;
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Sync Rules
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivitySyncRuleInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ActivitySyncConnectionID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    IsEnabled?: boolean;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Action?: string;
+
+    @Field({ nullable: true })
+    ActivityTypeID: string | null;
+
+    @Field({ nullable: true })
+    Direction: string | null;
+
+    @Field({ nullable: true })
+    DateFrom: Date | null;
+
+    @Field({ nullable: true })
+    DateTo: Date | null;
+
+    @Field(() => Boolean, { nullable: true })
+    IncludeAttachments?: boolean;
+
+    @Field({ nullable: true })
+    Filter: string | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Sync Rules
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivitySyncRuleInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ActivitySyncConnectionID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    IsEnabled?: boolean;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Action?: string;
+
+    @Field({ nullable: true })
+    ActivityTypeID?: string | null;
+
+    @Field({ nullable: true })
+    Direction?: string | null;
+
+    @Field({ nullable: true })
+    DateFrom?: Date | null;
+
+    @Field({ nullable: true })
+    DateTo?: Date | null;
+
+    @Field(() => Boolean, { nullable: true })
+    IncludeAttachments?: boolean;
+
+    @Field({ nullable: true })
+    Filter?: string | null;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activity Sync Rules
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivitySyncRuleViewResult {
+    @Field(() => [mjBizAppsCommonActivitySyncRule_])
+    Results: mjBizAppsCommonActivitySyncRule_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivitySyncRule_)
+export class mjBizAppsCommonActivitySyncRuleResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivitySyncRuleViewResult)
+    async RunmjBizAppsCommonActivitySyncRuleViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivitySyncRuleViewResult)
+    async RunmjBizAppsCommonActivitySyncRuleViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivitySyncRuleViewResult)
+    async RunmjBizAppsCommonActivitySyncRuleDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activity Sync Rules';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivitySyncRule_, { nullable: true })
+    async mjBizAppsCommonActivitySyncRule(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivitySyncRule_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Sync Rules', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivitySyncRules')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Sync Rules', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Sync Rules', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivitySyncRule_)
+    async CreatemjBizAppsCommonActivitySyncRule(
+        @Arg('input', () => CreatemjBizAppsCommonActivitySyncRuleInput) input: CreatemjBizAppsCommonActivitySyncRuleInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activity Sync Rules', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivitySyncRule_)
+    async UpdatemjBizAppsCommonActivitySyncRule(
+        @Arg('input', () => UpdatemjBizAppsCommonActivitySyncRuleInput) input: UpdatemjBizAppsCommonActivitySyncRuleInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activity Sync Rules', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivitySyncRule_)
+    async DeletemjBizAppsCommonActivitySyncRule(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activity Sync Rules', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Activity Types
+//****************************************************************************
+@ObjectType({ description: `Lookup of interaction channels (Email, Call, Meeting, Note, SMS, Chat). Hierarchy is picker-only; direction lives on Activity. Code is the stable key — sync and code target Code, never Name.` })
+export class mjBizAppsCommonActivityType_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({description: `Stable key targeted by sync and code (Email, Call, Meeting, Note, SMS, Chat). Unique. Names can be renamed; codes cannot.`}) 
+    @MaxLength(50)
+    Code: string;
+        
+    @Field({description: `Display name for the picker and timeline.`}) 
+    @MaxLength(100)
+    Name: string;
+        
+    @Field({nullable: true, description: `Optional longer description of the type.`}) 
+    Description?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ParentID?: string;
+        
+    @Field({nullable: true, description: `Font Awesome class for timeline chrome (e.g. fa-solid fa-envelope).`}) 
+    @MaxLength(100)
+    IconClass?: string;
+        
+    @Field({nullable: true, description: `Optional categorical color for timeline chrome. Not a design-token — this is stored per type.`}) 
+    @MaxLength(30)
+    Color?: string;
+        
+    @Field(() => Int, {description: `Picker sort order. Lower first.`}) 
+    Sequence: number;
+        
+    @Field(() => Boolean, {description: `1 = seeded system type the sync engine may assume (Email, Call, Meeting, Note, SMS, Chat). Clients add children with IsSystem = 0.`}) 
+    IsSystem: boolean;
+        
+    @Field(() => Boolean, {description: `0 hides the type from the picker without deleting historical activities.`}) 
+    IsActive: boolean;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    Parent?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    RootParentID?: string;
+        
+    @Field(() => [mjBizAppsCommonActivity_])
+    mjBizAppsCommonActivities_ActivityTypeIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
+    
+    @Field(() => [mjBizAppsCommonActivitySyncRule_])
+    mjBizAppsCommonActivitySyncRules_ActivityTypeIDArray: mjBizAppsCommonActivitySyncRule_[]; // Link to mjBizAppsCommonActivitySyncRules
+    
+    @Field(() => [mjBizAppsCommonActivityType_])
+    mjBizAppsCommonActivityTypes_ParentIDArray: mjBizAppsCommonActivityType_[]; // Link to mjBizAppsCommonActivityTypes
+    
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Types
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonActivityTypeInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    Code?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description: string | null;
+
+    @Field({ nullable: true })
+    ParentID: string | null;
+
+    @Field({ nullable: true })
+    IconClass: string | null;
+
+    @Field({ nullable: true })
+    Color: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => Boolean, { nullable: true })
+    IsSystem?: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Activity Types
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonActivityTypeInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    Code?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description?: string | null;
+
+    @Field({ nullable: true })
+    ParentID?: string | null;
+
+    @Field({ nullable: true })
+    IconClass?: string | null;
+
+    @Field({ nullable: true })
+    Color?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => Boolean, { nullable: true })
+    IsSystem?: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    IsActive?: boolean;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Activity Types
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonActivityTypeViewResult {
+    @Field(() => [mjBizAppsCommonActivityType_])
+    Results: mjBizAppsCommonActivityType_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonActivityType_)
+export class mjBizAppsCommonActivityTypeResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonActivityTypeViewResult)
+    async RunmjBizAppsCommonActivityTypeViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityTypeViewResult)
+    async RunmjBizAppsCommonActivityTypeViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonActivityTypeViewResult)
+    async RunmjBizAppsCommonActivityTypeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Activity Types';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonActivityType_, { nullable: true })
+    async mjBizAppsCommonActivityType(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonActivityType_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Types', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityTypes')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Types', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @FieldResolver(() => [mjBizAppsCommonActivity_])
+    async mjBizAppsCommonActivities_ActivityTypeIDArray(@Root() mjbizappscommonactivitytype_: mjBizAppsCommonActivityType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activities', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivities')} WHERE ${provider.QuoteIdentifier('ActivityTypeID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activities', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivitytype_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activities', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @FieldResolver(() => [mjBizAppsCommonActivitySyncRule_])
+    async mjBizAppsCommonActivitySyncRules_ActivityTypeIDArray(@Root() mjbizappscommonactivitytype_: mjBizAppsCommonActivityType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Sync Rules', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivitySyncRules')} WHERE ${provider.QuoteIdentifier('ActivityTypeID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Sync Rules', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivitytype_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Sync Rules', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @FieldResolver(() => [mjBizAppsCommonActivityType_])
+    async mjBizAppsCommonActivityTypes_ParentIDArray(@Root() mjbizappscommonactivitytype_: mjBizAppsCommonActivityType_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activity Types', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivityTypes')} WHERE ${provider.QuoteIdentifier('ParentID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activity Types', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonactivitytype_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activity Types', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivityType_)
+    async CreatemjBizAppsCommonActivityType(
+        @Arg('input', () => CreatemjBizAppsCommonActivityTypeInput) input: CreatemjBizAppsCommonActivityTypeInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Activity Types', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonActivityType_)
+    async UpdatemjBizAppsCommonActivityType(
+        @Arg('input', () => UpdatemjBizAppsCommonActivityTypeInput) input: UpdatemjBizAppsCommonActivityTypeInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Activity Types', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonActivityType_)
+    async DeletemjBizAppsCommonActivityType(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Activity Types', key, options, provider, userPayload, pubSub);
+    }
+    
+}
 
 //****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Address Links
@@ -467,6 +1986,9 @@ export class mjBizAppsCommonAddress_ {
     // Relationship field to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
 // Relationship field to MJ_BizApps_Orders: Event Products not generated: its GraphQL type is not declared in this file.
 
+    @Field(() => [mjBizAppsCommonActivity_])
+    mjBizAppsCommonActivities_AddressIDArray: mjBizAppsCommonActivity_[]; // Link to mjBizAppsCommonActivities
+    
 }
 
 //****************************************************************************
@@ -621,6 +2143,16 @@ export class mjBizAppsCommonAddressResolver extends ResolverBase {
         // Relationship to MJ_BizApps_Orders: Order Headers not generated: its GraphQL type is not declared in this file.
 // Relationship to MJ_BizApps_Orders: Event Products not generated: its GraphQL type is not declared in this file.
 
+    @FieldResolver(() => [mjBizAppsCommonActivity_])
+    async mjBizAppsCommonActivities_AddressIDArray(@Root() mjbizappscommonaddress_: mjBizAppsCommonAddress_, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Activities', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwActivities')} WHERE ${provider.QuoteIdentifier('AddressID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Activities', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [mjbizappscommonaddress_.ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.ArrayMapFieldNamesToCodeNames('MJ_BizApps_Common: Activities', rows, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+        
     @Mutation(() => mjBizAppsCommonAddress_)
     async CreatemjBizAppsCommonAddress(
         @Arg('input', () => CreatemjBizAppsCommonAddressInput) input: CreatemjBizAppsCommonAddressInput,
@@ -689,7 +2221,7 @@ export class mjBizAppsCommonContactMethod_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(100)
+    @MaxLength(201)
     Person?: string;
         
     @Field({nullable: true}) 
@@ -2315,7 +3847,7 @@ export class mjBizAppsCommonRelationship_ {
     RelationshipType: string;
         
     @Field({nullable: true}) 
-    @MaxLength(100)
+    @MaxLength(201)
     FromPerson?: string;
         
     @Field({nullable: true}) 
@@ -2323,7 +3855,7 @@ export class mjBizAppsCommonRelationship_ {
     FromOrganization?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(100)
+    @MaxLength(201)
     ToPerson?: string;
         
     @Field({nullable: true}) 

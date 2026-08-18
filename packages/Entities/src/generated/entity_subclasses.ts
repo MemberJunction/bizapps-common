@@ -9,6 +9,583 @@ export const loadModule = () => {
      
  
 /**
+ * zod schema definition for the entity MJ_BizApps_Common: Activities
+ */
+export const mjBizAppsCommonActivitySchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    ActivityTypeID: z.string().describe(`
+        * * Field Name: ActivityTypeID
+        * * Display Name: Activity Type ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)`),
+    StartedAt: z.date().describe(`
+        * * Field Name: StartedAt
+        * * Display Name: Started At
+        * * SQL Data Type: datetimeoffset
+        * * Description: Sort key for every timeline. Instant events use the date/time of the event.`),
+    EndedAt: z.date().nullable().describe(`
+        * * Field Name: EndedAt
+        * * Display Name: Ended At
+        * * SQL Data Type: datetimeoffset
+        * * Description: End of a meeting/call. Leave null for a point-in-time log. Must be >= StartedAt when set. Duration is derived; do not store it.`),
+    Title: z.string().describe(`
+        * * Field Name: Title
+        * * Display Name: Title
+        * * SQL Data Type: nvarchar(500)
+        * * Description: Subject / one-line card title (e.g. Called Jane about renewal).`),
+    Description: z.string().nullable().describe(`
+        * * Field Name: Description
+        * * Display Name: Description
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Notes or a short excerpt. Not the full email body — that lives on an ActivityFile of Kind Body.`),
+    Direction: z.union([z.literal('Inbound'), z.literal('Internal'), z.literal('Outbound')]).describe(`
+        * * Field Name: Direction
+        * * Display Name: Direction
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Inbound
+    *   * Internal
+    *   * Outbound
+        * * Description: Inbound, Outbound, or Internal. Channel lives on ActivityType; direction lives here so inbound email is a filter, not a type explosion.`),
+    Status: z.union([z.literal('Cancelled'), z.literal('Completed'), z.literal('Failed'), z.literal('Logged'), z.literal('Scheduled')]).describe(`
+        * * Field Name: Status
+        * * Display Name: Status
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Logged
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Cancelled
+    *   * Completed
+    *   * Failed
+    *   * Logged
+    *   * Scheduled
+        * * Description: Logged (default for a past event), Scheduled, Completed, Cancelled, or Failed.`),
+    Outcome: z.union([z.literal('Bounced'), z.literal('Connected'), z.literal('Interested'), z.literal('LeftVoicemail'), z.literal('NoAnswer'), z.literal('NoShow'), z.literal('NotInterested')]).nullable().describe(`
+        * * Field Name: Outcome
+        * * Display Name: Outcome
+        * * SQL Data Type: nvarchar(40)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Bounced
+    *   * Connected
+    *   * Interested
+    *   * LeftVoicemail
+    *   * NoAnswer
+    *   * NoShow
+    *   * NotInterested
+        * * Description: Optional disposition: Connected, LeftVoicemail, NoAnswer, NoShow, Bounced, Interested, NotInterested. A filter, not a type.`),
+    Visibility: z.union([z.literal('Internal'), z.literal('Private')]).describe(`
+        * * Field Name: Visibility
+        * * Display Name: Visibility
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Internal
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Internal
+    *   * Private
+        * * Description: Internal (anyone who can read a Regarding record) or Private (LoggedByUserID only, until a PermissionEngine domain exists). Manual default is Internal; synced mail should default Private in the engine.`),
+    Source: z.union([z.literal('Integration'), z.literal('Manual'), z.literal('System')]).describe(`
+        * * Field Name: Source
+        * * Display Name: Source
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Integration
+    *   * Manual
+    *   * System
+        * * Description: How the row was written: Manual, System, or Integration.`),
+    SourceSystem: z.string().nullable().describe(`
+        * * Field Name: SourceSystem
+        * * Display Name: Source System
+        * * SQL Data Type: nvarchar(80)
+        * * Description: Provider name for idempotent sync (Microsoft365, Gmail, Zoom). Required when ExternalID is set.`),
+    ExternalID: z.string().nullable().describe(`
+        * * Field Name: ExternalID
+        * * Display Name: External ID
+        * * SQL Data Type: nvarchar(400)
+        * * Description: Provider message/event id. Unique with SourceSystem where set — never dedup by subject.`),
+    ExternalThreadID: z.string().nullable().describe(`
+        * * Field Name: ExternalThreadID
+        * * Display Name: External Thread ID
+        * * SQL Data Type: nvarchar(400)
+        * * Description: Email or calendar thread id used to group replies.`),
+    ParentActivityID: z.string().nullable().describe(`
+        * * Field Name: ParentActivityID
+        * * Display Name: Parent Activity ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)`),
+    LoggedByUserID: z.string().describe(`
+        * * Field Name: LoggedByUserID
+        * * Display Name: Logged By User ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)`),
+    Location: z.string().nullable().describe(`
+        * * Field Name: Location
+        * * Display Name: Location
+        * * SQL Data Type: nvarchar(500)
+        * * Description: Meeting place as text. Optional AddressID is the structured location.`),
+    AddressID: z.string().nullable().describe(`
+        * * Field Name: AddressID
+        * * Display Name: Address ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)`),
+    ActivitySyncConnectionID: z.string().nullable().describe(`
+        * * Field Name: ActivitySyncConnectionID
+        * * Display Name: Activity Sync Connection ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)`),
+    Details: z.string().nullable().describe(`
+        * * Field Name: Details
+        * * Display Name: Details
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    ActivityType: z.string().describe(`
+        * * Field Name: ActivityType
+        * * Display Name: Activity Type
+        * * SQL Data Type: nvarchar(100)`),
+    LoggedByUser: z.string().describe(`
+        * * Field Name: LoggedByUser
+        * * Display Name: Logged By User
+        * * SQL Data Type: nvarchar(100)`),
+    Address: z.string().nullable().describe(`
+        * * Field Name: Address
+        * * Display Name: Address
+        * * SQL Data Type: nvarchar(255)`),
+    ActivitySyncConnection: z.string().nullable().describe(`
+        * * Field Name: ActivitySyncConnection
+        * * Display Name: Activity Sync Connection
+        * * SQL Data Type: nvarchar(200)`),
+    RootParentActivityID: z.string().nullable().describe(`
+        * * Field Name: RootParentActivityID
+        * * Display Name: Root Parent Activity ID
+        * * SQL Data Type: uniqueidentifier`),
+});
+
+export type mjBizAppsCommonActivityEntityType = z.infer<typeof mjBizAppsCommonActivitySchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Activity Files
+ */
+export const mjBizAppsCommonActivityFileSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    ActivityID: z.string().describe(`
+        * * Field Name: ActivityID
+        * * Display Name: Activity ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)`),
+    FileID: z.string().describe(`
+        * * Field Name: FileID
+        * * Display Name: File ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Files (vwFiles.ID)`),
+    Kind: z.union([z.literal('Attachment'), z.literal('Body'), z.literal('Ics')]).describe(`
+        * * Field Name: Kind
+        * * Display Name: Kind
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Attachment
+    *   * Body
+    *   * Ics
+        * * Description: Body (full MIME/HTML, at most one per activity), Attachment, or Ics.`),
+    Sequence: z.number().describe(`
+        * * Field Name: Sequence
+        * * Display Name: Sequence
+        * * SQL Data Type: int
+        * * Default Value: 0
+        * * Description: Display order of attachments.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    File: z.string().describe(`
+        * * Field Name: File
+        * * Display Name: File
+        * * SQL Data Type: nvarchar(500)`),
+});
+
+export type mjBizAppsCommonActivityFileEntityType = z.infer<typeof mjBizAppsCommonActivityFileSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Activity Links
+ */
+export const mjBizAppsCommonActivityLinkSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    ActivityID: z.string().describe(`
+        * * Field Name: ActivityID
+        * * Display Name: Activity ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)`),
+    Role: z.union([z.literal('Attendee'), z.literal('Bcc'), z.literal('Cc'), z.literal('From'), z.literal('LoggedFor'), z.literal('Organizer'), z.literal('Participant'), z.literal('Regarding'), z.literal('To')]).describe(`
+        * * Field Name: Role
+        * * Display Name: Role
+        * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Attendee
+    *   * Bcc
+    *   * Cc
+    *   * From
+    *   * LoggedFor
+    *   * Organizer
+    *   * Participant
+    *   * Regarding
+    *   * To
+        * * Description: Why this record is on the activity: Regarding (what it is about), Participant, From/To/Cc/Bcc, Organizer/Attendee, or LoggedFor (the mailbox it was filed under).`),
+    EntityID: z.string().nullable().describe(`
+        * * Field Name: EntityID
+        * * Display Name: Entity ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Entities (vwEntities.ID)`),
+    RecordID: z.string().nullable().describe(`
+        * * Field Name: RecordID
+        * * Display Name: Record ID
+        * * SQL Data Type: nvarchar(450)
+        * * Description: Primary key of the resolved record. NVARCHAR so composite keys work. Required with EntityID; must be null when the link is an unresolved identity.`),
+    IdentityKind: z.union([z.literal('Email'), z.literal('ExternalUser'), z.literal('Phone')]).nullable().describe(`
+        * * Field Name: IdentityKind
+        * * Display Name: Identity Kind
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Email
+    *   * ExternalUser
+    *   * Phone
+        * * Description: Email, Phone, or ExternalUser. Set with IdentityValue when the participant has not been matched to a Person/Org yet.`),
+    IdentityValue: z.string().nullable().describe(`
+        * * Field Name: IdentityValue
+        * * Display Name: Identity Value
+        * * SQL Data Type: nvarchar(320)
+        * * Description: The unmatched address, phone, or provider user id. A later matcher stamps EntityID/RecordID from ContactMethod.Value and clears these.`),
+    Sequence: z.number().describe(`
+        * * Field Name: Sequence
+        * * Display Name: Sequence
+        * * SQL Data Type: int
+        * * Default Value: 0
+        * * Description: Display order within a role (To, then Cc, …).`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Entity: z.string().nullable().describe(`
+        * * Field Name: Entity
+        * * Display Name: Entity
+        * * SQL Data Type: nvarchar(255)`),
+});
+
+export type mjBizAppsCommonActivityLinkEntityType = z.infer<typeof mjBizAppsCommonActivityLinkSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Activity Sync Connections
+ */
+export const mjBizAppsCommonActivitySyncConnectionSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    Name: z.string().describe(`
+        * * Field Name: Name
+        * * Display Name: Name
+        * * SQL Data Type: nvarchar(200)
+        * * Description: Display name of the connection (e.g. Amith / Microsoft 365).`),
+    Provider: z.union([z.literal('Generic'), z.literal('Gmail'), z.literal('Microsoft365'), z.literal('Zoom')]).describe(`
+        * * Field Name: Provider
+        * * Display Name: Provider
+        * * SQL Data Type: nvarchar(40)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Generic
+    *   * Gmail
+    *   * Microsoft365
+    *   * Zoom
+        * * Description: Microsoft365, Gmail, Zoom, or Generic. Widen the CHECK when a new first-class provider lands.`),
+    Status: z.union([z.literal('Active'), z.literal('Disabled'), z.literal('Error'), z.literal('Paused')]).describe(`
+        * * Field Name: Status
+        * * Display Name: Status
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Active
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Active
+    *   * Disabled
+    *   * Error
+    *   * Paused
+        * * Description: Active, Paused, Error, or Disabled.`),
+    Direction: z.union([z.literal('Bidirectional'), z.literal('Inbound'), z.literal('Outbound')]).describe(`
+        * * Field Name: Direction
+        * * Display Name: Direction
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Inbound
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Bidirectional
+    *   * Inbound
+    *   * Outbound
+        * * Description: Inbound (pull into CRM), Outbound, or Bidirectional.`),
+    OwnerUserID: z.string().describe(`
+        * * Field Name: OwnerUserID
+        * * Display Name: Owner User ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)`),
+    CredentialsRef: z.string().nullable().describe(`
+        * * Field Name: CredentialsRef
+        * * Display Name: Credentials Ref
+        * * SQL Data Type: nvarchar(200)
+        * * Description: MJ Credentials engine key. NEVER a secret value at rest.`),
+    Mailbox: z.string().nullable().describe(`
+        * * Field Name: Mailbox
+        * * Display Name: Mailbox
+        * * SQL Data Type: nvarchar(320)
+        * * Description: Mailbox address this connection reads (jane@acme.com).`),
+    LastSyncAt: z.date().nullable().describe(`
+        * * Field Name: LastSyncAt
+        * * Display Name: Last Sync At
+        * * SQL Data Type: datetimeoffset
+        * * Description: When the engine last completed a sync for this connection.`),
+    LastError: z.string().nullable().describe(`
+        * * Field Name: LastError
+        * * Display Name: Last Error
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Most recent sync error, if Status is Error.`),
+    Settings: z.string().nullable().describe(`
+        * * Field Name: Settings
+        * * Display Name: Settings
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: JSON provider extras (TenantID, MailboxFolder, CalendarID, IncludeCalendar, IncludeMail). See ActivitySyncConnectionSettings.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    OwnerUser: z.string().describe(`
+        * * Field Name: OwnerUser
+        * * Display Name: Owner User
+        * * SQL Data Type: nvarchar(100)`),
+});
+
+export type mjBizAppsCommonActivitySyncConnectionEntityType = z.infer<typeof mjBizAppsCommonActivitySyncConnectionSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Activity Sync Rules
+ */
+export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    ActivitySyncConnectionID: z.string().describe(`
+        * * Field Name: ActivitySyncConnectionID
+        * * Display Name: Activity Sync Connection ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)`),
+    Name: z.string().describe(`
+        * * Field Name: Name
+        * * Display Name: Name
+        * * SQL Data Type: nvarchar(200)
+        * * Description: Display name of the rule.`),
+    IsEnabled: z.boolean().describe(`
+        * * Field Name: IsEnabled
+        * * Display Name: Is Enabled
+        * * SQL Data Type: bit
+        * * Default Value: 1
+        * * Description: 0 skips the rule without deleting it.`),
+    Sequence: z.number().describe(`
+        * * Field Name: Sequence
+        * * Display Name: Sequence
+        * * SQL Data Type: int
+        * * Default Value: 0
+        * * Description: Evaluation order within the connection. Lower first.`),
+    Action: z.union([z.literal('Exclude'), z.literal('Include')]).describe(`
+        * * Field Name: Action
+        * * Display Name: Action
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Include
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Exclude
+    *   * Include
+        * * Description: Include or Exclude matching items. With no rules, the engine syncs everything the connection can see.`),
+    ActivityTypeID: z.string().nullable().describe(`
+        * * Field Name: ActivityTypeID
+        * * Display Name: Activity Type ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)`),
+    Direction: z.union([z.literal('Inbound'), z.literal('Internal'), z.literal('Outbound')]).nullable().describe(`
+        * * Field Name: Direction
+        * * Display Name: Direction
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Inbound
+    *   * Internal
+    *   * Outbound
+        * * Description: Optional direction filter (Inbound / Outbound / Internal). Null = any.`),
+    DateFrom: z.date().nullable().describe(`
+        * * Field Name: DateFrom
+        * * Display Name: Date From
+        * * SQL Data Type: datetimeoffset
+        * * Description: Inclusive lower bound of the sync window. Null = no lower bound.`),
+    DateTo: z.date().nullable().describe(`
+        * * Field Name: DateTo
+        * * Display Name: Date To
+        * * SQL Data Type: datetimeoffset
+        * * Description: Inclusive upper bound of the sync window. Null = no upper bound.`),
+    IncludeAttachments: z.boolean().describe(`
+        * * Field Name: IncludeAttachments
+        * * Display Name: Include Attachments
+        * * SQL Data Type: bit
+        * * Default Value: 0
+        * * Description: 1 = also pull attachments into ActivityFile rows.`),
+    Filter: z.string().nullable().describe(`
+        * * Field Name: Filter
+        * * Display Name: Filter
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    ActivitySyncConnection: z.string().describe(`
+        * * Field Name: ActivitySyncConnection
+        * * Display Name: Activity Sync Connection
+        * * SQL Data Type: nvarchar(200)`),
+    ActivityType: z.string().nullable().describe(`
+        * * Field Name: ActivityType
+        * * Display Name: Activity Type
+        * * SQL Data Type: nvarchar(100)`),
+});
+
+export type mjBizAppsCommonActivitySyncRuleEntityType = z.infer<typeof mjBizAppsCommonActivitySyncRuleSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Activity Types
+ */
+export const mjBizAppsCommonActivityTypeSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    Code: z.string().describe(`
+        * * Field Name: Code
+        * * Display Name: Code
+        * * SQL Data Type: nvarchar(50)
+        * * Description: Stable key targeted by sync and code (Email, Call, Meeting, Note, SMS, Chat). Unique. Names can be renamed; codes cannot.`),
+    Name: z.string().describe(`
+        * * Field Name: Name
+        * * Display Name: Name
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Display name for the picker and timeline.`),
+    Description: z.string().nullable().describe(`
+        * * Field Name: Description
+        * * Display Name: Description
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Optional longer description of the type.`),
+    ParentID: z.string().nullable().describe(`
+        * * Field Name: ParentID
+        * * Display Name: Parent ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)`),
+    IconClass: z.string().nullable().describe(`
+        * * Field Name: IconClass
+        * * Display Name: Icon Class
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Font Awesome class for timeline chrome (e.g. fa-solid fa-envelope).`),
+    Color: z.string().nullable().describe(`
+        * * Field Name: Color
+        * * Display Name: Color
+        * * SQL Data Type: nvarchar(30)
+        * * Description: Optional categorical color for timeline chrome. Not a design-token — this is stored per type.`),
+    Sequence: z.number().describe(`
+        * * Field Name: Sequence
+        * * Display Name: Sequence
+        * * SQL Data Type: int
+        * * Default Value: 0
+        * * Description: Picker sort order. Lower first.`),
+    IsSystem: z.boolean().describe(`
+        * * Field Name: IsSystem
+        * * Display Name: Is System
+        * * SQL Data Type: bit
+        * * Default Value: 0
+        * * Description: 1 = seeded system type the sync engine may assume (Email, Call, Meeting, Note, SMS, Chat). Clients add children with IsSystem = 0.`),
+    IsActive: z.boolean().describe(`
+        * * Field Name: IsActive
+        * * Display Name: Is Active
+        * * SQL Data Type: bit
+        * * Default Value: 1
+        * * Description: 0 hides the type from the picker without deleting historical activities.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Parent: z.string().nullable().describe(`
+        * * Field Name: Parent
+        * * Display Name: Parent
+        * * SQL Data Type: nvarchar(100)`),
+    RootParentID: z.string().nullable().describe(`
+        * * Field Name: RootParentID
+        * * Display Name: Root Parent ID
+        * * SQL Data Type: uniqueidentifier`),
+});
+
+export type mjBizAppsCommonActivityTypeEntityType = z.infer<typeof mjBizAppsCommonActivityTypeSchema>;
+
+/**
  * zod schema definition for the entity MJ_BizApps_Common: Address Links
  */
 export const mjBizAppsCommonAddressLinkSchema = z.object({
@@ -246,7 +823,7 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
     Person: z.string().nullable().describe(`
         * * Field Name: Person
         * * Display Name: Person Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
         * * Display Name: Organization Name
@@ -835,7 +1412,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     FromPerson: z.string().nullable().describe(`
         * * Field Name: FromPerson
         * * Display Name: From Person Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     FromOrganization: z.string().nullable().describe(`
         * * Field Name: FromOrganization
         * * Display Name: From Organization Name
@@ -843,7 +1420,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     ToPerson: z.string().nullable().describe(`
         * * Field Name: ToPerson
         * * Display Name: To Person Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(201)`),
     ToOrganization: z.string().nullable().describe(`
         * * Field Name: ToOrganization
         * * Display Name: To Organization Name
@@ -853,6 +1430,1426 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
 export type mjBizAppsCommonRelationshipEntityType = z.infer<typeof mjBizAppsCommonRelationshipSchema>;
  
  
+
+/**
+ * MJ_BizApps_Common: Activities - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: Activity
+ * * Base View: vwActivities
+ * * @description One interaction that happened between people, about records. Timeline card — not a blob store, not a task, not field-level audit. Duration is derived from StartedAt/EndedAt.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activities')
+export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonActivityEntityType> {
+
+  /**
+  * Related records: MJ_BizApps_Common: Activity Files
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Activities record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Activities → MJ_BizApps_Common: Activity Files' relationship; edit that row, not this file.
+  *
+  */
+  public readonly Files = this.DeclareRelatedRecords<mjBizAppsCommonActivityFileEntity>({
+      Name: 'Files',
+        RelatedEntity: 'MJ_BizApps_Common: Activity Files',
+        RelatedEntityJoinField: 'ActivityID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+
+  /**
+  * Related records: MJ_BizApps_Common: Activity Links
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Activities record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Activities → MJ_BizApps_Common: Activity Links' relationship; edit that row, not this file.
+  *
+  */
+  public readonly Links = this.DeclareRelatedRecords<mjBizAppsCommonActivityLinkEntity>({
+      Name: 'Links',
+        RelatedEntity: 'MJ_BizApps_Common: Activity Links',
+        RelatedEntityJoinField: 'ActivityID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+    /**
+    * Loads the MJ_BizApps_Common: Activities record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activities record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivityEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: ActivityTypeID
+    * * Display Name: Activity Type ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)
+    */
+    get ActivityTypeID(): string {
+        return this.Get('ActivityTypeID');
+    }
+    set ActivityTypeID(value: string) {
+        this.Set('ActivityTypeID', value);
+    }
+
+    /**
+    * * Field Name: StartedAt
+    * * Display Name: Started At
+    * * SQL Data Type: datetimeoffset
+    * * Description: Sort key for every timeline. Instant events use the date/time of the event.
+    */
+    get StartedAt(): Date {
+        return this.Get('StartedAt');
+    }
+    set StartedAt(value: Date) {
+        this.Set('StartedAt', value);
+    }
+
+    /**
+    * * Field Name: EndedAt
+    * * Display Name: Ended At
+    * * SQL Data Type: datetimeoffset
+    * * Description: End of a meeting/call. Leave null for a point-in-time log. Must be >= StartedAt when set. Duration is derived; do not store it.
+    */
+    get EndedAt(): Date | null {
+        return this.Get('EndedAt');
+    }
+    set EndedAt(value: Date | null) {
+        this.Set('EndedAt', value);
+    }
+
+    /**
+    * * Field Name: Title
+    * * Display Name: Title
+    * * SQL Data Type: nvarchar(500)
+    * * Description: Subject / one-line card title (e.g. Called Jane about renewal).
+    */
+    get Title(): string {
+        return this.Get('Title');
+    }
+    set Title(value: string) {
+        this.Set('Title', value);
+    }
+
+    /**
+    * * Field Name: Description
+    * * Display Name: Description
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Notes or a short excerpt. Not the full email body — that lives on an ActivityFile of Kind Body.
+    */
+    get Description(): string | null {
+        return this.Get('Description');
+    }
+    set Description(value: string | null) {
+        this.Set('Description', value);
+    }
+
+    /**
+    * * Field Name: Direction
+    * * Display Name: Direction
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Inbound
+    *   * Internal
+    *   * Outbound
+    * * Description: Inbound, Outbound, or Internal. Channel lives on ActivityType; direction lives here so inbound email is a filter, not a type explosion.
+    */
+    get Direction(): 'Inbound' | 'Internal' | 'Outbound' {
+        return this.Get('Direction');
+    }
+    set Direction(value: 'Inbound' | 'Internal' | 'Outbound') {
+        this.Set('Direction', value);
+    }
+
+    /**
+    * * Field Name: Status
+    * * Display Name: Status
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Logged
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Cancelled
+    *   * Completed
+    *   * Failed
+    *   * Logged
+    *   * Scheduled
+    * * Description: Logged (default for a past event), Scheduled, Completed, Cancelled, or Failed.
+    */
+    get Status(): 'Cancelled' | 'Completed' | 'Failed' | 'Logged' | 'Scheduled' {
+        return this.Get('Status');
+    }
+    set Status(value: 'Cancelled' | 'Completed' | 'Failed' | 'Logged' | 'Scheduled') {
+        this.Set('Status', value);
+    }
+
+    /**
+    * * Field Name: Outcome
+    * * Display Name: Outcome
+    * * SQL Data Type: nvarchar(40)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Bounced
+    *   * Connected
+    *   * Interested
+    *   * LeftVoicemail
+    *   * NoAnswer
+    *   * NoShow
+    *   * NotInterested
+    * * Description: Optional disposition: Connected, LeftVoicemail, NoAnswer, NoShow, Bounced, Interested, NotInterested. A filter, not a type.
+    */
+    get Outcome(): 'Bounced' | 'Connected' | 'Interested' | 'LeftVoicemail' | 'NoAnswer' | 'NoShow' | 'NotInterested' | null {
+        return this.Get('Outcome');
+    }
+    set Outcome(value: 'Bounced' | 'Connected' | 'Interested' | 'LeftVoicemail' | 'NoAnswer' | 'NoShow' | 'NotInterested' | null) {
+        this.Set('Outcome', value);
+    }
+
+    /**
+    * * Field Name: Visibility
+    * * Display Name: Visibility
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Internal
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Internal
+    *   * Private
+    * * Description: Internal (anyone who can read a Regarding record) or Private (LoggedByUserID only, until a PermissionEngine domain exists). Manual default is Internal; synced mail should default Private in the engine.
+    */
+    get Visibility(): 'Internal' | 'Private' {
+        return this.Get('Visibility');
+    }
+    set Visibility(value: 'Internal' | 'Private') {
+        this.Set('Visibility', value);
+    }
+
+    /**
+    * * Field Name: Source
+    * * Display Name: Source
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Integration
+    *   * Manual
+    *   * System
+    * * Description: How the row was written: Manual, System, or Integration.
+    */
+    get Source(): 'Integration' | 'Manual' | 'System' {
+        return this.Get('Source');
+    }
+    set Source(value: 'Integration' | 'Manual' | 'System') {
+        this.Set('Source', value);
+    }
+
+    /**
+    * * Field Name: SourceSystem
+    * * Display Name: Source System
+    * * SQL Data Type: nvarchar(80)
+    * * Description: Provider name for idempotent sync (Microsoft365, Gmail, Zoom). Required when ExternalID is set.
+    */
+    get SourceSystem(): string | null {
+        return this.Get('SourceSystem');
+    }
+    set SourceSystem(value: string | null) {
+        this.Set('SourceSystem', value);
+    }
+
+    /**
+    * * Field Name: ExternalID
+    * * Display Name: External ID
+    * * SQL Data Type: nvarchar(400)
+    * * Description: Provider message/event id. Unique with SourceSystem where set — never dedup by subject.
+    */
+    get ExternalID(): string | null {
+        return this.Get('ExternalID');
+    }
+    set ExternalID(value: string | null) {
+        this.Set('ExternalID', value);
+    }
+
+    /**
+    * * Field Name: ExternalThreadID
+    * * Display Name: External Thread ID
+    * * SQL Data Type: nvarchar(400)
+    * * Description: Email or calendar thread id used to group replies.
+    */
+    get ExternalThreadID(): string | null {
+        return this.Get('ExternalThreadID');
+    }
+    set ExternalThreadID(value: string | null) {
+        this.Set('ExternalThreadID', value);
+    }
+
+    /**
+    * * Field Name: ParentActivityID
+    * * Display Name: Parent Activity ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)
+    */
+    get ParentActivityID(): string | null {
+        return this.Get('ParentActivityID');
+    }
+    set ParentActivityID(value: string | null) {
+        this.Set('ParentActivityID', value);
+    }
+
+    /**
+    * * Field Name: LoggedByUserID
+    * * Display Name: Logged By User ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
+    */
+    get LoggedByUserID(): string {
+        return this.Get('LoggedByUserID');
+    }
+    set LoggedByUserID(value: string) {
+        this.Set('LoggedByUserID', value);
+    }
+
+    /**
+    * * Field Name: Location
+    * * Display Name: Location
+    * * SQL Data Type: nvarchar(500)
+    * * Description: Meeting place as text. Optional AddressID is the structured location.
+    */
+    get Location(): string | null {
+        return this.Get('Location');
+    }
+    set Location(value: string | null) {
+        this.Set('Location', value);
+    }
+
+    /**
+    * * Field Name: AddressID
+    * * Display Name: Address ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Addresses (vwAddresses.ID)
+    */
+    get AddressID(): string | null {
+        return this.Get('AddressID');
+    }
+    set AddressID(value: string | null) {
+        this.Set('AddressID', value);
+    }
+
+    /**
+    * * Field Name: ActivitySyncConnectionID
+    * * Display Name: Activity Sync Connection ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)
+    */
+    get ActivitySyncConnectionID(): string | null {
+        return this.Get('ActivitySyncConnectionID');
+    }
+    set ActivitySyncConnectionID(value: string | null) {
+        this.Set('ActivitySyncConnectionID', value);
+    }
+
+    /**
+    * * Field Name: Details
+    * * Display Name: Details
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.
+    */
+    get Details(): string | null {
+        return this.Get('Details');
+    }
+    set Details(value: string | null) {
+        this.Set('Details', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: ActivityType
+    * * Display Name: Activity Type
+    * * SQL Data Type: nvarchar(100)
+    */
+    get ActivityType(): string {
+        return this.Get('ActivityType');
+    }
+
+    /**
+    * * Field Name: LoggedByUser
+    * * Display Name: Logged By User
+    * * SQL Data Type: nvarchar(100)
+    */
+    get LoggedByUser(): string {
+        return this.Get('LoggedByUser');
+    }
+
+    /**
+    * * Field Name: Address
+    * * Display Name: Address
+    * * SQL Data Type: nvarchar(255)
+    */
+    get Address(): string | null {
+        return this.Get('Address');
+    }
+
+    /**
+    * * Field Name: ActivitySyncConnection
+    * * Display Name: Activity Sync Connection
+    * * SQL Data Type: nvarchar(200)
+    */
+    get ActivitySyncConnection(): string | null {
+        return this.Get('ActivitySyncConnection');
+    }
+
+    /**
+    * * Field Name: RootParentActivityID
+    * * Display Name: Root Parent Activity ID
+    * * SQL Data Type: uniqueidentifier
+    */
+    get RootParentActivityID(): string | null {
+        return this.Get('RootParentActivityID');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Activity Files - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ActivityFile
+ * * Base View: vwActivityFiles
+ * * @description Join from an Activity to an MJ File. Kind Body is the full MIME/HTML (at most one per activity); Attachment and Ics are extras. Deleting the activity drops the join, not the File.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activity Files')
+export class mjBizAppsCommonActivityFileEntity extends BaseEntity<mjBizAppsCommonActivityFileEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Activity Files record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activity Files record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivityFileEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: ActivityID
+    * * Display Name: Activity ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)
+    */
+    get ActivityID(): string {
+        return this.Get('ActivityID');
+    }
+    set ActivityID(value: string) {
+        this.Set('ActivityID', value);
+    }
+
+    /**
+    * * Field Name: FileID
+    * * Display Name: File ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Files (vwFiles.ID)
+    */
+    get FileID(): string {
+        return this.Get('FileID');
+    }
+    set FileID(value: string) {
+        this.Set('FileID', value);
+    }
+
+    /**
+    * * Field Name: Kind
+    * * Display Name: Kind
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Attachment
+    *   * Body
+    *   * Ics
+    * * Description: Body (full MIME/HTML, at most one per activity), Attachment, or Ics.
+    */
+    get Kind(): 'Attachment' | 'Body' | 'Ics' {
+        return this.Get('Kind');
+    }
+    set Kind(value: 'Attachment' | 'Body' | 'Ics') {
+        this.Set('Kind', value);
+    }
+
+    /**
+    * * Field Name: Sequence
+    * * Display Name: Sequence
+    * * SQL Data Type: int
+    * * Default Value: 0
+    * * Description: Display order of attachments.
+    */
+    get Sequence(): number {
+        return this.Get('Sequence');
+    }
+    set Sequence(value: number) {
+        this.Set('Sequence', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: File
+    * * Display Name: File
+    * * SQL Data Type: nvarchar(500)
+    */
+    get File(): string {
+        return this.Get('File');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Activity Links - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ActivityLink
+ * * Base View: vwActivityLinks
+ * * @description Attaches an Activity to a resolved MJ record (EntityID + RecordID) or an unresolved identity (email/phone/external user) the matcher has not stamped yet. Role says whether the link is Regarding, a participant, or an email/meeting mailbox role.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activity Links')
+export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommonActivityLinkEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Activity Links record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activity Links record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivityLinkEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: ActivityID
+    * * Display Name: Activity ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)
+    */
+    get ActivityID(): string {
+        return this.Get('ActivityID');
+    }
+    set ActivityID(value: string) {
+        this.Set('ActivityID', value);
+    }
+
+    /**
+    * * Field Name: Role
+    * * Display Name: Role
+    * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Attendee
+    *   * Bcc
+    *   * Cc
+    *   * From
+    *   * LoggedFor
+    *   * Organizer
+    *   * Participant
+    *   * Regarding
+    *   * To
+    * * Description: Why this record is on the activity: Regarding (what it is about), Participant, From/To/Cc/Bcc, Organizer/Attendee, or LoggedFor (the mailbox it was filed under).
+    */
+    get Role(): 'Attendee' | 'Bcc' | 'Cc' | 'From' | 'LoggedFor' | 'Organizer' | 'Participant' | 'Regarding' | 'To' {
+        return this.Get('Role');
+    }
+    set Role(value: 'Attendee' | 'Bcc' | 'Cc' | 'From' | 'LoggedFor' | 'Organizer' | 'Participant' | 'Regarding' | 'To') {
+        this.Set('Role', value);
+    }
+
+    /**
+    * * Field Name: EntityID
+    * * Display Name: Entity ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Entities (vwEntities.ID)
+    */
+    get EntityID(): string | null {
+        return this.Get('EntityID');
+    }
+    set EntityID(value: string | null) {
+        this.Set('EntityID', value);
+    }
+
+    /**
+    * * Field Name: RecordID
+    * * Display Name: Record ID
+    * * SQL Data Type: nvarchar(450)
+    * * Description: Primary key of the resolved record. NVARCHAR so composite keys work. Required with EntityID; must be null when the link is an unresolved identity.
+    */
+    get RecordID(): string | null {
+        return this.Get('RecordID');
+    }
+    set RecordID(value: string | null) {
+        this.Set('RecordID', value);
+    }
+
+    /**
+    * * Field Name: IdentityKind
+    * * Display Name: Identity Kind
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Email
+    *   * ExternalUser
+    *   * Phone
+    * * Description: Email, Phone, or ExternalUser. Set with IdentityValue when the participant has not been matched to a Person/Org yet.
+    */
+    get IdentityKind(): 'Email' | 'ExternalUser' | 'Phone' | null {
+        return this.Get('IdentityKind');
+    }
+    set IdentityKind(value: 'Email' | 'ExternalUser' | 'Phone' | null) {
+        this.Set('IdentityKind', value);
+    }
+
+    /**
+    * * Field Name: IdentityValue
+    * * Display Name: Identity Value
+    * * SQL Data Type: nvarchar(320)
+    * * Description: The unmatched address, phone, or provider user id. A later matcher stamps EntityID/RecordID from ContactMethod.Value and clears these.
+    */
+    get IdentityValue(): string | null {
+        return this.Get('IdentityValue');
+    }
+    set IdentityValue(value: string | null) {
+        this.Set('IdentityValue', value);
+    }
+
+    /**
+    * * Field Name: Sequence
+    * * Display Name: Sequence
+    * * SQL Data Type: int
+    * * Default Value: 0
+    * * Description: Display order within a role (To, then Cc, …).
+    */
+    get Sequence(): number {
+        return this.Get('Sequence');
+    }
+    set Sequence(value: number) {
+        this.Set('Sequence', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Entity
+    * * Display Name: Entity
+    * * SQL Data Type: nvarchar(255)
+    */
+    get Entity(): string | null {
+        return this.Get('Entity');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Activity Sync Connections - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ActivitySyncConnection
+ * * Base View: vwActivitySyncConnections
+ * * @description A mailbox, calendar, or other provider connection that writes Activities. CredentialsRef is an MJ Credentials engine key — never a secret at rest.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activity Sync Connections')
+export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBizAppsCommonActivitySyncConnectionEntityType> {
+
+  /**
+  * Related records: MJ_BizApps_Common: Activity Sync Rules
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Activity Sync Connections record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Activity Sync Connections → MJ_BizApps_Common: Activity Sync Rules' relationship; edit that row, not this file.
+  *
+  */
+  public readonly Rules = this.DeclareRelatedRecords<mjBizAppsCommonActivitySyncRuleEntity>({
+      Name: 'Rules',
+        RelatedEntity: 'MJ_BizApps_Common: Activity Sync Rules',
+        RelatedEntityJoinField: 'ActivitySyncConnectionID',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+    /**
+    * Loads the MJ_BizApps_Common: Activity Sync Connections record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activity Sync Connections record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivitySyncConnectionEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: Name
+    * * Display Name: Name
+    * * SQL Data Type: nvarchar(200)
+    * * Description: Display name of the connection (e.g. Amith / Microsoft 365).
+    */
+    get Name(): string {
+        return this.Get('Name');
+    }
+    set Name(value: string) {
+        this.Set('Name', value);
+    }
+
+    /**
+    * * Field Name: Provider
+    * * Display Name: Provider
+    * * SQL Data Type: nvarchar(40)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Generic
+    *   * Gmail
+    *   * Microsoft365
+    *   * Zoom
+    * * Description: Microsoft365, Gmail, Zoom, or Generic. Widen the CHECK when a new first-class provider lands.
+    */
+    get Provider(): 'Generic' | 'Gmail' | 'Microsoft365' | 'Zoom' {
+        return this.Get('Provider');
+    }
+    set Provider(value: 'Generic' | 'Gmail' | 'Microsoft365' | 'Zoom') {
+        this.Set('Provider', value);
+    }
+
+    /**
+    * * Field Name: Status
+    * * Display Name: Status
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Active
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Active
+    *   * Disabled
+    *   * Error
+    *   * Paused
+    * * Description: Active, Paused, Error, or Disabled.
+    */
+    get Status(): 'Active' | 'Disabled' | 'Error' | 'Paused' {
+        return this.Get('Status');
+    }
+    set Status(value: 'Active' | 'Disabled' | 'Error' | 'Paused') {
+        this.Set('Status', value);
+    }
+
+    /**
+    * * Field Name: Direction
+    * * Display Name: Direction
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Inbound
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Bidirectional
+    *   * Inbound
+    *   * Outbound
+    * * Description: Inbound (pull into CRM), Outbound, or Bidirectional.
+    */
+    get Direction(): 'Bidirectional' | 'Inbound' | 'Outbound' {
+        return this.Get('Direction');
+    }
+    set Direction(value: 'Bidirectional' | 'Inbound' | 'Outbound') {
+        this.Set('Direction', value);
+    }
+
+    /**
+    * * Field Name: OwnerUserID
+    * * Display Name: Owner User ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
+    */
+    get OwnerUserID(): string {
+        return this.Get('OwnerUserID');
+    }
+    set OwnerUserID(value: string) {
+        this.Set('OwnerUserID', value);
+    }
+
+    /**
+    * * Field Name: CredentialsRef
+    * * Display Name: Credentials Ref
+    * * SQL Data Type: nvarchar(200)
+    * * Description: MJ Credentials engine key. NEVER a secret value at rest.
+    */
+    get CredentialsRef(): string | null {
+        return this.Get('CredentialsRef');
+    }
+    set CredentialsRef(value: string | null) {
+        this.Set('CredentialsRef', value);
+    }
+
+    /**
+    * * Field Name: Mailbox
+    * * Display Name: Mailbox
+    * * SQL Data Type: nvarchar(320)
+    * * Description: Mailbox address this connection reads (jane@acme.com).
+    */
+    get Mailbox(): string | null {
+        return this.Get('Mailbox');
+    }
+    set Mailbox(value: string | null) {
+        this.Set('Mailbox', value);
+    }
+
+    /**
+    * * Field Name: LastSyncAt
+    * * Display Name: Last Sync At
+    * * SQL Data Type: datetimeoffset
+    * * Description: When the engine last completed a sync for this connection.
+    */
+    get LastSyncAt(): Date | null {
+        return this.Get('LastSyncAt');
+    }
+    set LastSyncAt(value: Date | null) {
+        this.Set('LastSyncAt', value);
+    }
+
+    /**
+    * * Field Name: LastError
+    * * Display Name: Last Error
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Most recent sync error, if Status is Error.
+    */
+    get LastError(): string | null {
+        return this.Get('LastError');
+    }
+    set LastError(value: string | null) {
+        this.Set('LastError', value);
+    }
+
+    /**
+    * * Field Name: Settings
+    * * Display Name: Settings
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: JSON provider extras (TenantID, MailboxFolder, CalendarID, IncludeCalendar, IncludeMail). See ActivitySyncConnectionSettings.
+    */
+    get Settings(): string | null {
+        return this.Get('Settings');
+    }
+    set Settings(value: string | null) {
+        this.Set('Settings', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: OwnerUser
+    * * Display Name: Owner User
+    * * SQL Data Type: nvarchar(100)
+    */
+    get OwnerUser(): string {
+        return this.Get('OwnerUser');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Activity Sync Rules - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ActivitySyncRule
+ * * Base View: vwActivitySyncRules
+ * * @description Include/exclude rule for an ActivitySyncConnection: type, direction, date window, attachments, plus a JSON Filter (folders, domains, participant-must-match-ContactMethod).
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activity Sync Rules')
+export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsCommonActivitySyncRuleEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Activity Sync Rules record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activity Sync Rules record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivitySyncRuleEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: ActivitySyncConnectionID
+    * * Display Name: Activity Sync Connection ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)
+    */
+    get ActivitySyncConnectionID(): string {
+        return this.Get('ActivitySyncConnectionID');
+    }
+    set ActivitySyncConnectionID(value: string) {
+        this.Set('ActivitySyncConnectionID', value);
+    }
+
+    /**
+    * * Field Name: Name
+    * * Display Name: Name
+    * * SQL Data Type: nvarchar(200)
+    * * Description: Display name of the rule.
+    */
+    get Name(): string {
+        return this.Get('Name');
+    }
+    set Name(value: string) {
+        this.Set('Name', value);
+    }
+
+    /**
+    * * Field Name: IsEnabled
+    * * Display Name: Is Enabled
+    * * SQL Data Type: bit
+    * * Default Value: 1
+    * * Description: 0 skips the rule without deleting it.
+    */
+    get IsEnabled(): boolean {
+        return this.Get('IsEnabled');
+    }
+    set IsEnabled(value: boolean) {
+        this.Set('IsEnabled', value);
+    }
+
+    /**
+    * * Field Name: Sequence
+    * * Display Name: Sequence
+    * * SQL Data Type: int
+    * * Default Value: 0
+    * * Description: Evaluation order within the connection. Lower first.
+    */
+    get Sequence(): number {
+        return this.Get('Sequence');
+    }
+    set Sequence(value: number) {
+        this.Set('Sequence', value);
+    }
+
+    /**
+    * * Field Name: Action
+    * * Display Name: Action
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Include
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Exclude
+    *   * Include
+    * * Description: Include or Exclude matching items. With no rules, the engine syncs everything the connection can see.
+    */
+    get Action(): 'Exclude' | 'Include' {
+        return this.Get('Action');
+    }
+    set Action(value: 'Exclude' | 'Include') {
+        this.Set('Action', value);
+    }
+
+    /**
+    * * Field Name: ActivityTypeID
+    * * Display Name: Activity Type ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)
+    */
+    get ActivityTypeID(): string | null {
+        return this.Get('ActivityTypeID');
+    }
+    set ActivityTypeID(value: string | null) {
+        this.Set('ActivityTypeID', value);
+    }
+
+    /**
+    * * Field Name: Direction
+    * * Display Name: Direction
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Inbound
+    *   * Internal
+    *   * Outbound
+    * * Description: Optional direction filter (Inbound / Outbound / Internal). Null = any.
+    */
+    get Direction(): 'Inbound' | 'Internal' | 'Outbound' | null {
+        return this.Get('Direction');
+    }
+    set Direction(value: 'Inbound' | 'Internal' | 'Outbound' | null) {
+        this.Set('Direction', value);
+    }
+
+    /**
+    * * Field Name: DateFrom
+    * * Display Name: Date From
+    * * SQL Data Type: datetimeoffset
+    * * Description: Inclusive lower bound of the sync window. Null = no lower bound.
+    */
+    get DateFrom(): Date | null {
+        return this.Get('DateFrom');
+    }
+    set DateFrom(value: Date | null) {
+        this.Set('DateFrom', value);
+    }
+
+    /**
+    * * Field Name: DateTo
+    * * Display Name: Date To
+    * * SQL Data Type: datetimeoffset
+    * * Description: Inclusive upper bound of the sync window. Null = no upper bound.
+    */
+    get DateTo(): Date | null {
+        return this.Get('DateTo');
+    }
+    set DateTo(value: Date | null) {
+        this.Set('DateTo', value);
+    }
+
+    /**
+    * * Field Name: IncludeAttachments
+    * * Display Name: Include Attachments
+    * * SQL Data Type: bit
+    * * Default Value: 0
+    * * Description: 1 = also pull attachments into ActivityFile rows.
+    */
+    get IncludeAttachments(): boolean {
+        return this.Get('IncludeAttachments');
+    }
+    set IncludeAttachments(value: boolean) {
+        this.Set('IncludeAttachments', value);
+    }
+
+    /**
+    * * Field Name: Filter
+    * * Display Name: Filter
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.
+    */
+    get Filter(): string | null {
+        return this.Get('Filter');
+    }
+    set Filter(value: string | null) {
+        this.Set('Filter', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: ActivitySyncConnection
+    * * Display Name: Activity Sync Connection
+    * * SQL Data Type: nvarchar(200)
+    */
+    get ActivitySyncConnection(): string {
+        return this.Get('ActivitySyncConnection');
+    }
+
+    /**
+    * * Field Name: ActivityType
+    * * Display Name: Activity Type
+    * * SQL Data Type: nvarchar(100)
+    */
+    get ActivityType(): string | null {
+        return this.Get('ActivityType');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Activity Types - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ActivityType
+ * * Base View: vwActivityTypes
+ * * @description Lookup of interaction channels (Email, Call, Meeting, Note, SMS, Chat). Hierarchy is picker-only; direction lives on Activity. Code is the stable key — sync and code target Code, never Name.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Activity Types')
+export class mjBizAppsCommonActivityTypeEntity extends BaseEntity<mjBizAppsCommonActivityTypeEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Activity Types record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Activity Types record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonActivityTypeEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: Code
+    * * Display Name: Code
+    * * SQL Data Type: nvarchar(50)
+    * * Description: Stable key targeted by sync and code (Email, Call, Meeting, Note, SMS, Chat). Unique. Names can be renamed; codes cannot.
+    */
+    get Code(): string {
+        return this.Get('Code');
+    }
+    set Code(value: string) {
+        this.Set('Code', value);
+    }
+
+    /**
+    * * Field Name: Name
+    * * Display Name: Name
+    * * SQL Data Type: nvarchar(100)
+    * * Description: Display name for the picker and timeline.
+    */
+    get Name(): string {
+        return this.Get('Name');
+    }
+    set Name(value: string) {
+        this.Set('Name', value);
+    }
+
+    /**
+    * * Field Name: Description
+    * * Display Name: Description
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Optional longer description of the type.
+    */
+    get Description(): string | null {
+        return this.Get('Description');
+    }
+    set Description(value: string | null) {
+        this.Set('Description', value);
+    }
+
+    /**
+    * * Field Name: ParentID
+    * * Display Name: Parent ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Types (vwActivityTypes.ID)
+    */
+    get ParentID(): string | null {
+        return this.Get('ParentID');
+    }
+    set ParentID(value: string | null) {
+        this.Set('ParentID', value);
+    }
+
+    /**
+    * * Field Name: IconClass
+    * * Display Name: Icon Class
+    * * SQL Data Type: nvarchar(100)
+    * * Description: Font Awesome class for timeline chrome (e.g. fa-solid fa-envelope).
+    */
+    get IconClass(): string | null {
+        return this.Get('IconClass');
+    }
+    set IconClass(value: string | null) {
+        this.Set('IconClass', value);
+    }
+
+    /**
+    * * Field Name: Color
+    * * Display Name: Color
+    * * SQL Data Type: nvarchar(30)
+    * * Description: Optional categorical color for timeline chrome. Not a design-token — this is stored per type.
+    */
+    get Color(): string | null {
+        return this.Get('Color');
+    }
+    set Color(value: string | null) {
+        this.Set('Color', value);
+    }
+
+    /**
+    * * Field Name: Sequence
+    * * Display Name: Sequence
+    * * SQL Data Type: int
+    * * Default Value: 0
+    * * Description: Picker sort order. Lower first.
+    */
+    get Sequence(): number {
+        return this.Get('Sequence');
+    }
+    set Sequence(value: number) {
+        this.Set('Sequence', value);
+    }
+
+    /**
+    * * Field Name: IsSystem
+    * * Display Name: Is System
+    * * SQL Data Type: bit
+    * * Default Value: 0
+    * * Description: 1 = seeded system type the sync engine may assume (Email, Call, Meeting, Note, SMS, Chat). Clients add children with IsSystem = 0.
+    */
+    get IsSystem(): boolean {
+        return this.Get('IsSystem');
+    }
+    set IsSystem(value: boolean) {
+        this.Set('IsSystem', value);
+    }
+
+    /**
+    * * Field Name: IsActive
+    * * Display Name: Is Active
+    * * SQL Data Type: bit
+    * * Default Value: 1
+    * * Description: 0 hides the type from the picker without deleting historical activities.
+    */
+    get IsActive(): boolean {
+        return this.Get('IsActive');
+    }
+    set IsActive(value: boolean) {
+        this.Set('IsActive', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Parent
+    * * Display Name: Parent
+    * * SQL Data Type: nvarchar(100)
+    */
+    get Parent(): string | null {
+        return this.Get('Parent');
+    }
+
+    /**
+    * * Field Name: RootParentID
+    * * Display Name: Root Parent ID
+    * * SQL Data Type: uniqueidentifier
+    */
+    get RootParentID(): string | null {
+        return this.Get('RootParentID');
+    }
+}
+
 
 /**
  * MJ_BizApps_Common: Address Links - strongly typed entity sub-class
@@ -1528,7 +3525,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     /**
     * * Field Name: Person
     * * Display Name: Person Name
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get Person(): string | null {
         return this.Get('Person');
@@ -3169,7 +5166,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: FromPerson
     * * Display Name: From Person Name
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get FromPerson(): string | null {
         return this.Get('FromPerson');
@@ -3187,7 +5184,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: ToPerson
     * * Display Name: To Person Name
-    * * SQL Data Type: nvarchar(100)
+    * * SQL Data Type: nvarchar(201)
     */
     get ToPerson(): string | null {
         return this.Get('ToPerson');

@@ -16,6 +16,10 @@
     "relatedEntities": {
       "MJ: Entity Fields": [
         {
+          "_comments": [
+            "DisplayName is the computed First + Last. It is the sole People name field.",
+            "Pin AutoUpdateIsNameField=0 so CodeGen cannot flip this back to FirstName."
+          ],
           "fields": {
             "IsNameField": true,
             "AutoUpdateIsNameField": false
@@ -29,6 +33,10 @@
           }
         },
         {
+          "_comments": [
+            "FirstName must stay IsNameField=0. Two name fields make FK display columns",
+            "(BillToPerson, FromPerson, …) race and CodeGen often wins with FirstName only."
+          ],
           "fields": {
             "IsNameField": false,
             "AutoUpdateIsNameField": false

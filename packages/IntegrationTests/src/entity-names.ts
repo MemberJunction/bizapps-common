@@ -9,6 +9,12 @@ export const COMMON_ENTITIES = {
     ContactType: 'MJ_BizApps_Common: Contact Types',
     Relationship: 'MJ_BizApps_Common: Relationships',
     RelationshipType: 'MJ_BizApps_Common: Relationship Types',
+    ActivityType: 'MJ_BizApps_Common: Activity Types',
+    Activity: 'MJ_BizApps_Common: Activities',
+    ActivityLink: 'MJ_BizApps_Common: Activity Links',
+    ActivityFile: 'MJ_BizApps_Common: Activity Files',
+    ActivitySyncConnection: 'MJ_BizApps_Common: Activity Sync Connections',
+    ActivitySyncRule: 'MJ_BizApps_Common: Activity Sync Rules',
 } as const;
 
 /** Email / name suffix that identifies COM-WORLD rows for cleanup. */

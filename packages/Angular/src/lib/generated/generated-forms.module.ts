@@ -15,6 +15,12 @@ import { EntityViewerModule } from '@memberjunction/ng-entity-viewer';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 
 // Import Generated Components
+import { mjBizAppsCommonActivityFormComponent } from "./Entities/mjBizAppsCommonActivity/mjbizappscommonactivity.form.component";
+import { mjBizAppsCommonActivityFileFormComponent } from "./Entities/mjBizAppsCommonActivityFile/mjbizappscommonactivityfile.form.component";
+import { mjBizAppsCommonActivityLinkFormComponent } from "./Entities/mjBizAppsCommonActivityLink/mjbizappscommonactivitylink.form.component";
+import { mjBizAppsCommonActivitySyncConnectionFormComponent } from "./Entities/mjBizAppsCommonActivitySyncConnection/mjbizappscommonactivitysyncconnection.form.component";
+import { mjBizAppsCommonActivitySyncRuleFormComponent } from "./Entities/mjBizAppsCommonActivitySyncRule/mjbizappscommonactivitysyncrule.form.component";
+import { mjBizAppsCommonActivityTypeFormComponent } from "./Entities/mjBizAppsCommonActivityType/mjbizappscommonactivitytype.form.component";
 import { mjBizAppsCommonAddressLinkFormComponent } from "./Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component";
 import { mjBizAppsCommonAddressTypeFormComponent } from "./Entities/mjBizAppsCommonAddressType/mjbizappscommonaddresstype.form.component";
 import { mjBizAppsCommonAddressFormComponent } from "./Entities/mjBizAppsCommonAddress/mjbizappscommonaddress.form.component";
@@ -29,6 +35,12 @@ import { mjBizAppsCommonRelationshipFormComponent } from "./Entities/mjBizAppsCo
 
 @NgModule({
 declarations: [
+    mjBizAppsCommonActivityFormComponent,
+    mjBizAppsCommonActivityFileFormComponent,
+    mjBizAppsCommonActivityLinkFormComponent,
+    mjBizAppsCommonActivitySyncConnectionFormComponent,
+    mjBizAppsCommonActivitySyncRuleFormComponent,
+    mjBizAppsCommonActivityTypeFormComponent,
     mjBizAppsCommonAddressLinkFormComponent,
     mjBizAppsCommonAddressTypeFormComponent,
     mjBizAppsCommonAddressFormComponent,

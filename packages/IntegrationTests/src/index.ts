@@ -12,6 +12,7 @@
  *   organizations        O1–O3     hierarchy, every shipped type, denormalized type filter
  *   contacts-addresses   CA1–CA3   address links, contact exclusivity, primary email
  *   relationships        R1–R4     employment, exclusivity, person-to-person, status
+ *   activities           A1–A5     types, regarding/xor/unresolved links, ExternalID, sync
  */
 import { LoadGeneratedEntities } from '@mj-biz-apps/common-entities';
 
@@ -26,6 +27,7 @@ export * from './checks/people.checks.js';
 export * from './checks/organizations.checks.js';
 export * from './checks/contacts-addresses.checks.js';
 export * from './checks/relationships.checks.js';
+export * from './checks/activities.checks.js';
 
 export function LoadCommonIntegrationTests(): void {
     // side-effect import is the registration
