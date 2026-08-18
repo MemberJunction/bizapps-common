@@ -13,7 +13,7 @@
     "build": "tsc && tsc-alias -f",
     "test": "vitest run"
   },
-  "license": "ISC",
+  "license": "BUSL-1.1",
   "dependencies": {
     "@mj-biz-apps/common-entities": "5.34.0",
     "@memberjunction/core": "^6.1.0-edge.2",
