@@ -11,7 +11,9 @@
       "skipLibCheck": true,
       "paths": {
         "@memberjunction/ng-graph-view": ["../MJ/packages/Angular/Generic/graph-view/dist/public-api.d.ts"],
-        "@memberjunction/ng-graph-view/*": ["../MJ/packages/Angular/Generic/graph-view/dist/*"]
+        "@memberjunction/ng-graph-view/*": ["../MJ/packages/Angular/Generic/graph-view/dist/*"],
+        "@memberjunction/ng-hierarchy-tree": ["../MJ/packages/Angular/Generic/hierarchy-tree/dist/public-api.d.ts"],
+        "@memberjunction/ng-hierarchy-tree/*": ["../MJ/packages/Angular/Generic/hierarchy-tree/dist/*"]
       },
       "types": [],
       "lib": ["es2022", "dom"]
