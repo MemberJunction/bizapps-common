@@ -13,4 +13,8 @@ export const COMMON_ENTITIES = {
     AddressLink: 'MJ_BizApps_Common: Address Links',
     OrganizationType: 'MJ_BizApps_Common: Organization Types',
     RelationshipType: 'MJ_BizApps_Common: Relationship Types',
+    Activity: 'MJ_BizApps_Common: Activities',
+    ActivityType: 'MJ_BizApps_Common: Activity Types',
+    ActivityLink: 'MJ_BizApps_Common: Activity Links',
+    ActivityFile: 'MJ_BizApps_Common: Activity Files',
 } as const;
