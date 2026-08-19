@@ -40,7 +40,7 @@ interface ActivityLinkRow {
     template: `
         <mj-collapsible-panel
             SectionKey="activityParticipants"
-            SectionName="Participants &amp; Linked Records"
+            SectionName="Participants"
             Icon="fa-solid fa-users"
             [Form]="FormComponent"
             [FormContext]="FormContext"
@@ -207,11 +207,11 @@ export class ActivityLinksPanel extends BaseFormPanel<mjBizAppsCommonActivityEnt
     }
 
     public OpenLink(link: ActivityLinkRow): void {
-        if (link.Entity && link.RecordID) {
+        if (link.Entity && link.RecordID && this.FormComponent?.OnFormNavigate) {
             this.FormComponent.OnFormNavigate({
                 Kind: 'record',
                 EntityName: link.Entity,
-                PrimaryKey: CompositeKey.FromID(link.RecordID),
+                PrimaryKey: CompositeKey.FromKeyValuePair('ID', link.RecordID),
             });
         }
     }

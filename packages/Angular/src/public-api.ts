@@ -31,10 +31,13 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
+export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';
 export { ActivityHierarchyPanel } from './lib/custom/panels/activity-hierarchy.panel';
 export { ActivityHeaderPanel } from './lib/custom/panels/activity-header.panel';
 export { ActivityLinksPanel } from './lib/custom/panels/activity-links.panel';
+export { ActivityFilesPanel } from './lib/custom/panels/activity-files.panel';
+export { ActivityContentPanel } from './lib/custom/panels/activity-content.panel';
 
 // Directory dashboard + People / Organizations lists / Graph / Activities (Explorer Custom nav)
 import './lib/sections/common-sections.component';
