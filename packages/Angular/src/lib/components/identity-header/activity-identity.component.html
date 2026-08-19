@@ -1,0 +1,108 @@
+<div class="biz-hero" [class.biz-hero--collapsed]="Collapsed">
+    <div class="biz-hero__identity">
+        <div class="biz-hero__avatar" [style.background]="TypeBackground" aria-hidden="true">
+            <i [class]="TypeIcon" style="font-size: 1.5rem; color: #ffffff;"></i>
+        </div>
+
+        <div class="biz-hero__copy">
+            <div class="biz-hero__title-row">
+                <h1 class="biz-hero__name">{{ Record.Title || 'New Activity' }}</h1>
+            </div>
+            <div class="biz-hero__badges">
+                <span class="biz-hero__entity-chip">
+                    <i [class]="TypeIcon"></i>
+                    {{ Record.ActivityType || 'Activity' }}
+                </span>
+                @if (Record.Direction) {
+                    <span class="biz-hero__chip" data-tone="info">
+                        <i [class]="DirectionIcon"></i>
+                        {{ Record.Direction }}
+                    </span>
+                }
+                @if (Record.Status) {
+                    <span class="biz-hero__chip" [attr.data-tone]="StatusTone">
+                        {{ Record.Status }}
+                    </span>
+                }
+                @if (Record.Outcome) {
+                    <span class="biz-hero__chip" data-tone="purple">
+                        <i class="fa-solid fa-flag"></i>
+                        {{ Record.Outcome }}
+                    </span>
+                }
+            </div>
+        </div>
+
+        <button type="button"
+                class="biz-hero__toggle"
+                [title]="Collapsed ? 'Expand header' : 'Collapse header'"
+                [attr.aria-label]="Collapsed ? 'Expand header' : 'Collapse header'"
+                (click)="ToggleCollapsed()">
+            <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'"></i>
+        </button>
+    </div>
+
+    @if (!Collapsed) {
+        <div class="biz-hero__summary">
+            @if (Record.StartedAt) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">When</span>
+                    <span class="biz-hero__stat-val">
+                        {{ Record.StartedAt | date:'MMM d, y, h:mm a' }}
+                        @if (DurationText) {
+                            <span style="opacity: 0.75; font-size: 0.88em; font-weight: 500;">({{ DurationText }})</span>
+                        }
+                    </span>
+                </div>
+            }
+            @if (Record.LoggedByUser) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Logged By</span>
+                    <span class="biz-hero__stat-val">{{ Record.LoggedByUser }}</span>
+                </div>
+            }
+            @if (LocationDisplay) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Location</span>
+                    <span class="biz-hero__stat-val">
+                        <i class="fa-solid fa-location-dot" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        {{ LocationDisplay }}
+                    </span>
+                </div>
+            }
+            @if (MeetingURL) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Video Meeting</span>
+                    <a [href]="MeetingURL" target="_blank" rel="noopener noreferrer" class="biz-hero__stat-val" style="color: var(--mj-brand-primary); text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-video"></i>
+                        Join Meeting
+                    </a>
+                </div>
+            }
+            @if (Record.Source) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Source</span>
+                    <span class="biz-hero__stat-val">
+                        <i class="fa-solid fa-cloud" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        {{ SourceDisplay }}
+                    </span>
+                </div>
+            }
+            @if (Record.ParentActivity) {
+                <div class="biz-hero__stat">
+                    <span class="biz-hero__stat-label">Thread / Parent</span>
+                    <button type="button" class="biz-hero__stat-val" (click)="OnParentActivityClick($event)">
+                        <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        {{ Record.ParentActivity }}
+                    </button>
+                </div>
+            }
+        </div>
+
+        @if (Record.Description) {
+            <div style="padding-top: var(--mj-space-2, 8px); border-top: 1px solid var(--mj-border-subtle, #f1f5f9); font-size: var(--mj-text-sm, 13px); line-height: 1.5; color: var(--mj-text-secondary, #334155); white-space: pre-wrap;">
+                {{ Record.Description }}
+            </div>
+        }
+    }
+</div>

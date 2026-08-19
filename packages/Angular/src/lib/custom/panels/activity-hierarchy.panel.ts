@@ -4,7 +4,7 @@ import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { UserInfoEngine } from '@memberjunction/core-entities';
-import { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
+import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
 
 /**
  * Visual Activity Hierarchy & Sub-activity Tree Panel.
@@ -30,8 +30,8 @@ import { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
     template: `
         <mj-collapsible-panel
             SectionKey="activityHierarchy"
-            SectionName="Hierarchy"
-            Icon="fa-solid fa-tasks"
+            SectionName="Thread"
+            Icon="fa-solid fa-sitemap"
             Variant="related-entity"
             [Form]="FormComponent"
             [FormContext]="FormContext"
@@ -83,16 +83,23 @@ export class ActivityHierarchyPanel extends BaseFormPanel<mjBizAppsCommonActivit
         const recId = this.Record?.ID || null;
         if (!this._treeConfig || this._cachedRecordId !== recId) {
             this._cachedRecordId = recId;
+            const rootId = this.Record?.RootParentActivityID || recId;
+            const extraFilter = rootId
+                ? `(ID = '${rootId}' OR RootParentActivityID = '${rootId}' OR ParentActivityID = '${rootId}' OR ParentActivityID = '${recId}')`
+                : undefined;
+
             this._treeConfig = {
                 EntityName: 'MJ_BizApps_Common: Activities',
                 ParentField: 'ParentActivityID',
-                NameField: 'Subject',
+                NameField: 'Title',
                 SubtitleField: 'ActivityType',
-                DefaultIcon: 'fa-solid fa-tasks',
-                DefaultColor: '#ec4899',
+                DefaultIcon: 'fa-solid fa-calendar-days',
+                DefaultColor: 'var(--mj-brand-primary, #0284c7)',
                 ActiveRecordID: recId || undefined,
+                ExtraFilter: extraFilter,
+                OrderBy: 'StartedAt ASC, __mj_CreatedAt ASC',
                 Height: '100%',
-                MinHeight: '640px',
+                MinHeight: '500px',
                 ShowSearch: true,
                 ShowToolbar: true,
                 Orientation: 'top-to-bottom'
