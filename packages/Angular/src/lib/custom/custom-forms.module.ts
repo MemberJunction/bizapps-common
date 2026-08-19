@@ -20,6 +20,10 @@ import { OrganizationAddressesPanel } from './panels/organization-addresses.pane
 import { OrganizationContactMethodsPanel } from './panels/organization-contact-methods.panel';
 import { OrganizationRelationshipsPanel } from './panels/organization-relationships.panel';
 import { OrganizationHierarchyPanel } from './panels/organization-hierarchy.panel';
+import { ActivityTypeHierarchyPanel } from './panels/activity-type-hierarchy.panel';
+import { ActivityHierarchyPanel } from './panels/activity-hierarchy.panel';
+import { ActivityHeaderPanel } from './panels/activity-header.panel';
+import { ActivityLinksPanel } from './panels/activity-links.panel';
 
 const PANELS = [
     PersonHeaderPanel,
@@ -34,8 +38,7 @@ const PANELS = [
 ];
 
 /**
- * Registers People/Organization BaseFormPanel contributions. Importing this
- * module fires @RegisterClassEx so generated forms pick up the widgets.
+ * Registers People/Organization/Activity BaseFormPanel contributions.
  */
 @NgModule({
     declarations: [...PANELS],
@@ -49,7 +52,17 @@ const PANELS = [
         CommonRelationshipGraphComponent,
         PersonIdentityComponent,
         OrganizationIdentityComponent,
+        ActivityTypeHierarchyPanel,
+        ActivityHierarchyPanel,
+        ActivityHeaderPanel,
+        ActivityLinksPanel,
     ],
-    exports: [...PANELS],
+    exports: [
+        ...PANELS,
+        ActivityTypeHierarchyPanel,
+        ActivityHierarchyPanel,
+        ActivityHeaderPanel,
+        ActivityLinksPanel,
+    ],
 })
 export class CustomFormsModule {}

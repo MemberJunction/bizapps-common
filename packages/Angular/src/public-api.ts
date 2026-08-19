@@ -31,8 +31,12 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
+export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';
+export { ActivityHierarchyPanel } from './lib/custom/panels/activity-hierarchy.panel';
+export { ActivityHeaderPanel } from './lib/custom/panels/activity-header.panel';
+export { ActivityLinksPanel } from './lib/custom/panels/activity-links.panel';
 
-// Directory dashboard + People / Organizations lists / Graph (Explorer Custom nav)
+// Directory dashboard + People / Organizations lists / Graph / Activities (Explorer Custom nav)
 import './lib/sections/common-sections.component';
 import { LoadCommonSectionResources } from './lib/sections/common-sections.component';
 export {
@@ -40,11 +44,13 @@ export {
     CommonDirectoryResource,
     CommonPeopleResource,
     CommonOrganizationsResource,
-    CommonRelationshipGraphResource
+    CommonRelationshipGraphResource,
+    CommonActivitiesResource
 } from './lib/sections/common-sections.component';
 export { CommonDashboardPageComponent } from './lib/pages/common-dashboard.page';
 export { CommonPeoplePageComponent } from './lib/pages/people-list.page';
 export { CommonOrganizationsPageComponent } from './lib/pages/organizations-list.page';
+export { CommonActivitiesPageComponent } from './lib/pages/activities-dashboard.page';
 
 /**
  * Bootstrap function called during MJExplorer initialization.

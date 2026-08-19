@@ -12,5 +12,5 @@ export function OpenCommonRecord(entityName: string, recordID: string | null | u
 
 /** Open a blank new record for the entity. */
 export function OpenNewCommonRecord(entityName: string): void {
-    SharedService.Instance.OpenEntityRecord(entityName, CompositeKey.FromID(NEW_RECORD_URL_ID));
+    SharedService.Instance.OpenNewEntityRecord(entityName);
 }
