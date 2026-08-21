@@ -1,5 +1,13 @@
 # @mj-biz-apps/common-actions
 
+## 5.35.1
+
+### Patch Changes
+
+- eac151e: Declare BUSL-1.1 in mj-app.json. The LICENSE file and every package already
+  state BUSL-1.1; the manifest still said ISC, so anything reading it saw the
+  wrong license.
+
 ## 5.35.0
 
 ## 5.34.0
