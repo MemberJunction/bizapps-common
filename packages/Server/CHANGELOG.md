@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-server
 
+## 5.35.0
+
+### Patch Changes
+
+- cbd0e27: Add RelatedRecordCollection metadata configuration for People and Organizations (Contact Methods, Relationships, Child Organizations) and synchronize CodeGen output.
+- Updated dependencies [1f07f2a]
+- Updated dependencies [026b83e]
+- Updated dependencies [4b4bcaa]
+- Updated dependencies [cbd0e27]
+  - @mj-biz-apps/common-entities@5.35.0
+  - @mj-biz-apps/common-core-entities-server@5.35.0
+  - @mj-biz-apps/common-actions@5.35.0
+
 ## 5.34.0
 
 ### Patch Changes

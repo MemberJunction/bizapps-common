@@ -1,5 +1,32 @@
 # @mj-biz-apps/common-ng
 
+## 5.35.0
+
+### Minor Changes
+
+- 6ce1aaf: Add the Common Explorer application (Directory / People / Organizations) and an operational directory dashboard: cheap counts, gap queues, recent people, organization-type mix, and list pages that open records.
+- 07e27b6: Add interactive CommonRelationshipGraphComponent with on-demand expansion, add Relationship Graph navigation tab to Common application metadata, add list/graph toggle to Person and Organization relationship panels, and register Application Roles metadata for UI and Developer roles.
+- 0e33a0c: Enhance RelationshipList with full-width native link field search and dedicated Add/Edit form card; enable collapsing hero headers during form EditMode to maximize vertical workspace; persist graph layout and zoom preferences via UserInfoEngine.
+
+### Patch Changes
+
+- 32c72f6: feat(common-ng): add interactive visual org chart to OrgHierarchyTree with UserInfoEngine persistence
+
+  - Upgrades `OrgHierarchyTreeComponent` to support switching between an interactive **Visual Org Chart Canvas** (powered by `@memberjunction/ng-hierarchy-tree`) and the classic Outline list.
+  - Integrates user preference persistence via `UserInfoEngine` (`'mj.orgHierarchy.viewMode'`).
+  - Supports smooth pan, zoom, auto-fit, and direct navigation to parent/subsidiary organization records.
+
+- bba54cb: Restyle Person/Org identity headers to match the payment card: compact surface, badge row, and a metric strip. PhotoURL / LogoURL already replace initials when set.
+- c638c00: Person and Organization identity headers stack edit fields as labeled columns. Each field is wrapped so mj-form-field's display:contents cannot leak into a parent grid. Two-across only when the hero is at least 52rem wide; URLs and description still span the full row.
+- 4b4bcaa: Stop overriding generated People and Organization forms. Address, contact-method, relationship, and org-hierarchy widgets register as BaseFormPanel contributions. Identity heroes (`contributionKey: 'header'`) replace the Personal Identity / Organization Identity field panels so verticals can last-win the same key (Orders adds stats without forking the form).
+- cbd0e27: Add RelatedRecordCollection metadata configuration for People and Organizations (Contact Methods, Relationships, Child Organizations) and synchronize CodeGen output.
+- 99efae7: Relationship list fills leftover left-nav height without parking its header mid-column. Type lookup is UUID-normalized so links still render when ID casing differs, and the empty state says there are no relationships instead of a blank panel.
+- Updated dependencies [1f07f2a]
+- Updated dependencies [026b83e]
+- Updated dependencies [4b4bcaa]
+- Updated dependencies [cbd0e27]
+  - @mj-biz-apps/common-entities@5.35.0
+
 ## 5.34.0
 
 ### Minor Changes

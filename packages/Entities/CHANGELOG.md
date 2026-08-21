@@ -1,5 +1,17 @@
 # Change Log - mj_generatedentities
 
+## 5.35.0
+
+### Minor Changes
+
+- 1f07f2a: Add Activity, ActivityType, ActivityLink, ActivityFile, ActivitySyncConnection, and ActivitySyncRule so Common can log interactions and control what a mailbox/calendar connection syncs. System activity types (Email, Call, Meeting, Note, SMS, Chat) are seeded via metadata, not SQL INSERTs.
+- 026b83e: Person and Organization related-grid membership uses L1 inclusion (Primary / More). Incoming Relationships sit in More.
+- 4b4bcaa: Mark People and Organizations as smart-ranked hub forms, and punch Contact Methods / outgoing Relationships / child Organizations as FormRole Primary so they stay top-level when other apps hang grids on the same record.
+
+### Patch Changes
+
+- cbd0e27: Add RelatedRecordCollection metadata configuration for People and Organizations (Contact Methods, Relationships, Child Organizations) and synchronize CodeGen output.
+
 ## 5.34.0
 
 ### Minor Changes

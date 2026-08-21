@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-ng",
   "type": "module",
-  "version": "5.34.0",
+  "version": "5.35.0",
   "description": "BizApps Common Angular bootstrap - form components and module for the Common business entities Open App",
   "main": "dist/public-api.js",
   "types": "dist/public-api.d.ts",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@memberjunction/ng-graph-view": "6.1.0-edge.3",
     "@memberjunction/ng-hierarchy-tree": "6.1.0-edge.3",
-    "@mj-biz-apps/common-entities": "5.34.0"
+    "@mj-biz-apps/common-entities": "5.35.0"
   },
   "peerDependencies": {
     "@angular/animations": "^21.1.3",
