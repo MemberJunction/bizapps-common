@@ -45,7 +45,7 @@
             "ID": "@lookup:MJ: Entity Fields.Name=FirstName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-08-17T03:17:37.620Z",
+            "lastModified": "2026-08-24T20:06:03.203Z",
             "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
           }
         },
@@ -68,7 +68,7 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:40:37.970Z",
+      "lastModified": "2026-08-24T20:06:03.013Z",
       "checksum": "d8abd2c17935ca208a98ccc50a8485cf98f875bdd7211fdad4d11e3a7986d285"
     }
   },
@@ -91,7 +91,7 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
-      "lastModified": "2026-08-14T20:40:38.013Z",
+      "lastModified": "2026-08-24T20:06:03.082Z",
       "checksum": "7c882ce1e2b55e329a7335935982f952d4573e8355e69f3fb3420ff6287c3426"
     }
   },
@@ -111,7 +111,7 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities"
     },
     "sync": {
-      "lastModified": "2026-08-19T22:53:04.440Z",
+      "lastModified": "2026-08-24T20:06:03.051Z",
       "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
     }
   }

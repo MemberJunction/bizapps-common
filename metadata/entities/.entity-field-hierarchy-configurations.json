@@ -20,7 +20,7 @@
             "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations&Name=ParentID"
           },
           "sync": {
-            "lastModified": "2026-08-18T21:32:15.367Z",
+            "lastModified": "2026-08-24T20:06:03.293Z",
             "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
           }
         }
@@ -51,7 +51,7 @@
             "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Types&Name=ParentID"
           },
           "sync": {
-            "lastModified": "2026-08-18T21:32:15.396Z",
+            "lastModified": "2026-08-24T20:06:03.362Z",
             "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
           }
         }
@@ -82,7 +82,7 @@
             "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities&Name=ParentActivityID"
           },
           "sync": {
-            "lastModified": "2026-08-18T21:32:15.420Z",
+            "lastModified": "2026-08-24T20:06:03.330Z",
             "checksum": "c9d7f02681366f41bfee4d9aea7fcd14c0e8d47223c47f20891c562673cfefa1"
           }
         }
