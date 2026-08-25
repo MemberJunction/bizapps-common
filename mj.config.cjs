@@ -112,13 +112,19 @@ module.exports = {
   },
 
   newEntityDefaults: {
-    NameRulesBySchema: [{ SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
-{
-  SchemaName: 'Committees',
-  EntityNamePrefix: 'Committees: ',
-  EntityNameSuffix: '',
-}
-    ]
+    NameRulesBySchema: [
+      { SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
+      // BizApps family convention: prefix this app's entities so their MJ
+      // entity names are globally unambiguous, e.g. 'MJ_BizApps_Common: People'.
+      // Required before CodeGen on new tables (Activities) or they land unprefixed
+      // and metadata/ lookups for 'MJ_BizApps_Common: Activity Types' miss.
+      { SchemaName: '__mj_BizAppsCommon', EntityNamePrefix: 'MJ_BizApps_Common: ', EntityNameSuffix: '' },
+      {
+        SchemaName: 'Committees',
+        EntityNamePrefix: 'Committees: ',
+        EntityNameSuffix: '',
+      },
+    ],
   },
 
   // ---------------------------------------------------------------------------
@@ -140,7 +146,7 @@ module.exports = {
   // slightly backwards, but naming a schema that is absent is inert, and the alternative
   // is a footgun that only fires on multi-app databases.
   excludeSchemas: [
-    'sys', 'staging', 'dbo', '__mj',
+    'sys', 'staging', 'dbo', '__mj', '__mj_UDT',
     '__mj_BizAppsOrders', '__mj_BizAppsAccounting', '__mj_BizAppsTasks',
     '__mj_BizAppsIssues', '__mj_BizAppsForms', '__mj_BizAppsATS', '__mj_BizAppsCaliber',
     '__mj_BizAppsCommittees', '__mj_BizAppsMarketing', '__mj_BizAppsSecureMessaging',
