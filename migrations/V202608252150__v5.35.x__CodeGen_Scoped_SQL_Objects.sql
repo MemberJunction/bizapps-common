@@ -2,13 +2,13 @@
 -- Scoped CodeGen emit for __mj_BizAppsCommon (mj codegen --skipfiles with
 -- includeSchemas). Inspected: paired DROP+CREATE of common views; Activities
 -- EntityField.ID restored (fixes CONCAT() save-capture); vwOrganizationsGenerated
--- keeps RootParentID / GetHierarchyMeta. Joined-DB EntityField inserts for
--- Orders entities were stripped.
+-- keeps RootParentID / GetHierarchyMeta. Joined-DB EntityField inserts and cascade SQL for
+-- Orders were stripped. Heal EXECs use @IncludedSchemaNames.
 -- Source: migrations/codegen/CodeGen_Run_2026-08-25_21-03-04.sql
 -- =============================================================================
 
 /* SQL text to update existing entities from schema */
-EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 52 new entity field(s) */
 
@@ -1213,10 +1213,10 @@ EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='${
 
 
 /* SQL text to update existing entity fields from schema */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
-EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert entity field value with ID b3bbf531-de64-4de8-bccc-9006c967e7e4 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
@@ -1686,7 +1686,7 @@ UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='082DF2CA-E
    END;
 
 /* SQL text to sync schema info from database schemas */
-EXEC [${mjSchema}].[spUpdateSchemaInfoFromDatabase] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spUpdateSchemaInfoFromDatabase] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* Index for Foreign Keys for Activity */
 -----------------------------------------------------------------
@@ -4148,639 +4148,16 @@ CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteOrganization]
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- Cascade update on ContactMethod using cursor to call spUpdateContactMethod
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_PersonID uniqueidentifier
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_OrganizationID uniqueidentifier
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_ContactTypeID uniqueidentifier
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_Value nvarchar(500)
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_Label nvarchar(100)
-    DECLARE @mjBizAppsCommonContactMethods_OrganizationID_IsPrimary bit
-    DECLARE cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor CURSOR FOR
-        SELECT [ID], [PersonID], [OrganizationID], [ContactTypeID], [Value], [Label], [IsPrimary]
-        FROM [${flyway:defaultSchema}].[ContactMethod]
-        WHERE [OrganizationID] = @ID
+    -- CascadeDeletes is off for shipped Open App entities. Deleting an
+    -- Organization that still has ContactMethods / Relationships / child orgs
+    -- fails the FK — callers reassign or delete children first.
+    DELETE FROM [${flyway:defaultSchema}].[Organization]
+    WHERE [ID] = @ID
 
-    OPEN cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor INTO @mjBizAppsCommonContactMethods_OrganizationIDID, @mjBizAppsCommonContactMethods_OrganizationID_PersonID, @mjBizAppsCommonContactMethods_OrganizationID_OrganizationID, @mjBizAppsCommonContactMethods_OrganizationID_ContactTypeID, @mjBizAppsCommonContactMethods_OrganizationID_Value, @mjBizAppsCommonContactMethods_OrganizationID_Label, @mjBizAppsCommonContactMethods_OrganizationID_IsPrimary
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsCommonContactMethods_OrganizationID_OrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${flyway:defaultSchema}].[spUpdateContactMethod] @ID = @mjBizAppsCommonContactMethods_OrganizationIDID, @PersonID = @mjBizAppsCommonContactMethods_OrganizationID_PersonID, @OrganizationID_Clear = 1, @OrganizationID = @mjBizAppsCommonContactMethods_OrganizationID_OrganizationID, @ContactTypeID = @mjBizAppsCommonContactMethods_OrganizationID_ContactTypeID, @Value = @mjBizAppsCommonContactMethods_OrganizationID_Value, @Label = @mjBizAppsCommonContactMethods_OrganizationID_Label, @IsPrimary = @mjBizAppsCommonContactMethods_OrganizationID_IsPrimary
-
-        FETCH NEXT FROM cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor INTO @mjBizAppsCommonContactMethods_OrganizationIDID, @mjBizAppsCommonContactMethods_OrganizationID_PersonID, @mjBizAppsCommonContactMethods_OrganizationID_OrganizationID, @mjBizAppsCommonContactMethods_OrganizationID_ContactTypeID, @mjBizAppsCommonContactMethods_OrganizationID_Value, @mjBizAppsCommonContactMethods_OrganizationID_Label, @mjBizAppsCommonContactMethods_OrganizationID_IsPrimary
-    END
-
-    CLOSE cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsCommonContactMethods_OrganizationID_cursor
-    
-    -- Cascade update on Organization using cursor to call spUpdateOrganization
-    DECLARE @mjBizAppsCommonOrganizations_ParentIDID uniqueidentifier
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Name nvarchar(255)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_LegalName nvarchar(255)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_OrganizationTypeID uniqueidentifier
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_ParentID uniqueidentifier
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Website nvarchar(1000)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_LogoURL nvarchar(1000)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Description nvarchar(MAX)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Email nvarchar(255)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Phone nvarchar(50)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_FoundedDate date
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_TaxID nvarchar(50)
-    DECLARE @mjBizAppsCommonOrganizations_ParentID_Status nvarchar(50)
-    DECLARE cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor CURSOR FOR
-        SELECT [ID], [Name], [LegalName], [OrganizationTypeID], [ParentID], [Website], [LogoURL], [Description], [Email], [Phone], [FoundedDate], [TaxID], [Status]
-        FROM [${flyway:defaultSchema}].[Organization]
-        WHERE [ParentID] = @ID
-
-    OPEN cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor INTO @mjBizAppsCommonOrganizations_ParentIDID, @mjBizAppsCommonOrganizations_ParentID_Name, @mjBizAppsCommonOrganizations_ParentID_LegalName, @mjBizAppsCommonOrganizations_ParentID_OrganizationTypeID, @mjBizAppsCommonOrganizations_ParentID_ParentID, @mjBizAppsCommonOrganizations_ParentID_Website, @mjBizAppsCommonOrganizations_ParentID_LogoURL, @mjBizAppsCommonOrganizations_ParentID_Description, @mjBizAppsCommonOrganizations_ParentID_Email, @mjBizAppsCommonOrganizations_ParentID_Phone, @mjBizAppsCommonOrganizations_ParentID_FoundedDate, @mjBizAppsCommonOrganizations_ParentID_TaxID, @mjBizAppsCommonOrganizations_ParentID_Status
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsCommonOrganizations_ParentID_ParentID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${flyway:defaultSchema}].[spUpdateOrganization] @ID = @mjBizAppsCommonOrganizations_ParentIDID, @Name = @mjBizAppsCommonOrganizations_ParentID_Name, @LegalName = @mjBizAppsCommonOrganizations_ParentID_LegalName, @OrganizationTypeID = @mjBizAppsCommonOrganizations_ParentID_OrganizationTypeID, @ParentID_Clear = 1, @ParentID = @mjBizAppsCommonOrganizations_ParentID_ParentID, @Website = @mjBizAppsCommonOrganizations_ParentID_Website, @LogoURL = @mjBizAppsCommonOrganizations_ParentID_LogoURL, @Description = @mjBizAppsCommonOrganizations_ParentID_Description, @Email = @mjBizAppsCommonOrganizations_ParentID_Email, @Phone = @mjBizAppsCommonOrganizations_ParentID_Phone, @FoundedDate = @mjBizAppsCommonOrganizations_ParentID_FoundedDate, @TaxID = @mjBizAppsCommonOrganizations_ParentID_TaxID, @Status = @mjBizAppsCommonOrganizations_ParentID_Status
-
-        FETCH NEXT FROM cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor INTO @mjBizAppsCommonOrganizations_ParentIDID, @mjBizAppsCommonOrganizations_ParentID_Name, @mjBizAppsCommonOrganizations_ParentID_LegalName, @mjBizAppsCommonOrganizations_ParentID_OrganizationTypeID, @mjBizAppsCommonOrganizations_ParentID_ParentID, @mjBizAppsCommonOrganizations_ParentID_Website, @mjBizAppsCommonOrganizations_ParentID_LogoURL, @mjBizAppsCommonOrganizations_ParentID_Description, @mjBizAppsCommonOrganizations_ParentID_Email, @mjBizAppsCommonOrganizations_ParentID_Phone, @mjBizAppsCommonOrganizations_ParentID_FoundedDate, @mjBizAppsCommonOrganizations_ParentID_TaxID, @mjBizAppsCommonOrganizations_ParentID_Status
-    END
-
-    CLOSE cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor
-    DEALLOCATE cascade_update_mjBizAppsCommonOrganizations_ParentID_cursor
-    
-    -- Cascade update on Relationship using cursor to call spUpdateRelationship
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_RelationshipTypeID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_FromPersonID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_FromOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_ToPersonID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_ToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_Title nvarchar(255)
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_StartDate date
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_EndDate date
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_Status nvarchar(50)
-    DECLARE @mjBizAppsCommonRelationships_FromOrganizationID_Notes nvarchar(MAX)
-    DECLARE cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [RelationshipTypeID], [FromPersonID], [FromOrganizationID], [ToPersonID], [ToOrganizationID], [Title], [StartDate], [EndDate], [Status], [Notes]
-        FROM [${flyway:defaultSchema}].[Relationship]
-        WHERE [FromOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor INTO @mjBizAppsCommonRelationships_FromOrganizationIDID, @mjBizAppsCommonRelationships_FromOrganizationID_RelationshipTypeID, @mjBizAppsCommonRelationships_FromOrganizationID_FromPersonID, @mjBizAppsCommonRelationships_FromOrganizationID_FromOrganizationID, @mjBizAppsCommonRelationships_FromOrganizationID_ToPersonID, @mjBizAppsCommonRelationships_FromOrganizationID_ToOrganizationID, @mjBizAppsCommonRelationships_FromOrganizationID_Title, @mjBizAppsCommonRelationships_FromOrganizationID_StartDate, @mjBizAppsCommonRelationships_FromOrganizationID_EndDate, @mjBizAppsCommonRelationships_FromOrganizationID_Status, @mjBizAppsCommonRelationships_FromOrganizationID_Notes
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsCommonRelationships_FromOrganizationID_FromOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${flyway:defaultSchema}].[spUpdateRelationship] @ID = @mjBizAppsCommonRelationships_FromOrganizationIDID, @RelationshipTypeID = @mjBizAppsCommonRelationships_FromOrganizationID_RelationshipTypeID, @FromPersonID = @mjBizAppsCommonRelationships_FromOrganizationID_FromPersonID, @FromOrganizationID_Clear = 1, @FromOrganizationID = @mjBizAppsCommonRelationships_FromOrganizationID_FromOrganizationID, @ToPersonID = @mjBizAppsCommonRelationships_FromOrganizationID_ToPersonID, @ToOrganizationID = @mjBizAppsCommonRelationships_FromOrganizationID_ToOrganizationID, @Title = @mjBizAppsCommonRelationships_FromOrganizationID_Title, @StartDate = @mjBizAppsCommonRelationships_FromOrganizationID_StartDate, @EndDate = @mjBizAppsCommonRelationships_FromOrganizationID_EndDate, @Status = @mjBizAppsCommonRelationships_FromOrganizationID_Status, @Notes = @mjBizAppsCommonRelationships_FromOrganizationID_Notes
-
-        FETCH NEXT FROM cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor INTO @mjBizAppsCommonRelationships_FromOrganizationIDID, @mjBizAppsCommonRelationships_FromOrganizationID_RelationshipTypeID, @mjBizAppsCommonRelationships_FromOrganizationID_FromPersonID, @mjBizAppsCommonRelationships_FromOrganizationID_FromOrganizationID, @mjBizAppsCommonRelationships_FromOrganizationID_ToPersonID, @mjBizAppsCommonRelationships_FromOrganizationID_ToOrganizationID, @mjBizAppsCommonRelationships_FromOrganizationID_Title, @mjBizAppsCommonRelationships_FromOrganizationID_StartDate, @mjBizAppsCommonRelationships_FromOrganizationID_EndDate, @mjBizAppsCommonRelationships_FromOrganizationID_Status, @mjBizAppsCommonRelationships_FromOrganizationID_Notes
-    END
-
-    CLOSE cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsCommonRelationships_FromOrganizationID_cursor
-    
-    -- Cascade update on Relationship using cursor to call spUpdateRelationship
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_RelationshipTypeID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_FromPersonID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_FromOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_ToPersonID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_ToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_Title nvarchar(255)
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_StartDate date
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_EndDate date
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_Status nvarchar(50)
-    DECLARE @mjBizAppsCommonRelationships_ToOrganizationID_Notes nvarchar(MAX)
-    DECLARE cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [RelationshipTypeID], [FromPersonID], [FromOrganizationID], [ToPersonID], [ToOrganizationID], [Title], [StartDate], [EndDate], [Status], [Notes]
-        FROM [${flyway:defaultSchema}].[Relationship]
-        WHERE [ToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor INTO @mjBizAppsCommonRelationships_ToOrganizationIDID, @mjBizAppsCommonRelationships_ToOrganizationID_RelationshipTypeID, @mjBizAppsCommonRelationships_ToOrganizationID_FromPersonID, @mjBizAppsCommonRelationships_ToOrganizationID_FromOrganizationID, @mjBizAppsCommonRelationships_ToOrganizationID_ToPersonID, @mjBizAppsCommonRelationships_ToOrganizationID_ToOrganizationID, @mjBizAppsCommonRelationships_ToOrganizationID_Title, @mjBizAppsCommonRelationships_ToOrganizationID_StartDate, @mjBizAppsCommonRelationships_ToOrganizationID_EndDate, @mjBizAppsCommonRelationships_ToOrganizationID_Status, @mjBizAppsCommonRelationships_ToOrganizationID_Notes
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsCommonRelationships_ToOrganizationID_ToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${flyway:defaultSchema}].[spUpdateRelationship] @ID = @mjBizAppsCommonRelationships_ToOrganizationIDID, @RelationshipTypeID = @mjBizAppsCommonRelationships_ToOrganizationID_RelationshipTypeID, @FromPersonID = @mjBizAppsCommonRelationships_ToOrganizationID_FromPersonID, @FromOrganizationID = @mjBizAppsCommonRelationships_ToOrganizationID_FromOrganizationID, @ToPersonID = @mjBizAppsCommonRelationships_ToOrganizationID_ToPersonID, @ToOrganizationID_Clear = 1, @ToOrganizationID = @mjBizAppsCommonRelationships_ToOrganizationID_ToOrganizationID, @Title = @mjBizAppsCommonRelationships_ToOrganizationID_Title, @StartDate = @mjBizAppsCommonRelationships_ToOrganizationID_StartDate, @EndDate = @mjBizAppsCommonRelationships_ToOrganizationID_EndDate, @Status = @mjBizAppsCommonRelationships_ToOrganizationID_Status, @Notes = @mjBizAppsCommonRelationships_ToOrganizationID_Notes
-
-        FETCH NEXT FROM cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor INTO @mjBizAppsCommonRelationships_ToOrganizationIDID, @mjBizAppsCommonRelationships_ToOrganizationID_RelationshipTypeID, @mjBizAppsCommonRelationships_ToOrganizationID_FromPersonID, @mjBizAppsCommonRelationships_ToOrganizationID_FromOrganizationID, @mjBizAppsCommonRelationships_ToOrganizationID_ToPersonID, @mjBizAppsCommonRelationships_ToOrganizationID_ToOrganizationID, @mjBizAppsCommonRelationships_ToOrganizationID_Title, @mjBizAppsCommonRelationships_ToOrganizationID_StartDate, @mjBizAppsCommonRelationships_ToOrganizationID_EndDate, @mjBizAppsCommonRelationships_ToOrganizationID_Status, @mjBizAppsCommonRelationships_ToOrganizationID_Notes
-    END
-
-    CLOSE cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsCommonRelationships_ToOrganizationID_cursor
-    
-    -- Cascade update on CustomerPaymentMethod using cursor to call spUpdateCustomerPaymentMethod
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_PaymentDetailID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_Nickname nvarchar(100)
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsDefault bit
-    DECLARE @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsActive bit
-    DECLARE cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [OwnerPersonID], [OwnerOrganizationID], [PaymentDetailID], [Nickname], [IsDefault], [IsActive]
-        FROM [${mjSchema}_BizAppsOrders].[CustomerPaymentMethod]
-        WHERE [OwnerOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor INTO @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationIDID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerPersonID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerOrganizationID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_PaymentDetailID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_Nickname, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsDefault, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsActive
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateCustomerPaymentMethod] @ID = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationIDID, @OwnerPersonID = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerPersonID, @OwnerOrganizationID_Clear = 1, @OwnerOrganizationID = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerOrganizationID, @PaymentDetailID = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_PaymentDetailID, @Nickname = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_Nickname, @IsDefault = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsDefault, @IsActive = @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsActive
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor INTO @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationIDID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerPersonID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_OwnerOrganizationID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_PaymentDetailID, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_Nickname, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsDefault, @mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_IsActive
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersCustomerPaymentMethods_OwnerOrganizationID_cursor
-    
-    -- Cascade update on CustomerTaxExemption using cursor to call spUpdateCustomerTaxExemption
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_OrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_PersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxJurisdictionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxCategory nvarchar(50)
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_ExemptionType nvarchar(30)
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateRef nvarchar(200)
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateIssuedAt date
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateExpiresAt date
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_StartedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_EndedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Status nvarchar(10)
-    DECLARE @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Comments nvarchar(MAX)
-    DECLARE cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor CURSOR FOR
-        SELECT [ID], [OrganizationID], [PersonID], [TaxJurisdictionID], [TaxCategory], [ExemptionType], [CertificateRef], [CertificateIssuedAt], [CertificateExpiresAt], [StartedAt], [EndedAt], [Status], [Comments]
-        FROM [${mjSchema}_BizAppsOrders].[CustomerTaxExemption]
-        WHERE [OrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor INTO @mjBizAppsOrdersCustomerTaxExemptions_OrganizationIDID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_OrganizationID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_PersonID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxJurisdictionID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxCategory, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_ExemptionType, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateRef, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateIssuedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateExpiresAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_StartedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_EndedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Status, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Comments
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_OrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateCustomerTaxExemption] @ID = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationIDID, @OrganizationID_Clear = 1, @OrganizationID = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_OrganizationID, @PersonID = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_PersonID, @TaxJurisdictionID = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxJurisdictionID, @TaxCategory = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxCategory, @ExemptionType = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_ExemptionType, @CertificateRef = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateRef, @CertificateIssuedAt = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateIssuedAt, @CertificateExpiresAt = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateExpiresAt, @StartedAt = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_StartedAt, @EndedAt = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_EndedAt, @Status = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Status, @Comments = @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Comments
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor INTO @mjBizAppsOrdersCustomerTaxExemptions_OrganizationIDID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_OrganizationID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_PersonID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxJurisdictionID, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_TaxCategory, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_ExemptionType, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateRef, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateIssuedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_CertificateExpiresAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_StartedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_EndedAt, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Status, @mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_Comments
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersCustomerTaxExemptions_OrganizationID_cursor
-    
-    -- Cascade update on EntitlementGrant using cursor to call spUpdateEntitlementGrant
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProductEntitlementID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_OrderLineID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Quantity decimal(18, 4)
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidFrom datetimeoffset
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidTo datetimeoffset
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProvisionedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidityModeApplied nvarchar(20)
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionTermID uniqueidentifier
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevokedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevocationReason nvarchar(300)
-    DECLARE cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [ProductEntitlementID], [OrderLineID], [SubscriptionID], [BeneficiaryPersonID], [BeneficiaryOrganizationID], [Quantity], [ValidFrom], [ValidTo], [Status], [ProvisionedAt], [ValidityModeApplied], [SubscriptionTermID], [RevokedAt], [RevocationReason]
-        FROM [${mjSchema}_BizAppsOrders].[EntitlementGrant]
-        WHERE [BeneficiaryOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor INTO @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationIDID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProductEntitlementID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_OrderLineID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Quantity, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidFrom, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidTo, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Status, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProvisionedAt, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidityModeApplied, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionTermID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevokedAt, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevocationReason
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateEntitlementGrant] @ID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationIDID, @ProductEntitlementID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProductEntitlementID, @OrderLineID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_OrderLineID, @SubscriptionID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionID, @BeneficiaryPersonID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryPersonID, @BeneficiaryOrganizationID_Clear = 1, @BeneficiaryOrganizationID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @Quantity = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Quantity, @ValidFrom = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidFrom, @ValidTo = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidTo, @Status = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Status, @ProvisionedAt = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProvisionedAt, @ValidityModeApplied = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidityModeApplied, @SubscriptionTermID = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionTermID, @RevokedAt = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevokedAt, @RevocationReason = @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevocationReason
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor INTO @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationIDID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProductEntitlementID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_OrderLineID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Quantity, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidFrom, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidTo, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_Status, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ProvisionedAt, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_ValidityModeApplied, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_SubscriptionTermID, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevokedAt, @mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_RevocationReason
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersEntitlementGrants_BeneficiaryOrganizationID_cursor
-    
-    -- Cascade update on OrderHeader using cursor to call spUpdateOrderHeader
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderNumber nvarchar(40)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderType nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_CompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SalesRepUserID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToAddressID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToAddressID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PaymentTermsTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_TotalGross decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_AmountPaid decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Balance decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_DueDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ExternalDocumentNumber nvarchar(80)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentDetailID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedByUserID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversesOrderHeaderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversalReason nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_RequestedDeliveryDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ApprovalTaskID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Description nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Notes nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ConfirmedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_FulfillmentStatus nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Origin nvarchar(50)
-    DECLARE @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SourceCheckoutWidgetID uniqueidentifier
-    DECLARE cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [OrderNumber], [OrderType], [OrderDate], [Status], [CompanyID], [BillToPersonID], [BillToOrganizationID], [SalesRepUserID], [BillToAddressID], [ShipToAddressID], [ShipToOrganizationID], [ShipToPersonID], [PaymentTermsTypeID], [TotalGross], [AmountPaid], [Balance], [DueDate], [ExternalDocumentNumber], [InitialPaymentTypeID], [InitialPaymentAmount], [InitialPaymentDetailID], [PostedAt], [PostedByUserID], [ReversesOrderHeaderID], [ReversalReason], [RequestedDeliveryDate], [ApprovalTaskID], [Description], [Notes], [ConfirmedAt], [FulfillmentStatus], [Origin], [SourceCheckoutWidgetID]
-        FROM [${mjSchema}_BizAppsOrders].[OrderHeader]
-        WHERE [BillToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor INTO @mjBizAppsOrdersOrderHeaders_BillToOrganizationIDID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderNumber, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderType, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Status, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_CompanyID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SalesRepUserID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToAddressID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PaymentTermsTypeID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_TotalGross, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_AmountPaid, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Balance, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_DueDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ExternalDocumentNumber, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentTypeID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentAmount, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentDetailID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedAt, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedByUserID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversesOrderHeaderID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversalReason, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_RequestedDeliveryDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ApprovalTaskID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Description, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Notes, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ConfirmedAt, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Origin, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SourceCheckoutWidgetID
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateOrderHeader] @ID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationIDID, @OrderNumber = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderNumber, @OrderType = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderType, @OrderDate = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderDate, @Status = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Status, @CompanyID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_CompanyID, @BillToPersonID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToPersonID, @BillToOrganizationID_Clear = 1, @BillToOrganizationID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToOrganizationID, @SalesRepUserID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SalesRepUserID, @BillToAddressID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToAddressID, @ShipToAddressID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToAddressID, @ShipToOrganizationID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToOrganizationID, @ShipToPersonID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToPersonID, @PaymentTermsTypeID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PaymentTermsTypeID, @TotalGross = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_TotalGross, @AmountPaid = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_AmountPaid, @Balance = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Balance, @DueDate = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_DueDate, @ExternalDocumentNumber = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ExternalDocumentNumber, @InitialPaymentTypeID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentTypeID, @InitialPaymentAmount = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentAmount, @InitialPaymentDetailID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentDetailID, @PostedAt = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedAt, @PostedByUserID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedByUserID, @ReversesOrderHeaderID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversesOrderHeaderID, @ReversalReason = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversalReason, @RequestedDeliveryDate = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_RequestedDeliveryDate, @ApprovalTaskID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ApprovalTaskID, @Description = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Description, @Notes = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Notes, @ConfirmedAt = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ConfirmedAt, @FulfillmentStatus = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_FulfillmentStatus, @Origin = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Origin, @SourceCheckoutWidgetID = @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SourceCheckoutWidgetID
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor INTO @mjBizAppsOrdersOrderHeaders_BillToOrganizationIDID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderNumber, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderType, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_OrderDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Status, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_CompanyID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SalesRepUserID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_BillToAddressID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PaymentTermsTypeID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_TotalGross, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_AmountPaid, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Balance, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_DueDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ExternalDocumentNumber, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentTypeID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentAmount, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_InitialPaymentDetailID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedAt, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_PostedByUserID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversesOrderHeaderID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ReversalReason, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_RequestedDeliveryDate, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ApprovalTaskID, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Description, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Notes, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_ConfirmedAt, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_Origin, @mjBizAppsOrdersOrderHeaders_BillToOrganizationID_SourceCheckoutWidgetID
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersOrderHeaders_BillToOrganizationID_cursor
-    
-    -- Cascade update on OrderHeader using cursor to call spUpdateOrderHeader
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderNumber nvarchar(40)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderType nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_CompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SalesRepUserID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToAddressID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToAddressID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PaymentTermsTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_TotalGross decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_AmountPaid decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Balance decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_DueDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ExternalDocumentNumber nvarchar(80)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentDetailID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedByUserID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversesOrderHeaderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversalReason nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_RequestedDeliveryDate date
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ApprovalTaskID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Description nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Notes nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ConfirmedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_FulfillmentStatus nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Origin nvarchar(50)
-    DECLARE @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SourceCheckoutWidgetID uniqueidentifier
-    DECLARE cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [OrderNumber], [OrderType], [OrderDate], [Status], [CompanyID], [BillToPersonID], [BillToOrganizationID], [SalesRepUserID], [BillToAddressID], [ShipToAddressID], [ShipToOrganizationID], [ShipToPersonID], [PaymentTermsTypeID], [TotalGross], [AmountPaid], [Balance], [DueDate], [ExternalDocumentNumber], [InitialPaymentTypeID], [InitialPaymentAmount], [InitialPaymentDetailID], [PostedAt], [PostedByUserID], [ReversesOrderHeaderID], [ReversalReason], [RequestedDeliveryDate], [ApprovalTaskID], [Description], [Notes], [ConfirmedAt], [FulfillmentStatus], [Origin], [SourceCheckoutWidgetID]
-        FROM [${mjSchema}_BizAppsOrders].[OrderHeader]
-        WHERE [ShipToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor INTO @mjBizAppsOrdersOrderHeaders_ShipToOrganizationIDID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderNumber, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderType, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Status, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_CompanyID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToPersonID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SalesRepUserID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToAddressID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PaymentTermsTypeID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_TotalGross, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_AmountPaid, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Balance, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_DueDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ExternalDocumentNumber, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentTypeID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentAmount, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentDetailID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedAt, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedByUserID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversesOrderHeaderID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversalReason, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_RequestedDeliveryDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ApprovalTaskID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Description, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Notes, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ConfirmedAt, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Origin, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SourceCheckoutWidgetID
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateOrderHeader] @ID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationIDID, @OrderNumber = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderNumber, @OrderType = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderType, @OrderDate = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderDate, @Status = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Status, @CompanyID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_CompanyID, @BillToPersonID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToPersonID, @BillToOrganizationID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToOrganizationID, @SalesRepUserID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SalesRepUserID, @BillToAddressID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToAddressID, @ShipToAddressID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToAddressID, @ShipToOrganizationID_Clear = 1, @ShipToOrganizationID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToOrganizationID, @ShipToPersonID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToPersonID, @PaymentTermsTypeID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PaymentTermsTypeID, @TotalGross = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_TotalGross, @AmountPaid = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_AmountPaid, @Balance = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Balance, @DueDate = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_DueDate, @ExternalDocumentNumber = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ExternalDocumentNumber, @InitialPaymentTypeID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentTypeID, @InitialPaymentAmount = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentAmount, @InitialPaymentDetailID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentDetailID, @PostedAt = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedAt, @PostedByUserID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedByUserID, @ReversesOrderHeaderID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversesOrderHeaderID, @ReversalReason = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversalReason, @RequestedDeliveryDate = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_RequestedDeliveryDate, @ApprovalTaskID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ApprovalTaskID, @Description = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Description, @Notes = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Notes, @ConfirmedAt = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ConfirmedAt, @FulfillmentStatus = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_FulfillmentStatus, @Origin = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Origin, @SourceCheckoutWidgetID = @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SourceCheckoutWidgetID
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor INTO @mjBizAppsOrdersOrderHeaders_ShipToOrganizationIDID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderNumber, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderType, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_OrderDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Status, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_CompanyID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToPersonID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SalesRepUserID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_BillToAddressID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PaymentTermsTypeID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_TotalGross, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_AmountPaid, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Balance, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_DueDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ExternalDocumentNumber, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentTypeID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentAmount, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_InitialPaymentDetailID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedAt, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_PostedByUserID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversesOrderHeaderID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ReversalReason, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_RequestedDeliveryDate, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ApprovalTaskID, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Description, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Notes, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_ConfirmedAt, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_Origin, @mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_SourceCheckoutWidgetID
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersOrderHeaders_ShipToOrganizationID_cursor
-    
-    -- Cascade update on OrderLine using cursor to call spUpdateOrderLine
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_OrderHeaderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_CompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineNumber int
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Quantity decimal(18, 4)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_UnitPrice decimal(19, 4)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductPriceID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountPct decimal(7, 4)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountAmount decimal(19, 4)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalNet decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ChargeAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTax decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalGross decimal(18, 2)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToAddressID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_RenewsSubscriptionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodStart date
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodEnd date
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_FulfillmentStatus nvarchar(20)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ReversesOrderLineID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SourceBundleProductID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ParentOrderLineID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsRollupParent bit
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsQuantityOverridden bit
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SubscriptionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Description nvarchar(500)
-    DECLARE @mjBizAppsOrdersOrderLines_ShipToOrganizationID_JournalEntryID uniqueidentifier
-    DECLARE cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [OrderHeaderID], [ProductID], [CompanyID], [LineNumber], [Quantity], [UnitPrice], [ProductPriceID], [DiscountPct], [DiscountAmount], [LineTotalNet], [ChargeAmount], [LineTax], [LineTotalGross], [ShipToAddressID], [ShipToOrganizationID], [ShipToPersonID], [RenewsSubscriptionID], [ServicePeriodStart], [ServicePeriodEnd], [FulfillmentStatus], [ReversesOrderLineID], [SourceBundleProductID], [ParentOrderLineID], [IsRollupParent], [IsQuantityOverridden], [SubscriptionID], [Description], [JournalEntryID]
-        FROM [${mjSchema}_BizAppsOrders].[OrderLine]
-        WHERE [ShipToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor INTO @mjBizAppsOrdersOrderLines_ShipToOrganizationIDID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_OrderHeaderID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_CompanyID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineNumber, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Quantity, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_UnitPrice, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductPriceID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountPct, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountAmount, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalNet, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ChargeAmount, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTax, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalGross, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_RenewsSubscriptionID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodStart, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodEnd, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ReversesOrderLineID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SourceBundleProductID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ParentOrderLineID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsRollupParent, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsQuantityOverridden, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SubscriptionID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Description, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_JournalEntryID
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateOrderLine] @ID = @mjBizAppsOrdersOrderLines_ShipToOrganizationIDID, @OrderHeaderID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_OrderHeaderID, @ProductID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductID, @CompanyID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_CompanyID, @LineNumber = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineNumber, @Quantity = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Quantity, @UnitPrice = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_UnitPrice, @ProductPriceID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductPriceID, @DiscountPct = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountPct, @DiscountAmount = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountAmount, @LineTotalNet = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalNet, @ChargeAmount = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ChargeAmount, @LineTax = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTax, @LineTotalGross = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalGross, @ShipToAddressID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToAddressID, @ShipToOrganizationID_Clear = 1, @ShipToOrganizationID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToOrganizationID, @ShipToPersonID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToPersonID, @RenewsSubscriptionID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_RenewsSubscriptionID, @ServicePeriodStart = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodStart, @ServicePeriodEnd = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodEnd, @FulfillmentStatus = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_FulfillmentStatus, @ReversesOrderLineID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ReversesOrderLineID, @SourceBundleProductID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SourceBundleProductID, @ParentOrderLineID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ParentOrderLineID, @IsRollupParent = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsRollupParent, @IsQuantityOverridden = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsQuantityOverridden, @SubscriptionID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SubscriptionID, @Description = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Description, @JournalEntryID = @mjBizAppsOrdersOrderLines_ShipToOrganizationID_JournalEntryID
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor INTO @mjBizAppsOrdersOrderLines_ShipToOrganizationIDID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_OrderHeaderID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_CompanyID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineNumber, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Quantity, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_UnitPrice, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ProductPriceID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountPct, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_DiscountAmount, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalNet, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ChargeAmount, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTax, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_LineTotalGross, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToAddressID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToOrganizationID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ShipToPersonID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_RenewsSubscriptionID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodStart, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ServicePeriodEnd, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_FulfillmentStatus, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ReversesOrderLineID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SourceBundleProductID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_ParentOrderLineID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsRollupParent, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_IsQuantityOverridden, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_SubscriptionID, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_Description, @mjBizAppsOrdersOrderLines_ShipToOrganizationID_JournalEntryID
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersOrderLines_ShipToOrganizationID_cursor
-    
-    -- Cascade update on PaymentHeader using cursor to call spUpdatePaymentHeader
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentNumber nvarchar(40)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReceivingCompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDate date
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Amount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProcessingFeeAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_NetAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentProviderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentIntentID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDetailID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderChargeID nvarchar(100)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderRefundID nvarchar(100)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversesPaymentHeaderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversalReason nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_JournalEntryID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Description nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Notes nvarchar(MAX)
-    DECLARE @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_IdempotencyKey nvarchar(200)
-    DECLARE cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [PaymentNumber], [ReceivingCompanyID], [BillToPersonID], [BillToOrganizationID], [PaymentDate], [PaymentTypeID], [Amount], [ProcessingFeeAmount], [NetAmount], [PaymentProviderID], [PaymentIntentID], [PaymentDetailID], [ProviderChargeID], [ProviderRefundID], [ReversesPaymentHeaderID], [ReversalReason], [Status], [JournalEntryID], [Description], [Notes], [IdempotencyKey]
-        FROM [${mjSchema}_BizAppsOrders].[PaymentHeader]
-        WHERE [BillToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor INTO @mjBizAppsOrdersPaymentHeaders_BillToOrganizationIDID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentNumber, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReceivingCompanyID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDate, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentTypeID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Amount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProcessingFeeAmount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_NetAmount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentProviderID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentIntentID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDetailID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderChargeID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderRefundID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversesPaymentHeaderID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversalReason, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Status, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_JournalEntryID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Description, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Notes, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_IdempotencyKey
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdatePaymentHeader] @ID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationIDID, @PaymentNumber = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentNumber, @ReceivingCompanyID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReceivingCompanyID, @BillToPersonID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToPersonID, @BillToOrganizationID_Clear = 1, @BillToOrganizationID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToOrganizationID, @PaymentDate = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDate, @PaymentTypeID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentTypeID, @Amount = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Amount, @ProcessingFeeAmount = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProcessingFeeAmount, @NetAmount = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_NetAmount, @PaymentProviderID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentProviderID, @PaymentIntentID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentIntentID, @PaymentDetailID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDetailID, @ProviderChargeID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderChargeID, @ProviderRefundID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderRefundID, @ReversesPaymentHeaderID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversesPaymentHeaderID, @ReversalReason = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversalReason, @Status = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Status, @JournalEntryID = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_JournalEntryID, @Description = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Description, @Notes = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Notes, @IdempotencyKey = @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_IdempotencyKey
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor INTO @mjBizAppsOrdersPaymentHeaders_BillToOrganizationIDID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentNumber, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReceivingCompanyID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDate, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentTypeID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Amount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProcessingFeeAmount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_NetAmount, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentProviderID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentIntentID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_PaymentDetailID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderChargeID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ProviderRefundID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversesPaymentHeaderID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_ReversalReason, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Status, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_JournalEntryID, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Description, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_Notes, @mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_IdempotencyKey
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersPaymentHeaders_BillToOrganizationID_cursor
-    
-    -- Cascade update on PaymentIntent using cursor to call spUpdatePaymentIntent
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_PaymentProviderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderIntentID nvarchar(100)
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Status nvarchar(30)
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Amount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_OrderHeaderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderEventID nvarchar(100)
-    DECLARE @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_LastEventAt datetimeoffset
-    DECLARE cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [PaymentProviderID], [ProviderIntentID], [Status], [Amount], [OrderHeaderID], [BillToPersonID], [BillToOrganizationID], [ProviderEventID], [LastEventAt]
-        FROM [${mjSchema}_BizAppsOrders].[PaymentIntent]
-        WHERE [BillToOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor INTO @mjBizAppsOrdersPaymentIntents_BillToOrganizationIDID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_PaymentProviderID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderIntentID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Status, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Amount, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_OrderHeaderID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderEventID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_LastEventAt
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdatePaymentIntent] @ID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationIDID, @PaymentProviderID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_PaymentProviderID, @ProviderIntentID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderIntentID, @Status = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Status, @Amount = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Amount, @OrderHeaderID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_OrderHeaderID, @BillToPersonID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToPersonID, @BillToOrganizationID_Clear = 1, @BillToOrganizationID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToOrganizationID, @ProviderEventID = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderEventID, @LastEventAt = @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_LastEventAt
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor INTO @mjBizAppsOrdersPaymentIntents_BillToOrganizationIDID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_PaymentProviderID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderIntentID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Status, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_Amount, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_OrderHeaderID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToPersonID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_BillToOrganizationID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_ProviderEventID, @mjBizAppsOrdersPaymentIntents_BillToOrganizationID_LastEventAt
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersPaymentIntents_BillToOrganizationID_cursor
-    
-    -- Cascade update on PriceListAssignment using cursor to call spUpdatePriceListAssignment
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_PriceListID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_OrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_PersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_Priority int
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_StartedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_EndedAt datetimeoffset
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_Status nvarchar(10)
-    DECLARE @mjBizAppsOrdersPriceListAssignments_OrganizationID_Comments nvarchar(MAX)
-    DECLARE cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor CURSOR FOR
-        SELECT [ID], [PriceListID], [OrganizationID], [PersonID], [Priority], [StartedAt], [EndedAt], [Status], [Comments]
-        FROM [${mjSchema}_BizAppsOrders].[PriceListAssignment]
-        WHERE [OrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor INTO @mjBizAppsOrdersPriceListAssignments_OrganizationIDID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_PriceListID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_OrganizationID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_PersonID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Priority, @mjBizAppsOrdersPriceListAssignments_OrganizationID_StartedAt, @mjBizAppsOrdersPriceListAssignments_OrganizationID_EndedAt, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Status, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Comments
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersPriceListAssignments_OrganizationID_OrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdatePriceListAssignment] @ID = @mjBizAppsOrdersPriceListAssignments_OrganizationIDID, @PriceListID = @mjBizAppsOrdersPriceListAssignments_OrganizationID_PriceListID, @OrganizationID_Clear = 1, @OrganizationID = @mjBizAppsOrdersPriceListAssignments_OrganizationID_OrganizationID, @PersonID = @mjBizAppsOrdersPriceListAssignments_OrganizationID_PersonID, @Priority = @mjBizAppsOrdersPriceListAssignments_OrganizationID_Priority, @StartedAt = @mjBizAppsOrdersPriceListAssignments_OrganizationID_StartedAt, @EndedAt = @mjBizAppsOrdersPriceListAssignments_OrganizationID_EndedAt, @Status = @mjBizAppsOrdersPriceListAssignments_OrganizationID_Status, @Comments = @mjBizAppsOrdersPriceListAssignments_OrganizationID_Comments
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor INTO @mjBizAppsOrdersPriceListAssignments_OrganizationIDID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_PriceListID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_OrganizationID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_PersonID, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Priority, @mjBizAppsOrdersPriceListAssignments_OrganizationID_StartedAt, @mjBizAppsOrdersPriceListAssignments_OrganizationID_EndedAt, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Status, @mjBizAppsOrdersPriceListAssignments_OrganizationID_Comments
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersPriceListAssignments_OrganizationID_cursor
-    
-    -- Cascade update on PromotionCode using cursor to call spUpdatePromotionCode
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_PromotionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Code nvarchar(60)
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_MaxRedemptions int
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveFrom datetimeoffset
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveTo datetimeoffset
-    DECLARE @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Status nvarchar(10)
-    DECLARE cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [PromotionID], [Code], [MaxRedemptions], [AssignedOrganizationID], [AssignedPersonID], [EffectiveFrom], [EffectiveTo], [Status]
-        FROM [${mjSchema}_BizAppsOrders].[PromotionCode]
-        WHERE [AssignedOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor INTO @mjBizAppsOrdersPromotionCodes_AssignedOrganizationIDID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_PromotionID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Code, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_MaxRedemptions, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedOrganizationID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedPersonID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveFrom, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveTo, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Status
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdatePromotionCode] @ID = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationIDID, @PromotionID = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_PromotionID, @Code = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Code, @MaxRedemptions = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_MaxRedemptions, @AssignedOrganizationID_Clear = 1, @AssignedOrganizationID = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedOrganizationID, @AssignedPersonID = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedPersonID, @EffectiveFrom = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveFrom, @EffectiveTo = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveTo, @Status = @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Status
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor INTO @mjBizAppsOrdersPromotionCodes_AssignedOrganizationIDID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_PromotionID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Code, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_MaxRedemptions, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedOrganizationID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_AssignedPersonID, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveFrom, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_EffectiveTo, @mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_Status
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersPromotionCodes_AssignedOrganizationID_cursor
-    
-    -- Cascade update on StoredValueAccount using cursor to call spUpdateStoredValueAccount
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Code nvarchar(60)
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuingCompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_InitialAmount decimal(18, 2)
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_CurrentBalance decimal(18, 2)
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuedFromOrderLineID uniqueidentifier
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_ExpiresAt date
-    DECLARE cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [Code], [IssuingCompanyID], [InitialAmount], [CurrentBalance], [Status], [IssuedFromOrderLineID], [BeneficiaryPersonID], [BeneficiaryOrganizationID], [ExpiresAt]
-        FROM [${mjSchema}_BizAppsOrders].[StoredValueAccount]
-        WHERE [BeneficiaryOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor INTO @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationIDID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Code, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuingCompanyID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_InitialAmount, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_CurrentBalance, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Status, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuedFromOrderLineID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_ExpiresAt
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateStoredValueAccount] @ID = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationIDID, @Code = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Code, @IssuingCompanyID = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuingCompanyID, @InitialAmount = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_InitialAmount, @CurrentBalance = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_CurrentBalance, @Status = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Status, @IssuedFromOrderLineID = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuedFromOrderLineID, @BeneficiaryPersonID = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryPersonID, @BeneficiaryOrganizationID_Clear = 1, @BeneficiaryOrganizationID = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @ExpiresAt = @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_ExpiresAt
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor INTO @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationIDID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Code, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuingCompanyID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_InitialAmount, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_CurrentBalance, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_Status, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_IssuedFromOrderLineID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_BeneficiaryOrganizationID, @mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_ExpiresAt
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersStoredValueAccounts_BeneficiaryOrganizationID_cursor
-    
-    -- Cascade update on Subscription using cursor to call spUpdateSubscription
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationIDID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionNumber nvarchar(40)
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CompanyID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_OrderLineID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionTypeID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProductID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_HolderOrganizationID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_BeneficiaryPersonID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_Status nvarchar(20)
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_StartDate date
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_TrialEndDate date
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CanceledAt datetimeoffset
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_EndDate date
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_AutoRenew bit
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_RenewalLeadDays int
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_PaymentProviderID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProviderSubscriptionID nvarchar(100)
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesFromSubscriptionID uniqueidentifier
-    DECLARE @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesToSubscriptionID uniqueidentifier
-    DECLARE cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor CURSOR FOR
-        SELECT [ID], [SubscriptionNumber], [CompanyID], [OrderLineID], [SubscriptionTypeID], [ProductID], [HolderOrganizationID], [BeneficiaryPersonID], [Status], [StartDate], [TrialEndDate], [CanceledAt], [EndDate], [AutoRenew], [RenewalLeadDays], [PaymentProviderID], [ProviderSubscriptionID], [MigratesFromSubscriptionID], [MigratesToSubscriptionID]
-        FROM [${mjSchema}_BizAppsOrders].[Subscription]
-        WHERE [HolderOrganizationID] = @ID
-
-    OPEN cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor
-    FETCH NEXT FROM cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor INTO @mjBizAppsOrdersSubscriptions_HolderOrganizationIDID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionNumber, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CompanyID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_OrderLineID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionTypeID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProductID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_HolderOrganizationID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_Status, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_StartDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_TrialEndDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CanceledAt, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_EndDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_AutoRenew, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_RenewalLeadDays, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_PaymentProviderID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProviderSubscriptionID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesFromSubscriptionID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesToSubscriptionID
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Set the FK field to NULL
-        SET @mjBizAppsOrdersSubscriptions_HolderOrganizationID_HolderOrganizationID = NULL
-
-        -- Call the update SP for the related entity
-        EXEC [${mjSchema}_BizAppsOrders].[spUpdateSubscription] @ID = @mjBizAppsOrdersSubscriptions_HolderOrganizationIDID, @SubscriptionNumber = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionNumber, @CompanyID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CompanyID, @OrderLineID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_OrderLineID, @SubscriptionTypeID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionTypeID, @ProductID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProductID, @HolderOrganizationID_Clear = 1, @HolderOrganizationID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_HolderOrganizationID, @BeneficiaryPersonID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_BeneficiaryPersonID, @Status = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_Status, @StartDate = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_StartDate, @TrialEndDate = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_TrialEndDate, @CanceledAt = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CanceledAt, @EndDate = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_EndDate, @AutoRenew = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_AutoRenew, @RenewalLeadDays = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_RenewalLeadDays, @PaymentProviderID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_PaymentProviderID, @ProviderSubscriptionID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProviderSubscriptionID, @MigratesFromSubscriptionID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesFromSubscriptionID, @MigratesToSubscriptionID = @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesToSubscriptionID
-
-        FETCH NEXT FROM cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor INTO @mjBizAppsOrdersSubscriptions_HolderOrganizationIDID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionNumber, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CompanyID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_OrderLineID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_SubscriptionTypeID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProductID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_HolderOrganizationID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_BeneficiaryPersonID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_Status, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_StartDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_TrialEndDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_CanceledAt, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_EndDate, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_AutoRenew, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_RenewalLeadDays, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_PaymentProviderID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_ProviderSubscriptionID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesFromSubscriptionID, @mjBizAppsOrdersSubscriptions_HolderOrganizationID_MigratesToSubscriptionID
-    END
-
-    CLOSE cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor
-    DEALLOCATE cascade_update_mjBizAppsOrdersSubscriptions_HolderOrganizationID_cursor
-    
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[Organization]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
     IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+        SELECT NULL AS [ID]
     ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+        SELECT @ID AS [ID]
 END
 GO
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteOrganization] TO [cdp_Integration];
@@ -5117,7 +4494,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteRelationship] TO [cdp_Integr
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteRelationship] TO [cdp_Integration];
 
 /* SQL text to delete unneeded entity fields (17 scoped entities) */
-EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys', @EntityIDs='C2F418C4-8239-4486-B036-0BC4EAE4D24E,72E55425-8822-4E70-A075-116219CA5A5D,83A06268-2C96-400F-9CC8-21EEEF6654D1,8936D4D1-EB07-4EE8-A7AC-24131A1C48A8,FC529BC8-FF09-44A9-B454-26EAFDAC791B,4B5B0D73-496E-4CFA-92B9-3299A1E29E17,C96F379A-3E15-4DE5-BA94-4ECC90960C6D,EC59C50D-92BD-4247-80B1-51139BE93D35,66D82C24-9C9F-4CD6-B019-53C20274AB00,EB009F74-F4C5-4596-86C3-5893B9453200,7D7C4D5F-E410-4803-9762-A060C536C098,572AC8CE-8446-418B-979A-A7EE4E1F5AFD,CE97BF15-F7C6-4C50-A744-A89C714A4DDD,9E638C8F-6447-45D9-9137-B24E1047BCE5,22E31028-E862-424B-8C10-C167B2C9E304,21B78371-132C-4507-AED8-D44E366468F2,E9B55146-3351-440C-AD47-FD4DE05BDA05';
+EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='sys,staging', @EntityIDs='C2F418C4-8239-4486-B036-0BC4EAE4D24E,72E55425-8822-4E70-A075-116219CA5A5D,83A06268-2C96-400F-9CC8-21EEEF6654D1,8936D4D1-EB07-4EE8-A7AC-24131A1C48A8,FC529BC8-FF09-44A9-B454-26EAFDAC791B,4B5B0D73-496E-4CFA-92B9-3299A1E29E17,C96F379A-3E15-4DE5-BA94-4ECC90960C6D,EC59C50D-92BD-4247-80B1-51139BE93D35,66D82C24-9C9F-4CD6-B019-53C20274AB00,EB009F74-F4C5-4596-86C3-5893B9453200,7D7C4D5F-E410-4803-9762-A060C536C098,572AC8CE-8446-418B-979A-A7EE4E1F5AFD,CE97BF15-F7C6-4C50-A744-A89C714A4DDD,9E638C8F-6447-45D9-9137-B24E1047BCE5,22E31028-E862-424B-8C10-C167B2C9E304,21B78371-132C-4507-AED8-D44E366468F2,E9B55146-3351-440C-AD47-FD4DE05BDA05', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 5 new entity field(s) */
 
@@ -5437,10 +4814,10 @@ EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='${mjSche
       END;
 
 /* SQL text to update existing entity fields from schema (17 scoped entities) */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys', @EntityIDs='C2F418C4-8239-4486-B036-0BC4EAE4D24E,72E55425-8822-4E70-A075-116219CA5A5D,83A06268-2C96-400F-9CC8-21EEEF6654D1,8936D4D1-EB07-4EE8-A7AC-24131A1C48A8,FC529BC8-FF09-44A9-B454-26EAFDAC791B,4B5B0D73-496E-4CFA-92B9-3299A1E29E17,C96F379A-3E15-4DE5-BA94-4ECC90960C6D,EC59C50D-92BD-4247-80B1-51139BE93D35,66D82C24-9C9F-4CD6-B019-53C20274AB00,EB009F74-F4C5-4596-86C3-5893B9453200,7D7C4D5F-E410-4803-9762-A060C536C098,572AC8CE-8446-418B-979A-A7EE4E1F5AFD,CE97BF15-F7C6-4C50-A744-A89C714A4DDD,9E638C8F-6447-45D9-9137-B24E1047BCE5,22E31028-E862-424B-8C10-C167B2C9E304,21B78371-132C-4507-AED8-D44E366468F2,E9B55146-3351-440C-AD47-FD4DE05BDA05';
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='sys,staging', @EntityIDs='C2F418C4-8239-4486-B036-0BC4EAE4D24E,72E55425-8822-4E70-A075-116219CA5A5D,83A06268-2C96-400F-9CC8-21EEEF6654D1,8936D4D1-EB07-4EE8-A7AC-24131A1C48A8,FC529BC8-FF09-44A9-B454-26EAFDAC791B,4B5B0D73-496E-4CFA-92B9-3299A1E29E17,C96F379A-3E15-4DE5-BA94-4ECC90960C6D,EC59C50D-92BD-4247-80B1-51139BE93D35,66D82C24-9C9F-4CD6-B019-53C20274AB00,EB009F74-F4C5-4596-86C3-5893B9453200,7D7C4D5F-E410-4803-9762-A060C536C098,572AC8CE-8446-418B-979A-A7EE4E1F5AFD,CE97BF15-F7C6-4C50-A744-A89C714A4DDD,9E638C8F-6447-45D9-9137-B24E1047BCE5,22E31028-E862-424B-8C10-C167B2C9E304,21B78371-132C-4507-AED8-D44E366468F2,E9B55146-3351-440C-AD47-FD4DE05BDA05', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
-EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* Set field properties for entity */
 
@@ -6760,7 +6137,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivity] TO [cdp_Developer]
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivity] TO [cdp_Developer], [cdp_Integration];
 
 /* SQL text to delete unneeded entity fields (1 scoped entities) */
-EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys', @EntityIDs='72E55425-8822-4E70-A075-116219CA5A5D';
+EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='sys,staging', @EntityIDs='72E55425-8822-4E70-A075-116219CA5A5D', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 3 new entity field(s) */
 
@@ -6954,21 +6331,14 @@ EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='${mjSche
       END;
 
 /* SQL text to update existing entity fields from schema (1 scoped entities) */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys', @EntityIDs='72E55425-8822-4E70-A075-116219CA5A5D';
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='sys,staging', @EntityIDs='72E55425-8822-4E70-A075-116219CA5A5D', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
-EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='${mjSchema}_BizAppsAccounting,${mjSchema}_BizAppsIssues,${mjSchema}_BizAppsOrders,${mjSchema}_BizAppsTasks,${mjSchema},sys';
+EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='sys,staging', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* Set ExtendedType=GeoLatitude on virtual geo fields */
 UPDATE [${mjSchema}].[EntityField] SET [ExtendedType] = 'GeoLatitude' WHERE [Name] = '${mjSchema}_Latitude' AND [ExtendedType] IS NULL AND [EntityID] IN ('72E55425-8822-4E70-A075-116219CA5A5D');
 
 /* Set ExtendedType=GeoLongitude on virtual geo fields */
 UPDATE [${mjSchema}].[EntityField] SET [ExtendedType] = 'GeoLongitude' WHERE [Name] = '${mjSchema}_Longitude' AND [ExtendedType] IS NULL AND [EntityID] IN ('72E55425-8822-4E70-A075-116219CA5A5D');
-
-/* Refresh custom base views for modified entities so schema changes are picked up */
-EXEC sp_refreshview '${mjSchema}_BizAppsOrders.vwOrderHeadersGenerated';
-IF OBJECT_ID('[${mjSchema}_BizAppsOrders].[vwOrderHeaders]', 'V') IS NOT NULL
-BEGIN
-    EXEC sp_executesql N'EXEC sp_refreshview ''${mjSchema}_BizAppsOrders.vwOrderHeaders'';';
-END;
 
