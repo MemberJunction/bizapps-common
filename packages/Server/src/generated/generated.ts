@@ -450,6 +450,10 @@ export class mjBizAppsCommonActivityFile_ {
         
     @Field() 
     @MaxLength(500)
+    Activity: string;
+        
+    @Field() 
+    @MaxLength(500)
     File: string;
         
 }
@@ -633,6 +637,10 @@ export class mjBizAppsCommonActivityLink_ {
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field() 
+    @MaxLength(500)
+    Activity: string;
         
     @Field({nullable: true}) 
     @MaxLength(255)
