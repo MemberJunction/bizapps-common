@@ -119,11 +119,6 @@ module.exports = {
       // Required before CodeGen on new tables (Activities) or they land unprefixed
       // and metadata/ lookups for 'MJ_BizApps_Common: Activity Types' miss.
       { SchemaName: '__mj_BizAppsCommon', EntityNamePrefix: 'MJ_BizApps_Common: ', EntityNameSuffix: '' },
-      {
-        SchemaName: 'Committees',
-        EntityNamePrefix: 'Committees: ',
-        EntityNameSuffix: '',
-      },
     ],
   },
 

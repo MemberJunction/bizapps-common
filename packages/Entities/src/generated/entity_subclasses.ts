@@ -252,6 +252,10 @@ export const mjBizAppsCommonActivityFileSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    Activity: z.string().describe(`
+        * * Field Name: Activity
+        * * Display Name: Activity
+        * * SQL Data Type: nvarchar(500)`),
     File: z.string().describe(`
         * * Field Name: File
         * * Display Name: File
@@ -331,6 +335,10 @@ export const mjBizAppsCommonActivityLinkSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    Activity: z.string().describe(`
+        * * Field Name: Activity
+        * * Display Name: Activity
+        * * SQL Data Type: nvarchar(500)`),
     Entity: z.string().nullable().describe(`
         * * Field Name: Entity
         * * Display Name: Entity
@@ -2158,6 +2166,15 @@ export class mjBizAppsCommonActivityFileEntity extends BaseEntity<mjBizAppsCommo
     }
 
     /**
+    * * Field Name: Activity
+    * * Display Name: Activity
+    * * SQL Data Type: nvarchar(500)
+    */
+    get Activity(): string {
+        return this.Get('Activity');
+    }
+
+    /**
     * * Field Name: File
     * * Display Name: File
     * * SQL Data Type: nvarchar(500)
@@ -2377,6 +2394,15 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
     */
     get __mj_UpdatedAt(): Date {
         return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Activity
+    * * Display Name: Activity
+    * * SQL Data Type: nvarchar(500)
+    */
+    get Activity(): string {
+        return this.Get('Activity');
     }
 
     /**
