@@ -6965,8 +6965,14 @@ UPDATE [${mjSchema}].[EntityField] SET [ExtendedType] = 'GeoLatitude' WHERE [Nam
 /* Set ExtendedType=GeoLongitude on virtual geo fields */
 UPDATE [${mjSchema}].[EntityField] SET [ExtendedType] = 'GeoLongitude' WHERE [Name] = '${mjSchema}_Longitude' AND [ExtendedType] IS NULL AND [EntityID] IN ('72E55425-8822-4E70-A075-116219CA5A5D');
 
-/* Refresh custom base views for modified entities so schema changes are picked up */
-EXEC sp_refreshview '${mjSchema}_BizAppsOrders.vwOrderHeadersGenerated';
+/* Refresh custom base views for modified entities so schema changes are picked up.
+   Guard both Orders views: this V is applied on a clean install BEFORE orders
+   exists, so an unguarded sp_refreshview of vwOrderHeadersGenerated fails the
+   whole last batch (and the migration) on a from-scratch database. */
+IF OBJECT_ID('[${mjSchema}_BizAppsOrders].[vwOrderHeadersGenerated]', 'V') IS NOT NULL
+BEGIN
+    EXEC sp_executesql N'EXEC sp_refreshview ''${mjSchema}_BizAppsOrders.vwOrderHeadersGenerated'';';
+END
 IF OBJECT_ID('[${mjSchema}_BizAppsOrders].[vwOrderHeaders]', 'V') IS NOT NULL
 BEGIN
     EXEC sp_executesql N'EXEC sp_refreshview ''${mjSchema}_BizAppsOrders.vwOrderHeaders'';';
