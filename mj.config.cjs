@@ -133,6 +133,15 @@ module.exports = {
   // Empty on purpose. includeSchemas is the scope; mj app install may append
   // here on a consumer host, so keep the key.
   excludeSchemas: [],
+  /**
+   * Schema → npm for peer entity classes this emit does NOT generate
+   * (embeds + related-record collections). Distinct from:
+   *   includeSchemas     — what this run generates
+   *   entityPackageName  — the npm package this run writes (string form)
+   * Core (__mj) always comes from @memberjunction/core-entities; do not list it.
+   * Common is a leaf — no sibling Open Apps to import.
+   */
+  entityImportPackages: {},
   // excludeTables: [
   //   { schema: '%', table: 'sys%' },
   //   { schema: '%', table: 'flyway_schema_history' }
