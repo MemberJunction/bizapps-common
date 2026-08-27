@@ -5,14 +5,14 @@
       "EntityIDMin": 1,
       "EntityIDMax": 1000000,
       "EntityNamePrefix": "MJ_BizApps_Common: ",
-      "Description": "MemberJunction: Common Business App Data"
+      "Description": "Common business application entities shared across apps: Person, Organization, Address, ContactMethod, Relationship"
     },
     "primaryKey": {
       "ID": "0A9F0FDD-CD4D-4892-BA45-85722B982032"
     },
     "sync": {
-      "lastModified": "2026-08-24T20:06:02.786Z",
-      "checksum": "d1b3f9e2cf179893f0a7a651a357c6896d36a9f36da227eb09230afd163961a7"
+      "lastModified": "2026-08-27T04:15:37.987Z",
+      "checksum": "3ae3b01d9583b47221456d81717d336f7c3d0d3c5231723c8e47025293ab6b9b"
     }
   }
 ]
