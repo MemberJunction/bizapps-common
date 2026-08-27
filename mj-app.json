@@ -4,7 +4,7 @@
   "name": "mj-bizapps-common",
   "displayName": "BizApps Common",
   "description": "Common business entities (Person, Organization, Address, ContactMethod, Relationship) shared across MemberJunction business applications",
-  "version": "5.35.1",
+  "version": "5.36.0",
   "license": "BUSL-1.1",
   "icon": "fa-solid fa-building-columns",
   "publisher": {

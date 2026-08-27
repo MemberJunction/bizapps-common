@@ -1,5 +1,7 @@
 # @mj-biz-apps/common-actions
 
+## 5.36.0
+
 ## 5.35.1
 
 ### Patch Changes

@@ -1,5 +1,20 @@
 # @mj-biz-apps/common-server
 
+## 5.36.0
+
+### Minor Changes
+
+- 60804ac: Ship CodeGen entity metadata, base views, and CRUD procedures for the six Activity tables introduced in V202608171935. A clean migrate previously left those tables without \_\_mj.Entity rows, so metadata sync of activity-types failed.
+- 6fe1f09: Register the Activity related-name virtual EntityFields on Activity Links and Activity Files so save-capture ResultTables match the base views. Also covers the consumer-blind CodeGen V (no Orders in Common), Organizations CascadeDeletes off, and Activity Types hierarchy virtuals.
+
+### Patch Changes
+
+- Updated dependencies [60804ac]
+- Updated dependencies [6fe1f09]
+  - @mj-biz-apps/common-entities@5.36.0
+  - @mj-biz-apps/common-core-entities-server@5.36.0
+  - @mj-biz-apps/common-actions@5.36.0
+
 ## 5.35.1
 
 ### Patch Changes
