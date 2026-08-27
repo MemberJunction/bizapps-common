@@ -357,7 +357,9 @@ Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/Entiti
 
 ## Purpose
 
-This repository provides foundational business entities that can be consumed by other MemberJunction applications (like Committees, Events, etc.). Applications can:
+**Consumer blindness.** Common must not name, refresh, cascade into, or heal consumer apps (Orders, Accounting, Tasks, …). FKs and package deps point **up** only. Shipped entities have `CascadeDeletes = false`. CodeGen cascade SQL is intra-schema unless a host sets `allowCrossSchemaCascadeDeletes` (do not turn that on here).
+
+This repository provides foundational business entities that can be consumed by other MemberJunction applications. Applications can:
 
 1. Reference the BizApps entities directly in their own migrations/schemas
 2. Link their application-specific entities to Person, Organization, etc.

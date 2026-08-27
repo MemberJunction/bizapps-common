@@ -112,40 +112,31 @@ module.exports = {
   },
 
   newEntityDefaults: {
-    NameRulesBySchema: [{ SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
-{
-  SchemaName: 'Committees',
-  EntityNamePrefix: 'Committees: ',
-  EntityNameSuffix: '',
-}
-    ]
+    NameRulesBySchema: [
+      { SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
+      // BizApps family convention: prefix this app's entities so their MJ
+      // entity names are globally unambiguous, e.g. 'MJ_BizApps_Common: People'.
+      // Required before CodeGen on new tables (Activities) or they land unprefixed
+      // and metadata/ lookups for 'MJ_BizApps_Common: Activity Types' miss.
+      { SchemaName: '__mj_BizAppsCommon', EntityNamePrefix: 'MJ_BizApps_Common: ', EntityNameSuffix: '' },
+    ],
   },
 
-  // ---------------------------------------------------------------------------
-  // Schema/Table Exclusions
-  // ---------------------------------------------------------------------------
-  // Default: excludeSchemas: ['sys', 'staging', '__mj']
-  // Default: excludeTables: [{ schema: '%', table: 'sys%' }, { schema: '%', table: 'flyway_schema_history' }]
-  //
-  // Using defaults - Core entities (__mj schema) should not be modified by distributions.
-  // Uncomment only if you need different exclusions than the defaults.
-  //
-  // The sibling app schemas are excluded for the same reason bizapps-orders excludes
-  // common/accounting/tasks and bizapps-tasks excludes common: each app owns exactly its
-  // own schema. Common is the base of the family so it has no dependencies to keep out —
-  // but a database can host SEVERAL of these apps at once (a joined dev workspace, or any
-  // host that installed more than one Open App). Without these entries CodeGen run from
-  // this repo registers the siblings' tables as entities and writes their generated classes
-  // into THIS repo's packages, which is silent and wrong. Listing consumers here is
-  // slightly backwards, but naming a schema that is absent is inert, and the alternative
-  // is a footgun that only fires on multi-app databases.
-  excludeSchemas: [
-    'sys', 'staging', 'dbo', '__mj',
-    '__mj_BizAppsOrders', '__mj_BizAppsAccounting', '__mj_BizAppsTasks',
-    '__mj_BizAppsIssues', '__mj_BizAppsForms', '__mj_BizAppsATS', '__mj_BizAppsCaliber',
-    '__mj_BizAppsCommittees', '__mj_BizAppsMarketing', '__mj_BizAppsSecureMessaging',
-    '__mj_BizAppsSonar', 'Committees', 'Sonar',
-  ],
+  // Allow-list: CodeGen this app's schema only (MJ >= 5.50 includeSchemas).
+  // Unnamed schemas — core, siblings, never-seen client schemas — are excluded.
+  includeSchemas: ['__mj_BizAppsCommon'],
+  // Empty on purpose. includeSchemas is the scope; mj app install may append
+  // here on a consumer host, so keep the key.
+  excludeSchemas: [],
+  /**
+   * Schema → npm for peer entity classes this emit does NOT generate
+   * (embeds + related-record collections). Distinct from:
+   *   includeSchemas     — what this run generates
+   *   entityPackageName  — the npm package this run writes (string form)
+   * Core (__mj) always comes from @memberjunction/core-entities; do not list it.
+   * Common is a leaf — no sibling Open Apps to import.
+   */
+  entityImportPackages: {},
   // excludeTables: [
   //   { schema: '%', table: 'sys%' },
   //   { schema: '%', table: 'flyway_schema_history' }
