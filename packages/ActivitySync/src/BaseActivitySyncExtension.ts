@@ -28,7 +28,7 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
-import type { UserInfo } from '@memberjunction/core';
+import type { IMetadataProvider, UserInfo } from '@memberjunction/core';
 import type {
     mjBizAppsCommonActivityEntity,
     mjBizAppsCommonActivityLinkEntity,
@@ -68,6 +68,15 @@ export interface ActivityWriteContext {
     ConnectionID: string;
     ProviderTypeCode: string;
     ContextUser: UserInfo;
+    /**
+     * The provider the engine is writing through.
+     *
+     * Carried rather than left to the extension to obtain, because an extension MUST write through
+     * the same provider as the engine or its rows land outside the write transaction — which is the
+     * one guarantee an in-stream extension exists to give. It is also how an extension resolves an
+     * `EntityID` for a link (`Provider.Entities`).
+     */
+    Provider: IMetadataProvider;
 }
 
 export abstract class BaseActivitySyncExtension {
