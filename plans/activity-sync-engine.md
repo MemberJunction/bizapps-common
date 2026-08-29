@@ -1,6 +1,6 @@
 # Activity Sync Engine — Design & Build Plan
 
-**Status:** design agreed, build not started
+**Status:** P1 + P3 complete; P2 (CodeGen) next
 **Owner:** BizApps Common
 **Created:** 2026-08-29
 
@@ -97,53 +97,132 @@ flowchart TD
 
 ---
 
-## 4. Schema changes
+## 4. Schema
 
-### 4.1 `ActivitySyncProviderType` — provider identity becomes data
+Nine tables/changes. Everything here is CONFIGURATION — nothing is seeded by the migration; provider
+types and system rule sets ship as `metadata/`.
 
-Today `CK_ActivitySyncConnection_Provider CHECK (Provider IN ('Microsoft365','Gmail','Zoom','Generic'))`
-makes every new provider a **migration to Common** — the exact consumer coupling this app exists to
-avoid, and vocabulary-as-code rather than vocabulary-as-data.
+### 4.1 `ActivitySyncProviderType` — identity, and the defaults set once per fleet
 
-Replaced by a lookup table on the same pattern as every other type table in the family:
+Replaces `CK_ActivitySyncConnection_Provider`, which made every new source a **migration to Common**.
 
 | Column | Notes |
 |---|---|
-| `ID` | |
-| `Code` | stable key, e.g. `Microsoft365`, `Gmail`, `Twilio.SMS`, `LinkedIn` |
-| `Name`, `Description`, `IconClass` | display |
-| `DriverClass` | the `@RegisterClass(BaseActivitySyncProvider, '<DriverClass>')` key |
+| `Code` | stable key — `Microsoft365`, `Gmail`, `Twilio.SMS`, `LinkedIn` |
+| `DriverClass` | the `@RegisterClass(BaseActivitySyncProvider, …)` key |
 | `SupportedKinds` | JSON, e.g. `["Message","Calendar"]` |
-| `DefaultQualificationPolicy` | `Exclude` \| `Include` — what an `Undecided` verdict means for this provider |
-| `IsActive`, `IsSystem` | |
+| `DefaultQualificationPolicy` | `Include` \| `Exclude` — what an abstained cascade means |
+| `DefaultSkippedContentPolicy` | `None` \| `SubjectEncrypted` \| `FullEncrypted` |
+| `DefaultEncryptionKeyID` | → `__mj.EncryptionKey` |
+| `DefaultStorageProviderID` | → `__mj.FileStorageProvider` |
+| `DefaultMaxAttachmentBytes` | |
 
-`ActivitySyncConnection.Provider` (NVARCHAR) becomes `ActivitySyncProviderTypeID` (FK). The four
-existing codes seed as metadata rows, not as `INSERT`s in the migration.
+**These defaults live on the provider type, not the connection, on purpose.** An operator configures
+storage and encryption once for "all our Microsoft 365 mailboxes" rather than per mailbox. A
+connection overrides only when that mailbox is genuinely different.
 
-**Migration note:** this is a breaking column change on a published entity. Per the
-Publish-Then-No-Breaking-Changes policy, it lands as *additive* — add `ActivitySyncProviderTypeID`
-nullable, backfill from `Provider`, keep `Provider` in place and deprecated, drop the CHECK. A
-later major removes the old column.
+`CK_ActivitySyncProviderType_KeyRequired` refuses a retaining policy with no key: keeping content
+from a message you declined to ingest is permissible *encrypted*, or not at all.
 
-### 4.2 `ActivitySyncExtension` — the extension registry
+### 4.2 `ActivitySyncRuleSet` + `ActivitySyncConnectionRuleSet`
 
-Common ships the **table**; each consumer app ships its own **rows**.
+Rules used to hang off one connection (`NOT NULL`), so an org-wide prohibition had to be retyped for
+every mailbox and a **new mailbox started with none** — governance by copy-paste.
 
-| Column | Notes |
+A rule set is authored once and **bound** to many connections, many-to-many and ordered, so a mailbox
+composes: org baseline + team overlay + anything specific to itself.
+
+`ActivitySyncRuleSet.InternalDomains` (JSON) is what makes internal/external rules expressible at
+all. "Internal" is a property of the **deployment**, not of a message.
+
+`ActivitySyncRule` gains `ActivitySyncRuleSetID` with a strict exclusive-or against the legacy
+`ActivitySyncConnectionID` (widened to NULL), so existing rows stay valid — additive.
+
+### 4.3 `ActivitySyncRule` — participant scope and size
+
+- **`ParticipantScope`**: `Any` \| `AllInternal` \| `AllExternal` \| `HasExternal` \| `HasInternal` \| `Mixed`.
+  This is the Outlook-rules control. "Exclude internal chatter" is `Action=Exclude` +
+  `AllInternal`. **`Mixed` exists because it is the case an all-or-nothing rule gets wrong** — three
+  colleagues and one customer on a thread is neither internal chatter nor an external conversation.
+- **`MaxAttachmentBytes`** — per-rule cap, narrowing the connection's, narrowing the provider's.
+
+**An unclassifiable address is never counted as internal** (`participants.ts`). A malformed address
+siding with "internal" would let one bad entry turn a mixed thread into internal-only, and an
+internal-only *exclusion* rule would then silently drop a customer conversation. Erring the other way
+costs one extra captured message, which is recoverable; a silent drop is not.
+
+### 4.4 `ActivitySyncExclusion` — the never-ingest list
+
+Rows, not a delimited string. An exclusion you cannot query cannot be audited, and this is exactly
+what a legal hold, an HR matter or an opt-out has to be able to prove.
+
+`IdentityKind` covers `Email` \| `Phone` \| `Handle` (social) \| `Domain`. `PersonID` is optional —
+an address is often excluded before anyone knows whose it is, and a Person has several
+`ContactMethod`s, so the identity is the durable key. `EffectiveFrom`/`EffectiveTo` because holds
+have dates. Scoped to a rule set, or **global** when `ActivitySyncRuleSetID` is null.
+
+### 4.5 `ActivitySyncRun` / `ActivitySyncRunDetail` — the audit
+
+`ActivitySyncRun` is one pass over one connection: counts (`Fetched` / `Included` / `Excluded` /
+`Duplicates` / `Failed` / `ExtensionErrors`), the watermark before and after, trigger type, and
+`IsDryRun`.
+
+`ActivitySyncRunDetail` is **the decision made about every message, including every skip** — which
+is what makes *"why did my email not appear"* answerable:
+
+| Column | |
 |---|---|
-| `ID` | |
-| `Name`, `Description` | |
-| `DriverClass` | `@RegisterClass(BaseActivitySyncExtension, 'Sales.DealLinker')` |
-| `ActivitySyncConnectionID` | nullable — null means "all connections" |
-| `ActivitySyncProviderTypeID` | nullable — scope to one provider type |
-| `Sequence` | **required.** Deterministic order; two extensions adding links must not race |
-| `FailurePolicy` | `Skip` (default) \| `Abort` |
-| `TimeoutMS` | cap; an extension holds the write transaction open |
-| `IsEnabled`, `LastError`, `LastRunAt` | operator surface |
+| `ExternalID`, `ExternalThreadID`, `OccurredAt` | opaque ids and a timestamp — always safe to keep |
+| `Decision` | `Included` \| `Excluded` \| `Duplicate` \| `Failed` \| `WouldInclude` \| `WouldExclude` |
+| `DecidedByStage`, `Reason` | which stage, and why — a rule name, not content |
+| `ActivitySyncRuleID`, `ActivitySyncExclusionID` | **the cause**, not a narrative |
+| `Confidence`, `AIPromptRunID` | the LLM's decision and its trace, when inference decided |
+| `ActivityID` | only ever set when `Decision = 'Included'` (CHECK-enforced) |
+| `CapturedContent`, `EncryptionKeyID` | ciphertext + its key, both or neither (CHECK-enforced) |
 
-Registration is deliberately **two-part**, matching `DriverClass` everywhere else in MJ:
-`@RegisterClass` carries the code, the metadata row *enables and configures* it per host. Metadata
-alone cannot carry code; code alone cannot be configured per deployment.
+**`ActivitySyncRunDetail` must get permissions distinct from `Activity`.** It can hold fragments of
+messages that were deliberately *not* ingested — a different security class, and the reason
+`CapturedContent` is never plaintext regardless of policy.
+
+### 4.6 `ActivitySyncConnection` — activation window and overrides
+
+- **`StartAt` / `EndAt`** — combine with `Status`: syncs only when `Status = 'Active'` **and** now is
+  inside the window, either bound open when null. A mailbox can be provisioned ahead of a start date
+  or retired on one without anyone remembering to flip a switch.
+- **`SkippedContentPolicy`, `EncryptionKeyID`, `StorageProviderID`, `MaxAttachmentBytes`** — nullable
+  overrides of the provider-type defaults. Null inherits.
+- `ActivitySyncProviderTypeID` FK; `Provider` deprecated in place.
+
+### 4.7 `ActivitySyncExtension`
+
+Unchanged from the original design: `DriverClass`, connection/provider-type scope, `Sequence`,
+`FailurePolicy` (`Skip` default), `TimeoutMS`, `IsEnabled`, `LastError`.
+
+---
+
+## 4A. Dry run
+
+`SyncRunOptions.DryRun` fetches, qualifies and resolves exactly as a real run does, then writes
+**only** the run and its details — never an `Activity`, never a link, never an attachment, and it
+never advances the watermark. Decisions are recorded as `WouldInclude` / `WouldExclude`.
+
+`CK_ActivitySyncRun_DryRunNoWatermark` enforces the watermark half **at the database**, so a bug in
+the engine cannot produce a dry run that quietly moved the connection forward.
+
+This is the only safe way to see what a rule set does to a real mailbox before pointing it at one,
+and it is the answer to "what is the blast radius" before first ingest.
+
+---
+
+## 4B. Attachments and storage
+
+Attachments go to **MJ Storage**, never into the database. The storage provider is
+`ActivitySyncProviderType.DefaultStorageProviderID` (→ `__mj.FileStorageProvider`), overridable per
+connection — again, configured per fleet rather than per mailbox.
+
+Size caps narrow down the chain: provider → connection → rule. `IncludeAttachments` remains the
+on/off switch; `MaxAttachmentBytes` is the ceiling. Attachments are the highest-risk payload and the
+most expensive to keep, so the default is off and bounded.
 
 ---
 
@@ -200,28 +279,47 @@ vocabulary.
 
 Ordered stages, each returning **decide or defer**:
 
-```
+```ts
 type QualificationVerdict = {
     Decision: 'Include' | 'Exclude' | 'Undecided';
-    Reason: string;          // always populated, including on Include
+    Reason: string;               // always populated, including on Include
     StageName: string;
     Confidence?: number;
+    AIPromptRunID?: string;       // when a model decided
+    ActivitySyncRuleID?: string;  // THE CAUSE — what ActivitySyncRunDetail records
+    ActivitySyncExclusionID?: string;
 }
 ```
 
+A verdict must be able to **name its cause**, because that is what the run log stores. A log that
+says "excluded" without saying by what is a narrative, not evidence.
+
 Stage order, cheapest and most certain first:
 
-1. **Sync rules** — `ActivitySyncRule` as it already exists: ordered `Include`/`Exclude`,
-   direction, date window, folders, domains, subject matching.
+0. **Exclusions** — `ActivitySyncExclusion`, matched on any participant identity or its domain.
+   **Absolute and first.** An exclusion is not a rule that a later `Include` can outrank: a legal
+   hold, an HR matter or an opt-out must not be defeatable by rule ordering, or the guarantee is
+   only as good as whoever sequenced the rule set last.
+1. **Rules** — every `ActivitySyncRuleSet` bound to the connection, in binding order then rule
+   `Sequence`: `Include`/`Exclude`, direction, date window, folders, domains, subject, attachment
+   size, and **`ParticipantScope`** for the internal/external tests.
 2. **Known-participant test** — an exact `ContactMethod` address match. Never a domain match: a
    domain rule captures every internal message and a customer's entire company, and it *reads as
    working* while putting private correspondence on a deal timeline.
 3. **Inference** — an MJ AI Prompt, reached only by items the earlier stages left `Undecided`, and
    only when the connection enables it. Records the `AIPromptRunID` for trace.
 
+Stage 3 running last is **enforced in code**, not documented: stages declare `RequiresInference`
+and `RunQualificationCascade` throws if a deterministic stage is ordered after an inference one —
+before consulting the model.
+
 **The abstention rule:** a stage that is not confident returns `Undecided` rather than guessing.
 If the chain ends `Undecided`, the provider type's `DefaultQualificationPolicy` decides — and for
 anything mailbox-shaped that default is **Exclude**. Fail closed.
+
+**The effective default is therefore known-participant allow**, and that is worth stating out loud
+rather than leaving to be discovered: an item no rule matches, whose participants include a known
+`ContactMethod`, is captured. An item nothing matches at all is not.
 
 > **On reusing `pk-classifier`:** we copy the *pattern*, not the code. Its cascade — convention →
 > naming heuristic → statistical sampling → one-shot LLM, *returning no candidate when nothing is
@@ -240,7 +338,7 @@ abstract class BaseActivitySyncExtension {
 ```
 
 `ActivityWriteContext` carries the saved `Activity`, its links so far, the `NormalizedItem`, the
-resolved parties, the connection, and the ambient transaction.
+resolved parties, the connection, the provider being written through, and the ambient transaction.
 
 **Four rules, decided rather than discovered:**
 
@@ -281,15 +379,16 @@ behaviour and should move with it, minus the deal-specific ones which stay in sa
 extension.
 
 **Sequencing:** Common ships first and sales' removal PR follows. They cannot land together —
-sales cannot delete code whose replacement is not yet published.
+sales cannot delete code whose replacement is not yet published. Tracked as
+MemberJunction/bizapps-sales#37.
 
 ---
 
 ## 9. Engine
 
 `ActivitySyncEngine extends BaseEngine<ActivitySyncEngine>` — metadata load and cache of provider
-types, connections, rules and extension registrations, with `@RegisterForStartup`, `EnsureLoaded`,
-and cross-server cache invalidation inherited rather than written.
+types, connections, rule sets, exclusions and extension registrations, with `@RegisterForStartup`,
+`EnsureLoaded`, and cross-server cache invalidation inherited rather than written.
 
 Scheduling stays MJ's: a `MJ: Scheduled Jobs` row invoking an Action, exactly as sales does today
 (`ConcurrencyMode: Skip` — two runs racing to advance one watermark can leave it *behind* where
@@ -327,9 +426,9 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 | Phase | Work | Blocked on |
 |---|---|---|
 | **P0** | This document | — |
-| **P1** | Migration: `ActivitySyncProviderType`, `ActivitySyncExtension`, additive FK, drop CHECK | a database for CodeGen |
+| **P1** | Migration: provider types, rule sets + binding, exclusions, run + run detail, extensions, connection window + overrides | a database for CodeGen |
 | **P2** | CodeGen + generated entities; metadata seeds for the four provider types | P1 |
-| **P3** | `BaseActivitySyncProvider`, qualification cascade, `BaseActivitySyncExtension` contracts | — (pure types; no new entities) |
+| **P3** | `BaseActivitySyncProvider`, qualification cascade, participant classification, run/dry-run vocabulary, `BaseActivitySyncExtension` | ✅ done (50 tests) |
 | **P4** | `ActivitySyncEngine`, writer, resolver | P2 |
 | **P5** | Graph + fixture providers ported from sales | P4 |
 | **P6** | Sales: `Sales.DealLinker` extension; delete migrated code; retire its ScheduledJob row | Common published |
@@ -338,14 +437,31 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 
 ## 12. Open questions
 
-1. **Body storage.** `ActivityFile` joins to MJ Files. Full bodies, headers-and-snippet, or a
-   per-connection setting? Cost, privacy and discovery all pull differently.
-2. **`Activity.Visibility` default** is `Internal`. For a synced personal mailbox that is almost
-   certainly wrong — should a synced activity default `Private` and be promoted deliberately?
-3. **Composes with #46 / #47.** Those record that People grants UI read on names, emails and DOB,
-   and that on BCSaaS hosts UI is every authenticated user. Ingestion turns directory exposure
-   into *correspondence* exposure. This must be settled before the first real mailbox lands in a
-   host database.
+**Answered in this design** (Amith, 2026-08-29) and recorded here so they are not re-opened:
+
+- *Global rules* — `ActivitySyncRuleSet`, bound many-to-many. Was: retyped per mailbox.
+- *Person-level exclusion* — `ActivitySyncExclusion`, queryable rows, optional `PersonID`.
+- *Exclusion audit* — `ActivitySyncRunDetail`, including the LLM's decision and its `AIPromptRunID`.
+- *Dry run* — `SyncRunOptions.DryRun`, with the watermark half CHECK-enforced.
+- *Attachment size + storage* — capped down the chain, stored in MJ Storage, defaulted per provider.
+- *Retention of skipped content* — `SkippedContentPolicy`, encrypted or not at all, per provider
+  with a per-connection override.
+
+**Still open:**
+
+1. **Body storage for INCLUDED activities.** Distinct from `SkippedContentPolicy`, which governs
+   messages we declined. `ActivityFile` joins to MJ Files: full bodies, headers-and-snippet, or a
+   per-connection setting? Recommendation on the PR is a `StoreBody` flag defaulting to `Snippet`.
+2. **`Activity.Visibility` for synced mail.** The column defaults `Internal`, which is right for a
+   manually logged activity and wrong for a synced personal mailbox. Recommendation: the engine
+   sets `Private` explicitly on write rather than changing the column default.
+3. **⛔ Composes with #46 / #47 — BLOCKING.** Those record that People grants UI read on names,
+   emails and DOB, and that on BCSaaS hosts UI is every authenticated user. Ingestion turns
+   directory exposure into *correspondence* exposure, and `ActivitySyncRunDetail` sharpens it
+   further by holding fragments of messages that were deliberately **not** ingested. Amith has
+   accepted the shape and scheduled a **detailed security audit**; this must be settled before the
+   first real mailbox lands in a host database. Build against the fixture provider until then.
 4. **Dedupe key across mailboxes.** A Graph message id is not stable across mailboxes, so the same
-   thread ingested from two connections yields two rows. Is that correct (two people's records) or
-   a defect?
+   thread ingested from two connections yields two rows. Recommendation: **two rows is correct** —
+   two observations, each with its own owner's visibility — grouped later via `Details.MessageID`,
+   the RFC-822 header, which `activity-json-types.ts` already has a field for.
