@@ -199,6 +199,9 @@ importers:
       '@memberjunction/global':
         specifier: ^6.1.0-edge.2
         version: 6.1.0-edge.2
+      '@mj-biz-apps/common-activity-sync':
+        specifier: 5.36.0
+        version: link:../ActivitySync
       '@mj-biz-apps/common-entities':
         specifier: 5.36.0
         version: link:../Entities
