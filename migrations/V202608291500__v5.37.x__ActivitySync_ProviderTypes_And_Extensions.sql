@@ -765,6 +765,14 @@ GO
 --     and hits UQ_EntityField_EntityID_Sequence).
 --   * second-pass +100000 sequence bump skipped on Connection and Rule
 --     (those entities already shipped; a second bump collides at 100015).
+-- Two databases, two proofs, neither substitutes:
+--   * r4  = `mj migrate` (host path). Open App install runs the
+--     R__RefreshMetadata equivalent after the V, so Connection sequences
+--     compact 1–24 and Provider's EntityField.Description copies from
+--     MS_Description. The +100000 bump on existing rows is transient.
+--   * r4verify = sqlcmd of this file alone. Proves the SQL applies against
+--     it6 without heal. Sequences stay 100001+; Provider EntityField stays
+--     at the V171935 text until heal runs.
 -- No second skipfiles. No r2 two-capture append. No sp_updateextendedproperty.
 -- =============================================================================
 

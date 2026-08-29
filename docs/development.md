@@ -55,6 +55,7 @@ npm run mj:migrate
 - Rules:
   - Never include `__mj_CreatedAt`/`__mj_UpdatedAt` columns - CodeGen handles them
   - Never create indexes for FK columns - CodeGen creates them automatically
+- `mj migrate` must be `@memberjunction/cli` **6.1.0-edge.4 or later**. edge.3 dies on `ToEpochMs` (`@memberjunction/global`). Applying the SQL some other way skips the Open App metadata-heal (`R__RefreshMetadata` equivalent in `migration-runner.ts`), which is what rewrites `EntityField.Sequence` to match the base view after this app's Flyway history. A worktree `node_modules/.bin/mj` that resolves older than edge.4 is not the host path.
 
 ## Metadata Sync
 ```bash
