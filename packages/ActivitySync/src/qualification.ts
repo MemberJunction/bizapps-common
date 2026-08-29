@@ -12,7 +12,7 @@
  * inference stage, rather than trusting the caller to order it correctly. A comment could be
  * ignored by the next person to add a stage; a thrown error cannot.
  *
- * ── AND ABSTENTION IS FIRST-CLASS ──────────────────────────────────────────────────────────────
+ * ── AND ABSTENTION IS FIRST-CLASS ────────────────────────────────────────────────────
  *
  * A stage that is not confident returns `Undecided` instead of guessing. When every stage abstains,
  * the provider type's default policy decides — and for anything mailbox-shaped that default is
@@ -37,6 +37,16 @@ export interface QualificationVerdict {
     Confidence?: number;
     /** Set when the verdict came from an AI Prompt, for trace. */
     AIPromptRunID?: string;
+    /**
+     * The rule or exclusion that decided, when one did.
+     *
+     * Carried on the verdict rather than reconstructed by the caller, because these are what
+     * `ActivitySyncRunDetail` records — and "which rule ate my message" is the question the run log
+     * exists to answer. A verdict that cannot name its cause makes the log a narrative instead of
+     * evidence.
+     */
+    ActivitySyncRuleID?: string;
+    ActivitySyncExclusionID?: string;
 }
 
 /** Whatever a stage needs beyond the item itself — known addresses, the connection's rules, and so on. */
