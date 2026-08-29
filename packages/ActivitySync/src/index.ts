@@ -10,5 +10,7 @@
 export * from './types.js';
 export * from './watermark.js';
 export * from './qualification.js';
+export * from './participants.js';
+export * from './run.js';
 export * from './BaseActivitySyncProvider.js';
 export * from './BaseActivitySyncExtension.js';
