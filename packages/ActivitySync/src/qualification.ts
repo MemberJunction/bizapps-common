@@ -28,6 +28,25 @@ export type QualificationDecision = 'Include' | 'Exclude' | 'Undecided';
 /** What an `Undecided` chain resolves to. Mirrors `ActivitySyncProviderType.DefaultQualificationPolicy`. */
 export type QualificationPolicy = 'Include' | 'Exclude';
 
+/**
+ * The cascade's fail-closed default.
+ *
+ * `ActivitySyncProviderTypeID` is nullable, and a host install currently ships
+ * zero provider-type rows until a release-engineer Metadata_Sync. Whatever the
+ * engine passes as `RunQualificationCascade`'s last argument *is* the real
+ * default — `ResolvePolicy`'s first parameter is required, so a missing type
+ * cannot silently fall through.
+ *
+ * Only an explicit `'Include'` on the type row opts in. Null, missing, empty,
+ * or any other value is `'Exclude'`. A `?? 'Include'` at the engine call site
+ * would defeat the cascade while every test still passed.
+ */
+export function DefaultPolicyFromProviderType(
+    policy: string | null | undefined,
+): QualificationPolicy {
+    return policy === 'Include' ? 'Include' : 'Exclude';
+}
+
 /** One stage's answer. `Reason` is always populated — including on `Include`, so a capture is explicable. */
 export interface QualificationVerdict {
     Decision: QualificationDecision;

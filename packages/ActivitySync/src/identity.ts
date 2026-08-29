@@ -8,7 +8,7 @@ import { RunView, type UserInfo } from '@memberjunction/core';
 
 import type { ResolvedParty, UnresolvedParty } from './BaseActivitySyncExtension.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
-import { EscapeSql, InList } from './sql.js';
+import { EscapeText, InList } from './sql.js';
 import type { ItemParticipant } from './types.js';
 
 export interface KnownAddress {
@@ -112,5 +112,5 @@ export class IdentityResolver {
 }
 
 export function Quote(value: string): string {
-    return EscapeSql(value);
+    return EscapeText(value);
 }

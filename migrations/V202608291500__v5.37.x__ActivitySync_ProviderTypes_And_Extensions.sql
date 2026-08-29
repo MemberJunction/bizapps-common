@@ -34,8 +34,9 @@
 --      an operator configures them once rather than per mailbox.
 --
 -- Nothing here seeds rows. Provider types and system rule sets ship as
--- metadata/, never as INSERTs. CodeGen output ships as its own migration,
--- matching V202608251531__v5.36.x__Activity_CodeGen_Objects.sql.
+-- metadata/, never as INSERTs. CodeGen output is appended below the banner
+-- in THIS file so a host that only runs mj migrate still gets entities,
+-- views, and SPs. Two files can be applied out of order; one file cannot.
 --
 -- PostgreSQL counterpart is deferred to the release build engineer.
 -- =============================================================================
@@ -433,6 +434,14 @@ GO
 
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
+    @value = N'The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.',
+    @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+    @level1type = N'TABLE',  @level1name = N'ActivitySyncConnectionRuleSet',
+    @level2type = N'COLUMN', @level2name = N'ActivitySyncRuleSetID';
+GO
+
+EXEC sp_addextendedproperty
+    @name = N'MS_Description',
     @value = N'Never-ingest list, by identity: an email address, a phone number, a social handle, or a whole domain. Rows rather than a delimited string because an exclusion that cannot be queried cannot be audited, and this is precisely what a legal hold, an HR matter or an opt-out has to be able to prove. Scoped to a rule set, or global when ActivitySyncRuleSetID is null.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion';
@@ -444,6 +453,14 @@ EXEC sp_addextendedproperty
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion',
     @level2type = N'COLUMN', @level2name = N'PersonID';
+GO
+
+EXEC sp_addextendedproperty
+    @name = N'MS_Description',
+    @value = N'Optional rule set this exclusion belongs to. Null means global — the identity is never ingested on any connection. A legal hold or opt-out is usually global; a mailbox-specific mute is not.',
+    @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+    @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion',
+    @level2type = N'COLUMN', @level2name = N'ActivitySyncRuleSetID';
 GO
 
 EXEC sp_addextendedproperty

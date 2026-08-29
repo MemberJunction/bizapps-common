@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     AssertInferenceRunsLast,
+    DefaultPolicyFromProviderType,
     RunQualificationCascade,
     type IQualificationStage,
     type QualificationContext,
@@ -108,6 +109,21 @@ describe('RunQualificationCascade', () => {
         );
         // And it refuses BEFORE sending anything to the model.
         expect(infer.Consulted).toBe(false);
+    });
+});
+
+describe('DefaultPolicyFromProviderType', () => {
+    it('only an explicit Include on the type row opts in', () => {
+        expect(DefaultPolicyFromProviderType('Include')).toBe('Include');
+    });
+
+    it('fails closed for missing, null, empty, or unrecognised values — never Include', () => {
+        expect(DefaultPolicyFromProviderType(undefined)).toBe('Exclude');
+        expect(DefaultPolicyFromProviderType(null)).toBe('Exclude');
+        expect(DefaultPolicyFromProviderType('')).toBe('Exclude');
+        expect(DefaultPolicyFromProviderType('Exclude')).toBe('Exclude');
+        expect(DefaultPolicyFromProviderType('include')).toBe('Exclude');
+        expect(DefaultPolicyFromProviderType('INCLUDE')).toBe('Exclude');
     });
 });
 

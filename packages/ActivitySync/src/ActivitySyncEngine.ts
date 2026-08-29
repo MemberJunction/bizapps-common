@@ -30,14 +30,19 @@ import {
 } from './stages.js';
 import { FixtureActivitySyncProvider } from './providers/FixtureActivitySyncProvider.js';
 import { MSGraphActivitySyncProvider } from './providers/MSGraphActivitySyncProvider.js';
-import { RunQualificationCascade, type IQualificationStage, type QualificationPolicy } from './qualification.js';
+import {
+    DefaultPolicyFromProviderType,
+    RunQualificationCascade,
+    type IQualificationStage,
+    type QualificationPolicy,
+} from './qualification.js';
 import {
     AsDryRunDecision,
     IsConnectionActive,
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
-import { EscapeSql } from './sql.js';
+import { RequireUUID, UuidInList } from './sql.js';
 import type { NormalizedItem } from './types.js';
 import { CanAdvanceWatermark, NextWatermark, type RunOutcome } from './watermark.js';
 import { ActivityWriter } from './writer.js';
@@ -62,7 +67,7 @@ interface ConnectionRow {
     StartAt: Date | string | null;
     EndAt: Date | string | null;
     LastSyncAt: Date | string | null;
-    ActivitySyncProviderTypeID: string;
+    ActivitySyncProviderTypeID: string | null;
     SkippedContentPolicy: string | null;
 }
 
@@ -118,17 +123,24 @@ export class ActivitySyncEngine {
             return result;
         }
 
-        const typeRow = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
-        if (!typeRow) {
-            result.Issues.push('Provider type is missing.');
-            return result;
-        }
+        const typeRow = connection.ActivitySyncProviderTypeID
+            ? await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser)
+            : null;
+        // Missing type row: hosts currently get zero provider-type seeds (Metadata_Sync
+        // is release-engineer, not this PR). The cascade still needs a default, and
+        // that default is Exclude — never `?? 'Include'`.
+        const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
 
-        const plugin = source ?? this.resolvePlugin(typeRow.DriverClass);
+        const plugin = source ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
         if (!plugin) {
-            result.Issues.push(`No BaseActivitySyncProvider registered for DriverClass '${typeRow.DriverClass}'.`);
+            result.Issues.push(
+                typeRow
+                    ? `No BaseActivitySyncProvider registered for DriverClass '${typeRow.DriverClass}'.`
+                    : 'Provider type is missing and no provider was injected.',
+            );
             return result;
         }
+        const sourceSystem = typeRow?.Code ?? plugin.ProviderTypeCode;
 
         const since = connection.LastSyncAt ? new Date(connection.LastSyncAt) : null;
         const batch = await plugin.Fetch({
@@ -164,7 +176,7 @@ export class ActivitySyncEngine {
         for (const item of batch.Items) {
             const ctx: EngineQualificationContext = {
                 ConnectionID: connection.ID,
-                ProviderTypeCode: typeRow.Code,
+                ProviderTypeCode: sourceSystem,
                 Exclusions: exclusions,
                 Rules: rules,
                 InternalDomains: [],
@@ -176,7 +188,7 @@ export class ActivitySyncEngine {
                     this.stages,
                     item,
                     ctx,
-                    typeRow.DefaultQualificationPolicy,
+                    defaultPolicy,
                 );
             } catch (err) {
                 result.Failed++;
@@ -243,7 +255,7 @@ export class ActivitySyncEngine {
                 {
                     Item: item,
                     ConnectionID: connection.ID,
-                    SourceSystem: typeRow.Code,
+                    SourceSystem: sourceSystem,
                     Source: sourceValue,
                     Resolved: itemIdentities.Resolved,
                     Unresolved: itemIdentities.Unresolved,
@@ -321,7 +333,7 @@ export class ActivitySyncEngine {
         const res = await rv.RunView<ConnectionRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
-                ExtraFilter: `ID = '${EscapeSql(id)}'`,
+                ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncConnectionID')}'`,
                 MaxRows: 1,
                 ResultType: 'simple',
             },
@@ -330,12 +342,13 @@ export class ActivitySyncEngine {
         return res.Success ? (res.Results?.[0] ?? null) : null;
     }
 
-    private async loadProviderType(id: string, user: UserInfo): Promise<ProviderTypeRow | null> {
+    private async loadProviderType(id: string | null | undefined, user: UserInfo): Promise<ProviderTypeRow | null> {
+        if (!id) return null;
         const rv = new RunView();
         const res = await rv.RunView<ProviderTypeRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
-                ExtraFilter: `ID = '${EscapeSql(id)}'`,
+                ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncProviderTypeID')}'`,
                 MaxRows: 1,
                 ResultType: 'simple',
             },
@@ -362,7 +375,7 @@ export class ActivitySyncEngine {
         const bound = await rv.RunView<{ ActivitySyncRuleSetID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ConnectionRuleSets,
-                ExtraFilter: `ActivitySyncConnectionID = '${EscapeSql(connectionID)}'`,
+                ExtraFilter: `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}'`,
                 ResultType: 'simple',
             },
             user,
@@ -372,8 +385,8 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Rules,
                 ExtraFilter: setIds.length
-                    ? `ActivitySyncRuleSetID IN (${setIds.map((id) => `'${EscapeSql(id)}'`).join(',')})`
-                    : `ActivitySyncConnectionID = '${EscapeSql(connectionID)}'`,
+                    ? `ActivitySyncRuleSetID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`
+                    : `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}'`,
                 ResultType: 'simple',
             },
             user,

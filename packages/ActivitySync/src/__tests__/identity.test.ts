@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
+const capture = vi.hoisted(() => ({ filter: '' }));
+
 vi.mock('@memberjunction/core', () => ({
     RunView: class {
-        public async RunView() {
+        public async RunView(params: { ExtraFilter?: string }) {
+            capture.filter = params.ExtraFilter ?? '';
             return { Success: true, Results: [] };
         }
     },
@@ -25,4 +28,21 @@ describe('IdentityResolver', () => {
             { Kind: 'Email', Value: 'stranger@nowhere.test', Role: 'From' },
         ]);
     });
+
+    it('doubles quotes in an inbound address before it reaches ExtraFilter', async () => {
+        const resolver = new IdentityResolver();
+        await resolver.Resolve(
+            [
+                {
+                    Address: "x@y.test' or '1'='1",
+                    Name: null,
+                    Role: 'From',
+                    IdentityKind: 'Email',
+                },
+            ],
+            { ID: 'user' } as UserInfo,
+        );
+        expect(capture.filter).toBe("Value IN ('x@y.test'' or ''1''=''1')");
+    });
 });
+

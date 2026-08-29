@@ -18,8 +18,15 @@ import type {
 
 import type { ResolvedParty, UnresolvedParty, ActivityWriteContext } from './BaseActivitySyncExtension.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
-import { EscapeSql } from './sql.js';
+import { EscapeText } from './sql.js';
 import type { NormalizedItem } from './types.js';
+
+function isDatabaseProvider(provider: IMetadataProvider): provider is DatabaseProviderBase {
+    return (
+        'BeginEntityTransaction' in provider &&
+        typeof (provider as DatabaseProviderBase).BeginEntityTransaction === 'function'
+    );
+}
 
 export type ActivitySourceValue = 'Manual' | 'System' | 'Integration';
 
@@ -71,13 +78,12 @@ export class ActivityWriter {
             return result;
         }
 
-        const db = provider as unknown as DatabaseProviderBase;
-        if (!db?.BeginEntityTransaction) {
+        if (!isDatabaseProvider(provider)) {
             result.Issues.push('This provider cannot open a transaction; ActivityWriter is server-only.');
             return result;
         }
 
-        const scope = await db.BeginEntityTransaction();
+        const scope = await provider.BeginEntityTransaction();
         try {
             const activity = await provider.GetEntityObject<mjBizAppsCommonActivityEntity>(
                 ACTIVITY_SYNC_ENTITIES.Activities,
@@ -240,7 +246,7 @@ export class ActivityWriter {
         const res = await rv.RunView<{ ID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ActivityTypes,
-                ExtraFilter: `Code = '${EscapeSql(code)}'`,
+                ExtraFilter: `Code = '${EscapeText(code)}'`,
                 MaxRows: 1,
                 ResultType: 'simple',
             },
@@ -259,7 +265,7 @@ export class ActivityWriter {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
                 ExtraFilter:
-                    `SourceSystem = '${EscapeSql(sourceSystem)}' AND ExternalID = '${EscapeSql(externalID)}'`,
+                    `SourceSystem = '${EscapeText(sourceSystem)}' AND ExternalID = '${EscapeText(externalID)}'`,
                 MaxRows: 1,
                 ResultType: 'simple',
             },
