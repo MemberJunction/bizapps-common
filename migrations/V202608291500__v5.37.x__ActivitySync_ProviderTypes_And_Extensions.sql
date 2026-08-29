@@ -427,6 +427,14 @@ GO
 
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
+    @value = N'Optional provider type this rule set is written for. Null means the set applies regardless of source — an org-wide prohibition does not care whether the mailbox is Microsoft365 or Gmail.',
+    @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+    @level1type = N'TABLE',  @level1name = N'ActivitySyncRuleSet',
+    @level2type = N'COLUMN', @level2name = N'ActivitySyncProviderTypeID';
+GO
+
+EXEC sp_addextendedproperty
+    @name = N'MS_Description',
     @value = N'Binds a rule set to a connection, ordered. Many-to-many so a mailbox composes an org-wide baseline, a team overlay, and anything specific to itself — rather than owning one private copy of everything.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncConnectionRuleSet';
@@ -522,6 +530,14 @@ EXEC sp_addextendedproperty
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExtension',
     @level2type = N'COLUMN', @level2name = N'FailurePolicy';
+GO
+
+EXEC sp_addextendedproperty
+    @name = N'MS_Description',
+    @value = N'Optional provider type this extension is registered for. Null means it runs on every connection. A deal-linker that only makes sense on email can bind here rather than being invoked for a phone transcript.',
+    @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+    @level1type = N'TABLE',  @level1name = N'ActivitySyncExtension',
+    @level2type = N'COLUMN', @level2name = N'ActivitySyncProviderTypeID';
 GO
 
 ---------------------------------------------------------------------------
@@ -11697,7 +11713,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [c
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
 
-/* SQL text to delete unneeded entity fields (9 scoped entities) */
+/* SQL text to delete unneeded entity fields (7 scoped entities) */
 EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='', @EntityIDs='AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75,7ED9F26E-B01D-472A-87C9-B163287F80B4,D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0,556381BF-9ACE-4A69-85BB-22EAE1856C88,ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1,AC16B066-9460-44F5-B027-3FD397E61F34,C7E5ECE1-F347-4BC9-AC53-E2F33577B449', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 26 new entity field(s) */
@@ -12803,7 +12819,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-/* SQL text to update existing entity fields from schema (9 scoped entities) */
+/* SQL text to update existing entity fields from schema (7 scoped entities) */
 EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='', @EntityIDs='AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75,7ED9F26E-B01D-472A-87C9-B163287F80B4,D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0,556381BF-9ACE-4A69-85BB-22EAE1856C88,ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1,AC16B066-9460-44F5-B027-3FD397E61F34,C7E5ECE1-F347-4BC9-AC53-E2F33577B449', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
