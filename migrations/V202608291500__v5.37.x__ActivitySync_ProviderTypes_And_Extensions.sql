@@ -384,7 +384,7 @@ ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRule]
 GO
 
 ---------------------------------------------------------------------------
--- Extended properties
+-- Extended properties — NEW tables (bare ADD is safe; they cannot pre-exist)
 ---------------------------------------------------------------------------
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
@@ -507,12 +507,55 @@ EXEC sp_addextendedproperty
     @level2type = N'COLUMN', @level2name = N'FailurePolicy';
 GO
 
+---------------------------------------------------------------------------
+-- Extended properties on the PRE-EXISTING tables
+--
+-- Guarded drop-then-add, not a bare ADD. ActivitySyncConnection.Provider
+-- already carries an MS_Description from V202608171935, and
+-- sp_addextendedproperty FAILS on a property that exists rather than
+-- overwriting it -- so a bare ADD breaks this migration on any host that has
+-- the table. Found by applying it to a real database (thanks @local-agent).
+--
+-- The guard is on all seven rather than only on Provider: the cause is
+-- "writing a property on a table that already exists", and keying the fix to
+-- that survives the next person adding one. Keying it to the single column
+-- that happens to collide today would not.
+--
+-- New tables above keep a bare ADD: their properties cannot pre-exist.
+---------------------------------------------------------------------------
+
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]'), N'StartAt', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
+        @level2type = N'COLUMN', @level2name = N'StartAt';
+GO
+
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
     @value = N'Activation window. Combines with Status: a connection syncs only when Status = Active AND now is within [StartAt, EndAt], treating either bound as open when null. Lets a mailbox be provisioned ahead of time, or retired on a date, without anyone remembering to flip a switch.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
     @level2type = N'COLUMN', @level2name = N'StartAt';
+GO
+
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]'), N'EndAt', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
+        @level2type = N'COLUMN', @level2name = N'EndAt';
 GO
 
 EXEC sp_addextendedproperty
@@ -523,12 +566,38 @@ EXEC sp_addextendedproperty
     @level2type = N'COLUMN', @level2name = N'EndAt';
 GO
 
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]'), N'SkippedContentPolicy', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
+        @level2type = N'COLUMN', @level2name = N'SkippedContentPolicy';
+GO
+
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
     @value = N'Per-connection override of the provider type''s DefaultSkippedContentPolicy. Null inherits. This is the knob for "this one mailbox is sensitive" without changing the estate.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
     @level2type = N'COLUMN', @level2name = N'SkippedContentPolicy';
+GO
+
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]'), N'ActivitySyncProviderTypeID', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
+        @level2type = N'COLUMN', @level2name = N'ActivitySyncProviderTypeID';
 GO
 
 EXEC sp_addextendedproperty
@@ -539,14 +608,38 @@ EXEC sp_addextendedproperty
     @level2type = N'COLUMN', @level2name = N'ActivitySyncProviderTypeID';
 GO
 
--- Provider already shipped with an MS_Description in V202608171935 (the CHECK
--- constraint wording). ADD fails on every host that has that table.
-EXEC sp_updateextendedproperty
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncConnection]'), N'Provider', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
+        @level2type = N'COLUMN', @level2name = N'Provider';
+GO
+
+EXEC sp_addextendedproperty
     @name = N'MS_Description',
     @value = N'DEPRECATED — use ActivitySyncProviderTypeID. Retained nullable so a published host keeps working; removed in the next major.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncConnection',
     @level2type = N'COLUMN', @level2name = N'Provider';
+GO
+
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncRule]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncRule]'), N'ParticipantScope', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncRule',
+        @level2type = N'COLUMN', @level2name = N'ParticipantScope';
 GO
 
 EXEC sp_addextendedproperty
@@ -555,6 +648,19 @@ EXEC sp_addextendedproperty
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncRule',
     @level2type = N'COLUMN', @level2name = N'ParticipantScope';
+GO
+
+IF EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncRule]')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncRule]'), N'ActivitySyncRuleSetID', 'ColumnId')
+      AND name = N'MS_Description'
+)
+    EXEC sp_dropextendedproperty
+        @name = N'MS_Description',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
+        @level1type = N'TABLE',  @level1name = N'ActivitySyncRule',
+        @level2type = N'COLUMN', @level2name = N'ActivitySyncRuleSetID';
 GO
 
 EXEC sp_addextendedproperty
