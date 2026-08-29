@@ -539,7 +539,9 @@ EXEC sp_addextendedproperty
     @level2type = N'COLUMN', @level2name = N'ActivitySyncProviderTypeID';
 GO
 
-EXEC sp_addextendedproperty
+-- Provider already shipped with an MS_Description in V202608171935 (the CHECK
+-- constraint wording). ADD fails on every host that has that table.
+EXEC sp_updateextendedproperty
     @name = N'MS_Description',
     @value = N'DEPRECATED — use ActivitySyncProviderTypeID. Retained nullable so a published host keeps working; removed in the next major.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',

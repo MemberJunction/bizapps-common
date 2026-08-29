@@ -23,6 +23,12 @@ export interface ActivitySyncConnectionSettings {
     CalendarID?: string;
     IncludeCalendar?: boolean;
     IncludeMail?: boolean;
+    /**
+     * How much of the body to persist on an included Activity. Default `Snippet`.
+     * `Full` is a per-connection opt-in. Independent of SkippedContentPolicy,
+     * which governs what is kept on a SKIP.
+     */
+    StoreBody?: 'None' | 'Snippet' | 'Full';
 }
 
 /** ActivitySyncRule.Filter — include/exclude match extras. */
