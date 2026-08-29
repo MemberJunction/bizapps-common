@@ -67,20 +67,23 @@ backfilling a new derived field across the last quarter. Not the gate.
 
 ## 3. Pipeline
 
-```
-                    ┌────────────────────── no transaction open ───────────────────┐
- ActivitySyncJob ──▶│  Fetch          provider.Fetch(query)  →  NormalizedItem[]         │
-   (Scheduled Job)  │  Normalize      provider maps its payload into the common shape    │
-                    │  Qualify        rules cascade; LLM only for the ambiguous band     │
-                    └──────────────────────────────────────────────────────┘
-                                                │  survivors only
-                    ┌───────────────── BEGIN TRANSACTION (per item) ─────────────────┐
-                    │  Resolve        participant address → Person / Organization        │
-                    │  Write          Activity + ActivityLink (resolved XOR unresolved)  │
-                    │  Extensions     registered extensions run IN-STREAM                │
-                    └─────────────────────── COMMIT ─────────────────────────┘
-                                                │
-                                          advance watermark
+```mermaid
+flowchart TD
+    subgraph NOTX["No transaction open"]
+        F["Fetch — provider.Fetch(query) → NormalizedItem[]"]
+        N["Normalize — provider maps its payload into the common shape"]
+        Q["Qualify — rules cascade; LLM only for the ambiguous band"]
+        F --> N --> Q
+    end
+    subgraph TX["BEGIN TRANSACTION (per item)"]
+        R["Resolve — participant address → Person / Organization"]
+        W["Write — Activity + ActivityLink (resolved XOR unresolved)"]
+        E["Extensions — registered extensions run IN-STREAM"]
+        R --> W --> E
+    end
+    JOB["ActivitySyncJob (Scheduled Job)"] --> F
+    Q -->|survivors only| R
+    E --> CM["COMMIT"] --> WM["advance watermark"]
 ```
 
 **Two ordering rules, both load-bearing:**
