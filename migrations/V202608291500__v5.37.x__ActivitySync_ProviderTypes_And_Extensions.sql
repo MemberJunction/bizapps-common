@@ -765,6 +765,9 @@ GO
 --     and hits UQ_EntityField_EntityID_Sequence).
 --   * second-pass +100000 sequence bump skipped on Connection and Rule
 --     (those entities already shipped; a second bump collides at 100015).
+--   * `(9 scoped entities)` comments over the 7-UUID list rewritten to
+--     `(7 scoped entities)` — inside the generated region, so a later
+--     regeneration will drop this unless the banner is consulted.
 -- Two databases, two proofs, neither substitutes:
 --   * r4  = `mj migrate` (host path). Open App install runs the
 --     R__RefreshMetadata equivalent after the V, so Connection sequences
