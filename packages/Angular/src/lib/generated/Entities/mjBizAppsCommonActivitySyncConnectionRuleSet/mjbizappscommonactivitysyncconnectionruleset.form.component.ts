@@ -15,8 +15,8 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSetFormComponent extends B
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'relationships', sectionName: 'Relationships', isExpanded: true },
-            { sectionKey: 'configuration', sectionName: 'Configuration', isExpanded: true },
+            { sectionKey: 'connectionDetails', sectionName: 'Connection Details', isExpanded: true },
+            { sectionKey: 'ruleSetConfiguration', sectionName: 'Rule Set Configuration', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

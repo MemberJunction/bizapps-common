@@ -17,12 +17,11 @@ export class mjBizAppsCommonActivitySyncRuleSetFormComponent extends BaseFormCom
         await super.ngOnInit();
         this.initSections([
             { sectionKey: 'ruleSetInformation', sectionName: 'Rule Set Information', isExpanded: true },
-            { sectionKey: 'providerConfiguration', sectionName: 'Provider Configuration', isExpanded: true },
-            { sectionKey: 'ruleSetConfiguration', sectionName: 'Rule Set Configuration', isExpanded: true },
+            { sectionKey: 'configuration', sectionName: 'Configuration', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivitySyncConnectionRuleSets', sectionName: 'Activity Sync Connection Rule Sets', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncExclusions', sectionName: 'Activity Sync Exclusions', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncConnectionRuleSets', sectionName: 'Activity Sync Connection Rule Sets', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false }
         ]);
     }
 }

@@ -17,8 +17,8 @@ export class mjBizAppsCommonActivitySyncExtensionFormComponent extends BaseFormC
         this.initSections([
             { sectionKey: 'pluginConfiguration', sectionName: 'Plugin Configuration', isExpanded: true },
             { sectionKey: 'integrationSettings', sectionName: 'Integration Settings', isExpanded: true },
-            { sectionKey: 'executionPolicy', sectionName: 'Execution Policy', isExpanded: true },
-            { sectionKey: 'monitoring', sectionName: 'Monitoring', isExpanded: true },
+            { sectionKey: 'executionLogic', sectionName: 'Execution Logic', isExpanded: true },
+            { sectionKey: 'performanceAndHealth', sectionName: 'Performance and Health', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

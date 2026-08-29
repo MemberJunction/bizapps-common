@@ -778,7 +778,7 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSet_ {
     @MaxLength(36)
     ActivitySyncConnectionID: string;
         
-    @Field() 
+    @Field({description: `The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.`}) 
     @MaxLength(36)
     ActivitySyncRuleSetID: string;
         
@@ -1262,7 +1262,7 @@ export class mjBizAppsCommonActivitySyncExclusion_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Optional rule set this exclusion belongs to. Null means global — the identity is never ingested on any connection. A legal hold or opt-out is usually global; a mailbox-specific mute is not.`}) 
     @MaxLength(36)
     ActivitySyncRuleSetID?: string;
         

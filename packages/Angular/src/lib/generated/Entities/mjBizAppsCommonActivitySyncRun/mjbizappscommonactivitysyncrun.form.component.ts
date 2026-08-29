@@ -16,11 +16,11 @@ export class mjBizAppsCommonActivitySyncRunFormComponent extends BaseFormCompone
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'syncContext', sectionName: 'Sync Context', isExpanded: true },
+            { sectionKey: 'syncConfiguration', sectionName: 'Sync Configuration', isExpanded: true },
             { sectionKey: 'executionTimeline', sectionName: 'Execution Timeline', isExpanded: true },
-            { sectionKey: 'executionResults', sectionName: 'Execution Results', isExpanded: true },
-            { sectionKey: 'executionMetrics', sectionName: 'Execution Metrics', isExpanded: true },
-            { sectionKey: 'syncState', sectionName: 'Sync State', isExpanded: true },
+            { sectionKey: 'executionStatus', sectionName: 'Execution Status', isExpanded: true },
+            { sectionKey: 'syncMetrics', sectionName: 'Sync Metrics', isExpanded: true },
+            { sectionKey: 'syncWatermark', sectionName: 'Sync Watermark', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncRunDetails', sectionName: 'Activity Sync Run Details', isExpanded: false }
         ]);

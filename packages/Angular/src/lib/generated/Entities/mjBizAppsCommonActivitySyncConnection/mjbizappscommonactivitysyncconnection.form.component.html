@@ -14,7 +14,7 @@
     <mj-collapsible-panel
         SectionKey="connectionDetails"
         SectionName="Connection Details"
-        Icon="fa fa-info-circle"
+        Icon="fa fa-plug"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -49,7 +49,7 @@
     <mj-collapsible-panel
         SectionKey="operationalStatus"
         SectionName="Operational Status"
-        Icon="fa fa-check-circle"
+        Icon="fa fa-tachometer-alt"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -84,30 +84,14 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="StartAt"
-            Type="datepicker"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="EndAt"
-            Type="datepicker"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
 
     </mj-collapsible-panel>
 
-    <!-- Ownership and Security Section -->
+    <!-- Access and Configuration Section -->
     <mj-collapsible-panel
-        SectionKey="ownershipAndSecurity"
-        SectionName="Ownership and Security"
-        Icon="fa fa-lock"
+        SectionKey="accessAndConfiguration"
+        SectionName="Access and Configuration"
+        Icon="fa fa-sliders-h"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -127,34 +111,6 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="EncryptionKeyID"
-            Type="textbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-            LinkType="Record"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="StorageProviderID"
-            Type="textbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-            LinkType="Record"
-        ></mj-form-field>
-
-    </mj-collapsible-panel>
-
-    <!-- Configuration Section -->
-    <mj-collapsible-panel
-        SectionKey="configuration"
-        SectionName="Configuration"
-        Icon="fa fa-sliders-h"
-        [Form]="this"
-        [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
@@ -179,6 +135,60 @@
             Type="select"
             [EditMode]="EditMode"
             [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Activation Window Section -->
+    <mj-collapsible-panel
+        SectionKey="activationWindow"
+        SectionName="Activation Window"
+        Icon="fa fa-calendar-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="StartAt"
+            Type="datepicker"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="EndAt"
+            Type="datepicker"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Security and Storage Section -->
+    <mj-collapsible-panel
+        SectionKey="securityAndStorage"
+        SectionName="Security and Storage"
+        Icon="fa fa-shield-alt"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="EncryptionKeyID"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+            LinkType="Record"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="StorageProviderID"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+            LinkType="Record"
         ></mj-form-field>
         <mj-form-field 
             [Record]="record"
@@ -273,25 +283,25 @@
         }
     </mj-collapsible-panel>
 
-    <!-- Activity Sync Connection Rule Sets Section -->
+    <!-- Activity Sync Extensions Section -->
     <mj-collapsible-panel
-        SectionKey="mJBizAppsCommonActivitySyncConnectionRuleSets"
-        SectionName="Activity Sync Connection Rule Sets"
-        Icon="fa fa-sync"
+        SectionKey="mJBizAppsCommonActivitySyncExtensions"
+        SectionName="Activity Sync Extensions"
+        Icon="fa fa-plug"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncConnectionRuleSets')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncExtensions')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Connection Rule Sets','ActivitySyncConnectionID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Connection Rule Sets','ActivitySyncConnectionID')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncConnectionRuleSets')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Extensions','ActivitySyncConnectionID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Extensions','ActivitySyncConnectionID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncExtensions')"
                 [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncConnectionRuleSets', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncExtensions', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
@@ -302,7 +312,7 @@
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonActivitySyncRuns"
         SectionName="Activity Sync Runs"
-        Icon="fa fa-sync-alt"
+        Icon="fa fa-sync"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
@@ -323,25 +333,25 @@
         }
     </mj-collapsible-panel>
 
-    <!-- Activity Sync Extensions Section -->
+    <!-- Activity Sync Connection Rule Sets Section -->
     <mj-collapsible-panel
-        SectionKey="mJBizAppsCommonActivitySyncExtensions"
-        SectionName="Activity Sync Extensions"
-        Icon="fa fa-plug"
+        SectionKey="mJBizAppsCommonActivitySyncConnectionRuleSets"
+        SectionName="Activity Sync Connection Rule Sets"
+        Icon="fa fa-link"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncExtensions')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncConnectionRuleSets')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Extensions','ActivitySyncConnectionID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Extensions','ActivitySyncConnectionID')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncExtensions')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Connection Rule Sets','ActivitySyncConnectionID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Connection Rule Sets','ActivitySyncConnectionID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncConnectionRuleSets')"
                 [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncExtensions', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncConnectionRuleSets', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

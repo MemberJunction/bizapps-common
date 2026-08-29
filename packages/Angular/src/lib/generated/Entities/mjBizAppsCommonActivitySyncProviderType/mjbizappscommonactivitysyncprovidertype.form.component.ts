@@ -17,12 +17,12 @@ export class mjBizAppsCommonActivitySyncProviderTypeFormComponent extends BaseFo
         await super.ngOnInit();
         this.initSections([
             { sectionKey: 'providerIdentification', sectionName: 'Provider Identification', isExpanded: true },
-            { sectionKey: 'technicalConfiguration', sectionName: 'Technical Configuration', isExpanded: true },
-            { sectionKey: 'policySettings', sectionName: 'Policy Settings', isExpanded: true },
+            { sectionKey: 'providerConfiguration', sectionName: 'Provider Configuration', isExpanded: true },
+            { sectionKey: 'operationalDefaults', sectionName: 'Operational Defaults', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivitySyncRuleSets', sectionName: 'Activity Sync Rule Sets', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncConnections', sectionName: 'Activity Sync Connections', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncExtensions', sectionName: 'Activity Sync Extensions', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncRuleSets', sectionName: 'Activity Sync Rule Sets', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncExtensions', sectionName: 'Activity Sync Extensions', isExpanded: false }
         ]);
     }
 }

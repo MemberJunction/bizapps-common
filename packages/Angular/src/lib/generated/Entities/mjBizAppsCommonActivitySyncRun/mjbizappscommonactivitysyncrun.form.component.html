@@ -10,37 +10,21 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Sync Context Section -->
+    <!-- Sync Configuration Section -->
     <mj-collapsible-panel
-        SectionKey="syncContext"
-        SectionName="Sync Context"
-        Icon="fa fa-info-circle"
+        SectionKey="syncConfiguration"
+        SectionName="Sync Configuration"
+        Icon="fa fa-plug"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
-            [ShowLabel]="true"
+            [ShowLabel]="false"
             FieldName="ActivitySyncConnectionID"
             Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
             LinkType="Record"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="TriggerType"
-            Type="select"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="IsDryRun"
-            Type="checkbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
         ></mj-form-field>
 
     </mj-collapsible-panel>
@@ -71,10 +55,10 @@
 
     </mj-collapsible-panel>
 
-    <!-- Execution Results Section -->
+    <!-- Execution Status Section -->
     <mj-collapsible-panel
-        SectionKey="executionResults"
-        SectionName="Execution Results"
+        SectionKey="executionStatus"
+        SectionName="Execution Status"
         Icon="fa fa-check-circle"
         [Form]="this"
         [FormContext]="formContext">
@@ -89,6 +73,22 @@
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
+            FieldName="TriggerType"
+            Type="select"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="IsDryRun"
+            Type="checkbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
             FieldName="ErrorMessage"
             Type="textarea"
             [EditMode]="EditMode"
@@ -97,10 +97,10 @@
 
     </mj-collapsible-panel>
 
-    <!-- Execution Metrics Section -->
+    <!-- Sync Metrics Section -->
     <mj-collapsible-panel
-        SectionKey="executionMetrics"
-        SectionName="Execution Metrics"
+        SectionKey="syncMetrics"
+        SectionName="Sync Metrics"
         Icon="fa fa-chart-line"
         [Form]="this"
         [FormContext]="formContext">
@@ -155,11 +155,11 @@
 
     </mj-collapsible-panel>
 
-    <!-- Sync State Section -->
+    <!-- Sync Watermark Section -->
     <mj-collapsible-panel
-        SectionKey="syncState"
-        SectionName="Sync State"
-        Icon="fa fa-database"
+        SectionKey="syncWatermark"
+        SectionName="Sync Watermark"
+        Icon="fa fa-bookmark"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 

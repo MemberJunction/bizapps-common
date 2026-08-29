@@ -688,14 +688,68 @@ EXEC sp_addextendedproperty
     @level2type = N'COLUMN', @level2name = N'ActivitySyncRuleSetID';
 GO
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- =============================================================================
 -- CODE GEN RUN
 -- =============================================================================
--- Appended verbatim from CodeGen_Run_2026-08-29_22-19-04.sql (full entity
--- INSERTs + views/SPs for the seven new Activity Sync entities and regenerated
--- Connections/Rules) plus CodeGen_Run_2026-08-29_22-54-23.sql (Run Details
--- related-entity map + refreshed view after --skipfiles on r2).
--- No sp_updateextendedproperty. 7e153a8's guarded drop-then-add above stands.
+-- Appended from CodeGen_Run_2026-08-29_23-23-53.sql (ONE skipfiles pass on
+-- bizapps_activity_sync_grok_r3_20260829 after V1500 DDL, including 7e153a8
+-- drop-then-add properties and the two item-4 properties, actually executed).
+-- Host-install edits vs the raw emit, proven on r4 (it6 restore + this file):
+--   * spUpdateExistingEntityFieldsFromSchema scoped to the seven NEW entities
+--     (the unscoped form rewrites Sequence on existing Connection/Rule fields
+--     and hits UQ_EntityField_EntityID_Sequence).
+--   * second-pass +100000 sequence bump skipped on Connection and Rule
+--     (those entities already shipped; a second bump collides at 100015).
+-- No second skipfiles. No r2 two-capture append. No sp_updateextendedproperty.
 -- =============================================================================
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Provider Types */
@@ -724,7 +778,7 @@ GO
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '0e231ab5-4e26-49cd-85b4-fa532bb5c88e',
+         'ad8b1485-8be1-4e5c-8efb-3b4fea363f75',
          'MJ_BizApps_Common: Activity Sync Provider Types',
          'Activity Sync Provider Types',
          'A kind of activity source (Microsoft365, Gmail, Twilio SMS, LinkedIn, …). Provider identity is DATA, not a CHECK constraint, so a new source is a new plugin package plus a metadata row — never a migration to Common. Also carries the DEFAULTS an operator should set once per provider rather than per mailbox: storage, encryption key, attachment cap, and what an undecided qualification verdict means.',
@@ -750,22 +804,22 @@ GO
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Provider Types to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '0e231ab5-4e26-49cd-85b4-fa532bb5c88e', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'ad8b1485-8be1-4e5c-8efb-3b4fea363f75', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Provider Types for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('0e231ab5-4e26-49cd-85b4-fa532bb5c88e', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('ad8b1485-8be1-4e5c-8efb-3b4fea363f75', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Provider Types for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('0e231ab5-4e26-49cd-85b4-fa532bb5c88e', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ad8b1485-8be1-4e5c-8efb-3b4fea363f75', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Provider Types for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('0e231ab5-4e26-49cd-85b4-fa532bb5c88e', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ad8b1485-8be1-4e5c-8efb-3b4fea363f75', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Rule Sets */
 
@@ -793,7 +847,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '2dd8a096-00bc-4755-9a43-f4230e2ca6d3',
+         '7ed9f26e-b01d-472a-87c9-b163287f80b4',
          'MJ_BizApps_Common: Activity Sync Rule Sets',
          'Activity Sync Rule Sets',
          'A NAMED, REUSABLE set of rules bound to many connections. Rules used to hang off a single connection, so an org-wide prohibition had to be retyped for every mailbox and a new mailbox started with none — governance by copy-paste. A rule set is authored once and bound wherever it applies.',
@@ -819,22 +873,22 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Rule Sets to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '2dd8a096-00bc-4755-9a43-f4230e2ca6d3', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7ed9f26e-b01d-472a-87c9-b163287f80b4', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Rule Sets for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('2dd8a096-00bc-4755-9a43-f4230e2ca6d3', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('7ed9f26e-b01d-472a-87c9-b163287f80b4', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Rule Sets for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('2dd8a096-00bc-4755-9a43-f4230e2ca6d3', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('7ed9f26e-b01d-472a-87c9-b163287f80b4', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Rule Sets for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('2dd8a096-00bc-4755-9a43-f4230e2ca6d3', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('7ed9f26e-b01d-472a-87c9-b163287f80b4', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Connection Rule Sets */
 
@@ -862,7 +916,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         'c7852f9f-cdd6-4868-a42c-1eff6a51c197',
+         'd2a4da75-fccd-4196-b6eb-0c15b28c95b0',
          'MJ_BizApps_Common: Activity Sync Connection Rule Sets',
          'Activity Sync Connection Rule Sets',
          'Binds a rule set to a connection, ordered. Many-to-many so a mailbox composes an org-wide baseline, a team overlay, and anything specific to itself — rather than owning one private copy of everything.',
@@ -888,22 +942,22 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Connection Rule Sets to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'c7852f9f-cdd6-4868-a42c-1eff6a51c197', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'd2a4da75-fccd-4196-b6eb-0c15b28c95b0', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Connection Rule Sets for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('c7852f9f-cdd6-4868-a42c-1eff6a51c197', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('d2a4da75-fccd-4196-b6eb-0c15b28c95b0', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Connection Rule Sets for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('c7852f9f-cdd6-4868-a42c-1eff6a51c197', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('d2a4da75-fccd-4196-b6eb-0c15b28c95b0', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Connection Rule Sets for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('c7852f9f-cdd6-4868-a42c-1eff6a51c197', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('d2a4da75-fccd-4196-b6eb-0c15b28c95b0', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Exclusions */
 
@@ -931,7 +985,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '43dd4ac3-48ff-419d-9a68-0558ae09ad73',
+         '556381bf-9ace-4a69-85bb-22eae1856c88',
          'MJ_BizApps_Common: Activity Sync Exclusions',
          'Activity Sync Exclusions',
          'Never-ingest list, by identity: an email address, a phone number, a social handle, or a whole domain. Rows rather than a delimited string because an exclusion that cannot be queried cannot be audited, and this is precisely what a legal hold, an HR matter or an opt-out has to be able to prove. Scoped to a rule set, or global when ActivitySyncRuleSetID is null.',
@@ -957,22 +1011,22 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Exclusions to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '43dd4ac3-48ff-419d-9a68-0558ae09ad73', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '556381bf-9ace-4a69-85bb-22eae1856c88', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Exclusions for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('43dd4ac3-48ff-419d-9a68-0558ae09ad73', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('556381bf-9ace-4a69-85bb-22eae1856c88', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Exclusions for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('43dd4ac3-48ff-419d-9a68-0558ae09ad73', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('556381bf-9ace-4a69-85bb-22eae1856c88', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Exclusions for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('43dd4ac3-48ff-419d-9a68-0558ae09ad73', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('556381bf-9ace-4a69-85bb-22eae1856c88', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Runs */
 
@@ -1000,7 +1054,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         'ac80fb5f-aa03-4819-b0d8-0edc4cb8f3a0',
+         'ecf19741-cba6-4db7-95a3-85fa37bec2f1',
          'MJ_BizApps_Common: Activity Sync Runs',
          'Activity Sync Runs',
          'One sync pass over one connection: what it fetched, what it decided, and whether it earned the right to move the watermark. A dry run is a real row with IsDryRun set — it evaluates and reports without writing an Activity or advancing the connection.',
@@ -1026,22 +1080,22 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Runs to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'ac80fb5f-aa03-4819-b0d8-0edc4cb8f3a0', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'ecf19741-cba6-4db7-95a3-85fa37bec2f1', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Runs for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('ac80fb5f-aa03-4819-b0d8-0edc4cb8f3a0', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('ecf19741-cba6-4db7-95a3-85fa37bec2f1', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Runs for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('ac80fb5f-aa03-4819-b0d8-0edc4cb8f3a0', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ecf19741-cba6-4db7-95a3-85fa37bec2f1', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Runs for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('ac80fb5f-aa03-4819-b0d8-0edc4cb8f3a0', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ecf19741-cba6-4db7-95a3-85fa37bec2f1', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Run Details */
 
@@ -1069,7 +1123,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '8c05be86-bc2b-4ae7-8e09-6575edab0f13',
+         'ac16b066-9460-44f5-b027-3fd397e61f34',
          'MJ_BizApps_Common: Activity Sync Run Details',
          'Activity Sync Run Details',
          'The decision made about ONE message, written for every item considered INCLUDING every skip — which is what makes "why did my email not appear" answerable. ExternalID and the decision are always safe to keep: an opaque provider id and the name of a rule, not content. CapturedContent is different in kind and is governed by the effective SkippedContentPolicy. Give this entity permissions DISTINCT from Activity: it can hold fragments of messages that were deliberately not ingested.',
@@ -1095,22 +1149,22 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Run Details to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '8c05be86-bc2b-4ae7-8e09-6575edab0f13', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'ac16b066-9460-44f5-b027-3fd397e61f34', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Run Details for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('8c05be86-bc2b-4ae7-8e09-6575edab0f13', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('ac16b066-9460-44f5-b027-3fd397e61f34', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Run Details for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('8c05be86-bc2b-4ae7-8e09-6575edab0f13', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ac16b066-9460-44f5-b027-3fd397e61f34', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Run Details for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('8c05be86-bc2b-4ae7-8e09-6575edab0f13', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('ac16b066-9460-44f5-b027-3fd397e61f34', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to create new entity MJ_BizApps_Common: Activity Sync Extensions */
 
@@ -1138,7 +1192,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '37aca09a-df6e-4a81-a519-690b425884ed',
+         'c7e5ece1-f347-4bc9-ac53-e2f33577b449',
          'MJ_BizApps_Common: Activity Sync Extensions',
          'Activity Sync Extensions',
          'Registration of an in-process enrichment plugin that runs inside the Activity write transaction. Common ships this table; each consumer app ships its own rows, so a downstream app adds links (a deal, a campaign) without Common knowing it exists. Extensions ENRICH — they never veto an activity, because qualification has already run and capture must not depend on which apps are installed.',
@@ -1164,89 +1218,25 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Activity Sync Extensions to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '37aca09a-df6e-4a81-a519-690b425884ed', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'c7e5ece1-f347-4bc9-ac53-e2f33577b449', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Extensions for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('37aca09a-df6e-4a81-a519-690b425884ed', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
+                                                   ('c7e5ece1-f347-4bc9-ac53-e2f33577b449', 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Extensions for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('37aca09a-df6e-4a81-a519-690b425884ed', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('c7e5ece1-f347-4bc9-ac53-e2f33577b449', 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Activity Sync Extensions for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                                                    ([EntityID], [RoleID], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                                   ('37aca09a-df6e-4a81-a519-690b425884ed', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
+                                                   ('c7e5ece1-f347-4bc9-ac53-e2f33577b449', 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE());
 
 /* SQL text to update existing entities from schema */
 EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncExclusion] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExclusion___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncExclusion] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExclusion___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRun] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRun___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRun] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRun___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
-GO
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncConnectionRuleSet */
 ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncConnectionRuleSet] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
@@ -1280,100 +1270,36 @@ GO
 ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncConnectionRuleSet] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncConnectionRuleSet___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
 GO
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
 GO
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRunDetail] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncExclusion] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
 GO
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
 GO
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRunDetail___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExclusion___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
 GO
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
 GO
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRunDetail] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncExclusion] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
 GO
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
 GO
 
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRunDetail___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncExtension] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExtension___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncExtension] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExtension___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRuleSet] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRuleSet___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-UPDATE [${flyway:defaultSchema}].[ActivitySyncRuleSet] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
-ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRuleSet___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExclusion */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExclusion] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExclusion___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
 GO
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncProviderType */
@@ -1408,13 +1334,141 @@ GO
 ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncProviderType] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncProviderType___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
 GO
 
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRunDetail] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRunDetail___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRunDetail] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRunDetail */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRunDetail] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRunDetail___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRun] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRun___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRun] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRun */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRun] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRun___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRuleSet] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRuleSet___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncRuleSet] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncRuleSet */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncRuleSet] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncRuleSet___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncExtension] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExtension___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+UPDATE [${flyway:defaultSchema}].[ActivitySyncExtension] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ActivitySyncExtension */
+ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncExtension] ADD CONSTRAINT [DF___mj_BizAppsCommon_ActivitySyncExtension___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+GO
+
 /* SQL text to insert 113 new entity field(s) */
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '43DD4AC3-48FF-419D-9A68-0558AE09AD73'
+       WHERE [EntityID] = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f8508259-99b5-4efc-b24a-b1753d262a64' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '210d070a-bc54-43e3-83aa-999b27982e16' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1447,8 +1501,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f8508259-99b5-4efc-b24a-b1753d262a64',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '210d070a-bc54-43e3-83aa-999b27982e16',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
             1,
             'ID',
             'ID',
@@ -1477,7 +1531,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f348aeae-159a-4559-a331-b5fb1f183d4c' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'ActivitySyncRuleSetID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '25052037-85a8-4f55-a64f-a17de48ae3fb' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'ActivitySyncConnectionID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1510,23 +1564,23 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f348aeae-159a-4559-a331-b5fb1f183d4c',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '25052037-85a8-4f55-a64f-a17de48ae3fb',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
             2,
-            'ActivitySyncRuleSetID',
-            'Activity Sync Rule Set ID',
+            'ActivitySyncConnectionID',
+            'Activity Sync Connection ID',
             NULL,
             'uniqueidentifier',
             16,
             0,
             0,
-            1,
+            0,
             NULL,
             0,
             1,
             0,
             0,
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3',
+            'C22591BB-B33A-439C-9567-5494A7B71D8A',
             'ID',
             0,
             0,
@@ -1540,7 +1594,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '57db0de7-22e0-4224-905a-733d46c663be' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'IdentityKind')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7bb4c198-cf87-4258-aeb5-99bf1f035baa' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'ActivitySyncRuleSetID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1573,8 +1627,453 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '57db0de7-22e0-4224-905a-733d46c663be',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '7bb4c198-cf87-4258-aeb5-99bf1f035baa',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            3,
+            'ActivitySyncRuleSetID',
+            'Activity Sync Rule Set ID',
+            'The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.',
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '47ccf48d-b837-44e0-9475-ff1b42076f34' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'Sequence')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '47ccf48d-b837-44e0-9475-ff1b42076f34',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            4,
+            'Sequence',
+            'Sequence',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7f25d600-b7d0-4548-816c-fa78ffe59044' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'IsEnabled')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '7f25d600-b7d0-4548-816c-fa78ffe59044',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            5,
+            'IsEnabled',
+            'Is Enabled',
+            NULL,
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '813e93a7-d167-45f0-87f5-c05f70947b92' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = '__mj_CreatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '813e93a7-d167-45f0-87f5-c05f70947b92',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            6,
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '70644c38-265d-492e-a219-b17262d3736c' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = '__mj_UpdatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '70644c38-265d-492e-a219-b17262d3736c',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            7,
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+UPDATE [${mjSchema}].[EntityField]
+         SET [Sequence] = [Sequence] + 100000
+       WHERE [EntityID] = '556381BF-9ACE-4A69-85BB-22EAE1856C88'
+         AND [Sequence] < 100000;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1fb477c2-553d-479c-907f-af425f214adc' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'ID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '1fb477c2-553d-479c-907f-af425f214adc',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            1,
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '84d4e65c-c18b-4a52-bd56-1fc459420563' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'ActivitySyncRuleSetID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '84d4e65c-c18b-4a52-bd56-1fc459420563',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            2,
+            'ActivitySyncRuleSetID',
+            'Activity Sync Rule Set ID',
+            'Optional rule set this exclusion belongs to. Null means global — the identity is never ingested on any connection. A legal hold or opt-out is usually global; a mailbox-specific mute is not.',
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ad5a0fb1-1144-408a-a0e8-3f300bc786ac' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'IdentityKind')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'ad5a0fb1-1144-408a-a0e8-3f300bc786ac',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             3,
             'IdentityKind',
             'Identity Kind',
@@ -1603,7 +2102,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '63896893-f878-4a02-b571-f9d291e3b2c9' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'IdentityValue')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7a54676f-41bd-466b-9bb6-26425b32f8b0' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'IdentityValue')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1636,8 +2135,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '63896893-f878-4a02-b571-f9d291e3b2c9',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '7a54676f-41bd-466b-9bb6-26425b32f8b0',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             4,
             'IdentityValue',
             'Identity Value',
@@ -1666,7 +2165,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'dfbe53bf-a115-4ce0-b4ba-1ec0b55dacee' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'PersonID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '568087ee-b48d-43b3-9411-28302a37b0c5' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'PersonID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1699,8 +2198,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'dfbe53bf-a115-4ce0-b4ba-1ec0b55dacee',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '568087ee-b48d-43b3-9411-28302a37b0c5',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             5,
             'PersonID',
             'Person ID',
@@ -1729,7 +2228,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '69cef437-d14a-43bd-ac1f-b9dd9c1ef972' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'Reason')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9560bace-04ee-4b7e-826b-a5e64e8513e1' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'Reason')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1762,8 +2261,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '69cef437-d14a-43bd-ac1f-b9dd9c1ef972',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '9560bace-04ee-4b7e-826b-a5e64e8513e1',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             6,
             'Reason',
             'Reason',
@@ -1792,7 +2291,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd6197eab-fa6b-4bcc-a08f-08f4e30bbafb' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'EffectiveFrom')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8f9e007e-b597-44e8-ab81-7bb7d2aca504' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'EffectiveFrom')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1825,8 +2324,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'd6197eab-fa6b-4bcc-a08f-08f4e30bbafb',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '8f9e007e-b597-44e8-ab81-7bb7d2aca504',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             7,
             'EffectiveFrom',
             'Effective From',
@@ -1855,7 +2354,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '38d1a947-6032-4d77-a223-78ad5bf010ae' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'EffectiveTo')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '85b42461-d8db-4d00-ad4e-9b9cc42eaf3e' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'EffectiveTo')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1888,8 +2387,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '38d1a947-6032-4d77-a223-78ad5bf010ae',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '85b42461-d8db-4d00-ad4e-9b9cc42eaf3e',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             8,
             'EffectiveTo',
             'Effective To',
@@ -1918,7 +2417,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9ba2ac68-fc8a-469b-b3f8-b23b723b9a1f' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'IsEnabled')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b741ade2-f250-40d7-b0d2-61d28b331f3e' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'IsEnabled')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1951,8 +2450,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '9ba2ac68-fc8a-469b-b3f8-b23b723b9a1f',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            'b741ade2-f250-40d7-b0d2-61d28b331f3e',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             9,
             'IsEnabled',
             'Is Enabled',
@@ -1981,7 +2480,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9447958e-900d-4e54-ad1f-4c4211187011' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = '__mj_CreatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a572f4c8-52e8-49ec-a42d-de68c3c730b5' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = '__mj_CreatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2014,8 +2513,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '9447958e-900d-4e54-ad1f-4c4211187011',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            'a572f4c8-52e8-49ec-a42d-de68c3c730b5',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             10,
             '__mj_CreatedAt',
             'Created At',
@@ -2044,7 +2543,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'dbddebd8-87b7-450a-b068-2d0b17b49f17' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '64004f94-0e95-4424-91e9-86aa9cd5d167' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2077,8 +2576,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'dbddebd8-87b7-450a-b068-2d0b17b49f17',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            '64004f94-0e95-4424-91e9-86aa9cd5d167',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
             11,
             '__mj_UpdatedAt',
             'Updated At',
@@ -2108,10 +2607,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0'
+       WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3a664e26-9f81-41bc-a0c8-8793e4038939' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '57a720bd-8cb1-4429-95dd-150c529ff1dd' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2144,8 +2643,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '3a664e26-9f81-41bc-a0c8-8793e4038939',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            '57a720bd-8cb1-4429-95dd-150c529ff1dd',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
             1,
             'ID',
             'ID',
@@ -2174,7 +2673,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '6f4ef6c9-e582-41de-be08-70ea509356be' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'ActivitySyncConnectionID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '52553d7e-79da-4dfd-9cc3-5f551e411de5' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'Code')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2207,14 +2706,14 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '6f4ef6c9-e582-41de-be08-70ea509356be',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            '52553d7e-79da-4dfd-9cc3-5f551e411de5',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
             2,
-            'ActivitySyncConnectionID',
-            'Activity Sync Connection ID',
+            'Code',
+            'Code',
             NULL,
-            'uniqueidentifier',
-            16,
+            'nvarchar',
+            120,
             0,
             0,
             0,
@@ -2223,21 +2722,21 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            'C22591BB-B33A-439C-9567-5494A7B71D8A',
-            'ID',
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
             0,
             0,
             1,
-            0,
-            0,
-            0,
             'Search',
             GETUTCDATE(),
             GETUTCDATE()
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fffdc12e-3879-4931-b101-1404836ab239' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'StartedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e3a328e8-5b81-48d7-9021-21ef3e67e3c2' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'Name')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2270,163 +2769,37 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'fffdc12e-3879-4931-b101-1404836ab239',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            'e3a328e8-5b81-48d7-9021-21ef3e67e3c2',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
             3,
-            'StartedAt',
-            'Started At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'sysdatetimeoffset()',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e5bfff94-f5f9-40e6-b191-5bf02af8ee1d' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'EndedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'e5bfff94-f5f9-40e6-b191-5bf02af8ee1d',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            4,
-            'EndedAt',
-            'Ended At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8da7f6ee-36dd-493a-bd52-e6540c0ee50b' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Status')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '8da7f6ee-36dd-493a-bd52-e6540c0ee50b',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            5,
-            'Status',
-            'Status',
+            'Name',
+            'Name',
             NULL,
             'nvarchar',
-            40,
+            200,
             0,
             0,
             0,
-            'Running',
+            NULL,
             0,
             1,
             0,
             0,
             NULL,
             NULL,
+            1,
+            1,
             0,
+            1,
             0,
-            0,
-            0,
-            0,
-            0,
+            1,
             'Search',
             GETUTCDATE(),
             GETUTCDATE()
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '54cfaba8-0096-4f6c-9abf-38b6ef6deeae' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'TriggerType')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b4ba9bc4-5776-424b-b009-5ebb50ca712f' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'Description')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2459,641 +2832,11 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '54cfaba8-0096-4f6c-9abf-38b6ef6deeae',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            6,
-            'TriggerType',
-            'Trigger Type',
-            NULL,
-            'nvarchar',
-            40,
-            0,
-            0,
-            0,
-            'Scheduled',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ffd6667a-eb33-41f1-aa1c-518577bdeab4' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'IsDryRun')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'ffd6667a-eb33-41f1-aa1c-518577bdeab4',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            7,
-            'IsDryRun',
-            'Is Dry Run',
-            NULL,
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '98fdbd40-d334-4ce0-85cb-244ae07c08e6' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Fetched')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '98fdbd40-d334-4ce0-85cb-244ae07c08e6',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            8,
-            'Fetched',
-            'Fetched',
-            NULL,
-            'int',
+            'b4ba9bc4-5776-424b-b009-5ebb50ca712f',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
             4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '21eda8dd-a859-40ab-86cc-324af3b2dccc' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Included')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '21eda8dd-a859-40ab-86cc-324af3b2dccc',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            9,
-            'Included',
-            'Included',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c1c06cb4-a932-40a0-ad27-57be898ed511' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Excluded')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'c1c06cb4-a932-40a0-ad27-57be898ed511',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            10,
-            'Excluded',
-            'Excluded',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4bdbd229-eb4b-4c06-8b2a-bdfb34e9f0e0' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Duplicates')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '4bdbd229-eb4b-4c06-8b2a-bdfb34e9f0e0',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            11,
-            'Duplicates',
-            'Duplicates',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '46ff9d43-8528-486f-8e74-afbdf37e490e' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'Failed')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '46ff9d43-8528-486f-8e74-afbdf37e490e',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            12,
-            'Failed',
-            'Failed',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e8d36003-1b47-4aff-8366-64c287fd3489' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'ExtensionErrors')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'e8d36003-1b47-4aff-8366-64c287fd3489',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            13,
-            'ExtensionErrors',
-            'Extension Errors',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e3c3671d-675a-4078-a4f8-999c593e80d5' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'WatermarkBefore')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'e3c3671d-675a-4078-a4f8-999c593e80d5',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            14,
-            'WatermarkBefore',
-            'Watermark Before',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd8a026e1-96d5-4a1e-a0eb-928d5f4ba026' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'WatermarkAfter')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'd8a026e1-96d5-4a1e-a0eb-928d5f4ba026',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            15,
-            'WatermarkAfter',
-            'Watermark After',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '89cf7125-5e97-404e-9894-ce2f1cdee2a1' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'ErrorMessage')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '89cf7125-5e97-404e-9894-ce2f1cdee2a1',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            16,
-            'ErrorMessage',
-            'Error Message',
+            'Description',
+            'Description',
             NULL,
             'nvarchar',
             -1,
@@ -3119,7 +2862,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '678dee4f-b995-4b26-9812-9011005eee3f' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = '__mj_CreatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b89e3f6e-bedb-4ce4-82f8-29c1ff23b809' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DriverClass')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3152,9 +2895,702 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '678dee4f-b995-4b26-9812-9011005eee3f',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            17,
+            'b89e3f6e-bedb-4ce4-82f8-29c1ff23b809',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            5,
+            'DriverClass',
+            'Driver Class',
+            NULL,
+            'nvarchar',
+            400,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '43042f34-0dd3-4789-bd19-f3ae56cc733c' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'IconClass')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '43042f34-0dd3-4789-bd19-f3ae56cc733c',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            6,
+            'IconClass',
+            'Icon Class',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2c86f25a-3816-4ec0-8885-06e4399313e0' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'SupportedKinds')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '2c86f25a-3816-4ec0-8885-06e4399313e0',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            7,
+            'SupportedKinds',
+            'Supported Kinds',
+            NULL,
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2b27de14-383f-4d07-9dcf-050237cec7c7' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultQualificationPolicy')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '2b27de14-383f-4d07-9dcf-050237cec7c7',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            8,
+            'DefaultQualificationPolicy',
+            'Default Qualification Policy',
+            'What an Undecided qualification verdict means for this provider once every rule stage has abstained. Exclude (the default) fails CLOSED — correct for anything mailbox-shaped, where capturing a private message is worse than missing a business one.',
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            'Exclude',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '10fdaf3a-2042-41f1-b148-beffc8fcb001' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultSkippedContentPolicy')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '10fdaf3a-2042-41f1-b148-beffc8fcb001',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            9,
+            'DefaultSkippedContentPolicy',
+            'Default Skipped Content Policy',
+            'Whether a SKIPPED message may have content retained for audit, and how much. None keeps only the opaque external id and the decision. SubjectEncrypted and FullEncrypted additionally keep ciphertext, and are only valid with DefaultEncryptionKeyID set — enforced by CK_ActivitySyncProviderType_KeyRequired. Overridable per connection.',
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            'None',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5e2effe9-2376-454d-8f8c-7e967e27e485' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultEncryptionKeyID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5e2effe9-2376-454d-8f8c-7e967e27e485',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            10,
+            'DefaultEncryptionKeyID',
+            'Default Encryption Key ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '854DB803-34D4-46CD-8B8D-712974AE592F',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd1c50585-1359-49b7-a011-6d590570b9e1' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultStorageProviderID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'd1c50585-1359-49b7-a011-6d590570b9e1',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            11,
+            'DefaultStorageProviderID',
+            'Default Storage Provider ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '28248F34-2837-EF11-86D4-6045BDEE16E6',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '827d6b7c-ba37-446c-a9c1-912320c1aff3' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultMaxAttachmentBytes')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '827d6b7c-ba37-446c-a9c1-912320c1aff3',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            12,
+            'DefaultMaxAttachmentBytes',
+            'Default Max Attachment Bytes',
+            NULL,
+            'bigint',
+            8,
+            19,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8f863005-aa6e-40a3-8ede-5601e45281e0' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'Sequence')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '8f863005-aa6e-40a3-8ede-5601e45281e0',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            13,
+            'Sequence',
+            'Sequence',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f609014d-e4d4-41a9-b26c-a12871cc782c' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'IsSystem')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'f609014d-e4d4-41a9-b26c-a12871cc782c',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            14,
+            'IsSystem',
+            'Is System',
+            NULL,
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd6351250-3c56-41cb-a5c1-003df4812fc3' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'IsActive')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'd6351250-3c56-41cb-a5c1-003df4812fc3',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            15,
+            'IsActive',
+            'Is Active',
+            NULL,
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5e0546dd-7ea6-48ed-81df-3b9bfae705cd' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = '__mj_CreatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5e0546dd-7ea6-48ed-81df-3b9bfae705cd',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            16,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -3182,7 +3618,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '83b32b7f-c72c-46fc-b491-dd289099eb1e' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ffcd695a-8745-44ba-af76-b532f8bd5db5' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3215,9 +3651,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '83b32b7f-c72c-46fc-b491-dd289099eb1e',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            18,
+            'ffcd695a-8745-44ba-af76-b532f8bd5db5',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            17,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -3246,10 +3682,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197'
+       WHERE [EntityID] = 'AC16B066-9460-44F5-B027-3FD397E61F34'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '416b9ac7-8565-4735-92a4-2635f2147ac5' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '87194352-7d59-4bb2-af24-c815d3d43892' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3282,8 +3718,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '416b9ac7-8565-4735-92a4-2635f2147ac5',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '87194352-7d59-4bb2-af24-c815d3d43892',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
             1,
             'ID',
             'ID',
@@ -3312,7 +3748,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b44aa5f7-dac6-4d95-8cfe-448baa93115d' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'ActivitySyncConnectionID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '92dd62bb-d66f-401b-8830-33b3246b0e26' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ActivitySyncRunID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3345,11 +3781,11 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'b44aa5f7-dac6-4d95-8cfe-448baa93115d',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '92dd62bb-d66f-401b-8830-33b3246b0e26',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
             2,
-            'ActivitySyncConnectionID',
-            'Activity Sync Connection ID',
+            'ActivitySyncRunID',
+            'Activity Sync Run ID',
             NULL,
             'uniqueidentifier',
             16,
@@ -3361,21 +3797,21 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            'C22591BB-B33A-439C-9567-5494A7B71D8A',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1',
             'ID',
             0,
             0,
             1,
             0,
             0,
-            1,
+            0,
             'Search',
             GETUTCDATE(),
             GETUTCDATE()
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '982414ca-bb67-4f87-9928-95312267921a' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'ActivitySyncRuleSetID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '36d13a87-c5b8-472a-9cda-eb3731afcc41' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ExternalID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3408,14 +3844,14 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '982414ca-bb67-4f87-9928-95312267921a',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '36d13a87-c5b8-472a-9cda-eb3731afcc41',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
             3,
-            'ActivitySyncRuleSetID',
-            'Activity Sync Rule Set ID',
+            'ExternalID',
+            'External ID',
             NULL,
-            'uniqueidentifier',
-            16,
+            'nvarchar',
+            800,
             0,
             0,
             0,
@@ -3424,21 +3860,336 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3',
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '15dd6494-57f4-42ca-bd84-0a15426a96be' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ExternalThreadID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '15dd6494-57f4-42ca-bd84-0a15426a96be',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            4,
+            'ExternalThreadID',
+            'External Thread ID',
+            NULL,
+            'nvarchar',
+            800,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7e700ed9-c6e6-487c-9304-aa7bb9fc222b' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'OccurredAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '7e700ed9-c6e6-487c-9304-aa7bb9fc222b',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            5,
+            'OccurredAt',
+            'Occurred At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0078772b-133b-45cd-b584-0d96cbf51a88' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'Decision')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '0078772b-133b-45cd-b584-0d96cbf51a88',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            6,
+            'Decision',
+            'Decision',
+            NULL,
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '38a89e25-30dd-4d1b-83d2-5e824d542e6d' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'DecidedByStage')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '38a89e25-30dd-4d1b-83d2-5e824d542e6d',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            7,
+            'DecidedByStage',
+            'Decided By Stage',
+            'Which stage of the qualification cascade decided — a rule set name, KnownParticipant, Inference, or DefaultPolicy. Paired with Reason it explains an outcome without retaining the message that produced it.',
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f9d3b360-0da7-4fb7-ac4f-8ca065aa9bf3' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ActivitySyncRuleID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'f9d3b360-0da7-4fb7-ac4f-8ca065aa9bf3',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            8,
+            'ActivitySyncRuleID',
+            'Activity Sync Rule ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '21B78371-132C-4507-AED8-D44E366468F2',
             'ID',
             0,
             0,
             1,
             0,
             0,
-            1,
+            0,
             'Search',
             GETUTCDATE(),
             GETUTCDATE()
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '150cacf5-a91b-48e8-9d3a-3553e97b67f4' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'Sequence')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b7be5c0e-e4d5-42fc-9b82-c0fd25de4b2a' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ActivitySyncExclusionID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3471,18 +4222,81 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '150cacf5-a91b-48e8-9d3a-3553e97b67f4',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
-            4,
-            'Sequence',
-            'Sequence',
+            'b7be5c0e-e4d5-42fc-9b82-c0fd25de4b2a',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            9,
+            'ActivitySyncExclusionID',
+            'Activity Sync Exclusion ID',
             NULL,
-            'int',
-            4,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f31cbd79-1083-435a-9d00-39a89f03b524' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'Reason')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'f31cbd79-1083-435a-9d00-39a89f03b524',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
             10,
+            'Reason',
+            'Reason',
+            NULL,
+            'nvarchar',
+            -1,
             0,
             0,
-            '(0)',
+            1,
+            NULL,
             0,
             1,
             0,
@@ -3501,7 +4315,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '45d9a27d-7856-4033-b255-7e31d6f11d83' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'IsEnabled')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '74f9bdc0-2b51-4f54-80dd-62677c682d67' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'Confidence')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3534,18 +4348,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '45d9a27d-7856-4033-b255-7e31d6f11d83',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '74f9bdc0-2b51-4f54-80dd-62677c682d67',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            11,
+            'Confidence',
+            'Confidence',
+            NULL,
+            'decimal',
             5,
-            'IsEnabled',
-            'Is Enabled',
+            5,
+            4,
+            1,
             NULL,
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(1)',
             0,
             1,
             0,
@@ -3564,7 +4378,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd026964a-693c-4871-9503-8b94c56cef82' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = '__mj_CreatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '21e93bc8-0535-445f-aafd-f3468f1eb62d' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'AIPromptRunID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3597,9 +4411,261 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'd026964a-693c-4871-9503-8b94c56cef82',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
-            6,
+            '21e93bc8-0535-445f-aafd-f3468f1eb62d',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            12,
+            'AIPromptRunID',
+            'AI Prompt Run ID',
+            'The MJ: AI Prompt Run behind an inference-stage verdict. Non-null only when a model actually decided this item, which is the audit trail for every automated judgement the engine makes.',
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4087a170-cd32-4b2a-a59e-e2747f272aa8' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ActivityID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '4087a170-cd32-4b2a-a59e-e2747f272aa8',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            13,
+            'ActivityID',
+            'Activity ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '72E55425-8822-4E70-A075-116219CA5A5D',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7905d4d1-557e-4693-92a9-8cd497d793cd' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'CapturedContent')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '7905d4d1-557e-4693-92a9-8cd497d793cd',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            14,
+            'CapturedContent',
+            'Captured Content',
+            'Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ''s EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1e55257f-d2be-4817-82c9-723aee6f8e42' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'EncryptionKeyID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '1e55257f-d2be-4817-82c9-723aee6f8e42',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            15,
+            'EncryptionKeyID',
+            'Encryption Key ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            '854DB803-34D4-46CD-8B8D-712974AE592F',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '07f6ab2b-c765-45a5-bafe-6166ec42f137' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = '__mj_CreatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '07f6ab2b-c765-45a5-bafe-6166ec42f137',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            16,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -3627,7 +4693,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a7d5f37b-9fda-4c6e-ab94-ed282de46e59' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5cda5908-7b09-4ea1-bfdf-75fa10555031' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3660,9 +4726,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'a7d5f37b-9fda-4c6e-ab94-ed282de46e59',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
-            7,
+            '5cda5908-7b09-4ea1-bfdf-75fa10555031',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            17,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -3694,7 +4760,7 @@ UPDATE [${mjSchema}].[EntityField]
        WHERE [EntityID] = 'C22591BB-B33A-439C-9567-5494A7B71D8A'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4372ae35-7750-4b5c-b32a-39330546cac7' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0eeefd0a-3809-4be9-b54e-c7c7efc8dbd0' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3727,7 +4793,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '4372ae35-7750-4b5c-b32a-39330546cac7',
+            '0eeefd0a-3809-4be9-b54e-c7c7efc8dbd0',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             14,
             'ActivitySyncProviderTypeID',
@@ -3743,7 +4809,7 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75',
             'ID',
             0,
             0,
@@ -3757,7 +4823,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '789cc900-d440-44ff-be55-5bf427c8a9b3' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StartAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '55161592-6265-4026-a501-72a6eb5a0e14' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StartAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3790,7 +4856,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '789cc900-d440-44ff-be55-5bf427c8a9b3',
+            '55161592-6265-4026-a501-72a6eb5a0e14',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             15,
             'StartAt',
@@ -3820,7 +4886,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '29c07796-bb2e-4cf0-8aed-a5aff377508f' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EndAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '068bee66-56da-445d-946e-514b1f3410c0' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EndAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3853,7 +4919,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '29c07796-bb2e-4cf0-8aed-a5aff377508f',
+            '068bee66-56da-445d-946e-514b1f3410c0',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             16,
             'EndAt',
@@ -3883,7 +4949,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b78f68b7-af4b-4a43-b4bd-4680b0db7a18' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'SkippedContentPolicy')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1e88da7c-c64b-4d7a-b218-804a9aeea2fa' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'SkippedContentPolicy')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3916,7 +4982,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'b78f68b7-af4b-4a43-b4bd-4680b0db7a18',
+            '1e88da7c-c64b-4d7a-b218-804a9aeea2fa',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             17,
             'SkippedContentPolicy',
@@ -3946,7 +5012,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd1a0ba01-ce0a-41d1-ae44-4dee9eb7c835' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EncryptionKeyID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2a5381dd-a180-4e03-9c04-9815703ddee3' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EncryptionKeyID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3979,7 +5045,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'd1a0ba01-ce0a-41d1-ae44-4dee9eb7c835',
+            '2a5381dd-a180-4e03-9c04-9815703ddee3',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             18,
             'EncryptionKeyID',
@@ -4009,7 +5075,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1e175147-3b07-4c30-9771-5d09fa41cee9' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StorageProviderID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '136ff7b4-bc67-4c96-98b2-9fd82c21363b' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StorageProviderID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4042,7 +5108,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '1e175147-3b07-4c30-9771-5d09fa41cee9',
+            '136ff7b4-bc67-4c96-98b2-9fd82c21363b',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             19,
             'StorageProviderID',
@@ -4072,7 +5138,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4a8a332f-54e9-4877-8847-168614610161' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'MaxAttachmentBytes')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a8e6fdd3-f038-42cb-a9da-d92c5105ec34' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'MaxAttachmentBytes')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4105,7 +5171,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '4a8a332f-54e9-4877-8847-168614610161',
+            'a8e6fdd3-f038-42cb-a9da-d92c5105ec34',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             20,
             'MaxAttachmentBytes',
@@ -4136,10 +5202,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13'
+       WHERE [EntityID] = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ff494474-1254-4b87-8296-b965f31f8cd7' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ab8bb2dc-fde4-400d-bc2f-a2e77bd22d57' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4172,8 +5238,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'ff494474-1254-4b87-8296-b965f31f8cd7',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            'ab8bb2dc-fde4-400d-bc2f-a2e77bd22d57',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             1,
             'ID',
             'ID',
@@ -4202,7 +5268,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2afa1062-990f-451b-bae6-192be8ac9fd8' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ActivitySyncRunID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '721edd40-b7f9-4227-bde7-f276389364f0' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'ActivitySyncConnectionID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4235,11 +5301,11 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '2afa1062-990f-451b-bae6-192be8ac9fd8',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '721edd40-b7f9-4227-bde7-f276389364f0',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             2,
-            'ActivitySyncRunID',
-            'Activity Sync Run ID',
+            'ActivitySyncConnectionID',
+            'Activity Sync Connection ID',
             NULL,
             'uniqueidentifier',
             16,
@@ -4251,7 +5317,7 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0',
+            'C22591BB-B33A-439C-9567-5494A7B71D8A',
             'ID',
             0,
             0,
@@ -4265,7 +5331,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b77e1c1e-2806-4a6e-a4fd-f847a84d60dd' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ExternalID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '23d4f371-f534-4ff6-880d-d3b7a9eb5032' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'StartedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4298,18 +5364,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'b77e1c1e-2806-4a6e-a4fd-f847a84d60dd',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '23d4f371-f534-4ff6-880d-d3b7a9eb5032',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             3,
-            'ExternalID',
-            'External ID',
+            'StartedAt',
+            'Started At',
             NULL,
-            'nvarchar',
-            800,
+            'datetimeoffset',
+            10,
+            34,
+            7,
             0,
-            0,
-            0,
-            NULL,
+            'sysdatetimeoffset()',
             0,
             1,
             0,
@@ -4328,7 +5394,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f9bdc444-a9c6-43ef-b882-22111228cd93' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ExternalThreadID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3b1e4e05-435b-4f9d-8288-c1961123b8ec' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'EndedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4361,74 +5427,11 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f9bdc444-a9c6-43ef-b882-22111228cd93',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '3b1e4e05-435b-4f9d-8288-c1961123b8ec',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             4,
-            'ExternalThreadID',
-            'External Thread ID',
-            NULL,
-            'nvarchar',
-            800,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '33fb5211-6291-43b8-b67f-e9c0c456560e' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'OccurredAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '33fb5211-6291-43b8-b67f-e9c0c456560e',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            5,
-            'OccurredAt',
-            'Occurred At',
+            'EndedAt',
+            'Ended At',
             NULL,
             'datetimeoffset',
             10,
@@ -4454,7 +5457,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3a9e3c37-c299-4a01-a084-d490a3fe7160' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'Decision')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ba933d11-ce9f-4f78-863f-8c73443df808' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Status')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4487,18 +5490,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '3a9e3c37-c299-4a01-a084-d490a3fe7160',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            6,
-            'Decision',
-            'Decision',
+            'ba933d11-ce9f-4f78-863f-8c73443df808',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            5,
+            'Status',
+            'Status',
             NULL,
             'nvarchar',
             40,
             0,
             0,
             0,
-            NULL,
+            'Running',
             0,
             1,
             0,
@@ -4517,7 +5520,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd094634a-e964-4199-aaa3-8302274b03ab' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'DecidedByStage')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1b3e1546-1ce5-417f-bf91-e64d591079ed' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'TriggerType')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4550,18 +5553,81 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'd094634a-e964-4199-aaa3-8302274b03ab',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '1b3e1546-1ce5-417f-bf91-e64d591079ed',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            6,
+            'TriggerType',
+            'Trigger Type',
+            NULL,
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            'Scheduled',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd29a08ef-c6c7-4aac-8239-d3db29a2d011' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'IsDryRun')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'd29a08ef-c6c7-4aac-8239-d3db29a2d011',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             7,
-            'DecidedByStage',
-            'Decided By Stage',
-            'Which stage of the qualification cascade decided — a rule set name, KnownParticipant, Inference, or DefaultPolicy. Paired with Reason it explains an outcome without retaining the message that produced it.',
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
+            'IsDryRun',
+            'Is Dry Run',
             NULL,
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(0)',
             0,
             1,
             0,
@@ -4580,7 +5646,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3a2b9c06-1919-4837-bb45-bc0a25499ce2' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ActivitySyncRuleID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fbbbe636-ee2a-4b4c-92a4-17e9b872495e' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Fetched')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4613,207 +5679,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '3a2b9c06-1919-4837-bb45-bc0a25499ce2',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            'fbbbe636-ee2a-4b4c-92a4-17e9b872495e',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             8,
-            'ActivitySyncRuleID',
-            'Activity Sync Rule ID',
+            'Fetched',
+            'Fetched',
             NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            '21B78371-132C-4507-AED8-D44E366468F2',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '112c5c1b-9a9d-49bf-b757-0a9a0b7840a0' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ActivitySyncExclusionID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '112c5c1b-9a9d-49bf-b757-0a9a0b7840a0',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            9,
-            'ActivitySyncExclusionID',
-            'Activity Sync Exclusion ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c07168e8-1b50-47f5-ad10-e3ddb8adddab' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'Reason')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'c07168e8-1b50-47f5-ad10-e3ddb8adddab',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            10,
-            'Reason',
-            'Reason',
-            NULL,
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '31b8db56-382c-4b7f-87ef-12c301cdc99e' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'Confidence')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '31b8db56-382c-4b7f-87ef-12c301cdc99e',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            11,
-            'Confidence',
-            'Confidence',
-            NULL,
-            'decimal',
-            5,
-            5,
+            'int',
             4,
-            1,
-            NULL,
+            10,
+            0,
+            0,
+            '(0)',
             0,
             1,
             0,
@@ -4832,7 +5709,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '324c20a5-2b6c-4422-89af-cd5fc20d1dff' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'AIPromptRunID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '666aadeb-9b84-4b06-b89c-6b46eba5c9a8' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Included')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4865,18 +5742,207 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '324c20a5-2b6c-4422-89af-cd5fc20d1dff',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '666aadeb-9b84-4b06-b89c-6b46eba5c9a8',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            9,
+            'Included',
+            'Included',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '930f7630-5819-4b43-a54f-b2de76900ea0' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Excluded')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '930f7630-5819-4b43-a54f-b2de76900ea0',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            10,
+            'Excluded',
+            'Excluded',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '77461d70-12ab-4f6a-97b8-253140d4efbd' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Duplicates')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '77461d70-12ab-4f6a-97b8-253140d4efbd',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            11,
+            'Duplicates',
+            'Duplicates',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '674b8800-2821-494e-a291-6c1f3ad8764e' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'Failed')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '674b8800-2821-494e-a291-6c1f3ad8764e',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             12,
-            'AIPromptRunID',
-            'AI Prompt Run ID',
-            'The MJ: AI Prompt Run behind an inference-stage verdict. Non-null only when a model actually decided this item, which is the audit trail for every automated judgement the engine makes.',
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
+            'Failed',
+            'Failed',
             NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(0)',
             0,
             1,
             0,
@@ -4895,7 +5961,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd6bc4c27-5838-4cf5-8dd4-50da693e666a' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ActivityID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '18d52c2d-5d4e-4c33-840f-fffc866a3ee5' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'ExtensionErrors')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4928,27 +5994,27 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'd6bc4c27-5838-4cf5-8dd4-50da693e666a',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            '18d52c2d-5d4e-4c33-840f-fffc866a3ee5',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             13,
-            'ActivityID',
-            'Activity ID',
+            'ExtensionErrors',
+            'Extension Errors',
             NULL,
-            'uniqueidentifier',
-            16,
+            'int',
+            4,
+            10,
             0,
+            0,
+            '(0)',
             0,
             1,
+            0,
+            0,
+            NULL,
             NULL,
             0,
-            1,
             0,
             0,
-            '72E55425-8822-4E70-A075-116219CA5A5D',
-            'ID',
-            0,
-            0,
-            1,
             0,
             0,
             0,
@@ -4958,7 +6024,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'dab10046-9cca-47ad-a671-01fbef76ca0f' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'CapturedContent')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c886d78b-82d5-4d3c-8a05-94f8db060525' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'WatermarkBefore')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4991,12 +6057,138 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'dab10046-9cca-47ad-a671-01fbef76ca0f',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            'c886d78b-82d5-4d3c-8a05-94f8db060525',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
             14,
-            'CapturedContent',
-            'Captured Content',
-            'Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ''s EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.',
+            'WatermarkBefore',
+            'Watermark Before',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0221e342-6338-48cf-a821-12f7ed4af644' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'WatermarkAfter')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '0221e342-6338-48cf-a821-12f7ed4af644',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            15,
+            'WatermarkAfter',
+            'Watermark After',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '22813953-a45f-4a63-97b9-440330021ad4' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'ErrorMessage')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '22813953-a45f-4a63-97b9-440330021ad4',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            16,
+            'ErrorMessage',
+            'Error Message',
+            NULL,
             'nvarchar',
             -1,
             0,
@@ -5021,7 +6213,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '6b8a5ef2-edca-41e8-9e4e-fd47f39a8395' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'EncryptionKeyID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7fb56db3-4235-473e-8034-34fde9f8458e' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = '__mj_CreatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5054,72 +6246,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '6b8a5ef2-edca-41e8-9e4e-fd47f39a8395',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            15,
-            'EncryptionKeyID',
-            'Encryption Key ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            '854DB803-34D4-46CD-8B8D-712974AE592F',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5dd48cac-9182-47f6-8991-d111a28c6034' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '5dd48cac-9182-47f6-8991-d111a28c6034',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            16,
+            '7fb56db3-4235-473e-8034-34fde9f8458e',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            17,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -5147,7 +6276,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b27316a9-9d71-41fe-abdb-fefbde66a924' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8474a9be-ca44-4467-816a-65d885e0e44e' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5180,9 +6309,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'b27316a9-9d71-41fe-abdb-fefbde66a924',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            17,
+            '8474a9be-ca44-4467-816a-65d885e0e44e',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            18,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -5211,10 +6340,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '37ACA09A-DF6E-4A81-A519-690B425884ED'
+       WHERE [EntityID] = '7ED9F26E-B01D-472A-87C9-B163287F80B4'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '424670b7-1cab-452e-b17f-ae1e6114ac8c' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5f781a56-a58e-4f5e-9fb6-9e602bc31892' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5247,8 +6376,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '424670b7-1cab-452e-b17f-ae1e6114ac8c',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            '5f781a56-a58e-4f5e-9fb6-9e602bc31892',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
             1,
             'ID',
             'ID',
@@ -5277,7 +6406,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '234d93e5-caa6-4e9a-a877-e27f2e26f117' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'Name')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7b94c459-6d4f-45f6-85a8-c6f436d83b1c' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'Name')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5310,8 +6439,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '234d93e5-caa6-4e9a-a877-e27f2e26f117',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            '7b94c459-6d4f-45f6-85a8-c6f436d83b1c',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
             2,
             'Name',
             'Name',
@@ -5340,7 +6469,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2756e0e5-47df-4da4-8bc8-8db761ac2279' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'Description')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e56c30dd-befc-4a2f-8447-314d1a1578e5' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'Description')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5373,8 +6502,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '2756e0e5-47df-4da4-8bc8-8db761ac2279',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            'e56c30dd-befc-4a2f-8447-314d1a1578e5',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
             3,
             'Description',
             'Description',
@@ -5403,7 +6532,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '82f98642-fc8c-4d79-8d29-92da161510c7' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'DriverClass')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1cb40317-e514-4bb1-86bf-c8b2b18ae84c' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5436,135 +6565,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '82f98642-fc8c-4d79-8d29-92da161510c7',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            '1cb40317-e514-4bb1-86bf-c8b2b18ae84c',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
             4,
-            'DriverClass',
-            'Driver Class',
-            NULL,
-            'nvarchar',
-            400,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '74a737d5-e23f-4a4c-b979-5cbc8fa88da2' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'ActivitySyncConnectionID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '74a737d5-e23f-4a4c-b979-5cbc8fa88da2',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            5,
-            'ActivitySyncConnectionID',
-            'Activity Sync Connection ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            'C22591BB-B33A-439C-9567-5494A7B71D8A',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c0108769-b775-4232-8694-a4ce00ffe4f1' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'c0108769-b775-4232-8694-a4ce00ffe4f1',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            6,
             'ActivitySyncProviderTypeID',
             'Activity Sync Provider Type ID',
             NULL,
@@ -5578,7 +6581,7 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75',
             'ID',
             0,
             0,
@@ -5592,7 +6595,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b32e136c-2566-4674-9035-28603185f458' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'Sequence')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '990e8112-4f9b-439e-8a0d-8472b630c5f9' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'InternalDomains')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5625,12 +6628,75 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'b32e136c-2566-4674-9035-28603185f458',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            7,
+            '990e8112-4f9b-439e-8a0d-8472b630c5f9',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            5,
+            'InternalDomains',
+            'Internal Domains',
+            'JSON array of the domains this deployment considers INTERNAL, e.g. ["bluecypress.io"]. Required for any rule using ParticipantScope: "internal" is a property of the deployment, not of a message. Held on the rule set so one definition serves every mailbox bound to it.',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7bafea34-d767-4b1b-8d6f-c304bc765ca5' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'Sequence')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '7bafea34-d767-4b1b-8d6f-c304bc765ca5',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            6,
             'Sequence',
             'Sequence',
-            'Ascending run order. REQUIRED rather than incidental: two extensions both adding links must not depend on registration order, which varies with package load order and is not reproducible.',
+            NULL,
             'int',
             4,
             10,
@@ -5655,7 +6721,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '711f2b8e-b1f8-44f4-8659-e32b80c0fe15' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'FailurePolicy')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9fc296ef-bd9d-417d-b75b-bcc67a253534' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'IsEnabled')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5688,135 +6754,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '711f2b8e-b1f8-44f4-8659-e32b80c0fe15',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            8,
-            'FailurePolicy',
-            'Failure Policy',
-            'What happens when this extension throws. Skip (the default) records the error and commits the activity without the enrichment; Abort rolls the whole write back. Skip is the default because the activity is worth more than the enrichment, and one buggy consumer app must not be able to halt ingestion for every other app on the host.',
-            'nvarchar',
-            40,
-            0,
-            0,
-            0,
-            'Skip',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b06807df-d238-41eb-8b25-1ecad66a0434' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'TimeoutMS')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'b06807df-d238-41eb-8b25-1ecad66a0434',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            9,
-            'TimeoutMS',
-            'Timeout MS',
-            NULL,
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(5000)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5f9bf4bd-3416-43de-930c-7b87c8fdbfa0' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'IsEnabled')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '5f9bf4bd-3416-43de-930c-7b87c8fdbfa0',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            10,
+            '9fc296ef-bd9d-417d-b75b-bcc67a253534',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            7,
             'IsEnabled',
             'Is Enabled',
             NULL,
@@ -5844,7 +6784,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f8d3c034-eaf4-47c5-ac8d-f0745efeeb73' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'LastRunAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a239da06-157e-477e-905d-d306159cc1f3' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'IsSystem')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5877,18 +6817,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f8d3c034-eaf4-47c5-ac8d-f0745efeeb73',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            11,
-            'LastRunAt',
-            'Last Run At',
+            'a239da06-157e-477e-905d-d306159cc1f3',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            8,
+            'IsSystem',
+            'Is System',
             NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
+            'bit',
             1,
-            NULL,
+            1,
+            0,
+            0,
+            '(0)',
             0,
             1,
             0,
@@ -5907,7 +6847,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e21d98a5-5172-4910-92d7-ac54846ec8a7' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'LastError')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4fd3836b-cea9-43c3-b81e-3b0f3a5c0c21' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = '__mj_CreatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -5940,72 +6880,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'e21d98a5-5172-4910-92d7-ac54846ec8a7',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            12,
-            'LastError',
-            'Last Error',
-            NULL,
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'be5d0a3e-8a74-4549-a906-cfeca7e0dc79' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'be5d0a3e-8a74-4549-a906-cfeca7e0dc79',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            13,
+            '4fd3836b-cea9-43c3-b81e-3b0f3a5c0c21',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            9,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -6033,7 +6910,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '86be9e45-5ded-484f-87b9-c34adaff6d65' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5515d121-d16f-4aea-a77a-6e094274ddee' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6066,9 +6943,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '86be9e45-5ded-484f-87b9-c34adaff6d65',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            14,
+            '5515d121-d16f-4aea-a77a-6e094274ddee',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            10,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -6100,7 +6977,7 @@ UPDATE [${mjSchema}].[EntityField]
        WHERE [EntityID] = '21B78371-132C-4507-AED8-D44E366468F2'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '79f1ebe3-fa24-481e-98df-18714e93cb84' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ActivitySyncRuleSetID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3b472ade-9440-46fc-ab87-9cb4b27fe729' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ActivitySyncRuleSetID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6133,7 +7010,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '79f1ebe3-fa24-481e-98df-18714e93cb84',
+            '3b472ade-9440-46fc-ab87-9cb4b27fe729',
             '21B78371-132C-4507-AED8-D44E366468F2', -- Entity: MJ_BizApps_Common: Activity Sync Rules
             15,
             'ActivitySyncRuleSetID',
@@ -6149,7 +7026,7 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4',
             'ID',
             0,
             0,
@@ -6163,7 +7040,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3b65a199-a495-42b5-8973-5328bfbbd9fc' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ParticipantScope')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ae0a8eb2-3130-4cbf-98fa-ca3c3676795b' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ParticipantScope')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6196,7 +7073,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '3b65a199-a495-42b5-8973-5328bfbbd9fc',
+            'ae0a8eb2-3130-4cbf-98fa-ca3c3676795b',
             '21B78371-132C-4507-AED8-D44E366468F2', -- Entity: MJ_BizApps_Common: Activity Sync Rules
             16,
             'ParticipantScope',
@@ -6226,7 +7103,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c850ed36-12ea-4d33-a38e-7a39c1e0d403' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'MaxAttachmentBytes')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'dca96b15-b3ee-4f41-bbd1-146c71922ba8' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'MaxAttachmentBytes')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6259,7 +7136,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'c850ed36-12ea-4d33-a38e-7a39c1e0d403',
+            'dca96b15-b3ee-4f41-bbd1-146c71922ba8',
             '21B78371-132C-4507-AED8-D44E366468F2', -- Entity: MJ_BizApps_Common: Activity Sync Rules
             17,
             'MaxAttachmentBytes',
@@ -6290,10 +7167,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3'
+       WHERE [EntityID] = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a6408a2e-2694-45de-b96d-6b83a55a6bf8' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8ff6284e-9816-42da-939c-b353b11dafeb' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6326,8 +7203,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'a6408a2e-2694-45de-b96d-6b83a55a6bf8',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            '8ff6284e-9816-42da-939c-b353b11dafeb',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
             1,
             'ID',
             'ID',
@@ -6356,7 +7233,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5071b352-b41a-44ba-8bcb-038032e3998d' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'Name')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e6722a67-7051-46f8-8c6f-b3475b4f6b69' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'Name')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6389,8 +7266,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '5071b352-b41a-44ba-8bcb-038032e3998d',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            'e6722a67-7051-46f8-8c6f-b3475b4f6b69',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
             2,
             'Name',
             'Name',
@@ -6419,7 +7296,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f63f7945-ae0f-4ee9-8e19-67d6a1665065' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'Description')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2665d26d-e5d2-42eb-acd0-6dab290d3b9e' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'Description')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6452,8 +7329,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f63f7945-ae0f-4ee9-8e19-67d6a1665065',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            '2665d26d-e5d2-42eb-acd0-6dab290d3b9e',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
             3,
             'Description',
             'Description',
@@ -6482,7 +7359,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '328fc82e-9f5c-4a8e-aa76-aa63c27d9beb' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd75c9fd1-f6a9-450a-b405-aff4728750d6' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'DriverClass')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6515,11 +7392,74 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '328fc82e-9f5c-4a8e-aa76-aa63c27d9beb',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            'd75c9fd1-f6a9-450a-b405-aff4728750d6',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
             4,
-            'ActivitySyncProviderTypeID',
-            'Activity Sync Provider Type ID',
+            'DriverClass',
+            'Driver Class',
+            NULL,
+            'nvarchar',
+            400,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'cefe0ec3-92e4-4890-b36a-3e9ce5f60ee6' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'ActivitySyncConnectionID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'cefe0ec3-92e4-4890-b36a-3e9ce5f60ee6',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            5,
+            'ActivitySyncConnectionID',
+            'Activity Sync Connection ID',
             NULL,
             'uniqueidentifier',
             16,
@@ -6531,7 +7471,7 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E',
+            'C22591BB-B33A-439C-9567-5494A7B71D8A',
             'ID',
             0,
             0,
@@ -6545,7 +7485,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3d6be045-c655-4c7e-87fe-ce6bee4637b0' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'InternalDomains')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '6c142921-feee-4d50-a601-adb0b370ee47' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'ActivitySyncProviderTypeID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6578,14 +7518,14 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '3d6be045-c655-4c7e-87fe-ce6bee4637b0',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            5,
-            'InternalDomains',
-            'Internal Domains',
-            'JSON array of the domains this deployment considers INTERNAL, e.g. ["bluecypress.io"]. Required for any rule using ParticipantScope: "internal" is a property of the deployment, not of a message. Held on the rule set so one definition serves every mailbox bound to it.',
-            'nvarchar',
-            -1,
+            '6c142921-feee-4d50-a601-adb0b370ee47',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            6,
+            'ActivitySyncProviderTypeID',
+            'Activity Sync Provider Type ID',
+            NULL,
+            'uniqueidentifier',
+            16,
             0,
             0,
             1,
@@ -6594,11 +7534,11 @@ UPDATE [${mjSchema}].[EntityField]
             1,
             0,
             0,
-            NULL,
-            NULL,
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75',
+            'ID',
             0,
             0,
-            0,
+            1,
             0,
             0,
             0,
@@ -6608,7 +7548,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f77abe7b-ad00-402b-854a-16088d6fdfcc' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'Sequence')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7790ea43-823f-4fa3-963d-a1110d614029' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'Sequence')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6641,12 +7581,12 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'f77abe7b-ad00-402b-854a-16088d6fdfcc',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            6,
+            '7790ea43-823f-4fa3-963d-a1110d614029',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            7,
             'Sequence',
             'Sequence',
-            NULL,
+            'Ascending run order. REQUIRED rather than incidental: two extensions both adding links must not depend on registration order, which varies with package load order and is not reproducible.',
             'int',
             4,
             10,
@@ -6671,7 +7611,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '39de5637-d27d-489b-8be6-dc064e4ecb24' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'IsEnabled')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fd76a168-2af9-462d-b284-549ab7cced6f' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'FailurePolicy')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6704,9 +7644,135 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '39de5637-d27d-489b-8be6-dc064e4ecb24',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            7,
+            'fd76a168-2af9-462d-b284-549ab7cced6f',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            8,
+            'FailurePolicy',
+            'Failure Policy',
+            'What happens when this extension throws. Skip (the default) records the error and commits the activity without the enrichment; Abort rolls the whole write back. Skip is the default because the activity is worth more than the enrichment, and one buggy consumer app must not be able to halt ingestion for every other app on the host.',
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            'Skip',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a12a8c4c-dbd9-40fb-97b4-3872aa966fc3' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'TimeoutMS')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'a12a8c4c-dbd9-40fb-97b4-3872aa966fc3',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            9,
+            'TimeoutMS',
+            'Timeout MS',
+            NULL,
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(5000)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '70ff0fe5-2a34-430f-85e4-10a5a38f83ca' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'IsEnabled')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '70ff0fe5-2a34-430f-85e4-10a5a38f83ca',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            10,
             'IsEnabled',
             'Is Enabled',
             NULL,
@@ -6734,7 +7800,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '466b9e4b-1aea-48d2-b5c1-922efe36cbdd' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'IsSystem')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b0acf26a-484c-4a19-899b-b6995030ead7' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'LastRunAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -6767,967 +7833,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '466b9e4b-1aea-48d2-b5c1-922efe36cbdd',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            8,
-            'IsSystem',
-            'Is System',
-            NULL,
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(0)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c1d8005b-1e70-45e2-8f0e-d7222bf22367' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'c1d8005b-1e70-45e2-8f0e-d7222bf22367',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            9,
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b2c56952-95bb-49ad-bbd6-a434a1b7ef7b' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = '__mj_UpdatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'b2c56952-95bb-49ad-bbd6-a434a1b7ef7b',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            10,
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E'
-         AND [Sequence] < 100000;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ec57fecd-38b8-4903-9bb4-0943f0d8a8ca' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'ID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'ec57fecd-38b8-4903-9bb4-0943f0d8a8ca',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            1,
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b30c7ace-438b-4d03-8bf2-6829de7d2858' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'Code')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'b30c7ace-438b-4d03-8bf2-6829de7d2858',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            2,
-            'Code',
-            'Code',
-            NULL,
-            'nvarchar',
-            120,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'cfc542bf-cb02-4278-9f78-108dd1f41a96' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'Name')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'cfc542bf-cb02-4278-9f78-108dd1f41a96',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            3,
-            'Name',
-            'Name',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2c17f1f5-8b12-470d-854c-a43aa7249a05' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'Description')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '2c17f1f5-8b12-470d-854c-a43aa7249a05',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            4,
-            'Description',
-            'Description',
-            NULL,
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fe933568-e911-489d-b382-327bc8790528' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DriverClass')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'fe933568-e911-489d-b382-327bc8790528',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            5,
-            'DriverClass',
-            'Driver Class',
-            NULL,
-            'nvarchar',
-            400,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5fc26bd1-c70a-496d-8c6d-b8c07a1067de' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'IconClass')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '5fc26bd1-c70a-496d-8c6d-b8c07a1067de',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            6,
-            'IconClass',
-            'Icon Class',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a0a8ff1a-1a48-44ce-9303-93f0cccbf15f' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'SupportedKinds')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'a0a8ff1a-1a48-44ce-9303-93f0cccbf15f',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            7,
-            'SupportedKinds',
-            'Supported Kinds',
-            NULL,
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5f0b1567-9a48-419a-9e9e-9aac56dabebe' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultQualificationPolicy')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '5f0b1567-9a48-419a-9e9e-9aac56dabebe',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            8,
-            'DefaultQualificationPolicy',
-            'Default Qualification Policy',
-            'What an Undecided qualification verdict means for this provider once every rule stage has abstained. Exclude (the default) fails CLOSED — correct for anything mailbox-shaped, where capturing a private message is worse than missing a business one.',
-            'nvarchar',
-            40,
-            0,
-            0,
-            0,
-            'Exclude',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0ec3920a-e045-4728-8526-5b12349216ed' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultSkippedContentPolicy')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '0ec3920a-e045-4728-8526-5b12349216ed',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            9,
-            'DefaultSkippedContentPolicy',
-            'Default Skipped Content Policy',
-            'Whether a SKIPPED message may have content retained for audit, and how much. None keeps only the opaque external id and the decision. SubjectEncrypted and FullEncrypted additionally keep ciphertext, and are only valid with DefaultEncryptionKeyID set — enforced by CK_ActivitySyncProviderType_KeyRequired. Overridable per connection.',
-            'nvarchar',
-            40,
-            0,
-            0,
-            0,
-            'None',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f6c78976-ea44-44f4-bb61-927d2da98098' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultEncryptionKeyID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'f6c78976-ea44-44f4-bb61-927d2da98098',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            10,
-            'DefaultEncryptionKeyID',
-            'Default Encryption Key ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            '854DB803-34D4-46CD-8B8D-712974AE592F',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e5a60b5f-87d9-4154-b122-6d3ff216d73f' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultStorageProviderID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'e5a60b5f-87d9-4154-b122-6d3ff216d73f',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            'b0acf26a-484c-4a19-899b-b6995030ead7',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
             11,
-            'DefaultStorageProviderID',
-            'Default Storage Provider ID',
+            'LastRunAt',
+            'Last Run At',
             NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            '28248F34-2837-EF11-86D4-6045BDEE16E6',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'df8bdf3c-04f4-45f7-a99e-79f1e2a9bd11' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultMaxAttachmentBytes')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'df8bdf3c-04f4-45f7-a99e-79f1e2a9bd11',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            12,
-            'DefaultMaxAttachmentBytes',
-            'Default Max Attachment Bytes',
-            NULL,
-            'bigint',
-            8,
-            19,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9ec2fd51-ab21-4076-bc64-804789ced690' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'Sequence')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '9ec2fd51-ab21-4076-bc64-804789ced690',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            13,
-            'Sequence',
-            'Sequence',
-            NULL,
-            'int',
-            4,
+            'datetimeoffset',
             10,
-            0,
-            0,
-            '(0)',
+            34,
+            7,
+            1,
+            NULL,
             0,
             1,
             0,
@@ -7746,7 +7863,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0bca6145-4ee3-42c3-81b0-12b6d9f99036' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'IsSystem')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '840551bd-057b-44cb-9651-d8cda50f7f06' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'LastError')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -7779,18 +7896,18 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '0bca6145-4ee3-42c3-81b0-12b6d9f99036',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            14,
-            'IsSystem',
-            'Is System',
+            '840551bd-057b-44cb-9651-d8cda50f7f06',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            12,
+            'LastError',
+            'Last Error',
             NULL,
-            'bit',
-            1,
-            1,
+            'nvarchar',
+            -1,
             0,
             0,
-            '(0)',
+            1,
+            NULL,
             0,
             1,
             0,
@@ -7809,7 +7926,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9f7c5e4e-8dc5-42fe-a590-9d48bc3aa97e' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'IsActive')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ee946000-7849-412f-ae49-71d092d7c389' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = '__mj_CreatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -7842,72 +7959,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '9f7c5e4e-8dc5-42fe-a590-9d48bc3aa97e',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            15,
-            'IsActive',
-            'Is Active',
-            NULL,
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(1)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8bde845e-e4f2-4403-9c58-8adda3f33bd0' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '8bde845e-e4f2-4403-9c58-8adda3f33bd0',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            16,
+            'ee946000-7849-412f-ae49-71d092d7c389',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            13,
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -7935,7 +7989,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e0385875-a80b-4eac-bc3f-b73070746c69' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fbf026fb-33e9-4a3e-ac40-63062a60d26b' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -7968,9 +8022,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'e0385875-a80b-4eac-bc3f-b73070746c69',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            17,
+            'fbf026fb-33e9-4a3e-ac40-63062a60d26b',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            14,
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -7998,419 +8052,430 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-/* SQL text to update existing entity fields from schema */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
+/* SQL text to update existing entity fields from schema
+   SCOPED to the seven NEW Activity Sync entities. The unscoped form
+   (CodeGen's live-DB emit) also rewrites Sequence on existing
+   ActivitySyncConnection / ActivitySyncRule fields from SQL ordinals,
+   which collides with UQ_EntityField_EntityID_Sequence once this
+   migration has inserted the new columns at those sequence numbers.
+   A host that only runs mj migrate never runs CodeGen, so this call
+   must not touch entities that already shipped in V202608251531. */
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema]
+    @ExcludedSchemaNames='',
+    @EntityIDs='AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75,7ED9F26E-B01D-472A-87C9-B163287F80B4,D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0,556381BF-9ACE-4A69-85BB-22EAE1856C88,ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1,AC16B066-9460-44F5-B027-3FD397E61F34,C7E5ECE1-F347-4BC9-AC53-E2F33577B449',
+    @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
 EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
 
-/* SQL text to insert entity field value with ID b5886d9d-8b66-4c71-8479-8f57d874f8d2 */
+/* SQL text to insert entity field value with ID 25b1b24b-41ab-49a1-8c75-6a199530db14 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('b5886d9d-8b66-4c71-8479-8f57d874f8d2', '5F0B1567-9A48-419A-9E9E-9AAC56DABEBE', 1, 'Exclude', 'Exclude', GETUTCDATE(), GETUTCDATE());
+                                       ('25b1b24b-41ab-49a1-8c75-6a199530db14', '2B27DE14-383F-4D07-9DCF-050237CEC7C7', 1, 'Exclude', 'Exclude', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID ee62cc6a-36cf-420e-8604-23d5d12d0498 */
+/* SQL text to insert entity field value with ID 05d3c571-b899-4096-8070-b9c0ca79cbc8 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('ee62cc6a-36cf-420e-8604-23d5d12d0498', '5F0B1567-9A48-419A-9E9E-9AAC56DABEBE', 2, 'Include', 'Include', GETUTCDATE(), GETUTCDATE());
+                                       ('05d3c571-b899-4096-8070-b9c0ca79cbc8', '2B27DE14-383F-4D07-9DCF-050237CEC7C7', 2, 'Include', 'Include', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 5F0B1567-9A48-419A-9E9E-9AAC56DABEBE */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='5F0B1567-9A48-419A-9E9E-9AAC56DABEBE';
+/* SQL text to update ValueListType for entity field ID 2B27DE14-383F-4D07-9DCF-050237CEC7C7 */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='2B27DE14-383F-4D07-9DCF-050237CEC7C7';
 
-/* SQL text to insert entity field value with ID d64fa92b-01de-447b-8f1f-65e0f9e3c152 */
+/* SQL text to insert entity field value with ID 01a9fe4e-e4bc-4633-b7f5-ad601bac07c3 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('d64fa92b-01de-447b-8f1f-65e0f9e3c152', '0EC3920A-E045-4728-8526-5B12349216ED', 1, 'FullEncrypted', 'FullEncrypted', GETUTCDATE(), GETUTCDATE());
+                                       ('01a9fe4e-e4bc-4633-b7f5-ad601bac07c3', '10FDAF3A-2042-41F1-B148-BEFFC8FCB001', 1, 'FullEncrypted', 'FullEncrypted', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID db60a034-4d7a-415c-9960-19067b57b804 */
+/* SQL text to insert entity field value with ID 03618c22-8a98-4271-b82f-cfaf956a789c */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('db60a034-4d7a-415c-9960-19067b57b804', '0EC3920A-E045-4728-8526-5B12349216ED', 2, 'None', 'None', GETUTCDATE(), GETUTCDATE());
+                                       ('03618c22-8a98-4271-b82f-cfaf956a789c', '10FDAF3A-2042-41F1-B148-BEFFC8FCB001', 2, 'None', 'None', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 470dc8df-53b6-423b-a7f7-710259f9e34f */
+/* SQL text to insert entity field value with ID ab6ef7c0-c416-4bbd-be89-43cc412b3915 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('470dc8df-53b6-423b-a7f7-710259f9e34f', '0EC3920A-E045-4728-8526-5B12349216ED', 3, 'SubjectEncrypted', 'SubjectEncrypted', GETUTCDATE(), GETUTCDATE());
+                                       ('ab6ef7c0-c416-4bbd-be89-43cc412b3915', '10FDAF3A-2042-41F1-B148-BEFFC8FCB001', 3, 'SubjectEncrypted', 'SubjectEncrypted', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 0EC3920A-E045-4728-8526-5B12349216ED */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='0EC3920A-E045-4728-8526-5B12349216ED';
+/* SQL text to update ValueListType for entity field ID 10FDAF3A-2042-41F1-B148-BEFFC8FCB001 */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='10FDAF3A-2042-41F1-B148-BEFFC8FCB001';
 
-/* SQL text to insert entity field value with ID 34ff242d-a3cc-4434-a527-915e9975f132 */
+/* SQL text to insert entity field value with ID 2731345f-de5d-4412-95a5-5a0a0b6e9a12 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('34ff242d-a3cc-4434-a527-915e9975f132', '57DB0DE7-22E0-4224-905A-733D46C663BE', 1, 'Domain', 'Domain', GETUTCDATE(), GETUTCDATE());
+                                       ('2731345f-de5d-4412-95a5-5a0a0b6e9a12', 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC', 1, 'Domain', 'Domain', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 9a61c9ee-9c8a-4722-b4b0-3a4c77479344 */
+/* SQL text to insert entity field value with ID cbf21b53-1347-4cec-9712-d913b9ec339a */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('9a61c9ee-9c8a-4722-b4b0-3a4c77479344', '57DB0DE7-22E0-4224-905A-733D46C663BE', 2, 'Email', 'Email', GETUTCDATE(), GETUTCDATE());
+                                       ('cbf21b53-1347-4cec-9712-d913b9ec339a', 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC', 2, 'Email', 'Email', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID e6cf2e27-5361-4738-a49e-0cfa079ab0da */
+/* SQL text to insert entity field value with ID 9042e972-cdb1-41f6-bdb6-0b4e1249536a */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('e6cf2e27-5361-4738-a49e-0cfa079ab0da', '57DB0DE7-22E0-4224-905A-733D46C663BE', 3, 'Handle', 'Handle', GETUTCDATE(), GETUTCDATE());
+                                       ('9042e972-cdb1-41f6-bdb6-0b4e1249536a', 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC', 3, 'Handle', 'Handle', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID dee79515-95bc-4e26-bf44-810e706babae */
+/* SQL text to insert entity field value with ID 3f07ec49-12b2-4875-aaf3-4fa8434d4e9d */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('dee79515-95bc-4e26-bf44-810e706babae', '57DB0DE7-22E0-4224-905A-733D46C663BE', 4, 'Phone', 'Phone', GETUTCDATE(), GETUTCDATE());
+                                       ('3f07ec49-12b2-4875-aaf3-4fa8434d4e9d', 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC', 4, 'Phone', 'Phone', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 57DB0DE7-22E0-4224-905A-733D46C663BE */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='57DB0DE7-22E0-4224-905A-733D46C663BE';
+/* SQL text to update ValueListType for entity field ID AD5A0FB1-1144-408A-A0E8-3F300BC786AC */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='AD5A0FB1-1144-408A-A0E8-3F300BC786AC';
 
-/* SQL text to insert entity field value with ID 88aa8e16-4a82-4075-8e8f-81e7351f403c */
+/* SQL text to insert entity field value with ID fcb5f25d-ff42-4974-bdbf-51d2b11e72cb */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('88aa8e16-4a82-4075-8e8f-81e7351f403c', '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B', 1, 'Cancelled', 'Cancelled', GETUTCDATE(), GETUTCDATE());
+                                       ('fcb5f25d-ff42-4974-bdbf-51d2b11e72cb', 'BA933D11-CE9F-4F78-863F-8C73443DF808', 1, 'Cancelled', 'Cancelled', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 3f625a22-847c-4efc-ad0b-c2515673bc40 */
+/* SQL text to insert entity field value with ID 1c5136d1-112c-4651-a167-942583ebd13e */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('3f625a22-847c-4efc-ad0b-c2515673bc40', '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B', 2, 'Completed', 'Completed', GETUTCDATE(), GETUTCDATE());
+                                       ('1c5136d1-112c-4651-a167-942583ebd13e', 'BA933D11-CE9F-4F78-863F-8C73443DF808', 2, 'Completed', 'Completed', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 91832948-c6b1-4cc0-bcfb-095bd440da17 */
+/* SQL text to insert entity field value with ID 90a1362f-d2a9-44e0-a6da-aed6cde885f8 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('91832948-c6b1-4cc0-bcfb-095bd440da17', '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B', 3, 'Failed', 'Failed', GETUTCDATE(), GETUTCDATE());
+                                       ('90a1362f-d2a9-44e0-a6da-aed6cde885f8', 'BA933D11-CE9F-4F78-863F-8C73443DF808', 3, 'Failed', 'Failed', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 01307267-8e45-4805-8cc3-373a4f1f95e6 */
+/* SQL text to insert entity field value with ID 4fcd310a-bd97-48b4-8d97-8d01ac772037 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('01307267-8e45-4805-8cc3-373a4f1f95e6', '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B', 4, 'Running', 'Running', GETUTCDATE(), GETUTCDATE());
+                                       ('4fcd310a-bd97-48b4-8d97-8d01ac772037', 'BA933D11-CE9F-4F78-863F-8C73443DF808', 4, 'Running', 'Running', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 8DA7F6EE-36DD-493A-BD52-E6540C0EE50B */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='8DA7F6EE-36DD-493A-BD52-E6540C0EE50B';
+/* SQL text to update ValueListType for entity field ID BA933D11-CE9F-4F78-863F-8C73443DF808 */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='BA933D11-CE9F-4F78-863F-8C73443DF808';
 
-/* SQL text to insert entity field value with ID e20e31cf-ec9d-4b97-b856-b04a16f7a828 */
+/* SQL text to insert entity field value with ID 890b8ebb-6c06-46a1-a107-db0acf6e8d18 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('e20e31cf-ec9d-4b97-b856-b04a16f7a828', '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE', 1, 'Backfill', 'Backfill', GETUTCDATE(), GETUTCDATE());
+                                       ('890b8ebb-6c06-46a1-a107-db0acf6e8d18', '1B3E1546-1CE5-417F-BF91-E64D591079ED', 1, 'Backfill', 'Backfill', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID d1b8bbd0-8a12-415e-a930-3b68823155f8 */
+/* SQL text to insert entity field value with ID 92e464e1-440d-45f1-8e6c-5186a2ca3441 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('d1b8bbd0-8a12-415e-a930-3b68823155f8', '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE', 2, 'Manual', 'Manual', GETUTCDATE(), GETUTCDATE());
+                                       ('92e464e1-440d-45f1-8e6c-5186a2ca3441', '1B3E1546-1CE5-417F-BF91-E64D591079ED', 2, 'Manual', 'Manual', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID f6f7d837-ac0c-413f-97d2-e3b6b322caeb */
+/* SQL text to insert entity field value with ID 42560280-9d99-46b7-8900-754df07d9112 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('f6f7d837-ac0c-413f-97d2-e3b6b322caeb', '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE', 3, 'Scheduled', 'Scheduled', GETUTCDATE(), GETUTCDATE());
+                                       ('42560280-9d99-46b7-8900-754df07d9112', '1B3E1546-1CE5-417F-BF91-E64D591079ED', 3, 'Scheduled', 'Scheduled', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID d30ebe0c-e0b6-41e7-b6f1-aeaa1f3523ef */
+/* SQL text to insert entity field value with ID 9b6315cb-4e56-4c2d-93bf-1fc09ae49ad2 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('d30ebe0c-e0b6-41e7-b6f1-aeaa1f3523ef', '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE', 4, 'Webhook', 'Webhook', GETUTCDATE(), GETUTCDATE());
+                                       ('9b6315cb-4e56-4c2d-93bf-1fc09ae49ad2', '1B3E1546-1CE5-417F-BF91-E64D591079ED', 4, 'Webhook', 'Webhook', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE';
+/* SQL text to update ValueListType for entity field ID 1B3E1546-1CE5-417F-BF91-E64D591079ED */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='1B3E1546-1CE5-417F-BF91-E64D591079ED';
 
-/* SQL text to insert entity field value with ID 4898be48-7f14-48ff-ac10-2a33644ec2d5 */
+/* SQL text to insert entity field value with ID ce1dc7c4-a826-4449-97c8-47edcd0b504d */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('4898be48-7f14-48ff-ac10-2a33644ec2d5', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 1, 'Duplicate', 'Duplicate', GETUTCDATE(), GETUTCDATE());
+                                       ('ce1dc7c4-a826-4449-97c8-47edcd0b504d', '0078772B-133B-45CD-B584-0D96CBF51A88', 1, 'Duplicate', 'Duplicate', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID fadc5e0a-ac73-4992-9094-00d721fae9b5 */
+/* SQL text to insert entity field value with ID a39c03f5-c710-4932-affe-7b5ee5b530fd */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('fadc5e0a-ac73-4992-9094-00d721fae9b5', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 2, 'Excluded', 'Excluded', GETUTCDATE(), GETUTCDATE());
+                                       ('a39c03f5-c710-4932-affe-7b5ee5b530fd', '0078772B-133B-45CD-B584-0D96CBF51A88', 2, 'Excluded', 'Excluded', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 747128e5-dc7a-4cc9-b498-7defd584fa37 */
+/* SQL text to insert entity field value with ID a25ceea6-43d8-47c2-9fb1-e12b230f9fec */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('747128e5-dc7a-4cc9-b498-7defd584fa37', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 3, 'Failed', 'Failed', GETUTCDATE(), GETUTCDATE());
+                                       ('a25ceea6-43d8-47c2-9fb1-e12b230f9fec', '0078772B-133B-45CD-B584-0D96CBF51A88', 3, 'Failed', 'Failed', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 75307646-9b86-4ee9-a0de-7bffccc127ee */
+/* SQL text to insert entity field value with ID a7d50b65-25fb-47cf-8ac6-64aa1057f8c0 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('75307646-9b86-4ee9-a0de-7bffccc127ee', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 4, 'Included', 'Included', GETUTCDATE(), GETUTCDATE());
+                                       ('a7d50b65-25fb-47cf-8ac6-64aa1057f8c0', '0078772B-133B-45CD-B584-0D96CBF51A88', 4, 'Included', 'Included', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 7aa1659a-34a9-45af-bf7c-65cc4606b38b */
+/* SQL text to insert entity field value with ID dd50c232-862e-49d3-84b6-2926039d9ad3 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('7aa1659a-34a9-45af-bf7c-65cc4606b38b', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 5, 'WouldExclude', 'WouldExclude', GETUTCDATE(), GETUTCDATE());
+                                       ('dd50c232-862e-49d3-84b6-2926039d9ad3', '0078772B-133B-45CD-B584-0D96CBF51A88', 5, 'WouldExclude', 'WouldExclude', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 962f0bd9-b4ce-4ac7-a2cf-074756cf3dab */
+/* SQL text to insert entity field value with ID d72fbcac-6439-4277-aa15-2cf7db8df547 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('962f0bd9-b4ce-4ac7-a2cf-074756cf3dab', '3A9E3C37-C299-4A01-A084-D490A3FE7160', 6, 'WouldInclude', 'WouldInclude', GETUTCDATE(), GETUTCDATE());
+                                       ('d72fbcac-6439-4277-aa15-2cf7db8df547', '0078772B-133B-45CD-B584-0D96CBF51A88', 6, 'WouldInclude', 'WouldInclude', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 3A9E3C37-C299-4A01-A084-D490A3FE7160 */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='3A9E3C37-C299-4A01-A084-D490A3FE7160';
+/* SQL text to update ValueListType for entity field ID 0078772B-133B-45CD-B584-0D96CBF51A88 */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='0078772B-133B-45CD-B584-0D96CBF51A88';
 
-/* SQL text to insert entity field value with ID b9a1c672-6046-4fb8-a0f9-dfa9630aa26e */
+/* SQL text to insert entity field value with ID 0bc3676c-d8e2-4fc7-8897-ad9b288a0f6d */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('b9a1c672-6046-4fb8-a0f9-dfa9630aa26e', '711F2B8E-B1F8-44F4-8659-E32B80C0FE15', 1, 'Abort', 'Abort', GETUTCDATE(), GETUTCDATE());
+                                       ('0bc3676c-d8e2-4fc7-8897-ad9b288a0f6d', 'FD76A168-2AF9-462D-B284-549AB7CCED6F', 1, 'Abort', 'Abort', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 98d3ed0e-71f2-46a1-8507-8c752055d23c */
+/* SQL text to insert entity field value with ID ef9ada9c-bad3-46dc-948e-2a2cb5575477 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('98d3ed0e-71f2-46a1-8507-8c752055d23c', '711F2B8E-B1F8-44F4-8659-E32B80C0FE15', 2, 'Skip', 'Skip', GETUTCDATE(), GETUTCDATE());
+                                       ('ef9ada9c-bad3-46dc-948e-2a2cb5575477', 'FD76A168-2AF9-462D-B284-549AB7CCED6F', 2, 'Skip', 'Skip', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 711F2B8E-B1F8-44F4-8659-E32B80C0FE15 */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='711F2B8E-B1F8-44F4-8659-E32B80C0FE15';
+/* SQL text to update ValueListType for entity field ID FD76A168-2AF9-462D-B284-549AB7CCED6F */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='FD76A168-2AF9-462D-B284-549AB7CCED6F';
 
-/* SQL text to insert entity field value with ID df016fd8-4501-4102-bdee-6224610124f8 */
+/* SQL text to insert entity field value with ID a6d8c080-28cf-49e7-8419-1df6cfdb571a */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('df016fd8-4501-4102-bdee-6224610124f8', 'B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18', 1, 'FullEncrypted', 'FullEncrypted', GETUTCDATE(), GETUTCDATE());
+                                       ('a6d8c080-28cf-49e7-8419-1df6cfdb571a', '1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA', 1, 'FullEncrypted', 'FullEncrypted', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 28d97c13-00c0-4532-ba8f-e6af9db6c38c */
+/* SQL text to insert entity field value with ID aca33bb4-76e5-4054-aa9d-23393c36efe5 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('28d97c13-00c0-4532-ba8f-e6af9db6c38c', 'B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18', 2, 'None', 'None', GETUTCDATE(), GETUTCDATE());
+                                       ('aca33bb4-76e5-4054-aa9d-23393c36efe5', '1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA', 2, 'None', 'None', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID ca373c9e-1c37-499b-80db-7415c8ce679e */
+/* SQL text to insert entity field value with ID 1f650d73-be6b-4379-9a3c-d9a7dc496182 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('ca373c9e-1c37-499b-80db-7415c8ce679e', 'B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18', 3, 'SubjectEncrypted', 'SubjectEncrypted', GETUTCDATE(), GETUTCDATE());
+                                       ('1f650d73-be6b-4379-9a3c-d9a7dc496182', '1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA', 3, 'SubjectEncrypted', 'SubjectEncrypted', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18 */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18';
+/* SQL text to update ValueListType for entity field ID 1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA';
 
-/* SQL text to insert entity field value with ID ccefe29c-7f90-4110-a754-0146e0652135 */
+/* SQL text to insert entity field value with ID b30788bf-f564-42d7-a9f5-8355f79f9a3a */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('ccefe29c-7f90-4110-a754-0146e0652135', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 1, 'AllExternal', 'AllExternal', GETUTCDATE(), GETUTCDATE());
+                                       ('b30788bf-f564-42d7-a9f5-8355f79f9a3a', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 1, 'AllExternal', 'AllExternal', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID b5132662-c7be-4a12-ac7e-8ebe8f388876 */
+/* SQL text to insert entity field value with ID f064dfd9-bf58-4a37-87aa-36c7e74ba0ed */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('b5132662-c7be-4a12-ac7e-8ebe8f388876', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 2, 'AllInternal', 'AllInternal', GETUTCDATE(), GETUTCDATE());
+                                       ('f064dfd9-bf58-4a37-87aa-36c7e74ba0ed', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 2, 'AllInternal', 'AllInternal', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 7ccb0deb-5b78-42f3-a315-1d3a933359d0 */
+/* SQL text to insert entity field value with ID 844d7163-57ba-4f54-aaaa-14f0b7d7d3fc */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('7ccb0deb-5b78-42f3-a315-1d3a933359d0', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 3, 'Any', 'Any', GETUTCDATE(), GETUTCDATE());
+                                       ('844d7163-57ba-4f54-aaaa-14f0b7d7d3fc', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 3, 'Any', 'Any', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID f6212957-3e1f-448a-8466-d3784a3da686 */
+/* SQL text to insert entity field value with ID 7e50f5e5-b5f6-44f9-a071-ff55564d0032 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('f6212957-3e1f-448a-8466-d3784a3da686', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 4, 'HasExternal', 'HasExternal', GETUTCDATE(), GETUTCDATE());
+                                       ('7e50f5e5-b5f6-44f9-a071-ff55564d0032', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 4, 'HasExternal', 'HasExternal', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID f8a955ec-70ca-4bbf-a634-ea0a67d5a6d9 */
+/* SQL text to insert entity field value with ID c5c5d108-3bce-4841-a467-bd0c03aa418e */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('f8a955ec-70ca-4bbf-a634-ea0a67d5a6d9', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 5, 'HasInternal', 'HasInternal', GETUTCDATE(), GETUTCDATE());
+                                       ('c5c5d108-3bce-4841-a467-bd0c03aa418e', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 5, 'HasInternal', 'HasInternal', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 3a715465-a66d-4d2b-aec6-ed44048f6318 */
+/* SQL text to insert entity field value with ID f19c30ef-9e98-4f4a-8e54-2210ab9984ab */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('3a715465-a66d-4d2b-aec6-ed44048f6318', '3B65A199-A495-42B5-8973-5328BFBBD9FC', 6, 'Mixed', 'Mixed', GETUTCDATE(), GETUTCDATE());
+                                       ('f19c30ef-9e98-4f4a-8e54-2210ab9984ab', 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B', 6, 'Mixed', 'Mixed', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 3B65A199-A495-42B5-8973-5328BFBBD9FC */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='3B65A199-A495-42B5-8973-5328BFBBD9FC';
+/* SQL text to update ValueListType for entity field ID AE0A8EB2-3130-4CBF-98FA-CA3C3676795B */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='AE0A8EB2-3130-4CBF-98FA-CA3C3676795B';
 
 
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Exclusions -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncExclusionID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '060f9502-5e1c-4a39-a5bf-328247c2dea6'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('060f9502-5e1c-4a39-a5bf-328247c2dea6', '43DD4AC3-48FF-419D-9A68-0558AE09AD73', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'ActivitySyncExclusionID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Runs -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncRunID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'de787517-6f7b-4531-8084-9c345e831a95'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('de787517-6f7b-4531-8084-9c345e831a95', 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'ActivitySyncRunID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
 /* Create Entity Relationship: MJ_BizApps_Common: Activities -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivityID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '6bf24436-1adb-4da4-a795-fb295d34127b'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '821a47b0-e690-4474-aed9-1e70bd1702ae'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('6bf24436-1adb-4da4-a795-fb295d34127b', '72E55425-8822-4E70-A075-116219CA5A5D', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'ActivityID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Connections -> MJ_BizApps_Common: Activity Sync Connection Rule Sets (One To Many via ActivitySyncConnectionID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '3ea8facd-d177-426f-9b97-2ea216456552'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('3ea8facd-d177-426f-9b97-2ea216456552', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('821a47b0-e690-4474-aed9-1e70bd1702ae', '72E55425-8822-4E70-A075-116219CA5A5D', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'ActivityID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
    END;
                     
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Connections -> MJ_BizApps_Common: Activity Sync Runs (One To Many via ActivitySyncConnectionID) */
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Exclusions -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncExclusionID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'bea3f6db-7fc9-46c0-95c2-c8e289ed74c4'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '1fec4588-519e-42cf-be19-67ca38ee5a70'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('bea3f6db-7fc9-46c0-95c2-c8e289ed74c4', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('1fec4588-519e-42cf-be19-67ca38ee5a70', '556381BF-9ACE-4A69-85BB-22EAE1856C88', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'ActivitySyncExclusionID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Rule Sets (One To Many via ActivitySyncProviderTypeID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '886131d1-502e-4c18-9dc1-76adf339f530'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('886131d1-502e-4c18-9dc1-76adf339f530', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', '7ED9F26E-B01D-472A-87C9-B163287F80B4', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Connections (One To Many via ActivitySyncProviderTypeID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '40ef7fd6-5a93-4888-9ae7-ed5ecfce65a0'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('40ef7fd6-5a93-4888-9ae7-ed5ecfce65a0', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Extensions (One To Many via ActivitySyncProviderTypeID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '37a0cf73-58af-48d4-a14e-39f981f1eb8f'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('37a0cf73-58af-48d4-a14e-39f981f1eb8f', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
    END;
                     
 /* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Connections -> MJ_BizApps_Common: Activity Sync Extensions (One To Many via ActivitySyncConnectionID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'c6d655d0-3bcb-4cc1-8096-820868aa8fae'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'c635ab08-b8fc-424a-a2af-1e16b38439e9'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('c6d655d0-3bcb-4cc1-8096-820868aa8fae', 'C22591BB-B33A-439C-9567-5494A7B71D8A', '37ACA09A-DF6E-4A81-A519-690B425884ED', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 5, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('c635ab08-b8fc-424a-a2af-1e16b38439e9', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Connections -> MJ_BizApps_Common: Activity Sync Runs (One To Many via ActivitySyncConnectionID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'b719e155-0210-4961-8791-1483fb940527'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('b719e155-0210-4961-8791-1483fb940527', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Connections -> MJ_BizApps_Common: Activity Sync Connection Rule Sets (One To Many via ActivitySyncConnectionID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '88704d93-dc17-4c52-8865-d0d6236b23ed'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('88704d93-dc17-4c52-8865-d0d6236b23ed', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', 'ActivitySyncConnectionID', 'One To Many', 1, 1, 5, GETUTCDATE(), GETUTCDATE())
    END;
 
 
 /* Create Entity Relationship: MJ: File Storage Providers -> MJ_BizApps_Common: Activity Sync Connections (One To Many via StorageProviderID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'c9b85913-6e07-4841-815a-beef25b6ade8'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '3773ae43-a556-4df7-9d3e-b56dea6756b0'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('c9b85913-6e07-4841-815a-beef25b6ade8', '28248F34-2837-EF11-86D4-6045BDEE16E6', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'StorageProviderID', 'One To Many', 1, 1, 6, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('3773ae43-a556-4df7-9d3e-b56dea6756b0', '28248F34-2837-EF11-86D4-6045BDEE16E6', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'StorageProviderID', 'One To Many', 1, 1, 6, GETUTCDATE(), GETUTCDATE())
    END;
-                    
+
+
 /* Create Entity Relationship: MJ: File Storage Providers -> MJ_BizApps_Common: Activity Sync Provider Types (One To Many via DefaultStorageProviderID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'f092f388-7895-4d0b-860c-c0f1f30911f3'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '1ce6d16a-a447-4d17-a434-9b2e5750fadd'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('f092f388-7895-4d0b-860c-c0f1f30911f3', '28248F34-2837-EF11-86D4-6045BDEE16E6', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', 'DefaultStorageProviderID', 'One To Many', 1, 1, 7, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ: Encryption Keys -> MJ_BizApps_Common: Activity Sync Connections (One To Many via EncryptionKeyID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'ebdba92e-e3af-4068-82ec-ee43ca6e5620'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('ebdba92e-e3af-4068-82ec-ee43ca6e5620', '854DB803-34D4-46CD-8B8D-712974AE592F', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'EncryptionKeyID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('1ce6d16a-a447-4d17-a434-9b2e5750fadd', '28248F34-2837-EF11-86D4-6045BDEE16E6', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'DefaultStorageProviderID', 'One To Many', 1, 1, 7, GETUTCDATE(), GETUTCDATE())
    END;
                     
 /* Create Entity Relationship: MJ: Encryption Keys -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via EncryptionKeyID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'a27e5f4d-27a1-482d-8a79-7f5b71e1d84a'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '5fb3fdd8-3dcd-4c7c-b865-39bb874defa0'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('a27e5f4d-27a1-482d-8a79-7f5b71e1d84a', '854DB803-34D4-46CD-8B8D-712974AE592F', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'EncryptionKeyID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('5fb3fdd8-3dcd-4c7c-b865-39bb874defa0', '854DB803-34D4-46CD-8B8D-712974AE592F', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'EncryptionKeyID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ: Encryption Keys -> MJ_BizApps_Common: Activity Sync Connections (One To Many via EncryptionKeyID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'e7dfa7ca-fd8c-4621-adc7-93bedf3ff0f3'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('e7dfa7ca-fd8c-4621-adc7-93bedf3ff0f3', '854DB803-34D4-46CD-8B8D-712974AE592F', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'EncryptionKeyID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
    END;
                     
 /* Create Entity Relationship: MJ: Encryption Keys -> MJ_BizApps_Common: Activity Sync Provider Types (One To Many via DefaultEncryptionKeyID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'e497634b-b1e9-4b61-bc77-bc659c246ee5'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'd3838578-45b5-4f6c-9c12-63b47e8e761e'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('e497634b-b1e9-4b61-bc77-bc659c246ee5', '854DB803-34D4-46CD-8B8D-712974AE592F', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', 'DefaultEncryptionKeyID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('d3838578-45b5-4f6c-9c12-63b47e8e761e', '854DB803-34D4-46CD-8B8D-712974AE592F', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'DefaultEncryptionKeyID', 'One To Many', 1, 1, 4, GETUTCDATE(), GETUTCDATE())
    END;
 
 
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rules -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncRuleID) */
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Runs -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncRunID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '1c8b6234-38b5-44ab-85c1-be359ec6241b'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'd277b718-0a26-4828-b741-d2298ee52f72'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('1c8b6234-38b5-44ab-85c1-be359ec6241b', '21B78371-132C-4507-AED8-D44E366468F2', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'ActivitySyncRuleID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('d277b718-0a26-4828-b741-d2298ee52f72', 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'ActivitySyncRunID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Connection Rule Sets (One To Many via ActivitySyncRuleSetID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '3099ec33-190e-480b-b5ee-54125e8b3249'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('3099ec33-190e-480b-b5ee-54125e8b3249', '7ED9F26E-B01D-472A-87C9-B163287F80B4', 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Exclusions (One To Many via ActivitySyncRuleSetID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '3ab4bc5f-59ee-47d0-8574-de643ef6bd88'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('3ab4bc5f-59ee-47d0-8574-de643ef6bd88', '7ED9F26E-B01D-472A-87C9-B163287F80B4', '556381BF-9ACE-4A69-85BB-22EAE1856C88', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Rules (One To Many via ActivitySyncRuleSetID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '45cbf900-c66f-4edf-b103-c758b411d8b0'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('45cbf900-c66f-4edf-b103-c758b411d8b0', '7ED9F26E-B01D-472A-87C9-B163287F80B4', '21B78371-132C-4507-AED8-D44E366468F2', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+   END;
+                    
+/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rules -> MJ_BizApps_Common: Activity Sync Run Details (One To Many via ActivitySyncRuleID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'a9714372-a5a1-4477-bb5e-a1f5235c4088'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('a9714372-a5a1-4477-bb5e-a1f5235c4088', '21B78371-132C-4507-AED8-D44E366468F2', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'ActivitySyncRuleID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
    END;
                     
 /* Create Entity Relationship: MJ_BizApps_Common: People -> MJ_BizApps_Common: Activity Sync Exclusions (One To Many via PersonID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '3e1202de-94d2-4d57-bbc5-34864693590c'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '28baf494-3ee7-4a6f-a388-6cfbc9bc4af2'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('3e1202de-94d2-4d57-bbc5-34864693590c', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '43DD4AC3-48FF-419D-9A68-0558AE09AD73', 'PersonID', 'One To Many', 1, 1, 29, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Rules (One To Many via ActivitySyncRuleSetID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'cc986281-a670-4b56-8165-d8e1f7836f2e'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('cc986281-a670-4b56-8165-d8e1f7836f2e', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', '21B78371-132C-4507-AED8-D44E366468F2', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Exclusions (One To Many via ActivitySyncRuleSetID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'fce5e199-0463-4758-835c-6c6de290ae86'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('fce5e199-0463-4758-835c-6c6de290ae86', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', '43DD4AC3-48FF-419D-9A68-0558AE09AD73', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Rule Sets -> MJ_BizApps_Common: Activity Sync Connection Rule Sets (One To Many via ActivitySyncRuleSetID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '2b9b0e34-9b30-4ea2-b4c7-f9d605959698'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('2b9b0e34-9b30-4ea2-b4c7-f9d605959698', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', 'ActivitySyncRuleSetID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Connections (One To Many via ActivitySyncProviderTypeID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '4b4e4817-29e0-481c-9767-79b936993046'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('4b4e4817-29e0-481c-9767-79b936993046', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Extensions (One To Many via ActivitySyncProviderTypeID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '6c4fe06d-be99-471e-bf68-abdefad17e97'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('6c4fe06d-be99-471e-bf68-abdefad17e97', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', '37ACA09A-DF6E-4A81-A519-690B425884ED', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 2, GETUTCDATE(), GETUTCDATE())
-   END;
-                    
-/* Create Entity Relationship: MJ_BizApps_Common: Activity Sync Provider Types -> MJ_BizApps_Common: Activity Sync Rule Sets (One To Many via ActivitySyncProviderTypeID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'ce8b4c75-5498-43c1-9779-9cdbdbfa0f48'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('ce8b4c75-5498-43c1-9779-9cdbdbfa0f48', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', 'ActivitySyncProviderTypeID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('28baf494-3ee7-4a6f-a388-6cfbc9bc4af2', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', '556381BF-9ACE-4A69-85BB-22EAE1856C88', 'PersonID', 'One To Many', 1, 1, 29, GETUTCDATE(), GETUTCDATE())
    END;
 
 /* SQL text to sync schema info from database schemas */
@@ -8443,8 +8508,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncConnectionRuleSet_ActivitySyncRuleSetID ON [${flyway:defaultSchema}].[ActivitySyncConnectionRuleSet] ([ActivitySyncRuleSetID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID B44AA5F7-DAC6-4D95-8CFE-448BAA93115D */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='B44AA5F7-DAC6-4D95-8CFE-448BAA93115D', @RelatedEntityNameFieldMap='ActivitySyncConnection';
+/* SQL text to update entity field related entity name field map for entity field ID 25052037-85A8-4F55-A64F-A17DE48AE3FB */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='25052037-85A8-4F55-A64F-A17DE48AE3FB', @RelatedEntityNameFieldMap='ActivitySyncConnection';
 
 /* Index for Foreign Keys for ActivitySyncConnection */
 -----------------------------------------------------------------
@@ -8491,8 +8556,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncConnection_StorageProviderID ON [${flyway:defaultSchema}].[ActivitySyncConnection] ([StorageProviderID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 4372AE35-7750-4B5C-B32A-39330546CAC7 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='4372AE35-7750-4B5C-B32A-39330546CAC7', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
+/* SQL text to update entity field related entity name field map for entity field ID 0EEEFD0A-3809-4BE9-B54E-C7C7EFC8DBD0 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='0EEEFD0A-3809-4BE9-B54E-C7C7EFC8DBD0', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
 
 /* Index for Foreign Keys for ActivitySyncExclusion */
 -----------------------------------------------------------------
@@ -8521,8 +8586,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncExclusion_PersonID ON [${flyway:defaultSchema}].[ActivitySyncExclusion] ([PersonID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID F348AEAE-159A-4559-A331-B5FB1F183D4C */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='F348AEAE-159A-4559-A331-B5FB1F183D4C', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
+/* SQL text to update entity field related entity name field map for entity field ID 84D4E65C-C18B-4A52-BD56-1FC459420563 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='84D4E65C-C18B-4A52-BD56-1FC459420563', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
 
 /* Index for Foreign Keys for ActivitySyncExtension */
 -----------------------------------------------------------------
@@ -8551,8 +8616,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncExtension_ActivitySyncProviderTypeID ON [${flyway:defaultSchema}].[ActivitySyncExtension] ([ActivitySyncProviderTypeID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 74A737D5-E23F-4A4C-B979-5CBC8FA88DA2 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='74A737D5-E23F-4A4C-B979-5CBC8FA88DA2', @RelatedEntityNameFieldMap='ActivitySyncConnection';
+/* SQL text to update entity field related entity name field map for entity field ID CEFE0EC3-92E4-4890-B36A-3E9CE5F60EE6 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='CEFE0EC3-92E4-4890-B36A-3E9CE5F60EE6', @RelatedEntityNameFieldMap='ActivitySyncConnection';
 
 /* Index for Foreign Keys for ActivitySyncProviderType */
 -----------------------------------------------------------------
@@ -8581,20 +8646,23 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncProviderType_DefaultStorageProviderID ON [${flyway:defaultSchema}].[ActivitySyncProviderType] ([DefaultStorageProviderID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID F6C78976-EA44-44F4-BB61-927D2DA98098 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='F6C78976-EA44-44F4-BB61-927D2DA98098', @RelatedEntityNameFieldMap='DefaultEncryptionKey';
+/* SQL text to update entity field related entity name field map for entity field ID 5E2EFFE9-2376-454D-8F8C-7E967E27E485 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='5E2EFFE9-2376-454D-8F8C-7E967E27E485', @RelatedEntityNameFieldMap='DefaultEncryptionKey';
 
-/* SQL text to update entity field related entity name field map for entity field ID DFBE53BF-A115-4CE0-B4BA-1EC0B55DACEE */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='DFBE53BF-A115-4CE0-B4BA-1EC0B55DACEE', @RelatedEntityNameFieldMap='Person';
+/* SQL text to update entity field related entity name field map for entity field ID 6C142921-FEEE-4D50-A601-ADB0B370EE47 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='6C142921-FEEE-4D50-A601-ADB0B370EE47', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
 
-/* SQL text to update entity field related entity name field map for entity field ID 982414CA-BB67-4F87-9928-95312267921A */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='982414CA-BB67-4F87-9928-95312267921A', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
+/* SQL text to update entity field related entity name field map for entity field ID 2A5381DD-A180-4E03-9C04-9815703DDEE3 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='2A5381DD-A180-4E03-9C04-9815703DDEE3', @RelatedEntityNameFieldMap='EncryptionKey';
 
-/* SQL text to update entity field related entity name field map for entity field ID E5A60B5F-87D9-4154-B122-6D3FF216D73F */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='E5A60B5F-87D9-4154-B122-6D3FF216D73F', @RelatedEntityNameFieldMap='DefaultStorageProvider';
+/* SQL text to update entity field related entity name field map for entity field ID D1C50585-1359-49B7-A011-6D590570B9E1 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='D1C50585-1359-49B7-A011-6D590570B9E1', @RelatedEntityNameFieldMap='DefaultStorageProvider';
 
-/* SQL text to update entity field related entity name field map for entity field ID D1A0BA01-CE0A-41D1-AE44-4DEE9EB7C835 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='D1A0BA01-CE0A-41D1-AE44-4DEE9EB7C835', @RelatedEntityNameFieldMap='EncryptionKey';
+/* SQL text to update entity field related entity name field map for entity field ID 7BB4C198-CF87-4258-AEB5-99BF1F035BAA */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='7BB4C198-CF87-4258-AEB5-99BF1F035BAA', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
+
+/* SQL text to update entity field related entity name field map for entity field ID 568087EE-B48D-43B3-9411-28302A37B0C5 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='568087EE-B48D-43B3-9411-28302A37B0C5', @RelatedEntityNameFieldMap='Person';
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Connection Rule Sets */
 -----------------------------------------------------------------
@@ -8849,298 +8917,6 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncConnectionRuleSe
 /* spDelete Permissions for MJ_BizApps_Common: Activity Sync Connection Rule Sets */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncConnectionRuleSet] TO [cdp_Developer], [cdp_Integration];
-
-/* Base View SQL for MJ_BizApps_Common: Activity Sync Exclusions */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Exclusions
--- Item: vwActivitySyncExclusions
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Exclusions
------               SCHEMA:      ${flyway:defaultSchema}
------               BASE TABLE:  ActivitySyncExclusion
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncExclusions]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncExclusions];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncExclusions]
-AS
-SELECT
-    a.*,
-    mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID.[Name] AS [ActivitySyncRuleSet],
-    mjBizAppsCommonPerson_PersonID.[DisplayName] AS [Person]
-FROM
-    [${flyway:defaultSchema}].[ActivitySyncExclusion] AS a
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID
-  ON
-    [a].[ActivitySyncRuleSetID] = mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID.[ID]
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[Person] AS mjBizAppsCommonPerson_PersonID
-  ON
-    [a].[PersonID] = mjBizAppsCommonPerson_PersonID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncExclusions] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Exclusions */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Exclusions
--- Item: Permissions for vwActivitySyncExclusions
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncExclusions] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* spCreate SQL for MJ_BizApps_Common: Activity Sync Exclusions */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Exclusions
--- Item: spCreateActivitySyncExclusion
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR ActivitySyncExclusion
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncExclusion]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncExclusion];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncExclusion]
-    @ID uniqueidentifier = NULL,
-    @ActivitySyncRuleSetID_Clear bit = 0,
-    @ActivitySyncRuleSetID uniqueidentifier = NULL,
-    @IdentityKind nvarchar(20),
-    @IdentityValue nvarchar(320),
-    @PersonID_Clear bit = 0,
-    @PersonID uniqueidentifier = NULL,
-    @Reason_Clear bit = 0,
-    @Reason nvarchar(MAX) = NULL,
-    @EffectiveFrom_Clear bit = 0,
-    @EffectiveFrom datetimeoffset = NULL,
-    @EffectiveTo_Clear bit = 0,
-    @EffectiveTo datetimeoffset = NULL,
-    @IsEnabled bit = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncExclusion]
-            (
-                [ID],
-                [ActivitySyncRuleSetID],
-                [IdentityKind],
-                [IdentityValue],
-                [PersonID],
-                [Reason],
-                [EffectiveFrom],
-                [EffectiveTo],
-                [IsEnabled]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, NULL) END,
-                @IdentityKind,
-                @IdentityValue,
-                CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, NULL) END,
-                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
-                CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, NULL) END,
-                CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, NULL) END,
-                ISNULL(@IsEnabled, 1)
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncExclusion]
-            (
-                [ActivitySyncRuleSetID],
-                [IdentityKind],
-                [IdentityValue],
-                [PersonID],
-                [Reason],
-                [EffectiveFrom],
-                [EffectiveTo],
-                [IsEnabled]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, NULL) END,
-                @IdentityKind,
-                @IdentityValue,
-                CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, NULL) END,
-                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
-                CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, NULL) END,
-                CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, NULL) END,
-                ISNULL(@IsEnabled, 1)
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncExclusions] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
-
-/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
-
-/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Exclusions */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Exclusions
--- Item: spUpdateActivitySyncExclusion
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR ActivitySyncExclusion
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncExclusion]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion]
-    @ID uniqueidentifier,
-    @ActivitySyncRuleSetID_Clear bit = 0,
-    @ActivitySyncRuleSetID uniqueidentifier = NULL,
-    @IdentityKind nvarchar(20) = NULL,
-    @IdentityValue nvarchar(320) = NULL,
-    @PersonID_Clear bit = 0,
-    @PersonID uniqueidentifier = NULL,
-    @Reason_Clear bit = 0,
-    @Reason nvarchar(MAX) = NULL,
-    @EffectiveFrom_Clear bit = 0,
-    @EffectiveFrom datetimeoffset = NULL,
-    @EffectiveTo_Clear bit = 0,
-    @EffectiveTo datetimeoffset = NULL,
-    @IsEnabled bit = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncExclusion]
-    SET
-        [ActivitySyncRuleSetID] = CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, [ActivitySyncRuleSetID]) END,
-        [IdentityKind] = ISNULL(@IdentityKind, [IdentityKind]),
-        [IdentityValue] = ISNULL(@IdentityValue, [IdentityValue]),
-        [PersonID] = CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, [PersonID]) END,
-        [Reason] = CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, [Reason]) END,
-        [EffectiveFrom] = CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, [EffectiveFrom]) END,
-        [EffectiveTo] = CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, [EffectiveTo]) END,
-        [IsEnabled] = ISNULL(@IsEnabled, [IsEnabled])
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncExclusions] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}].[vwActivitySyncExclusions]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncExclusion table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncExclusion]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncExclusion];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncExclusion
-ON [${flyway:defaultSchema}].[ActivitySyncExclusion]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncExclusion]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}].[ActivitySyncExclusion] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-
-/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete SQL for MJ_BizApps_Common: Activity Sync Exclusions */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Exclusions
--- Item: spDeleteActivitySyncExclusion
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR ActivitySyncExclusion
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncExclusion]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[ActivitySyncExclusion]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Provider Types */
 -----------------------------------------------------------------
@@ -9480,11 +9256,297 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncProviderType] TO
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncProviderType] TO [cdp_Developer], [cdp_Integration];
 
-/* SQL text to update entity field related entity name field map for entity field ID C0108769-B775-4232-8694-A4CE00FFE4F1 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='C0108769-B775-4232-8694-A4CE00FFE4F1', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
+/* Base View SQL for MJ_BizApps_Common: Activity Sync Exclusions */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+-- Item: vwActivitySyncExclusions
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
 
-/* SQL text to update entity field related entity name field map for entity field ID 1E175147-3B07-4C30-9771-5D09FA41CEE9 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='1E175147-3B07-4C30-9771-5D09FA41CEE9', @RelatedEntityNameFieldMap='StorageProvider';
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Exclusions
+-----               SCHEMA:      ${flyway:defaultSchema}
+-----               BASE TABLE:  ActivitySyncExclusion
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncExclusions]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncExclusions];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncExclusions]
+AS
+SELECT
+    a.*,
+    mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID.[Name] AS [ActivitySyncRuleSet],
+    mjBizAppsCommonPerson_PersonID.[DisplayName] AS [Person]
+FROM
+    [${flyway:defaultSchema}].[ActivitySyncExclusion] AS a
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID
+  ON
+    [a].[ActivitySyncRuleSetID] = mjBizAppsCommonActivitySyncRuleSet_ActivitySyncRuleSetID.[ID]
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[Person] AS mjBizAppsCommonPerson_PersonID
+  ON
+    [a].[PersonID] = mjBizAppsCommonPerson_PersonID.[ID]
+GO
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncExclusions] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Exclusions */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+-- Item: Permissions for vwActivitySyncExclusions
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncExclusions] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* spCreate SQL for MJ_BizApps_Common: Activity Sync Exclusions */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+-- Item: spCreateActivitySyncExclusion
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ActivitySyncExclusion
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncExclusion]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncExclusion];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncExclusion]
+    @ID uniqueidentifier = NULL,
+    @ActivitySyncRuleSetID_Clear bit = 0,
+    @ActivitySyncRuleSetID uniqueidentifier = NULL,
+    @IdentityKind nvarchar(20),
+    @IdentityValue nvarchar(320),
+    @PersonID_Clear bit = 0,
+    @PersonID uniqueidentifier = NULL,
+    @Reason_Clear bit = 0,
+    @Reason nvarchar(MAX) = NULL,
+    @EffectiveFrom_Clear bit = 0,
+    @EffectiveFrom datetimeoffset = NULL,
+    @EffectiveTo_Clear bit = 0,
+    @EffectiveTo datetimeoffset = NULL,
+    @IsEnabled bit = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
+
+    IF @ID IS NOT NULL
+    BEGIN
+        -- User provided a value, use it
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncExclusion]
+            (
+                [ID],
+                [ActivitySyncRuleSetID],
+                [IdentityKind],
+                [IdentityValue],
+                [PersonID],
+                [Reason],
+                [EffectiveFrom],
+                [EffectiveTo],
+                [IsEnabled]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ID,
+                CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, NULL) END,
+                @IdentityKind,
+                @IdentityValue,
+                CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, NULL) END,
+                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
+                CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, NULL) END,
+                CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, NULL) END,
+                ISNULL(@IsEnabled, 1)
+            )
+    END
+    ELSE
+    BEGIN
+        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncExclusion]
+            (
+                [ActivitySyncRuleSetID],
+                [IdentityKind],
+                [IdentityValue],
+                [PersonID],
+                [Reason],
+                [EffectiveFrom],
+                [EffectiveTo],
+                [IsEnabled]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, NULL) END,
+                @IdentityKind,
+                @IdentityValue,
+                CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, NULL) END,
+                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
+                CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, NULL) END,
+                CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, NULL) END,
+                ISNULL(@IsEnabled, 1)
+            )
+    END
+    -- return the new record from the base view, which might have some calculated fields
+    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncExclusions] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
+
+/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
+
+/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Exclusions */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+-- Item: spUpdateActivitySyncExclusion
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ActivitySyncExclusion
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncExclusion]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion]
+    @ID uniqueidentifier,
+    @ActivitySyncRuleSetID_Clear bit = 0,
+    @ActivitySyncRuleSetID uniqueidentifier = NULL,
+    @IdentityKind nvarchar(20) = NULL,
+    @IdentityValue nvarchar(320) = NULL,
+    @PersonID_Clear bit = 0,
+    @PersonID uniqueidentifier = NULL,
+    @Reason_Clear bit = 0,
+    @Reason nvarchar(MAX) = NULL,
+    @EffectiveFrom_Clear bit = 0,
+    @EffectiveFrom datetimeoffset = NULL,
+    @EffectiveTo_Clear bit = 0,
+    @EffectiveTo datetimeoffset = NULL,
+    @IsEnabled bit = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncExclusion]
+    SET
+        [ActivitySyncRuleSetID] = CASE WHEN @ActivitySyncRuleSetID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleSetID, [ActivitySyncRuleSetID]) END,
+        [IdentityKind] = ISNULL(@IdentityKind, [IdentityKind]),
+        [IdentityValue] = ISNULL(@IdentityValue, [IdentityValue]),
+        [PersonID] = CASE WHEN @PersonID_Clear = 1 THEN NULL ELSE ISNULL(@PersonID, [PersonID]) END,
+        [Reason] = CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, [Reason]) END,
+        [EffectiveFrom] = CASE WHEN @EffectiveFrom_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveFrom, [EffectiveFrom]) END,
+        [EffectiveTo] = CASE WHEN @EffectiveTo_Clear = 1 THEN NULL ELSE ISNULL(@EffectiveTo, [EffectiveTo]) END,
+        [IsEnabled] = ISNULL(@IsEnabled, [IsEnabled])
+    WHERE
+        [ID] = @ID
+
+    -- Check if the update was successful
+    IF @@ROWCOUNT = 0
+        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
+        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncExclusions] WHERE 1=0
+    ELSE
+        -- Return the updated record so the caller can see the updated values and any calculated fields
+        SELECT
+                                        *
+                                    FROM
+                                        [${flyway:defaultSchema}].[vwActivitySyncExclusions]
+                                    WHERE
+                                        [ID] = @ID
+                                    
+END
+GO
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration]
+GO
+
+------------------------------------------------------------
+----- TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncExclusion table
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncExclusion]', 'TR') IS NOT NULL
+    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncExclusion];
+GO
+CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncExclusion
+ON [${flyway:defaultSchema}].[ActivitySyncExclusion]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncExclusion]
+    SET
+        __mj_UpdatedAt = GETUTCDATE()
+    FROM
+        [${flyway:defaultSchema}].[ActivitySyncExclusion] AS _organicTable
+    INNER JOIN
+        INSERTED AS I ON
+        _organicTable.[ID] = I.[ID];
+END;
+GO
+
+/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete SQL for MJ_BizApps_Common: Activity Sync Exclusions */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+-- Item: spDeleteActivitySyncExclusion
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ActivitySyncExclusion
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncExclusion]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion]
+    @ID uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM
+        [${flyway:defaultSchema}].[ActivitySyncExclusion]
+    WHERE
+        [ID] = @ID
+
+
+    -- Check if the delete was successful
+    IF @@ROWCOUNT = 0
+        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+    ELSE
+        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Exclusions */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExclusion] TO [cdp_Developer], [cdp_Integration];
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Extensions */
 -----------------------------------------------------------------
@@ -9798,6 +9860,9 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExtension] TO [c
 /* spDelete Permissions for MJ_BizApps_Common: Activity Sync Extensions */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncExtension] TO [cdp_Developer], [cdp_Integration];
+
+/* SQL text to update entity field related entity name field map for entity field ID 136FF7B4-BC67-4C96-98B2-9FD82C21363B */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='136FF7B4-BC67-4C96-98B2-9FD82C21363B', @RelatedEntityNameFieldMap='StorageProvider';
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Connections */
 -----------------------------------------------------------------
@@ -10198,8 +10263,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncRuleSet_ActivitySyncProviderTypeID ON [${flyway:defaultSchema}].[ActivitySyncRuleSet] ([ActivitySyncProviderTypeID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 328FC82E-9F5C-4A8E-AA76-AA63C27D9BEB */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='328FC82E-9F5C-4A8E-AA76-AA63C27D9BEB', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
+/* SQL text to update entity field related entity name field map for entity field ID 1CB40317-E514-4BB1-86BF-C8B2B18AE84C */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='1CB40317-E514-4BB1-86BF-C8B2B18AE84C', @RelatedEntityNameFieldMap='ActivitySyncProviderType';
 
 /* Index for Foreign Keys for ActivitySyncRule */
 -----------------------------------------------------------------
@@ -10237,8 +10302,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncRule_ActivitySyncRuleSetID ON [${flyway:defaultSchema}].[ActivitySyncRule] ([ActivitySyncRuleSetID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 79F1EBE3-FA24-481E-98DF-18714E93CB84 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='79F1EBE3-FA24-481E-98DF-18714E93CB84', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
+/* SQL text to update entity field related entity name field map for entity field ID 3B472ADE-9440-46FC-AB87-9CB4B27FE729 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='3B472ADE-9440-46FC-AB87-9CB4B27FE729', @RelatedEntityNameFieldMap='ActivitySyncRuleSet';
 
 /* Index for Foreign Keys for ActivitySyncRunDetail */
 -----------------------------------------------------------------
@@ -10294,8 +10359,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncRunDetail_EncryptionKeyID ON [${flyway:defaultSchema}].[ActivitySyncRunDetail] ([EncryptionKeyID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 3A2B9C06-1919-4837-BB45-BC0A25499CE2 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='3A2B9C06-1919-4837-BB45-BC0A25499CE2', @RelatedEntityNameFieldMap='ActivitySyncRule';
+/* SQL text to update entity field related entity name field map for entity field ID F9D3B360-0DA7-4FB7-AC4F-8CA065AA9BF3 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='F9D3B360-0DA7-4FB7-AC4F-8CA065AA9BF3', @RelatedEntityNameFieldMap='ActivitySyncRule';
 
 /* Index for Foreign Keys for ActivitySyncRun */
 -----------------------------------------------------------------
@@ -10315,621 +10380,11 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ActivitySyncRun_ActivitySyncConnectionID ON [${flyway:defaultSchema}].[ActivitySyncRun] ([ActivitySyncConnectionID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID 6F4EF6C9-E582-41DE-BE08-70EA509356BE */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='6F4EF6C9-E582-41DE-BE08-70EA509356BE', @RelatedEntityNameFieldMap='ActivitySyncConnection';
+/* SQL text to update entity field related entity name field map for entity field ID 721EDD40-B7F9-4227-BDE7-F276389364F0 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='721EDD40-B7F9-4227-BDE7-F276389364F0', @RelatedEntityNameFieldMap='ActivitySyncConnection';
 
-/* SQL text to update entity field related entity name field map for entity field ID D6BC4C27-5838-4CF5-8DD4-50DA693E666A */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='D6BC4C27-5838-4CF5-8DD4-50DA693E666A', @RelatedEntityNameFieldMap='Activity';
-
-/* Base View SQL for MJ_BizApps_Common: Activity Sync Runs */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Runs
--- Item: vwActivitySyncRuns
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Runs
------               SCHEMA:      ${flyway:defaultSchema}
------               BASE TABLE:  ActivitySyncRun
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncRuns]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncRuns];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncRuns]
-AS
-SELECT
-    a.*,
-    mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID.[Name] AS [ActivitySyncConnection]
-FROM
-    [${flyway:defaultSchema}].[ActivitySyncRun] AS a
-INNER JOIN
-    [${flyway:defaultSchema}].[ActivitySyncConnection] AS mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID
-  ON
-    [a].[ActivitySyncConnectionID] = mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuns] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Runs */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Runs
--- Item: Permissions for vwActivitySyncRuns
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuns] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* spCreate SQL for MJ_BizApps_Common: Activity Sync Runs */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Runs
--- Item: spCreateActivitySyncRun
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR ActivitySyncRun
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncRun]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRun];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRun]
-    @ID uniqueidentifier = NULL,
-    @ActivitySyncConnectionID uniqueidentifier,
-    @StartedAt datetimeoffset = NULL,
-    @EndedAt_Clear bit = 0,
-    @EndedAt datetimeoffset = NULL,
-    @Status nvarchar(20) = NULL,
-    @TriggerType nvarchar(20) = NULL,
-    @IsDryRun bit = NULL,
-    @Fetched int = NULL,
-    @Included int = NULL,
-    @Excluded int = NULL,
-    @Duplicates int = NULL,
-    @Failed int = NULL,
-    @ExtensionErrors int = NULL,
-    @WatermarkBefore_Clear bit = 0,
-    @WatermarkBefore datetimeoffset = NULL,
-    @WatermarkAfter_Clear bit = 0,
-    @WatermarkAfter datetimeoffset = NULL,
-    @ErrorMessage_Clear bit = 0,
-    @ErrorMessage nvarchar(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRun]
-            (
-                [ID],
-                [ActivitySyncConnectionID],
-                [StartedAt],
-                [EndedAt],
-                [Status],
-                [TriggerType],
-                [IsDryRun],
-                [Fetched],
-                [Included],
-                [Excluded],
-                [Duplicates],
-                [Failed],
-                [ExtensionErrors],
-                [WatermarkBefore],
-                [WatermarkAfter],
-                [ErrorMessage]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                @ActivitySyncConnectionID,
-                ISNULL(@StartedAt, sysdatetimeoffset()),
-                CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, NULL) END,
-                ISNULL(@Status, 'Running'),
-                ISNULL(@TriggerType, 'Scheduled'),
-                ISNULL(@IsDryRun, 0),
-                ISNULL(@Fetched, 0),
-                ISNULL(@Included, 0),
-                ISNULL(@Excluded, 0),
-                ISNULL(@Duplicates, 0),
-                ISNULL(@Failed, 0),
-                ISNULL(@ExtensionErrors, 0),
-                CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, NULL) END,
-                CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, NULL) END,
-                CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, NULL) END
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRun]
-            (
-                [ActivitySyncConnectionID],
-                [StartedAt],
-                [EndedAt],
-                [Status],
-                [TriggerType],
-                [IsDryRun],
-                [Fetched],
-                [Included],
-                [Excluded],
-                [Duplicates],
-                [Failed],
-                [ExtensionErrors],
-                [WatermarkBefore],
-                [WatermarkAfter],
-                [ErrorMessage]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ActivitySyncConnectionID,
-                ISNULL(@StartedAt, sysdatetimeoffset()),
-                CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, NULL) END,
-                ISNULL(@Status, 'Running'),
-                ISNULL(@TriggerType, 'Scheduled'),
-                ISNULL(@IsDryRun, 0),
-                ISNULL(@Fetched, 0),
-                ISNULL(@Included, 0),
-                ISNULL(@Excluded, 0),
-                ISNULL(@Duplicates, 0),
-                ISNULL(@Failed, 0),
-                ISNULL(@ExtensionErrors, 0),
-                CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, NULL) END,
-                CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, NULL) END,
-                CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, NULL) END
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncRuns] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
-
-/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Runs */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
-
-/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Runs */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Runs
--- Item: spUpdateActivitySyncRun
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR ActivitySyncRun
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncRun]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRun];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRun]
-    @ID uniqueidentifier,
-    @ActivitySyncConnectionID uniqueidentifier = NULL,
-    @StartedAt datetimeoffset = NULL,
-    @EndedAt_Clear bit = 0,
-    @EndedAt datetimeoffset = NULL,
-    @Status nvarchar(20) = NULL,
-    @TriggerType nvarchar(20) = NULL,
-    @IsDryRun bit = NULL,
-    @Fetched int = NULL,
-    @Included int = NULL,
-    @Excluded int = NULL,
-    @Duplicates int = NULL,
-    @Failed int = NULL,
-    @ExtensionErrors int = NULL,
-    @WatermarkBefore_Clear bit = 0,
-    @WatermarkBefore datetimeoffset = NULL,
-    @WatermarkAfter_Clear bit = 0,
-    @WatermarkAfter datetimeoffset = NULL,
-    @ErrorMessage_Clear bit = 0,
-    @ErrorMessage nvarchar(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRun]
-    SET
-        [ActivitySyncConnectionID] = ISNULL(@ActivitySyncConnectionID, [ActivitySyncConnectionID]),
-        [StartedAt] = ISNULL(@StartedAt, [StartedAt]),
-        [EndedAt] = CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, [EndedAt]) END,
-        [Status] = ISNULL(@Status, [Status]),
-        [TriggerType] = ISNULL(@TriggerType, [TriggerType]),
-        [IsDryRun] = ISNULL(@IsDryRun, [IsDryRun]),
-        [Fetched] = ISNULL(@Fetched, [Fetched]),
-        [Included] = ISNULL(@Included, [Included]),
-        [Excluded] = ISNULL(@Excluded, [Excluded]),
-        [Duplicates] = ISNULL(@Duplicates, [Duplicates]),
-        [Failed] = ISNULL(@Failed, [Failed]),
-        [ExtensionErrors] = ISNULL(@ExtensionErrors, [ExtensionErrors]),
-        [WatermarkBefore] = CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, [WatermarkBefore]) END,
-        [WatermarkAfter] = CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, [WatermarkAfter]) END,
-        [ErrorMessage] = CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, [ErrorMessage]) END
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncRuns] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}].[vwActivitySyncRuns]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRun] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncRun table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncRun]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncRun];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncRun
-ON [${flyway:defaultSchema}].[ActivitySyncRun]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRun]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}].[ActivitySyncRun] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-
-/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Runs */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete SQL for MJ_BizApps_Common: Activity Sync Runs */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Runs
--- Item: spDeleteActivitySyncRun
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR ActivitySyncRun
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncRun]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRun];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRun]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[ActivitySyncRun]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Runs */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
-
-/* Base View SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
--- Item: vwActivitySyncRuleSets
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Rule Sets
------               SCHEMA:      ${flyway:defaultSchema}
------               BASE TABLE:  ActivitySyncRuleSet
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncRuleSets]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncRuleSets];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncRuleSets]
-AS
-SELECT
-    a.*,
-    mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID.[Name] AS [ActivitySyncProviderType]
-FROM
-    [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS a
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ActivitySyncProviderType] AS mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID
-  ON
-    [a].[ActivitySyncProviderTypeID] = mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuleSets] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
--- Item: Permissions for vwActivitySyncRuleSets
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuleSets] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* spCreate SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
--- Item: spCreateActivitySyncRuleSet
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR ActivitySyncRuleSet
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncRuleSet]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet]
-    @ID uniqueidentifier = NULL,
-    @Name nvarchar(200),
-    @Description_Clear bit = 0,
-    @Description nvarchar(MAX) = NULL,
-    @ActivitySyncProviderTypeID_Clear bit = 0,
-    @ActivitySyncProviderTypeID uniqueidentifier = NULL,
-    @InternalDomains_Clear bit = 0,
-    @InternalDomains nvarchar(MAX) = NULL,
-    @Sequence int = NULL,
-    @IsEnabled bit = NULL,
-    @IsSystem bit = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-            (
-                [ID],
-                [Name],
-                [Description],
-                [ActivitySyncProviderTypeID],
-                [InternalDomains],
-                [Sequence],
-                [IsEnabled],
-                [IsSystem]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                @Name,
-                CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, NULL) END,
-                CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, NULL) END,
-                CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, NULL) END,
-                ISNULL(@Sequence, 0),
-                ISNULL(@IsEnabled, 1),
-                ISNULL(@IsSystem, 0)
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-            (
-                [Name],
-                [Description],
-                [ActivitySyncProviderTypeID],
-                [InternalDomains],
-                [Sequence],
-                [IsEnabled],
-                [IsSystem]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @Name,
-                CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, NULL) END,
-                CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, NULL) END,
-                CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, NULL) END,
-                ISNULL(@Sequence, 0),
-                ISNULL(@IsEnabled, 1),
-                ISNULL(@IsSystem, 0)
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncRuleSets] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
-
-/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
-
-/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
--- Item: spUpdateActivitySyncRuleSet
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR ActivitySyncRuleSet
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet]
-    @ID uniqueidentifier,
-    @Name nvarchar(200) = NULL,
-    @Description_Clear bit = 0,
-    @Description nvarchar(MAX) = NULL,
-    @ActivitySyncProviderTypeID_Clear bit = 0,
-    @ActivitySyncProviderTypeID uniqueidentifier = NULL,
-    @InternalDomains_Clear bit = 0,
-    @InternalDomains nvarchar(MAX) = NULL,
-    @Sequence int = NULL,
-    @IsEnabled bit = NULL,
-    @IsSystem bit = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-    SET
-        [Name] = ISNULL(@Name, [Name]),
-        [Description] = CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, [Description]) END,
-        [ActivitySyncProviderTypeID] = CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, [ActivitySyncProviderTypeID]) END,
-        [InternalDomains] = CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, [InternalDomains]) END,
-        [Sequence] = ISNULL(@Sequence, [Sequence]),
-        [IsEnabled] = ISNULL(@IsEnabled, [IsEnabled]),
-        [IsSystem] = ISNULL(@IsSystem, [IsSystem])
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncRuleSets] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}].[vwActivitySyncRuleSets]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncRuleSet table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncRuleSet]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncRuleSet];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncRuleSet
-ON [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-
-/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
--- Item: spDeleteActivitySyncRuleSet
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR ActivitySyncRuleSet
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+/* SQL text to update entity field related entity name field map for entity field ID 4087A170-CD32-4B2A-A59E-E2747F272AA8 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='4087A170-CD32-4B2A-A59E-E2747F272AA8', @RelatedEntityNameFieldMap='Activity';
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Rules */
 -----------------------------------------------------------------
@@ -11278,8 +10733,618 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRule] TO [cdp_De
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRule] TO [cdp_Developer], [cdp_Integration];
 
-/* SQL text to update entity field related entity name field map for entity field ID 6B8A5EF2-EDCA-41E8-9E4E-FD47F39A8395 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='6B8A5EF2-EDCA-41E8-9E4E-FD47F39A8395', @RelatedEntityNameFieldMap='EncryptionKey';
+/* Base View SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+-- Item: vwActivitySyncRuleSets
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Rule Sets
+-----               SCHEMA:      ${flyway:defaultSchema}
+-----               BASE TABLE:  ActivitySyncRuleSet
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncRuleSets]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncRuleSets];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncRuleSets]
+AS
+SELECT
+    a.*,
+    mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID.[Name] AS [ActivitySyncProviderType]
+FROM
+    [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS a
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[ActivitySyncProviderType] AS mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID
+  ON
+    [a].[ActivitySyncProviderTypeID] = mjBizAppsCommonActivitySyncProviderType_ActivitySyncProviderTypeID.[ID]
+GO
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuleSets] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+-- Item: Permissions for vwActivitySyncRuleSets
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuleSets] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* spCreate SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+-- Item: spCreateActivitySyncRuleSet
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ActivitySyncRuleSet
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncRuleSet]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet]
+    @ID uniqueidentifier = NULL,
+    @Name nvarchar(200),
+    @Description_Clear bit = 0,
+    @Description nvarchar(MAX) = NULL,
+    @ActivitySyncProviderTypeID_Clear bit = 0,
+    @ActivitySyncProviderTypeID uniqueidentifier = NULL,
+    @InternalDomains_Clear bit = 0,
+    @InternalDomains nvarchar(MAX) = NULL,
+    @Sequence int = NULL,
+    @IsEnabled bit = NULL,
+    @IsSystem bit = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
+
+    IF @ID IS NOT NULL
+    BEGIN
+        -- User provided a value, use it
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+            (
+                [ID],
+                [Name],
+                [Description],
+                [ActivitySyncProviderTypeID],
+                [InternalDomains],
+                [Sequence],
+                [IsEnabled],
+                [IsSystem]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ID,
+                @Name,
+                CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, NULL) END,
+                CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, NULL) END,
+                CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, NULL) END,
+                ISNULL(@Sequence, 0),
+                ISNULL(@IsEnabled, 1),
+                ISNULL(@IsSystem, 0)
+            )
+    END
+    ELSE
+    BEGIN
+        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+            (
+                [Name],
+                [Description],
+                [ActivitySyncProviderTypeID],
+                [InternalDomains],
+                [Sequence],
+                [IsEnabled],
+                [IsSystem]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @Name,
+                CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, NULL) END,
+                CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, NULL) END,
+                CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, NULL) END,
+                ISNULL(@Sequence, 0),
+                ISNULL(@IsEnabled, 1),
+                ISNULL(@IsSystem, 0)
+            )
+    END
+    -- return the new record from the base view, which might have some calculated fields
+    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncRuleSets] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+
+/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+
+/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+-- Item: spUpdateActivitySyncRuleSet
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ActivitySyncRuleSet
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet]
+    @ID uniqueidentifier,
+    @Name nvarchar(200) = NULL,
+    @Description_Clear bit = 0,
+    @Description nvarchar(MAX) = NULL,
+    @ActivitySyncProviderTypeID_Clear bit = 0,
+    @ActivitySyncProviderTypeID uniqueidentifier = NULL,
+    @InternalDomains_Clear bit = 0,
+    @InternalDomains nvarchar(MAX) = NULL,
+    @Sequence int = NULL,
+    @IsEnabled bit = NULL,
+    @IsSystem bit = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+    SET
+        [Name] = ISNULL(@Name, [Name]),
+        [Description] = CASE WHEN @Description_Clear = 1 THEN NULL ELSE ISNULL(@Description, [Description]) END,
+        [ActivitySyncProviderTypeID] = CASE WHEN @ActivitySyncProviderTypeID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncProviderTypeID, [ActivitySyncProviderTypeID]) END,
+        [InternalDomains] = CASE WHEN @InternalDomains_Clear = 1 THEN NULL ELSE ISNULL(@InternalDomains, [InternalDomains]) END,
+        [Sequence] = ISNULL(@Sequence, [Sequence]),
+        [IsEnabled] = ISNULL(@IsEnabled, [IsEnabled]),
+        [IsSystem] = ISNULL(@IsSystem, [IsSystem])
+    WHERE
+        [ID] = @ID
+
+    -- Check if the update was successful
+    IF @@ROWCOUNT = 0
+        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
+        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncRuleSets] WHERE 1=0
+    ELSE
+        -- Return the updated record so the caller can see the updated values and any calculated fields
+        SELECT
+                                        *
+                                    FROM
+                                        [${flyway:defaultSchema}].[vwActivitySyncRuleSets]
+                                    WHERE
+                                        [ID] = @ID
+                                    
+END
+GO
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration]
+GO
+
+------------------------------------------------------------
+----- TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncRuleSet table
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncRuleSet]', 'TR') IS NOT NULL
+    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncRuleSet];
+GO
+CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncRuleSet
+ON [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+    SET
+        __mj_UpdatedAt = GETUTCDATE()
+    FROM
+        [${flyway:defaultSchema}].[ActivitySyncRuleSet] AS _organicTable
+    INNER JOIN
+        INSERTED AS I ON
+        _organicTable.[ID] = I.[ID];
+END;
+GO
+
+/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete SQL for MJ_BizApps_Common: Activity Sync Rule Sets */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+-- Item: spDeleteActivitySyncRuleSet
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ActivitySyncRuleSet
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet]
+    @ID uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM
+        [${flyway:defaultSchema}].[ActivitySyncRuleSet]
+    WHERE
+        [ID] = @ID
+
+
+    -- Check if the delete was successful
+    IF @@ROWCOUNT = 0
+        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+    ELSE
+        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Rule Sets */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRuleSet] TO [cdp_Developer], [cdp_Integration];
+
+/* SQL text to update entity field related entity name field map for entity field ID 1E55257F-D2BE-4817-82C9-723AEE6F8E42 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='1E55257F-D2BE-4817-82C9-723AEE6F8E42', @RelatedEntityNameFieldMap='EncryptionKey';
+
+/* Base View SQL for MJ_BizApps_Common: Activity Sync Runs */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Runs
+-- Item: vwActivitySyncRuns
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Runs
+-----               SCHEMA:      ${flyway:defaultSchema}
+-----               BASE TABLE:  ActivitySyncRun
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncRuns]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncRuns];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncRuns]
+AS
+SELECT
+    a.*,
+    mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID.[Name] AS [ActivitySyncConnection]
+FROM
+    [${flyway:defaultSchema}].[ActivitySyncRun] AS a
+INNER JOIN
+    [${flyway:defaultSchema}].[ActivitySyncConnection] AS mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID
+  ON
+    [a].[ActivitySyncConnectionID] = mjBizAppsCommonActivitySyncConnection_ActivitySyncConnectionID.[ID]
+GO
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuns] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Runs */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Runs
+-- Item: Permissions for vwActivitySyncRuns
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRuns] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* spCreate SQL for MJ_BizApps_Common: Activity Sync Runs */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Runs
+-- Item: spCreateActivitySyncRun
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ActivitySyncRun
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncRun]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRun];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRun]
+    @ID uniqueidentifier = NULL,
+    @ActivitySyncConnectionID uniqueidentifier,
+    @StartedAt datetimeoffset = NULL,
+    @EndedAt_Clear bit = 0,
+    @EndedAt datetimeoffset = NULL,
+    @Status nvarchar(20) = NULL,
+    @TriggerType nvarchar(20) = NULL,
+    @IsDryRun bit = NULL,
+    @Fetched int = NULL,
+    @Included int = NULL,
+    @Excluded int = NULL,
+    @Duplicates int = NULL,
+    @Failed int = NULL,
+    @ExtensionErrors int = NULL,
+    @WatermarkBefore_Clear bit = 0,
+    @WatermarkBefore datetimeoffset = NULL,
+    @WatermarkAfter_Clear bit = 0,
+    @WatermarkAfter datetimeoffset = NULL,
+    @ErrorMessage_Clear bit = 0,
+    @ErrorMessage nvarchar(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
+
+    IF @ID IS NOT NULL
+    BEGIN
+        -- User provided a value, use it
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRun]
+            (
+                [ID],
+                [ActivitySyncConnectionID],
+                [StartedAt],
+                [EndedAt],
+                [Status],
+                [TriggerType],
+                [IsDryRun],
+                [Fetched],
+                [Included],
+                [Excluded],
+                [Duplicates],
+                [Failed],
+                [ExtensionErrors],
+                [WatermarkBefore],
+                [WatermarkAfter],
+                [ErrorMessage]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ID,
+                @ActivitySyncConnectionID,
+                ISNULL(@StartedAt, sysdatetimeoffset()),
+                CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, NULL) END,
+                ISNULL(@Status, 'Running'),
+                ISNULL(@TriggerType, 'Scheduled'),
+                ISNULL(@IsDryRun, 0),
+                ISNULL(@Fetched, 0),
+                ISNULL(@Included, 0),
+                ISNULL(@Excluded, 0),
+                ISNULL(@Duplicates, 0),
+                ISNULL(@Failed, 0),
+                ISNULL(@ExtensionErrors, 0),
+                CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, NULL) END,
+                CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, NULL) END,
+                CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, NULL) END
+            )
+    END
+    ELSE
+    BEGIN
+        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
+        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRun]
+            (
+                [ActivitySyncConnectionID],
+                [StartedAt],
+                [EndedAt],
+                [Status],
+                [TriggerType],
+                [IsDryRun],
+                [Fetched],
+                [Included],
+                [Excluded],
+                [Duplicates],
+                [Failed],
+                [ExtensionErrors],
+                [WatermarkBefore],
+                [WatermarkAfter],
+                [ErrorMessage]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ActivitySyncConnectionID,
+                ISNULL(@StartedAt, sysdatetimeoffset()),
+                CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, NULL) END,
+                ISNULL(@Status, 'Running'),
+                ISNULL(@TriggerType, 'Scheduled'),
+                ISNULL(@IsDryRun, 0),
+                ISNULL(@Fetched, 0),
+                ISNULL(@Included, 0),
+                ISNULL(@Excluded, 0),
+                ISNULL(@Duplicates, 0),
+                ISNULL(@Failed, 0),
+                ISNULL(@ExtensionErrors, 0),
+                CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, NULL) END,
+                CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, NULL) END,
+                CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, NULL) END
+            )
+    END
+    -- return the new record from the base view, which might have some calculated fields
+    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncRuns] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
+
+/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Runs */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
+
+/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Runs */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Runs
+-- Item: spUpdateActivitySyncRun
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ActivitySyncRun
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncRun]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRun];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRun]
+    @ID uniqueidentifier,
+    @ActivitySyncConnectionID uniqueidentifier = NULL,
+    @StartedAt datetimeoffset = NULL,
+    @EndedAt_Clear bit = 0,
+    @EndedAt datetimeoffset = NULL,
+    @Status nvarchar(20) = NULL,
+    @TriggerType nvarchar(20) = NULL,
+    @IsDryRun bit = NULL,
+    @Fetched int = NULL,
+    @Included int = NULL,
+    @Excluded int = NULL,
+    @Duplicates int = NULL,
+    @Failed int = NULL,
+    @ExtensionErrors int = NULL,
+    @WatermarkBefore_Clear bit = 0,
+    @WatermarkBefore datetimeoffset = NULL,
+    @WatermarkAfter_Clear bit = 0,
+    @WatermarkAfter datetimeoffset = NULL,
+    @ErrorMessage_Clear bit = 0,
+    @ErrorMessage nvarchar(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncRun]
+    SET
+        [ActivitySyncConnectionID] = ISNULL(@ActivitySyncConnectionID, [ActivitySyncConnectionID]),
+        [StartedAt] = ISNULL(@StartedAt, [StartedAt]),
+        [EndedAt] = CASE WHEN @EndedAt_Clear = 1 THEN NULL ELSE ISNULL(@EndedAt, [EndedAt]) END,
+        [Status] = ISNULL(@Status, [Status]),
+        [TriggerType] = ISNULL(@TriggerType, [TriggerType]),
+        [IsDryRun] = ISNULL(@IsDryRun, [IsDryRun]),
+        [Fetched] = ISNULL(@Fetched, [Fetched]),
+        [Included] = ISNULL(@Included, [Included]),
+        [Excluded] = ISNULL(@Excluded, [Excluded]),
+        [Duplicates] = ISNULL(@Duplicates, [Duplicates]),
+        [Failed] = ISNULL(@Failed, [Failed]),
+        [ExtensionErrors] = ISNULL(@ExtensionErrors, [ExtensionErrors]),
+        [WatermarkBefore] = CASE WHEN @WatermarkBefore_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkBefore, [WatermarkBefore]) END,
+        [WatermarkAfter] = CASE WHEN @WatermarkAfter_Clear = 1 THEN NULL ELSE ISNULL(@WatermarkAfter, [WatermarkAfter]) END,
+        [ErrorMessage] = CASE WHEN @ErrorMessage_Clear = 1 THEN NULL ELSE ISNULL(@ErrorMessage, [ErrorMessage]) END
+    WHERE
+        [ID] = @ID
+
+    -- Check if the update was successful
+    IF @@ROWCOUNT = 0
+        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
+        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncRuns] WHERE 1=0
+    ELSE
+        -- Return the updated record so the caller can see the updated values and any calculated fields
+        SELECT
+                                        *
+                                    FROM
+                                        [${flyway:defaultSchema}].[vwActivitySyncRuns]
+                                    WHERE
+                                        [ID] = @ID
+                                    
+END
+GO
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRun] TO [cdp_Developer], [cdp_Integration]
+GO
+
+------------------------------------------------------------
+----- TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncRun table
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncRun]', 'TR') IS NOT NULL
+    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncRun];
+GO
+CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncRun
+ON [${flyway:defaultSchema}].[ActivitySyncRun]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ActivitySyncRun]
+    SET
+        __mj_UpdatedAt = GETUTCDATE()
+    FROM
+        [${flyway:defaultSchema}].[ActivitySyncRun] AS _organicTable
+    INNER JOIN
+        INSERTED AS I ON
+        _organicTable.[ID] = I.[ID];
+END;
+GO
+
+/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Runs */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete SQL for MJ_BizApps_Common: Activity Sync Runs */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Activity Sync Runs
+-- Item: spDeleteActivitySyncRun
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ActivitySyncRun
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncRun]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRun];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRun]
+    @ID uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM
+        [${flyway:defaultSchema}].[ActivitySyncRun]
+    WHERE
+        [ID] = @ID
+
+
+    -- Check if the delete was successful
+    IF @@ROWCOUNT = 0
+        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+    ELSE
+        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Runs */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRun] TO [cdp_Developer], [cdp_Integration];
 
 /* Base View SQL for MJ_BizApps_Common: Activity Sync Run Details */
 -----------------------------------------------------------------
@@ -11633,15 +11698,15 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [c
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
 
 /* SQL text to delete unneeded entity fields (9 scoped entities) */
-EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='', @EntityIDs='0E231AB5-4E26-49CD-85B4-FA532BB5C88E,2DD8A096-00BC-4755-9A43-F4230E2CA6D3,C7852F9F-CDD6-4868-A42C-1EFF6A51C197,43DD4AC3-48FF-419D-9A68-0558AE09AD73,AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0,8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13,37ACA09A-DF6E-4A81-A519-690B425884ED,C22591BB-B33A-439C-9567-5494A7B71D8A,21B78371-132C-4507-AED8-D44E366468F2', @IncludedSchemaNames='${flyway:defaultSchema}';
+EXEC [${mjSchema}].[spDeleteUnneededEntityFields] @ExcludedSchemaNames='', @EntityIDs='AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75,7ED9F26E-B01D-472A-87C9-B163287F80B4,D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0,556381BF-9ACE-4A69-85BB-22EAE1856C88,ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1,AC16B066-9460-44F5-B027-3FD397E61F34,C7E5ECE1-F347-4BC9-AC53-E2F33577B449', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 26 new entity field(s) */
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '43DD4AC3-48FF-419D-9A68-0558AE09AD73'
+       WHERE [EntityID] = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1fe390ee-fdbe-4be5-9bf8-232afb780bf1' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'ActivitySyncRuleSet')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '6321804a-a19f-44d7-828b-5d6f68b2a633' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'ActivitySyncConnection')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -11674,205 +11739,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '1fe390ee-fdbe-4be5-9bf8-232afb780bf1',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
-            12,
-            'ActivitySyncRuleSet',
-            'Activity Sync Rule Set',
-            NULL,
-            'nvarchar',
-            400,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '96f4a28f-dfad-419b-8d81-47809243c896' OR (EntityID = '43DD4AC3-48FF-419D-9A68-0558AE09AD73' AND Name = 'Person')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '96f4a28f-dfad-419b-8d81-47809243c896',
-            '43DD4AC3-48FF-419D-9A68-0558AE09AD73', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
-            13,
-            'Person',
-            'Person',
-            NULL,
-            'nvarchar',
-            402,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0'
-         AND [Sequence] < 100000;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '43e9b9e6-b3c4-4f49-98fc-015e9be1efd9' OR (EntityID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0' AND Name = 'ActivitySyncConnection')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '43e9b9e6-b3c4-4f49-98fc-015e9be1efd9',
-            'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', -- Entity: MJ_BizApps_Common: Activity Sync Runs
-            19,
-            'ActivitySyncConnection',
-            'Activity Sync Connection',
-            NULL,
-            'nvarchar',
-            400,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197'
-         AND [Sequence] < 100000;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1d8b0e98-34aa-4d3e-8987-f6565542ed6c' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'ActivitySyncConnection')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '1d8b0e98-34aa-4d3e-8987-f6565542ed6c',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '6321804a-a19f-44d7-828b-5d6f68b2a633',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
             8,
             'ActivitySyncConnection',
             'Activity Sync Connection',
@@ -11901,7 +11769,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1850a756-c138-4def-9c54-340d5f17c388' OR (EntityID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197' AND Name = 'ActivitySyncRuleSet')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '36a25924-2dbb-4082-9c26-ed805b9bddce' OR (EntityID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0' AND Name = 'ActivitySyncRuleSet')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -11934,8 +11802,8 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '1850a756-c138-4def-9c54-340d5f17c388',
-            'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
+            '36a25924-2dbb-4082-9c26-ed805b9bddce',
+            'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', -- Entity: MJ_BizApps_Common: Activity Sync Connection Rule Sets
             9,
             'ActivitySyncRuleSet',
             'Activity Sync Rule Set',
@@ -11965,10 +11833,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'C22591BB-B33A-439C-9567-5494A7B71D8A'
+       WHERE [EntityID] = '556381BF-9ACE-4A69-85BB-22EAE1856C88'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c2361c6f-d683-4e73-8d5e-05612f3c35a2' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'ActivitySyncProviderType')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1e3b2d01-0bb3-4546-901a-b314226dea2a' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'ActivitySyncRuleSet')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12001,7 +11869,458 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'c2361c6f-d683-4e73-8d5e-05612f3c35a2',
+            '1e3b2d01-0bb3-4546-901a-b314226dea2a',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            12,
+            'ActivitySyncRuleSet',
+            'Activity Sync Rule Set',
+            NULL,
+            'nvarchar',
+            400,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b61dd372-ede6-4b46-80fc-bcd0bce3714f' OR (EntityID = '556381BF-9ACE-4A69-85BB-22EAE1856C88' AND Name = 'Person')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'b61dd372-ede6-4b46-80fc-bcd0bce3714f',
+            '556381BF-9ACE-4A69-85BB-22EAE1856C88', -- Entity: MJ_BizApps_Common: Activity Sync Exclusions
+            13,
+            'Person',
+            'Person',
+            NULL,
+            'nvarchar',
+            402,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+UPDATE [${mjSchema}].[EntityField]
+         SET [Sequence] = [Sequence] + 100000
+       WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'
+         AND [Sequence] < 100000;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ae2c135e-282f-485c-947b-396cc6e36548' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultEncryptionKey')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'ae2c135e-282f-485c-947b-396cc6e36548',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            18,
+            'DefaultEncryptionKey',
+            'Default Encryption Key',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '51369d06-bcee-4156-93bb-e8c09bf0d7f1' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'DefaultStorageProvider')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '51369d06-bcee-4156-93bb-e8c09bf0d7f1',
+            'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
+            19,
+            'DefaultStorageProvider',
+            'Default Storage Provider',
+            NULL,
+            'nvarchar',
+            100,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+UPDATE [${mjSchema}].[EntityField]
+         SET [Sequence] = [Sequence] + 100000
+       WHERE [EntityID] = 'AC16B066-9460-44F5-B027-3FD397E61F34'
+         AND [Sequence] < 100000;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '33f6dc61-4a5b-4367-87d9-4b50fd89f1f3' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'ActivitySyncRule')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '33f6dc61-4a5b-4367-87d9-4b50fd89f1f3',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            18,
+            'ActivitySyncRule',
+            'Activity Sync Rule',
+            NULL,
+            'nvarchar',
+            400,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5bf4cf4b-b9e3-4237-8d0c-eea4df89cad4' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'Activity')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5bf4cf4b-b9e3-4237-8d0c-eea4df89cad4',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            19,
+            'Activity',
+            'Activity',
+            NULL,
+            'nvarchar',
+            1000,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '49c089a3-71f3-46a2-8182-e3a351b60a8c' OR (EntityID = 'AC16B066-9460-44F5-B027-3FD397E61F34' AND Name = 'EncryptionKey')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '49c089a3-71f3-46a2-8182-e3a351b60a8c',
+            'AC16B066-9460-44F5-B027-3FD397E61F34', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
+            20,
+            'EncryptionKey',
+            'Encryption Key',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+-- Do not re-bump ActivitySyncConnection sequences: the first field pass
+-- already moved pre-existing rows to 100000+ and inserted new physical
+-- columns at 14–20. A second +100000 collides (UQ_EntityField_EntityID_Sequence).
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8b8e6e5a-015d-4f82-8b01-36d0e20e6072' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'ActivitySyncProviderType')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '8b8e6e5a-015d-4f82-8b01-36d0e20e6072',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             22,
             'ActivitySyncProviderType',
@@ -12031,7 +12350,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5cde0a92-be82-4044-95b7-e7d7ba2842f8' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EncryptionKey')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd7b744c6-6756-4f40-b9ae-32debe51322b' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'EncryptionKey')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12064,7 +12383,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '5cde0a92-be82-4044-95b7-e7d7ba2842f8',
+            'd7b744c6-6756-4f40-b9ae-32debe51322b',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             23,
             'EncryptionKey',
@@ -12094,7 +12413,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ec2f090b-c4a5-4b31-938a-e1c432859956' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StorageProvider')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'df8219d5-e2b4-4460-97bd-25e6efc8002b' OR (EntityID = 'C22591BB-B33A-439C-9567-5494A7B71D8A' AND Name = 'StorageProvider')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12127,7 +12446,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'ec2f090b-c4a5-4b31-938a-e1c432859956',
+            'df8219d5-e2b4-4460-97bd-25e6efc8002b',
             'C22591BB-B33A-439C-9567-5494A7B71D8A', -- Entity: MJ_BizApps_Common: Activity Sync Connections
             24,
             'StorageProvider',
@@ -12158,10 +12477,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13'
+       WHERE [EntityID] = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4bee21c4-161a-482f-b105-88b1418090bd' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'ActivitySyncRule')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c270fa0d-d8ca-4a7e-9441-fa3bcdc7eaaf' OR (EntityID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1' AND Name = 'ActivitySyncConnection')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12194,143 +12513,17 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '4bee21c4-161a-482f-b105-88b1418090bd',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            18,
-            'ActivitySyncRule',
-            'Activity Sync Rule',
+            'c270fa0d-d8ca-4a7e-9441-fa3bcdc7eaaf',
+            'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', -- Entity: MJ_BizApps_Common: Activity Sync Runs
+            19,
+            'ActivitySyncConnection',
+            'Activity Sync Connection',
             NULL,
             'nvarchar',
             400,
             0,
             0,
-            1,
-            NULL,
             0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ce918e47-dc79-41b1-a2eb-a2b721870bd8' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'Activity')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'ce918e47-dc79-41b1-a2eb-a2b721870bd8',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            19,
-            'Activity',
-            'Activity',
-            NULL,
-            'nvarchar',
-            1000,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3f18470d-3990-4be9-829e-67204278003b' OR (EntityID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13' AND Name = 'EncryptionKey')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '3f18470d-3990-4be9-829e-67204278003b',
-            '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', -- Entity: MJ_BizApps_Common: Activity Sync Run Details
-            20,
-            'EncryptionKey',
-            'Encryption Key',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
             NULL,
             0,
             0,
@@ -12351,10 +12544,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '37ACA09A-DF6E-4A81-A519-690B425884ED'
+       WHERE [EntityID] = '7ED9F26E-B01D-472A-87C9-B163287F80B4'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'bbb5844d-5d8e-4e6b-875c-68a024994ade' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'ActivitySyncConnection')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'dd283888-a644-4070-ac78-fc167b2d0a7c' OR (EntityID = '7ED9F26E-B01D-472A-87C9-B163287F80B4' AND Name = 'ActivitySyncProviderType')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12387,72 +12580,9 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            'bbb5844d-5d8e-4e6b-875c-68a024994ade',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            15,
-            'ActivitySyncConnection',
-            'Activity Sync Connection',
-            NULL,
-            'nvarchar',
-            400,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9412ef13-6c0f-44a1-b35f-aa94f5979683' OR (EntityID = '37ACA09A-DF6E-4A81-A519-690B425884ED' AND Name = 'ActivitySyncProviderType')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '9412ef13-6c0f-44a1-b35f-aa94f5979683',
-            '37ACA09A-DF6E-4A81-A519-690B425884ED', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
-            16,
+            'dd283888-a644-4070-ac78-fc167b2d0a7c',
+            '7ED9F26E-B01D-472A-87C9-B163287F80B4', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
+            11,
             'ActivitySyncProviderType',
             'Activity Sync Provider Type',
             NULL,
@@ -12479,12 +12609,8 @@ UPDATE [${mjSchema}].[EntityField]
             GETUTCDATE()
          )
       END;
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '21B78371-132C-4507-AED8-D44E366468F2'
-         AND [Sequence] < 100000;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '779a9bc3-bcd6-444d-b186-8b617866852d' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ActivitySyncRuleSet')) BEGIN
+-- Same as Connections: ActivitySyncRule already shipped; do not re-bump.
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '29a07a5e-2f5a-40de-87cf-6c89368ab7d7' OR (EntityID = '21B78371-132C-4507-AED8-D44E366468F2' AND Name = 'ActivitySyncRuleSet')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12517,7 +12643,7 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '779a9bc3-bcd6-444d-b186-8b617866852d',
+            '29a07a5e-2f5a-40de-87cf-6c89368ab7d7',
             '21B78371-132C-4507-AED8-D44E366468F2', -- Entity: MJ_BizApps_Common: Activity Sync Rules
             20,
             'ActivitySyncRuleSet',
@@ -12548,10 +12674,10 @@ UPDATE [${mjSchema}].[EntityField]
       END;
 UPDATE [${mjSchema}].[EntityField]
          SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3'
+       WHERE [EntityID] = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449'
          AND [Sequence] < 100000;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '74b967a8-3487-4885-b726-7e851d5f0fd0' OR (EntityID = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3' AND Name = 'ActivitySyncProviderType')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '24fc40b3-8cd9-4c23-9202-87b0b63b3b15' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'ActivitySyncConnection')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -12584,9 +12710,72 @@ UPDATE [${mjSchema}].[EntityField]
          )
          VALUES
          (
-            '74b967a8-3487-4885-b726-7e851d5f0fd0',
-            '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', -- Entity: MJ_BizApps_Common: Activity Sync Rule Sets
-            11,
+            '24fc40b3-8cd9-4c23-9202-87b0b63b3b15',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            15,
+            'ActivitySyncConnection',
+            'Activity Sync Connection',
+            NULL,
+            'nvarchar',
+            400,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b90d18ef-6655-47ba-a664-0a9ac97cd44f' OR (EntityID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449' AND Name = 'ActivitySyncProviderType')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'b90d18ef-6655-47ba-a664-0a9ac97cd44f',
+            'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', -- Entity: MJ_BizApps_Common: Activity Sync Extensions
+            16,
             'ActivitySyncProviderType',
             'Activity Sync Provider Type',
             NULL,
@@ -12613,139 +12802,9 @@ UPDATE [${mjSchema}].[EntityField]
             GETUTCDATE()
          )
       END;
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E'
-         AND [Sequence] < 100000;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'ef2cbb07-997e-4f18-b8df-30066af1b5d6' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultEncryptionKey')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'ef2cbb07-997e-4f18-b8df-30066af1b5d6',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            18,
-            'DefaultEncryptionKey',
-            'Default Encryption Key',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '456222bc-3ad7-4198-8203-afa4545c8bfc' OR (EntityID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E' AND Name = 'DefaultStorageProvider')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '456222bc-3ad7-4198-8203-afa4545c8bfc',
-            '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            19,
-            'DefaultStorageProvider',
-            'Default Storage Provider',
-            NULL,
-            'nvarchar',
-            100,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
 
 /* SQL text to update existing entity fields from schema (9 scoped entities) */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='', @EntityIDs='0E231AB5-4E26-49CD-85B4-FA532BB5C88E,2DD8A096-00BC-4755-9A43-F4230E2CA6D3,C7852F9F-CDD6-4868-A42C-1EFF6A51C197,43DD4AC3-48FF-419D-9A68-0558AE09AD73,AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0,8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13,37ACA09A-DF6E-4A81-A519-690B425884ED,C22591BB-B33A-439C-9567-5494A7B71D8A,21B78371-132C-4507-AED8-D44E366468F2', @IncludedSchemaNames='${flyway:defaultSchema}';
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='', @EntityIDs='AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75,7ED9F26E-B01D-472A-87C9-B163287F80B4,D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0,556381BF-9ACE-4A69-85BB-22EAE1856C88,ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1,AC16B066-9460-44F5-B027-3FD397E61F34,C7E5ECE1-F347-4BC9-AC53-E2F33577B449', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to set default column width where needed */
 EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
@@ -12754,113 +12813,27 @@ EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='',
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '82F98642-FC8C-4D79-8D29-92DA161510C7'
+               WHERE ID = 'D75C9FD1-F6A9-450A-B405-AFF4728750D6'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = 'B32E136C-2566-4674-9035-28603185F458'
+               WHERE ID = '7790EA43-823F-4FA3-963D-A1110D614029'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '711F2B8E-B1F8-44F4-8659-E32B80C0FE15'
+               WHERE ID = 'FD76A168-2AF9-462D-B284-549AB7CCED6F'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '5F9BF4BD-3416-43DE-930C-7B87C8FDBFA0'
+               WHERE ID = '70FF0FE5-2A34-430F-85E4-10A5A38F83CA'
                AND AutoUpdateDefaultInView = 1;
 
             UPDATE [${mjSchema}].[Entity]
             SET AllowUserSearchAPI = 0
-            WHERE ID = '37ACA09A-DF6E-4A81-A519-690B425884ED'
-            AND AutoUpdateAllowUserSearchAPI = 1;
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = 'B30C7ACE-438B-4D03-8BF2-6829DE7D2858'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '0BCA6145-4EE3-42C3-81B0-12B6D9F99036'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '9F7C5E4E-8DC5-42FE-A590-9D48BC3AA97E'
-               AND AutoUpdateDefaultInView = 1;
-
-            UPDATE [${mjSchema}].[Entity]
-            SET AllowUserSearchAPI = 0
-            WHERE ID = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E'
-            AND AutoUpdateAllowUserSearchAPI = 1;
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET IsNameField = 1
-               WHERE ID = '63896893-F878-4A02-B571-F9D291E3B2C9'
-               AND AutoUpdateIsNameField = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '57DB0DE7-22E0-4224-905A-733D46C663BE'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '63896893-F878-4A02-B571-F9D291E3B2C9'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '69CEF437-D14A-43BD-AC1F-B9DD9C1EF972'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '9BA2AC68-FC8A-469B-B3F8-B23B723B9A1F'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET IncludeInUserSearchAPI = 1
-               WHERE ID = '63896893-F878-4A02-B571-F9D291E3B2C9'
-               AND AutoUpdateIncludeInUserSearchAPI = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET UserSearchPredicateAPI = 'Exact'
-               WHERE ID = '63896893-F878-4A02-B571-F9D291E3B2C9'
-               AND AutoUpdateUserSearchPredicate = 1;
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '150CACF5-A91B-48E8-9D3A-3553E97B67F4'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '45D9A27D-7856-4033-B255-7E31D6F11D83'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '1D8B0E98-34AA-4D3E-8987-F6565542ED6C'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '1850A756-C138-4DEF-9C54-340D5F17C388'
-               AND AutoUpdateDefaultInView = 1;
-
-            UPDATE [${mjSchema}].[Entity]
-            SET AllowUserSearchAPI = 0
-            WHERE ID = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197'
+            WHERE ID = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449'
             AND AutoUpdateAllowUserSearchAPI = 1;
 
 /* Set field properties for entity */
@@ -12900,6 +12873,97 @@ EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='',
                WHERE ID = '57D01C0F-01DA-4B55-A748-CA4B445062E1'
                AND AutoUpdateUserSearchPredicate = 1;
 
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '47CCF48D-B837-44E0-9475-FF1B42076F34'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '7F25D600-B7D0-4548-816C-FA78FFE59044'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '6321804A-A19F-44D7-828B-5D6F68B2A633'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '36A25924-2DBB-4082-9C26-ED805B9BDDCE'
+               AND AutoUpdateDefaultInView = 1;
+
+            UPDATE [${mjSchema}].[Entity]
+            SET AllowUserSearchAPI = 0
+            WHERE ID = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0'
+            AND AutoUpdateAllowUserSearchAPI = 1;
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET IsNameField = 1
+               WHERE ID = '7A54676F-41BD-466B-9BB6-26425B32F8B0'
+               AND AutoUpdateIsNameField = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '7A54676F-41BD-466B-9BB6-26425B32F8B0'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '9560BACE-04EE-4B7E-826B-A5E64E8513E1'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'B741ADE2-F250-40D7-B0D2-61D28B331F3E'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '1E3B2D01-0BB3-4546-901A-B314226DEA2A'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET IncludeInUserSearchAPI = 1
+               WHERE ID = '7A54676F-41BD-466B-9BB6-26425B32F8B0'
+               AND AutoUpdateIncludeInUserSearchAPI = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET UserSearchPredicateAPI = 'Exact'
+               WHERE ID = '7A54676F-41BD-466B-9BB6-26425B32F8B0'
+               AND AutoUpdateUserSearchPredicate = 1;
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '52553D7E-79DA-4DFD-9CC3-5F551E411DE5'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'F609014D-E4D4-41A9-B26C-A12871CC782C'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'D6351250-3C56-41CB-A5C1-003DF4812FC3'
+               AND AutoUpdateDefaultInView = 1;
+
+            UPDATE [${mjSchema}].[Entity]
+            SET AllowUserSearchAPI = 0
+            WHERE ID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'
+            AND AutoUpdateAllowUserSearchAPI = 1;
+
 /* Set categories for 9 fields */
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ID 
@@ -12910,71 +12974,72 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '416B9AC7-8565-4735-92A4-2635F2147AC5' AND AutoUpdateCategory = 1;
+   ID = '210D070A-BC54-43E3-83AA-999B27982E16' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ActivitySyncConnectionID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Relationships',
+   Category = 'Connection Details',
    GeneratedFormSection = 'Category',
    DisplayName = 'Activity Sync Connection',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B44AA5F7-DAC6-4D95-8CFE-448BAA93115D' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ActivitySyncRuleSetID 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Relationships',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Rule Set',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '982414CA-BB67-4F87-9928-95312267921A' AND AutoUpdateCategory = 1;
+   ID = '25052037-85A8-4F55-A64F-A17DE48AE3FB' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ActivitySyncConnection 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Relationships',
+   Category = 'Connection Details',
    GeneratedFormSection = 'Category',
    DisplayName = 'Connection Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '1D8B0E98-34AA-4D3E-8987-F6565542ED6C' AND AutoUpdateCategory = 1;
+   ID = '6321804A-A19F-44D7-828B-5D6F68B2A633' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ActivitySyncRuleSetID 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Rule Set Configuration',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Activity Sync Rule Set',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '7BB4C198-CF87-4258-AEB5-99BF1F035BAA' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.ActivitySyncRuleSet 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Relationships',
+   Category = 'Rule Set Configuration',
    GeneratedFormSection = 'Category',
    DisplayName = 'Rule Set Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '1850A756-C138-4DEF-9C54-340D5F17C388' AND AutoUpdateCategory = 1;
+   ID = '36A25924-2DBB-4082-9C26-ED805B9BDDCE' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.Sequence 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Configuration',
+   Category = 'Rule Set Configuration',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Evaluation Sequence',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '150CACF5-A91B-48E8-9D3A-3553E97B67F4' AND AutoUpdateCategory = 1;
+   ID = '47CCF48D-B837-44E0-9475-FF1B42076F34' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.IsEnabled 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Configuration',
+   Category = 'Rule Set Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '45D9A27D-7856-4033-B255-7E31D6F11D83' AND AutoUpdateCategory = 1;
+   ID = '7F25D600-B7D0-4548-816C-FA78FFE59044' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -12984,7 +13049,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D026964A-693C-4871-9503-8B94C56CEF82' AND AutoUpdateCategory = 1;
+   ID = '813E93A7-D167-45F0-87F5-C05F70947B92' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connection Rule Sets.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -12994,29 +13059,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'A7D5F37B-9FDA-4C6E-AB94-ED282DE46E59' AND AutoUpdateCategory = 1;
+   ID = '70644C38-265D-492E-A219-B17262D3736C' AND AutoUpdateCategory = 1;
 
-/* Set entity icon to fa fa-sync */
+/* Set entity icon to fa fa-link */
 
                UPDATE [${mjSchema}].[Entity]
-               SET [Icon] = 'fa fa-sync', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197';
+               SET [Icon] = 'fa fa-link', [__mj_UpdatedAt] = GETUTCDATE()
+               WHERE [ID] = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('951a8e76-7bf8-42de-8dcd-ee41d72b2ed6', 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', 'FieldCategoryInfo', '{"Relationships":{"icon":"fa fa-link","description":"Links between activity sync connections and rule sets"},"Configuration":{"icon":"fa fa-sliders-h","description":"Operational settings for rule application order and activation"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('29010232-ab5d-46d3-a4f8-5a066ece67fd', 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', 'FieldCategoryInfo', '{"Connection Details":{"icon":"fa fa-plug","description":"Information regarding the activity sync connection being bound"},"Rule Set Configuration":{"icon":"fa fa-cogs","description":"Rules and evaluation settings for the connection binding"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('1b6c95ae-da1a-4794-b2a1-0f45ad36f043', 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197', 'FieldCategoryIcons', '{"Relationships":"fa fa-link","Configuration":"fa fa-sliders-h","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('44fffe78-ae2d-4699-a875-d1b0cd3cb46a', 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0', 'FieldCategoryIcons', '{"Connection Details":"fa fa-plug","Rule Set Configuration":"fa fa-cogs","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: junction, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = 'C7852F9F-CDD6-4868-A42C-1EFF6A51C197';
+         WHERE [EntityID] = 'D2A4DA75-FCCD-4196-B6EB-0C15B28C95B0';
 
 /* Set categories for 13 fields */
 
@@ -13028,7 +13093,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F8508259-99B5-4EFC-B24A-B1753D262A64' AND AutoUpdateCategory = 1;
+   ID = '1FB477C2-553D-479C-907F-AF425F214ADC' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.ActivitySyncRuleSetID 
 UPDATE [${mjSchema}].[EntityField]
@@ -13039,7 +13104,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F348AEAE-159A-4559-A331-B5FB1F183D4C' AND AutoUpdateCategory = 1;
+   ID = '84D4E65C-C18B-4A52-BD56-1FC459420563' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.ActivitySyncRuleSet 
 UPDATE [${mjSchema}].[EntityField]
@@ -13050,7 +13115,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '1FE390EE-FDBE-4BE5-9BF8-232AFB780BF1' AND AutoUpdateCategory = 1;
+   ID = '1E3B2D01-0BB3-4546-901A-B314226DEA2A' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.IdentityKind 
 UPDATE [${mjSchema}].[EntityField]
@@ -13060,7 +13125,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '57DB0DE7-22E0-4224-905A-733D46C663BE' AND AutoUpdateCategory = 1;
+   ID = 'AD5A0FB1-1144-408A-A0E8-3F300BC786AC' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.IdentityValue 
 UPDATE [${mjSchema}].[EntityField]
@@ -13070,7 +13135,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '63896893-F878-4A02-B571-F9D291E3B2C9' AND AutoUpdateCategory = 1;
+   ID = '7A54676F-41BD-466B-9BB6-26425B32F8B0' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.PersonID 
 UPDATE [${mjSchema}].[EntityField]
@@ -13081,7 +13146,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'DFBE53BF-A115-4CE0-B4BA-1EC0B55DACEE' AND AutoUpdateCategory = 1;
+   ID = '568087EE-B48D-43B3-9411-28302A37B0C5' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.Person 
 UPDATE [${mjSchema}].[EntityField]
@@ -13092,7 +13157,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '96F4A28F-DFAD-419B-8D81-47809243C896' AND AutoUpdateCategory = 1;
+   ID = 'B61DD372-EDE6-4B46-80FC-BCD0BCE3714F' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.Reason 
 UPDATE [${mjSchema}].[EntityField]
@@ -13102,7 +13167,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '69CEF437-D14A-43BD-AC1F-B9DD9C1EF972' AND AutoUpdateCategory = 1;
+   ID = '9560BACE-04EE-4B7E-826B-A5E64E8513E1' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.IsEnabled 
 UPDATE [${mjSchema}].[EntityField]
@@ -13112,7 +13177,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '9BA2AC68-FC8A-469B-B3F8-B23B723B9A1F' AND AutoUpdateCategory = 1;
+   ID = 'B741ADE2-F250-40D7-B0D2-61D28B331F3E' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.EffectiveFrom 
 UPDATE [${mjSchema}].[EntityField]
@@ -13122,7 +13187,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D6197EAB-FA6B-4BCC-A08F-08F4E30BBAFB' AND AutoUpdateCategory = 1;
+   ID = '8F9E007E-B597-44E8-AB81-7BB7D2ACA504' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.EffectiveTo 
 UPDATE [${mjSchema}].[EntityField]
@@ -13132,7 +13197,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '38D1A947-6032-4D77-A223-78AD5BF010AE' AND AutoUpdateCategory = 1;
+   ID = '85B42461-D8DB-4D00-AD4E-9B9CC42EAF3E' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13142,7 +13207,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '9447958E-900D-4E54-AD1F-4C4211187011' AND AutoUpdateCategory = 1;
+   ID = 'A572F4C8-52E8-49EC-A42D-DE68C3C730B5' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Exclusions.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13152,29 +13217,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'DBDDEBD8-87B7-450A-B068-2D0B17B49F17' AND AutoUpdateCategory = 1;
+   ID = '64004F94-0E95-4424-91E9-86AA9CD5D167' AND AutoUpdateCategory = 1;
 
-/* Set entity icon to fa fa-ban */
+/* Set entity icon to fa fa-user-slash */
 
                UPDATE [${mjSchema}].[Entity]
-               SET [Icon] = 'fa fa-ban', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '43DD4AC3-48FF-419D-9A68-0558AE09AD73';
+               SET [Icon] = 'fa fa-user-slash', [__mj_UpdatedAt] = GETUTCDATE()
+               WHERE [ID] = '556381BF-9ACE-4A69-85BB-22EAE1856C88';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('b7181f7d-64bc-417a-a50b-67a0eed06fe3', '43DD4AC3-48FF-419D-9A68-0558AE09AD73', 'FieldCategoryInfo', '{"Exclusion Rules":{"icon":"fa fa-layer-group","description":"Ruleset associations and grouping for exclusions"},"Identity Details":{"icon":"fa fa-user-slash","description":"Specific identity information and person associations"},"Exclusion Policy":{"icon":"fa fa-shield-alt","description":"Policy settings including reasons, validity periods, and activation status"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('f315fcec-d3dd-4f56-bb97-ecb3aed311c7', '556381BF-9ACE-4A69-85BB-22EAE1856C88', 'FieldCategoryInfo', '{"Exclusion Rules":{"icon":"fa fa-cogs","description":"Configuration settings for linking exclusions to specific rule sets"},"Identity Details":{"icon":"fa fa-user-tag","description":"Details regarding the specific identity (email, phone, etc.) being excluded"},"Exclusion Policy":{"icon":"fa fa-shield-alt","description":"Policy settings including reasons, active status, and effective date ranges"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('27547d44-9359-4781-8aa1-836d5d4eb8c2', '43DD4AC3-48FF-419D-9A68-0558AE09AD73', 'FieldCategoryIcons', '{"Exclusion Rules":"fa fa-layer-group","Identity Details":"fa fa-user-slash","Exclusion Policy":"fa fa-shield-alt","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('bfb2b2d9-c7fe-4ef3-b236-050c3678d25a', '556381BF-9ACE-4A69-85BB-22EAE1856C88', 'FieldCategoryIcons', '{"Exclusion Rules":"fa fa-cogs","Identity Details":"fa fa-user-tag","Exclusion Policy":"fa fa-shield-alt","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '43DD4AC3-48FF-419D-9A68-0558AE09AD73';
+         WHERE [EntityID] = '556381BF-9ACE-4A69-85BB-22EAE1856C88';
 
 /* Set categories for 16 fields */
 
@@ -13186,7 +13251,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '424670B7-1CAB-452E-B17F-AE1E6114AC8C' AND AutoUpdateCategory = 1;
+   ID = '8FF6284E-9816-42DA-939C-B353B11DAFEB' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.Name 
 UPDATE [${mjSchema}].[EntityField]
@@ -13196,7 +13261,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '234D93E5-CAA6-4E9A-A877-E27F2E26F117' AND AutoUpdateCategory = 1;
+   ID = 'E6722A67-7051-46F8-8C6F-B3475B4F6B69' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.Description 
 UPDATE [${mjSchema}].[EntityField]
@@ -13206,7 +13271,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '2756E0E5-47DF-4DA4-8BC8-8DB761AC2279' AND AutoUpdateCategory = 1;
+   ID = '2665D26D-E5D2-42EB-ACD0-6DAB290D3B9E' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.DriverClass 
 UPDATE [${mjSchema}].[EntityField]
@@ -13216,7 +13281,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '82F98642-FC8C-4D79-8D29-92DA161510C7' AND AutoUpdateCategory = 1;
+   ID = 'D75C9FD1-F6A9-450A-B405-AFF4728750D6' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.ActivitySyncConnectionID 
 UPDATE [${mjSchema}].[EntityField]
@@ -13227,7 +13292,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '74A737D5-E23F-4A4C-B979-5CBC8FA88DA2' AND AutoUpdateCategory = 1;
+   ID = 'CEFE0EC3-92E4-4890-B36A-3E9CE5F60EE6' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.ActivitySyncProviderTypeID 
 UPDATE [${mjSchema}].[EntityField]
@@ -13238,38 +13303,38 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C0108769-B775-4232-8694-A4CE00FFE4F1' AND AutoUpdateCategory = 1;
+   ID = '6C142921-FEEE-4D50-A601-ADB0B370EE47' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.Sequence 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Execution Policy',
+   Category = 'Execution Logic',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B32E136C-2566-4674-9035-28603185F458' AND AutoUpdateCategory = 1;
+   ID = '7790EA43-823F-4FA3-963D-A1110D614029' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.FailurePolicy 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Execution Policy',
+   Category = 'Execution Logic',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '711F2B8E-B1F8-44F4-8659-E32B80C0FE15' AND AutoUpdateCategory = 1;
+   ID = 'FD76A168-2AF9-462D-B284-549AB7CCED6F' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.TimeoutMS 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Execution Policy',
+   Category = 'Execution Logic',
    GeneratedFormSection = 'Category',
    DisplayName = 'Timeout (ms)',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B06807DF-D238-41EB-8B25-1ECAD66A0434' AND AutoUpdateCategory = 1;
+   ID = 'A12A8C4C-DBD9-40FB-97B4-3872AA966FC3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.IsEnabled 
 UPDATE [${mjSchema}].[EntityField]
@@ -13279,27 +13344,27 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5F9BF4BD-3416-43DE-930C-7B87C8FDBFA0' AND AutoUpdateCategory = 1;
+   ID = '70FF0FE5-2A34-430F-85E4-10A5A38F83CA' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.LastRunAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Monitoring',
+   Category = 'Performance and Health',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F8D3C034-EAF4-47C5-AC8D-F0745EFEEB73' AND AutoUpdateCategory = 1;
+   ID = 'B0ACF26A-484C-4A19-899B-B6995030EAD7' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.LastError 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Monitoring',
+   Category = 'Performance and Health',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E21D98A5-5172-4910-92D7-AC54846EC8A7' AND AutoUpdateCategory = 1;
+   ID = '840551BD-057B-44CB-9651-D8CDA50F7F06' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13309,7 +13374,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'BE5D0A3E-8A74-4549-A906-CFECA7E0DC79' AND AutoUpdateCategory = 1;
+   ID = 'EE946000-7849-412F-AE49-71D092D7C389' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13319,51 +13384,51 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '86BE9E45-5DED-484F-87B9-C34ADAFF6D65' AND AutoUpdateCategory = 1;
+   ID = 'FBF026FB-33E9-4A3E-AC40-63062A60D26B' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.ActivitySyncConnection 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Integration Settings',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Connection Name',
+   DisplayName = 'Activity Sync Connection (Name)',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'BBB5844D-5D8E-4E6B-875C-68A024994ADE' AND AutoUpdateCategory = 1;
+   ID = '24FC40B3-8CD9-4C23-9202-87B0B63B3B15' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Extensions.ActivitySyncProviderType 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Integration Settings',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Provider Type Name',
+   DisplayName = 'Activity Sync Provider Type (Name)',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '9412EF13-6C0F-44A1-B35F-AA94F5979683' AND AutoUpdateCategory = 1;
+   ID = 'B90D18EF-6655-47BA-A664-0A9AC97CD44F' AND AutoUpdateCategory = 1;
 
 /* Set entity icon to fa fa-plug */
 
                UPDATE [${mjSchema}].[Entity]
                SET [Icon] = 'fa fa-plug', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '37ACA09A-DF6E-4A81-A519-690B425884ED';
+               WHERE [ID] = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('123d619f-50bf-46d4-a523-a7294cc893bd', '37ACA09A-DF6E-4A81-A519-690B425884ED', 'FieldCategoryInfo', '{"Plugin Configuration":{"icon":"fa fa-cog","description":"General settings and identification for the enrichment plugin"},"Integration Settings":{"icon":"fa fa-link","description":"Configuration for external sync providers and connections"},"Execution Policy":{"icon":"fa fa-tasks","description":"Rules governing the timing, sequence, and error handling of the plugin"},"Monitoring":{"icon":"fa fa-chart-line","description":"Operational metrics and error logs for the plugin"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('50dba497-8296-4df5-bdfe-f6f14eebd831', 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', 'FieldCategoryInfo', '{"Plugin Configuration":{"icon":"fa fa-cog","description":"General settings and identification for the enrichment plugin."},"Integration Settings":{"icon":"fa fa-link","description":"Configuration for external sync connections and provider types."},"Execution Logic":{"icon":"fa fa-terminal","description":"Operational parameters defining how the plugin executes."},"Performance and Health":{"icon":"fa fa-heartbeat","description":"Monitoring and audit logs for plugin performance."},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields."}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('b0b994f4-0e8e-4519-83aa-ac902b8696cb', '37ACA09A-DF6E-4A81-A519-690B425884ED', 'FieldCategoryIcons', '{"Plugin Configuration":"fa fa-cog","Integration Settings":"fa fa-link","Execution Policy":"fa fa-tasks","Monitoring":"fa fa-chart-line","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('4901cf1b-47f6-4164-8d4e-9dda29c67931', 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449', 'FieldCategoryIcons', '{"Plugin Configuration":"fa fa-cog","Integration Settings":"fa fa-link","Execution Logic":"fa fa-terminal","Performance and Health":"fa fa-heartbeat","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '37ACA09A-DF6E-4A81-A519-690B425884ED';
+         WHERE [EntityID] = 'C7E5ECE1-F347-4BC9-AC53-E2F33577B449';
 
 /* Set categories for 19 fields */
 
@@ -13375,7 +13440,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'EC57FECD-38B8-4903-9BB4-0943F0D8A8CA' AND AutoUpdateCategory = 1;
+   ID = '57A720BD-8CB1-4429-95DD-150C529FF1DD' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.Code 
 UPDATE [${mjSchema}].[EntityField]
@@ -13385,7 +13450,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B30C7ACE-438B-4D03-8BF2-6829DE7D2858' AND AutoUpdateCategory = 1;
+   ID = '52553D7E-79DA-4DFD-9CC3-5F551E411DE5' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.Name 
 UPDATE [${mjSchema}].[EntityField]
@@ -13395,7 +13460,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'CFC542BF-CB02-4278-9F78-108DD1F41A96' AND AutoUpdateCategory = 1;
+   ID = 'E3A328E8-5B81-48D7-9021-21EF3E67E3C2' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.Description 
 UPDATE [${mjSchema}].[EntityField]
@@ -13405,137 +13470,137 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '2C17F1F5-8B12-470D-854C-A43AA7249A05' AND AutoUpdateCategory = 1;
+   ID = 'B4BA9BC4-5776-424B-B009-5EBB50CA712F' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DriverClass 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Technical Configuration',
+   Category = 'Provider Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FE933568-E911-489D-B382-327BC8790528' AND AutoUpdateCategory = 1;
+   ID = 'B89E3F6E-BEDB-4CE4-82F8-29C1FF23B809' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.IconClass 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Technical Configuration',
+   Category = 'Provider Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5FC26BD1-C70A-496D-8C6D-B8C07A1067DE' AND AutoUpdateCategory = 1;
+   ID = '43042F34-0DD3-4789-BD19-F3AE56CC733C' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.SupportedKinds 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Technical Configuration',
+   Category = 'Provider Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'A0A8FF1A-1A48-44CE-9303-93F0CCCBF15F' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.Sequence 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Technical Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '9EC2FD51-AB21-4076-BC64-804789CED690' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.IsSystem 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Technical Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '0BCA6145-4EE3-42C3-81B0-12B6D9F99036' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.IsActive 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Technical Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '9F7C5E4E-8DC5-42FE-A590-9D48BC3AA97E' AND AutoUpdateCategory = 1;
+   ID = '2C86F25A-3816-4EC0-8885-06E4399313E0' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultQualificationPolicy 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5F0B1567-9A48-419A-9E9E-9AAC56DABEBE' AND AutoUpdateCategory = 1;
+   ID = '2B27DE14-383F-4D07-9DCF-050237CEC7C7' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultSkippedContentPolicy 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '0EC3920A-E045-4728-8526-5B12349216ED' AND AutoUpdateCategory = 1;
+   ID = '10FDAF3A-2042-41F1-B148-BEFFC8FCB001' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultEncryptionKeyID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F6C78976-EA44-44F4-BB61-927D2DA98098' AND AutoUpdateCategory = 1;
+   ID = '5E2EFFE9-2376-454D-8F8C-7E967E27E485' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultEncryptionKey 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'EF2CBB07-997E-4F18-B8DF-30066AF1B5D6' AND AutoUpdateCategory = 1;
+   ID = 'AE2C135E-282F-485C-947B-396CC6E36548' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultStorageProviderID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E5A60B5F-87D9-4154-B122-6D3FF216D73F' AND AutoUpdateCategory = 1;
+   ID = 'D1C50585-1359-49B7-A011-6D590570B9E1' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultStorageProvider 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '456222BC-3AD7-4198-8203-AFA4545C8BFC' AND AutoUpdateCategory = 1;
+   ID = '51369D06-BCEE-4156-93BB-E8C09BF0D7F1' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.DefaultMaxAttachmentBytes 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Policy Settings',
+   Category = 'Operational Defaults',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'DF8BDF3C-04F4-45F7-A99E-79F1E2A9BD11' AND AutoUpdateCategory = 1;
+   ID = '827D6B7C-BA37-446C-A9C1-912320C1AFF3' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.Sequence 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Provider Identification',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '8F863005-AA6E-40A3-8EDE-5601E45281E0' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.IsSystem 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Provider Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'F609014D-E4D4-41A9-B26C-A12871CC782C' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.IsActive 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Provider Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'D6351250-3C56-41CB-A5C1-003DF4812FC3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13545,7 +13610,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '8BDE845E-E4F2-4403-9C58-8ADDA3F33BD0' AND AutoUpdateCategory = 1;
+   ID = '5E0546DD-7EA6-48ED-81DF-3B9BFAE705CD' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Provider Types.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13555,29 +13620,13 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E0385875-A80B-4EAC-BC3F-B73070746C69' AND AutoUpdateCategory = 1;
+   ID = 'FFCD695A-8745-44BA-AF76-B532F8BD5DB5' AND AutoUpdateCategory = 1;
 
 /* Set entity icon to fa fa-sync-alt */
 
                UPDATE [${mjSchema}].[Entity]
                SET [Icon] = 'fa fa-sync-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E';
-
-/* Insert FieldCategoryInfo setting for entity */
-
-               INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('8f74cef2-f77f-432f-b781-3b8924f9c50a', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', 'FieldCategoryInfo', '{"Provider Identification":{"icon":"fa fa-id-card","description":"Core identity and descriptive information for the sync provider"},"Technical Configuration":{"icon":"fa fa-cogs","description":"Technical implementation, UI, and state settings for the provider"},"Policy Settings":{"icon":"fa fa-shield-alt","description":"Default operational policies for qualification, storage, and security"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
-
-/* Insert FieldCategoryIcons setting (legacy) */
-
-               INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('287af205-cf1a-4380-a6d5-a4c089307aa7', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E', 'FieldCategoryIcons', '{"Provider Identification":"fa fa-id-card","Technical Configuration":"fa fa-cogs","Policy Settings":"fa fa-shield-alt","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
-
-/* Set DefaultForNewUser=false for NEW entity (category: reference, confidence: high) */
-
-         UPDATE [${mjSchema}].[ApplicationEntity]
-         SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '0E231AB5-4E26-49CD-85B4-FA532BB5C88E';
+               WHERE [ID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75';
 
 /* Set categories for 24 fields */
 
@@ -13620,7 +13669,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '4372AE35-7750-4B5C-B32A-39330546CAC7' AND AutoUpdateCategory = 1;
+   ID = '0EEEFD0A-3809-4BE9-B54E-C7C7EFC8DBD0' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.ActivitySyncProviderType 
 UPDATE [${mjSchema}].[EntityField]
@@ -13631,7 +13680,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C2361C6F-D683-4E73-8D5E-05612F3C35A2' AND AutoUpdateCategory = 1;
+   ID = '8B8E6E5A-015D-4F82-8B01-36D0E20E6072' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.Status 
 UPDATE [${mjSchema}].[EntityField]
@@ -13653,26 +13702,6 @@ SET
 WHERE 
    ID = '1F569493-170C-42FB-BD80-821BEB6C75ED' AND AutoUpdateCategory = 1;
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.StartAt 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Operational Status',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '789CC900-D440-44FF-BE55-5BF427C8A9B3' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.EndAt 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Operational Status',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '29C07796-BB2E-4CF0-8AED-A5AFF377508F' AND AutoUpdateCategory = 1;
-
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.LastSyncAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
@@ -13693,51 +13722,30 @@ SET
 WHERE 
    ID = '6F07727C-D449-4B90-B81C-AE0D8E3944A9' AND AutoUpdateCategory = 1;
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.Mailbox 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.StartAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Email',
-   CodeType = NULL
-WHERE 
-   ID = '57D01C0F-01DA-4B55-A748-CA4B445062E1' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.Settings 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Configuration',
-   GeneratedFormSection = 'Category',
-   ExtendedType = 'Code',
-   CodeType = 'Other'
-WHERE 
-   ID = '3213A7A7-6404-4F89-9752-55874E53D6FD' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.SkippedContentPolicy 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Configuration',
+   Category = 'Activation Window',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B78F68B7-AF4B-4A43-B4BD-4680B0DB7A18' AND AutoUpdateCategory = 1;
+   ID = '55161592-6265-4026-A501-72A6EB5A0E14' AND AutoUpdateCategory = 1;
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.MaxAttachmentBytes 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.EndAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Configuration',
+   Category = 'Activation Window',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Max Attachment Size',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '4A8A332F-54E9-4877-8847-168614610161' AND AutoUpdateCategory = 1;
+   ID = '068BEE66-56DA-445D-946E-514B1F3410C0' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.OwnerUserID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Access and Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
@@ -13747,7 +13755,7 @@ WHERE
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.OwnerUser 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Access and Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
@@ -13757,7 +13765,7 @@ WHERE
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.CredentialsRef 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Access and Configuration',
    GeneratedFormSection = 'Category',
    DisplayName = 'Credentials Reference',
    ExtendedType = NULL,
@@ -13765,45 +13773,85 @@ SET
 WHERE 
    ID = 'F3BBB1A4-F50D-40EF-9FAA-F0FD13E6FC97' AND AutoUpdateCategory = 1;
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.EncryptionKeyID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.Mailbox 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Access and Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = 'Email',
+   CodeType = NULL
+WHERE 
+   ID = '57D01C0F-01DA-4B55-A748-CA4B445062E1' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.Settings 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Access and Configuration',
+   GeneratedFormSection = 'Category',
+   ExtendedType = 'Code',
+   CodeType = 'Other'
+WHERE 
+   ID = '3213A7A7-6404-4F89-9752-55874E53D6FD' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.SkippedContentPolicy 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Access and Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D1A0BA01-CE0A-41D1-AE44-4DEE9EB7C835' AND AutoUpdateCategory = 1;
+   ID = '1E88DA7C-C64B-4D7A-B218-804A9AEEA2FA' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.EncryptionKeyID 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Security and Storage',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '2A5381DD-A180-4E03-9C04-9815703DDEE3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.EncryptionKey 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Security and Storage',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5CDE0A92-BE82-4044-95B7-E7D7BA2842F8' AND AutoUpdateCategory = 1;
+   ID = 'D7B744C6-6756-4F40-B9AE-32DEBE51322B' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.StorageProviderID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Security and Storage',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '1E175147-3B07-4C30-9771-5D09FA41CEE9' AND AutoUpdateCategory = 1;
+   ID = '136FF7B4-BC67-4C96-98B2-9FD82C21363B' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.StorageProvider 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Ownership and Security',
+   Category = 'Security and Storage',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'EC2F090B-C4A5-4B31-938A-E1C432859956' AND AutoUpdateCategory = 1;
+   ID = 'DF8219D5-E2B4-4460-97BD-25E6EFC8002B' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.MaxAttachmentBytes 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Security and Storage',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'A8E6FDD3-F038-42CB-A9DA-D92C5105EC34' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Connections.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -13825,6 +13873,22 @@ SET
 WHERE 
    ID = '1D637687-5D39-403F-90B5-E063CDFED790' AND AutoUpdateCategory = 1;
 
+/* Insert FieldCategoryInfo setting for entity */
+
+               INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
+               VALUES ('a4c9df05-9063-4dde-9c87-2aa502b3eb32', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'FieldCategoryInfo', '{"Provider Identification":{"icon":"fa fa-id-badge","description":"Basic identification and display settings for the sync provider."},"Provider Configuration":{"icon":"fa fa-sliders-h","description":"Technical implementation settings and operational flags for the provider."},"Operational Defaults":{"icon":"fa fa-cogs","description":"Default policies and settings applied to mailboxes using this provider."},"System Metadata":{"icon":"fa fa-database","description":"Internal system tracking and audit information."}}', GETUTCDATE(), GETUTCDATE());
+
+/* Insert FieldCategoryIcons setting (legacy) */
+
+               INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
+               VALUES ('3a661e91-07bc-4f28-bb8b-b86e49a6a343', 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', 'FieldCategoryIcons', '{"Provider Identification":"fa fa-id-badge","Provider Configuration":"fa fa-sliders-h","Operational Defaults":"fa fa-cogs","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
+
+/* Set DefaultForNewUser=false for NEW entity (category: reference, confidence: high) */
+
+         UPDATE [${mjSchema}].[ApplicationEntity]
+         SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
+         WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75';
+
 /* Set entity icon to fa fa-sync-alt */
 
                UPDATE [${mjSchema}].[Entity]
@@ -13834,102 +13898,53 @@ WHERE
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('e927a0af-0f27-4ed7-adf4-a149ea18984c', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'FieldCategoryInfo', '{"Connection Details":{"icon":"fa fa-info-circle","description":"General identification and provider type information for the sync connection"},"Operational Status":{"icon":"fa fa-check-circle","description":"Current health, sync state, and scheduling boundaries"},"Configuration":{"icon":"fa fa-sliders-h","description":"Specific provider settings, mailbox targets, and content policies"},"Ownership and Security":{"icon":"fa fa-lock","description":"Ownership, credential references, and security configuration"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('8a8266c4-a771-40e6-9abd-8a5880d7d906', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'FieldCategoryInfo', '{"Connection Details":{"icon":"fa fa-plug","description":"Provider and identity information for the sync connection"},"Operational Status":{"icon":"fa fa-tachometer-alt","description":"Current health, sync direction, and error tracking information"},"Activation Window":{"icon":"fa fa-calendar-alt","description":"Scheduled time range for when the connection is active"},"Access and Configuration":{"icon":"fa fa-sliders-h","description":"Ownership, authentication references, and provider-specific configurations"},"Security and Storage":{"icon":"fa fa-shield-alt","description":"Encryption and storage provider settings for data at rest"},"System Metadata":{"icon":"fa fa-database","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('2b8f7d4c-5160-469f-bce6-3dd207d24897', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'FieldCategoryIcons', '{"Connection Details":"fa fa-info-circle","Operational Status":"fa fa-check-circle","Configuration":"fa fa-sliders-h","Ownership and Security":"fa fa-lock","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('fa6cf77f-f9c5-42ac-badd-214627d2791d', 'C22591BB-B33A-439C-9567-5494A7B71D8A', 'FieldCategoryIcons', '{"Connection Details":"fa fa-plug","Operational Status":"fa fa-tachometer-alt","Activation Window":"fa fa-calendar-alt","Access and Configuration":"fa fa-sliders-h","Security and Storage":"fa fa-shield-alt","System Metadata":"fa fa-database"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set field properties for entity */
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = 'FFFDC12E-3879-4931-B101-1404836AB239'
+               WHERE ID = '23D4F371-F534-4FF6-880D-D3B7A9EB5032'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B'
+               WHERE ID = 'BA933D11-CE9F-4F78-863F-8C73443DF808'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE'
+               WHERE ID = '1B3E1546-1CE5-417F-BF91-E64D591079ED'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = 'FFD6667A-EB33-41F1-AA1C-518577BDEAB4'
+               WHERE ID = 'D29A08EF-C6C7-4AAC-8239-D3DB29A2D011'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '98FDBD40-D334-4CE0-85CB-244AE07C08E6'
+               WHERE ID = 'FBBBE636-EE2A-4B4C-92A4-17E9B872495E'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '46FF9D43-8528-486F-8E74-AFBDF37E490E'
+               WHERE ID = '674B8800-2821-494E-A291-6C1F3AD8764E'
                AND AutoUpdateDefaultInView = 1;
 
                UPDATE [${mjSchema}].[EntityField]
                SET DefaultInView = 1
-               WHERE ID = '43E9B9E6-B3C4-4F49-98FC-015E9BE1EFD9'
+               WHERE ID = 'C270FA0D-D8CA-4A7E-9441-FA3BCDC7EAAF'
                AND AutoUpdateDefaultInView = 1;
 
             UPDATE [${mjSchema}].[Entity]
             SET AllowUserSearchAPI = 0
-            WHERE ID = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0'
-            AND AutoUpdateAllowUserSearchAPI = 1;
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = 'F77ABE7B-AD00-402B-854A-16088D6FDFCC'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '39DE5637-D27D-489B-8BE6-DC064E4ECB24'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '74B967A8-3487-4885-B726-7E851D5F0FD0'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET UserSearchPredicateAPI = 'BeginsWith'
-               WHERE ID = '5071B352-B41A-44BA-8BCB-038032E3998D'
-               AND AutoUpdateUserSearchPredicate = 1;
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '33FB5211-6291-43B8-B67F-E9C0C456560E'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '3A9E3C37-C299-4A01-A084-D490A3FE7160'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '31B8DB56-382C-4B7F-87EF-12C301CDC99E'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '4BEE21C4-161A-482F-B105-88B1418090BD'
-               AND AutoUpdateDefaultInView = 1;
-
-            UPDATE [${mjSchema}].[Entity]
-            SET AllowUserSearchAPI = 0
-            WHERE ID = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13'
+            WHERE ID = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1'
             AND AutoUpdateAllowUserSearchAPI = 1;
 
 /* Set field properties for entity */
@@ -13938,6 +13953,60 @@ WHERE
                SET DefaultInView = 1
                WHERE ID = '082DF2CA-E47E-4FF3-969A-A6B8D090A39A'
                AND AutoUpdateDefaultInView = 1;
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '7BAFEA34-D767-4B1B-8D6F-C304BC765CA5'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '9FC296EF-BD9D-417D-B75B-BCC67A253534'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'DD283888-A644-4070-AC78-FC167B2D0A7C'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET UserSearchPredicateAPI = 'BeginsWith'
+               WHERE ID = '7B94C459-6D4F-45F6-85A8-C6F436D83B1C'
+               AND AutoUpdateUserSearchPredicate = 1;
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET IsNameField = 1
+               WHERE ID = '36D13A87-C5B8-472A-9CDA-EB3731AFCC41'
+               AND AutoUpdateIsNameField = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '36D13A87-C5B8-472A-9CDA-EB3731AFCC41'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '7E700ED9-C6E6-487C-9304-AA7BB9FC222B'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '0078772B-133B-45CD-B584-0D96CBF51A88'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'F31CBD79-1083-435A-9D00-39A89F03B524'
+               AND AutoUpdateDefaultInView = 1;
+
+            UPDATE [${mjSchema}].[Entity]
+            SET AllowUserSearchAPI = 0
+            WHERE ID = 'AC16B066-9460-44F5-B027-3FD397E61F34'
+            AND AutoUpdateAllowUserSearchAPI = 1;
 
 /* Set categories for 11 fields */
 
@@ -13949,7 +14018,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'A6408A2E-2694-45DE-B96D-6B83A55A6BF8' AND AutoUpdateCategory = 1;
+   ID = '5F781A56-A58E-4F5E-9FB6-9E602BC31892' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.Name 
 UPDATE [${mjSchema}].[EntityField]
@@ -13959,7 +14028,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5071B352-B41A-44BA-8BCB-038032E3998D' AND AutoUpdateCategory = 1;
+   ID = '7B94C459-6D4F-45F6-85A8-C6F436D83B1C' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.Description 
 UPDATE [${mjSchema}].[EntityField]
@@ -13969,67 +14038,67 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F63F7945-AE0F-4EE9-8E19-67D6A1665065' AND AutoUpdateCategory = 1;
+   ID = 'E56C30DD-BEFC-4A2F-8447-314D1A1578E5' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.ActivitySyncProviderTypeID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Provider Configuration',
+   Category = 'Rule Set Information',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '328FC82E-9F5C-4A8E-AA76-AA63C27D9BEB' AND AutoUpdateCategory = 1;
+   ID = '1CB40317-E514-4BB1-86BF-C8B2B18AE84C' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.ActivitySyncProviderType 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Provider Configuration',
+   Category = 'Rule Set Information',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '74B967A8-3487-4885-B726-7E851D5F0FD0' AND AutoUpdateCategory = 1;
+   ID = 'DD283888-A644-4070-AC78-FC167B2D0A7C' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.InternalDomains 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Provider Configuration',
+   Category = 'Configuration',
    GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
+   ExtendedType = 'Code',
+   CodeType = 'Other'
 WHERE 
-   ID = '3D6BE045-C655-4C7E-87FE-CE6BEE4637B0' AND AutoUpdateCategory = 1;
+   ID = '990E8112-4F9B-439E-8A0D-8472B630C5F9' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.Sequence 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Rule Set Configuration',
+   Category = 'Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F77ABE7B-AD00-402B-854A-16088D6FDFCC' AND AutoUpdateCategory = 1;
+   ID = '7BAFEA34-D767-4B1B-8D6F-C304BC765CA5' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.IsEnabled 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Rule Set Configuration',
+   Category = 'Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '39DE5637-D27D-489B-8BE6-DC064E4ECB24' AND AutoUpdateCategory = 1;
+   ID = '9FC296EF-BD9D-417D-B75B-BCC67A253534' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.IsSystem 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Rule Set Configuration',
+   Category = 'Configuration',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '466B9E4B-1AEA-48D2-B5C1-922EFE36CBDD' AND AutoUpdateCategory = 1;
+   ID = 'A239DA06-157E-477E-905D-D306159CC1F3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14039,7 +14108,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C1D8005B-1E70-45E2-8F0E-D7222BF22367' AND AutoUpdateCategory = 1;
+   ID = '4FD3836B-CEA9-43C3-B81E-3B0F3A5C0C21' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rule Sets.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14049,29 +14118,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B2C56952-95BB-49AD-BBD6-A434A1B7EF7B' AND AutoUpdateCategory = 1;
+   ID = '5515D121-D16F-4AEA-A77A-6E094274DDEE' AND AutoUpdateCategory = 1;
 
 /* Set entity icon to fa fa-sync-alt */
 
                UPDATE [${mjSchema}].[Entity]
                SET [Icon] = 'fa fa-sync-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3';
+               WHERE [ID] = '7ED9F26E-B01D-472A-87C9-B163287F80B4';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('f3c0bf72-a651-4b6f-83d1-eec3d7dbd0d1', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', 'FieldCategoryInfo', '{"Rule Set Information":{"icon":"fa fa-info-circle","description":"Essential naming and descriptive information for the sync rule set"},"Provider Configuration":{"icon":"fa fa-network-wired","description":"Settings related to the sync provider type and domain scope"},"Rule Set Configuration":{"icon":"fa fa-sliders-h","description":"Operational settings including sequence, status, and system flags"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('510e1bf1-03d3-4b56-8d16-173f400a425f', '7ED9F26E-B01D-472A-87C9-B163287F80B4', 'FieldCategoryInfo', '{"Rule Set Information":{"icon":"fa fa-info-circle","description":"General identification and provider details for the activity sync rule set"},"Configuration":{"icon":"fa fa-sliders-h","description":"Operational settings, sequence, and domain scoping for rule execution"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('593576d9-2cbb-489a-918b-35bbb0f69dc7', '2DD8A096-00BC-4755-9A43-F4230E2CA6D3', 'FieldCategoryIcons', '{"Rule Set Information":"fa fa-info-circle","Provider Configuration":"fa fa-network-wired","Rule Set Configuration":"fa fa-sliders-h","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('acb42ec4-7b6a-4936-a8bd-7880a0e2c0f7', '7ED9F26E-B01D-472A-87C9-B163287F80B4', 'FieldCategoryIcons', '{"Rule Set Information":"fa fa-info-circle","Configuration":"fa fa-sliders-h","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '2DD8A096-00BC-4755-9A43-F4230E2CA6D3';
+         WHERE [EntityID] = '7ED9F26E-B01D-472A-87C9-B163287F80B4';
 
 /* Set categories for 20 fields */
 
@@ -14106,7 +14175,6 @@ WHERE
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Connection',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
@@ -14116,7 +14184,6 @@ WHERE
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Connection Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
@@ -14127,28 +14194,27 @@ UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Sync Configuration',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Rule Set',
+   DisplayName = 'Sync Rule Set',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '79F1EBE3-FA24-481E-98DF-18714E93CB84' AND AutoUpdateCategory = 1;
+   ID = '3B472ADE-9440-46FC-AB87-9CB4B27FE729' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rules.ActivitySyncRuleSet 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Sync Configuration',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Activity Sync Rule Set Name',
+   DisplayName = 'Sync Rule Set Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '779A9BC3-BCD6-444D-B186-8B617866852D' AND AutoUpdateCategory = 1;
+   ID = '29A07A5E-2F5A-40DE-87CF-6C89368AB7D7' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rules.Name 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
-   DisplayName = 'Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
@@ -14222,10 +14288,11 @@ UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Sync Criteria',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Max Attachment Size (Bytes)',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C850ED36-12EA-4D33-A38E-7A39C1E0D403' AND AutoUpdateCategory = 1;
+   ID = 'DCA96B15-B3EE-4F41-BBD1-146C71922BA8' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rules.ParticipantScope 
 UPDATE [${mjSchema}].[EntityField]
@@ -14235,13 +14302,13 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3B65A199-A495-42B5-8973-5328BFBBD9FC' AND AutoUpdateCategory = 1;
+   ID = 'AE0A8EB2-3130-4CBF-98FA-CA3C3676795B' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Rules.DateFrom 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
-   DisplayName = 'Date From',
+   DisplayName = 'Sync From',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
@@ -14251,7 +14318,7 @@ WHERE
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
-   DisplayName = 'Date To',
+   DisplayName = 'Sync To',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
@@ -14261,6 +14328,7 @@ WHERE
 UPDATE [${mjSchema}].[EntityField]
 SET 
    GeneratedFormSection = 'Category',
+   DisplayName = 'Filter Rules',
    ExtendedType = 'Code',
    CodeType = 'Other'
 WHERE 
@@ -14276,29 +14344,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3A664E26-9F81-41BC-A0C8-8793E4038939' AND AutoUpdateCategory = 1;
+   ID = 'AB8BB2DC-FDE4-400D-BC2F-A2E77BD22D57' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.ActivitySyncConnectionID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Sync Configuration',
    GeneratedFormSection = 'Category',
    DisplayName = 'Connection ID',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '6F4EF6C9-E582-41DE-BE08-70EA509356BE' AND AutoUpdateCategory = 1;
+   ID = '721EDD40-B7F9-4227-BDE7-F276389364F0' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.ActivitySyncConnection 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Sync Configuration',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Connection',
+   DisplayName = 'Connection Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '43E9B9E6-B3C4-4F49-98FC-015E9BE1EFD9' AND AutoUpdateCategory = 1;
+   ID = 'C270FA0D-D8CA-4A7E-9441-FA3BCDC7EAAF' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.StartedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14308,7 +14376,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FFFDC12E-3879-4931-B101-1404836AB239' AND AutoUpdateCategory = 1;
+   ID = '23D4F371-F534-4FF6-880D-D3B7A9EB5032' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.EndedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14318,130 +14386,132 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'E5BFFF94-F5F9-40E6-B191-5BF02AF8EE1D' AND AutoUpdateCategory = 1;
+   ID = '3B1E4E05-435B-4F9D-8288-C1961123B8EC' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Status 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Execution Results',
+   Category = 'Execution Status',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '8DA7F6EE-36DD-493A-BD52-E6540C0EE50B' AND AutoUpdateCategory = 1;
+   ID = 'BA933D11-CE9F-4F78-863F-8C73443DF808' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.TriggerType 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Status',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '54CFABA8-0096-4F6C-9ABF-38B6EF6DEEAE' AND AutoUpdateCategory = 1;
+   ID = '1B3E1546-1CE5-417F-BF91-E64D591079ED' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.IsDryRun 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Status',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FFD6667A-EB33-41F1-AA1C-518577BDEAB4' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Fetched 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Items Fetched',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '98FDBD40-D334-4CE0-85CB-244AE07C08E6' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Included 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Items Included',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '21EDA8DD-A859-40AB-86CC-324AF3B2DCCC' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Excluded 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Items Excluded',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'C1C06CB4-A932-40A0-AD27-57BE898ED511' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Duplicates 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '4BDBD229-EB4B-4C06-8B2A-BDFB34E9F0E0' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Failed 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = '46FF9D43-8528-486F-8E74-AFBDF37E490E' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.ExtensionErrors 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Execution Metrics',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'E8D36003-1B47-4AFF-8366-64C287FD3489' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.WatermarkBefore 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Sync State',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'E3C3671D-675A-4078-A4F8-999C593E80D5' AND AutoUpdateCategory = 1;
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.WatermarkAfter 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Sync State',
-   GeneratedFormSection = 'Category',
-   ExtendedType = NULL,
-   CodeType = NULL
-WHERE 
-   ID = 'D8A026E1-96D5-4A1E-A0EB-928D5F4BA026' AND AutoUpdateCategory = 1;
+   ID = 'D29A08EF-C6C7-4AAC-8239-D3DB29A2D011' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.ErrorMessage 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Execution Results',
+   Category = 'Execution Status',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '89CF7125-5E97-404E-9894-CE2F1CDEE2A1' AND AutoUpdateCategory = 1;
+   ID = '22813953-A45F-4A63-97B9-440330021AD4' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Fetched 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Fetched Count',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'FBBBE636-EE2A-4B4C-92A4-17E9B872495E' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Included 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Included Count',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '666AADEB-9B84-4B06-B89C-6B46EBA5C9A8' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Excluded 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Excluded Count',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '930F7630-5819-4B43-A54F-B2DE76900EA0' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Duplicates 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Duplicate Count',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '77461D70-12AB-4F6A-97B8-253140D4EFBD' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.Failed 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Failed Count',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '674B8800-2821-494E-A291-6C1F3AD8764E' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.ExtensionErrors 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Metrics',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '18D52C2D-5D4E-4C33-840F-FFFC866A3EE5' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.WatermarkBefore 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Watermark',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = 'C886D78B-82D5-4D3C-8A05-94F8DB060525' AND AutoUpdateCategory = 1;
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.WatermarkAfter 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Sync Watermark',
+   GeneratedFormSection = 'Category',
+   ExtendedType = NULL,
+   CodeType = NULL
+WHERE 
+   ID = '0221E342-6338-48CF-A821-12F7ED4AF644' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14451,7 +14521,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '678DEE4F-B995-4B26-9812-9011005EEE3F' AND AutoUpdateCategory = 1;
+   ID = '7FB56DB3-4235-473E-8034-34FDE9F8458E' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Runs.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14461,29 +14531,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '83B32B7F-C72C-46FC-B491-DD289099EB1E' AND AutoUpdateCategory = 1;
+   ID = '8474A9BE-CA44-4467-816A-65D885E0E44E' AND AutoUpdateCategory = 1;
 
-/* Set entity icon to fa fa-sync-alt */
+/* Set entity icon to fa fa-sync */
 
                UPDATE [${mjSchema}].[Entity]
-               SET [Icon] = 'fa fa-sync-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0';
+               SET [Icon] = 'fa fa-sync', [__mj_UpdatedAt] = GETUTCDATE()
+               WHERE [ID] = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('dfc2a8a4-6bf1-47db-b5cb-a477e73feacf', 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', 'FieldCategoryInfo', '{"Sync Context":{"icon":"fa fa-info-circle","description":"Information about the connection and trigger context for the sync operation"},"Execution Timeline":{"icon":"fa fa-clock","description":"Start and end timestamps for the sync pass"},"Execution Results":{"icon":"fa fa-check-circle","description":"Outcome status and error details for the sync run"},"Execution Metrics":{"icon":"fa fa-chart-line","description":"Quantitative results including counts of fetched, included, and failed items"},"Sync State":{"icon":"fa fa-database","description":"Watermark state tracking for synchronization progress"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('7d5b856f-6fc1-4bde-a455-df131ea59e0b', 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', 'FieldCategoryInfo', '{"Sync Configuration":{"icon":"fa fa-plug","description":"Details regarding the connection being synchronized"},"Execution Timeline":{"icon":"fa fa-clock","description":"Start and end times for the synchronization process"},"Execution Status":{"icon":"fa fa-check-circle","description":"Information about the state, triggers, and outcome of the sync"},"Sync Metrics":{"icon":"fa fa-chart-line","description":"Quantitative results of the sync including counts of processed records"},"Sync Watermark":{"icon":"fa fa-bookmark","description":"Tracking of synchronization progress markers"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('41584d03-8546-4bcd-8545-2b16b9dd93f1', 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0', 'FieldCategoryIcons', '{"Sync Context":"fa fa-info-circle","Execution Timeline":"fa fa-clock","Execution Results":"fa fa-check-circle","Execution Metrics":"fa fa-chart-line","Sync State":"fa fa-database","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('e1cf78cd-c655-4c3d-b43d-cf85c0b7f485', 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1', 'FieldCategoryIcons', '{"Sync Configuration":"fa fa-plug","Execution Timeline":"fa fa-clock","Execution Status":"fa fa-check-circle","Sync Metrics":"fa fa-chart-line","Sync Watermark":"fa fa-bookmark","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0';
+         WHERE [EntityID] = 'ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1';
 
 /* Set categories for 20 fields */
 
@@ -14495,18 +14565,18 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'FF494474-1254-4B87-8296-B965F31F8CD7' AND AutoUpdateCategory = 1;
+   ID = '87194352-7D59-4BB2-AF24-C815D3D43892' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ActivitySyncRunID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Context',
    GeneratedFormSection = 'Category',
    DisplayName = 'Activity Sync Run',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '2AFA1062-990F-451B-BAE6-192BE8AC9FD8' AND AutoUpdateCategory = 1;
+   ID = '92DD62BB-D66F-401B-8830-33B3246B0E26' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ExternalID 
 UPDATE [${mjSchema}].[EntityField]
@@ -14516,7 +14586,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B77E1C1E-2806-4A6E-A4FD-F847A84D60DD' AND AutoUpdateCategory = 1;
+   ID = '36D13A87-C5B8-472A-9CDA-EB3731AFCC41' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ExternalThreadID 
 UPDATE [${mjSchema}].[EntityField]
@@ -14526,17 +14596,17 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'F9BDC444-A9C6-43EF-B882-22111228CD93' AND AutoUpdateCategory = 1;
+   ID = '15DD6494-57F4-42CA-BD84-0A15426A96BE' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.OccurredAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Context',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '33FB5211-6291-43B8-B67F-E9C0C456560E' AND AutoUpdateCategory = 1;
+   ID = '7E700ED9-C6E6-487C-9304-AA7BB9FC222B' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.Decision 
 UPDATE [${mjSchema}].[EntityField]
@@ -14546,7 +14616,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3A9E3C37-C299-4A01-A084-D490A3FE7160' AND AutoUpdateCategory = 1;
+   ID = '0078772B-133B-45CD-B584-0D96CBF51A88' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.DecidedByStage 
 UPDATE [${mjSchema}].[EntityField]
@@ -14556,27 +14626,29 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D094634A-E964-4199-AAA3-8302274B03AB' AND AutoUpdateCategory = 1;
+   ID = '38A89E25-30DD-4D1B-83D2-5E824D542E6D' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ActivitySyncRuleID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Decision Logic',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Activity Sync Rule',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3A2B9C06-1919-4837-BB45-BC0A25499CE2' AND AutoUpdateCategory = 1;
+   ID = 'F9D3B360-0DA7-4FB7-AC4F-8CA065AA9BF3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ActivitySyncExclusionID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Decision Logic',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Activity Sync Exclusion',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '112C5C1B-9A9D-49BF-B757-0A9A0B7840A0' AND AutoUpdateCategory = 1;
+   ID = 'B7BE5C0E-E4D5-42FC-9B82-C0FD25DE4B2A' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.Reason 
 UPDATE [${mjSchema}].[EntityField]
@@ -14586,7 +14658,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'C07168E8-1B50-47F5-AD10-E3DDB8ADDDAB' AND AutoUpdateCategory = 1;
+   ID = 'F31CBD79-1083-435A-9D00-39A89F03B524' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.Confidence 
 UPDATE [${mjSchema}].[EntityField]
@@ -14596,47 +14668,50 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '31B8DB56-382C-4B7F-87EF-12C301CDC99E' AND AutoUpdateCategory = 1;
+   ID = '74F9BDC0-2B51-4F54-80DD-62677C682D67' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.AIPromptRunID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Decision Logic',
    GeneratedFormSection = 'Category',
+   DisplayName = 'AI Prompt Run',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '324C20A5-2B6C-4422-89AF-CD5FC20D1DFF' AND AutoUpdateCategory = 1;
+   ID = '21E93BC8-0535-445F-AAFD-F3468F1EB62D' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ActivityID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Context',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Activity',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'D6BC4C27-5838-4CF5-8DD4-50DA693E666A' AND AutoUpdateCategory = 1;
+   ID = '4087A170-CD32-4B2A-A59E-E2747F272AA8' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.CapturedContent 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Content Retention',
+   Category = 'Message Content',
    GeneratedFormSection = 'Category',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'DAB10046-9CCA-47AD-A671-01FBEF76CA0F' AND AutoUpdateCategory = 1;
+   ID = '7905D4D1-557E-4693-92A9-8CD497D793CD' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.EncryptionKeyID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Content Retention',
+   Category = 'Message Content',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Encryption Key',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '6B8A5EF2-EDCA-41E8-9E4E-FD47F39A8395' AND AutoUpdateCategory = 1;
+   ID = '1E55257F-D2BE-4817-82C9-723AEE6F8E42' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14646,7 +14721,7 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '5DD48CAC-9182-47F6-8991-D111A28C6034' AND AutoUpdateCategory = 1;
+   ID = '07F6AB2B-C765-45A5-BAFE-6166EC42F137' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -14656,682 +14731,60 @@ SET
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'B27316A9-9D71-41FE-ABDB-FEFBDE66A924' AND AutoUpdateCategory = 1;
+   ID = '5CDA5908-7B09-4EA1-BFDF-75FA10555031' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.ActivitySyncRule 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Decision Logic',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Activity Sync Rule Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '4BEE21C4-161A-482F-B105-88B1418090BD' AND AutoUpdateCategory = 1;
+   ID = '33F6DC61-4A5B-4367-87D9-4B50FD89F1F3' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.Activity 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Sync Context',
+   Category = 'Execution Context',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Activity Reference',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = 'CE918E47-DC79-41B1-A2EB-A2B721870BD8' AND AutoUpdateCategory = 1;
+   ID = '5BF4CF4B-B9E3-4237-8D0C-EEA4DF89CAD4' AND AutoUpdateCategory = 1;
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Activity Sync Run Details.EncryptionKey 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Content Retention',
+   Category = 'Message Content',
    GeneratedFormSection = 'Category',
+   DisplayName = 'Encryption Key Name',
    ExtendedType = NULL,
    CodeType = NULL
 WHERE 
-   ID = '3F18470D-3990-4BE9-829E-67204278003B' AND AutoUpdateCategory = 1;
+   ID = '49C089A3-71F3-46A2-8182-E3A351B60A8C' AND AutoUpdateCategory = 1;
 
 /* Set entity icon to fa fa-sync-alt */
 
                UPDATE [${mjSchema}].[Entity]
                SET [Icon] = 'fa fa-sync-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13';
+               WHERE [ID] = 'AC16B066-9460-44F5-B027-3FD397E61F34';
 
 /* Insert FieldCategoryInfo setting for entity */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('7f3fadc8-d2a2-4cac-9378-9e29f37f2614', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'FieldCategoryInfo', '{"Sync Context":{"icon":"fa fa-tasks","description":"Information regarding the sync run, activity references, and timing."},"Decision Logic":{"icon":"fa fa-brain","description":"Details about how and why a specific sync decision was reached."},"External Reference":{"icon":"fa fa-external-link-alt","description":"Identifiers linked to external provider systems."},"Content Retention":{"icon":"fa fa-lock","description":"Encrypted content fragments and associated security keys."},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields."}}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('a9030c42-3d74-4c18-ba0d-9118d0fd3280', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'FieldCategoryInfo', '{"Execution Context":{"icon":"fa fa-tasks","description":"Contextual information regarding the sync run and resulting activity links"},"External Reference":{"icon":"fa fa-external-link-alt","description":"Identifiers linking to the external message provider"},"Decision Logic":{"icon":"fa fa-brain","description":"Details on how and why a specific sync decision was reached"},"Message Content":{"icon":"fa fa-lock","description":"Secure storage for fragments of non-ingested messages"},"System Metadata":{"icon":"fa fa-cog","description":"System-managed audit and tracking fields"}}', GETUTCDATE(), GETUTCDATE());
 
 /* Insert FieldCategoryIcons setting (legacy) */
 
                INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('7d2023b3-855f-41e6-8132-31fb9090f632', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13', 'FieldCategoryIcons', '{"Sync Context":"fa fa-tasks","Decision Logic":"fa fa-brain","External Reference":"fa fa-external-link-alt","Content Retention":"fa fa-lock","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
+               VALUES ('f2d5b3bb-cbf5-46aa-8db9-0f31713c9b11', 'AC16B066-9460-44F5-B027-3FD397E61F34', 'FieldCategoryIcons', '{"Execution Context":"fa fa-tasks","External Reference":"fa fa-external-link-alt","Decision Logic":"fa fa-brain","Message Content":"fa fa-lock","System Metadata":"fa fa-cog"}', GETUTCDATE(), GETUTCDATE());
 
 /* Set DefaultForNewUser=false for NEW entity (category: supporting, confidence: high) */
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13';
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activities */
--- CHECK constraint for MJ_BizApps_Common: Activities @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([EndedAt] IS NULL OR [EndedAt]>=[StartedAt])', 'public ValidateEndedAtAfterStartedAt(result: ValidationResult) {
-	if (this.EndedAt != null && this.StartedAt != null && this.EndedAt < this.StartedAt) {
-		result.Errors.push(new ValidationErrorInfo(
-			"EndedAt",
-			"The end date and time must be at or after the start date and time.",
-			this.EndedAt,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'The end date and time must be at or after the start date and time. An activity cannot end before it has started.', 'ValidateEndedAtAfterStartedAt', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '72E55425-8822-4E70-A075-116219CA5A5D');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activities @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([ExternalID] IS NULL AND [SourceSystem] IS NULL OR [ExternalID] IS NOT NULL AND [SourceSystem] IS NOT NULL)', 'public ValidateExternalIdAndSourceSystemCoexistence(result: ValidationResult) {
-	const isExternalIdNull = this.ExternalID === null || this.ExternalID === undefined;
-	const isSourceSystemNull = this.SourceSystem === null || this.SourceSystem === undefined;
-
-	if (isExternalIdNull !== isSourceSystemNull) {
-		result.Errors.push(new ValidationErrorInfo(
-			"ExternalID",
-			"Both External ID and Source System must either be provided together or both left empty.",
-			this.ExternalID,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'Both External ID and Source System must either be provided together or both left empty, ensuring external identifiers are always associated with their originating source system.', 'ValidateExternalIdAndSourceSystemCoexistence', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '72E55425-8822-4E70-A075-116219CA5A5D');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Links */
--- CHECK constraint for MJ_BizApps_Common: Activity Links @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([EntityID] IS NOT NULL AND [RecordID] IS NOT NULL AND [IdentityKind] IS NULL AND [IdentityValue] IS NULL OR [EntityID] IS NULL AND [RecordID] IS NULL AND [IdentityKind] IS NOT NULL AND [IdentityValue] IS NOT NULL)', 'public ValidateIdentifierExclusivity(result: ValidationResult) {
-    const hasEntity = this.EntityID != null;
-    const hasRecord = this.RecordID != null;
-    const hasIdentityKind = this.IdentityKind != null;
-    const hasIdentityValue = this.IdentityValue != null;
-
-    const isEntityRecordSet = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
-    const isIdentitySet = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
-
-    if (!isEntityRecordSet && !isIdentitySet) {
-        result.Errors.push(new ValidationErrorInfo(
-            "EntityID",
-            "You must provide either both Entity ID and Record ID, or both Identity Kind and Identity Value. You cannot mix them, leave them empty, or provide only one part of the pair.",
-            this.EntityID,
-            ValidationErrorType.Failure
-        ));
-    }
-}', 'The record must be identified either by both an Entity ID and a Record ID, or by both an Identity Kind and an Identity Value. You cannot specify both sets of identifiers, leave both sets empty, or provide only partial information for either set.', 'ValidateIdentifierExclusivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '9C48DF77-E4A1-4ADB-AABF-916F5798B894');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Connections */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Connections: Field: MaxAttachmentBytes was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([MaxAttachmentBytes] IS NULL OR [MaxAttachmentBytes]>(0))', 'public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-	if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
-		result.Errors.push(new ValidationErrorInfo(
-			"MaxAttachmentBytes",
-			"The maximum attachment size limit must be greater than zero.",
-			this.MaxAttachmentBytes,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'The maximum attachment size limit must be greater than zero if it is specified.', 'ValidateMaxAttachmentBytesGreaterThanZero', 'DF238F34-2837-EF11-86D4-6045BDEE16E6', '4A8A332F-54E9-4877-8847-168614610161');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Connections @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([StartAt] IS NULL OR [EndAt] IS NULL OR [EndAt]>=[StartAt])', 'public ValidateEndAtAfterOrEqualStartAt(result: ValidationResult) {
-	if (this.StartAt != null && this.EndAt != null) {
-		if (this.EndAt < this.StartAt) {
-			result.Errors.push(new ValidationErrorInfo(
-				"EndAt",
-				"The end date and time must be greater than or equal to the start date and time.",
-				this.EndAt,
-				ValidationErrorType.Failure
-			));
-		}
-	}
-}', 'The end date and time must be greater than or equal to the start date and time.', 'ValidateEndAtAfterOrEqualStartAt', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', 'C22591BB-B33A-439C-9567-5494A7B71D8A');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Exclusions */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Exclusions @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([EffectiveFrom] IS NULL OR [EffectiveTo] IS NULL OR [EffectiveTo]>=[EffectiveFrom])', 'public ValidateEffectiveToAfterEffectiveFrom(result: ValidationResult) {
-	if (this.EffectiveFrom != null && this.EffectiveTo != null) {
-		if (this.EffectiveTo < this.EffectiveFrom) {
-			result.Errors.push(new ValidationErrorInfo(
-				"EffectiveTo",
-				"The effective end date must be on or after the effective start date.",
-				this.EffectiveTo,
-				ValidationErrorType.Failure
-			));
-		}
-	}
-}', 'The effective end date must be on or after the effective start date if both dates are specified.', 'ValidateEffectiveToAfterEffectiveFrom', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '43DD4AC3-48FF-419D-9A68-0558AE09AD73');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Extensions */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Extensions: Field: TimeoutMS was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([TimeoutMS]>(0) AND [TimeoutMS]<=(300000))', 'public ValidateTimeoutMSRange(result: ValidationResult) {
-	if (this.TimeoutMS !== undefined && this.TimeoutMS !== null) {
-		if (this.TimeoutMS <= 0 || this.TimeoutMS > 300000) {
-			result.Errors.push(new ValidationErrorInfo(
-				"TimeoutMS",
-				"Timeout must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes).",
-				this.TimeoutMS,
-				ValidationErrorType.Failure
-			));
-		}
-	}
-}', 'The timeout value must be greater than 0 milliseconds and cannot exceed 300,000 milliseconds (5 minutes).', 'ValidateTimeoutMSRange', 'DF238F34-2837-EF11-86D4-6045BDEE16E6', 'B06807DF-D238-41EB-8B25-1ECAD66A0434');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Provider Types */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Provider Types: Field: DefaultMaxAttachmentBytes was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([DefaultMaxAttachmentBytes] IS NULL OR [DefaultMaxAttachmentBytes]>(0))', 'public ValidateDefaultMaxAttachmentBytesPositive(result: ValidationResult) {
-	if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {
-		result.Errors.push(new ValidationErrorInfo(
-			"DefaultMaxAttachmentBytes",
-			"The default maximum attachment size must be greater than 0 bytes.",
-			this.DefaultMaxAttachmentBytes,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'The default maximum attachment size must be greater than 0 bytes if it is specified.', 'ValidateDefaultMaxAttachmentBytesPositive', 'DF238F34-2837-EF11-86D4-6045BDEE16E6', 'DF8BDF3C-04F4-45F7-A99E-79F1E2A9BD11');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Provider Types @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([DefaultSkippedContentPolicy]=N''None'' OR [DefaultEncryptionKeyID] IS NOT NULL)', 'public ValidateDefaultEncryptionKeyIDForSkippedContentPolicy(result: ValidationResult) {
-    if (this.DefaultSkippedContentPolicy !== "None" && this.DefaultEncryptionKeyID == null) {
-        result.Errors.push(new ValidationErrorInfo(
-            "DefaultEncryptionKeyID",
-            "A default encryption key must be specified when the default skipped content policy is not set to ''None''.",
-            this.DefaultEncryptionKeyID,
-            ValidationErrorType.Failure
-        ));
-    }
-}', 'A default encryption key must be provided if the default skipped content policy is set to any value other than ''None''.', 'ValidateDefaultEncryptionKeyIDForSkippedContentPolicy', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '0E231AB5-4E26-49CD-85B4-FA532BB5C88E');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Rules */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Rules: Field: MaxAttachmentBytes was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([MaxAttachmentBytes] IS NULL OR [MaxAttachmentBytes]>(0))', 'public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-    if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
-        result.Errors.push(new ValidationErrorInfo(
-            "MaxAttachmentBytes",
-            "Maximum attachment bytes must be greater than 0.",
-            this.MaxAttachmentBytes,
-            ValidationErrorType.Failure
-        ));
-    }
-}', 'The maximum attachment size limit must be a positive value greater than zero if it is specified.', 'ValidateMaxAttachmentBytesGreaterThanZero', 'DF238F34-2837-EF11-86D4-6045BDEE16E6', 'C850ED36-12EA-4D33-A38E-7A39C1E0D403');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Rules @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([ActivitySyncRuleSetID] IS NULL AND [ActivitySyncConnectionID] IS NOT NULL OR [ActivitySyncRuleSetID] IS NOT NULL AND [ActivitySyncConnectionID] IS NULL)', 'public ValidateActivitySyncRuleSetOrConnectionExclusive(result: ValidationResult) {
-	const hasRuleSet = this.ActivitySyncRuleSetID != null;
-	const hasConnection = this.ActivitySyncConnectionID != null;
-
-	if ((hasRuleSet && hasConnection) || (!hasRuleSet && !hasConnection)) {
-		const errorMessage = "You must specify either an Activity Sync Rule Set or an Activity Sync Connection, but not both.";
-		result.Errors.push(new ValidationErrorInfo(
-			"ActivitySyncRuleSetID",
-			errorMessage,
-			this.ActivitySyncRuleSetID,
-			ValidationErrorType.Failure
-		));
-		result.Errors.push(new ValidationErrorInfo(
-			"ActivitySyncConnectionID",
-			errorMessage,
-			this.ActivitySyncConnectionID,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'Either an Activity Sync Rule Set or an Activity Sync Connection must be specified, but not both. This ensures the activity sync rule is linked to exactly one parent configuration.', 'ValidateActivitySyncRuleSetOrConnectionExclusive', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '21B78371-132C-4507-AED8-D44E366468F2');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Rules @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([DateFrom] IS NULL OR [DateTo] IS NULL OR [DateTo]>=[DateFrom])', 'public ValidateDateToAfterDateFrom(result: ValidationResult) {
-	if (this.DateFrom != null && this.DateTo != null) {
-		const fromDate = new Date(this.DateFrom).getTime();
-		const toDate = new Date(this.DateTo).getTime();
-		if (toDate < fromDate) {
-			result.Errors.push(new ValidationErrorInfo(
-				"DateTo",
-				"The end date (DateTo) must be on or after the start date (DateFrom).",
-				this.DateTo,
-				ValidationErrorType.Failure
-			));
-		}
-	}
-}', 'If both a start date (DateFrom) and an end date (DateTo) are specified, the end date must be greater than or equal to the start date.', 'ValidateDateToAfterDateFrom', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '21B78371-132C-4507-AED8-D44E366468F2');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Run Details */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Run Details: Field: Confidence was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([Confidence] IS NULL OR [Confidence]>=(0) AND [Confidence]<=(1))', 'public ValidateConfidenceRange(result: ValidationResult) {
-	if (this.Confidence != null && (this.Confidence < 0 || this.Confidence > 1)) {
-		result.Errors.push(new ValidationErrorInfo(
-			"Confidence",
-			"Confidence score must be a decimal value between 0 and 1.",
-			this.Confidence,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'If a confidence score is provided, it must be a decimal value between 0 and 1, representing a valid probability range.', 'ValidateConfidenceRange', 'DF238F34-2837-EF11-86D4-6045BDEE16E6', '31B8DB56-382C-4B7F-87EF-12C301CDC99E');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Run Details @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([CapturedContent] IS NULL AND [EncryptionKeyID] IS NULL OR [CapturedContent] IS NOT NULL AND [EncryptionKeyID] IS NOT NULL)', 'public ValidateCapturedContentAndEncryptionKeyID(result: ValidationResult) {
-	const hasContent = this.CapturedContent != null && this.CapturedContent !== "";
-	const hasKey = this.EncryptionKeyID != null && this.EncryptionKeyID !== "";
-
-	if (hasContent !== hasKey) {
-		result.Errors.push(new ValidationErrorInfo(
-			"CapturedContent",
-			"Captured Content and Encryption Key ID must either both be provided or both be empty.",
-			this.CapturedContent,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'Captured Content and Encryption Key ID must either both be provided or both be empty. This ensures that any captured content is properly encrypted and that encryption keys are not assigned without content.', 'ValidateCapturedContentAndEncryptionKeyID', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13');
-
-            -- CHECK constraint for MJ_BizApps_Common: Activity Sync Run Details @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([ActivityID] IS NULL OR [Decision]=N''Included'')', 'public ValidateDecisionForLinkedActivity(result: ValidationResult) {
-	if (this.ActivityID != null && this.Decision !== "Included") {
-		result.Errors.push(new ValidationErrorInfo(
-			"Decision",
-			"The Decision must be ''Included'' when an Activity is associated.",
-			this.Decision,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'If an activity is specified, the decision must be set to ''Included''.', 'ValidateDecisionForLinkedActivity', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', '8C05BE86-BC2B-4AE7-8E09-6575EDAB0F13');
-
-/* Generated Validation Functions for MJ_BizApps_Common: Activity Sync Runs */
--- CHECK constraint for MJ_BizApps_Common: Activity Sync Runs @ Table Level was newly set or modified since the last generation of the validation function, the code was regenerated and updating the GeneratedCode table with the new generated validation function
-INSERT INTO [${mjSchema}].[GeneratedCode] ([CategoryID], [GeneratedByModelID], [GeneratedAt], [Language], [Status], [Source], [Code], [Description], [Name], [LinkedEntityID], [LinkedRecordPrimaryKey])
-                      VALUES ((SELECT [ID] FROM [${mjSchema}].[vwGeneratedCodeCategories] WHERE [Name]='CodeGen: Validators'), 'C43229F6-4CC8-4838-9D04-03419A2DA191', GETUTCDATE(), 'TypeScript', 'Approved', '([IsDryRun]=(0) OR [WatermarkAfter] IS NULL)', 'public ValidateWatermarkAfterForDryRun(result: ValidationResult) {
-	if (this.IsDryRun && this.WatermarkAfter != null) {
-		result.Errors.push(new ValidationErrorInfo(
-			"WatermarkAfter",
-			"WatermarkAfter must be null when IsDryRun is enabled.",
-			this.WatermarkAfter,
-			ValidationErrorType.Failure
-		));
-	}
-}', 'A watermark after date cannot be specified when performing a dry run.', 'ValidateWatermarkAfterForDryRun', 'E0238F34-2837-EF11-86D4-6045BDEE16E6', 'AC80FB5F-AA03-4819-B0D8-0EDC4CB8F3A0');
-
-
--- ----- CodeGen delta 2026-08-29_22-54-23 (Run Details refresh) -----
-
-/* SQL text to update existing entities from schema */
-EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
-
-/* SQL text to update existing entity fields from schema */
-EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
-
-/* SQL text to set default column width where needed */
-EXEC [${mjSchema}].[spSetDefaultColumnWidthWhereNeeded] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
-
-/* SQL text to sync schema info from database schemas */
-EXEC [${mjSchema}].[spUpdateSchemaInfoFromDatabase] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
-
-/* SQL text to update entity field related entity name field map for entity field ID 112C5C1B-9A9D-49BF-B757-0A9A0B7840A0 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='112C5C1B-9A9D-49BF-B757-0A9A0B7840A0', @RelatedEntityNameFieldMap='ActivitySyncExclusion';
-
-/* Base View SQL for MJ_BizApps_Common: Activity Sync Run Details */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Run Details
--- Item: vwActivitySyncRunDetails
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Activity Sync Run Details
------               SCHEMA:      ${flyway:defaultSchema}
------               BASE TABLE:  ActivitySyncRunDetail
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncRunDetails]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncRunDetails];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncRunDetails]
-AS
-SELECT
-    a.*,
-    mjBizAppsCommonActivitySyncRule_ActivitySyncRuleID.[Name] AS [ActivitySyncRule],
-    mjBizAppsCommonActivitySyncExclusion_ActivitySyncExclusionID.[IdentityValue] AS [ActivitySyncExclusion],
-    mjBizAppsCommonActivity_ActivityID.[Title] AS [Activity],
-    MJEncryptionKey_EncryptionKeyID.[Name] AS [EncryptionKey]
-FROM
-    [${flyway:defaultSchema}].[ActivitySyncRunDetail] AS a
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ActivitySyncRule] AS mjBizAppsCommonActivitySyncRule_ActivitySyncRuleID
-  ON
-    [a].[ActivitySyncRuleID] = mjBizAppsCommonActivitySyncRule_ActivitySyncRuleID.[ID]
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ActivitySyncExclusion] AS mjBizAppsCommonActivitySyncExclusion_ActivitySyncExclusionID
-  ON
-    [a].[ActivitySyncExclusionID] = mjBizAppsCommonActivitySyncExclusion_ActivitySyncExclusionID.[ID]
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[Activity] AS mjBizAppsCommonActivity_ActivityID
-  ON
-    [a].[ActivityID] = mjBizAppsCommonActivity_ActivityID.[ID]
-LEFT OUTER JOIN
-    [${mjSchema}].[EncryptionKey] AS MJEncryptionKey_EncryptionKeyID
-  ON
-    [a].[EncryptionKeyID] = MJEncryptionKey_EncryptionKeyID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRunDetails] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* Base View Permissions SQL for MJ_BizApps_Common: Activity Sync Run Details */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Run Details
--- Item: Permissions for vwActivitySyncRunDetails
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwActivitySyncRunDetails] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* spCreate SQL for MJ_BizApps_Common: Activity Sync Run Details */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Run Details
--- Item: spCreateActivitySyncRunDetail
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR ActivitySyncRunDetail
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateActivitySyncRunDetail]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRunDetail];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateActivitySyncRunDetail]
-    @ID uniqueidentifier = NULL,
-    @ActivitySyncRunID uniqueidentifier,
-    @ExternalID nvarchar(400),
-    @ExternalThreadID_Clear bit = 0,
-    @ExternalThreadID nvarchar(400) = NULL,
-    @OccurredAt_Clear bit = 0,
-    @OccurredAt datetimeoffset = NULL,
-    @Decision nvarchar(20),
-    @DecidedByStage_Clear bit = 0,
-    @DecidedByStage nvarchar(100) = NULL,
-    @ActivitySyncRuleID_Clear bit = 0,
-    @ActivitySyncRuleID uniqueidentifier = NULL,
-    @ActivitySyncExclusionID_Clear bit = 0,
-    @ActivitySyncExclusionID uniqueidentifier = NULL,
-    @Reason_Clear bit = 0,
-    @Reason nvarchar(MAX) = NULL,
-    @Confidence_Clear bit = 0,
-    @Confidence decimal(5, 4) = NULL,
-    @AIPromptRunID_Clear bit = 0,
-    @AIPromptRunID uniqueidentifier = NULL,
-    @ActivityID_Clear bit = 0,
-    @ActivityID uniqueidentifier = NULL,
-    @CapturedContent_Clear bit = 0,
-    @CapturedContent nvarchar(MAX) = NULL,
-    @EncryptionKeyID_Clear bit = 0,
-    @EncryptionKeyID uniqueidentifier = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-            (
-                [ID],
-                [ActivitySyncRunID],
-                [ExternalID],
-                [ExternalThreadID],
-                [OccurredAt],
-                [Decision],
-                [DecidedByStage],
-                [ActivitySyncRuleID],
-                [ActivitySyncExclusionID],
-                [Reason],
-                [Confidence],
-                [AIPromptRunID],
-                [ActivityID],
-                [CapturedContent],
-                [EncryptionKeyID]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                @ActivitySyncRunID,
-                @ExternalID,
-                CASE WHEN @ExternalThreadID_Clear = 1 THEN NULL ELSE ISNULL(@ExternalThreadID, NULL) END,
-                CASE WHEN @OccurredAt_Clear = 1 THEN NULL ELSE ISNULL(@OccurredAt, NULL) END,
-                @Decision,
-                CASE WHEN @DecidedByStage_Clear = 1 THEN NULL ELSE ISNULL(@DecidedByStage, NULL) END,
-                CASE WHEN @ActivitySyncRuleID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleID, NULL) END,
-                CASE WHEN @ActivitySyncExclusionID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncExclusionID, NULL) END,
-                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
-                CASE WHEN @Confidence_Clear = 1 THEN NULL ELSE ISNULL(@Confidence, NULL) END,
-                CASE WHEN @AIPromptRunID_Clear = 1 THEN NULL ELSE ISNULL(@AIPromptRunID, NULL) END,
-                CASE WHEN @ActivityID_Clear = 1 THEN NULL ELSE ISNULL(@ActivityID, NULL) END,
-                CASE WHEN @CapturedContent_Clear = 1 THEN NULL ELSE ISNULL(@CapturedContent, NULL) END,
-                CASE WHEN @EncryptionKeyID_Clear = 1 THEN NULL ELSE ISNULL(@EncryptionKeyID, NULL) END
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-            (
-                [ActivitySyncRunID],
-                [ExternalID],
-                [ExternalThreadID],
-                [OccurredAt],
-                [Decision],
-                [DecidedByStage],
-                [ActivitySyncRuleID],
-                [ActivitySyncExclusionID],
-                [Reason],
-                [Confidence],
-                [AIPromptRunID],
-                [ActivityID],
-                [CapturedContent],
-                [EncryptionKeyID]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ActivitySyncRunID,
-                @ExternalID,
-                CASE WHEN @ExternalThreadID_Clear = 1 THEN NULL ELSE ISNULL(@ExternalThreadID, NULL) END,
-                CASE WHEN @OccurredAt_Clear = 1 THEN NULL ELSE ISNULL(@OccurredAt, NULL) END,
-                @Decision,
-                CASE WHEN @DecidedByStage_Clear = 1 THEN NULL ELSE ISNULL(@DecidedByStage, NULL) END,
-                CASE WHEN @ActivitySyncRuleID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleID, NULL) END,
-                CASE WHEN @ActivitySyncExclusionID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncExclusionID, NULL) END,
-                CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, NULL) END,
-                CASE WHEN @Confidence_Clear = 1 THEN NULL ELSE ISNULL(@Confidence, NULL) END,
-                CASE WHEN @AIPromptRunID_Clear = 1 THEN NULL ELSE ISNULL(@AIPromptRunID, NULL) END,
-                CASE WHEN @ActivityID_Clear = 1 THEN NULL ELSE ISNULL(@ActivityID, NULL) END,
-                CASE WHEN @CapturedContent_Clear = 1 THEN NULL ELSE ISNULL(@CapturedContent, NULL) END,
-                CASE WHEN @EncryptionKeyID_Clear = 1 THEN NULL ELSE ISNULL(@EncryptionKeyID, NULL) END
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}].[vwActivitySyncRunDetails] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
-
-/* spCreate Permissions for MJ_BizApps_Common: Activity Sync Run Details */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
-
-/* spUpdate SQL for MJ_BizApps_Common: Activity Sync Run Details */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Run Details
--- Item: spUpdateActivitySyncRunDetail
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR ActivitySyncRunDetail
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateActivitySyncRunDetail]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRunDetail];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateActivitySyncRunDetail]
-    @ID uniqueidentifier,
-    @ActivitySyncRunID uniqueidentifier = NULL,
-    @ExternalID nvarchar(400) = NULL,
-    @ExternalThreadID_Clear bit = 0,
-    @ExternalThreadID nvarchar(400) = NULL,
-    @OccurredAt_Clear bit = 0,
-    @OccurredAt datetimeoffset = NULL,
-    @Decision nvarchar(20) = NULL,
-    @DecidedByStage_Clear bit = 0,
-    @DecidedByStage nvarchar(100) = NULL,
-    @ActivitySyncRuleID_Clear bit = 0,
-    @ActivitySyncRuleID uniqueidentifier = NULL,
-    @ActivitySyncExclusionID_Clear bit = 0,
-    @ActivitySyncExclusionID uniqueidentifier = NULL,
-    @Reason_Clear bit = 0,
-    @Reason nvarchar(MAX) = NULL,
-    @Confidence_Clear bit = 0,
-    @Confidence decimal(5, 4) = NULL,
-    @AIPromptRunID_Clear bit = 0,
-    @AIPromptRunID uniqueidentifier = NULL,
-    @ActivityID_Clear bit = 0,
-    @ActivityID uniqueidentifier = NULL,
-    @CapturedContent_Clear bit = 0,
-    @CapturedContent nvarchar(MAX) = NULL,
-    @EncryptionKeyID_Clear bit = 0,
-    @EncryptionKeyID uniqueidentifier = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-    SET
-        [ActivitySyncRunID] = ISNULL(@ActivitySyncRunID, [ActivitySyncRunID]),
-        [ExternalID] = ISNULL(@ExternalID, [ExternalID]),
-        [ExternalThreadID] = CASE WHEN @ExternalThreadID_Clear = 1 THEN NULL ELSE ISNULL(@ExternalThreadID, [ExternalThreadID]) END,
-        [OccurredAt] = CASE WHEN @OccurredAt_Clear = 1 THEN NULL ELSE ISNULL(@OccurredAt, [OccurredAt]) END,
-        [Decision] = ISNULL(@Decision, [Decision]),
-        [DecidedByStage] = CASE WHEN @DecidedByStage_Clear = 1 THEN NULL ELSE ISNULL(@DecidedByStage, [DecidedByStage]) END,
-        [ActivitySyncRuleID] = CASE WHEN @ActivitySyncRuleID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncRuleID, [ActivitySyncRuleID]) END,
-        [ActivitySyncExclusionID] = CASE WHEN @ActivitySyncExclusionID_Clear = 1 THEN NULL ELSE ISNULL(@ActivitySyncExclusionID, [ActivitySyncExclusionID]) END,
-        [Reason] = CASE WHEN @Reason_Clear = 1 THEN NULL ELSE ISNULL(@Reason, [Reason]) END,
-        [Confidence] = CASE WHEN @Confidence_Clear = 1 THEN NULL ELSE ISNULL(@Confidence, [Confidence]) END,
-        [AIPromptRunID] = CASE WHEN @AIPromptRunID_Clear = 1 THEN NULL ELSE ISNULL(@AIPromptRunID, [AIPromptRunID]) END,
-        [ActivityID] = CASE WHEN @ActivityID_Clear = 1 THEN NULL ELSE ISNULL(@ActivityID, [ActivityID]) END,
-        [CapturedContent] = CASE WHEN @CapturedContent_Clear = 1 THEN NULL ELSE ISNULL(@CapturedContent, [CapturedContent]) END,
-        [EncryptionKeyID] = CASE WHEN @EncryptionKeyID_Clear = 1 THEN NULL ELSE ISNULL(@EncryptionKeyID, [EncryptionKeyID]) END
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwActivitySyncRunDetails] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}].[vwActivitySyncRunDetails]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the ActivitySyncRunDetail table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateActivitySyncRunDetail]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateActivitySyncRunDetail];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateActivitySyncRunDetail
-ON [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}].[ActivitySyncRunDetail] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-
-/* spUpdate Permissions for MJ_BizApps_Common: Activity Sync Run Details */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete SQL for MJ_BizApps_Common: Activity Sync Run Details */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Activity Sync Run Details
--- Item: spDeleteActivitySyncRunDetail
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR ActivitySyncRunDetail
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[ActivitySyncRunDetail]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete Permissions for MJ_BizApps_Common: Activity Sync Run Details */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteActivitySyncRunDetail] TO [cdp_Developer], [cdp_Integration];
+         WHERE [EntityID] = 'AC16B066-9460-44F5-B027-3FD397E61F34';
 

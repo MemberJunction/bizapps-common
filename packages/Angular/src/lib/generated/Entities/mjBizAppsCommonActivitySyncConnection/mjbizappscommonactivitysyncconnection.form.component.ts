@@ -18,14 +18,15 @@ export class mjBizAppsCommonActivitySyncConnectionFormComponent extends BaseForm
         this.initSections([
             { sectionKey: 'connectionDetails', sectionName: 'Connection Details', isExpanded: true },
             { sectionKey: 'operationalStatus', sectionName: 'Operational Status', isExpanded: true },
-            { sectionKey: 'ownershipAndSecurity', sectionName: 'Ownership and Security', isExpanded: true },
-            { sectionKey: 'configuration', sectionName: 'Configuration', isExpanded: true },
+            { sectionKey: 'accessAndConfiguration', sectionName: 'Access and Configuration', isExpanded: true },
+            { sectionKey: 'activationWindow', sectionName: 'Activation Window', isExpanded: true },
+            { sectionKey: 'securityAndStorage', sectionName: 'Security and Storage', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivities', sectionName: 'Activities', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncConnectionRuleSets', sectionName: 'Activity Sync Connection Rule Sets', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivitySyncExtensions', sectionName: 'Activity Sync Extensions', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncRuns', sectionName: 'Activity Sync Runs', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncExtensions', sectionName: 'Activity Sync Extensions', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncConnectionRuleSets', sectionName: 'Activity Sync Connection Rule Sets', isExpanded: false }
         ]);
     }
 }

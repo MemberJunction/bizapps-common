@@ -361,10 +361,11 @@ export const mjBizAppsCommonActivitySyncConnectionRuleSetSchema = z.object({
         * * Field Name: ActivitySyncRuleSetID
         * * Display Name: Activity Sync Rule Set
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
+        * * Description: The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
-        * * Display Name: Sequence
+        * * Display Name: Evaluation Sequence
         * * SQL Data Type: int
         * * Default Value: 0`),
     IsEnabled: z.boolean().describe(`
@@ -520,7 +521,7 @@ export const mjBizAppsCommonActivitySyncConnectionSchema = z.object({
         * * Related Entity/Foreign Key: MJ: File Storage Providers (vwFileStorageProviders.ID)`),
     MaxAttachmentBytes: z.number().nullable().describe(`
         * * Field Name: MaxAttachmentBytes
-        * * Display Name: Max Attachment Size
+        * * Display Name: Max Attachment Bytes
         * * SQL Data Type: bigint`),
     OwnerUser: z.string().describe(`
         * * Field Name: OwnerUser
@@ -555,7 +556,8 @@ export const mjBizAppsCommonActivitySyncExclusionSchema = z.object({
         * * Field Name: ActivitySyncRuleSetID
         * * Display Name: Activity Sync Rule Set
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
+        * * Description: Optional rule set this exclusion belongs to. Null means global — the identity is never ingested on any connection. A legal hold or opt-out is usually global; a mailbox-specific mute is not.`),
     IdentityKind: z.union([z.literal('Domain'), z.literal('Email'), z.literal('Handle'), z.literal('Phone')]).describe(`
         * * Field Name: IdentityKind
         * * Display Name: Identity Kind
@@ -692,11 +694,11 @@ export const mjBizAppsCommonActivitySyncExtensionSchema = z.object({
         * * Default Value: getutcdate()`),
     ActivitySyncConnection: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnection
-        * * Display Name: Activity Sync Connection Name
+        * * Display Name: Activity Sync Connection (Name)
         * * SQL Data Type: nvarchar(200)`),
     ActivitySyncProviderType: z.string().nullable().describe(`
         * * Field Name: ActivitySyncProviderType
-        * * Display Name: Activity Sync Provider Type Name
+        * * Display Name: Activity Sync Provider Type (Name)
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -878,12 +880,12 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * Default Value: newsequentialid()`),
     ActivitySyncConnectionID: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnectionID
-        * * Display Name: Activity Sync Connection
+        * * Display Name: Sync Connection
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)`),
     Name: z.string().describe(`
         * * Field Name: Name
-        * * Display Name: Name
+        * * Display Name: Rule Name
         * * SQL Data Type: nvarchar(200)
         * * Description: Display name of the rule.`),
     IsEnabled: z.boolean().describe(`
@@ -925,12 +927,12 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * Description: Optional direction filter (Inbound / Outbound / Internal). Null = any.`),
     DateFrom: z.date().nullable().describe(`
         * * Field Name: DateFrom
-        * * Display Name: Date From
+        * * Display Name: Sync From
         * * SQL Data Type: datetimeoffset
         * * Description: Inclusive lower bound of the sync window. Null = no lower bound.`),
     DateTo: z.date().nullable().describe(`
         * * Field Name: DateTo
-        * * Display Name: Date To
+        * * Display Name: Sync To
         * * SQL Data Type: datetimeoffset
         * * Description: Inclusive upper bound of the sync window. Null = no upper bound.`),
     IncludeAttachments: z.boolean().describe(`
@@ -941,7 +943,7 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * Description: 1 = also pull attachments into ActivityFile rows.`),
     Filter: z.string().nullable().describe(`
         * * Field Name: Filter
-        * * Display Name: Filter JSON
+        * * Display Name: Filter Rules
         * * SQL Data Type: nvarchar(MAX)
         * * Description: JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.`),
     __mj_CreatedAt: z.date().describe(`
@@ -956,7 +958,7 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * Default Value: getutcdate()`),
     ActivitySyncRuleSetID: z.string().nullable().describe(`
         * * Field Name: ActivitySyncRuleSetID
-        * * Display Name: Activity Sync Rule Set
+        * * Display Name: Sync Rule Set
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
         * * Description: The rule set this rule belongs to. Exactly one of ActivitySyncRuleSetID and ActivitySyncConnectionID is set (CK_ActivitySyncRule_Owner) — the connection form is the deprecated original and remains only so existing rows stay valid.`),
@@ -975,11 +977,11 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * Description: Which participants must be present for this rule to apply — the internal/external control. AllInternal excludes purely internal chatter; HasExternal catches a thread with any outside party on it; Mixed is the case an all-or-nothing rule gets wrong. Requires the rule set to define InternalDomains. Null means the rule does not test participants.`),
     MaxAttachmentBytes: z.number().nullable().describe(`
         * * Field Name: MaxAttachmentBytes
-        * * Display Name: Max Attachment Bytes
+        * * Display Name: Max Attachment Size (Bytes)
         * * SQL Data Type: bigint`),
     ActivitySyncConnection: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnection
-        * * Display Name: Activity Sync Connection Name
+        * * Display Name: Sync Connection Name
         * * SQL Data Type: nvarchar(200)`),
     ActivityType: z.string().nullable().describe(`
         * * Field Name: ActivityType
@@ -987,7 +989,7 @@ export const mjBizAppsCommonActivitySyncRuleSchema = z.object({
         * * SQL Data Type: nvarchar(100)`),
     ActivitySyncRuleSet: z.string().nullable().describe(`
         * * Field Name: ActivitySyncRuleSet
-        * * Display Name: Activity Sync Rule Set Name
+        * * Display Name: Sync Rule Set Name
         * * SQL Data Type: nvarchar(200)`),
 });
 
@@ -1038,12 +1040,12 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Description: Which stage of the qualification cascade decided — a rule set name, KnownParticipant, Inference, or DefaultPolicy. Paired with Reason it explains an outcome without retaining the message that produced it.`),
     ActivitySyncRuleID: z.string().nullable().describe(`
         * * Field Name: ActivitySyncRuleID
-        * * Display Name: Activity Sync Rule ID
+        * * Display Name: Activity Sync Rule
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rules (vwActivitySyncRules.ID)`),
     ActivitySyncExclusionID: z.string().nullable().describe(`
         * * Field Name: ActivitySyncExclusionID
-        * * Display Name: Activity Sync Exclusion ID
+        * * Display Name: Activity Sync Exclusion
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Exclusions (vwActivitySyncExclusions.ID)`),
     Reason: z.string().nullable().describe(`
@@ -1056,12 +1058,12 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * SQL Data Type: decimal(5, 4)`),
     AIPromptRunID: z.string().nullable().describe(`
         * * Field Name: AIPromptRunID
-        * * Display Name: AI Prompt Run ID
+        * * Display Name: AI Prompt Run
         * * SQL Data Type: uniqueidentifier
         * * Description: The MJ: AI Prompt Run behind an inference-stage verdict. Non-null only when a model actually decided this item, which is the audit trail for every automated judgement the engine makes.`),
     ActivityID: z.string().nullable().describe(`
         * * Field Name: ActivityID
-        * * Display Name: Activity ID
+        * * Display Name: Activity
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)`),
     CapturedContent: z.string().nullable().describe(`
@@ -1071,7 +1073,7 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.`),
     EncryptionKeyID: z.string().nullable().describe(`
         * * Field Name: EncryptionKeyID
-        * * Display Name: Encryption Key ID
+        * * Display Name: Encryption Key
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Encryption Keys (vwEncryptionKeys.ID)`),
     __mj_CreatedAt: z.date().describe(`
@@ -1086,15 +1088,15 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Default Value: getutcdate()`),
     ActivitySyncRule: z.string().nullable().describe(`
         * * Field Name: ActivitySyncRule
-        * * Display Name: Activity Sync Rule
+        * * Display Name: Activity Sync Rule Name
         * * SQL Data Type: nvarchar(200)`),
     Activity: z.string().nullable().describe(`
         * * Field Name: Activity
-        * * Display Name: Activity
+        * * Display Name: Activity Reference
         * * SQL Data Type: nvarchar(500)`),
     EncryptionKey: z.string().nullable().describe(`
         * * Field Name: EncryptionKey
-        * * Display Name: Encryption Key
+        * * Display Name: Encryption Key Name
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -1152,27 +1154,27 @@ export const mjBizAppsCommonActivitySyncRunSchema = z.object({
         * * Default Value: 0`),
     Fetched: z.number().describe(`
         * * Field Name: Fetched
-        * * Display Name: Items Fetched
+        * * Display Name: Fetched Count
         * * SQL Data Type: int
         * * Default Value: 0`),
     Included: z.number().describe(`
         * * Field Name: Included
-        * * Display Name: Items Included
+        * * Display Name: Included Count
         * * SQL Data Type: int
         * * Default Value: 0`),
     Excluded: z.number().describe(`
         * * Field Name: Excluded
-        * * Display Name: Items Excluded
+        * * Display Name: Excluded Count
         * * SQL Data Type: int
         * * Default Value: 0`),
     Duplicates: z.number().describe(`
         * * Field Name: Duplicates
-        * * Display Name: Duplicates
+        * * Display Name: Duplicate Count
         * * SQL Data Type: int
         * * Default Value: 0`),
     Failed: z.number().describe(`
         * * Field Name: Failed
-        * * Display Name: Failed
+        * * Display Name: Failed Count
         * * SQL Data Type: int
         * * Default Value: 0`),
     ExtensionErrors: z.number().describe(`
@@ -1204,7 +1206,7 @@ export const mjBizAppsCommonActivitySyncRunSchema = z.object({
         * * Default Value: getutcdate()`),
     ActivitySyncConnection: z.string().describe(`
         * * Field Name: ActivitySyncConnection
-        * * Display Name: Connection
+        * * Display Name: Connection Name
         * * SQL Data Type: nvarchar(200)`),
 });
 
@@ -2233,60 +2235,6 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Activities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The end date and time must be at or after the start date and time. An activity cannot end before it has started.
-    * * Table-Level: Both External ID and Source System must either be provided together or both left empty, ensuring external identifiers are always associated with their originating source system.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateEndedAtAfterStartedAt(result);
-        this.ValidateExternalIdAndSourceSystemCoexistence(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The end date and time must be at or after the start date and time. An activity cannot end before it has started.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateEndedAtAfterStartedAt(result: ValidationResult) {
-    	if (this.EndedAt != null && this.StartedAt != null && this.EndedAt < this.StartedAt) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"EndedAt",
-    			"The end date and time must be at or after the start date and time.",
-    			this.EndedAt,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * Both External ID and Source System must either be provided together or both left empty, ensuring external identifiers are always associated with their originating source system.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateExternalIdAndSourceSystemCoexistence(result: ValidationResult) {
-    	const isExternalIdNull = this.ExternalID === null || this.ExternalID === undefined;
-    	const isSourceSystemNull = this.SourceSystem === null || this.SourceSystem === undefined;
-    
-    	if (isExternalIdNull !== isSourceSystemNull) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"ExternalID",
-    			"Both External ID and Source System must either be provided together or both left empty.",
-    			this.ExternalID,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -2881,46 +2829,6 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Activity Links entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The record must be identified either by both an Entity ID and a Record ID, or by both an Identity Kind and an Identity Value. You cannot specify both sets of identifiers, leave both sets empty, or provide only partial information for either set.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateIdentifierExclusivity(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The record must be identified either by both an Entity ID and a Record ID, or by both an Identity Kind and an Identity Value. You cannot specify both sets of identifiers, leave both sets empty, or provide only partial information for either set.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateIdentifierExclusivity(result: ValidationResult) {
-        const hasEntity = this.EntityID != null;
-        const hasRecord = this.RecordID != null;
-        const hasIdentityKind = this.IdentityKind != null;
-        const hasIdentityValue = this.IdentityValue != null;
-    
-        const isEntityRecordSet = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
-        const isIdentitySet = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
-    
-        if (!isEntityRecordSet && !isIdentitySet) {
-            result.Errors.push(new ValidationErrorInfo(
-                "EntityID",
-                "You must provide either both Entity ID and Record ID, or both Identity Kind and Identity Value. You cannot mix them, leave them empty, or provide only one part of the pair.",
-                this.EntityID,
-                ValidationErrorType.Failure
-            ));
-        }
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -3142,6 +3050,7 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSetEntity extends BaseEnti
     * * Display Name: Activity Sync Rule Set
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
+    * * Description: The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.
     */
     get ActivitySyncRuleSetID(): string {
         return this.Get('ActivitySyncRuleSetID');
@@ -3152,7 +3061,7 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSetEntity extends BaseEnti
 
     /**
     * * Field Name: Sequence
-    * * Display Name: Sequence
+    * * Display Name: Evaluation Sequence
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -3261,59 +3170,6 @@ export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBi
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Connections entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * MaxAttachmentBytes: The maximum attachment size limit must be greater than zero if it is specified.
-    * * Table-Level: The end date and time must be greater than or equal to the start date and time.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateMaxAttachmentBytesGreaterThanZero(result);
-        this.ValidateEndAtAfterOrEqualStartAt(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The maximum attachment size limit must be greater than zero if it is specified.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-    	if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"MaxAttachmentBytes",
-    			"The maximum attachment size limit must be greater than zero.",
-    			this.MaxAttachmentBytes,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * The end date and time must be greater than or equal to the start date and time.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateEndAtAfterOrEqualStartAt(result: ValidationResult) {
-    	if (this.StartAt != null && this.EndAt != null) {
-    		if (this.EndAt < this.StartAt) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"EndAt",
-    				"The end date and time must be greater than or equal to the start date and time.",
-    				this.EndAt,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
     }
 
     /**
@@ -3584,7 +3440,7 @@ export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBi
 
     /**
     * * Field Name: MaxAttachmentBytes
-    * * Display Name: Max Attachment Size
+    * * Display Name: Max Attachment Bytes
     * * SQL Data Type: bigint
     */
     get MaxAttachmentBytes(): number | null {
@@ -3663,40 +3519,6 @@ export class mjBizAppsCommonActivitySyncExclusionEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Exclusions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The effective end date must be on or after the effective start date if both dates are specified.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateEffectiveToAfterEffectiveFrom(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The effective end date must be on or after the effective start date if both dates are specified.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateEffectiveToAfterEffectiveFrom(result: ValidationResult) {
-    	if (this.EffectiveFrom != null && this.EffectiveTo != null) {
-    		if (this.EffectiveTo < this.EffectiveFrom) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"EffectiveTo",
-    				"The effective end date must be on or after the effective start date.",
-    				this.EffectiveTo,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -3714,6 +3536,7 @@ export class mjBizAppsCommonActivitySyncExclusionEntity extends BaseEntity<mjBiz
     * * Display Name: Activity Sync Rule Set
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
+    * * Description: Optional rule set this exclusion belongs to. Null means global — the identity is never ingested on any connection. A legal hold or opt-out is usually global; a mailbox-specific mute is not.
     */
     get ActivitySyncRuleSetID(): string | null {
         return this.Get('ActivitySyncRuleSetID');
@@ -3883,40 +3706,6 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Extensions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * TimeoutMS: The timeout value must be greater than 0 milliseconds and cannot exceed 300,000 milliseconds (5 minutes).
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateTimeoutMSRange(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The timeout value must be greater than 0 milliseconds and cannot exceed 300,000 milliseconds (5 minutes).
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateTimeoutMSRange(result: ValidationResult) {
-    	if (this.TimeoutMS !== undefined && this.TimeoutMS !== null) {
-    		if (this.TimeoutMS <= 0 || this.TimeoutMS > 300000) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"TimeoutMS",
-    				"Timeout must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes).",
-    				this.TimeoutMS,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
     }
 
     /**
@@ -4098,7 +3887,7 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivitySyncConnection
-    * * Display Name: Activity Sync Connection Name
+    * * Display Name: Activity Sync Connection (Name)
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncConnection(): string | null {
@@ -4107,7 +3896,7 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivitySyncProviderType
-    * * Display Name: Activity Sync Provider Type Name
+    * * Display Name: Activity Sync Provider Type (Name)
     * * SQL Data Type: nvarchar(100)
     */
     get ActivitySyncProviderType(): string | null {
@@ -4144,57 +3933,6 @@ export class mjBizAppsCommonActivitySyncProviderTypeEntity extends BaseEntity<mj
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Provider Types entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * DefaultMaxAttachmentBytes: The default maximum attachment size must be greater than 0 bytes if it is specified.
-    * * Table-Level: A default encryption key must be provided if the default skipped content policy is set to any value other than 'None'.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateDefaultMaxAttachmentBytesPositive(result);
-        this.ValidateDefaultEncryptionKeyIDForSkippedContentPolicy(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The default maximum attachment size must be greater than 0 bytes if it is specified.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateDefaultMaxAttachmentBytesPositive(result: ValidationResult) {
-    	if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"DefaultMaxAttachmentBytes",
-    			"The default maximum attachment size must be greater than 0 bytes.",
-    			this.DefaultMaxAttachmentBytes,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * A default encryption key must be provided if the default skipped content policy is set to any value other than 'None'.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateDefaultEncryptionKeyIDForSkippedContentPolicy(result: ValidationResult) {
-        if (this.DefaultSkippedContentPolicy !== "None" && this.DefaultEncryptionKeyID == null) {
-            result.Errors.push(new ValidationErrorInfo(
-                "DefaultEncryptionKeyID",
-                "A default encryption key must be specified when the default skipped content policy is not set to 'None'.",
-                this.DefaultEncryptionKeyID,
-                ValidationErrorType.Failure
-            ));
-        }
     }
 
     /**
@@ -4630,90 +4368,6 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Rules entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * MaxAttachmentBytes: The maximum attachment size limit must be a positive value greater than zero if it is specified.
-    * * Table-Level: Either an Activity Sync Rule Set or an Activity Sync Connection must be specified, but not both. This ensures the activity sync rule is linked to exactly one parent configuration.
-    * * Table-Level: If both a start date (DateFrom) and an end date (DateTo) are specified, the end date must be greater than or equal to the start date.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateMaxAttachmentBytesGreaterThanZero(result);
-        this.ValidateActivitySyncRuleSetOrConnectionExclusive(result);
-        this.ValidateDateToAfterDateFrom(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The maximum attachment size limit must be a positive value greater than zero if it is specified.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-        if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
-            result.Errors.push(new ValidationErrorInfo(
-                "MaxAttachmentBytes",
-                "Maximum attachment bytes must be greater than 0.",
-                this.MaxAttachmentBytes,
-                ValidationErrorType.Failure
-            ));
-        }
-    }
-
-    /**
-    * Either an Activity Sync Rule Set or an Activity Sync Connection must be specified, but not both. This ensures the activity sync rule is linked to exactly one parent configuration.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateActivitySyncRuleSetOrConnectionExclusive(result: ValidationResult) {
-    	const hasRuleSet = this.ActivitySyncRuleSetID != null;
-    	const hasConnection = this.ActivitySyncConnectionID != null;
-    
-    	if ((hasRuleSet && hasConnection) || (!hasRuleSet && !hasConnection)) {
-    		const errorMessage = "You must specify either an Activity Sync Rule Set or an Activity Sync Connection, but not both.";
-    		result.Errors.push(new ValidationErrorInfo(
-    			"ActivitySyncRuleSetID",
-    			errorMessage,
-    			this.ActivitySyncRuleSetID,
-    			ValidationErrorType.Failure
-    		));
-    		result.Errors.push(new ValidationErrorInfo(
-    			"ActivitySyncConnectionID",
-    			errorMessage,
-    			this.ActivitySyncConnectionID,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * If both a start date (DateFrom) and an end date (DateTo) are specified, the end date must be greater than or equal to the start date.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateDateToAfterDateFrom(result: ValidationResult) {
-    	if (this.DateFrom != null && this.DateTo != null) {
-    		const fromDate = new Date(this.DateFrom).getTime();
-    		const toDate = new Date(this.DateTo).getTime();
-    		if (toDate < fromDate) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"DateTo",
-    				"The end date (DateTo) must be on or after the start date (DateFrom).",
-    				this.DateTo,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -4728,7 +4382,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: ActivitySyncConnectionID
-    * * Display Name: Activity Sync Connection
+    * * Display Name: Sync Connection
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Connections (vwActivitySyncConnections.ID)
     */
@@ -4741,7 +4395,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: Name
-    * * Display Name: Name
+    * * Display Name: Rule Name
     * * SQL Data Type: nvarchar(200)
     * * Description: Display name of the rule.
     */
@@ -4831,7 +4485,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: DateFrom
-    * * Display Name: Date From
+    * * Display Name: Sync From
     * * SQL Data Type: datetimeoffset
     * * Description: Inclusive lower bound of the sync window. Null = no lower bound.
     */
@@ -4844,7 +4498,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: DateTo
-    * * Display Name: Date To
+    * * Display Name: Sync To
     * * SQL Data Type: datetimeoffset
     * * Description: Inclusive upper bound of the sync window. Null = no upper bound.
     */
@@ -4871,7 +4525,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: Filter
-    * * Display Name: Filter JSON
+    * * Display Name: Filter Rules
     * * SQL Data Type: nvarchar(MAX)
     * * Description: JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.
     */
@@ -4904,7 +4558,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: ActivitySyncRuleSetID
-    * * Display Name: Activity Sync Rule Set
+    * * Display Name: Sync Rule Set
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rule Sets (vwActivitySyncRuleSets.ID)
     * * Description: The rule set this rule belongs to. Exactly one of ActivitySyncRuleSetID and ActivitySyncConnectionID is set (CK_ActivitySyncRule_Owner) — the connection form is the deprecated original and remains only so existing rows stay valid.
@@ -4939,7 +4593,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: MaxAttachmentBytes
-    * * Display Name: Max Attachment Bytes
+    * * Display Name: Max Attachment Size (Bytes)
     * * SQL Data Type: bigint
     */
     get MaxAttachmentBytes(): number | null {
@@ -4951,7 +4605,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: ActivitySyncConnection
-    * * Display Name: Activity Sync Connection Name
+    * * Display Name: Sync Connection Name
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncConnection(): string | null {
@@ -4969,7 +4623,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * * Field Name: ActivitySyncRuleSet
-    * * Display Name: Activity Sync Rule Set Name
+    * * Display Name: Sync Rule Set Name
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncRuleSet(): string | null {
@@ -5006,79 +4660,6 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Run Details entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Confidence: If a confidence score is provided, it must be a decimal value between 0 and 1, representing a valid probability range.
-    * * Table-Level: Captured Content and Encryption Key ID must either both be provided or both be empty. This ensures that any captured content is properly encrypted and that encryption keys are not assigned without content.
-    * * Table-Level: If an activity is specified, the decision must be set to 'Included'.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateConfidenceRange(result);
-        this.ValidateCapturedContentAndEncryptionKeyID(result);
-        this.ValidateDecisionForLinkedActivity(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * If a confidence score is provided, it must be a decimal value between 0 and 1, representing a valid probability range.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateConfidenceRange(result: ValidationResult) {
-    	if (this.Confidence != null && (this.Confidence < 0 || this.Confidence > 1)) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"Confidence",
-    			"Confidence score must be a decimal value between 0 and 1.",
-    			this.Confidence,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * Captured Content and Encryption Key ID must either both be provided or both be empty. This ensures that any captured content is properly encrypted and that encryption keys are not assigned without content.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateCapturedContentAndEncryptionKeyID(result: ValidationResult) {
-    	const hasContent = this.CapturedContent != null && this.CapturedContent !== "";
-    	const hasKey = this.EncryptionKeyID != null && this.EncryptionKeyID !== "";
-    
-    	if (hasContent !== hasKey) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"CapturedContent",
-    			"Captured Content and Encryption Key ID must either both be provided or both be empty.",
-    			this.CapturedContent,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
-    * If an activity is specified, the decision must be set to 'Included'.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateDecisionForLinkedActivity(result: ValidationResult) {
-    	if (this.ActivityID != null && this.Decision !== "Included") {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"Decision",
-    			"The Decision must be 'Included' when an Activity is associated.",
-    			this.Decision,
-    			ValidationErrorType.Failure
-    		));
-    	}
     }
 
     /**
@@ -5178,7 +4759,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivitySyncRuleID
-    * * Display Name: Activity Sync Rule ID
+    * * Display Name: Activity Sync Rule
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Rules (vwActivitySyncRules.ID)
     */
@@ -5191,7 +4772,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivitySyncExclusionID
-    * * Display Name: Activity Sync Exclusion ID
+    * * Display Name: Activity Sync Exclusion
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Exclusions (vwActivitySyncExclusions.ID)
     */
@@ -5228,7 +4809,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: AIPromptRunID
-    * * Display Name: AI Prompt Run ID
+    * * Display Name: AI Prompt Run
     * * SQL Data Type: uniqueidentifier
     * * Description: The MJ: AI Prompt Run behind an inference-stage verdict. Non-null only when a model actually decided this item, which is the audit trail for every automated judgement the engine makes.
     */
@@ -5241,7 +4822,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivityID
-    * * Display Name: Activity ID
+    * * Display Name: Activity
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activities (vwActivities.ID)
     */
@@ -5267,7 +4848,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: EncryptionKeyID
-    * * Display Name: Encryption Key ID
+    * * Display Name: Encryption Key
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Encryption Keys (vwEncryptionKeys.ID)
     */
@@ -5300,7 +4881,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ActivitySyncRule
-    * * Display Name: Activity Sync Rule
+    * * Display Name: Activity Sync Rule Name
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncRule(): string | null {
@@ -5309,7 +4890,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: Activity
-    * * Display Name: Activity
+    * * Display Name: Activity Reference
     * * SQL Data Type: nvarchar(500)
     */
     get Activity(): string | null {
@@ -5318,7 +4899,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: EncryptionKey
-    * * Display Name: Encryption Key
+    * * Display Name: Encryption Key Name
     * * SQL Data Type: nvarchar(100)
     */
     get EncryptionKey(): string | null {
@@ -5355,38 +4936,6 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Runs entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: A watermark after date cannot be specified when performing a dry run.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateWatermarkAfterForDryRun(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * A watermark after date cannot be specified when performing a dry run.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateWatermarkAfterForDryRun(result: ValidationResult) {
-    	if (this.IsDryRun && this.WatermarkAfter != null) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"WatermarkAfter",
-    			"WatermarkAfter must be null when IsDryRun is enabled.",
-    			this.WatermarkAfter,
-    			ValidationErrorType.Failure
-    		));
-    	}
     }
 
     /**
@@ -5493,7 +5042,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: Fetched
-    * * Display Name: Items Fetched
+    * * Display Name: Fetched Count
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -5506,7 +5055,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: Included
-    * * Display Name: Items Included
+    * * Display Name: Included Count
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -5519,7 +5068,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: Excluded
-    * * Display Name: Items Excluded
+    * * Display Name: Excluded Count
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -5532,7 +5081,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: Duplicates
-    * * Display Name: Duplicates
+    * * Display Name: Duplicate Count
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -5545,7 +5094,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: Failed
-    * * Display Name: Failed
+    * * Display Name: Failed Count
     * * SQL Data Type: int
     * * Default Value: 0
     */
@@ -5627,7 +5176,7 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * * Field Name: ActivitySyncConnection
-    * * Display Name: Connection
+    * * Display Name: Connection Name
     * * SQL Data Type: nvarchar(200)
     */
     get ActivitySyncConnection(): string {

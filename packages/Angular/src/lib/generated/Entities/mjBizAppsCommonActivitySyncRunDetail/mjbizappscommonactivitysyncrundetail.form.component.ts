@@ -15,10 +15,10 @@ export class mjBizAppsCommonActivitySyncRunDetailFormComponent extends BaseFormC
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'syncContext', sectionName: 'Sync Context', isExpanded: true },
+            { sectionKey: 'executionContext', sectionName: 'Execution Context', isExpanded: true },
             { sectionKey: 'externalReference', sectionName: 'External Reference', isExpanded: true },
             { sectionKey: 'decisionLogic', sectionName: 'Decision Logic', isExpanded: true },
-            { sectionKey: 'contentRetention', sectionName: 'Content Retention', isExpanded: true },
+            { sectionKey: 'messageContent', sectionName: 'Message Content', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

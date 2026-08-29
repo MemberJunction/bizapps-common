@@ -14,7 +14,7 @@
     <mj-collapsible-panel
         SectionKey="providerIdentification"
         SectionName="Provider Identification"
-        Icon="fa fa-id-card"
+        Icon="fa fa-id-badge"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -41,14 +41,22 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="Sequence"
+            Type="number"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
 
     </mj-collapsible-panel>
 
-    <!-- Technical Configuration Section -->
+    <!-- Provider Configuration Section -->
     <mj-collapsible-panel
-        SectionKey="technicalConfiguration"
-        SectionName="Technical Configuration"
-        Icon="fa fa-cogs"
+        SectionKey="providerConfiguration"
+        SectionName="Provider Configuration"
+        Icon="fa fa-sliders-h"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -78,14 +86,6 @@
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
-            FieldName="Sequence"
-            Type="number"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
             FieldName="IsSystem"
             Type="checkbox"
             [EditMode]="EditMode"
@@ -102,11 +102,11 @@
 
     </mj-collapsible-panel>
 
-    <!-- Policy Settings Section -->
+    <!-- Operational Defaults Section -->
     <mj-collapsible-panel
-        SectionKey="policySettings"
-        SectionName="Policy Settings"
-        Icon="fa fa-shield-alt"
+        SectionKey="operationalDefaults"
+        SectionName="Operational Defaults"
+        Icon="fa fa-cogs"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -186,6 +186,31 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
+    <!-- Activity Sync Rule Sets Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsCommonActivitySyncRuleSets"
+        SectionName="Activity Sync Rule Sets"
+        Icon="fa fa-sync-alt"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncRuleSets')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Rule Sets','ActivitySyncProviderTypeID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Rule Sets','ActivitySyncProviderTypeID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncRuleSets')"
+                [ShowToolbar]="true"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncRuleSets', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
     <!-- Activity Sync Connections Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonActivitySyncConnections"
@@ -230,31 +255,6 @@
                 [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
                 (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncExtensions', $event.totalRowCount)"
-                >
-            </mj-explorer-entity-data-grid>
-        </div>
-        }
-    </mj-collapsible-panel>
-
-    <!-- Activity Sync Rule Sets Section -->
-    <mj-collapsible-panel
-        SectionKey="mJBizAppsCommonActivitySyncRuleSets"
-        SectionName="Activity Sync Rule Sets"
-        Icon="fa fa-sync-alt"
-        Variant="related-entity"
-        [Form]="this"
-        [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonActivitySyncRuleSets')"
-        [DefaultExpanded]="false">
-        @if (record.IsSaved) {
-        <div>
-            <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Activity Sync Rule Sets','ActivitySyncProviderTypeID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Activity Sync Rule Sets','ActivitySyncProviderTypeID')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonActivitySyncRuleSets')"
-                [ShowToolbar]="true"
-                (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonActivitySyncRuleSets', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>
