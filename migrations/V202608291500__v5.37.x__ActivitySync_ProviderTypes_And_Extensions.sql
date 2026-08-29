@@ -670,3 +670,80 @@ EXEC sp_addextendedproperty
     @level1type = N'TABLE',  @level1name = N'ActivitySyncRule',
     @level2type = N'COLUMN', @level2name = N'ActivitySyncRuleSetID';
 GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- =============================================================================
+-- CODEGEN OUTPUT BELOW THIS LINE — NOT YET GENERATED
+-- =============================================================================
+-- Everything above is hand-written DDL. Everything below is CodeGen's emit,
+-- appended verbatim under the standard `-- CODE GEN RUN` banner CodeGen itself
+-- writes. That is MJ's migration structure: hand DDL, ~50 blank lines, then the
+-- generated half in the SAME file.
+--
+-- WHY THE SAME FILE, AND WHY THIS IS NOT OPTIONAL
+--
+-- bizapps-common is an Open App. A host runs `mj migrate` and NEVER runs CodeGen
+-- for this schema. So DDL that ships without its generated half gives every host
+-- tables that exist in the database and do not exist in the API -- no entity
+-- rows, no views, no stored procedures, no permissions. Every step still reports
+-- success. The columns are simply, silently, not there.
+--
+-- HOW TO FILL IT
+--
+--   1. `pnpm run mj:migrate` on a database NO OTHER SESSION is using.
+--   2. `pnpm run mj:codegen`
+--   3. Append the emit below this banner, verbatim, in the same file.
+--
+-- Do NOT commit a standalone CodeGen_Run_*.sql, and do NOT re-create the
+-- separate V202608292220__ActivitySync_CodeGen_Objects.sql this replaces -- it
+-- was generated before the extended-property fix in 7e153a8 and captured seven
+-- empty column descriptions, which is why it was deleted rather than amended.
+-- =============================================================================
