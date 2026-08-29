@@ -1,0 +1,35 @@
+{
+  "name": "@mj-biz-apps/common-activity-sync",
+  "type": "module",
+  "version": "5.36.0",
+  "description": "Activity Sync Engine contracts for BizApps Common — provider plugin base class, qualification cascade, and the in-process extension contract that lets downstream apps enrich an Activity inside its own write transaction.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "build": "tsc && tsc-alias -f",
+    "test": "vitest run"
+  },
+  "author": "MemberJunction.com",
+  "license": "BUSL-1.1",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@mj-biz-apps/common-entities": "5.36.0"
+  },
+  "peerDependencies": {
+    "@memberjunction/core": "^6.1.0-edge.3",
+    "@memberjunction/global": "^6.1.0-edge.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MemberJunction/bizapps-common"
+  }
+}
