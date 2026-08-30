@@ -259,6 +259,12 @@ importers:
 
   packages/Server:
     dependencies:
+      '@memberjunction/actions':
+        specifier: ^6.1.0-edge.3
+        version: 6.1.0-edge.3(debug@4.4.3)
+      '@memberjunction/actions-base':
+        specifier: ^6.1.0-edge.3
+        version: 6.1.0-edge.3
       '@memberjunction/core':
         specifier: ^6.1.0-edge.2
         version: 6.1.0-edge.2
@@ -274,6 +280,9 @@ importers:
       '@mj-biz-apps/common-actions':
         specifier: 5.36.0
         version: link:../Actions
+      '@mj-biz-apps/common-activity-sync':
+        specifier: 5.36.0
+        version: link:../ActivitySync
       '@mj-biz-apps/common-core-entities-server':
         specifier: 5.36.0
         version: link:../CoreEntitiesServer

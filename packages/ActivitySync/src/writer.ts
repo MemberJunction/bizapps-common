@@ -82,11 +82,22 @@ export interface WriteActivityResult {
     Issues: string[];
 }
 
+export interface WriteOptions {
+    ProviderTypeCode: string;
+    /**
+     * Runs inside the open write transaction, after the activity and its party
+     * links are saved and before commit. This is where registered extensions
+     * add app-specific links. Throwing rolls the write back.
+     */
+    OnWritten?: (context: ActivityWriteContext) => Promise<void>;
+}
+
 export class ActivityWriter {
     public async Write(
         input: WriteActivityInput,
         provider: IMetadataProvider,
         contextUser: UserInfo,
+        options?: WriteOptions,
     ): Promise<WriteActivityResult> {
         const result: WriteActivityResult = {
             Success: false,
@@ -156,6 +167,20 @@ export class ActivityWriter {
                     return result;
                 }
                 result.Links.push(row);
+            }
+
+            if (options?.OnWritten) {
+                const writeContext = this.BuildWriteContext(
+                    { ...result, Activity: activity, ActivityID: activity.ID, Success: true },
+                    input,
+                    contextUser,
+                    provider,
+                    options.ProviderTypeCode,
+                );
+                if (writeContext) {
+                    await options.OnWritten(writeContext);
+                    result.Links = writeContext.Links;
+                }
             }
 
             await scope.Commit();

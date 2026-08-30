@@ -26,6 +26,15 @@ export class FixtureActivitySyncProvider extends BaseActivitySyncProvider {
         this.Kind = kind;
     }
 
+    /**
+     * The instant a CALENDAR fixture reports as its watermark. Injectable so a
+     * check can assert an exact value instead of racing the clock. Messages
+     * still use max(StartedAt) via Kind.
+     */
+    protected override Now(): Date {
+        return this.fetchedAt;
+    }
+
     protected async FetchRaw(query: ActivitySourceQuery): Promise<RawBatch> {
         this.Calls.push(query);
         const since = query.Since ? query.Since.getTime() : null;

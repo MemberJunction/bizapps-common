@@ -19,6 +19,8 @@ export * from './identity.js';
 export * from './writer.js';
 export * from './stages.js';
 export * from './ActivitySyncEngine.js';
+export * from './extensions.js';
 export * from './providers/FixtureActivitySyncProvider.js';
 export * from './providers/MSGraphActivitySyncProvider.js';
+export * from './providers/MSGraphCalendarSyncProvider.js';
 export * from './providers/GraphMessageMapper.js';

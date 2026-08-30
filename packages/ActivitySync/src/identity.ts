@@ -89,7 +89,7 @@ export class IdentityResolver {
         const res = await rv.RunView<ContactMethodRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ContactMethods,
-                ExtraFilter: `Value IN (${InList(addresses)})`,
+                ExtraFilter: `LOWER(Value) IN (${InList(addresses)})`,
                 ResultType: 'simple',
             },
             contextUser,

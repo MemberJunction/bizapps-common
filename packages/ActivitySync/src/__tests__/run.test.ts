@@ -13,11 +13,14 @@ const EARLIER = new Date('2026-08-01T00:00:00Z');
 const LATER = new Date('2026-09-30T00:00:00Z');
 
 describe('IsConnectionActive', () => {
-    it('requires Status = Active regardless of the window', () => {
-        for (const status of ['Paused', 'Error', 'Disabled'] as const) {
+    it('Paused and Disabled stay off regardless of the window; Error retries', () => {
+        for (const status of ['Paused', 'Disabled'] as const) {
             expect(IsConnectionActive(status, null, null, NOW)).toBe(false);
             expect(IsConnectionActive(status, EARLIER, LATER, NOW)).toBe(false);
         }
+        expect(IsConnectionActive('Error', null, null, NOW)).toBe(true);
+        expect(IsConnectionActive('Error', EARLIER, LATER, NOW)).toBe(true);
+        expect(IsConnectionActive('Error', LATER, null, NOW)).toBe(false);
     });
 
     it('is active with no window at all', () => {
