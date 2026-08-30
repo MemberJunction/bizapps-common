@@ -1,0 +1,430 @@
+[
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
+      "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+      "Status": "Active",
+      "RunMode": "Durable",
+      "Sequence": 10,
+      "ScopeEntityID": null,
+      "ScopeRecordID": null
+    },
+    "relatedEntities": {
+      "MJ: Entity Action Invocations": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "InvocationTypeID": "@lookup:MJ: Entity Action Invocation Types.Name=AfterCreate",
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "6509788B-9C63-411C-ACC7-07EBCF50B573" }
+        }
+      ],
+      "MJ: Entity Action Params": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB",
+            "ValueType": "Static",
+            "Value": "SystemEvent",
+            "Comments": "TypeCode"
+          },
+          "primaryKey": { "ID": "80A80D02-68C2-42D0-A80B-147BD70E6043" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330",
+            "ValueType": "Static",
+            "Value": "Person created",
+            "Comments": "Title"
+          },
+          "primaryKey": { "ID": "84D5106C-8239-46BA-A60F-9F093B070555" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
+            "ValueType": "Static",
+            "Value": "MJ_BizApps_Common: People",
+            "Comments": "EntityName — with RecordData.ID it becomes the Regarding link that seeds the person's timeline."
+          },
+          "primaryKey": { "ID": "E7FBFC32-C480-4C5B-A0B3-526DB83B49DA" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Entity Object Data",
+            "Comments": "RecordData — 'Entity Object Data' (entity.GetAll()), NEVER 'Entity Object', which serializes to {} silently (plan §3.3)."
+          },
+          "primaryKey": { "ID": "991FB3F3-8101-49BE-B27A-16AF3F77BF10" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "9ED5AE47-E6A1-4F1A-AA91-751CA7C8F0F7",
+            "ValueType": "Static",
+            "Value": "AfterCreate",
+            "Comments": "EventKey — a person is created once, so the seed entry is idempotent per record: a durable retry cannot double-log it."
+          },
+          "primaryKey": { "ID": "EBBF1287-EB2A-445E-9956-99E4E433650D" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "E9E37537-DD1C-48E4-8545-AD806497833B",
+            "ValueType": "Static",
+            "Value": "System",
+            "Comments": "Source — machine-written, not a human's manual log."
+          },
+          "primaryKey": { "ID": "748CE108-D99D-4508-B914-14DE26CDE614" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "DC862BD2-6529-42F6-BBA3-D9602FA76450" }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
+      "ActionID": "@lookup:MJ: Actions.Name=Execute Agent",
+      "Status": "Active",
+      "RunMode": "Durable",
+      "Sequence": 20,
+      "ScopeEntityID": null,
+      "ScopeRecordID": null
+    },
+    "relatedEntities": {
+      "MJ: Entity Action Invocations": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "InvocationTypeID": "@lookup:MJ: Entity Action Invocation Types.Name=AfterUpdate",
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "BC9482B3-50B3-4018-8754-D93071B9CA40" }
+        }
+      ],
+      "MJ: Entity Action Filters": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionFilterID": "@lookup:MJ: Action Filters.UserDescription=Common: Status field changed in this save",
+            "Sequence": 10,
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "9E4CEB37-73AC-4B2D-87E8-D832C6C2EFD9" }
+        }
+      ],
+      "MJ: Entity Action Params": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "617E9E56-EF54-4D5F-8561-1D5AF245295B",
+            "ValueType": "Static",
+            "Value": "Person Lifecycle Changed",
+            "Comments": "AgentName — the Flow agent shipped in metadata/agents/. Agents belong on After* only; Validate and Before* run inside the caller's transaction (plan §7)."
+          },
+          "primaryKey": { "ID": "85895539-3D54-4B31-9093-C2CBAB817143" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "F12EF739-720B-4FD4-8B9F-0656A756502E",
+            "ValueType": "Entity Object Data",
+            "Comments": "Data — the person's fields reach the agent as a plain object. 'Entity Object Data', NEVER 'Entity Object' (plan §3.3)."
+          },
+          "primaryKey": { "ID": "D9FC0271-AA50-4B0C-A0D4-C29A0B4E1922" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "C5AF459B-6757-4BC3-B890-B5CEBCD0E745" }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations",
+      "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+      "Status": "Active",
+      "RunMode": "Durable",
+      "Sequence": 10,
+      "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organization Types",
+      "ScopeRecordID": "A8DB7343-DCC9-44D1-B99F-9E21024C3C2E"
+    },
+    "relatedEntities": {
+      "MJ: Entity Action Invocations": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "InvocationTypeID": "@lookup:MJ: Entity Action Invocation Types.Name=AfterUpdate",
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "398634C6-92CF-4868-ADF6-E3FD3E7A64FA" }
+        }
+      ],
+      "MJ: Entity Action Filters": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionFilterID": "@lookup:MJ: Action Filters.UserDescription=Common: Status field changed in this save",
+            "Sequence": 10,
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "5B105CBA-4ED8-4AB3-A15F-B81502A5D2A4" }
+        }
+      ],
+      "MJ: Entity Action Params": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB",
+            "ValueType": "Static",
+            "Value": "SystemEvent",
+            "Comments": "TypeCode"
+          },
+          "primaryKey": { "ID": "84983E4E-FF38-40DF-A0BF-E416C2F00406" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330",
+            "ValueType": "Static",
+            "Value": "Organization status changed",
+            "Comments": "Title"
+          },
+          "primaryKey": { "ID": "300B8BE4-F3C9-4602-97F3-D1C1AEB8B576" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4",
+            "ValueType": "Entity Field",
+            "Value": "Status",
+            "Comments": "Description ← the organization's new Status value (Active / Inactive / Dissolved)."
+          },
+          "primaryKey": { "ID": "F4F23C56-C3E7-4244-BE84-26BED2006B71" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
+            "ValueType": "Static",
+            "Value": "MJ_BizApps_Common: Organizations",
+            "Comments": "EntityName — the Regarding link puts the transition on the organization's timeline."
+          },
+          "primaryKey": { "ID": "696826AF-9DC2-4E99-8042-12A399F3F5D2" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Entity Object Data",
+            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3). No EventKey on purpose: a status can change repeatedly and every transition belongs on the timeline."
+          },
+          "primaryKey": { "ID": "7376D962-3CC7-4F57-B3D5-17023621A405" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "E9E37537-DD1C-48E4-8545-AD806497833B",
+            "ValueType": "Static",
+            "Value": "System",
+            "Comments": "Source"
+          },
+          "primaryKey": { "ID": "E1F56396-89D9-496A-84D6-007075C4B078" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "D7497F2F-DFC6-4B46-B3A5-D677A99A71DB" }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
+      "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+      "Status": "Active",
+      "RunMode": "Durable",
+      "Sequence": 10,
+      "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
+      "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
+    },
+    "relatedEntities": {
+      "MJ: Entity Action Invocations": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "InvocationTypeID": "@lookup:MJ: Entity Action Invocation Types.Name=AfterCreate",
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "06EED5FA-411E-44CF-A6A5-D5E449D64A92" }
+        }
+      ],
+      "MJ: Entity Action Params": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB",
+            "ValueType": "Static",
+            "Value": "SystemEvent",
+            "Comments": "TypeCode"
+          },
+          "primaryKey": { "ID": "A9198BE4-A16F-4230-B6BA-D9E802F672B5" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330",
+            "ValueType": "Static",
+            "Value": "Employment relationship started",
+            "Comments": "Title"
+          },
+          "primaryKey": { "ID": "4709EA32-0F5C-4231-8E00-DC17D620A38C" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
+            "ValueType": "Static",
+            "Value": "MJ_BizApps_Common: Relationships",
+            "Comments": "EntityName"
+          },
+          "primaryKey": { "ID": "803C18DC-DD61-4802-8CDB-28EC005F0794" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Entity Object Data",
+            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3)."
+          },
+          "primaryKey": { "ID": "01F9747B-6F07-4671-A44E-953113442878" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "5ABC9668-9E20-4385-9258-F2FC106B8477",
+            "ValueType": "Static",
+            "Value": "[{\"Field\":\"FromPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"ToPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"FromOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"},{\"Field\":\"ToOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"}]",
+            "Comments": "LinkFields — routes the activity to the person and organization the relationship connects, so it lands on THEIR timelines, not only on the relationship record."
+          },
+          "primaryKey": { "ID": "0002071D-7D2B-4777-A211-9F4CCD3626E9" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "9ED5AE47-E6A1-4F1A-AA91-751CA7C8F0F7",
+            "ValueType": "Static",
+            "Value": "AfterCreate",
+            "Comments": "EventKey — one start entry per relationship record, idempotent under durable retry."
+          },
+          "primaryKey": { "ID": "5EA71CB6-8BA7-44B1-B369-1771D118C359" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "E9E37537-DD1C-48E4-8545-AD806497833B",
+            "ValueType": "Static",
+            "Value": "System",
+            "Comments": "Source"
+          },
+          "primaryKey": { "ID": "1B67114A-5291-41C7-981E-0C61DF4237B4" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "ABF0B899-C4D8-4BF8-9AE8-4EAE7DD32346" }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
+      "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+      "Status": "Active",
+      "RunMode": "Durable",
+      "Sequence": 20,
+      "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
+      "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
+    },
+    "relatedEntities": {
+      "MJ: Entity Action Invocations": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "InvocationTypeID": "@lookup:MJ: Entity Action Invocation Types.Name=AfterUpdate",
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "DF807248-154A-4D78-94DF-950B4B0407E7" }
+        }
+      ],
+      "MJ: Entity Action Filters": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionFilterID": "@lookup:MJ: Action Filters.UserDescription=Common: Status field changed to Ended in this save",
+            "Sequence": 10,
+            "Status": "Active"
+          },
+          "primaryKey": { "ID": "79C60778-7F8A-4334-AA87-ECAEFF502418" }
+        }
+      ],
+      "MJ: Entity Action Params": [
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB",
+            "ValueType": "Static",
+            "Value": "SystemEvent",
+            "Comments": "TypeCode"
+          },
+          "primaryKey": { "ID": "0BB1A2C1-CDEB-4FDB-99FF-3E934A693EF8" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330",
+            "ValueType": "Static",
+            "Value": "Employment relationship ended",
+            "Comments": "Title"
+          },
+          "primaryKey": { "ID": "C1193321-D92A-4F58-9579-B3A4754C0867" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
+            "ValueType": "Static",
+            "Value": "MJ_BizApps_Common: Relationships",
+            "Comments": "EntityName"
+          },
+          "primaryKey": { "ID": "1C3F40E2-E5E7-475B-87CF-57E492A72B85" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Entity Object Data",
+            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3). No EventKey: a relationship can end, restart and end again; each transition is its own entry (the filter already limits firing to the transition save)."
+          },
+          "primaryKey": { "ID": "42AF8F1E-0B3E-4879-A72C-9D728D9DFAAB" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "5ABC9668-9E20-4385-9258-F2FC106B8477",
+            "ValueType": "Static",
+            "Value": "[{\"Field\":\"FromPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"ToPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"FromOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"},{\"Field\":\"ToOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"}]",
+            "Comments": "LinkFields — same routing as the start entry."
+          },
+          "primaryKey": { "ID": "C3209787-8595-49A9-A026-3C45237AB2EC" }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "E9E37537-DD1C-48E4-8545-AD806497833B",
+            "ValueType": "Static",
+            "Value": "System",
+            "Comments": "Source"
+          },
+          "primaryKey": { "ID": "849DDB39-BF91-4E7E-905C-AB6D4A32F6DC" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "32D1707C-D9BE-48F7-BB46-701F8DB09110" }
+  }
+]

@@ -1,0 +1,48 @@
+[
+  {
+    "fields": {
+      "Name": "Person Lifecycle Changed",
+      "Description": "The downstream reaction to a person's lifecycle status changing (Active / Inactive / Deceased). Dispatched durably by the People·AfterUpdate Entity Action binding through Execute Agent, with the person's data arriving as the Data payload (bound as 'Entity Object Data'). A deterministic Flow agent on purpose: it records the transition on the person's timeline via Common.LogActivity and finishes — it creates work and completes, it never holds a run open waiting for anyone. Hosts extend the reaction by adding steps here (notify, enrich, hand off) instead of touching the binding.",
+      "TypeID": "@lookup:MJ: AI Agent Types.Name=Flow",
+      "Status": "Active",
+      "ExposeAsAction": true,
+      "ExecutionOrder": 0,
+      "ExecutionMode": "Sequential",
+      "IconClass": "fa-solid fa-user-clock"
+    },
+    "relatedEntities": {
+      "MJ: AI Agent Prompts": [],
+      "MJ: AI Agent Steps": [
+        {
+          "fields": {
+            "AgentID": "@parent:ID",
+            "Name": "Log lifecycle change on the timeline",
+            "Description": "Records the status transition as a SystemEvent activity linked Regarding the person, through the one shared ActivityWriter. The Description carries the new status value; idempotency is deliberately NOT keyed (no EventKey) because a person can change status more than once and each transition belongs on the timeline.",
+            "StartingStep": 1,
+            "StepType": "Action",
+            "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+            "ActionInputMapping": {
+              "TypeCode": "static:SystemEvent",
+              "Title": "static:Person lifecycle status changed",
+              "Description": "data.Status",
+              "EntityName": "static:MJ_BizApps_Common: People",
+              "RecordID": "data.ID",
+              "Source": "static:System"
+            },
+            "ActionOutputMapping": {
+              "ActivityID": "loggedActivityID",
+              "AlreadyPresent": "activityAlreadyPresent"
+            },
+            "Status": "Active",
+            "PositionX": 80,
+            "PositionY": 80,
+            "Width": 220,
+            "Height": 80
+          },
+          "primaryKey": { "ID": "65B3A8BD-585C-4712-BBD3-59751450A21F" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "C30BAF99-D85D-4020-ADD3-8C97773AC749" }
+  }
+]

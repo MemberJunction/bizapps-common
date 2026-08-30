@@ -179,8 +179,10 @@ describe('load-bearing engine rules', () => {
         const writer = readFileSync(join(SRC, 'writer.ts'), 'utf8');
         expect(engine).toMatch(/OnWritten:/);
         expect(engine).toMatch(/RunRegisteredExtensions/);
-        expect(writer).toMatch(/await options\.OnWritten\(writeContext\)/);
-        expect(writer.indexOf('OnWritten')).toBeLessThan(writer.indexOf('await scope.Commit()'));
+        expect(writer).toMatch(/await onWritten\(writeContext\)/);
+        // The dispatch seam (afterLinks) runs inside the transactional core, before the commit.
+        expect(writer.indexOf('result.Links = await afterLinks(')).toBeGreaterThan(-1);
+        expect(writer.indexOf('await afterLinks(')).toBeLessThan(writer.indexOf('await scope.Commit()'));
     });
 
     it('checks ActivitySyncRunDetail.Save and does not abort the detail loop', () => {
