@@ -66,12 +66,14 @@ describe('sql guards', () => {
 
 describe('ExtraFilter call sites', () => {
     it('engine ID filters go through RequireUUID / UuidInList, not quote-doubling', () => {
-        const source = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
-        expect(source).toMatch(/RequireUUID\(id, 'ActivitySyncConnectionID'\)/);
-        expect(source).toMatch(/RequireUUID\(id, 'ActivitySyncProviderTypeID'\)/);
-        expect(source).toMatch(/UuidInList\(setIds, 'ActivitySyncRuleSetID'\)/);
-        expect(source).not.toMatch(/EscapeText\(id\)/);
-        expect(source).not.toMatch(/EscapeSql/);
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        const load = readFileSync(join(SRC, 'load.ts'), 'utf8');
+        expect(engine).toMatch(/RequireUUID\(id, 'ActivitySyncConnectionID'\)/);
+        expect(engine).toMatch(/RequireUUID\(id, 'ActivitySyncProviderTypeID'\)/);
+        expect(load).toMatch(/UuidInList\(setIds, 'ActivitySyncRuleSetID'\)/);
+        expect(engine).not.toMatch(/EscapeText\(id\)/);
+        expect(engine).not.toMatch(/EscapeSql/);
+        expect(load).not.toMatch(/EscapeSql/);
     });
 
     it('inbound addresses go through InList / EscapeText', () => {

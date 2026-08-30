@@ -42,9 +42,10 @@ import {
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
-import { RequireUUID, UuidInList } from './sql.js';
+import { RequireUUID } from './sql.js';
 import type { NormalizedItem } from './types.js';
 import { CanAdvanceWatermark, NextWatermark, type RunOutcome } from './watermark.js';
+import { ExclusionsExtraFilter, FromRunView, RulesExtraFilter, type ViewLoad } from './load.js';
 import { ActivityWriter, StoreBodyFromSettings } from './writer.js';
 
 export interface SyncEngineResult {
@@ -106,7 +107,12 @@ export class ActivitySyncEngine {
             Issues: [],
         };
 
-        const connection = await this.loadConnection(connectionID, contextUser);
+        const loadedConnection = await this.loadConnection(connectionID, contextUser);
+        if (loadedConnection.Failed) {
+            result.Issues.push(loadedConnection.Issue);
+            return result;
+        }
+        const connection = loadedConnection.Rows[0];
         if (!connection) {
             result.Issues.push(`No ActivitySyncConnection '${connectionID}'.`);
             return result;
@@ -124,12 +130,17 @@ export class ActivitySyncEngine {
             return result;
         }
 
-        const typeRow = connection.ActivitySyncProviderTypeID
-            ? await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser)
-            : null;
-        // Missing type row: hosts currently get zero provider-type seeds (Metadata_Sync
-        // is release-engineer, not this PR). The cascade still needs a default, and
-        // that default is Exclude — never `?? 'Include'`.
+        let typeRow: ProviderTypeRow | null = null;
+        if (connection.ActivitySyncProviderTypeID) {
+            const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
+            if (loadedType.Failed) {
+                result.Issues.push(loadedType.Issue);
+                return result;
+            }
+            typeRow = loadedType.Rows[0] ?? null;
+        }
+        // Missing type row: the cascade still needs a default, and that default is
+        // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
 
         const plugin = source ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
@@ -152,8 +163,18 @@ export class ActivitySyncEngine {
         result.Fetched = batch.Items.length;
         result.Issues.push(...batch.Issues);
 
-        const exclusions = await this.loadExclusions(connectionID, contextUser);
-        const rules = await this.loadRules(connectionID, contextUser);
+        const bound = await this.loadBoundSetIds(connectionID, contextUser);
+        if (bound.Failed) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, bound.Issue);
+        }
+        const exclusions = await this.loadExclusions(bound.Rows, contextUser);
+        if (exclusions.Failed) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, exclusions.Issue);
+        }
+        const rules = await this.loadRules(connectionID, bound.Rows, contextUser);
+        if (rules.Failed) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue);
+        }
 
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const identities = await this.resolver.Resolve(allParticipants, contextUser);
@@ -178,8 +199,8 @@ export class ActivitySyncEngine {
             const ctx: EngineQualificationContext = {
                 ConnectionID: connection.ID,
                 ProviderTypeCode: sourceSystem,
-                Exclusions: exclusions,
-                Rules: rules,
+                Exclusions: exclusions.Rows,
+                Rules: rules.Rows,
                 InternalDomains: [],
                 KnownAddresses: identities.Known,
             };
@@ -305,8 +326,12 @@ export class ActivitySyncEngine {
         const candidate = batch.HighWatermark;
         const next = options.DryRun ? since : NextWatermark(since, candidate, outcome);
         if (!options.DryRun && next && CanAdvanceWatermark(outcome) && candidate) {
-            result.WatermarkAdvancedTo = next;
-            await this.stampConnectionWatermark(connectionID, next, contextUser, provider);
+            const stamped = await this.stampConnectionWatermark(connectionID, next, contextUser, provider);
+            if (stamped) {
+                result.WatermarkAdvancedTo = next;
+            } else {
+                result.Issues.push('Failed to persist connection LastSyncAt — watermark will not advance.');
+            }
         }
 
         await this.persistRun(connection, options, result, since, options.DryRun ? null : result.WatermarkAdvancedTo, provider, contextUser, details);
@@ -330,7 +355,22 @@ export class ActivitySyncEngine {
         }
     }
 
-    private async loadConnection(id: string, user: UserInfo): Promise<ConnectionRow | null> {
+    private async failClosed(
+        connection: ConnectionRow,
+        options: SyncRunOptions,
+        result: SyncEngineResult,
+        since: Date | null,
+        provider: IMetadataProvider,
+        contextUser: UserInfo,
+        issue: string,
+    ): Promise<SyncEngineResult> {
+        result.Issues.push(issue);
+        result.Failed += result.Fetched;
+        await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+        return result;
+    }
+
+    private async loadConnection(id: string, user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
         const rv = new RunView();
         const res = await rv.RunView<ConnectionRow>(
             {
@@ -341,11 +381,10 @@ export class ActivitySyncEngine {
             },
             user,
         );
-        return res.Success ? (res.Results?.[0] ?? null) : null;
+        return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
     }
 
-    private async loadProviderType(id: string | null | undefined, user: UserInfo): Promise<ProviderTypeRow | null> {
-        if (!id) return null;
+    private async loadProviderType(id: string, user: UserInfo): Promise<ViewLoad<ProviderTypeRow>> {
         const rv = new RunView();
         const res = await rv.RunView<ProviderTypeRow>(
             {
@@ -356,23 +395,10 @@ export class ActivitySyncEngine {
             },
             user,
         );
-        return res.Success ? (res.Results?.[0] ?? null) : null;
+        return FromRunView(res.Success, res.Results, 'ActivitySyncProviderType');
     }
 
-    private async loadExclusions(connectionID: string, user: UserInfo): Promise<ExclusionRow[]> {
-        const rv = new RunView();
-        const res = await rv.RunView<ExclusionRow>(
-            {
-                EntityName: ACTIVITY_SYNC_ENTITIES.Exclusions,
-                ResultType: 'simple',
-            },
-            user,
-        );
-        if (!res.Success) return [];
-        return res.Results ?? [];
-    }
-
-    private async loadRules(connectionID: string, user: UserInfo): Promise<RuleRow[]> {
+    private async loadBoundSetIds(connectionID: string, user: UserInfo): Promise<ViewLoad<string>> {
         const rv = new RunView();
         const bound = await rv.RunView<{ ActivitySyncRuleSetID: string }>(
             {
@@ -382,18 +408,43 @@ export class ActivitySyncEngine {
             },
             user,
         );
-        const setIds = (bound.Results ?? []).map((r) => r.ActivitySyncRuleSetID);
-        const res = await rv.RunView<RuleRow>(
+        if (!bound.Success) {
+            return { Failed: true, Issue: 'ActivitySyncConnectionRuleSet lookup failed.' };
+        }
+        return {
+            Failed: false,
+            Rows: (bound.Results ?? []).map((r) => r.ActivitySyncRuleSetID),
+        };
+    }
+
+    private async loadExclusions(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<ExclusionRow>> {
+        const rv = new RunView();
+        const res = await rv.RunView<ExclusionRow>(
             {
-                EntityName: ACTIVITY_SYNC_ENTITIES.Rules,
-                ExtraFilter: setIds.length
-                    ? `ActivitySyncRuleSetID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`
-                    : `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}'`,
+                EntityName: ACTIVITY_SYNC_ENTITIES.Exclusions,
+                ExtraFilter: ExclusionsExtraFilter(setIds),
                 ResultType: 'simple',
             },
             user,
         );
-        return res.Success ? (res.Results ?? []) : [];
+        return FromRunView(res.Success, res.Results, 'ActivitySyncExclusion');
+    }
+
+    private async loadRules(
+        connectionID: string,
+        setIds: readonly string[],
+        user: UserInfo,
+    ): Promise<ViewLoad<RuleRow>> {
+        const rv = new RunView();
+        const res = await rv.RunView<RuleRow>(
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.Rules,
+                ExtraFilter: RulesExtraFilter(setIds, connectionID),
+                ResultType: 'simple',
+            },
+            user,
+        );
+        return FromRunView(res.Success, res.Results, 'ActivitySyncRule');
     }
 
     private async stampConnectionWatermark(
@@ -401,16 +452,16 @@ export class ActivitySyncEngine {
         at: Date,
         user: UserInfo,
         provider: IMetadataProvider,
-    ): Promise<void> {
+    ): Promise<boolean> {
         const row = await provider.GetEntityObject<mjBizAppsCommonActivitySyncConnectionEntity>(
             ACTIVITY_SYNC_ENTITIES.Connections,
             user,
         );
-        if (!(await row.Load(connectionID))) return;
+        if (!(await row.Load(connectionID))) return false;
         row.LastSyncAt = at;
         row.LastError = null;
         if (row.Status === 'Error') row.Status = 'Active';
-        await row.Save();
+        return row.Save();
     }
 
     private async persistRun(
