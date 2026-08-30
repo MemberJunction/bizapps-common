@@ -75,9 +75,17 @@ export interface SyncEngineResult {
     Issues: string[];
 }
 
+export interface FleetRunResult {
+    Success: boolean;
+    ConnectionsAttempted: number;
+    Results: Array<{ ConnectionID: string; Surface: string; Result: SyncEngineResult }>;
+    Issues: string[];
+}
+
 interface ConnectionRow {
     ID: string;
     Status: string;
+    Provider: string | null;
     Mailbox: string | null;
     StartAt: Date | string | null;
     EndAt: Date | string | null;
@@ -399,6 +407,58 @@ export class ActivitySyncEngine {
         return result;
     }
 
+    /**
+     * Every Active-or-Error connection, once per surface. This is what a scheduled
+     * Action calls. Downstream apps do not wrap this — they register an extension.
+     *
+     * Microsoft365 runs Message then Calendar so neither surface can hide the other
+     * behind a shared watermark. Calendar Graph still refuses live fetch.
+     */
+    public async RunConnections(
+        options: SyncRunOptions,
+        provider: IMetadataProvider,
+        contextUser: UserInfo,
+    ): Promise<FleetRunResult> {
+        const fleet: FleetRunResult = { Success: true, ConnectionsAttempted: 0, Results: [], Issues: [] };
+        const loaded = await this.loadRunnableConnections(contextUser);
+        if (loaded.Failed) {
+            fleet.Success = false;
+            fleet.Issues.push(loaded.Issue);
+            return fleet;
+        }
+        if (loaded.Rows.length === 0) {
+            return fleet;
+        }
+        for (const connection of loaded.Rows) {
+            fleet.ConnectionsAttempted++;
+            const primary = await this.Run(connection.ID, options, provider, contextUser);
+            fleet.Results.push({ ConnectionID: connection.ID, Surface: 'primary', Result: primary });
+            if (!primary.Success) {
+                fleet.Success = false;
+                fleet.Issues.push(...primary.Issues);
+            }
+            if (this.needsCalendarSurface(connection)) {
+                const calendar = await this.Run(
+                    connection.ID,
+                    options,
+                    provider,
+                    contextUser,
+                    new MSGraphCalendarSyncProvider(),
+                );
+                fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: calendar });
+                if (!calendar.Success) {
+                    fleet.Success = false;
+                    fleet.Issues.push(...calendar.Issues);
+                }
+            }
+        }
+        return fleet;
+    }
+
+    private needsCalendarSurface(connection: ConnectionRow): boolean {
+        return (connection.Provider ?? '') === 'Microsoft365';
+    }
+
     private resolvePlugin(driverClass: string): BaseActivitySyncProvider | null {
         try {
             const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivitySyncProvider>(
@@ -519,6 +579,19 @@ export class ActivitySyncEngine {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
                 ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncConnectionID')}'`,
                 MaxRows: 1,
+                ResultType: 'simple',
+            },
+            user,
+        );
+        return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
+    }
+
+    private async loadRunnableConnections(user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
+        const rv = new RunView();
+        const res = await rv.RunView<ConnectionRow>(
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
+                ExtraFilter: `Status = 'Active' OR Status = 'Error'`,
                 ResultType: 'simple',
             },
             user,
