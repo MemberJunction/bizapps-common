@@ -10,6 +10,7 @@
     "contact-types",
     "organization-types",
     "relationship-types",
+    "activity-sync-provider-types",
     "entities",
     "entity-relationships",
     "application-roles"

@@ -99,6 +99,25 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/ActivitySync:
+    dependencies:
+      '@memberjunction/core':
+        specifier: ^6.1.0-edge.2
+        version: 6.1.0-edge.2
+      '@memberjunction/global':
+        specifier: ^6.1.0-edge.2
+        version: 6.1.0-edge.2
+      '@mj-biz-apps/common-entities':
+        specifier: 5.36.0
+        version: link:../Entities
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@25.9.5)(jsdom@26.1.0)
+
   packages/Angular:
     dependencies:
       '@memberjunction/actions-base':
@@ -180,6 +199,9 @@ importers:
       '@memberjunction/global':
         specifier: ^6.1.0-edge.2
         version: 6.1.0-edge.2
+      '@mj-biz-apps/common-activity-sync':
+        specifier: 5.36.0
+        version: link:../ActivitySync
       '@mj-biz-apps/common-entities':
         specifier: 5.36.0
         version: link:../Entities
@@ -10074,7 +10096,7 @@ snapshots:
       '@memberjunction/ai': 6.1.0-edge.3
       '@memberjunction/global': 6.1.0-edge.2
       axios: 1.19.0(debug@4.4.3)
-      axios-retry: 4.5.0(axios@1.19.0(debug@4.4.3))
+      axios-retry: 4.5.0(axios@1.19.0)
       env-var: 7.5.0
     transitivePeerDependencies:
       - debug
@@ -10502,7 +10524,7 @@ snapshots:
       '@memberjunction/global': 6.1.0-edge.2
       '@mistralai/mistralai': 1.15.1
       axios: 1.19.0(debug@4.4.3)
-      axios-retry: 4.5.0(axios@1.19.0(debug@4.4.3))
+      axios-retry: 4.5.0(axios@1.19.0)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -17013,7 +17035,7 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios-retry@4.5.0(axios@1.19.0(debug@4.4.3)):
+  axios-retry@4.5.0(axios@1.19.0):
     dependencies:
       axios: 1.19.0(debug@4.4.3)
       is-retry-allowed: 2.2.0

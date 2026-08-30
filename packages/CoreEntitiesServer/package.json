@@ -21,7 +21,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.36.0"
+    "@mj-biz-apps/common-entities": "5.36.0",
+    "@mj-biz-apps/common-activity-sync": "5.36.0"
   },
   "peerDependencies": {
     "@memberjunction/core": "^6.1.0-edge.3",
