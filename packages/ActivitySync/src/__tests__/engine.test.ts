@@ -91,6 +91,27 @@ describe('load-bearing engine rules', () => {
         expect(batch.Items).toEqual([]);
         expect(batch.HighWatermark).toBeNull();
         expect(batch.Issues[0]).toBe(LIVE_GRAPH_REFUSAL);
+        expect(batch.Failed).toBeFalsy();
+    });
+
+    it('a thrown FetchRaw is a failed look, not an empty mailbox', async () => {
+        const { BaseActivitySyncProvider } = await import('../BaseActivitySyncProvider.js');
+        class Boom extends BaseActivitySyncProvider {
+            public readonly Kind = 'Message' as const;
+            public readonly ProviderTypeCode = 'X';
+            public readonly IsLive = false;
+            protected async FetchRaw(): Promise<{ Payloads: Record<string, never>[]; Issues: string[] }> {
+                throw new Error('mailbox gone');
+            }
+            protected Normalize(): NormalizedItem[] {
+                return [];
+            }
+        }
+        const batch = await new Boom().Fetch({ Mailbox: 'gone@x.test', Since: null, Limit: 10 });
+        expect(batch.Failed).toBe(true);
+        expect(batch.Items).toEqual([]);
+        expect(batch.HighWatermark).toBeNull();
+        expect(batch.Issues[0]).toMatch(/mailbox gone/);
     });
 
     it('fixture is not live and filters strictly after the watermark', async () => {
@@ -206,9 +227,15 @@ describe('load-bearing engine rules', () => {
         expect(loop![1]).not.toMatch(/stampExtensions/);
     });
 
-    it('caps the fleet connection load', () => {
+    it('caps the fleet connection load without false-positiving at exactly the cap', () => {
         const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
-        expect(engine).toMatch(/MaxRows: MAX_RUNNABLE_CONNECTIONS/);
+        expect(engine).toMatch(/MaxRows: MAX_RUNNABLE_CONNECTIONS \+ 1/);
+        expect(engine).toMatch(/rows\.length > MAX_RUNNABLE_CONNECTIONS/);
+    });
+
+    it('loads CalendarDriverClass by name, not via SELECT *', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        expect(engine).toMatch(/Fields: \['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass'\]/);
     });
 
     it('stores a cancelled meeting as Cancelled, not Logged', () => {

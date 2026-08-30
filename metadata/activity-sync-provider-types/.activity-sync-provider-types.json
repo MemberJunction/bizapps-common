@@ -5,6 +5,7 @@
       "Name": "Microsoft 365",
       "Description": "Microsoft Graph mail and calendar. Mail.Read is tenant-wide under app-only auth; the Graph provider refuses to fetch without an explicit opt-in until an Exchange Application Access Policy is applied.",
       "DriverClass": "Microsoft365",
+      "CalendarDriverClass": "Microsoft365.Calendar",
       "IconClass": "fa-brands fa-microsoft",
       "SupportedKinds": "[\"Message\",\"Calendar\"]",
       "DefaultQualificationPolicy": "Exclude",

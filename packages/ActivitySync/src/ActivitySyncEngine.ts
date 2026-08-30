@@ -132,7 +132,13 @@ export function healthErrorFromResults(results: readonly SyncEngineResult[]): st
     return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);
 }
 
-/** One Load+Save per extension row after the batch — not N items × M extensions. */
+/**
+ * One Load+Save per extension row after the batch — not N items × M extensions.
+ *
+ * An error is sticky within the batch on purpose: a later success on a different item must
+ * not clear LastError for a Skip that already happened in this run. Only a later run that
+ * is clean for that row writes null.
+ */
 export function collapseExtensionStamps(stamps: readonly ExtensionStamp[]): ExtensionStamp[] {
     const byId = new Map<string, string | null>();
     for (const stamp of stamps) {
@@ -144,6 +150,21 @@ export function collapseExtensionStamps(stamps: readonly ExtensionStamp[]): Exte
         }
     }
     return [...byId.entries()].map(([ID, LastError]) => ({ ID, LastError }));
+}
+
+function failedSurfaceResult(issues: readonly string[]): SyncEngineResult {
+    return {
+        Success: false,
+        RunID: null,
+        Fetched: 0,
+        Included: 0,
+        Excluded: 0,
+        Duplicates: 0,
+        Failed: 1,
+        ExtensionErrors: 0,
+        WatermarkAdvancedTo: null,
+        Issues: [...issues],
+    };
 }
 
 export class ActivitySyncEngine {
@@ -239,6 +260,18 @@ export class ActivitySyncEngine {
         });
         result.Fetched = batch.Items.length;
         result.Issues.push(...batch.Issues);
+        if (batch.Failed) {
+            return this.failClosed(
+                connection,
+                options,
+                result,
+                since,
+                provider,
+                contextUser,
+                batch.Issues.join(' | ') || 'Provider fetch failed.',
+                stampHealth,
+            );
+        }
 
         const bound = await this.loadBoundSetIds(connectionID, contextUser);
         if (bound.Failed) {
@@ -485,20 +518,33 @@ export class ActivitySyncEngine {
         if (loaded.Rows.length === 0) {
             return fleet;
         }
-        if (loaded.Rows.length >= MAX_RUNNABLE_CONNECTIONS) {
+        let rows = loaded.Rows;
+        if (rows.length > MAX_RUNNABLE_CONNECTIONS) {
             fleet.Success = false;
             fleet.Issues.push(
-                `Runnable connection load hit MaxRows=${MAX_RUNNABLE_CONNECTIONS}; remaining connections were not attempted.`,
+                `Runnable connection load exceeded MaxRows=${MAX_RUNNABLE_CONNECTIONS}; remaining connections were not attempted.`,
             );
+            rows = rows.slice(0, MAX_RUNNABLE_CONNECTIONS);
         }
-        for (const connection of loaded.Rows) {
+        for (const connection of rows) {
             fleet.ConnectionsAttempted++;
             let typeRow: ProviderTypeRow | null = null;
             if (connection.ActivitySyncProviderTypeID) {
                 const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
                 if (loadedType.Failed) {
+                    const failed = failedSurfaceResult([loadedType.Issue]);
+                    fleet.Results.push({ ConnectionID: connection.ID, Surface: 'primary', Result: failed });
                     fleet.Success = false;
-                    fleet.Issues.push(loadedType.Issue);
+                    fleet.Issues.push(...failed.Issues);
+                    if (!options.DryRun) {
+                        await this.stampConnectionHealth(
+                            connection.ID,
+                            false,
+                            healthErrorFromResults([failed]),
+                            contextUser,
+                            provider,
+                        );
+                    }
                     continue;
                 }
                 typeRow = loadedType.Rows[0] ?? null;
@@ -518,18 +564,9 @@ export class ActivitySyncEngine {
             if (calendarDriver) {
                 const calendarPlugin = this.resolvePlugin(calendarDriver);
                 if (!calendarPlugin) {
-                    const missing: SyncEngineResult = {
-                        Success: false,
-                        RunID: null,
-                        Fetched: 0,
-                        Included: 0,
-                        Excluded: 0,
-                        Duplicates: 0,
-                        Failed: 0,
-                        ExtensionErrors: 0,
-                        WatermarkAdvancedTo: null,
-                        Issues: [`No BaseActivitySyncProvider registered for CalendarDriverClass '${calendarDriver}'.`],
-                    };
+                    const missing = failedSurfaceResult([
+                        `No BaseActivitySyncProvider registered for CalendarDriverClass '${calendarDriver}'.`,
+                    ]);
                     fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: missing });
                     fleet.Success = false;
                     fleet.Issues.push(...missing.Issues);
@@ -591,6 +628,7 @@ export class ActivitySyncEngine {
     ): Promise<SyncEngineResult> {
         result.Issues.push(issue);
         result.Failed += result.Fetched;
+        if (result.Failed < 1) result.Failed = 1;
         await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
         if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
@@ -697,7 +735,7 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
                 ExtraFilter: `Status = 'Active' OR Status = 'Error'`,
-                MaxRows: MAX_RUNNABLE_CONNECTIONS,
+                MaxRows: MAX_RUNNABLE_CONNECTIONS + 1,
                 ResultType: 'simple',
             },
             user,
@@ -711,6 +749,7 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
                 ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncProviderTypeID')}'`,
+                Fields: ['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass'],
                 MaxRows: 1,
                 ResultType: 'simple',
             },

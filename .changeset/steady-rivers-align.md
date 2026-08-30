@@ -1,6 +1,7 @@
 ---
 '@mj-biz-apps/common-activity-sync': minor
 '@mj-biz-apps/common-server': minor
+'@mj-biz-apps/common-entities': minor
 ---
 
 Activity sync trigger, calendar companion as data, and per-connection health.

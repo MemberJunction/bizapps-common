@@ -26,7 +26,7 @@
     "fields": {
       "Name": "Common — Activity Sync (hourly)",
       "Description": "Pulls messages and calendar items for every Active-or-Error activity-sync connection and files the relevant ones as Activities. Downstream apps enrich in-stream; they do not own this job.",
-      "JobTypeID": "3B94DD43-E961-4D85-B7F4-B6783D748766",
+      "JobTypeID": "@lookup:MJ: Scheduled Job Types.DriverClass=ActionScheduledJobDriver",
       "CronExpression": "0 0 * * * *",
       "Timezone": "UTC",
       "Status": "Active",
@@ -39,10 +39,10 @@
       "NotifyViaEmail": false,
       "NotifyViaInApp": false,
       "Configuration": {
-        "ActionID": "B2CAEFB7-60FD-41FF-8B12-DB908A7BEF0E",
+        "ActionID": "@lookup:MJ: Actions.DriverClass=Common.SyncActivities",
         "Params": [
           {
-            "ActionParamID": "9E35EF82-BDE6-4B17-8797-C0D29CD2D688",
+            "ActionParamID": "@lookup:MJ: Action Params.Name=Limit",
             "ValueType": "Static",
             "Value": "100"
           }

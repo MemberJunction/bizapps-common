@@ -60,7 +60,20 @@ describe('Common.SyncActivities trigger metadata (AC15)', () => {
         expect(job?.fields?.Status).toBe('Active');
         expect(job?.fields?.ConcurrencyMode).toBe('Skip');
         expect(job?.fields?.MissedRunPolicy).toBe('RunOnce');
+        expect(job?.fields?.JobTypeID).toBe(
+            '@lookup:MJ: Scheduled Job Types.DriverClass=ActionScheduledJobDriver',
+        );
         const config = job?.fields?.Configuration as { ActionID?: string } | undefined;
-        expect(config?.ActionID).toBe(action?.primaryKey?.ID);
+        expect(config?.ActionID).toBe('@lookup:MJ: Actions.DriverClass=Common.SyncActivities');
+    });
+
+    it('the Action metadata DriverClass matches the @RegisterClass key', () => {
+        const source = readFileSync(
+            join(REPO, 'packages/Server/src/custom/sync-activities.action.ts'),
+            'utf8',
+        );
+        const match = source.match(/@RegisterClass\(\s*BaseAction,\s*'([^']+)'\s*\)/);
+        expect(match?.[1]).toBe('Common.SyncActivities');
+        expect(match?.[1]).toBe(action?.fields?.DriverClass);
     });
 });
