@@ -106,5 +106,19 @@
       "lastModified": "2026-08-24T20:06:03.797Z",
       "checksum": "52f8d7315a4bd83cecb4b0e407ba6b696a91f9534d1a0bc597fc259b8660e037"
     }
+  },
+  {
+    "fields": {
+      "Code": "SystemEvent",
+      "Name": "System Event",
+      "Description": "A lifecycle or system-generated timeline entry (record created, status changed) written declaratively — the Entity Action bindings and Common.LogActivity log with this type.",
+      "IconClass": "fa-solid fa-bolt",
+      "Sequence": 70,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "BAF5157F-31D1-4F20-8268-2EC8479CA4BB"
+    }
   }
 ]

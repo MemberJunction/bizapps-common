@@ -1,0 +1,20 @@
+[
+  {
+    "fields": {
+      "UserDescription": "Common: Status field changed in this save",
+      "UserComments": "Reusable transition detector for AfterUpdate bindings on any entity with a Status column (People, Organizations). MJ ships no seed ActionFilter rows (verified 2026-08-30) — the reusable piece upstream is the ActionFilterContext vocabulary this Code uses. Two behaviours to respect when attaching it: a CREATE reports no changes (DidFieldChange is false on insert), so never attach this to an AfterCreate-only binding; and filter evaluation is fail-closed — a prevented run still writes an ActionExecutionLog row.",
+      "Code": "return ActionFilterContext.DidFieldChange('Status');",
+      "CodeExplanation": "True only when the Status field's value actually differs across this save — the binding fires on the transition, not on every update."
+    },
+    "primaryKey": { "ID": "9270AA31-975F-49C3-A16C-82CD009FED16" }
+  },
+  {
+    "fields": {
+      "UserDescription": "Common: Status field changed to Ended in this save",
+      "UserComments": "The 'field changed TO value' shape — written as a transition, never as 'status IS Ended', which would re-fire on every later save of an ended record. Loose compare per the ActionFilterContext contract. Same caveats as the plain status-changed filter: false on create, fail-closed evaluation.",
+      "Code": "return ActionFilterContext.DidFieldChangeToValue('Status', 'Ended');",
+      "CodeExplanation": "True only on the save that moves Status to Ended, so a relationship's end is logged exactly once per transition."
+    },
+    "primaryKey": { "ID": "EC35D675-FD23-4E99-81FF-87874BFE731C" }
+  }
+]
