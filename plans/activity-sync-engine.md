@@ -180,9 +180,57 @@ is what makes *"why did my email not appear"* answerable:
 | `ActivityID` | only ever set when `Decision = 'Included'` (CHECK-enforced) |
 | `CapturedContent`, `EncryptionKeyID` | ciphertext + its key, both or neither (CHECK-enforced) |
 
-**`ActivitySyncRunDetail` must get permissions distinct from `Activity`.** It can hold fragments of
-messages that were deliberately *not* ingested — a different security class, and the reason
-`CapturedContent` is never plaintext regardless of policy.
+**`ActivitySyncRunDetail` gets permissions distinct from `Activity`** — it can hold fragments of
+messages that were deliberately *not* ingested, a different security class, and the reason
+`CapturedContent` is never plaintext regardless of policy. Two mechanisms, decided 2026-08-30.
+
+**1. Field-level security on `CapturedContent`.** MJ is implementing FLS via an
+`EntityFieldPermission` table. Assume it: `CapturedContent` is restricted at the *field* level
+rather than by hiding the entity. That is what keeps the run log useful — the decision rows **are**
+the answer to *"why did my email not appear"*, and the people asking should be able to read them.
+
+This **supersedes the earlier recommendation to split the table** into a 1:1 child. That child
+existed only to work around MJ's inability to express "entity readable, this column not"; once FLS
+can say it directly, the workaround is strictly worse than the thing it stood in for.
+
+**2. Default-deny at the entity level, authored as metadata.** CodeGen emits `UI` read /
+`Developer` CRUD / `Integration` CRUD for every new entity. Nobody chose that for this table, and
+it is wrong here. `metadata/entities/` carries explicit `EntityPermission` rows denying read to
+every role except Developer, keyed by nested `@lookup` exactly as MJ pins JSONType metadata to an
+`EntityField` — no hardcoded UUIDs, resolved at push time:
+
+```json
+[
+  {
+    "_comments": [
+      "ActivitySyncRunDetail can hold encrypted fragments of messages deliberately NOT ingested.",
+      "CodeGen's default UI read is wrong for this entity — deny explicitly rather than inherit it."
+    ],
+    "fields": { "Name": "MJ_BizApps_Common: Activity Sync Run Details" },
+    "relatedEntities": {
+      "MJ: Entity Permissions": [
+        {
+          "fields": { "CanRead": 0, "CanCreate": 0, "CanUpdate": 0, "CanDelete": 0 },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=UI"
+          }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details" }
+  }
+]
+```
+
+`EntityPermission`'s natural key is `(EntityID, RoleID)` and both halves resolve **by name**, so the
+file survives a re-mint of entity IDs — which this branch has already done once, when the
+single-pass CodeGen regenerated all seven.
+
+⚠️ **One consequence, because it fails quietly.** The permissive rows CodeGen emitted are *inside
+the migration*, so a host gets `UI CanRead = 1` the moment it installs. The deny lives in
+`metadata/`, which reaches a host only through a release-time `*__Metadata_Sync.sql` (§11). Until
+that migration carries it, a host is permissive and every step still reports success. The migration
+is the deliverable here, not the `mj sync push`.
 
 ### 4.6 `ActivitySyncConnection` — activation window and overrides
 
@@ -455,12 +503,31 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 2. **`Activity.Visibility` for synced mail.** The column defaults `Internal`, which is right for a
    manually logged activity and wrong for a synced personal mailbox. Recommendation: the engine
    sets `Private` explicitly on write rather than changing the column default.
-3. **⛔ Composes with #46 / #47 — BLOCKING.** Those record that People grants UI read on names,
-   emails and DOB, and that on BCSaaS hosts UI is every authenticated user. Ingestion turns
-   directory exposure into *correspondence* exposure, and `ActivitySyncRunDetail` sharpens it
-   further by holding fragments of messages that were deliberately **not** ingested. Amith has
-   accepted the shape and scheduled a **detailed security audit**; this must be settled before the
-   first real mailbox lands in a host database. Build against the fixture provider until then.
+3. **Composes with #46 / #47 — CLOSED for this design (Amith, 2026-08-30). Not a gate.**
+   #47 records that `MJ_BizApps_Common: People` grants the `UI` role `CanRead = 1` — CodeGen's
+   default, not a choice made for People — so on a host whose middleware grants `UI` to every
+   authenticated user, every authenticated user reads every Person row.
+
+   **Ruling: the shipped default staying open is fine.** Who may read `People` is the deploying
+   implementor's call; a real MJ deployment defines its own roles and grants to suit. This design
+   does not gate on it and should not try to solve it.
+
+   Two things that make that ruling safe to hold, and both are ours rather than the host's:
+
+   - `ActivitySyncRunDetail` does **not** inherit the permissive default — §4.5 denies read to every
+     role but Developer, with FLS on `CapturedContent`. The one entity here that holds fragments of
+     messages we declined is closed by construction, whatever a host does with `UI`.
+   - The Graph provider still refuses live fetch, but for an unrelated reason: app-only `Mail.Read`
+     is **tenant-wide** until an Exchange Application Access Policy scopes it. That is a Microsoft
+     consent boundary, not a role question, and it does not move with this ruling.
+
+   Worth keeping the framing straight for whoever reads #47 next: it is a property of a host's
+   role-assignment policy, not a dependency of any app here. Its evidence comes from BCSaaS's
+   `ensureUIRole()` middleware, and #47's own closing note says a host that never calls it has a
+   much smaller `UI` population. **Nothing in bizapps-common or bizapps-sales references BCSaaS** —
+   sales has zero hits across `.ts`, `.md`, `.json` and `.sql`; common's only mentions are a
+   deprecation note in `PersonEntityServer` and a branching-model aside in `CLAUDE.md`. The general
+   statement is: *whatever population holds `UI` on a given host reads whatever `UI` reads.*
 4. **Dedupe key across mailboxes.** A Graph message id is not stable across mailboxes, so the same
    thread ingested from two connections yields two rows. Recommendation: **two rows is correct** —
    two observations, each with its own owner's visibility — grouped later via `Details.MessageID`,
