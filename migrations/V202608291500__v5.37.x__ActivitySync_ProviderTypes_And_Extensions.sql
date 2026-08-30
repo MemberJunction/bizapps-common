@@ -776,6 +776,10 @@ GO
 --   * r4verify = sqlcmd of this file alone. Proves the SQL applies against
 --     it6 without heal. Sequences stay 100001+; Provider EntityField stays
 --     at the V171935 text until heal runs.
+-- Metadata that does NOT ride this V — release-engineer Metadata_Sync:
+--   * four ActivitySyncProviderType seed rows
+--   * ActivitySyncRunDetail EntityPermission denies (UI + Integration)
+-- A host that only mj migrate gets CodeGen's UI CanRead=1 and zero type rows.
 -- No second skipfiles. No r2 two-capture append. No sp_updateextendedproperty.
 -- =============================================================================
 

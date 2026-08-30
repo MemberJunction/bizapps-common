@@ -481,6 +481,15 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 | **P5** | Graph + fixture providers ported from sales | P4 |
 | **P6** | Sales: `Sales.DealLinker` extension; delete migrated code; retire its ScheduledJob row | Common published |
 
+### Release engineer — `Metadata_Sync` (not this PR)
+
+Two `metadata/` additions have **no** `V…__Metadata_Sync.sql` yet. A host that only runs `mj migrate` / `mj app install` gets neither, and every step reports success:
+
+1. **Four `ActivitySyncProviderType` seed rows** (`metadata/activity-sync-provider-types/`). Without them the type table is empty; the engine fail-closes to `Exclude`.
+2. **`ActivitySyncRunDetail` EntityPermission denies** (`metadata/entities/.activity-sync-run-details.json`) — UI and Integration all zeros. Until this ships, CodeGen's `UI CanRead = 1` is what the host has.
+
+Generate the sync from a **fresh** database after this PR merges. Do not `mj sync push` a long-lived dev database (that emits `spUpdate*`). Same ritual as `V202608262255`.
+
 ---
 
 ## 12. Open questions
@@ -495,14 +504,13 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 - *Retention of skipped content* — `SkippedContentPolicy`, encrypted or not at all, per provider
   with a per-connection override.
 
-**Still open:**
+**Closed in the engine (this PR):**
 
-1. **Body storage for INCLUDED activities.** Distinct from `SkippedContentPolicy`, which governs
-   messages we declined. `ActivityFile` joins to MJ Files: full bodies, headers-and-snippet, or a
-   per-connection setting? Recommendation on the PR is a `StoreBody` flag defaulting to `Snippet`.
-2. **`Activity.Visibility` for synced mail.** The column defaults `Internal`, which is right for a
-   manually logged activity and wrong for a synced personal mailbox. Recommendation: the engine
-   sets `Private` explicitly on write rather than changing the column default.
+1. **Body storage for INCLUDED activities.** `ActivitySyncConnectionSettings.StoreBody`:
+   `'None' | 'Snippet' | 'Full'`, default `'Snippet'`. The writer persists `Activity.Description`
+   through `BodyForStorage`; `Full` is a per-connection opt-in. Independent of `SkippedContentPolicy`.
+2. **`Activity.Visibility` for synced mail.** The writer sets `Visibility = 'Private'` explicitly.
+   Column default `Internal` stays for manually logged rows.
 3. **Composes with #46 / #47 — CLOSED for this design (Amith, 2026-08-30). Not a gate.**
    #47 records that `MJ_BizApps_Common: People` grants the `UI` role `CanRead = 1` — CodeGen's
    default, not a choice made for People — so on a host whose middleware grants `UI` to every
@@ -528,7 +536,7 @@ allowed, and the fixture provider is how the engine is exercised until the polic
    sales has zero hits across `.ts`, `.md`, `.json` and `.sql`; common's only mentions are a
    deprecation note in `PersonEntityServer` and a branching-model aside in `CLAUDE.md`. The general
    statement is: *whatever population holds `UI` on a given host reads whatever `UI` reads.*
-4. **Dedupe key across mailboxes.** A Graph message id is not stable across mailboxes, so the same
-   thread ingested from two connections yields two rows. Recommendation: **two rows is correct** —
-   two observations, each with its own owner's visibility — grouped later via `Details.MessageID`,
-   the RFC-822 header, which `activity-json-types.ts` already has a field for.
+4. **Dedupe key across mailboxes — two rows is correct.** A Graph message id is not stable across
+   mailboxes, so the same thread ingested from two connections yields two rows: two observations,
+   each with its own owner's visibility, grouped later via `Details.MessageID` (the RFC-822 header),
+   which `activity-json-types.ts` already has a field for.

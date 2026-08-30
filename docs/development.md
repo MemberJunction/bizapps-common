@@ -64,6 +64,7 @@ npx mj-sync push --dir ./metadata
 - Syncs seed data from JSON files to database
 - Config: `.mj-sync.json` specifies directory order and options
 - Directories processed in order: schema-info -> address-types -> contact-types -> organization-types -> relationship-types -> entities
+- **Release-time `Metadata_Sync` (not a feature PR).** Two `metadata/` additions currently have no `V…__Metadata_Sync.sql`, so a host that only `mj migrate`s does not get them: (1) four `ActivitySyncProviderType` seeds, (2) `ActivitySyncRunDetail` EntityPermission denies (UI + Integration). Generate that migration from a fresh database at release, same ritual as `V202608262255`. See `plans/activity-sync-engine.md` §11.
 
 ## Development Servers
 ```bash

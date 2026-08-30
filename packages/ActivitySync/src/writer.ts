@@ -30,6 +30,37 @@ function isDatabaseProvider(provider: IMetadataProvider): provider is DatabasePr
 
 export type ActivitySourceValue = 'Manual' | 'System' | 'Integration';
 
+/** How much of an included body to persist. Default Snippet — Full is a per-connection opt-in. */
+export type StoreBodyPolicy = 'None' | 'Snippet' | 'Full';
+
+export const BODY_SNIPPET_CHARS = 500;
+
+/** Read StoreBody from ActivitySyncConnection.Settings. Missing / invalid / unparseable → Snippet. */
+export function StoreBodyFromSettings(settings: string | null | undefined): StoreBodyPolicy {
+    if (!settings) return 'Snippet';
+    try {
+        const parsed: unknown = JSON.parse(settings);
+        if (parsed !== null && typeof parsed === 'object' && 'StoreBody' in parsed) {
+            const value = (parsed as { StoreBody: unknown }).StoreBody;
+            if (value === 'None' || value === 'Full' || value === 'Snippet') return value;
+        }
+    } catch {
+        // ignore
+    }
+    return 'Snippet';
+}
+
+export function BodyForStorage(
+    body: string | null | undefined,
+    policy: StoreBodyPolicy = 'Snippet',
+): string | null {
+    const text = body ?? '';
+    if (policy === 'None') return null;
+    if (policy === 'Full') return text.length > 0 ? text : null;
+    if (!text) return null;
+    return text.length <= BODY_SNIPPET_CHARS ? text : text.slice(0, BODY_SNIPPET_CHARS);
+}
+
 export interface WriteActivityInput {
     Item: NormalizedItem;
     ConnectionID: string;
@@ -38,6 +69,8 @@ export interface WriteActivityInput {
     Source: ActivitySourceValue;
     Resolved: ResolvedParty[];
     Unresolved: UnresolvedParty[];
+    /** Default Snippet. Independent of SkippedContentPolicy. */
+    StoreBody?: StoreBodyPolicy;
 }
 
 export interface WriteActivityResult {
@@ -94,7 +127,7 @@ export class ActivityWriter {
             activity.Title = (input.Item.Subject || '(no subject)').slice(0, 200);
             activity.StartedAt = input.Item.StartedAt;
             activity.EndedAt = input.Item.EndedAt;
-            activity.Description = input.Item.Body;
+            activity.Description = BodyForStorage(input.Item.Body, input.StoreBody ?? 'Snippet');
             activity.Direction = input.Item.Direction;
             activity.Status = input.Item.Cancelled ? 'Cancelled' : 'Logged';
             activity.Visibility = 'Private';

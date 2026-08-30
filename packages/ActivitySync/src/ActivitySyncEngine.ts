@@ -45,7 +45,7 @@ import {
 import { RequireUUID, UuidInList } from './sql.js';
 import type { NormalizedItem } from './types.js';
 import { CanAdvanceWatermark, NextWatermark, type RunOutcome } from './watermark.js';
-import { ActivityWriter } from './writer.js';
+import { ActivityWriter, StoreBodyFromSettings } from './writer.js';
 
 export interface SyncEngineResult {
     Success: boolean;
@@ -69,6 +69,7 @@ interface ConnectionRow {
     LastSyncAt: Date | string | null;
     ActivitySyncProviderTypeID: string | null;
     SkippedContentPolicy: string | null;
+    Settings: string | null;
 }
 
 interface ProviderTypeRow {
@@ -259,6 +260,7 @@ export class ActivitySyncEngine {
                     Source: sourceValue,
                     Resolved: itemIdentities.Resolved,
                     Unresolved: itemIdentities.Unresolved,
+                    StoreBody: StoreBodyFromSettings(connection.Settings),
                 },
                 provider,
                 contextUser,
