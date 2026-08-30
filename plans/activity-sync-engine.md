@@ -195,9 +195,16 @@ can say it directly, the workaround is strictly worse than the thing it stood in
 
 **2. Default-deny at the entity level, authored as metadata.** CodeGen emits `UI` read /
 `Developer` CRUD / `Integration` CRUD for every new entity. Nobody chose that for this table, and
-it is wrong here. `metadata/entities/` carries explicit `EntityPermission` rows denying read to
-every role except Developer, keyed by nested `@lookup` exactly as MJ pins JSONType metadata to an
-`EntityField` — no hardcoded UUIDs, resolved at push time:
+it is wrong here. Amith's ruling is **read**: no role other than Developer may read RunDetail.
+`metadata/entities/` carries explicit `EntityPermission` rows keyed by nested `@lookup` exactly as
+MJ pins JSONType metadata to an `EntityField` — no hardcoded UUIDs, resolved at push time. UI is
+all zeros. Integration keeps `CanCreate = 1` (scheduled ingest writes these rows) and loses
+read/update/delete. Developer keeps CodeGen CRUD.
+
+The engine does not pick a role. `ActivitySyncEngine.Run` takes `contextUser` from the caller;
+`ActionScheduledJobDriver` forwards `ScheduledJobEngine`'s polling user, which is whoever the
+host's MJAPI passed to `StartPolling`. Sales' job seeds `OwnerUserID` NULL. The role therefore
+**varies by host**, so the write grant on Integration has to exist.
 
 ```json
 [

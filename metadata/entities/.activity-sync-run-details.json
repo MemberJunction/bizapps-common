@@ -3,7 +3,10 @@
     "_comments": [
       "ActivitySyncRunDetail can hold encrypted fragments of messages deliberately NOT ingested.",
       "CodeGen emits UI read + Integration CRUD for every new entity; nobody chose that here.",
-      "Deny every role except Developer. Developer keeps the CodeGen CRUD row.",
+      "Amith's ruling is about read: no role other than Developer may read this entity.",
+      "Developer keeps the CodeGen CRUD row. UI is all zeros.",
+      "Integration keeps CanCreate so a scheduled ingest can append audit rows; CanRead/Update/Delete stay 0.",
+      "The engine does not pick a role — ActivitySyncEngine.Run takes contextUser from the caller.",
       "Roles with no EntityPermission row are already denied; UI and Integration are the ones CodeGen granted.",
       "Field-level security on CapturedContent: MJ is implementing EntityFieldPermission. Assume it.",
       "Until that table exists, the entity-level deny is the control. Do not split the table."
@@ -31,7 +34,7 @@
         {
           "fields": {
             "CanRead": 0,
-            "CanCreate": 0,
+            "CanCreate": 1,
             "CanUpdate": 0,
             "CanDelete": 0
           },

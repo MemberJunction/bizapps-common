@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { LIVE_GRAPH_REFUSAL, MSGraphActivitySyncProvider } from '../providers/MSGraphActivitySyncProvider.js';
@@ -8,6 +11,8 @@ import { RunQualificationCascade } from '../qualification.js';
 import { AsDryRunDecision } from '../run.js';
 import { CanAdvanceWatermark, NextWatermark } from '../watermark.js';
 import type { NormalizedItem } from '../types.js';
+
+const SRC = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const ITEM: NormalizedItem = {
     ExternalID: 'msg-1',
@@ -110,5 +115,17 @@ describe('load-bearing engine rules', () => {
         );
         expect(item?.Participants.map((p) => p.Address)).toEqual(['alice@customer.com']);
         expect(issues.some((i) => i.includes('pmtauser'))).toBe(true);
+    });
+
+    it('checks ActivitySyncRunDetail.Save and does not abort the detail loop', () => {
+        const source = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        const loop = source.match(/for \(const detail of details\) \{([\s\S]*?)\n            \}/);
+        expect(loop?.[1]).toBeTruthy();
+        const body = loop![1];
+        expect(body).toMatch(/if \(!\(await row\.Save\(\)\)\)/);
+        expect(body).toMatch(/result\.Issues\.push\(/);
+        expect(body).toMatch(/row\.LatestResult\?\.CompleteMessage/);
+        expect(body).not.toMatch(/\breturn;/);
+        expect(body).not.toMatch(/\bbreak;/);
     });
 });

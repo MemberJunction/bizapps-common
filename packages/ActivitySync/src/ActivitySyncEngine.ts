@@ -472,7 +472,12 @@ export class ActivitySyncEngine {
                 row.ActivitySyncRuleID = detail.RuleID ?? null;
                 row.ActivitySyncExclusionID = detail.ExclusionID ?? null;
                 row.ActivityID = detail.Decision === 'Included' ? (detail.ActivityID ?? null) : null;
-                await row.Save();
+                if (!(await row.Save())) {
+                    result.Issues.push(
+                        row.LatestResult?.CompleteMessage ??
+                            `ActivitySyncRunDetail.Save failed for ${detail.Item.ExternalID}.`,
+                    );
+                }
             }
         } catch (err) {
             LogError(`ActivitySyncEngine.persistRun failed: ${err}`);
