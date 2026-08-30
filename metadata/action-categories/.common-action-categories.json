@@ -1,0 +1,23 @@
+[
+  {
+    "_comments": [
+      "COMMON'S ACTION CATEGORY. One row, so MJ: Actions rows resolve a parent by @lookup on Name",
+      "rather than baking a UUID into every action.",
+      "",
+      "There was no Common category before this. The ~50 seeded categories are MJ's own connectors",
+      "and utilities — none of them is where a Common action belongs. Reusing CRM would read as an",
+      "integration rather than this app.",
+      "",
+      "primaryKey from uuidgen so a re-push against a rebuilt database UPDATES this row rather than",
+      "creating a second identically-named parent."
+    ],
+    "fields": {
+      "Name": "Common",
+      "Description": "Actions belonging to BizApps Common. Common.SyncActivities is the hourly activity-sync trigger; downstream apps register extensions rather than wrapping this.",
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "DC407501-60D9-44E1-9CB2-A0CBF1FA9FE4"
+    }
+  }
+]

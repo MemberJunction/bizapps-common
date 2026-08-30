@@ -1,0 +1,56 @@
+[
+  {
+    "_comments": [
+      "THE HOURLY ACTIVITY SYNC. MJ's SchedulingEngine is the mechanism — no external cron.",
+      "",
+      "  · JobTypeID — the seeded Action type (ActionScheduledJobDriver). The job does not contain",
+      "    logic; it invokes Common.SyncActivities, which keeps the schedule and the work separable.",
+      "",
+      "  · CronExpression `0 0 * * * *` — SIX fields, seconds first, so this is the top of every hour.",
+      "",
+      "  · ConcurrencyMode Skip — overlapping runs would fetch the same window twice. Dedupe absorbs",
+      "    the writes; two runs racing to advance the same watermark can leave it behind.",
+      "",
+      "  · MissedRunPolicy RunOnce — not RunAll. There is no date filter on the fetch, so catching up",
+      "    ten missed hours would make ten identical requests for the most recent N messages.",
+      "",
+      "SAFE TO SHIP Active: Graph refuses live fetch until an Application Access Policy exists, so an",
+      "hourly run writes nothing until a deployment opts in. A host with no connection reports",
+      "NO_CONNECTIONS. Neither state writes LastError.",
+      "",
+      "OwnerUserID and NotifyUserID are left NULL: naming a person here would seed one deployment's",
+      "staff into another's database.",
+      "",
+      "Configuration is a native JSON object (MJ/metadata/CLAUDE.md §1c). No sync block."
+    ],
+    "fields": {
+      "Name": "Common — Activity Sync (hourly)",
+      "Description": "Pulls messages and calendar items for every Active-or-Error activity-sync connection and files the relevant ones as Activities. Downstream apps enrich in-stream; they do not own this job.",
+      "JobTypeID": "3B94DD43-E961-4D85-B7F4-B6783D748766",
+      "CronExpression": "0 0 * * * *",
+      "Timezone": "UTC",
+      "Status": "Active",
+      "ConcurrencyMode": "Skip",
+      "MissedRunPolicy": "RunOnce",
+      "RunImmediatelyIfNeverRun": false,
+      "MaxRuntimeMinutes": 20,
+      "NotifyOnSuccess": false,
+      "NotifyOnFailure": false,
+      "NotifyViaEmail": false,
+      "NotifyViaInApp": false,
+      "Configuration": {
+        "ActionID": "B2CAEFB7-60FD-41FF-8B12-DB908A7BEF0E",
+        "Params": [
+          {
+            "ActionParamID": "9E35EF82-BDE6-4B17-8797-C0D29CD2D688",
+            "ValueType": "Static",
+            "Value": "100"
+          }
+        ]
+      }
+    },
+    "primaryKey": {
+      "ID": "F342A04F-C232-4A6B-93C8-147A14DA067C"
+    }
+  }
+]

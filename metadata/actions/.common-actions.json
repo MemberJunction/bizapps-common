@@ -1,0 +1,101 @@
+[
+  {
+    "_comments": [
+      "THE HOURLY ACTIVITY-SYNC ACTION. Fired by the ScheduledJob under metadata/scheduled-jobs/.",
+      "",
+      "DriverClass is a ClassFactory key, not a display name: @RegisterClass(BaseAction,",
+      "'Common.SyncActivities') in packages/Server/src/custom/sync-activities.action.ts is what it",
+      "resolves to, and LoadSyncActivitiesAction() in the server bootstrap is what keeps that",
+      "registration from being tree-shaken away. Get either wrong and the action exists in metadata,",
+      "is scheduled, fires on time, and does nothing — with no error anywhere.",
+      "",
+      "Downstream apps do not wrap this. They register a BaseActivitySyncExtension (e.g.",
+      "Sales.DealLinker) which the engine runs inside the write transaction.",
+      "",
+      "SAFE TO SHIP Active: Graph providers refuse live fetch until an Exchange Application Access",
+      "Policy exists, so an hourly run against a Microsoft365 connection writes nothing until a",
+      "deployment opts in. A host with no ActivitySyncConnection reports NO_CONNECTIONS.",
+      "",
+      "No sync block — the release push writes that back. primaryKey from uuidgen."
+    ],
+    "fields": {
+      "Name": "Sync Activities",
+      "CategoryID": "@lookup:MJ: Action Categories.Name=Common",
+      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new.",
+      "Type": "Custom",
+      "DriverClass": "Common.SyncActivities",
+      "IconClass": "fa-solid fa-inbox",
+      "UserPrompt": "Run the hourly activity sync.",
+      "CodeApprovalStatus": "Approved",
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "B2CAEFB7-60FD-41FF-8B12-DB908A7BEF0E"
+    },
+    "relatedEntities": {
+      "MJ: Action Params": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Limit",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "DefaultValue": "100",
+            "Description": "How many items to pull per mailbox per surface per run. MJ's GetMessages contract has no date filter, so a run fetches the most recent N and discards what it has already seen — anything older than the Nth newest message since the last run is missed and never retried."
+          },
+          "primaryKey": {
+            "ID": "9E35EF82-BDE6-4B17-8797-C0D29CD2D688"
+          }
+        }
+      ],
+      "MJ: Action Result Codes": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "SUCCESS",
+            "IsSuccess": true,
+            "Description": "Every attempted connection completed with no failed items."
+          },
+          "primaryKey": {
+            "ID": "3929FCE5-47B1-418C-9505-7D24BBAD0987"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "PARTIAL",
+            "IsSuccess": false,
+            "Description": "At least one connection was attempted and at least one item or surface failed."
+          },
+          "primaryKey": {
+            "ID": "BA1063A5-A485-4204-A3A8-A48A07DD5B33"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "NO_CONNECTIONS",
+            "IsSuccess": true,
+            "Description": "The connection list loaded successfully and was empty. Not used when the list failed to load."
+          },
+          "primaryKey": {
+            "ID": "87F48551-562F-4AED-96AD-75C40BF286DB"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "ERROR",
+            "IsSuccess": false,
+            "Description": "The run failed before any connection was attempted (including a failed connection list load), or threw."
+          },
+          "primaryKey": {
+            "ID": "58F7CF32-1952-4C34-BCEE-E826326AD1FD"
+          }
+        }
+      ]
+    }
+  }
+]
