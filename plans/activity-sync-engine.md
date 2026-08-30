@@ -226,12 +226,6 @@ every role except Developer, keyed by nested `@lookup` exactly as MJ pins JSONTy
 file survives a re-mint of entity IDs — which this branch has already done once, when the
 single-pass CodeGen regenerated all seven.
 
-⚠️ **One consequence, because it fails quietly.** The permissive rows CodeGen emitted are *inside
-the migration*, so a host gets `UI CanRead = 1` the moment it installs. The deny lives in
-`metadata/`, which reaches a host only through a release-time `*__Metadata_Sync.sql` (§11). Until
-that migration carries it, a host is permissive and every step still reports success. The migration
-is the deliverable here, not the `mj sync push`.
-
 ### 4.6 `ActivitySyncConnection` — activation window and overrides
 
 - **`StartAt` / `EndAt`** — combine with `Status`: syncs only when `Status = 'Active'` **and** now is
@@ -480,15 +474,6 @@ allowed, and the fixture provider is how the engine is exercised until the polic
 | **P4** | `ActivitySyncEngine`, writer, resolver | P2 |
 | **P5** | Graph + fixture providers ported from sales | P4 |
 | **P6** | Sales: `Sales.DealLinker` extension; delete migrated code; retire its ScheduledJob row | Common published |
-
-### Release engineer — `Metadata_Sync` (not this PR)
-
-Two `metadata/` additions have **no** `V…__Metadata_Sync.sql` yet. A host that only runs `mj migrate` / `mj app install` gets neither, and every step reports success:
-
-1. **Four `ActivitySyncProviderType` seed rows** (`metadata/activity-sync-provider-types/`). Without them the type table is empty; the engine fail-closes to `Exclude`.
-2. **`ActivitySyncRunDetail` EntityPermission denies** (`metadata/entities/.activity-sync-run-details.json`) — UI and Integration all zeros. Until this ships, CodeGen's `UI CanRead = 1` is what the host has.
-
-Generate the sync from a **fresh** database after this PR merges. Do not `mj sync push` a long-lived dev database (that emits `spUpdate*`). Same ritual as `V202608262255`.
 
 ---
 

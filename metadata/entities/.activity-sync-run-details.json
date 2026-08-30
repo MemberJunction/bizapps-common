@@ -6,10 +6,7 @@
       "Deny every role except Developer. Developer keeps the CodeGen CRUD row.",
       "Roles with no EntityPermission row are already denied; UI and Integration are the ones CodeGen granted.",
       "Field-level security on CapturedContent: MJ is implementing EntityFieldPermission. Assume it.",
-      "Until that table exists, the entity-level deny is the control. Do not split the table.",
-      "These rows live in metadata/. A host that only mj migrate still gets CodeGen's UI CanRead=1",
-      "until a release-time Metadata_Sync carries this file. Same quiet-success shape as the",
-      "provider-type seeds. See plans/activity-sync-engine.md §11."
+      "Until that table exists, the entity-level deny is the control. Do not split the table."
     ],
     "fields": {
       "Name": "MJ_BizApps_Common: Activity Sync Run Details"
