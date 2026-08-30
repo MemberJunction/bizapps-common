@@ -16,13 +16,14 @@ import { IdentityResolver } from '../identity.js';
 import type { UserInfo } from '@memberjunction/core';
 
 describe('IdentityResolver', () => {
-    it('matches mixed-case stored ContactMethod values via LOWER(Value)', async () => {
+    it('matches by sargable Value IN, with literals already lowercased', async () => {
         const resolver = new IdentityResolver();
         await resolver.Resolve(
             [{ Address: 'Alex@Customer.COM', Name: null, Role: 'From', IdentityKind: 'Email' }],
             { ID: 'user' } as UserInfo,
         );
-        expect(capture.filter).toBe("LOWER(Value) IN ('alex@customer.com')");
+        expect(capture.filter).toBe("Value IN ('alex@customer.com')");
+        expect(capture.filter).not.toMatch(/LOWER\s*\(\s*Value\s*\)/i);
     });
 
     it('records an unmatched address as unresolved and never invents a Person', async () => {
@@ -51,7 +52,7 @@ describe('IdentityResolver', () => {
             ],
             { ID: 'user' } as UserInfo,
         );
-        expect(capture.filter).toBe("LOWER(Value) IN ('x@y.test'' or ''1''=''1')");
+        expect(capture.filter).toBe("Value IN ('x@y.test'' or ''1''=''1')");
     });
 });
 

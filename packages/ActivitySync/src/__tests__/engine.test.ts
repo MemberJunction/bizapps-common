@@ -183,6 +183,39 @@ describe('load-bearing engine rules', () => {
         expect(writer.indexOf('OnWritten')).toBeLessThan(writer.indexOf('await scope.Commit()'));
     });
 
+    it('keys the companion calendar on CalendarDriverClass, not Connection.Provider', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        expect(engine).toMatch(/CalendarDriverClass/);
+        expect(engine).toMatch(/resolvePlugin\(calendarDriver\)/);
+        expect(engine).not.toMatch(/new MSGraphCalendarSyncProvider\(\)/);
+        expect(engine).not.toMatch(/connection\.Provider \?\? ''\) === 'Microsoft365'/);
+    });
+
+    it('stamps connection health from the combined surfaces, not per Run', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        expect(engine).toMatch(/stampHealth: false/);
+        expect(engine).toMatch(/healthErrorFromResults\(surfaces\)/);
+        expect(engine).not.toMatch(/result\.Issues\[0\] \?\? \(result\.Success/);
+    });
+
+    it('stamps extension LastRunAt once per row after the item loop', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        expect(engine).toMatch(/collapseExtensionStamps\(extensionStamps\)/);
+        const loop = engine.match(/for \(const item of batch\.Items\) \{([\s\S]*?)\n        \}/);
+        expect(loop?.[1]).toBeTruthy();
+        expect(loop![1]).not.toMatch(/stampExtensions/);
+    });
+
+    it('caps the fleet connection load', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        expect(engine).toMatch(/MaxRows: MAX_RUNNABLE_CONNECTIONS/);
+    });
+
+    it('stores a cancelled meeting as Cancelled, not Logged', () => {
+        const writer = readFileSync(join(SRC, 'writer.ts'), 'utf8');
+        expect(writer).toMatch(/activity\.Status = input\.Item\.Cancelled \? 'Cancelled' : 'Logged'/);
+    });
+
     it('checks ActivitySyncRunDetail.Save and does not abort the detail loop', () => {
         const source = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
         const loop = source.match(/for \(const detail of details\) \{([\s\S]*?)\n            \}/);

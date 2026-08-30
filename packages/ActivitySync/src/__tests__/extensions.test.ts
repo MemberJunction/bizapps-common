@@ -148,4 +148,12 @@ describe('WithTimeout', () => {
     it('resolves when the work finishes in time', async () => {
         await expect(WithTimeout(Promise.resolve(1), 100, 'x')).resolves.toBe(1);
     });
+
+    it('aborts the controller so Enrich can stop cooperatively', async () => {
+        const controller = new AbortController();
+        await expect(WithTimeout(new Promise(() => undefined), 5, 'Slow', controller)).rejects.toThrow(
+            /timed out after 5ms/,
+        );
+        expect(controller.signal.aborted).toBe(true);
+    });
 });

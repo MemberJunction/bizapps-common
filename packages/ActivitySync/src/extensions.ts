@@ -6,7 +6,10 @@
  * back. Stamps are always returned so LastError survives an Abort rollback.
  */
 import { RequireUUID } from './sql.js';
-import type { ActivityWriteContext, BaseActivitySyncExtension } from './BaseActivitySyncExtension.js';
+import {
+    type ActivityWriteContext,
+    type BaseActivitySyncExtension,
+} from './BaseActivitySyncExtension.js';
 
 export interface ExtensionRegistration {
     ID: string;
@@ -39,13 +42,24 @@ export function ExtensionsExtraFilter(connectionID: string, providerTypeID: stri
     return `IsEnabled = 1 AND ${connClause} AND ${typeClause}`;
 }
 
-export async function WithTimeout<T>(work: Promise<T>, timeoutMS: number, label: string): Promise<T> {
+/**
+ * Race `work` against TimeoutMS. This REJECTS THE WAITER; it does not cancel `work`.
+ *
+ * Pass an AbortController so Enrich can see `context.Signal.aborted` and stop. Work that
+ * ignores the signal keeps running inside the open write transaction.
+ */
+export async function WithTimeout<T>(
+    work: Promise<T>,
+    timeoutMS: number,
+    label: string,
+    controller?: AbortController,
+): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(
-            () => reject(new Error(`${label} timed out after ${timeoutMS}ms`)),
-            timeoutMS,
-        );
+        timer = setTimeout(() => {
+            controller?.abort();
+            reject(new Error(`${label} timed out after ${timeoutMS}ms`));
+        }, timeoutMS);
     });
     try {
         return await Promise.race([work, timeout]);
@@ -82,8 +96,10 @@ export async function RunRegisteredExtensions(
             continue;
         }
 
+        const controller = new AbortController();
+        const timed: ActivityWriteContext = { ...context, Signal: controller.signal };
         try {
-            await WithTimeout(instance.Enrich(context), row.TimeoutMS, row.DriverClass);
+            await WithTimeout(instance.Enrich(timed), row.TimeoutMS, row.DriverClass, controller);
             result.Stamps.push({ ID: row.ID, LastError: null });
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);

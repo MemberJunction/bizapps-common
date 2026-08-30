@@ -82,6 +82,9 @@ export interface FleetRunResult {
     Issues: string[];
 }
 
+/** Hard cap on the fleet query. Unbounded RunView is how a tenant with a burst of mailboxes stalls the hourly job. */
+export const MAX_RUNNABLE_CONNECTIONS = 500;
+
 interface ConnectionRow {
     ID: string;
     Status: string;
@@ -100,6 +103,47 @@ interface ProviderTypeRow {
     Code: string;
     DriverClass: string;
     DefaultQualificationPolicy: QualificationPolicy;
+    /** Companion calendar ClassFactory key. Null = this type has no second surface. */
+    CalendarDriverClass: string | null;
+}
+
+interface RunSurfaceOptions {
+    /** Injected provider (tests). When omitted, resolved from the type row. */
+    source?: BaseActivitySyncProvider;
+    /**
+     * Connection health is per-connection, not per-surface. RunConnections stamps once
+     * from the combined outcome so a refused calendar pass cannot clear a message failure.
+     */
+    stampHealth: boolean;
+    /** Skip the ID reload when the fleet already has the row. */
+    connection?: ConnectionRow;
+    /** Skip the type reload when the fleet already loaded it. */
+    typeRow?: ProviderTypeRow | null;
+}
+
+/**
+ * LastError must name the failure, not whatever happened to be Issues[0].
+ * Mapping warnings ("Event X had no usable start time") sort ahead of the actual miss.
+ */
+export function healthErrorFromResults(results: readonly SyncEngineResult[]): string | null {
+    const failed = results.filter((r) => !r.Success);
+    if (failed.length === 0) return null;
+    const issues = failed.flatMap((r) => r.Issues).filter((m) => m.trim().length > 0);
+    return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);
+}
+
+/** One Load+Save per extension row after the batch — not N items × M extensions. */
+export function collapseExtensionStamps(stamps: readonly ExtensionStamp[]): ExtensionStamp[] {
+    const byId = new Map<string, string | null>();
+    for (const stamp of stamps) {
+        const prev = byId.get(stamp.ID);
+        if (stamp.LastError) {
+            byId.set(stamp.ID, stamp.LastError);
+        } else if (prev === undefined) {
+            byId.set(stamp.ID, null);
+        }
+    }
+    return [...byId.entries()].map(([ID, LastError]) => ({ ID, LastError }));
 }
 
 export class ActivitySyncEngine {
@@ -115,7 +159,9 @@ export class ActivitySyncEngine {
         provider: IMetadataProvider,
         contextUser: UserInfo,
         source?: BaseActivitySyncProvider,
+        surface?: RunSurfaceOptions,
     ): Promise<SyncEngineResult> {
+        const stampHealth = surface?.stampHealth ?? true;
         const result: SyncEngineResult = {
             Success: false,
             RunID: null,
@@ -129,12 +175,15 @@ export class ActivitySyncEngine {
             Issues: [],
         };
 
-        const loadedConnection = await this.loadConnection(connectionID, contextUser);
-        if (loadedConnection.Failed) {
-            result.Issues.push(loadedConnection.Issue);
-            return result;
+        let connection = surface?.connection;
+        if (!connection || connection.ID !== connectionID) {
+            const loadedConnection = await this.loadConnection(connectionID, contextUser);
+            if (loadedConnection.Failed) {
+                result.Issues.push(loadedConnection.Issue);
+                return result;
+            }
+            connection = loadedConnection.Rows[0];
         }
-        const connection = loadedConnection.Rows[0];
         if (!connection) {
             result.Issues.push(`No ActivitySyncConnection '${connectionID}'.`);
             return result;
@@ -153,7 +202,9 @@ export class ActivitySyncEngine {
         }
 
         let typeRow: ProviderTypeRow | null = null;
-        if (connection.ActivitySyncProviderTypeID) {
+        if (surface && Object.prototype.hasOwnProperty.call(surface, 'typeRow')) {
+            typeRow = surface.typeRow ?? null;
+        } else if (connection.ActivitySyncProviderTypeID) {
             const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
             if (loadedType.Failed) {
                 result.Issues.push(loadedType.Issue);
@@ -165,7 +216,7 @@ export class ActivitySyncEngine {
         // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
 
-        const plugin = source ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
+        const plugin = (surface?.source ?? source) ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
         if (!plugin) {
             result.Issues.push(
                 typeRow
@@ -179,7 +230,7 @@ export class ActivitySyncEngine {
 
         const extensions = await this.loadExtensions(connection.ID, typeRow?.ID ?? null, contextUser);
         if (extensions.Failed) {
-            return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue);
+            return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue, stampHealth);
         }
         const batch = await plugin.Fetch({
             Mailbox: connection.Mailbox ?? '',
@@ -191,24 +242,25 @@ export class ActivitySyncEngine {
 
         const bound = await this.loadBoundSetIds(connectionID, contextUser);
         if (bound.Failed) {
-            return this.failClosed(connection, options, result, since, provider, contextUser, bound.Issue);
+            return this.failClosed(connection, options, result, since, provider, contextUser, bound.Issue, stampHealth);
         }
         const exclusions = await this.loadExclusions(bound.Rows, contextUser);
         if (exclusions.Failed) {
-            return this.failClosed(connection, options, result, since, provider, contextUser, exclusions.Issue);
+            return this.failClosed(connection, options, result, since, provider, contextUser, exclusions.Issue, stampHealth);
         }
         const rules = await this.loadRules(connectionID, bound.Rows, contextUser);
         if (rules.Failed) {
-            return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue);
+            return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue, stampHealth);
         }
 
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
+        const extensionStamps: ExtensionStamp[] = [];
         const identities = await this.resolver.Resolve(allParticipants, contextUser);
         if (identities.LookupFailed) {
             result.Failed += batch.Items.length;
             result.Issues.push('ContactMethod lookup failed — watermark will not advance.');
             await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
-            if (!options.DryRun) {
+            if (!options.DryRun && stampHealth) {
                 await this.stampConnectionHealth(
                     connection.ID,
                     false,
@@ -308,7 +360,6 @@ export class ActivitySyncEngine {
             }
 
             const sourceValue = plugin.IsLive ? 'Integration' : 'System';
-            const extensionStamps: ExtensionStamp[] = [];
             const written = await this.writer.Write(
                 {
                     Item: item,
@@ -338,7 +389,6 @@ export class ActivitySyncEngine {
                     },
                 },
             );
-            await this.stampExtensions(extensionStamps, provider, contextUser);
             if (!written.Success) {
                 result.Failed++;
                 details.push({
@@ -371,6 +421,10 @@ export class ActivitySyncEngine {
             });
         }
 
+        if (!options.DryRun) {
+            await this.stampExtensions(collapseExtensionStamps(extensionStamps), provider, contextUser);
+        }
+
         const outcome: RunOutcome = {
             Settled: result.Included + result.Duplicates,
             Discarded: result.Excluded,
@@ -395,11 +449,11 @@ export class ActivitySyncEngine {
 
         await this.persistRun(connection, options, result, since, options.DryRun ? null : result.WatermarkAdvancedTo, provider, contextUser, details);
         result.Success = result.Failed === 0;
-        if (!options.DryRun) {
+        if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(
                 connectionID,
                 result.Success,
-                result.Issues[0] ?? (result.Success ? null : 'Activity sync run failed.'),
+                healthErrorFromResults([result]),
                 contextUser,
                 provider,
             );
@@ -411,8 +465,10 @@ export class ActivitySyncEngine {
      * Every Active-or-Error connection, once per surface. This is what a scheduled
      * Action calls. Downstream apps do not wrap this — they register an extension.
      *
-     * Microsoft365 runs Message then Calendar so neither surface can hide the other
-     * behind a shared watermark. Calendar Graph still refuses live fetch.
+     * A companion calendar pass is data: ActivitySyncProviderType.CalendarDriverClass.
+     * The engine never keys on the deprecated Connection.Provider column. Calendar Graph
+     * still refuses live fetch. Health is stamped once from the combined outcome so a
+     * refused calendar pass cannot clear a message failure.
      */
     public async RunConnections(
         options: SyncRunOptions,
@@ -429,34 +485,82 @@ export class ActivitySyncEngine {
         if (loaded.Rows.length === 0) {
             return fleet;
         }
+        if (loaded.Rows.length >= MAX_RUNNABLE_CONNECTIONS) {
+            fleet.Success = false;
+            fleet.Issues.push(
+                `Runnable connection load hit MaxRows=${MAX_RUNNABLE_CONNECTIONS}; remaining connections were not attempted.`,
+            );
+        }
         for (const connection of loaded.Rows) {
             fleet.ConnectionsAttempted++;
-            const primary = await this.Run(connection.ID, options, provider, contextUser);
+            let typeRow: ProviderTypeRow | null = null;
+            if (connection.ActivitySyncProviderTypeID) {
+                const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
+                if (loadedType.Failed) {
+                    fleet.Success = false;
+                    fleet.Issues.push(loadedType.Issue);
+                    continue;
+                }
+                typeRow = loadedType.Rows[0] ?? null;
+            }
+            const primary = await this.Run(connection.ID, options, provider, contextUser, undefined, {
+                stampHealth: false,
+                connection,
+                typeRow,
+            });
             fleet.Results.push({ ConnectionID: connection.ID, Surface: 'primary', Result: primary });
             if (!primary.Success) {
                 fleet.Success = false;
                 fleet.Issues.push(...primary.Issues);
             }
-            if (this.needsCalendarSurface(connection)) {
-                const calendar = await this.Run(
-                    connection.ID,
-                    options,
-                    provider,
-                    contextUser,
-                    new MSGraphCalendarSyncProvider(),
-                );
-                fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: calendar });
-                if (!calendar.Success) {
+            const surfaces: SyncEngineResult[] = [primary];
+            const calendarDriver = typeRow?.CalendarDriverClass?.trim();
+            if (calendarDriver) {
+                const calendarPlugin = this.resolvePlugin(calendarDriver);
+                if (!calendarPlugin) {
+                    const missing: SyncEngineResult = {
+                        Success: false,
+                        RunID: null,
+                        Fetched: 0,
+                        Included: 0,
+                        Excluded: 0,
+                        Duplicates: 0,
+                        Failed: 0,
+                        ExtensionErrors: 0,
+                        WatermarkAdvancedTo: null,
+                        Issues: [`No BaseActivitySyncProvider registered for CalendarDriverClass '${calendarDriver}'.`],
+                    };
+                    fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: missing });
                     fleet.Success = false;
-                    fleet.Issues.push(...calendar.Issues);
+                    fleet.Issues.push(...missing.Issues);
+                    surfaces.push(missing);
+                } else {
+                    const calendar = await this.Run(connection.ID, options, provider, contextUser, undefined, {
+                        stampHealth: false,
+                        connection,
+                        typeRow,
+                        source: calendarPlugin,
+                    });
+                    fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: calendar });
+                    if (!calendar.Success) {
+                        fleet.Success = false;
+                        fleet.Issues.push(...calendar.Issues);
+                    }
+                    surfaces.push(calendar);
                 }
+            }
+            if (!options.DryRun) {
+                const combinedSuccess = surfaces.every((s) => s.Success);
+                await this.stampConnectionHealth(
+                    connection.ID,
+                    combinedSuccess,
+                    healthErrorFromResults(surfaces),
+                    contextUser,
+                    provider,
+                );
             }
         }
         return fleet;
-    }
-
-    private needsCalendarSurface(connection: ConnectionRow): boolean {
-        return (connection.Provider ?? '') === 'Microsoft365';
     }
 
     private resolvePlugin(driverClass: string): BaseActivitySyncProvider | null {
@@ -483,11 +587,12 @@ export class ActivitySyncEngine {
         provider: IMetadataProvider,
         contextUser: UserInfo,
         issue: string,
+        stampHealth: boolean,
     ): Promise<SyncEngineResult> {
         result.Issues.push(issue);
         result.Failed += result.Fetched;
         await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
-        if (!options.DryRun) {
+        if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
         }
         return result;
@@ -592,6 +697,7 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
                 ExtraFilter: `Status = 'Active' OR Status = 'Error'`,
+                MaxRows: MAX_RUNNABLE_CONNECTIONS,
                 ResultType: 'simple',
             },
             user,

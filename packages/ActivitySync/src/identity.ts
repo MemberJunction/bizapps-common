@@ -89,7 +89,11 @@ export class IdentityResolver {
         const res = await rv.RunView<ContactMethodRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ContactMethods,
-                ExtraFilter: `LOWER(Value) IN (${InList(addresses)})`,
+                // Sargable equality. Literals are already lowercased. SQL Server CI collations
+                // match mixed-case stored values; wrapping the column in LOWER() would disable
+                // the index on the highest-cardinality lookup in a run. PostgreSQL is CS by
+                // default and wants citext or a functional index, not LOWER(Value) as a scan.
+                ExtraFilter: `Value IN (${InList(addresses)})`,
                 ResultType: 'simple',
             },
             contextUser,
