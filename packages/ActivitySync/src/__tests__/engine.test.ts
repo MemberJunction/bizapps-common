@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { LIVE_GRAPH_REFUSAL, MSGraphActivitySyncProvider } from '../providers/MSGraphActivitySyncProvider.js';
+import {
+    LIVE_GRAPH_CALENDAR_REFUSAL,
+    MapGraphEvent,
+    MSGraphCalendarSyncProvider,
+} from '../providers/MSGraphCalendarSyncProvider.js';
 import { FixtureActivitySyncProvider } from '../providers/FixtureActivitySyncProvider.js';
 import { MapGraphMessage } from '../providers/GraphMessageMapper.js';
 import { DefaultDeterministicStages, type EngineQualificationContext } from '../stages.js';
@@ -115,6 +120,67 @@ describe('load-bearing engine rules', () => {
         );
         expect(item?.Participants.map((p) => p.Address)).toEqual(['alice@customer.com']);
         expect(issues.some((i) => i.includes('pmtauser'))).toBe(true);
+    });
+
+    it('calendar Graph provider refuses live fetch until an Application Access Policy exists', async () => {
+        const graph = new MSGraphCalendarSyncProvider(false);
+        const batch = await graph.Fetch({ Mailbox: 'user@tenant.com', Since: null, Limit: 10 });
+        expect(batch.Items).toEqual([]);
+        expect(batch.HighWatermark).toBeNull();
+        expect(batch.Issues[0]).toBe(LIVE_GRAPH_CALENDAR_REFUSAL);
+    });
+
+    it('calendar Graph reports observation time, not the event start', async () => {
+        const eventStart = '2031-12-01T10:00:00.0000000';
+        const fetcher = {
+            calls: 0,
+            async GetEvents() {
+                this.calls++;
+                return {
+                    Success: true,
+                    Events: [
+                        {
+                            id: 'ac21-far-future-event',
+                            subject: 'planning',
+                            start: { dateTime: eventStart, timeZone: 'UTC' },
+                            end: { dateTime: '2031-12-01T11:00:00.0000000', timeZone: 'UTC' },
+                            organizer: { emailAddress: { address: 'organiser@example.invalid' } },
+                            attendees: [{ emailAddress: { address: 'attendee@example.invalid' } }],
+                        },
+                    ],
+                };
+            },
+        };
+        const before = Date.now();
+        const source = new MSGraphCalendarSyncProvider(true, fetcher);
+        const batch = await source.Fetch({ Mailbox: 'ac21@example.invalid', Since: null, Limit: 10 });
+        const after = Date.now();
+        expect(fetcher.calls).toBe(1);
+        expect(batch.Items).toHaveLength(1);
+        expect(batch.Items[0].TypeCode).toBe('Meeting');
+        expect(batch.HighWatermark).toBeTruthy();
+        expect(batch.HighWatermark!.getTime()).toBeLessThan(batch.Items[0].StartedAt.getTime());
+        expect(batch.HighWatermark!.getTime()).toBeGreaterThanOrEqual(before);
+        expect(batch.HighWatermark!.getTime()).toBeLessThanOrEqual(after);
+        const mapped = MapGraphEvent(
+            {
+                id: 'x',
+                start: { dateTime: eventStart, timeZone: 'UTC' },
+                organizer: { emailAddress: { address: 'a@b.c' } },
+            },
+            [],
+        );
+        expect(mapped?.Direction).toBe('Internal');
+        expect(mapped?.Participants[0].Role).toBe('Organizer');
+    });
+
+    it('invokes extensions inside the write transaction, before commit', () => {
+        const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
+        const writer = readFileSync(join(SRC, 'writer.ts'), 'utf8');
+        expect(engine).toMatch(/OnWritten:/);
+        expect(engine).toMatch(/RunRegisteredExtensions/);
+        expect(writer).toMatch(/await options\.OnWritten\(writeContext\)/);
+        expect(writer.indexOf('OnWritten')).toBeLessThan(writer.indexOf('await scope.Commit()'));
     });
 
     it('checks ActivitySyncRunDetail.Save and does not abort the detail loop', () => {

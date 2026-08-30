@@ -75,6 +75,52 @@ export function CanAdvanceWatermark(outcome: RunOutcome): boolean {
  * can otherwise leave the watermark behind where the earlier run reached, which silently re-reads
  * a window on every subsequent pass.
  */
+/** Calendar watermark lives in ActivitySyncConnection.Settings so it cannot hide behind LastSyncAt. */
+export const CALENDAR_WATERMARK_SETTING = 'CalendarLastSyncAt';
+
+export function ParseConnectionSettings(settings: string | null | undefined): Record<string, unknown> {
+    if (!settings) return {};
+    try {
+        const parsed: unknown = JSON.parse(settings);
+        if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed as Record<string, unknown>;
+        }
+    } catch {
+        /* hand-edited JSON is treated as empty — re-read the window, let dedupe absorb it */
+    }
+    return {};
+}
+
+function asDate(value: Date | string | null | undefined): Date | null {
+    if (value == null || value === '') return null;
+    const d = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * One watermark per surface. Messages use LastSyncAt; calendar uses Settings.
+ * A shared column takes the max of both, so a meeting older than the newest
+ * email is judged already-seen and skipped forever.
+ */
+export function SurfaceWatermark(
+    kind: ActivitySourceKind,
+    lastSyncAt: Date | string | null | undefined,
+    settings: string | null | undefined,
+): Date | null {
+    if (kind === 'Calendar') {
+        const raw = ParseConnectionSettings(settings)[CALENDAR_WATERMARK_SETTING];
+        return typeof raw === 'string' ? asDate(raw) : null;
+    }
+    return asDate(lastSyncAt);
+}
+
+/** Merge the calendar watermark into Settings without dropping other keys. */
+export function MergeCalendarWatermark(settings: string | null | undefined, at: Date): string {
+    const bag = ParseConnectionSettings(settings);
+    bag[CALENDAR_WATERMARK_SETTING] = at.toISOString();
+    return JSON.stringify(bag);
+}
+
 export function NextWatermark(current: Date | null, candidate: Date | null, outcome: RunOutcome): Date | null {
     if (!CanAdvanceWatermark(outcome) || candidate === null) {
         return current;

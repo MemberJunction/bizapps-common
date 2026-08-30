@@ -14,6 +14,7 @@ import {
 import { MJGlobal } from '@memberjunction/global';
 import type {
     mjBizAppsCommonActivitySyncConnectionEntity,
+    mjBizAppsCommonActivitySyncExtensionEntity,
     mjBizAppsCommonActivitySyncRunDetailEntity,
     mjBizAppsCommonActivitySyncRunEntity,
 } from '@mj-biz-apps/common-entities';
@@ -21,6 +22,12 @@ import type {
 import { BaseActivitySyncExtension } from './BaseActivitySyncExtension.js';
 import { BaseActivitySyncProvider } from './BaseActivitySyncProvider.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
+import {
+    ExtensionsExtraFilter,
+    RunRegisteredExtensions,
+    type ExtensionRegistration,
+    type ExtensionStamp,
+} from './extensions.js';
 import { IdentityResolver } from './identity.js';
 import {
     DefaultDeterministicStages,
@@ -30,6 +37,7 @@ import {
 } from './stages.js';
 import { FixtureActivitySyncProvider } from './providers/FixtureActivitySyncProvider.js';
 import { MSGraphActivitySyncProvider } from './providers/MSGraphActivitySyncProvider.js';
+import { MSGraphCalendarSyncProvider } from './providers/MSGraphCalendarSyncProvider.js';
 import {
     DefaultPolicyFromProviderType,
     RunQualificationCascade,
@@ -43,8 +51,14 @@ import {
     type SyncRunOptions,
 } from './run.js';
 import { RequireUUID } from './sql.js';
-import type { NormalizedItem } from './types.js';
-import { CanAdvanceWatermark, NextWatermark, type RunOutcome } from './watermark.js';
+import type { ActivitySourceKind, NormalizedItem } from './types.js';
+import {
+    CanAdvanceWatermark,
+    MergeCalendarWatermark,
+    NextWatermark,
+    SurfaceWatermark,
+    type RunOutcome,
+} from './watermark.js';
 import { ExclusionsExtraFilter, FromRunView, RulesExtraFilter, type ViewLoad } from './load.js';
 import { ActivityWriter, StoreBodyFromSettings } from './writer.js';
 
@@ -153,8 +167,12 @@ export class ActivitySyncEngine {
             return result;
         }
         const sourceSystem = typeRow?.Code ?? plugin.ProviderTypeCode;
+        const since = SurfaceWatermark(plugin.Kind, connection.LastSyncAt, connection.Settings);
 
-        const since = connection.LastSyncAt ? new Date(connection.LastSyncAt) : null;
+        const extensions = await this.loadExtensions(connection.ID, typeRow?.ID ?? null, contextUser);
+        if (extensions.Failed) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue);
+        }
         const batch = await plugin.Fetch({
             Mailbox: connection.Mailbox ?? '',
             Since: since,
@@ -182,6 +200,15 @@ export class ActivitySyncEngine {
             result.Failed += batch.Items.length;
             result.Issues.push('ContactMethod lookup failed — watermark will not advance.');
             await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+            if (!options.DryRun) {
+                await this.stampConnectionHealth(
+                    connection.ID,
+                    false,
+                    'ContactMethod lookup failed — watermark will not advance.',
+                    contextUser,
+                    provider,
+                );
+            }
             return result;
         }
 
@@ -273,6 +300,7 @@ export class ActivitySyncEngine {
             }
 
             const sourceValue = plugin.IsLive ? 'Integration' : 'System';
+            const extensionStamps: ExtensionStamp[] = [];
             const written = await this.writer.Write(
                 {
                     Item: item,
@@ -285,7 +313,24 @@ export class ActivitySyncEngine {
                 },
                 provider,
                 contextUser,
+                {
+                    ProviderTypeCode: sourceSystem,
+                    OnWritten: async (writeCtx) => {
+                        const ext = await RunRegisteredExtensions(
+                            writeCtx,
+                            extensions.Rows,
+                            (driverClass) => this.resolveExtension(driverClass),
+                        );
+                        result.ExtensionErrors += ext.Errors;
+                        extensionStamps.push(...ext.Stamps);
+                        if (ext.Aborted) {
+                            const last = ext.Stamps[ext.Stamps.length - 1];
+                            throw new Error(last?.LastError ?? 'An ActivitySyncExtension aborted the write.');
+                        }
+                    },
+                },
             );
+            await this.stampExtensions(extensionStamps, provider, contextUser);
             if (!written.Success) {
                 result.Failed++;
                 details.push({
@@ -326,16 +371,31 @@ export class ActivitySyncEngine {
         const candidate = batch.HighWatermark;
         const next = options.DryRun ? since : NextWatermark(since, candidate, outcome);
         if (!options.DryRun && next && CanAdvanceWatermark(outcome) && candidate) {
-            const stamped = await this.stampConnectionWatermark(connectionID, next, contextUser, provider);
+            const stamped = await this.stampSurfaceWatermark(
+                connectionID,
+                next,
+                plugin.Kind,
+                contextUser,
+                provider,
+            );
             if (stamped) {
                 result.WatermarkAdvancedTo = next;
             } else {
-                result.Issues.push('Failed to persist connection LastSyncAt — watermark will not advance.');
+                result.Issues.push('Failed to persist the surface watermark — it will not advance.');
             }
         }
 
         await this.persistRun(connection, options, result, since, options.DryRun ? null : result.WatermarkAdvancedTo, provider, contextUser, details);
         result.Success = result.Failed === 0;
+        if (!options.DryRun) {
+            await this.stampConnectionHealth(
+                connectionID,
+                result.Success,
+                result.Issues[0] ?? (result.Success ? null : 'Activity sync run failed.'),
+                contextUser,
+                provider,
+            );
+        }
         return result;
     }
 
@@ -367,7 +427,89 @@ export class ActivitySyncEngine {
         result.Issues.push(issue);
         result.Failed += result.Fetched;
         await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+        if (!options.DryRun) {
+            await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
+        }
         return result;
+    }
+
+    private resolveExtension(driverClass: string): BaseActivitySyncExtension | null {
+        try {
+            const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivitySyncExtension>(
+                BaseActivitySyncExtension,
+                driverClass,
+            );
+            if (created.Resolved && created.Instance) return created.Instance;
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
+    private async loadExtensions(
+        connectionID: string,
+        providerTypeID: string | null,
+        user: UserInfo,
+    ): Promise<ViewLoad<ExtensionRegistration>> {
+        const rv = new RunView();
+        const res = await rv.RunView<ExtensionRegistration>(
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.Extensions,
+                ExtraFilter: ExtensionsExtraFilter(connectionID, providerTypeID),
+                OrderBy: 'Sequence ASC',
+                ResultType: 'simple',
+            },
+            user,
+        );
+        return FromRunView(res.Success, res.Results, 'ActivitySyncExtension');
+    }
+
+    private async stampExtensions(
+        stamps: readonly ExtensionStamp[],
+        provider: IMetadataProvider,
+        user: UserInfo,
+    ): Promise<void> {
+        const now = new Date();
+        for (const stamp of stamps) {
+            try {
+                const row = await provider.GetEntityObject<mjBizAppsCommonActivitySyncExtensionEntity>(
+                    ACTIVITY_SYNC_ENTITIES.Extensions,
+                    user,
+                );
+                if (!(await row.Load(stamp.ID))) continue;
+                row.LastRunAt = now;
+                row.LastError = stamp.LastError;
+                await row.Save();
+            } catch (err) {
+                LogError(`ActivitySyncEngine.stampExtensions failed for ${stamp.ID}: ${err}`);
+            }
+        }
+    }
+
+    private async stampConnectionHealth(
+        connectionID: string,
+        success: boolean,
+        error: string | null,
+        user: UserInfo,
+        provider: IMetadataProvider,
+    ): Promise<void> {
+        try {
+            const row = await provider.GetEntityObject<mjBizAppsCommonActivitySyncConnectionEntity>(
+                ACTIVITY_SYNC_ENTITIES.Connections,
+                user,
+            );
+            if (!(await row.Load(connectionID))) return;
+            if (success) {
+                row.LastError = null;
+                if (row.Status === 'Error') row.Status = 'Active';
+            } else {
+                row.Status = 'Error';
+                row.LastError = (error ?? 'Activity sync run failed.').slice(0, 4000);
+            }
+            await row.Save();
+        } catch (err) {
+            LogError(`ActivitySyncEngine.stampConnectionHealth failed: ${err}`);
+        }
     }
 
     private async loadConnection(id: string, user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
@@ -447,9 +589,10 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncRule');
     }
 
-    private async stampConnectionWatermark(
+    private async stampSurfaceWatermark(
         connectionID: string,
         at: Date,
+        kind: ActivitySourceKind,
         user: UserInfo,
         provider: IMetadataProvider,
     ): Promise<boolean> {
@@ -458,9 +601,11 @@ export class ActivitySyncEngine {
             user,
         );
         if (!(await row.Load(connectionID))) return false;
-        row.LastSyncAt = at;
-        row.LastError = null;
-        if (row.Status === 'Error') row.Status = 'Active';
+        if (kind === 'Calendar') {
+            row.Settings = MergeCalendarWatermark(row.Settings, at);
+        } else {
+            row.LastSyncAt = at;
+        }
         return row.Save();
     }
 
@@ -542,4 +687,5 @@ export function LoadActivitySyncEngine(): void {
     void BaseActivitySyncExtension;
     void FixtureActivitySyncProvider;
     void MSGraphActivitySyncProvider;
+    void MSGraphCalendarSyncProvider;
 }

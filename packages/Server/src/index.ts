@@ -13,6 +13,7 @@ import '@mj-biz-apps/common-actions';
 // Server-side entity subclasses — must come after common-entities so
 // @RegisterClass auto-increment gives these higher priority
 import '@mj-biz-apps/common-core-entities-server';
+import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -39,4 +40,5 @@ export const RESOLVER_PATHS = [resolve(__dirname, 'generated/generated.{js,ts}')
 export function LoadBizAppsCommonServer(): void {
     // Static imports above ensure all classes are registered.
     // This function exists as the startupExport entry point for DynamicPackageLoader.
+    LoadActivitySyncEngine();
 }

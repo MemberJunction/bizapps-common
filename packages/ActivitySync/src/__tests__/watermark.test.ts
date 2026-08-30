@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { CanAdvanceWatermark, NextWatermark, ResolveHighWatermark, type RunOutcome } from '../watermark.js';
+import {
+    CanAdvanceWatermark,
+    MergeCalendarWatermark,
+    NextWatermark,
+    ResolveHighWatermark,
+    SurfaceWatermark,
+    type RunOutcome,
+} from '../watermark.js';
 import type { NormalizedItem } from '../types.js';
 
 function item(startedAt: string): NormalizedItem {
@@ -100,5 +107,27 @@ describe('NextWatermark', () => {
     it('accepts the first watermark from null', () => {
         const candidate = new Date('2026-08-05T00:00:00Z');
         expect(NextWatermark(null, candidate, clean)).toEqual(candidate);
+    });
+});
+
+describe('SurfaceWatermark', () => {
+    const at = new Date('2026-08-19T18:00:00.000Z');
+
+    it('reads LastSyncAt for messages and ignores Settings', () => {
+        expect(SurfaceWatermark('Message', at, '{"CalendarLastSyncAt":"2026-01-01T00:00:00.000Z"}')).toEqual(at);
+        expect(SurfaceWatermark('Message', null, '{"CalendarLastSyncAt":"2026-01-01T00:00:00.000Z"}')).toBeNull();
+    });
+
+    it('reads Settings.CalendarLastSyncAt for calendar, never LastSyncAt', () => {
+        expect(SurfaceWatermark('Calendar', at, '{"CalendarLastSyncAt":"2026-08-19T09:00:00.000Z"}')).toEqual(
+            new Date('2026-08-19T09:00:00.000Z'),
+        );
+        expect(SurfaceWatermark('Calendar', at, null)).toBeNull();
+        expect(SurfaceWatermark('Calendar', at, '{')).toBeNull();
+    });
+
+    it('merges the calendar watermark without dropping other Settings keys', () => {
+        const merged = MergeCalendarWatermark('{"StoreBody":"Full"}', at);
+        expect(JSON.parse(merged)).toEqual({ StoreBody: 'Full', CalendarLastSyncAt: at.toISOString() });
     });
 });

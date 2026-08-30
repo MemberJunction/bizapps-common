@@ -56,7 +56,13 @@ export function IsConnectionActive(
     endAt: Date | null,
     now: Date,
 ): boolean {
-    if (status !== 'Active') {
+    /**
+     * `Error` retries. `Paused` and `Disabled` are a person deciding the mailbox
+     * is off and must be honoured. `Error` is a record of the last run and says
+     * nothing about whether the next one will work — refusing it latches a
+     * throttle into a permanent stop.
+     */
+    if (status !== 'Active' && status !== 'Error') {
         return false;
     }
     if (startAt !== null && now.getTime() < startAt.getTime()) {
