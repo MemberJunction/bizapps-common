@@ -27,6 +27,25 @@ export type ActivityLinkRole =
 export type ActivityIdentityKind = 'Email' | 'Phone' | 'ExternalUser';
 
 /**
+ * Runtime value lists for the two unions above, for validating link specs that arrive as data
+ * (JSON params on `Common.LogActivity`) rather than as typed code. The compiler checks every
+ * member is a legal union value; keep them in lockstep with the CHECK constraints.
+ */
+export const ACTIVITY_LINK_ROLES: readonly ActivityLinkRole[] = [
+    'Regarding',
+    'Participant',
+    'From',
+    'To',
+    'Cc',
+    'Bcc',
+    'Organizer',
+    'Attendee',
+    'LoggedFor',
+];
+
+export const ACTIVITY_IDENTITY_KINDS: readonly ActivityIdentityKind[] = ['Email', 'Phone', 'ExternalUser'];
+
+/**
  * The surface a provider reads.
  *
  * This is not decoration — it selects the watermark basis. See {@link WatermarkBasisForKind}.

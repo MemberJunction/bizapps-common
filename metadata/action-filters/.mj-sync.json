@@ -1,0 +1,13 @@
+{
+  "entity": "MJ: Action Filters",
+  "filePattern": "**/.*.json",
+  "pull": {
+    "createNewFileIfNotFound": true,
+    "newFileName": ".action-filters.json",
+    "appendRecordsToExistingFile": true,
+    "updateExistingRecords": true,
+    "ignoreNullFields": true,
+    "ignoreVirtualFields": true,
+    "filter": "UserDescription LIKE 'Common:%'"
+  }
+}

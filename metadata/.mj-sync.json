@@ -16,7 +16,10 @@
     "scheduled-jobs",
     "entities",
     "entity-relationships",
-    "application-roles"
+    "application-roles",
+    "action-filters",
+    "agents",
+    "entity-actions"
   ],
   "sqlLogging": {
     "enabled": true,

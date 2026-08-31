@@ -8,6 +8,7 @@
     "updateExistingRecords": true,
     "ignoreNullFields": true,
     "ignoreVirtualFields": true,
+    "filter": "DriverClass LIKE 'Common.%'",
     "relatedEntities": {
       "MJ: Action Params": {
         "entity": "MJ: Action Params",

@@ -17,6 +17,7 @@ export * from './BaseActivitySyncExtension.js';
 export * from './entity-names.js';
 export * from './identity.js';
 export * from './writer.js';
+export * from './manual-log.js';
 export * from './stages.js';
 export * from './ActivitySyncEngine.js';
 export * from './action-result.js';
