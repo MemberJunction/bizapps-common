@@ -729,6 +729,10 @@ export const mjBizAppsCommonActivitySyncProviderTypeSchema = z.object({
         * * Field Name: DriverClass
         * * Display Name: Driver Class
         * * SQL Data Type: nvarchar(200)`),
+    CalendarDriverClass: z.string().nullable().describe(`
+        * * Field Name: CalendarDriverClass
+        * * Display Name: Calendar Driver Class
+        * * SQL Data Type: nvarchar(200)`),
     IconClass: z.string().nullable().describe(`
         * * Field Name: IconClass
         * * Display Name: Icon Class
@@ -3994,6 +3998,19 @@ export class mjBizAppsCommonActivitySyncProviderTypeEntity extends BaseEntity<mj
     }
     set DriverClass(value: string | null) {
         this.Set('DriverClass', value);
+    }
+
+    /**
+    * * Field Name: CalendarDriverClass
+    * * Display Name: Calendar Driver Class
+    * * SQL Data Type: nvarchar(200)
+    * * Description: ClassFactory key for the companion calendar surface. Null means this type has no second surface.
+    */
+    get CalendarDriverClass(): string | null {
+        return this.Get('CalendarDriverClass');
+    }
+    set CalendarDriverClass(value: string | null) {
+        this.Set('CalendarDriverClass', value);
     }
 
     /**

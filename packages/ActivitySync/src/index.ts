@@ -20,6 +20,7 @@ export * from './writer.js';
 export * from './manual-log.js';
 export * from './stages.js';
 export * from './ActivitySyncEngine.js';
+export * from './action-result.js';
 export * from './extensions.js';
 export * from './providers/FixtureActivitySyncProvider.js';
 export * from './providers/MSGraphActivitySyncProvider.js';

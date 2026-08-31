@@ -77,6 +77,15 @@ export interface ActivityWriteContext {
      * `EntityID` for a link (`Provider.Entities`).
      */
     Provider: IMetadataProvider;
+    /**
+     * Cooperative cancellation for the registration's TimeoutMS.
+     *
+     * WithTimeout races; it does not kill the work. A timed-out Enrich keeps running inside
+     * the open write transaction unless it watches this signal. Abort the remaining work
+     * when `Signal.aborted` is set — otherwise a Skip loop can still be mid-Save when
+     * Commit or Rollback runs.
+     */
+    Signal?: AbortSignal;
 }
 
 export abstract class BaseActivitySyncExtension {
@@ -90,6 +99,8 @@ export abstract class BaseActivitySyncExtension {
      * must not be able to halt ingestion for every other app on the host.
      *
      * Keep it inside the registration's `TimeoutMS`: this runs with the write transaction open.
+     * Timeout is cooperative — watch `context.Signal` and return or throw when it aborts.
+     * `WithTimeout` rejects the waiter; it does not cancel the promise.
      */
     public abstract Enrich(context: ActivityWriteContext): Promise<void>;
 }

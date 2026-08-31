@@ -80,9 +80,9 @@ export abstract class BaseActivitySyncProvider {
                     `on mailbox "${query.Mailbox}": ${message}`,
             );
             await this.OnError(error, query);
-            // An empty batch with a NULL watermark. Never a partial claim: a failed pass has seen
-            // nothing to a conclusion, so it must not move the connection forward.
-            return { Items: [], HighWatermark: null, Issues: [message] };
+            // Failed, not empty. An empty mailbox is a successful look that found nothing; a
+            // throw means we saw nothing and must not report SUCCESS or clear LastError.
+            return { Items: [], HighWatermark: null, Issues: [message], Failed: true };
         }
     }
 

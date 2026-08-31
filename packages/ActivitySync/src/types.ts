@@ -142,6 +142,12 @@ export interface ActivitySourceBatch {
      */
     HighWatermark: Date | null;
     Issues: string[];
+    /**
+     * True when the provider did not complete a look — a throw from FetchRaw / transport / auth —
+     * not an empty mailbox and not a deliberate live-fetch refusal. The engine must not treat
+     * this as Success or clear LastError.
+     */
+    Failed?: boolean;
 }
 
 /**

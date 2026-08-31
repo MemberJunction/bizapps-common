@@ -1,8 +1,107 @@
 [
   {
+    "_comments": [
+      "THE HOURLY ACTIVITY-SYNC ACTION. Fired by the ScheduledJob under metadata/scheduled-jobs/.",
+      "",
+      "DriverClass is a ClassFactory key, not a display name: @RegisterClass(BaseAction,",
+      "'Common.SyncActivities') in packages/Server/src/custom/sync-activities.action.ts is what it",
+      "resolves to, and LoadSyncActivitiesAction() in the server bootstrap is what keeps that",
+      "registration from being tree-shaken away. Get either wrong and the action exists in metadata,",
+      "is scheduled, fires on time, and does nothing \u2014 with no error anywhere.",
+      "",
+      "Downstream apps do not wrap this. They register a BaseActivitySyncExtension (e.g.",
+      "Sales.DealLinker) which the engine runs inside the write transaction.",
+      "",
+      "SAFE TO SHIP Active: Graph providers refuse live fetch until an Exchange Application Access",
+      "Policy exists, so an hourly run against a Microsoft365 connection writes nothing until a",
+      "deployment opts in. A host with no ActivitySyncConnection reports NO_CONNECTIONS.",
+      "",
+      "No sync block \u2014 the release push writes that back. primaryKey from uuidgen."
+    ],
+    "fields": {
+      "Name": "Sync Activities",
+      "CategoryID": "@lookup:MJ: Action Categories.Name=Common",
+      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new.",
+      "Type": "Custom",
+      "DriverClass": "Common.SyncActivities",
+      "IconClass": "fa-solid fa-inbox",
+      "UserPrompt": "Run the hourly activity sync.",
+      "CodeApprovalStatus": "Approved",
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "B2CAEFB7-60FD-41FF-8B12-DB908A7BEF0E"
+    },
+    "relatedEntities": {
+      "MJ: Action Params": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Limit",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "DefaultValue": "100",
+            "Description": "How many items to pull per mailbox per surface per run. MJ's GetMessages contract has no date filter, so a run fetches the most recent N and discards what it has already seen \u2014 anything older than the Nth newest message since the last run is missed and never retried."
+          },
+          "primaryKey": {
+            "ID": "9E35EF82-BDE6-4B17-8797-C0D29CD2D688"
+          }
+        }
+      ],
+      "MJ: Action Result Codes": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "SUCCESS",
+            "IsSuccess": true,
+            "Description": "Every attempted connection completed with no failed items."
+          },
+          "primaryKey": {
+            "ID": "3929FCE5-47B1-418C-9505-7D24BBAD0987"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "PARTIAL",
+            "IsSuccess": false,
+            "Description": "At least one connection was attempted and at least one item or surface failed."
+          },
+          "primaryKey": {
+            "ID": "BA1063A5-A485-4204-A3A8-A48A07DD5B33"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "NO_CONNECTIONS",
+            "IsSuccess": true,
+            "Description": "The connection list loaded successfully and was empty. Not used when the list failed to load."
+          },
+          "primaryKey": {
+            "ID": "87F48551-562F-4AED-96AD-75C40BF286DB"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "ERROR",
+            "IsSuccess": false,
+            "Description": "The run failed before any connection was attempted (including a failed connection list load), or threw."
+          },
+          "primaryKey": {
+            "ID": "58F7CF32-1952-4C34-BCEE-E826326AD1FD"
+          }
+        }
+      ]
+    }
+  },
+  {
     "fields": {
       "Name": "Common.LogActivity",
-      "Description": "Writes one Activity plus its ActivityLink rows to the unified timeline through the shared ActivityWriter (one writer, two entry points — this is the manual/declarative one). Bind AfterCreate/AfterUpdate on any entity to this action and the record's lifecycle appears on the person's or organization's timeline with no code in the consuming app. Bind RecordData with ValueType 'Entity Object Data' — NEVER 'Entity Object', which serializes to {} silently. Idempotency: pass EventKey for one-per-record events (AfterCreate) so a durable retry cannot double-log; leave it off when every firing should log. Sync extensions do NOT run on this path — they fire on ingest, not on a record being logged.",
+      "Description": "Writes one Activity plus its ActivityLink rows to the unified timeline through the shared ActivityWriter (one writer, two entry points \u2014 this is the manual/declarative one). Bind AfterCreate/AfterUpdate on any entity to this action and the record's lifecycle appears on the person's or organization's timeline with no code in the consuming app. Bind RecordData with ValueType 'Entity Object Data' \u2014 NEVER 'Entity Object', which serializes to {} silently. Idempotency: pass EventKey for one-per-record events (AfterCreate) so a durable retry cannot double-log; leave it off when every firing should log. Sync extensions do NOT run on this path \u2014 they fire on ingest, not on a record being logged.",
       "DriverClass": "Common.LogActivity",
       "Type": "Custom",
       "Status": "Active",
@@ -20,7 +119,9 @@
             "IsRequired": true,
             "Description": "ActivityType.Code of the entry (e.g. SystemEvent, Note). Resolved by code so renaming a type never breaks bindings."
           },
-          "primaryKey": { "ID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB" }
+          "primaryKey": {
+            "ID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB"
+          }
         },
         {
           "fields": {
@@ -32,7 +133,9 @@
             "IsRequired": true,
             "Description": "One-line card title for the timeline entry."
           },
-          "primaryKey": { "ID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330" }
+          "primaryKey": {
+            "ID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330"
+          }
         },
         {
           "fields": {
@@ -43,9 +146,11 @@
             "IsArray": false,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Optional notes / excerpt. May carry personal data — not logged."
+            "Description": "Optional notes / excerpt. May carry personal data \u2014 not logged."
           },
-          "primaryKey": { "ID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4" }
+          "primaryKey": {
+            "ID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4"
+          }
         },
         {
           "fields": {
@@ -57,7 +162,9 @@
             "IsRequired": false,
             "Description": "Timeline sort key (Date or ISO string). Defaults to now."
           },
-          "primaryKey": { "ID": "F7EF1D96-3541-4454-BBF2-75850657520C" }
+          "primaryKey": {
+            "ID": "F7EF1D96-3541-4454-BBF2-75850657520C"
+          }
         },
         {
           "fields": {
@@ -69,7 +176,9 @@
             "IsRequired": false,
             "Description": "End of a meeting/call. Must be on or after StartedAt."
           },
-          "primaryKey": { "ID": "1459BD58-5985-469B-8286-20CC620428B8" }
+          "primaryKey": {
+            "ID": "1459BD58-5985-469B-8286-20CC620428B8"
+          }
         },
         {
           "fields": {
@@ -81,7 +190,9 @@
             "IsRequired": false,
             "Description": "Inbound, Outbound or Internal. Defaults to Internal."
           },
-          "primaryKey": { "ID": "8461308D-6610-40F4-9CB5-F29C3A2224E0" }
+          "primaryKey": {
+            "ID": "8461308D-6610-40F4-9CB5-F29C3A2224E0"
+          }
         },
         {
           "fields": {
@@ -93,7 +204,9 @@
             "IsRequired": false,
             "Description": "Logged, Scheduled, Completed, Cancelled or Failed. Defaults to Logged."
           },
-          "primaryKey": { "ID": "712A6935-98B1-4245-AEC3-B38BF4CD2F2B" }
+          "primaryKey": {
+            "ID": "712A6935-98B1-4245-AEC3-B38BF4CD2F2B"
+          }
         },
         {
           "fields": {
@@ -103,9 +216,11 @@
             "ValueType": "Scalar",
             "IsArray": false,
             "IsRequired": false,
-            "Description": "Internal or Private. Defaults to Internal — the manual-log default; the sync engine's Private is for mail nobody chose to share."
+            "Description": "Internal or Private. Defaults to Internal \u2014 the manual-log default; the sync engine's Private is for mail nobody chose to share."
           },
-          "primaryKey": { "ID": "DBFBA552-A3DE-4AF2-AF38-0519EBC0FB27" }
+          "primaryKey": {
+            "ID": "DBFBA552-A3DE-4AF2-AF38-0519EBC0FB27"
+          }
         },
         {
           "fields": {
@@ -117,7 +232,9 @@
             "IsRequired": false,
             "Description": "Manual or System. Defaults to Manual. 'Integration' belongs to the sync engine's entry point and is refused here."
           },
-          "primaryKey": { "ID": "E9E37537-DD1C-48E4-8545-AD806497833B" }
+          "primaryKey": {
+            "ID": "E9E37537-DD1C-48E4-8545-AD806497833B"
+          }
         },
         {
           "fields": {
@@ -129,7 +246,9 @@
             "IsRequired": false,
             "Description": "Meeting place as text."
           },
-          "primaryKey": { "ID": "0A613615-A5EB-4A1B-B88D-A46C440DA5E7" }
+          "primaryKey": {
+            "ID": "0A613615-A5EB-4A1B-B88D-A46C440DA5E7"
+          }
         },
         {
           "fields": {
@@ -142,7 +261,9 @@
             "LogValue": false,
             "Description": "JSON extras that are not query predicates. Stringified into Activity.Details. Not logged."
           },
-          "primaryKey": { "ID": "6E9D0749-4F8C-457A-A0B3-1229DB5F48F5" }
+          "primaryKey": {
+            "ID": "6E9D0749-4F8C-457A-A0B3-1229DB5F48F5"
+          }
         },
         {
           "fields": {
@@ -154,7 +275,9 @@
             "IsRequired": false,
             "Description": "MJ entity name of the record this activity is about. With RecordID (or RecordData.ID) it becomes a leading Regarding link."
           },
-          "primaryKey": { "ID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75" }
+          "primaryKey": {
+            "ID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75"
+          }
         },
         {
           "fields": {
@@ -166,7 +289,9 @@
             "IsRequired": false,
             "Description": "The subject record's id. Optional when RecordData carries ID."
           },
-          "primaryKey": { "ID": "522170BB-9FA4-447D-9458-9C134B0985FA" }
+          "primaryKey": {
+            "ID": "522170BB-9FA4-447D-9458-9C134B0985FA"
+          }
         },
         {
           "fields": {
@@ -177,9 +302,11 @@
             "IsArray": false,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "The subject record as a PLAIN object. In an Entity Action binding use ValueType 'Entity Object Data' — never 'Entity Object', which serializes to {} silently. Carries whole records — never logged."
+            "Description": "The subject record as a PLAIN object. In an Entity Action binding use ValueType 'Entity Object Data' \u2014 never 'Entity Object', which serializes to {} silently. Carries whole records \u2014 never logged."
           },
-          "primaryKey": { "ID": "D067FFE0-70B2-4A28-9C31-066BB536E637" }
+          "primaryKey": {
+            "ID": "D067FFE0-70B2-4A28-9C31-066BB536E637"
+          }
         },
         {
           "fields": {
@@ -190,9 +317,11 @@
             "IsArray": true,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Declarative link routing: [{ Field, EntityName, Role }] — reads Field from RecordData and links that record. This is what routes a binding on any entity to the People/Organizations rows it references. Null FKs are skipped."
+            "Description": "Declarative link routing: [{ Field, EntityName, Role }] \u2014 reads Field from RecordData and links that record. This is what routes a binding on any entity to the People/Organizations rows it references. Null FKs are skipped."
           },
-          "primaryKey": { "ID": "5ABC9668-9E20-4385-9258-F2FC106B8477" }
+          "primaryKey": {
+            "ID": "5ABC9668-9E20-4385-9258-F2FC106B8477"
+          }
         },
         {
           "fields": {
@@ -203,9 +332,11 @@
             "IsArray": true,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Extra explicit links: [{ Role, EntityName, RecordID }] or [{ Role, IdentityKind, IdentityValue }]. May carry identity values — not logged."
+            "Description": "Extra explicit links: [{ Role, EntityName, RecordID }] or [{ Role, IdentityKind, IdentityValue }]. May carry identity values \u2014 not logged."
           },
-          "primaryKey": { "ID": "DC2CE432-64D7-43E6-B27D-A35666494D20" }
+          "primaryKey": {
+            "ID": "DC2CE432-64D7-43E6-B27D-A35666494D20"
+          }
         },
         {
           "fields": {
@@ -217,7 +348,9 @@
             "IsRequired": false,
             "Description": "Idempotency namespace, paired with ExternalID. Required when ExternalID is set."
           },
-          "primaryKey": { "ID": "DB90FCB7-D59D-4F5B-985D-D91802533143" }
+          "primaryKey": {
+            "ID": "DB90FCB7-D59D-4F5B-985D-D91802533143"
+          }
         },
         {
           "fields": {
@@ -229,7 +362,9 @@
             "IsRequired": false,
             "Description": "Idempotency key within SourceSystem. A repeat write with the same pair is a no-op reporting AlreadyPresent."
           },
-          "primaryKey": { "ID": "B3BF861B-5CB8-4F42-B20D-370375BFA7C6" }
+          "primaryKey": {
+            "ID": "B3BF861B-5CB8-4F42-B20D-370375BFA7C6"
+          }
         },
         {
           "fields": {
@@ -241,7 +376,9 @@
             "IsRequired": false,
             "Description": "Makes a binding idempotent per record: ExternalID becomes EntityName|RecordID|EventKey and SourceSystem defaults to 'EntityAction'. Use for one-per-record events (AfterCreate); leave off when every firing should log."
           },
-          "primaryKey": { "ID": "9ED5AE47-E6A1-4F1A-AA91-751CA7C8F0F7" }
+          "primaryKey": {
+            "ID": "9ED5AE47-E6A1-4F1A-AA91-751CA7C8F0F7"
+          }
         },
         {
           "fields": {
@@ -253,7 +390,9 @@
             "IsRequired": false,
             "Description": "ID of the written (or already-present) activity."
           },
-          "primaryKey": { "ID": "AEFC8671-73AC-44AC-9F99-55304B54B742" }
+          "primaryKey": {
+            "ID": "AEFC8671-73AC-44AC-9F99-55304B54B742"
+          }
         },
         {
           "fields": {
@@ -265,7 +404,9 @@
             "IsRequired": false,
             "Description": "True when the SourceSystem/ExternalID pair already existed and nothing was written."
           },
-          "primaryKey": { "ID": "9B768858-15D3-4684-907F-652B1E87CE88" }
+          "primaryKey": {
+            "ID": "9B768858-15D3-4684-907F-652B1E87CE88"
+          }
         }
       ],
       "MJ: Action Result Codes": [
@@ -276,7 +417,9 @@
             "IsSuccess": true,
             "Description": "The activity and its links were written."
           },
-          "primaryKey": { "ID": "3755B0EB-48C1-4E16-B48D-B0347489CECA" }
+          "primaryKey": {
+            "ID": "3755B0EB-48C1-4E16-B48D-B0347489CECA"
+          }
         },
         {
           "fields": {
@@ -285,7 +428,9 @@
             "IsSuccess": true,
             "Description": "An activity with this SourceSystem/ExternalID already exists; nothing was written."
           },
-          "primaryKey": { "ID": "7C2F6CEA-55A8-4864-B42D-694CA192A13C" }
+          "primaryKey": {
+            "ID": "7C2F6CEA-55A8-4864-B42D-694CA192A13C"
+          }
         },
         {
           "fields": {
@@ -294,7 +439,9 @@
             "IsSuccess": false,
             "Description": "The inputs were invalid; the message lists every problem."
           },
-          "primaryKey": { "ID": "2CD2521E-4771-4ADC-BC85-7076890DEA31" }
+          "primaryKey": {
+            "ID": "2CD2521E-4771-4ADC-BC85-7076890DEA31"
+          }
         },
         {
           "fields": {
@@ -303,10 +450,14 @@
             "IsSuccess": false,
             "Description": "The write failed; the transaction rolled back and the message carries the issues."
           },
-          "primaryKey": { "ID": "F5E249FC-21EC-4BE1-BA61-208BFF2E7091" }
+          "primaryKey": {
+            "ID": "F5E249FC-21EC-4BE1-BA61-208BFF2E7091"
+          }
         }
       ]
     },
-    "primaryKey": { "ID": "CD67D909-A87D-43E2-9F34-95E04A0DDE3C" }
+    "primaryKey": {
+      "ID": "CD67D909-A87D-43E2-9F34-95E04A0DDE3C"
+    }
   }
 ]

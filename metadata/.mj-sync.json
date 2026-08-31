@@ -11,10 +11,12 @@
     "organization-types",
     "relationship-types",
     "activity-sync-provider-types",
+    "action-categories",
+    "actions",
+    "scheduled-jobs",
     "entities",
     "entity-relationships",
     "application-roles",
-    "actions",
     "action-filters",
     "agents",
     "entity-actions"

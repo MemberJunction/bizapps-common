@@ -8,7 +8,11 @@ import { BaseAction } from '@memberjunction/actions';
 import type { ActionParam, ActionResultSimple, RunActionParams } from '@memberjunction/actions-base';
 import { Metadata } from '@memberjunction/core';
 import { RegisterClass } from '@memberjunction/global';
-import { ActivitySyncEngine } from '@mj-biz-apps/common-activity-sync';
+import {
+    ActionResultFromFleet,
+    ActivitySyncEngine,
+    TotalsFromFleet,
+} from '@mj-biz-apps/common-activity-sync';
 
 const P_LIMIT = 'Limit';
 const DEFAULT_LIMIT = 100;
@@ -50,16 +54,7 @@ export class SyncActivitiesAction extends BaseAction {
             Metadata.Provider,
             params.ContextUser,
         );
-        const totals = fleet.Results.reduce(
-            (sum, run) => ({
-                Fetched: sum.Fetched + run.Result.Fetched,
-                Written: sum.Written + run.Result.Included,
-                Duplicates: sum.Duplicates + run.Result.Duplicates,
-                Excluded: sum.Excluded + run.Result.Excluded,
-                Failed: sum.Failed + run.Result.Failed,
-            }),
-            { Fetched: 0, Written: 0, Duplicates: 0, Excluded: 0, Failed: 0 },
-        );
+        const totals = TotalsFromFleet(fleet);
         setOutput(params, 'ConnectionsAttempted', fleet.ConnectionsAttempted);
         setOutput(params, 'Fetched', totals.Fetched);
         setOutput(params, 'Written', totals.Written);
@@ -67,22 +62,7 @@ export class SyncActivitiesAction extends BaseAction {
         setOutput(params, 'Excluded', totals.Excluded);
         setOutput(params, 'Failed', totals.Failed);
         setOutput(params, 'Issues', JSON.stringify(fleet.Issues));
-        if (fleet.ConnectionsAttempted === 0) {
-            return {
-                Success: true,
-                ResultCode: 'NO_CONNECTIONS',
-                Message: 'No Active activity-sync connection exists, so nothing was read.',
-            };
-        }
-        return {
-            Success: fleet.Success,
-            ResultCode: fleet.Success ? 'SUCCESS' : 'PARTIAL',
-            Message:
-                `${fleet.ConnectionsAttempted} connection(s): fetched ${totals.Fetched}, ` +
-                `written ${totals.Written}, duplicates ${totals.Duplicates}, ` +
-                `excluded ${totals.Excluded}, failed ${totals.Failed}.` +
-                (fleet.Issues.length ? ` Issues: ${fleet.Issues.join(' | ')}` : ''),
-        };
+        return ActionResultFromFleet(fleet, totals);
     }
 }
 

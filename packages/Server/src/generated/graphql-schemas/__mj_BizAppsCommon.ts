@@ -1736,6 +1736,10 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     DriverClass?: string;
         
     @Field({nullable: true}) 
+    @MaxLength(200)
+    CalendarDriverClass?: string;
+        
+    @Field({nullable: true}) 
     @MaxLength(100)
     IconClass?: string;
         
@@ -1807,6 +1811,9 @@ export class CreatemjBizAppsCommonActivitySyncProviderTypeInput {
     DriverClass: string | null;
 
     @Field({ nullable: true })
+    CalendarDriverClass: string | null;
+
+    @Field({ nullable: true })
     IconClass: string | null;
 
     @Field({ nullable: true })
@@ -1860,6 +1867,9 @@ export class UpdatemjBizAppsCommonActivitySyncProviderTypeInput {
 
     @Field({ nullable: true })
     DriverClass?: string | null;
+
+    @Field({ nullable: true })
+    CalendarDriverClass?: string | null;
 
     @Field({ nullable: true })
     IconClass?: string | null;
