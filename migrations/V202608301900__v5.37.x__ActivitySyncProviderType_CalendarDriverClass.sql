@@ -5,12 +5,11 @@
 -- through ClassFactory; it does not `new` the Graph calendar provider.
 --
 -- Hosts run mj migrate, never CodeGen. This V therefore carries the column AND the
--- CodeGen objects a write path needs: EntityField (sequence matches view order),
--- and spCreate / spUpdate with the new parameter. The view is SELECT a.*, so the
--- column appears in the result set after the __mj timestamps and before the two
--- related-name virtuals — EntityField Sequence 18, with DefaultEncryptionKey /
--- DefaultStorageProvider bumped 18→19 and 19→20 so INSERT INTO @ResultTable EXEC
--- stays aligned.
+-- CodeGen objects a write path needs: EntityField, and spCreate / spUpdate with the
+-- new parameter. EntityField.Sequence is an apply-time MAX+1, not a literal — on a
+-- fresh install the related-name virtuals still sit at their +100000 placeholders
+-- until R__RefreshMetadata, which owns compact ordering. Do not re-derive a
+-- positional layout in a versioned migration.
 
 ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncProviderType]
 ADD [CalendarDriverClass] NVARCHAR(200) NULL;
@@ -24,19 +23,6 @@ GO
 
 DECLARE @EntityID UNIQUEIDENTIFIER = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'; -- MJ_BizApps_Common: Activity Sync Provider Types
 
--- View order after ALTER: a.* (… __mj_UpdatedAt, CalendarDriverClass), DefaultEncryptionKey, DefaultStorageProvider.
-UPDATE [${mjSchema}].[EntityField]
-SET [Sequence] = 20
-WHERE [EntityID] = @EntityID
-  AND [Name] = 'DefaultStorageProvider'
-  AND [Sequence] = 19;
-
-UPDATE [${mjSchema}].[EntityField]
-SET [Sequence] = 19
-WHERE [EntityID] = @EntityID
-  AND [Name] = 'DefaultEncryptionKey'
-  AND [Sequence] = 18;
-
 IF NOT EXISTS (
     SELECT 1 FROM [${mjSchema}].[EntityField]
     WHERE ID = '1BC8E870-B508-49C3-A66E-2AEE1AD7A159'
@@ -48,7 +34,7 @@ VALUES
     (
         '1BC8E870-B508-49C3-A66E-2AEE1AD7A159',
         @EntityID,
-        18,
+        (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = @EntityID),
         'CalendarDriverClass',
         'Calendar Driver Class',
         'ClassFactory key for the companion calendar surface on this provider type. Null means this type has no second surface. Resolved through ClassFactory — never constructed with new.',

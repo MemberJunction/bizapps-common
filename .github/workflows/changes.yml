@@ -38,6 +38,13 @@ jobs:
         if: steps.migration_check.outputs.has_migrations == 'true'
         run: ./.github/scripts/validate-migration-filenames.sh
 
+      - name: EntityField Sequence must not be a literal placeholder
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          ./.github/scripts/check-migration-entityfield-sequence.sh --self-test
+          ./.github/scripts/check-migration-entityfield-sequence.sh
+
       - name: Validate migration timestamps are newer than existing
         if: steps.migration_check.outputs.has_migrations == 'true'
         run: |
