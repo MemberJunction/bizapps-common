@@ -1736,10 +1736,6 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     DriverClass?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(200)
-    CalendarDriverClass?: string;
-        
-    @Field({nullable: true}) 
     @MaxLength(100)
     IconClass?: string;
         
@@ -1781,6 +1777,10 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
+    @MaxLength(200)
+    CalendarDriverClass?: string;
+        
+    @Field({nullable: true}) 
     @MaxLength(100)
     DefaultEncryptionKey?: string;
         
@@ -1809,9 +1809,6 @@ export class CreatemjBizAppsCommonActivitySyncProviderTypeInput {
 
     @Field({ nullable: true })
     DriverClass: string | null;
-
-    @Field({ nullable: true })
-    CalendarDriverClass: string | null;
 
     @Field({ nullable: true })
     IconClass: string | null;
@@ -1843,6 +1840,9 @@ export class CreatemjBizAppsCommonActivitySyncProviderTypeInput {
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
 
+    @Field({ nullable: true })
+    CalendarDriverClass: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -1867,9 +1867,6 @@ export class UpdatemjBizAppsCommonActivitySyncProviderTypeInput {
 
     @Field({ nullable: true })
     DriverClass?: string | null;
-
-    @Field({ nullable: true })
-    CalendarDriverClass?: string | null;
 
     @Field({ nullable: true })
     IconClass?: string | null;
@@ -1900,6 +1897,9 @@ export class UpdatemjBizAppsCommonActivitySyncProviderTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field({ nullable: true })
+    CalendarDriverClass?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
