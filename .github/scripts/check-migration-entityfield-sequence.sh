@@ -177,7 +177,8 @@ main() {
     if [ "${1:-}" = "--all" ]; then
         files=$(find migrations -name '*.sql' -type f 2>/dev/null)
     else
-        files=$(git diff --name-only --diff-filter=ACM "$base"...HEAD -- 'migrations/**/*.sql' 2>/dev/null)
+        # Common keeps versioned SQL at migrations/*.sql (not MJ's migrations/vN/).
+        files=$(git diff --name-only --diff-filter=ACM "$base"...HEAD -- 'migrations/*.sql' 'migrations/**/*.sql' 2>/dev/null)
     fi
 
     [ -z "$files" ] && { echo "${DIM}no changed migrations to check${NC}"; exit 0; }
