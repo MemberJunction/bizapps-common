@@ -42,6 +42,9 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: |
+          # Keep these two lines together. The default invocation exits 0 with
+          # "no changed migrations to check" when BASE_REF is unset; --self-test
+          # is what makes a green run meaningful.
           ./.github/scripts/check-migration-entityfield-sequence.sh --self-test
           ./.github/scripts/check-migration-entityfield-sequence.sh
 
