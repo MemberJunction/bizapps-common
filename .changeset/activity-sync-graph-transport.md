@@ -37,6 +37,16 @@ envelope is now detected by shape rather than inferred from array length.
 meeting as Cancelled, not Logged" had no proof it could fail. Re-anchored, and `M-AC23`–`M-AC28`
 added for the new behaviour.
 
+**`CredentialsRef` is finally read.** The column describes itself as an "MJ Credentials engine key.
+NEVER a secret value at rest" — and no code anywhere consumed it, so a connection could name the
+credential it wanted and be silently ignored. Worse than an absent column: the configuration looked
+complete while the provider refused for what appeared to be an unrelated reason. `BaseActivitySyncProvider`
+gains a `Configure` hook (a no-op by default, so every existing provider is untouched), the engine calls
+it with the connection's `CredentialsRef`, `Mailbox` and driver before fetching, and the Graph provider
+resolves a transport from it through a host-supplied factory. Each way of failing now says something
+different — no CredentialsRef, no factory registered, or a factory that served nothing — because each
+has a different fix. A transport passed to the constructor still wins and is never replaced.
+
 **No date bound is sent yet, deliberately.** The published Communication API has no first-class date
 filter, and the only alternative was `ContextData.Filter`, which silently discarded any other clause.
 MemberJunction/MJ#4123 adds `ReceivedAfter` and fixes that overwrite; until it publishes, the window

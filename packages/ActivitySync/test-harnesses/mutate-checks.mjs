@@ -78,6 +78,24 @@ const PRODUCT = [
         to: '        return true;',
     },
     {
+        // The CredentialsRef read itself. Ignoring the column again puts us back where we started:
+        // a connection naming its credential and being silently disregarded.
+        id: 'M-AC29',
+        file: GRAPH,
+        expect: ['refuses with a CredentialsRef-specific message when the connection names none'],
+        from: "        const ref = (context.CredentialsRef ?? '').trim();",
+        to: "        const ref = 'always-set';",
+    },
+    {
+        // A constructor-supplied transport must win. Dropping this guard lets a database row swap
+        // out what a caller handed in.
+        id: 'M-AC30',
+        file: GRAPH,
+        expect: ['NEVER replaces a transport given to the constructor'],
+        from: '        if (this.Transport) {' + String.fromCharCode(10) + '            return;' + String.fromCharCode(10) + '        }',
+        to: '        if (false) {' + String.fromCharCode(10) + '            return;' + String.fromCharCode(10) + '        }',
+    },
+    {
         // A swallowed transport failure becomes a successful empty sync, which clears LastError and
         // advances the watermark past mail nobody read.
         id: 'M-AC27',

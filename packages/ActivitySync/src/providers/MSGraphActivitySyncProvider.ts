@@ -23,7 +23,11 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseActivitySyncProvider } from '../BaseActivitySyncProvider.js';
 import type { ActivitySourceQuery, NormalizedItem, RawBatch } from '../types.js';
 import { MapGraphMessages } from './GraphMessageMapper.js';
-import type { ActivityMessageTransport } from './MessageTransport.js';
+import type {
+    ActivityMessageTransport,
+    ActivityTransportContext,
+    ActivityTransportFactory,
+} from './MessageTransport.js';
 
 export const LIVE_GRAPH_REFUSAL =
     'Live Graph fetch is disabled. MSGraphProvider uses app-only auth, so Mail.Read reads ' +
@@ -34,6 +38,11 @@ export const LIVE_GRAPH_REFUSAL =
 export const NO_TRANSPORT_REFUSAL =
     'No mailbox transport was supplied. Construct this provider with a GraphCommunicationTransport ' +
     '(live) or a RecordedMessageTransport (replay).';
+
+export const NO_CREDENTIAL_REF_REFUSAL =
+    'This ActivitySyncConnection names no credential. Set its CredentialsRef to the NAME of an ' +
+    '"Azure Service Principal" credential in MJ — that column holds a Credentials engine key, ' +
+    'never a secret value.';
 
 @RegisterClass(BaseActivitySyncProvider, 'Microsoft365')
 export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
@@ -65,9 +74,56 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
          */
         private readonly AllowLiveFetch: boolean = false,
         /** Where messages come from. Without one this provider refuses rather than pretending. */
-        private readonly Transport?: ActivityMessageTransport,
+        private Transport?: ActivityMessageTransport,
+        /** How a host builds a transport for a connection. See {@link Configure}. */
+        private readonly Factory?: ActivityTransportFactory,
     ) {
         super();
+    }
+
+    /** Why this provider cannot fetch, decided at Configure time and reported at fetch time. */
+    private ConfigurationRefusal: string | null = null;
+
+    /**
+     * Reads `ActivitySyncConnection.CredentialsRef` and builds this connection's transport from it.
+     *
+     * THE COLUMN EXISTED AND NOTHING READ IT. Its own description says it holds an "MJ Credentials
+     * engine key. NEVER a secret value at rest" — and no code anywhere consumed it. A connection
+     * could name the credential it wanted and be silently ignored, which is worse than the column
+     * being absent: the configuration looked complete and the provider refused for what looked like
+     * an unrelated reason.
+     *
+     * A transport passed to the CONSTRUCTOR wins and is never replaced. Tests and the demo supply
+     * one directly, and a database row should not be able to reach in and swap it.
+     */
+    public override Configure(context: ActivityTransportContext): void {
+        if (this.Transport) {
+            return;
+        }
+
+        const ref = (context.CredentialsRef ?? '').trim();
+        if (!ref) {
+            this.ConfigurationRefusal = NO_CREDENTIAL_REF_REFUSAL;
+            return;
+        }
+        if (!this.Factory) {
+            this.ConfigurationRefusal =
+                `This connection names credential "${ref}", but no transport factory is registered in ` +
+                'this host, so the credential cannot be resolved.';
+            return;
+        }
+
+        // NOT caught. A factory that throws is a host wiring fault, and swallowing it here would
+        // recreate the silent misconfiguration this whole change exists to end.
+        const built = this.Factory(context);
+        if (!built) {
+            this.ConfigurationRefusal =
+                `The transport factory served no transport for credential "${ref}" on driver ` +
+                `"${context.DriverClass}".`;
+            return;
+        }
+        this.Transport = built;
+        this.ConfigurationRefusal = null;
     }
 
     protected async FetchRaw(query: ActivitySourceQuery): Promise<RawBatch> {
@@ -84,7 +140,10 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
         }
 
         if (!this.Transport) {
-            return { Payloads: [], Issues: [NO_TRANSPORT_REFUSAL] };
+            // The Configure-time refusal is the specific one when there is one: a connection with no
+            // CredentialsRef needs a different fix from a host with no factory, and from a provider
+            // simply constructed without a transport. Saying which saves a wrong hunt.
+            return { Payloads: [], Issues: [this.ConfigurationRefusal ?? NO_TRANSPORT_REFUSAL] };
         }
 
         // Deliberately NOT caught here. `BaseActivitySyncProvider.Fetch` already distinguishes a

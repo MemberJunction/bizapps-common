@@ -23,6 +23,7 @@
 import { LogError } from '@memberjunction/core';
 
 import { ResolveHighWatermark } from './watermark.js';
+import type { ActivityTransportContext } from './providers/MessageTransport.js';
 import type {
     ActivitySourceBatch,
     ActivitySourceKind,
@@ -101,6 +102,20 @@ export abstract class BaseActivitySyncProvider {
     protected Now(): Date {
         return new Date();
     }
+
+    /**
+     * Told what connection this run is for, BEFORE any fetch.
+     *
+     * The plugin is built by `MJGlobal.ClassFactory` with no arguments, so this is the only point at
+     * which a provider learns which credential the connection named. A no-op by default: a fixture
+     * provider has nothing to configure, and every existing provider keeps working untouched.
+     *
+     * NOT allowed to throw. A provider that cannot configure itself should record the reason and
+     * refuse at fetch time, where the refusal reaches the run's Issues and the watermark is
+     * preserved — the engine's existing distinction between 'looked, found nothing' and 'could not
+     * look' does the rest.
+     */
+    public Configure(_context: ActivityTransportContext): void {}
 
     // ── Hooks. All no-ops; override any subset. ────────────────────────────────────────────────
 

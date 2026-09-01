@@ -25,6 +25,7 @@ import { RecordedMessageTransport } from '../providers/RecordedMessageTransport.
 import {
     LIVE_GRAPH_REFUSAL,
     MSGraphActivitySyncProvider,
+    NO_CREDENTIAL_REF_REFUSAL,
     NO_TRANSPORT_REFUSAL,
 } from '../providers/MSGraphActivitySyncProvider.js';
 import type { ActivitySourceQuery } from '../types.js';
@@ -338,6 +339,98 @@ describe('MSGraphActivitySyncProvider — the gate around the transport', () => 
     function recordedTransport() {
         return new RecordedMessageTransport([
             { Mailbox: 'rep@example.com', Payloads: [GRAPH_MESSAGE], Provenance: 'captured 2026-08-30' },
+        ]);
+    }
+});
+
+describe('Configure — reading CredentialsRef off the connection', () => {
+    /**
+     * THE COLUMN THAT NOTHING READ. `ActivitySyncConnection.CredentialsRef` describes itself as an
+     * MJ Credentials engine key, and no code consumed it — so a connection could name the credential
+     * it wanted and be ignored. These assert that it is now read, and that each way of failing to
+     * resolve it says something DIFFERENT, because they have different fixes.
+     */
+    const ctx = (over = {}) => ({
+        CredentialsRef: 'BizApps Graph Reader',
+        Mailbox: 'rep@example.com',
+        DriverClass: 'Microsoft365',
+        ...over,
+    });
+
+    /**
+     * These opt IN to live fetch deliberately. The tenant-wide refusal is checked FIRST and is the
+     * right answer when it applies, so a configuration refusal is only reachable once that gate is
+     * past. Testing them with the gate shut would assert the gate, not the configuration.
+     */
+    const fetchIssue = async (p: MSGraphActivitySyncProvider) =>
+        (await p.Fetch({ ...QUERY, Since: null })).Issues.join(' ');
+
+    it('builds a transport from the factory, passing it the connection context', async () => {
+        const factory = vi.fn().mockReturnValue(recorded());
+        const provider = new MSGraphActivitySyncProvider(false, undefined, factory);
+        provider.Configure(ctx());
+
+        expect(factory).toHaveBeenCalledWith(
+            expect.objectContaining({ CredentialsRef: 'BizApps Graph Reader', Mailbox: 'rep@example.com' }),
+        );
+        const batch = await provider.Fetch({ ...QUERY, Since: null });
+        expect(batch.Items).toHaveLength(1);
+    });
+
+    it('refuses with a CredentialsRef-specific message when the connection names none', async () => {
+        // The real state of our own connection row today: Status Active, CredentialsRef NULL.
+        const provider = new MSGraphActivitySyncProvider(true, undefined, () => recorded());
+        provider.Configure(ctx({ CredentialsRef: null }));
+        expect(await fetchIssue(provider)).toBe(NO_CREDENTIAL_REF_REFUSAL);
+    });
+
+    it('treats a whitespace-only CredentialsRef as absent', async () => {
+        const provider = new MSGraphActivitySyncProvider(true, undefined, () => recorded());
+        provider.Configure(ctx({ CredentialsRef: '   ' }));
+        expect(await fetchIssue(provider)).toBe(NO_CREDENTIAL_REF_REFUSAL);
+    });
+
+    it('does not call the factory when there is no CredentialsRef to resolve', async () => {
+        const factory = vi.fn().mockReturnValue(recorded());
+        new MSGraphActivitySyncProvider(false, undefined, factory).Configure(ctx({ CredentialsRef: null }));
+        expect(factory).not.toHaveBeenCalled();
+    });
+
+    it('names the MISSING FACTORY distinctly — a different fix from a missing CredentialsRef', async () => {
+        const provider = new MSGraphActivitySyncProvider(true);
+        provider.Configure(ctx());
+        const issue = await fetchIssue(provider);
+        expect(issue).toMatch(/no transport factory is registered/i);
+        expect(issue).toContain('BizApps Graph Reader');
+        expect(issue).not.toBe(NO_CREDENTIAL_REF_REFUSAL);
+    });
+
+    it('names a factory that served nothing, rather than reporting a missing transport', async () => {
+        const provider = new MSGraphActivitySyncProvider(true, undefined, () => null);
+        provider.Configure(ctx());
+        expect(await fetchIssue(provider)).toMatch(/served no transport/i);
+    });
+
+    it('NEVER replaces a transport given to the constructor', async () => {
+        // A database row must not be able to reach in and swap what a caller supplied.
+        const factory = vi.fn().mockReturnValue(recorded());
+        const provider = new MSGraphActivitySyncProvider(false, recorded(), factory);
+        provider.Configure(ctx());
+        expect(factory).not.toHaveBeenCalled();
+    });
+
+    it('lets a provider that was never configured keep its old refusal', async () => {
+        expect(await fetchIssue(new MSGraphActivitySyncProvider(true))).toBe(NO_TRANSPORT_REFUSAL);
+    });
+
+    it('is a NO-OP on the base class, so existing providers are untouched', () => {
+        const fixture = new RecordedMessageTransport([]);
+        expect(() => new MSGraphActivitySyncProvider(false, fixture).Configure(ctx())).not.toThrow();
+    });
+
+    function recorded() {
+        return new RecordedMessageTransport([
+            { Mailbox: 'rep@example.com', Payloads: [GRAPH_MESSAGE], Provenance: 'captured' },
         ]);
     }
 });

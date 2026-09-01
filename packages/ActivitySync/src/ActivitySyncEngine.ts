@@ -90,6 +90,8 @@ interface ConnectionRow {
     Status: string;
     Provider: string | null;
     Mailbox: string | null;
+    /** MJ Credentials engine KEY, never a secret. Read by `BaseActivitySyncProvider.Configure`. */
+    CredentialsRef: string | null;
     StartAt: Date | string | null;
     EndAt: Date | string | null;
     LastSyncAt: Date | string | null;
@@ -246,6 +248,15 @@ export class ActivitySyncEngine {
             );
             return result;
         }
+        // Tell the plugin which connection this run is for BEFORE it fetches. This is the only
+        // moment it can learn which credential the connection named: ClassFactory builds plugins
+        // with no arguments, so nothing is injectable at construction.
+        plugin.Configure({
+            CredentialsRef: connection.CredentialsRef ?? null,
+            Mailbox: connection.Mailbox ?? null,
+            DriverClass: typeRow?.DriverClass ?? plugin.ProviderTypeCode,
+        });
+
         const sourceSystem = typeRow?.Code ?? plugin.ProviderTypeCode;
         const since = SurfaceWatermark(plugin.Kind, connection.LastSyncAt, connection.Settings);
 

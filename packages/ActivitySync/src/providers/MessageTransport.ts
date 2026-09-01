@@ -37,3 +37,30 @@ export interface ActivityMessageTransport {
 
     Fetch(query: ActivitySourceQuery): Promise<RawBatch>;
 }
+
+/**
+ * What a connection knows about itself that a transport needs.
+ *
+ * `CredentialsRef` is the column's whole purpose — its own description says "MJ Credentials engine
+ * key. NEVER a secret value at rest" — and until now nothing read it. A connection could name the
+ * credential it wanted and be ignored, which is worse than having no column at all: the
+ * configuration looked complete.
+ */
+export interface ActivityTransportContext {
+    /** `ActivitySyncConnection.CredentialsRef` — a KEY into MJ's Credentials engine, never a secret. */
+    CredentialsRef: string | null;
+    /** `ActivitySyncConnection.Mailbox`, so a factory can scope or validate what it builds. */
+    Mailbox: string | null;
+    /** The plugin key this connection resolved to, for a factory serving more than one provider. */
+    DriverClass: string;
+}
+
+/**
+ * How a HOST supplies a transport for a connection.
+ *
+ * Providers are constructed by `MJGlobal.ClassFactory` with no arguments, so nothing can be injected
+ * at construction. A factory is the seam that respects that: the host owns the Communication and
+ * Credentials engines, and hands back a transport for a given connection or null if it cannot serve
+ * one. Returning null is not an error — a host that syncs only fixtures legitimately has none.
+ */
+export type ActivityTransportFactory = (context: ActivityTransportContext) => ActivityMessageTransport | null;
