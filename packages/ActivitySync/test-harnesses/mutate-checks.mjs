@@ -24,6 +24,7 @@ const WRITER = 'src/writer.ts';
 const WATER = 'src/watermark.ts';
 const LOAD = 'src/load.ts';
 const ACTION = 'src/action-result.ts';
+const TRANSPORT = 'src/providers/GraphCommunicationTransport.ts';
 
 const PRODUCT = [
     {
@@ -37,15 +38,69 @@ const PRODUCT = [
         id: 'M-AC11',
         file: GRAPH,
         expect: ['Graph provider refuses live fetch until an Application Access Policy exists'],
-        from: '        if (!this.AllowLiveFetch) {\n            return { Payloads: [], Issues: [LIVE_GRAPH_REFUSAL] };',
-        to: '        if (false && !this.AllowLiveFetch) {\n            return { Payloads: [], Issues: [LIVE_GRAPH_REFUSAL] };',
+        from: '        if ((this.Transport?.IsLive ?? true) && !this.AllowLiveFetch) {',
+        to: '        if (false && (this.Transport?.IsLive ?? true) && !this.AllowLiveFetch) {',
+    },
+    {
+        // The exemption that lets a REPLAY run without the live opt-in. Widening it to every
+        // transport would re-open the tenant-wide read behind a flag that still reads as off.
+        id: 'M-AC23',
+        file: GRAPH,
+        expect: ['refuses with the tenant-wide warning when live fetch is not opted in'],
+        from: '        if ((this.Transport?.IsLive ?? true) && !this.AllowLiveFetch) {',
+        to: '        if (false && !this.AllowLiveFetch) {',
+    },
+    {
+        // An absent transport must be the STRICTER case. Defaulting it to non-live would let the
+        // default construction slip past the refusal entirely.
+        id: 'M-AC24',
+        file: GRAPH,
+        expect: ['prefers the tenant-wide warning in the DEFAULT construction'],
+        from: '        if ((this.Transport?.IsLive ?? true) && !this.AllowLiveFetch) {',
+        to: '        if ((this.Transport?.IsLive ?? false) && !this.AllowLiveFetch) {',
+    },
+    {
+        // The one-message bug, restored. This shape reported a clean empty sync for a mailbox that
+        // had exactly one new message.
+        id: 'M-AC25',
+        file: GRAPH,
+        expect: ['maps exactly ONE payload rather than silently dropping it'],
+        from: '        const mapped = MapGraphMessages(isEnvelope ? only : raw.Payloads, query.Mailbox);',
+        to: '        const mapped = MapGraphMessages(raw.Payloads.length === 1 ? raw.Payloads[0] : raw.Payloads, query.Mailbox);',
+    },
+    {
+        // IsLive must follow the TRANSPORT. Hard-coding it true again would make a replayed run
+        // indistinguishable from a real one in the database.
+        id: 'M-AC26',
+        file: GRAPH,
+        expect: ['reports IsLive from the transport, not from the class'],
+        from: '        return this.Transport?.IsLive ?? true;',
+        to: '        return true;',
+    },
+    {
+        // A swallowed transport failure becomes a successful empty sync, which clears LastError and
+        // advances the watermark past mail nobody read.
+        id: 'M-AC27',
+        file: TRANSPORT,
+        expect: ['THROWS when Graph reports failure, rather than returning an empty batch'],
+        from: '        if (!result?.Success) {',
+        to: '        if (false && !result?.Success) {',
+    },
+    {
+        // Dropping the credential guard lets an empty secret reach MJ, which then silently falls
+        // back to environment variables and reads whatever mailbox those point at.
+        id: 'M-AC28',
+        file: TRANSPORT,
+        expect: ['refuses an incomplete credential and NAMES the missing fields'],
+        from: '        if (missing.length > 0) {',
+        to: '        if (false && missing.length > 0) {',
     },
     {
         id: 'M-AC18',
         file: WRITER,
         expect: ['stores a cancelled meeting as Cancelled, not Logged'],
-        from: "            activity.Status = input.Item.Cancelled ? 'Cancelled' : 'Logged';",
-        to: "            activity.Status = 'Logged';",
+        from: "        activity.Status = input.Item.Cancelled ? 'Cancelled' : 'Logged';",
+        to: "        activity.Status = 'Logged';",
     },
     {
         id: 'M-AC19',
