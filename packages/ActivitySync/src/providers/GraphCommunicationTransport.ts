@@ -21,6 +21,7 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
+import type { BaseCommunicationProvider } from '@memberjunction/communication-types';
 import type { UserInfo } from '@memberjunction/core';
 
 import type { ActivitySourceQuery, RawBatch } from '../types.js';
@@ -61,6 +62,25 @@ export interface GraphMessageReader {
         AppliedFilters?: unknown;
     }>;
 }
+
+/**
+ * COMPILE-TIME PROOF THAT THE STRUCTURAL TYPE ABOVE IS NOT FICTION.
+ *
+ * `GraphMessageReader` is declared structurally so this package takes no runtime dependency on the
+ * Communication provider. The cost of that choice is that nothing checked the shape against MJ: the
+ * only value ever assigned to it is a test stub, and that stub is cast with `as unknown as`, which
+ * bypasses checking entirely. A drift in MJ's `GetMessages` would therefore have surfaced on the
+ * FIRST LIVE CALL and nowhere earlier — the exact class of silent failure this package keeps being
+ * designed against.
+ *
+ * So the compiler is made to check it instead. `@memberjunction/communication-types` is already a
+ * declared peer and this is a TYPE-only import, so no runtime dependency is added and these lines
+ * emit no JavaScript. If MJ changes the signature, the BUILD breaks here rather than a live sync.
+ */
+type AssertTrue<T extends true> = T;
+export type GraphMessageReaderMatchesMJ = AssertTrue<
+    BaseCommunicationProvider extends GraphMessageReader ? true : false
+>;
 
 /**
  * How the two collaborators are obtained.
