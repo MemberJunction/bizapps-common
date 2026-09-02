@@ -22,10 +22,11 @@ export type StatTileTone = 'none' | 'warn' | 'error';
  * mode a work-queue dashboard must not have. Pass `null` for "we could not read this" and the tile
  * says so.
  *
- * **THE TILE IS ONLY INTERACTIVE WHEN SOMEONE IS LISTENING.** `Clicked.observed` drives the cursor,
- * the `role`, the `tabindex` and the keyboard handlers together, so a tile with no handler is not
- * focusable, not announced as a button, and does not invite a click that does nothing. Getting this
- * from one flag rather than four inputs is why it cannot drift into a lie.
+ * **A TILE THAT DOES NOTHING MUST NOT LOOK CLICKABLE.** One flag — {@link IsClickable} — drives the
+ * cursor, the `role`, the `tabindex` and the keyboard handlers together, so they cannot drift apart.
+ * It defaults to "is anything listening to `Clicked`", which is right for a row where every tile
+ * navigates; a row with a mix of live and inert tiles must pass {@link Clickable} explicitly, because
+ * a template binding counts as listening whatever its handler decides to do. See that input.
  *
  * ## Styles live here, deliberately
  *
@@ -154,17 +155,37 @@ export class StatTileComponent {
     /** Colours the value when the number is one somebody has to act on. */
     @Input() Tone: StatTileTone = 'none';
 
-    /** Emitted on click, Enter or Space. Subscribing is what makes the tile interactive at all. */
+    /** Emitted on click, Enter or Space. */
     @Output() Clicked = new EventEmitter<void>();
+
+    /**
+     * Force interactivity on or off. Leave unset to infer it from whether anything is listening.
+     *
+     * ⚠ THE INFERENCE ALONE IS NOT ENOUGH, and this input exists because of a bug it failed to
+     * prevent. `Clicked.observed` is true whenever a TEMPLATE binds `(Clicked)` — Angular subscribes
+     * to the output at binding time, and it has no idea what the handler expression decides to do.
+     * So a consumer writing `(Clicked)="tile.Target ? Go(tile) : null"` for a mixed row of tiles gets
+     * every tile focusable, announced as a button and showing a pointer, including the ones whose
+     * click resolves to nothing — which is precisely the "invites a click that does nothing" outcome
+     * the inference was meant to rule out.
+     *
+     * Pass `false` for a tile that is deliberately inert, and keep binding `(Clicked)` normally.
+     */
+    @Input() Clickable: boolean | null = null;
 
     /** `null` becomes an em dash. See the class comment — this is the rule, not a formatting choice. */
     public get DisplayValue(): string {
         return this.Value === null || this.Value === undefined ? '—' : String(this.Value);
     }
 
-    /** One flag drives cursor, role, tabindex and the keyboard handlers, so they cannot disagree. */
+    /**
+     * One flag drives cursor, role, tabindex and the keyboard handlers, so they cannot disagree.
+     *
+     * An explicit {@link Clickable} always wins; otherwise fall back to whether anything is
+     * listening, which is right for the common case of a row where every tile navigates.
+     */
     public get IsClickable(): boolean {
-        return this.Clicked.observed;
+        return this.Clickable ?? this.Clicked.observed;
     }
 
     /**
