@@ -434,3 +434,62 @@ describe('Configure — reading CredentialsRef off the connection', () => {
         ]);
     }
 });
+
+describe('Configure — reachable in the configuration the ENGINE actually uses', () => {
+    /**
+     * THE TESTS ABOVE OPT IN TO LIVE FETCH. That is a legitimate way to isolate the configuration
+     * refusals, but it leaves the production path unasserted: `ActivitySyncEngine` resolves this
+     * provider through `ClassFactory`, which constructs it with NO ARGUMENTS, so `AllowLiveFetch`
+     * is false and no factory is ever injected. With the tenant gate returning early, every
+     * Configure-time message was unreachable there — the operator was told the Exchange policy was
+     * the problem when the real problem was a missing CredentialsRef or a missing factory.
+     *
+     * These construct the provider the way the engine does and assert BOTH messages surface. They
+     * fail against an implementation that returns only the tenant refusal.
+     */
+    const engineBuilt = () => new MSGraphActivitySyncProvider();
+    const ctx = (over = {}) => ({
+        CredentialsRef: 'BizApps Graph Reader',
+        Mailbox: 'rep@example.com',
+        DriverClass: 'Microsoft365',
+        ...over,
+    });
+
+    it('still reports the tenant-wide refusal FIRST — the security message keeps precedence', async () => {
+        const p = engineBuilt();
+        p.Configure(ctx({ CredentialsRef: null }));
+        const batch = await p.Fetch({ ...QUERY, Since: null });
+        expect(batch.Issues[0]).toBe(LIVE_GRAPH_REFUSAL);
+    });
+
+    it('ALSO names the missing CredentialsRef, which the tenant refusal does not mention', async () => {
+        const p = engineBuilt();
+        p.Configure(ctx({ CredentialsRef: null }));
+        const batch = await p.Fetch({ ...QUERY, Since: null });
+        expect(batch.Issues).toHaveLength(2);
+        expect(batch.Issues[1]).toBe(NO_CREDENTIAL_REF_REFUSAL);
+    });
+
+    it('ALSO names the missing factory when the connection DOES name a credential', async () => {
+        // Setting CredentialsRef in the database and changing nothing else lands here. Without the
+        // second issue an operator sees only 'confirm the Application Access Policy', which is the
+        // wrong hunt: the policy could be perfect and this would still refuse.
+        const p = engineBuilt();
+        p.Configure(ctx());
+        const batch = await p.Fetch({ ...QUERY, Since: null });
+        expect(batch.Issues).toHaveLength(2);
+        expect(batch.Issues[1]).toContain('no transport factory is registered');
+        expect(batch.Issues[1]).toContain('BizApps Graph Reader');
+    });
+
+    it('adds NOTHING for a recorded transport — the demo path stays a single provenance note', async () => {
+        const p = new MSGraphActivitySyncProvider(false, new RecordedMessageTransport([
+            { Mailbox: 'rep@example.com', Payloads: [GRAPH_MESSAGE], Provenance: 'captured' },
+        ]));
+        p.Configure(ctx({ CredentialsRef: null }));
+        const batch = await p.Fetch({ ...QUERY, Since: null });
+        expect(batch.Issues).toHaveLength(1);
+        expect(batch.Issues[0]).not.toBe(LIVE_GRAPH_REFUSAL);
+        expect(batch.Items).toHaveLength(1);
+    });
+});

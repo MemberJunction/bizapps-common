@@ -136,7 +136,18 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
         // scoped to, and a replay reads none. Gating it as well would make the safe path as awkward
         // as the dangerous one, which is how people end up flipping the dangerous flag.
         if ((this.Transport?.IsLive ?? true) && !this.AllowLiveFetch) {
-            return { Payloads: [], Issues: [LIVE_GRAPH_REFUSAL] };
+            // The tenant refusal stays FIRST for the reason above. But a Configure-time fault is
+            // ALSO true and has a DIFFERENT fix, and reporting only the first sends an operator to
+            // chase an Exchange policy when what is actually missing is a CredentialsRef or a
+            // factory. Since AllowLiveFetch defaults false and ClassFactory builds this provider
+            // with no arguments, returning early here made every Configure-time message below
+            // unreachable through the engine — the exact silent misconfiguration this class exists
+            // to end. Both are reported, most severe first.
+            const issues = [LIVE_GRAPH_REFUSAL];
+            if (!this.Transport && this.ConfigurationRefusal) {
+                issues.push(this.ConfigurationRefusal);
+            }
+            return { Payloads: [], Issues: issues };
         }
 
         if (!this.Transport) {
