@@ -1,5 +1,29 @@
 # Change Log - mj_generatedentities
 
+## 5.37.0
+
+### Minor Changes
+
+- d73a3af: Activity Sync Engine P2 — CodeGen objects folded into the schema V, plus provider-type seeds.
+
+  Entity metadata, views, and CRUD for the seven new Activity Sync tables append under the
+  banner in `V202608291500` (one migration for the whole schema; no standalone CodeGen V).
+  Seeds Microsoft365, Gmail, Zoom, and Generic as metadata, with
+  `DefaultQualificationPolicy=Exclude` on mailbox-shaped types.
+
+- d73a3af: Fold CodeGen output for ActivitySyncProviderType.CalendarDriverClass into V202608301900.
+
+  Hand DDL is the ALTER TABLE only. Microsoft365's CalendarDriverClass value stays in
+  metadata JSON. CodeGen SQL (EntityField, view, spCreate/spUpdate/spDelete, trigger)
+  is appended after the standard banner.
+
+- d73a3af: Activity sync trigger, calendar companion as data, and per-connection health.
+
+  Seeds Common.SyncActivities (Action, Limit, result codes, hourly job) as JSON.
+  CalendarDriverClass on ActivitySyncProviderType drives the companion surface through
+  ClassFactory. Connection health is stamped once from combined surfaces. A failed
+  connection list load is ERROR, not NO_CONNECTIONS.
+
 ## 5.36.0
 
 ### Minor Changes
