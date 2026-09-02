@@ -255,6 +255,7 @@ export class ActivitySyncEngine {
             CredentialsRef: connection.CredentialsRef ?? null,
             Mailbox: connection.Mailbox ?? null,
             DriverClass: typeRow?.DriverClass ?? plugin.ProviderTypeCode,
+            ContextUser: contextUser,
         });
 
         const sourceSystem = typeRow?.Code ?? plugin.ProviderTypeCode;

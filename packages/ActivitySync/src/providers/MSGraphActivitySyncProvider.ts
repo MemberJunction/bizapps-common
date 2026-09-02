@@ -23,6 +23,7 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseActivitySyncProvider } from '../BaseActivitySyncProvider.js';
 import type { ActivitySourceQuery, NormalizedItem, RawBatch } from '../types.js';
 import { MapGraphMessages } from './GraphMessageMapper.js';
+import { HostActivityTransportFactory } from './MessageTransport.js';
 import type {
     ActivityMessageTransport,
     ActivityTransportContext,
@@ -106,7 +107,11 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
             this.ConfigurationRefusal = NO_CREDENTIAL_REF_REFUSAL;
             return;
         }
-        if (!this.Factory) {
+        // A CONSTRUCTOR factory wins; otherwise ask the host registry. Only the second of these is
+        // reachable through the engine, because ClassFactory passes no arguments — see
+        // RegisterActivityTransportFactory.
+        const factory = this.Factory ?? HostActivityTransportFactory();
+        if (!factory) {
             this.ConfigurationRefusal =
                 `This connection names credential "${ref}", but no transport factory is registered in ` +
                 'this host, so the credential cannot be resolved.';
@@ -115,7 +120,7 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
 
         // NOT caught. A factory that throws is a host wiring fault, and swallowing it here would
         // recreate the silent misconfiguration this whole change exists to end.
-        const built = this.Factory(context);
+        const built = factory(context);
         if (!built) {
             this.ConfigurationRefusal =
                 `The transport factory served no transport for credential "${ref}" on driver ` +

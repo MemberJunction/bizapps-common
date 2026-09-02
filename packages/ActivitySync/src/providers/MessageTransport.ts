@@ -15,6 +15,8 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
+import type { UserInfo } from '@memberjunction/core';
+
 import type { ActivitySourceQuery, RawBatch } from '../types.js';
 
 /**
@@ -53,6 +55,15 @@ export interface ActivityTransportContext {
     Mailbox: string | null;
     /** The plugin key this connection resolved to, for a factory serving more than one provider. */
     DriverClass: string;
+    /**
+     * Who the run is acting as.
+     *
+     * MJ's Credentials engine documents `contextUser` as REQUIRED server-side, so a factory that
+     * resolves a credential cannot do its job without it. It is optional here because a factory that
+     * serves recordings needs no user at all, and requiring one would make the safe path the awkward
+     * one.
+     */
+    ContextUser?: UserInfo;
 }
 
 /**
@@ -64,3 +75,35 @@ export interface ActivityTransportContext {
  * one. Returning null is not an error — a host that syncs only fixtures legitimately has none.
  */
 export type ActivityTransportFactory = (context: ActivityTransportContext) => ActivityMessageTransport | null;
+
+/**
+ * THE HOST REGISTRY, and why a constructor parameter was not enough.
+ *
+ * `ActivityTransportFactory` was declared as "how a HOST supplies a transport" and reachable only as
+ * the third constructor argument — which `MJGlobal.ClassFactory` never passes, because it builds
+ * plugins with no arguments. So through the engine, the only path that matters in production, no
+ * factory could ever arrive. The seam was described, exported, and unreachable.
+ *
+ * A module-level registry is the shape that fits the constraint rather than fighting it: the host
+ * owns the Communication and Credentials engines and registers once at bootstrap, and the provider
+ * asks for one at Configure time.
+ *
+ * A transport or factory passed to the CONSTRUCTOR still wins. Tests and the demo supply their own,
+ * and a process-wide registration must not be able to reach in and replace it.
+ */
+let hostFactory: ActivityTransportFactory | null = null;
+
+/**
+ * Register the factory this host serves transports from. Pass null to clear it.
+ *
+ * Idempotent and last-call-wins, deliberately: a host that boots twice in one process (tests, a
+ * reload) must not end up with two, and there is no sensible way to merge them.
+ */
+export function RegisterActivityTransportFactory(factory: ActivityTransportFactory | null): void {
+    hostFactory = factory;
+}
+
+/** The registered factory, or null when this host serves none. */
+export function HostActivityTransportFactory(): ActivityTransportFactory | null {
+    return hostFactory;
+}

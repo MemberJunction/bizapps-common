@@ -11,7 +11,7 @@
  * a successful sync — and "could not look", which must surface as a failure and preserve the
  * watermark. Collapsing those two is the recurring defect this package keeps designing against.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     GraphCommunicationTransport,
@@ -21,6 +21,10 @@ import {
     type GraphMessageReader,
     type GraphServicePrincipal,
 } from '../providers/GraphCommunicationTransport.js';
+import {
+    HostActivityTransportFactory,
+    RegisterActivityTransportFactory,
+} from '../providers/MessageTransport.js';
 import { RecordedMessageTransport } from '../providers/RecordedMessageTransport.js';
 import {
     LIVE_GRAPH_REFUSAL,
@@ -28,6 +32,8 @@ import {
     NO_CREDENTIAL_REF_REFUSAL,
     NO_TRANSPORT_REFUSAL,
 } from '../providers/MSGraphActivitySyncProvider.js';
+import type { UserInfo } from '@memberjunction/core';
+
 import type { ActivitySourceQuery } from '../types.js';
 
 const CREDENTIAL: GraphServicePrincipal = {
@@ -541,5 +547,89 @@ describe('a capped read must not advance the watermark past mail it never fetche
         const provider = new MSGraphActivitySyncProvider(true, t);
         const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 50 });
         expect(batch.HighWatermark).toEqual(new Date('2026-08-30T09:00:00Z'));
+    });
+});
+
+describe('the host transport registry — making the seam reachable at all', () => {
+    /**
+     * WHAT THIS COVERS THAT NOTHING DID. `ActivityTransportFactory` was reachable only as the THIRD
+     * constructor argument, and `MJGlobal.ClassFactory` builds plugins with NO arguments. So through
+     * `ActivitySyncEngine` — the only path production uses — a factory could never arrive, and every
+     * test that exercised one passed it directly to the constructor, which production never does.
+     * A seam that is exported, documented and unreachable is the same defect this package keeps
+     * being written against, one layer up.
+     */
+    afterEach(() => {
+        RegisterActivityTransportFactory(null); // process-wide state — never leak it between tests
+    });
+
+    const ctx = (over = {}) => ({
+        CredentialsRef: 'BizApps Graph Reader',
+        Mailbox: 'rep@example.com',
+        DriverClass: 'Microsoft365',
+        ...over,
+    });
+    const recorded = () =>
+        new RecordedMessageTransport([
+            { Mailbox: 'rep@example.com', Payloads: [GRAPH_MESSAGE], Provenance: 'captured' },
+        ]);
+
+    it('serves no factory until a host registers one', () => {
+        expect(HostActivityTransportFactory()).toBeNull();
+    });
+
+    it('a provider built the way ClassFactory builds it USES the registered factory', async () => {
+        const factory = vi.fn().mockReturnValue(recorded());
+        RegisterActivityTransportFactory(factory);
+
+        const provider = new MSGraphActivitySyncProvider(); // no arguments, exactly like the engine
+        provider.Configure(ctx());
+
+        expect(factory).toHaveBeenCalledWith(
+            expect.objectContaining({ CredentialsRef: 'BizApps Graph Reader', DriverClass: 'Microsoft365' }),
+        );
+        const batch = await provider.Fetch({ ...QUERY, Since: null });
+        expect(batch.Items).toHaveLength(1);
+    });
+
+    it('a CONSTRUCTOR factory still wins over a registered one', async () => {
+        const registered = vi.fn().mockReturnValue(recorded());
+        const explicit = vi.fn().mockReturnValue(recorded());
+        RegisterActivityTransportFactory(registered);
+
+        new MSGraphActivitySyncProvider(false, undefined, explicit).Configure(ctx());
+
+        expect(explicit).toHaveBeenCalled();
+        expect(registered).not.toHaveBeenCalled();
+    });
+
+    it('a CONSTRUCTOR transport is never replaced by a registered factory', async () => {
+        const registered = vi.fn().mockReturnValue(recorded());
+        RegisterActivityTransportFactory(registered);
+
+        const fixture = recorded();
+        new MSGraphActivitySyncProvider(false, fixture).Configure(ctx());
+
+        expect(registered).not.toHaveBeenCalled();
+    });
+
+    it('clearing the registry restores the no-factory refusal rather than leaving a stale one', async () => {
+        RegisterActivityTransportFactory(vi.fn().mockReturnValue(recorded()));
+        RegisterActivityTransportFactory(null);
+
+        const provider = new MSGraphActivitySyncProvider(true);
+        provider.Configure(ctx());
+        const batch = await provider.Fetch({ ...QUERY, Since: null });
+        expect(batch.Issues.join(' ')).toContain('no transport factory is registered');
+    });
+
+    it('passes the ContextUser through, which the Credentials engine requires server-side', () => {
+        const factory = vi.fn().mockReturnValue(recorded());
+        RegisterActivityTransportFactory(factory);
+        const user = { ID: 'u-1', Name: 'Rep' } as unknown as UserInfo;
+
+        new MSGraphActivitySyncProvider().Configure(ctx({ ContextUser: user }));
+
+        expect(factory).toHaveBeenCalledWith(expect.objectContaining({ ContextUser: user }));
     });
 });
