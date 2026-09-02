@@ -1,5 +1,26 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.37.0
+
+### Minor Changes
+
+- d73a3af: Activity Sync Engine P4/P5 — engine, writer, identity resolver, fixture and Graph providers.
+
+  Graph refuses live fetch until an Exchange Application Access Policy exists. Synced
+  activities are Visibility=Private. Unmatched addresses become unresolved ActivityLinks.
+  Dry runs never set WatermarkAfter. Exclusions run first and are absolute.
+
+### Patch Changes
+
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+  - @mj-biz-apps/common-entities@5.37.0
+  - @mj-biz-apps/common-activity-sync@5.37.0
+
 ## 5.36.0
 
 ### Patch Changes
