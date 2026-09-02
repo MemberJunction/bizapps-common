@@ -101,7 +101,13 @@ importers:
 
   packages/ActivitySync:
     dependencies:
+      '@memberjunction/communication-types':
+        specifier: ^6.1.0-edge.5
+        version: 6.1.0-edge.5
       '@memberjunction/core':
+        specifier: ^6.1.0-edge.5
+        version: 6.1.0-edge.5
+      '@memberjunction/credentials':
         specifier: ^6.1.0-edge.5
         version: 6.1.0-edge.5
       '@memberjunction/global':

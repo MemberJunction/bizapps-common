@@ -92,8 +92,12 @@ const PRODUCT = [
         id: 'M-AC30',
         file: GRAPH,
         expect: ['NEVER replaces a transport given to the constructor'],
-        from: '        if (this.Transport) {' + String.fromCharCode(10) + '            return;' + String.fromCharCode(10) + '        }',
-        to: '        if (false) {' + String.fromCharCode(10) + '            return;' + String.fromCharCode(10) + '        }',
+        // Single-line anchor ON PURPOSE. A multi-line one embedded LF and silently stopped
+        // matching the moment the file was checked out with CRLF — the mutant then SKIPPED,
+        // which reads as 'not proven' rather than 'broken', and is exactly the quiet failure
+        // this harness exists to catch.
+        from: '        if (this.Transport) {',
+        to: '        if (false && this.Transport) {',
     },
     {
         // A swallowed transport failure becomes a successful empty sync, which clears LastError and
