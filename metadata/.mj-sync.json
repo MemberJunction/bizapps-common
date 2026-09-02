@@ -10,9 +10,16 @@
     "contact-types",
     "organization-types",
     "relationship-types",
+    "activity-sync-provider-types",
+    "action-categories",
+    "actions",
+    "scheduled-jobs",
     "entities",
     "entity-relationships",
-    "application-roles"
+    "application-roles",
+    "action-filters",
+    "agents",
+    "entity-actions"
   ],
   "sqlLogging": {
     "enabled": true,

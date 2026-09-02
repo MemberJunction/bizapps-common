@@ -18,8 +18,15 @@ import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 import { mjBizAppsCommonActivityFormComponent } from "./Entities/mjBizAppsCommonActivity/mjbizappscommonactivity.form.component";
 import { mjBizAppsCommonActivityFileFormComponent } from "./Entities/mjBizAppsCommonActivityFile/mjbizappscommonactivityfile.form.component";
 import { mjBizAppsCommonActivityLinkFormComponent } from "./Entities/mjBizAppsCommonActivityLink/mjbizappscommonactivitylink.form.component";
+import { mjBizAppsCommonActivitySyncConnectionRuleSetFormComponent } from "./Entities/mjBizAppsCommonActivitySyncConnectionRuleSet/mjbizappscommonactivitysyncconnectionruleset.form.component";
 import { mjBizAppsCommonActivitySyncConnectionFormComponent } from "./Entities/mjBizAppsCommonActivitySyncConnection/mjbizappscommonactivitysyncconnection.form.component";
+import { mjBizAppsCommonActivitySyncExclusionFormComponent } from "./Entities/mjBizAppsCommonActivitySyncExclusion/mjbizappscommonactivitysyncexclusion.form.component";
+import { mjBizAppsCommonActivitySyncExtensionFormComponent } from "./Entities/mjBizAppsCommonActivitySyncExtension/mjbizappscommonactivitysyncextension.form.component";
+import { mjBizAppsCommonActivitySyncProviderTypeFormComponent } from "./Entities/mjBizAppsCommonActivitySyncProviderType/mjbizappscommonactivitysyncprovidertype.form.component";
+import { mjBizAppsCommonActivitySyncRuleSetFormComponent } from "./Entities/mjBizAppsCommonActivitySyncRuleSet/mjbizappscommonactivitysyncruleset.form.component";
 import { mjBizAppsCommonActivitySyncRuleFormComponent } from "./Entities/mjBizAppsCommonActivitySyncRule/mjbizappscommonactivitysyncrule.form.component";
+import { mjBizAppsCommonActivitySyncRunDetailFormComponent } from "./Entities/mjBizAppsCommonActivitySyncRunDetail/mjbizappscommonactivitysyncrundetail.form.component";
+import { mjBizAppsCommonActivitySyncRunFormComponent } from "./Entities/mjBizAppsCommonActivitySyncRun/mjbizappscommonactivitysyncrun.form.component";
 import { mjBizAppsCommonActivityTypeFormComponent } from "./Entities/mjBizAppsCommonActivityType/mjbizappscommonactivitytype.form.component";
 import { mjBizAppsCommonAddressLinkFormComponent } from "./Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component";
 import { mjBizAppsCommonAddressTypeFormComponent } from "./Entities/mjBizAppsCommonAddressType/mjbizappscommonaddresstype.form.component";
@@ -38,8 +45,15 @@ declarations: [
     mjBizAppsCommonActivityFormComponent,
     mjBizAppsCommonActivityFileFormComponent,
     mjBizAppsCommonActivityLinkFormComponent,
+    mjBizAppsCommonActivitySyncConnectionRuleSetFormComponent,
     mjBizAppsCommonActivitySyncConnectionFormComponent,
+    mjBizAppsCommonActivitySyncExclusionFormComponent,
+    mjBizAppsCommonActivitySyncExtensionFormComponent,
+    mjBizAppsCommonActivitySyncProviderTypeFormComponent,
+    mjBizAppsCommonActivitySyncRuleSetFormComponent,
     mjBizAppsCommonActivitySyncRuleFormComponent,
+    mjBizAppsCommonActivitySyncRunDetailFormComponent,
+    mjBizAppsCommonActivitySyncRunFormComponent,
     mjBizAppsCommonActivityTypeFormComponent,
     mjBizAppsCommonAddressLinkFormComponent,
     mjBizAppsCommonAddressTypeFormComponent,
@@ -47,10 +61,7 @@ declarations: [
     mjBizAppsCommonContactMethodFormComponent,
     mjBizAppsCommonContactTypeFormComponent,
     mjBizAppsCommonOrganizationTypeFormComponent,
-    mjBizAppsCommonOrganizationFormComponent,
-    mjBizAppsCommonPersonFormComponent,
-    mjBizAppsCommonRelationshipTypeFormComponent,
-    mjBizAppsCommonRelationshipFormComponent],
+    mjBizAppsCommonOrganizationFormComponent],
 imports: [
     CommonModule,
     FormsModule,
@@ -67,9 +78,29 @@ export class GeneratedForms_SubModule_0 { }
 
 @NgModule({
 declarations: [
+    mjBizAppsCommonPersonFormComponent,
+    mjBizAppsCommonRelationshipTypeFormComponent,
+    mjBizAppsCommonRelationshipFormComponent],
+imports: [
+    CommonModule,
+    FormsModule,
+    BaseFormsModule,
+    EntityViewerModule,
+    LinkDirectivesModule
+],
+exports: [
+]
+})
+export class GeneratedForms_SubModule_1 { }
+    
+
+
+@NgModule({
+declarations: [
 ],
 imports: [
-    GeneratedForms_SubModule_0
+    GeneratedForms_SubModule_0,
+    GeneratedForms_SubModule_1
 ]
 })
 export class GeneratedFormsModule { }

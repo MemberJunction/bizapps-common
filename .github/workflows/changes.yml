@@ -38,6 +38,16 @@ jobs:
         if: steps.migration_check.outputs.has_migrations == 'true'
         run: ./.github/scripts/validate-migration-filenames.sh
 
+      - name: EntityField Sequence must not be a literal placeholder
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Keep these two lines together. The default invocation exits 0 with
+          # "no changed migrations to check" when BASE_REF is unset; --self-test
+          # is what makes a green run meaningful.
+          ./.github/scripts/check-migration-entityfield-sequence.sh --self-test
+          ./.github/scripts/check-migration-entityfield-sequence.sh
+
       - name: Validate migration timestamps are newer than existing
         if: steps.migration_check.outputs.has_migrations == 'true'
         run: |

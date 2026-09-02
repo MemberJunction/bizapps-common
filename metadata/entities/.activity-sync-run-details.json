@@ -1,0 +1,55 @@
+[
+  {
+    "_comments": [
+      "ActivitySyncRunDetail can hold encrypted fragments of messages deliberately NOT ingested.",
+      "CodeGen emits UI read + Integration CRUD for every new entity; nobody chose that here.",
+      "Amith's ruling is about read: no role other than Developer may read this entity.",
+      "Developer keeps the CodeGen CRUD row. UI is all zeros.",
+      "Integration keeps CanCreate so a scheduled ingest can append audit rows; CanRead/Update/Delete stay 0.",
+      "The engine does not pick a role — ActivitySyncEngine.Run takes contextUser from the caller.",
+      "Roles with no EntityPermission row are already denied; UI and Integration are the ones CodeGen granted.",
+      "Field-level security on CapturedContent: MJ is implementing EntityFieldPermission. Assume it.",
+      "Until that table exists, the entity-level deny is the control. Do not split the table."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Sync Run Details"
+    },
+    "relatedEntities": {
+      "MJ: Entity Permissions": [
+        {
+          "fields": {
+            "CanRead": 0,
+            "CanCreate": 0,
+            "CanUpdate": 0,
+            "CanDelete": 0
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=UI"
+          },
+          "sync": {
+            "lastModified": "2026-08-30T03:08:07.950Z",
+            "checksum": "1b211d424684bf7180085dbc08d234f3f5420cd51e69837e0db4be0301704efa"
+          }
+        },
+        {
+          "fields": {
+            "CanRead": 0,
+            "CanCreate": 1,
+            "CanUpdate": 0,
+            "CanDelete": 0
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=Integration"
+          },
+          "sync": {
+            "lastModified": "2026-08-30T03:08:07.963Z",
+            "checksum": "13a115c5585b0fe340e9833df4ce7b32c15150cfa70005a2db6d75f7469c2af0"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details"
+    }
+  }
+]

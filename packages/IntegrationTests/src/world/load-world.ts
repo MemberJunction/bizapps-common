@@ -17,7 +17,7 @@ import {
     mjBizAppsCommonPersonEntity,
     mjBizAppsCommonRelationshipEntity,
 } from '@mj-biz-apps/common-entities';
-import { COMMON_ENTITIES, WORLD_EMAIL_DOMAIN } from '../entity-names.js';
+import { COMMON_ENTITIES, WORLD_EMAIL_DOMAIN, WorldAvatarURL } from '../entity-names.js';
 import { FindId, FindRows, Quote, RequireSave } from '../wire.js';
 import { SetWorld, type WorldPerson, type WorldState } from './world.js';
 
@@ -110,7 +110,37 @@ async function loadPeople(ctx: IntegrationCheckContext, world: WorldState): Prom
         { Email: `alan.turing@${WORLD_EMAIL_DOMAIN}`, First: 'Alan', Last: 'Turing', Title: 'Faculty', Org: 'SUM' },
         { Email: `jordan.blake@${WORLD_EMAIL_DOMAIN}`, First: 'Jordan', Last: 'Blake', Title: 'Independent' },
         { Email: `marcus.webb@${WORLD_EMAIL_DOMAIN}`, First: 'Marcus', Last: 'Webb', Title: 'Coach', Org: 'ATL' },
-        { Email: `priya.shah@${WORLD_EMAIL_DOMAIN}`, First: 'Priya', Last: 'Shah', Title: 'Principal', Org: 'NGS' },
+        { Email: `priya.shah@${WORLD_EMAIL_DOMAIN}`, First: 'Priya', Last: 'Shah', Title: 'CFO', Org: 'BCP' },
+        { Email: `alex.chen@${WORLD_EMAIL_DOMAIN}`, First: 'Alex', Last: 'Chen', Title: 'Controller', Org: 'BCP' },
+        { Email: `marcus.lee@${WORLD_EMAIL_DOMAIN}`, First: 'Marcus', Last: 'Lee', Title: 'General Counsel', Org: 'BCP' },
+        { Email: `dana.ortiz@${WORLD_EMAIL_DOMAIN}`, First: 'Dana', Last: 'Ortiz', Title: 'Internal Audit Director', Org: 'BCP' },
+        { Email: `jordan.hale@${WORLD_EMAIL_DOMAIN}`, First: 'Jordan', Last: 'Hale', Title: 'VP Membership', Org: 'BCP' },
+        { Email: `sam.rivera@${WORLD_EMAIL_DOMAIN}`, First: 'Sam', Last: 'Rivera', Title: 'Board Member', Org: 'BCP' },
+        { Email: `casey.ng@${WORLD_EMAIL_DOMAIN}`, First: 'Casey', Last: 'Ng', Title: 'Board Member', Org: 'BCP' },
+        { Email: `riley.brooks@${WORLD_EMAIL_DOMAIN}`, First: 'Riley', Last: 'Brooks', Title: 'Board Member', Org: 'BCP' },
+        { Email: `morgan.ellis@${WORLD_EMAIL_DOMAIN}`, First: 'Morgan', Last: 'Ellis', Title: 'Board Member', Org: 'BCP' },
+        { Email: `taylor.kim@${WORLD_EMAIL_DOMAIN}`, First: 'Taylor', Last: 'Kim', Title: 'Board Member', Org: 'BCP' },
+        { Email: `jamie.walsh@${WORLD_EMAIL_DOMAIN}`, First: 'Jamie', Last: 'Walsh', Title: 'Board Member', Org: 'BCP' },
+        { Email: `devon.patel@${WORLD_EMAIL_DOMAIN}`, First: 'Devon', Last: 'Patel', Title: 'Program Director', Org: 'BCP' },
+        { Email: `owen.park@${WORLD_EMAIL_DOMAIN}`, First: 'Owen', Last: 'Park', Title: 'Trustee', Org: 'BCP' },
+        { Email: `lea.okonkwo@${WORLD_EMAIL_DOMAIN}`, First: 'Lea', Last: 'Okonkwo', Title: 'Trustee', Org: 'BCP' },
+        { Email: `frank.ibarra@${WORLD_EMAIL_DOMAIN}`, First: 'Frank', Last: 'Ibarra', Title: 'Trustee', Org: 'BCP' },
+        { Email: `gita.raman@${WORLD_EMAIL_DOMAIN}`, First: 'Gita', Last: 'Raman', Title: 'Trustee', Org: 'BCP' },
+        { Email: `henry.cho@${WORLD_EMAIL_DOMAIN}`, First: 'Henry', Last: 'Cho', Title: 'Trustee', Org: 'BCP' },
+        { Email: `iris.bennett@${WORLD_EMAIL_DOMAIN}`, First: 'Iris', Last: 'Bennett', Title: 'Trustee', Org: 'BCP' },
+        { Email: `nico.alvarez@${WORLD_EMAIL_DOMAIN}`, First: 'Nico', Last: 'Alvarez', Title: 'Trustee', Org: 'BCP' },
+        { Email: `sasha.petrov@${WORLD_EMAIL_DOMAIN}`, First: 'Sasha', Last: 'Petrov', Title: 'Trustee', Org: 'BCP' },
+        { Email: `quinn.delgado@${WORLD_EMAIL_DOMAIN}`, First: 'Quinn', Last: 'Delgado', Title: 'Trustee', Org: 'BCP' },
+        { Email: `blake.nguyen@${WORLD_EMAIL_DOMAIN}`, First: 'Blake', Last: 'Nguyen', Title: 'Trustee', Org: 'BCP' },
+        { Email: `robin.shaw@${WORLD_EMAIL_DOMAIN}`, First: 'Robin', Last: 'Shaw', Title: 'Public Health Advisor', Org: 'RIV' },
+        { Email: `pat.iyer@${WORLD_EMAIL_DOMAIN}`, First: 'Pat', Last: 'Iyer', Title: 'Operations Lead', Org: 'BCP' },
+        { Email: `ruth.adeleke@${WORLD_EMAIL_DOMAIN}`, First: 'Ruth', Last: 'Adeleke', Title: 'Abstract Chair', Org: 'SUM' },
+        { Email: `mina.choi@${WORLD_EMAIL_DOMAIN}`, First: 'Mina', Last: 'Choi', Title: 'Reviewer', Org: 'SUM' },
+        { Email: `paul.okeke@${WORLD_EMAIL_DOMAIN}`, First: 'Paul', Last: 'Okeke', Title: 'Reviewer', Org: 'SUM' },
+        { Email: `yara.said@${WORLD_EMAIL_DOMAIN}`, First: 'Yara', Last: 'Said', Title: 'Reviewer', Org: 'NGS' },
+        { Email: `theo.brandt@${WORLD_EMAIL_DOMAIN}`, First: 'Theo', Last: 'Brandt', Title: 'Reviewer', Org: 'HH' },
+        { Email: `lin.zhao@${WORLD_EMAIL_DOMAIN}`, First: 'Lin', Last: 'Zhao', Title: 'Reviewer', Org: 'SUM' },
+        { Email: `cole.mendez@${WORLD_EMAIL_DOMAIN}`, First: 'Cole', Last: 'Mendez', Title: 'Reviewer', Org: 'ATL' },
     ];
 
     for (const def of defs) {
@@ -128,6 +158,7 @@ async function loadPeople(ctx: IntegrationCheckContext, world: WorldState): Prom
         person.Email = def.Email;
         person.Title = def.Title;
         person.Status = 'Active';
+        person.PhotoURL = WorldAvatarURL(def.Email);
         await RequireSave(person, `Person ${def.Email}`);
         const row: WorldPerson = { ID: person.ID, Email: def.Email, FirstName: def.First, LastName: def.Last };
         world.People[def.Email] = row;
