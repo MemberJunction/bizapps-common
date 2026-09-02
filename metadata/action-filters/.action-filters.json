@@ -6,7 +6,13 @@
       "Code": "return ActionFilterContext.DidFieldChange('Status');",
       "CodeExplanation": "True only when the Status field's value actually differs across this save — the binding fires on the transition, not on every update."
     },
-    "primaryKey": { "ID": "9270AA31-975F-49C3-A16C-82CD009FED16" }
+    "primaryKey": {
+      "ID": "9270AA31-975F-49C3-A16C-82CD009FED16"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:09.948Z",
+      "checksum": "1611095f973366a7b66cddd9bb4c5fc5deef9100fcc29bc56a3c0aefc7330a74"
+    }
   },
   {
     "fields": {
@@ -15,6 +21,12 @@
       "Code": "return ActionFilterContext.DidFieldChangeToValue('Status', 'Ended');",
       "CodeExplanation": "True only on the save that moves Status to Ended, so a relationship's end is logged exactly once per transition."
     },
-    "primaryKey": { "ID": "EC35D675-FD23-4E99-81FF-87874BFE731C" }
+    "primaryKey": {
+      "ID": "EC35D675-FD23-4E99-81FF-87874BFE731C"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:09.962Z",
+      "checksum": "935843b030686a9c09c5fa5fb46b0099b37970bfcafaaf2431244bffc065b715"
+    }
   }
 ]

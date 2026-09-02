@@ -7,7 +7,7 @@
       "'Common.SyncActivities') in packages/Server/src/custom/sync-activities.action.ts is what it",
       "resolves to, and LoadSyncActivitiesAction() in the server bootstrap is what keeps that",
       "registration from being tree-shaken away. Get either wrong and the action exists in metadata,",
-      "is scheduled, fires on time, and does nothing \u2014 with no error anywhere.",
+      "is scheduled, fires on time, and does nothing — with no error anywhere.",
       "",
       "Downstream apps do not wrap this. They register a BaseActivitySyncExtension (e.g.",
       "Sales.DealLinker) which the engine runs inside the write transaction.",
@@ -16,7 +16,7 @@
       "Policy exists, so an hourly run against a Microsoft365 connection writes nothing until a",
       "deployment opts in. A host with no ActivitySyncConnection reports NO_CONNECTIONS.",
       "",
-      "No sync block \u2014 the release push writes that back. primaryKey from uuidgen."
+      "No sync block — the release push writes that back. primaryKey from uuidgen."
     ],
     "fields": {
       "Name": "Sync Activities",
@@ -43,10 +43,14 @@
             "IsArray": false,
             "IsRequired": false,
             "DefaultValue": "100",
-            "Description": "How many items to pull per mailbox per surface per run. MJ's GetMessages contract has no date filter, so a run fetches the most recent N and discards what it has already seen \u2014 anything older than the Nth newest message since the last run is missed and never retried."
+            "Description": "How many items to pull per mailbox per surface per run. MJ's GetMessages contract has no date filter, so a run fetches the most recent N and discards what it has already seen — anything older than the Nth newest message since the last run is missed and never retried."
           },
           "primaryKey": {
             "ID": "9E35EF82-BDE6-4B17-8797-C0D29CD2D688"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.773Z",
+            "checksum": "7cd06212929b132826bf7854137cb272566e4d0d4325da2eeade2b3e3a6ad389"
           }
         }
       ],
@@ -60,6 +64,10 @@
           },
           "primaryKey": {
             "ID": "3929FCE5-47B1-418C-9505-7D24BBAD0987"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.813Z",
+            "checksum": "cd03be6b5ac22cc0f60ea5a7098480915212b69682a2f03178760ce21a29fcee"
           }
         },
         {
@@ -71,6 +79,10 @@
           },
           "primaryKey": {
             "ID": "BA1063A5-A485-4204-A3A8-A48A07DD5B33"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.831Z",
+            "checksum": "fb0b4d472e16faaa53238efa96c4776950b94011cf67fc7f2747b51bba0c4041"
           }
         },
         {
@@ -82,6 +94,10 @@
           },
           "primaryKey": {
             "ID": "87F48551-562F-4AED-96AD-75C40BF286DB"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.854Z",
+            "checksum": "b15cc17de7dc0005ad8ff47d24124239c0eef49f81ffb700d042770b86a12d6b"
           }
         },
         {
@@ -93,15 +109,23 @@
           },
           "primaryKey": {
             "ID": "58F7CF32-1952-4C34-BCEE-E826326AD1FD"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.874Z",
+            "checksum": "3838d1083c71fb802851baa6bd95b80d6a590063667720100f4ddb8392bc8899"
           }
         }
       ]
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:08.586Z",
+      "checksum": "5b3606271f4084b1659fc33f8baea91eb917a2c27269529152e01141987c1317"
     }
   },
   {
     "fields": {
       "Name": "Common.LogActivity",
-      "Description": "Writes one Activity plus its ActivityLink rows to the unified timeline through the shared ActivityWriter (one writer, two entry points \u2014 this is the manual/declarative one). Bind AfterCreate/AfterUpdate on any entity to this action and the record's lifecycle appears on the person's or organization's timeline with no code in the consuming app. Bind RecordData with ValueType 'Entity Object Data' \u2014 NEVER 'Entity Object', which serializes to {} silently. Idempotency: pass EventKey for one-per-record events (AfterCreate) so a durable retry cannot double-log; leave it off when every firing should log. Sync extensions do NOT run on this path \u2014 they fire on ingest, not on a record being logged.",
+      "Description": "Writes one Activity plus its ActivityLink rows to the unified timeline through the shared ActivityWriter (one writer, two entry points — this is the manual/declarative one). Bind AfterCreate/AfterUpdate on any entity to this action and the record's lifecycle appears on the person's or organization's timeline with no code in the consuming app. Bind RecordData with ValueType 'Entity Object Data' — NEVER 'Entity Object', which serializes to {} silently. Idempotency: pass EventKey for one-per-record events (AfterCreate) so a durable retry cannot double-log; leave it off when every firing should log. Sync extensions do NOT run on this path — they fire on ingest, not on a record being logged.",
       "DriverClass": "Common.LogActivity",
       "Type": "Custom",
       "Status": "Active",
@@ -121,6 +145,10 @@
           },
           "primaryKey": {
             "ID": "F2019C1C-EB5B-4656-A122-EAEECF425CBB"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.895Z",
+            "checksum": "a7500620e085834dad5acf611fb197fe6b2b7760b7222a8c807fc71fd5e84924"
           }
         },
         {
@@ -135,6 +163,10 @@
           },
           "primaryKey": {
             "ID": "A0CEF2BC-7A2E-45F7-AEC8-DC586A63D330"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.919Z",
+            "checksum": "56756a3ebe40deb259174ca98615c9341ca609f3c72db23bdd4d90315b08c5e9"
           }
         },
         {
@@ -146,10 +178,14 @@
             "IsArray": false,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Optional notes / excerpt. May carry personal data \u2014 not logged."
+            "Description": "Optional notes / excerpt. May carry personal data — not logged."
           },
           "primaryKey": {
             "ID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.943Z",
+            "checksum": "6442f07df398e71fbfe88b8d5c738182abd9a734d2adabd37a184862577bfad5"
           }
         },
         {
@@ -164,6 +200,10 @@
           },
           "primaryKey": {
             "ID": "F7EF1D96-3541-4454-BBF2-75850657520C"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.969Z",
+            "checksum": "2aeed36f1511f52a790f9d6f0e7517d40ac030471a0da2bce21abccf300d998a"
           }
         },
         {
@@ -178,6 +218,10 @@
           },
           "primaryKey": {
             "ID": "1459BD58-5985-469B-8286-20CC620428B8"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:08.992Z",
+            "checksum": "50bc6dde3ed9b2cabb35d35da108fdfd0d0f7ce54b0e3ecce05de4b1f7c5e348"
           }
         },
         {
@@ -192,6 +236,10 @@
           },
           "primaryKey": {
             "ID": "8461308D-6610-40F4-9CB5-F29C3A2224E0"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.207Z",
+            "checksum": "1f83b6be0e8b9bf8515f2c98bdd9801fc2921da5a3bb9b482a382407e993bda3"
           }
         },
         {
@@ -206,6 +254,10 @@
           },
           "primaryKey": {
             "ID": "712A6935-98B1-4245-AEC3-B38BF4CD2F2B"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.232Z",
+            "checksum": "4dd36cb8367370bbce6306d35d86fc9ede85fbc6486f1623f889bb37452e9112"
           }
         },
         {
@@ -216,10 +268,14 @@
             "ValueType": "Scalar",
             "IsArray": false,
             "IsRequired": false,
-            "Description": "Internal or Private. Defaults to Internal \u2014 the manual-log default; the sync engine's Private is for mail nobody chose to share."
+            "Description": "Internal or Private. Defaults to Internal — the manual-log default; the sync engine's Private is for mail nobody chose to share."
           },
           "primaryKey": {
             "ID": "DBFBA552-A3DE-4AF2-AF38-0519EBC0FB27"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.255Z",
+            "checksum": "bb88611a1607e54229d39db92aa26595311ecfd301d060225f2a77ef8c4ad815"
           }
         },
         {
@@ -234,6 +290,10 @@
           },
           "primaryKey": {
             "ID": "E9E37537-DD1C-48E4-8545-AD806497833B"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.277Z",
+            "checksum": "c187a79cdcfd0d3830a0f7fb580d1d880c2dd4a91ad68c853986a3a574146218"
           }
         },
         {
@@ -248,6 +308,10 @@
           },
           "primaryKey": {
             "ID": "0A613615-A5EB-4A1B-B88D-A46C440DA5E7"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.300Z",
+            "checksum": "09f332b215d43f7f029c2672ebc450310649e6911b0af5be5612dbe3924fc93d"
           }
         },
         {
@@ -263,6 +327,10 @@
           },
           "primaryKey": {
             "ID": "6E9D0749-4F8C-457A-A0B3-1229DB5F48F5"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.323Z",
+            "checksum": "e7666fd8d5b1677985cfe1e5f073d0d5f02ec11f456acb4113fe4359b88e2b28"
           }
         },
         {
@@ -277,6 +345,10 @@
           },
           "primaryKey": {
             "ID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.345Z",
+            "checksum": "0149d1991c5076c409f41357310fb2d46be1a2280ac593eac34817ae4f72d7e4"
           }
         },
         {
@@ -291,6 +363,10 @@
           },
           "primaryKey": {
             "ID": "522170BB-9FA4-447D-9458-9C134B0985FA"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.368Z",
+            "checksum": "2226bbbdf36944bec00c2ca2bdf7371fc098083d225ec24398bedb2762c30f9c"
           }
         },
         {
@@ -302,10 +378,14 @@
             "IsArray": false,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "The subject record as a PLAIN object. In an Entity Action binding use ValueType 'Entity Object Data' \u2014 never 'Entity Object', which serializes to {} silently. Carries whole records \u2014 never logged."
+            "Description": "The subject record as a PLAIN object. In an Entity Action binding use ValueType 'Entity Object Data' — never 'Entity Object', which serializes to {} silently. Carries whole records — never logged."
           },
           "primaryKey": {
             "ID": "D067FFE0-70B2-4A28-9C31-066BB536E637"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.390Z",
+            "checksum": "709d184195d317e99507307bcd6c041f1a8ae8e211b21d5dfd8a2f34b751b46f"
           }
         },
         {
@@ -317,10 +397,14 @@
             "IsArray": true,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Declarative link routing: [{ Field, EntityName, Role }] \u2014 reads Field from RecordData and links that record. This is what routes a binding on any entity to the People/Organizations rows it references. Null FKs are skipped."
+            "Description": "Declarative link routing: [{ Field, EntityName, Role }] — reads Field from RecordData and links that record. This is what routes a binding on any entity to the People/Organizations rows it references. Null FKs are skipped."
           },
           "primaryKey": {
             "ID": "5ABC9668-9E20-4385-9258-F2FC106B8477"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.414Z",
+            "checksum": "3622599e43c23ed229a671b575436759e198cca5ebd11d2fda40f384b5c830ab"
           }
         },
         {
@@ -332,10 +416,14 @@
             "IsArray": true,
             "IsRequired": false,
             "LogValue": false,
-            "Description": "Extra explicit links: [{ Role, EntityName, RecordID }] or [{ Role, IdentityKind, IdentityValue }]. May carry identity values \u2014 not logged."
+            "Description": "Extra explicit links: [{ Role, EntityName, RecordID }] or [{ Role, IdentityKind, IdentityValue }]. May carry identity values — not logged."
           },
           "primaryKey": {
             "ID": "DC2CE432-64D7-43E6-B27D-A35666494D20"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.453Z",
+            "checksum": "61406a29327d7b970b0909d2d5332342f6c1cb53fe1f44981fc149e7bd71b9b3"
           }
         },
         {
@@ -350,6 +438,10 @@
           },
           "primaryKey": {
             "ID": "DB90FCB7-D59D-4F5B-985D-D91802533143"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.478Z",
+            "checksum": "cb19b7c1c0b3686763734b273701dde085fb796e34e9c90b799a6d9d9d8d5c79"
           }
         },
         {
@@ -364,6 +456,10 @@
           },
           "primaryKey": {
             "ID": "B3BF861B-5CB8-4F42-B20D-370375BFA7C6"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.502Z",
+            "checksum": "8aace17d4c8dc011569ab68b38abc7e935cfd1ba48f132011dfdc3d3e9add0ec"
           }
         },
         {
@@ -378,6 +474,10 @@
           },
           "primaryKey": {
             "ID": "9ED5AE47-E6A1-4F1A-AA91-751CA7C8F0F7"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.526Z",
+            "checksum": "622eac0acf7f5d7162a1c9252a0653445740481894505020ff149e0c04305918"
           }
         },
         {
@@ -392,6 +492,10 @@
           },
           "primaryKey": {
             "ID": "AEFC8671-73AC-44AC-9F99-55304B54B742"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.549Z",
+            "checksum": "de04aa6d87f69940dd8a8b7bb0af262c17a4f9d09998f9c907e47f8c2bfb903e"
           }
         },
         {
@@ -406,6 +510,10 @@
           },
           "primaryKey": {
             "ID": "9B768858-15D3-4684-907F-652B1E87CE88"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.572Z",
+            "checksum": "a09dc730e6ce8a7242c6dfc45f3a981fc5649348ce7f3026163e654a65a6fb51"
           }
         }
       ],
@@ -419,6 +527,10 @@
           },
           "primaryKey": {
             "ID": "3755B0EB-48C1-4E16-B48D-B0347489CECA"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.592Z",
+            "checksum": "c36c377aaefb070959a30cdfcbf2aa9d3e46e98d466d3679efd5e64a319ecbac"
           }
         },
         {
@@ -430,6 +542,10 @@
           },
           "primaryKey": {
             "ID": "7C2F6CEA-55A8-4864-B42D-694CA192A13C"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.608Z",
+            "checksum": "4c8d676f56df8f069c3daf430cdf650fce2ac8d5ed18b5de9c0fb0cbc365597a"
           }
         },
         {
@@ -441,6 +557,10 @@
           },
           "primaryKey": {
             "ID": "2CD2521E-4771-4ADC-BC85-7076890DEA31"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.622Z",
+            "checksum": "f78eeab8d9f4417cfe4cf3dbfdfffdc110ce550e5d36a6ea91dfc75cf0fb30c6"
           }
         },
         {
@@ -452,12 +572,20 @@
           },
           "primaryKey": {
             "ID": "F5E249FC-21EC-4BE1-BA61-208BFF2E7091"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:09.638Z",
+            "checksum": "6e262105a65887d20665e6eb41dea1af39136ac4eb676270003ffa3b7f51d652"
           }
         }
       ]
     },
     "primaryKey": {
       "ID": "CD67D909-A87D-43E2-9F34-95E04A0DDE3C"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:08.607Z",
+      "checksum": "0e787a52b73ed45ea68a7f1fab3abd853bb64d89ac75e46a8b37939113374733"
     }
   }
 ]

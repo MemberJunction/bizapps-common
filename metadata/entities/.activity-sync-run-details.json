@@ -27,7 +27,7 @@
             "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=UI"
           },
           "sync": {
-            "lastModified": "2026-08-30T03:08:07.950Z",
+            "lastModified": "2026-09-02T04:04:09.771Z",
             "checksum": "1b211d424684bf7180085dbc08d234f3f5420cd51e69837e0db4be0301704efa"
           }
         },
@@ -42,7 +42,7 @@
             "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=Integration"
           },
           "sync": {
-            "lastModified": "2026-08-30T03:08:07.963Z",
+            "lastModified": "2026-09-02T04:04:09.787Z",
             "checksum": "13a115c5585b0fe340e9833df4ce7b32c15150cfa70005a2db6d75f7469c2af0"
           }
         }
