@@ -1,0 +1,19 @@
+{
+  "entity": "MJ: AI Agents",
+  "filePattern": "**/.*.json",
+  "pull": {
+    "createNewFileIfNotFound": true,
+    "newFileName": ".common-agents.json",
+    "appendRecordsToExistingFile": true,
+    "updateExistingRecords": true,
+    "ignoreNullFields": true,
+    "ignoreVirtualFields": true,
+    "filter": "Name = 'Person Lifecycle Changed'",
+    "lookupFields": {
+      "TypeID": { "entity": "MJ: AI Agent Types", "field": "Name" }
+    },
+    "relatedEntities": {
+      "MJ: AI Agent Steps": { "entity": "MJ: AI Agent Steps", "foreignKey": "AgentID" }
+    }
+  }
+}

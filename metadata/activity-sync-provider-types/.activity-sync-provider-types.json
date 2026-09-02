@@ -1,0 +1,91 @@
+[
+  {
+    "fields": {
+      "Code": "Microsoft365",
+      "Name": "Microsoft 365",
+      "Description": "Microsoft Graph mail and calendar. Mail.Read is tenant-wide under app-only auth; the Graph provider refuses to fetch without an explicit opt-in until an Exchange Application Access Policy is applied.",
+      "DriverClass": "Microsoft365",
+      "CalendarDriverClass": "Microsoft365.Calendar",
+      "IconClass": "fa-brands fa-microsoft",
+      "SupportedKinds": "[\"Message\",\"Calendar\"]",
+      "DefaultQualificationPolicy": "Exclude",
+      "DefaultSkippedContentPolicy": "None",
+      "Sequence": 10,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "53155A0D-372C-44FB-A58E-7E2DE0F22B2E"
+    },
+    "sync": {
+      "lastModified": "2026-08-29T22:25:04.092Z",
+      "checksum": "c6c9ba765887ba404349331a0847ff616bdfdde36599f89e9a8a345a45f53a40"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Gmail",
+      "Name": "Gmail",
+      "Description": "Gmail mailbox via the MJ Communication provider. Mailbox-shaped: an Undecided qualification verdict excludes.",
+      "DriverClass": "Gmail",
+      "IconClass": "fa-brands fa-google",
+      "SupportedKinds": "[\"Message\"]",
+      "DefaultQualificationPolicy": "Exclude",
+      "DefaultSkippedContentPolicy": "None",
+      "Sequence": 20,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "2799D5A0-29AD-46D0-BF58-2CD8533DDD7B"
+    },
+    "sync": {
+      "lastModified": "2026-08-29T22:25:04.110Z",
+      "checksum": "848fbff2dc8bac52087e403f9d7587fdb6b3d794fe2e4ac1deda928ddd8f4692"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Zoom",
+      "Name": "Zoom",
+      "Description": "Zoom meetings and recordings. Calendar-shaped: watermarks advance on observation time, never max(StartedAt).",
+      "DriverClass": "Zoom",
+      "IconClass": "fa-solid fa-video",
+      "SupportedKinds": "[\"Calendar\"]",
+      "DefaultQualificationPolicy": "Exclude",
+      "DefaultSkippedContentPolicy": "None",
+      "Sequence": 30,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "9B96B990-EB9F-4CDE-AE1E-103EC4EEB8DE"
+    },
+    "sync": {
+      "lastModified": "2026-08-29T22:25:04.127Z",
+      "checksum": "65d895d1f59b8962fd424c987b1a7a28e5d6961ff5fb4c9fe60b8b29f012324a"
+    }
+  },
+  {
+    "fields": {
+      "Code": "Generic",
+      "Name": "Generic",
+      "Description": "Catch-all for fixtures and host-specific plugins that do not yet have a first-class type. The fixture provider is how the engine is exercised until Graph is explicitly opted in.",
+      "DriverClass": "Generic",
+      "IconClass": "fa-solid fa-plug",
+      "SupportedKinds": "[\"Message\",\"Calendar\"]",
+      "DefaultQualificationPolicy": "Exclude",
+      "DefaultSkippedContentPolicy": "None",
+      "Sequence": 40,
+      "IsSystem": true,
+      "IsActive": true
+    },
+    "primaryKey": {
+      "ID": "CB1A86EA-D671-4F16-B71F-72BD9A5B5282"
+    },
+    "sync": {
+      "lastModified": "2026-08-29T22:25:04.143Z",
+      "checksum": "b7fba8c3a63d250c54a6a8a57c4b87c36bbca7602c108218e9739ecfc91fa074"
+    }
+  }
+]

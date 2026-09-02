@@ -16,13 +16,10 @@ export class mjBizAppsCommonActivityTypeFormComponent extends BaseFormComponent 
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'generalInformation', sectionName: 'General Information', isExpanded: true },
-            { sectionKey: 'hierarchy', sectionName: 'Hierarchy', isExpanded: true },
-            { sectionKey: 'displaySettings', sectionName: 'Display Settings', isExpanded: true },
-            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
+            { sectionKey: 'mJBizAppsCommonActivityTypes', sectionName: 'Activity Types', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivities', sectionName: 'Activities', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivityTypes', sectionName: 'Activity Types', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false }
         ]);
     }
 }
