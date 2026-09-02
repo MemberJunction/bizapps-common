@@ -71,7 +71,11 @@ export abstract class BaseActivitySyncProvider {
 
             return {
                 Items: items,
-                HighWatermark: this.ComputeHighWatermark(items, observedAt),
+                // A CAPPED read earns no advance. `NextWatermark` treats null as 'stay put', so the
+                // next pass re-reads the window rather than stepping over mail it never fetched.
+                // The items in hand are still returned and still written — only the claim to have
+                // seen everything up to their newest is withheld, because it is not true.
+                HighWatermark: raw.Capped ? null : this.ComputeHighWatermark(items, observedAt),
                 Issues: raw.Issues,
             };
         } catch (error) {

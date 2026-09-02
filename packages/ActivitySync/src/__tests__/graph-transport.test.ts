@@ -493,3 +493,53 @@ describe('Configure — reachable in the configuration the ENGINE actually uses'
         expect(batch.Items).toHaveLength(1);
     });
 });
+
+describe('a capped read must not advance the watermark past mail it never fetched', () => {
+    /**
+     * THE SILENT LOSS THIS PREVENTS. Graph returns newest-first, so when a read hits NumMessages
+     * the batch holds the NEWEST N — and its newest item is the newest in the mailbox. Advancing
+     * the watermark to it steps over everything between the previous watermark and the OLDEST item
+     * returned. That mail is then permanently below the watermark and is never read again, and the
+     * run reports success. Re-reading a window costs a de-duplicated pass; losing mail costs the
+     * mail. `watermark.ts` already states those are not comparable — this enforces it.
+     */
+    const SINCE = new Date('2026-08-01T00:00:00Z');
+    const msg = (id: string, when: string) => ({ ...GRAPH_MESSAGE, id, receivedDateTime: when, sentDateTime: when });
+    const TWO = [msg('m-old', '2026-08-20T09:00:00Z'), msg('m-new', '2026-08-30T09:00:00Z')];
+
+    it('flags the batch as capped when the limit binds and a watermark was in play', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const batch = await t.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(batch.Capped).toBe(true);
+    });
+
+    it('does NOT flag a first sync, which has no watermark to strand mail behind', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const batch = await t.Fetch({ ...QUERY, Since: null, Limit: 2 });
+        expect(batch.Capped).toBeFalsy();
+    });
+
+    it('WITHHOLDS the watermark on a capped batch, so the next pass re-reads the window', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const provider = new MSGraphActivitySyncProvider(true, t);
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        // Without this the watermark becomes 2026-08-30 and anything between 08-01 and 08-20 that
+        // did not fit in the batch is stranded below it forever.
+        expect(batch.HighWatermark).toBeNull();
+    });
+
+    it('still RETURNS the items it did fetch — only the claim is withheld, not the data', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const provider = new MSGraphActivitySyncProvider(true, t);
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(batch.Items).toHaveLength(2);
+        expect(batch.Failed).toBeFalsy();
+    });
+
+    it('advances normally when the read was NOT capped', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const provider = new MSGraphActivitySyncProvider(true, t);
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 50 });
+        expect(batch.HighWatermark).toEqual(new Date('2026-08-30T09:00:00Z'));
+    });
+});

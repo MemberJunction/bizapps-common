@@ -135,7 +135,8 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
 
         const payloads = (result.SourceData ?? []) as Record<string, unknown>[];
 
-        if (query.Since && payloads.length >= query.Limit) {
+        const capped = !!query.Since && payloads.length >= query.Limit;
+        if (capped) {
             issues.push(
                 `Fetched the maximum of ${query.Limit} message(s) for "${query.Mailbox}" while a watermark was set, ` +
                     'so older items may remain unread. Re-run to continue, or raise the limit. A server-side date ' +
@@ -143,7 +144,10 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
             );
         }
 
-        return { Payloads: payloads, Issues: issues };
+        // `Capped` is what actually protects the mail; the issue above only TELLS someone. Without
+        // it the watermark advanced to the newest item in a truncated batch and the remainder was
+        // never read again.
+        return { Payloads: payloads, Issues: issues, Capped: capped };
     }
 }
 
