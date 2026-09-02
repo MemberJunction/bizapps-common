@@ -39,10 +39,22 @@
             "Width": 220,
             "Height": 80
           },
-          "primaryKey": { "ID": "65B3A8BD-585C-4712-BBD3-59751450A21F" }
+          "primaryKey": {
+            "ID": "65B3A8BD-585C-4712-BBD3-59751450A21F"
+          },
+          "sync": {
+            "lastModified": "2026-09-02T04:04:10.179Z",
+            "checksum": "aa17343ca0fa325924d9fb298cce5b24f1710e18fb8792356c8cf5796b98c858"
+          }
         }
       ]
     },
-    "primaryKey": { "ID": "C30BAF99-D85D-4020-ADD3-8C97773AC749" }
+    "primaryKey": {
+      "ID": "C30BAF99-D85D-4020-ADD3-8C97773AC749"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:10.134Z",
+      "checksum": "d689d3705a6f58d86c1accc345dfd30b619ecc1b4bd9c58139560afbede90354"
+    }
   }
 ]

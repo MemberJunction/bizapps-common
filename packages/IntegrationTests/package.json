@@ -20,9 +20,9 @@
   },
   "dependencies": {
     "@mj-biz-apps/common-entities": "5.37.0",
-    "@memberjunction/core": "^6.1.0-edge.3",
-    "@memberjunction/global": "^6.1.0-edge.3",
-    "@memberjunction/testing-integration": "^6.1.0-edge.3"
+    "@memberjunction/core": "^6.1.0-edge.5",
+    "@memberjunction/global": "^6.1.0-edge.5",
+    "@memberjunction/testing-integration": "^6.1.0-edge.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

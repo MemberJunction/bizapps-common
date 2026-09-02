@@ -18,6 +18,10 @@
     },
     "primaryKey": {
       "ID": "DC407501-60D9-44E1-9CB2-A0CBF1FA9FE4"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T04:04:08.142Z",
+      "checksum": "1063dc7abf4448d3a9222a3a48e498cb50c9213d1a5bb48fcdfe680f4af05b94"
     }
   }
 ]
