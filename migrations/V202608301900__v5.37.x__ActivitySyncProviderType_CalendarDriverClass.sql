@@ -12,6 +12,25 @@ ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncProviderType]
 ADD [CalendarDriverClass] NVARCHAR(200) NULL;
 GO
 
+-- FRESH-INSTALL GUARD (1 of 2; the other is the Sequence expression below).
+-- Earlier migrations recreated vwActivityFiles and vwActivityLinks WITHOUT their `Activity`
+-- related-name column but left the EntityField rows behind. Those orphans squat on the
+-- sequence the schema-wide spUpdateExistingEntityFieldsFromSchema below computes for the
+-- column that IS in the view, so it dies with:
+--
+--     Violation of UNIQUE KEY constraint 'UQ_EntityField_EntityID_Sequence'
+--     duplicate key value is (232c27e0-..., 8)          -- Activity Files, Sequence 8
+--
+-- Scoped to those two entities on purpose: a schema-wide prune here would also delete
+-- DefaultEncryptionKey / DefaultStorageProvider, which are REAL columns whose view simply has
+-- not been regenerated yet at this point in the run. Idempotent - deletes nothing on a
+-- database where CodeGen's live renumber has already tidied up.
+EXEC [${mjSchema}].[spDeleteUnneededEntityFields]
+     @ExcludedSchemaNames='',
+     @IncludedSchemaNames='${flyway:defaultSchema}',
+     @EntityIDs='232C27E0-0AAC-450B-B902-251EF20A2802,9C48DF77-E4A1-4ADB-AABF-916F5798B894';
+GO
+
 
 
 
@@ -117,7 +136,14 @@ UPDATE [${mjSchema}].[EntityField]
          (
             '5868a298-8684-456b-ad63-5fec4af750d4',
             'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            18,
+            -- Sequence evaluated at APPLY time, never a literal. A literal (this was `18`) collides on
+            -- UQ_EntityField_EntityID_Sequence during a fresh install: on a database built from
+            -- migrations only, V202608291500's fields are still at their CodeGen placeholders
+            -- (100001..100019) because the renumber has not run yet, so the proc below renumbers them
+            -- onto 1..18 and lands on top of this row. See
+            -- .github/scripts/check-migration-entityfield-sequence.sh, which forbids exactly this.
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField]
+              WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'),
             'CalendarDriverClass',
             'Calendar Driver Class',
             NULL,
