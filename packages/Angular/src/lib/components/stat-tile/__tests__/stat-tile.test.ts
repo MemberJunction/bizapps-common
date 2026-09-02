@@ -69,6 +69,42 @@ describe('StatTileComponent', () => {
             expect(prevented).toBe(true);
         });
 
+        /**
+         * ⚠ THE REGRESSION THIS FILE EXISTS FOR. A template binding subscribes at bind time whatever
+         * its handler expression later decides, so `(Clicked)="tile.Target ? Go() : null"` made every
+         * tile in a mixed row look and behave like a button. Contracts' dashboard shipped that; the
+         * inert "Clients with special terms" tile showed a pointer and did nothing.
+         */
+        it('an explicit Clickable=false beats an observed subscription', () => {
+            const tile = new StatTileComponent();
+            tile.Clicked.subscribe(() => undefined);
+            tile.Clickable = false;
+            expect(tile.IsClickable).toBe(false);
+        });
+
+        it('does not emit when explicitly not clickable, even with a subscriber', () => {
+            const tile = new StatTileComponent();
+            let fired = 0;
+            tile.Clicked.subscribe(() => (fired += 1));
+            tile.Clickable = false;
+            tile.OnActivate();
+            expect(fired).toBe(0);
+        });
+
+        it('an explicit Clickable=true beats having no subscriber', () => {
+            const tile = new StatTileComponent();
+            tile.Clickable = true;
+            expect(tile.IsClickable).toBe(true);
+        });
+
+        it('falls back to the subscription when Clickable is unset', () => {
+            const tile = new StatTileComponent();
+            expect(tile.Clickable).toBeNull();
+            expect(tile.IsClickable).toBe(false);
+            tile.Clicked.subscribe(() => undefined);
+            expect(tile.IsClickable).toBe(true);
+        });
+
         it('does not prevent the default when it is not going to act', () => {
             const tile = new StatTileComponent();
             let prevented = false;
