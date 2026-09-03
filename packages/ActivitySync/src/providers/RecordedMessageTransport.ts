@@ -73,13 +73,28 @@ export class RecordedMessageTransport implements ActivityMessageTransport {
         const issues = [
             `REPLAYED, NOT LIVE: ${recording.Provenance}. Nothing was read from Microsoft 365 on this run.`,
         ];
-        if (recording.Payloads.length > query.Limit) {
+        const capped = recording.Payloads.length > query.Limit;
+        if (capped) {
             issues.push(
                 `Recording holds ${recording.Payloads.length} message(s); Limit is ${query.Limit}, so ` +
                     `${recording.Payloads.length - query.Limit} were not returned.`,
             );
         }
 
-        return { Payloads: payloads, Issues: issues };
+        /**
+         * A CAPPED REPLAY WITHHOLDS THE WATERMARK TOO, and not only for symmetry.
+         *
+         * The live transport already does this: Graph returns newest-first, so a truncated live batch
+         * strands everything between the old watermark and its oldest item. A replay truncates the
+         * other way — `slice(0, Limit)` takes the FIRST N of the recording — so if a recording happens
+         * to be ordered oldest-first, the batch IS contiguous with the watermark and advancing would
+         * be safe.
+         *
+         * That safety is an accident of file order, and nothing enforces it. A recording captured
+         * newest-first, or re-sorted by an editor, silently becomes the live bug with no code change
+         * anywhere. Withholding costs a re-read that de-duplication absorbs, so the flag is set
+         * whenever the limit binds and a watermark is in play, exactly as on the live path.
+         */
+        return { Payloads: payloads, Issues: issues, Capped: capped && !!query.Since };
     }
 }

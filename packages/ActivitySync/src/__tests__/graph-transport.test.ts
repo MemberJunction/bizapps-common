@@ -633,3 +633,44 @@ describe('the host transport registry — making the seam reachable at all', () 
         expect(factory).toHaveBeenCalledWith(expect.objectContaining({ ContextUser: user }));
     });
 });
+
+describe('a capped REPLAY withholds the watermark too', () => {
+    /**
+     * The live path was fixed first, and fixing only it left the seam inconsistent. A replay
+     * truncates with `slice(0, Limit)` — the FIRST N — so a recording ordered oldest-first produces
+     * a batch contiguous with the watermark, and advancing happens to be safe. That safety is an
+     * accident of FILE ORDER. A recording captured newest-first, or re-sorted by an editor, becomes
+     * the live data-loss bug with no code change anywhere and nothing to notice it.
+     */
+    const SINCE = new Date('2026-08-01T00:00:00Z');
+    const msg = (id: string, when: string) => ({ ...GRAPH_MESSAGE, id, receivedDateTime: when, sentDateTime: when });
+    const THREE = [
+        msg('r-1', '2026-08-20T09:00:00Z'),
+        msg('r-2', '2026-08-25T09:00:00Z'),
+        msg('r-3', '2026-08-30T09:00:00Z'),
+    ];
+    const recorded = (payloads: Record<string, unknown>[]) =>
+        new RecordedMessageTransport([{ Mailbox: 'rep@example.com', Payloads: payloads, Provenance: 'captured' }]);
+
+    it('flags a truncated replay as capped when a watermark is in play', async () => {
+        const batch = await recorded(THREE).Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(batch.Capped).toBe(true);
+    });
+
+    it('does NOT flag a first sync — there is no watermark to strand anything behind', async () => {
+        const batch = await recorded(THREE).Fetch({ ...QUERY, Since: null, Limit: 2 });
+        expect(batch.Capped).toBeFalsy();
+    });
+
+    it('does NOT flag a replay that fitted', async () => {
+        const batch = await recorded(THREE).Fetch({ ...QUERY, Since: SINCE, Limit: 50 });
+        expect(batch.Capped).toBeFalsy();
+    });
+
+    it('withholds the watermark through the provider, exactly as the live path does', async () => {
+        const provider = new MSGraphActivitySyncProvider(false, recorded(THREE));
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(batch.HighWatermark, 'a capped replay must not claim to have seen past its newest item').toBeNull();
+        expect(batch.Items.length, 'the items it DID read are still returned').toBeGreaterThan(0);
+    });
+});
