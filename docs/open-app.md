@@ -103,7 +103,7 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
   "displayName": "BizApps Common",
   "description": "Common business entities shared across MemberJunction business applications",
   "version": "1.0.0",
-  "license": "ISC",
+  "license": "BUSL-1.1",
   "icon": "fa-solid fa-building-columns",
 
   "publisher": {
