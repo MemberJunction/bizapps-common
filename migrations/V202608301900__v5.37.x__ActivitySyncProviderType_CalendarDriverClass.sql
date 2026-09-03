@@ -12,6 +12,28 @@ ALTER TABLE [${flyway:defaultSchema}].[ActivitySyncProviderType]
 ADD [CalendarDriverClass] NVARCHAR(200) NULL;
 GO
 
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwActivitySyncProviderTypes]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwActivitySyncProviderTypes];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwActivitySyncProviderTypes]
+AS
+SELECT
+    a.*,
+    MJEncryptionKey_DefaultEncryptionKeyID.[Name] AS [DefaultEncryptionKey],
+    MJFileStorageProvider_DefaultStorageProviderID.[Name] AS [DefaultStorageProvider]
+FROM
+    [${flyway:defaultSchema}].[ActivitySyncProviderType] AS a
+LEFT OUTER JOIN
+    [${mjSchema}].[EncryptionKey] AS MJEncryptionKey_DefaultEncryptionKeyID
+  ON
+    [a].[DefaultEncryptionKeyID] = MJEncryptionKey_DefaultEncryptionKeyID.[ID]
+LEFT OUTER JOIN
+    [${mjSchema}].[FileStorageProvider] AS MJFileStorageProvider_DefaultStorageProviderID
+  ON
+    [a].[DefaultStorageProviderID] = MJFileStorageProvider_DefaultStorageProviderID.[ID]
+GO
+
 
 
 
@@ -77,11 +99,6 @@ GO
 EXEC [${mjSchema}].[spUpdateExistingEntitiesFromSchema] @ExcludedSchemaNames='', @IncludedSchemaNames='${flyway:defaultSchema}';
 
 /* SQL text to insert 2 new entity field(s) */
-UPDATE [${mjSchema}].[EntityField]
-         SET [Sequence] = [Sequence] + 100000
-       WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75'
-         AND [Sequence] < 100000;
-
       IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5868a298-8684-456b-ad63-5fec4af750d4' OR (EntityID = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75' AND Name = 'CalendarDriverClass')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
@@ -117,7 +134,7 @@ UPDATE [${mjSchema}].[EntityField]
          (
             '5868a298-8684-456b-ad63-5fec4af750d4',
             'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75', -- Entity: MJ_BizApps_Common: Activity Sync Provider Types
-            18,
+            (SELECT COALESCE(MAX([Sequence]), 0) FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75') + 1,
             'CalendarDriverClass',
             'Calendar Driver Class',
             NULL,

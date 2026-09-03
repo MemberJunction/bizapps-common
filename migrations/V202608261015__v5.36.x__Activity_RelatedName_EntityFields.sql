@@ -38,3 +38,39 @@ INSERT INTO [${mjSchema}].[EntityField]
 VALUES
     ('8f910bcc-a121-481b-9ff0-ae33e5bdbb87', @FilesID, 8, 'Activity', 'Activity', 'nvarchar', 1000, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'Search', GETUTCDATE(), GETUTCDATE());
 GO
+
+CREATE OR ALTER VIEW [${flyway:defaultSchema}].[vwActivityLinks]
+AS
+SELECT
+    a.*,
+    Activity_ActivityID.[Title] AS [Activity],
+    MJEntity_EntityID.[Name] AS [Entity]
+FROM
+    [${flyway:defaultSchema}].[ActivityLink] AS a
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[Activity] AS Activity_ActivityID
+  ON
+    [a].[ActivityID] = Activity_ActivityID.[ID]
+LEFT OUTER JOIN
+    [${mjSchema}].[Entity] AS MJEntity_EntityID
+  ON
+    [a].[EntityID] = MJEntity_EntityID.[ID]
+GO
+
+CREATE OR ALTER VIEW [${flyway:defaultSchema}].[vwActivityFiles]
+AS
+SELECT
+    a.*,
+    Activity_ActivityID.[Title] AS [Activity],
+    MJFile_FileID.[Name] AS [File]
+FROM
+    [${flyway:defaultSchema}].[ActivityFile] AS a
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[Activity] AS Activity_ActivityID
+  ON
+    [a].[ActivityID] = Activity_ActivityID.[ID]
+INNER JOIN
+    [${mjSchema}].[File] AS MJFile_FileID
+  ON
+    [a].[FileID] = MJFile_FileID.[ID]
+GO
