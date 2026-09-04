@@ -1,5 +1,17 @@
 # Change Log - mj_generatedentities
 
+## 5.39.0
+
+### Patch Changes
+
+- 7887d5d: License declarations now agree on BUSL-1.1 everywhere.
+
+  `LICENSE`, `package.json`, `mj-app.json` and every workspace package already declared
+  BUSL-1.1. Two statements still said ISC: the README badge, which is the first license
+  statement a reader meets and so outranked all of them in practice, and the `mj-app.json`
+  sample in `docs/open-app.md` — this repo is the reference Open App, so that snippet is
+  copied into new repos and is how the wrong value spreads. The badge now links to `LICENSE`.
+
 ## 5.38.0
 
 ### Minor Changes

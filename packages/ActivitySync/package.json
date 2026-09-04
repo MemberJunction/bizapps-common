@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-activity-sync",
   "type": "module",
-  "version": "5.38.0",
+  "version": "5.39.0",
   "description": "Activity Sync Engine contracts for BizApps Common — provider plugin base class, qualification cascade, and the in-process extension contract that lets downstream apps enrich an Activity inside its own write transaction.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.38.0"
+    "@mj-biz-apps/common-entities": "5.39.0"
   },
   "peerDependencies": {
     "@memberjunction/communication-types": "^6.1.0-edge.5",
