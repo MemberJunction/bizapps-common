@@ -2542,6 +2542,10 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     ActivitySyncRule?: string;
         
     @Field({nullable: true}) 
+    @MaxLength(320)
+    ActivitySyncExclusion?: string;
+        
+    @Field({nullable: true}) 
     @MaxLength(500)
     Activity?: string;
         

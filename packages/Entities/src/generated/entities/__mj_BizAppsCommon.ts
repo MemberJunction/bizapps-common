@@ -1094,6 +1094,10 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Field Name: ActivitySyncRule
         * * Display Name: Activity Sync Rule Name
         * * SQL Data Type: nvarchar(200)`),
+    ActivitySyncExclusion: z.string().nullable().describe(`
+        * * Field Name: ActivitySyncExclusion
+        * * Display Name: Activity Sync Exclusion
+        * * SQL Data Type: nvarchar(320)`),
     Activity: z.string().nullable().describe(`
         * * Field Name: Activity
         * * Display Name: Activity Reference
@@ -4902,6 +4906,15 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     */
     get ActivitySyncRule(): string | null {
         return this.Get('ActivitySyncRule');
+    }
+
+    /**
+    * * Field Name: ActivitySyncExclusion
+    * * Display Name: Activity Sync Exclusion
+    * * SQL Data Type: nvarchar(320)
+    */
+    get ActivitySyncExclusion(): string | null {
+        return this.Get('ActivitySyncExclusion');
     }
 
     /**
