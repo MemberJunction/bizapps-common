@@ -14,6 +14,41 @@ export interface ExclusionRow {
     IdentityKind: string | null;
     IdentityValue: string;
     ActivitySyncRuleSetID: string | null;
+    /**
+     * Whether this exclusion is switched on. Rules honoured their `IsEnabled` from the start;
+     * exclusions did not, so switching one off left it excluding.
+     */
+    IsEnabled: boolean;
+    /**
+     * The window of ITEMS this exclusion covers — matched against `item.StartedAt`, exactly as
+     * `RuleRow.DateFrom`/`DateTo` are. Null on either end is unbounded.
+     *
+     * ITEM TIME, NOT RUN TIME, and the choice is not free. Two date windows sit in one cascade; if an
+     * exclusion's window meant "while this record is in force" and a rule's meant "which items it
+     * covers", the same two dates would mean different things one stage apart. It also keeps a re-run
+     * reproducible: `ActivitySyncRunDetail` exists to answer "which rule ate my message", and an answer
+     * that changes with the wall clock is a narrative rather than evidence.
+     */
+    EffectiveFrom: Date | string | null;
+    EffectiveTo: Date | string | null;
+}
+
+/**
+ * Whether an exclusion applies to an item that occurred at `occurredAt`.
+ *
+ * Pure and exported so the three ways an exclusion can fail to apply — switched off, too early, too
+ * late — can be pinned without standing up a cascade.
+ */
+export function ExclusionAppliesTo(
+    exclusion: Pick<ExclusionRow, 'IsEnabled' | 'EffectiveFrom' | 'EffectiveTo'>,
+    occurredAt: Date,
+): boolean {
+    if (exclusion.IsEnabled === false) return false;
+    const from = asDate(exclusion.EffectiveFrom);
+    if (from && occurredAt.getTime() < from.getTime()) return false;
+    const to = asDate(exclusion.EffectiveTo);
+    if (to && occurredAt.getTime() > to.getTime()) return false;
+    return true;
 }
 
 export interface RuleRow {
@@ -39,6 +74,17 @@ export interface EngineQualificationContext extends QualificationContext {
     KnownAddresses: Map<string, KnownAddressHit>;
 }
 
+/**
+ * A date bound, or nothing. `RunView` hands back a `Date` or the string it came as, depending on how
+ * the row was loaded, so both are accepted.
+ *
+ * The `NaN` guard looks removable and is not. Every caller today only ever compares the result with
+ * `<` or `>`, and those are false against `NaN` in both directions, so an Invalid Date happens to fall
+ * through exactly like `null` — dropping the guard changes no current behaviour, which is why no test
+ * can catch its removal. It stays because it is what makes the return type honest: the next caller to
+ * do anything else with a bound (`toISOString()` throws a `RangeError` on an Invalid Date) inherits a
+ * value that is either a usable date or `null`, rather than a third case nobody thought about.
+ */
 function asDate(value: Date | string | null | undefined): Date | null {
     if (value == null) return null;
     const d = value instanceof Date ? value : new Date(value);
@@ -54,6 +100,9 @@ export class ExclusionStage implements IQualificationStage {
         const ctx = context as EngineQualificationContext;
         const addresses = item.Participants.map((p) => p.Address.trim().toLowerCase()).filter(Boolean);
         for (const exclusion of ctx.Exclusions ?? []) {
+            // Switched off, or outside the window of items it covers. Neither was checked before, so a
+            // disabled exclusion kept excluding and one set to lapse never lapsed.
+            if (!ExclusionAppliesTo(exclusion, item.StartedAt)) continue;
             const needle = exclusion.IdentityValue.trim().toLowerCase().replace(/^@/, '');
             if (!needle) continue;
             for (const address of addresses) {
