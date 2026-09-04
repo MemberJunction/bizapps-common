@@ -107,3 +107,71 @@ export function RegisterActivityTransportFactory(factory: ActivityTransportFacto
 export function HostActivityTransportFactory(): ActivityTransportFactory | null {
     return hostFactory;
 }
+
+/**
+ * WHAT A HOST MUST WRITE DOWN BEFORE IT MAY READ A REAL MAILBOX.
+ *
+ * `MSGraphProvider` authenticates app-only, so the `Mail.Read` APPLICATION permission is granted
+ * against the tenant and not against a mailbox: it reads EVERY mailbox in the organisation. The
+ * `Mailbox` on a connection narrows what we ASK for, not what we are ALLOWED to read. The only thing
+ * that narrows the grant is an Exchange Application Access Policy binding the app registration to a
+ * mail-enabled security group.
+ *
+ * So the opt-in is not a boolean. A boolean records that somebody wanted live fetch; this records
+ * that somebody CHECKED, which group they found, and who is answerable for it — the things an audit
+ * actually asks for, and the things a person is forced to look up rather than guess. `Confirmed` is
+ * the literal `true` rather than `boolean` deliberately: a variable that happens to be false will
+ * not type-check, so the attestation cannot be satisfied by passing a flag through.
+ */
+export interface LiveMailboxPolicyAttestation {
+    /** Literal `true`. See above — a `boolean` variable is rejected by the compiler. */
+    Confirmed: true;
+    /** The mail-enabled security group the Exchange policy scopes the app registration to. */
+    ScopedToGroup: string;
+    /** Who verified it. A person, so the decision has an owner. */
+    ConfirmedBy: string;
+    /** When they verified it. Policies get deleted; a stale attestation should be visible as stale. */
+    ConfirmedAt: Date;
+}
+
+let hostLivePolicy: LiveMailboxPolicyAttestation | null = null;
+
+/**
+ * Record that this host is scoped, and may therefore read real mailboxes. Pass null to revoke.
+ *
+ * DELIBERATELY NOT DRIVEN BY DATA. `ActivitySyncConnection` is an ordinary editable entity, and
+ * anyone who can edit a row could otherwise turn on tenant-wide mail reading by typing in a form.
+ * The same reasoning already applies to the transport itself — "a database row should not be able to
+ * reach in and swap it" — and it applies with more force here. This is a bootstrap-time decision in
+ * code, made by whoever deploys the host.
+ *
+ * The blank checks are the point rather than defensive noise: an attestation with an empty group or
+ * no name records nothing, and silently accepting one would turn this back into a boolean.
+ */
+export function AllowLiveMailboxFetch(attestation: LiveMailboxPolicyAttestation | null): void {
+    if (attestation === null) {
+        hostLivePolicy = null;
+        return;
+    }
+    if (!attestation.ScopedToGroup?.trim()) {
+        throw new Error(
+            'AllowLiveMailboxFetch requires ScopedToGroup — the mail-enabled security group the ' +
+                'Exchange Application Access Policy binds the app registration to. Run ' +
+                'Get-ApplicationAccessPolicy to find it.',
+        );
+    }
+    if (!attestation.ConfirmedBy?.trim()) {
+        throw new Error('AllowLiveMailboxFetch requires ConfirmedBy — who verified the policy.');
+    }
+    hostLivePolicy = attestation;
+}
+
+/** The recorded attestation, or null when this host has not opted in. */
+export function HostLiveMailboxPolicy(): LiveMailboxPolicyAttestation | null {
+    return hostLivePolicy;
+}
+
+/** Whether this host has attested that its app registration is scoped. */
+export function HostAllowsLiveMailboxFetch(): boolean {
+    return hostLivePolicy !== null;
+}
