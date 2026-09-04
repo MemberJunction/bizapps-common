@@ -16,6 +16,7 @@ import '@mj-biz-apps/common-core-entities-server';
 import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
+import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -45,7 +46,11 @@ export function LoadBizAppsCommonServer(): void {
     LoadActivitySyncEngine();
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
+    // Registers the seam that turns a connection's CredentialsRef into a live Graph transport.
+    // Nothing about this enables a live read on its own — AllowLiveFetch still defaults false.
+    LoadGraphTransportFactory();
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
+export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';

@@ -129,6 +129,17 @@ export interface RawBatch {
     Payloads: Record<string, unknown>[];
     /** Reported, never thrown — a partial batch is still worth filing. */
     Issues: string[];
+    /**
+     * The read hit its limit while a watermark was in play, so items OLDER than the ones returned
+     * may still be unread. The watermark must NOT advance past a capped batch: Graph returns
+     * newest-first, so the newest item in a capped batch is the newest in the mailbox, and
+     * advancing to it steps over everything between the old watermark and the oldest item
+     * returned — losing that mail permanently and silently.
+     *
+     * Withholding the watermark instead costs a re-read that de-duplication absorbs. Those two
+     * costs are not comparable, which is the rule `watermark.ts` already states.
+     */
+    Capped?: boolean;
 }
 
 /** One provider pass. */
