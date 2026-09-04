@@ -29,6 +29,7 @@ import {
     type ExtensionStamp,
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
+import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
 import {
     DefaultDeterministicStages,
     type EngineQualificationContext,
@@ -50,7 +51,7 @@ import {
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
-import { RequireUUID } from './sql.js';
+import { RequireUUID, UuidInList } from './sql.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import {
     CanAdvanceWatermark,
@@ -298,6 +299,30 @@ export class ActivitySyncEngine {
             return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue, stampHealth);
         }
 
+        const internalDomains = await this.loadInternalDomains(bound.Rows, contextUser);
+        if (internalDomains.Failed) {
+            return this.failClosed(
+                connection,
+                options,
+                result,
+                since,
+                provider,
+                contextUser,
+                internalDomains.Issue,
+                stampHealth,
+            );
+        }
+        // A rule that tests participants against NO domain list does not filter — it INVERTS.
+        // `ClassifyParticipants` counts an address as Internal only when its domain is in the list,
+        // so an empty list makes every participant External: `HasExternal` matches everything,
+        // including the purely internal chatter it exists to keep out, and `AllInternal` matches
+        // nothing. That reads as a working filter and is the opposite of one, so it is reported
+        // rather than left to look like a quiet pass.
+        const scopeWarning = ParticipantScopeWarning(rules.Rows, internalDomains.Rows);
+        if (scopeWarning) {
+            result.Issues.push(scopeWarning);
+        }
+
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const extensionStamps: ExtensionStamp[] = [];
         const identities = await this.resolver.Resolve(allParticipants, contextUser);
@@ -333,7 +358,7 @@ export class ActivitySyncEngine {
                 ProviderTypeCode: sourceSystem,
                 Exclusions: exclusions.Rows,
                 Rules: rules.Rows,
-                InternalDomains: [],
+                InternalDomains: internalDomains.Rows,
                 KnownAddresses: identities.Known,
             };
             let verdict;
@@ -787,6 +812,48 @@ export class ActivitySyncEngine {
             Failed: false,
             Rows: (bound.Results ?? []).map((r) => r.ActivitySyncRuleSetID),
         };
+    }
+
+    /**
+     * The domains this deployment calls INTERNAL, merged across every rule set bound to the
+     * connection.
+     *
+     * WHY THIS EXISTS. `ActivitySyncRuleSet.InternalDomains` describes itself as "Required for any
+     * rule using ParticipantScope", `participants.ts` names it as where the list lives, and the
+     * engine passed a hard-coded `[]` — so nothing ever read the column. Same shape as the
+     * `CredentialsRef` gap: a column that documents its own purpose, with no reader.
+     *
+     * MALFORMED IS NOT EMPTY. A list that fails to parse fails the run rather than degrading to
+     * `[]`, because `[]` silently inverts every participant rule (see the caller). Parsing itself
+     * lives in {@link ParseInternalDomains} so it is testable without standing up a RunView.
+     */
+    private async loadInternalDomains(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<string>> {
+        if (setIds.length === 0) {
+            return { Failed: false, Rows: [] };
+        }
+        const rv = new RunView();
+        const res = await rv.RunView<{ ID: string; Name: string; InternalDomains: string | null }>(
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.RuleSets,
+                ExtraFilter: `ID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`,
+                Fields: ['ID', 'Name', 'InternalDomains'],
+                ResultType: 'simple',
+            },
+            user,
+        );
+        if (!res.Success) {
+            return { Failed: true, Issue: 'ActivitySyncRuleSet lookup failed.' };
+        }
+
+        const domains = new Set<string>();
+        for (const row of res.Results ?? []) {
+            const parsed = ParseInternalDomains(row.InternalDomains, row.Name);
+            if (!parsed.Ok) {
+                return { Failed: true, Issue: parsed.Issue };
+            }
+            for (const d of parsed.Domains) domains.add(d);
+        }
+        return { Failed: false, Rows: [...domains] };
     }
 
     private async loadExclusions(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<ExclusionRow>> {
