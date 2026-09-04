@@ -36,6 +36,14 @@ jobs:
       - name: Validate repository.url in packages
         run: ./.github/scripts/validate-package-repository.sh
 
+      # Runs on every PR, not only at publish. validate-package-lock-case.sh is a release gate, so
+      # a bug in the GATE would otherwise be discovered during a release — the one-level-up form of
+      # the failure it exists to prevent, and exactly what happened: it could not detect a mis-cased
+      # path at all. These fixtures drive the real script against throwaway repos, including the
+      # mis-cased cases that fail without the fix.
+      - name: CI guard script tests
+        run: ./.github/scripts/__tests__/validate-package-lock-case.test.sh
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
