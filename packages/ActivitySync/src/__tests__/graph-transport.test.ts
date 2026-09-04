@@ -77,7 +77,20 @@ describe('GraphCommunicationTransport — the live path', () => {
         expect(params.NumMessages).toBe(50);
         // The credential is PASSED, never held. If this ever stops being forwarded, MJ silently
         // falls back to environment variables and reads whatever mailbox those point at.
-        expect(credentials).toEqual(CREDENTIAL);
+        expect(credentials).toEqual({
+            ...CREDENTIAL,
+            accountEmail: 'rep@example.com',
+            disableEnvironmentFallback: true,
+        });
+        // MJ's MSGraphProvider validates accountEmail alongside the three service-principal
+        // fields before it makes any request. It must be the mailbox from the QUERY: dropping it
+        // fails every live call on a host without AZURE_ACCOUNT_EMAIL, and any fixed value would
+        // be wrong for every connection but one.
+        expect(credentials.accountEmail).toBe(QUERY.Mailbox);
+        // And the host's AZURE_* variables must never be able to fill a gap in the credential —
+        // that is the difference between "fails on the missing field" and "reads someone else's
+        // mailbox".
+        expect(credentials.disableEnvironmentFallback).toBe(true);
     });
 
     it('returns Graph’s own payloads, not MJ’s normalized Messages', async () => {

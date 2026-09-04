@@ -92,6 +92,11 @@ function CredentialLoader(contextUser?: UserInfo) {
  * so a missing provider comes back as a truthy object that answers no calls usefully. Without this
  * the transport would be built, reach `GetMessages`, and fail somewhere far less informative than
  * the registration message the provider already carries.
+ *
+ * WHY NOT CALL `CommunicationEngine.GetProvider` ITSELF. It is this exact resolution and nothing
+ * more — it consults no provider metadata and no Status — but it throws unless the engine's
+ * `Config()` has loaded its five metadata entities first. That is a sending-side prerequisite this
+ * read-only path has no use for, so the two lines are mirrored here rather than paying the load.
  */
 function ResolveCommunicationProvider(name: string): GraphMessageReader | null {
     const instance = MJGlobal.Instance.ClassFactory.CreateInstance<BaseCommunicationProvider>(
