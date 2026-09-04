@@ -54,7 +54,15 @@ describe('load-bearing engine rules', () => {
             stages,
             ITEM,
             ctx({
-                Exclusions: [{ ID: 'ex-1', IdentityKind: 'Email', IdentityValue: 'alice@customer.com', ActivitySyncRuleSetID: null }],
+                Exclusions: [{
+                    ID: 'ex-1',
+                    IdentityKind: 'Email',
+                    IdentityValue: 'alice@customer.com',
+                    ActivitySyncRuleSetID: null,
+                    IsEnabled: true,
+                    EffectiveFrom: null,
+                    EffectiveTo: null,
+                }],
                 Rules: [{
                     ID: 'rule-include',
                     Sequence: 1,
@@ -235,9 +243,30 @@ describe('load-bearing engine rules', () => {
         expect(engine).toMatch(/rows\.length > MAX_RUNNABLE_CONNECTIONS/);
     });
 
-    it('loads CalendarDriverClass by name, not via SELECT *', () => {
+    /**
+     * Names its columns rather than taking `SELECT *`, AND asks for exactly the ones `ProviderTypeRow`
+     * declares. The second half is the load-bearing one: a field declared on the interface but left out
+     * of the `Fields` list is `undefined` at runtime, so every check written against it silently never
+     * fires — which is precisely how `IsActive` came to be ignored. Pinning the two together means
+     * adding a column to one side fails here until it is added to the other.
+     */
+    it('asks for every ProviderTypeRow field by name, and no others', () => {
         const engine = readFileSync(join(SRC, 'ActivitySyncEngine.ts'), 'utf8');
-        expect(engine).toMatch(/Fields: \['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass'\]/);
+
+        const declared = engine
+            .match(/interface ProviderTypeRow \{([^}]*)\}/)![1]
+            .replace(/\/\*\*[\s\S]*?\*\//g, '')
+            .match(/^\s*(\w+)\s*\??:/gm)!
+            .map((line) => line.trim().replace(/\s*\??:$/, ''));
+
+        const requested = engine
+            .match(/Fields: \[([^\]]*)\],\s*MaxRows: 1,/)![1]
+            .split(',')
+            .map((f) => f.trim().replace(/^'|'$/g, ''))
+            .filter(Boolean);
+
+        expect(declared.length).toBeGreaterThan(0);
+        expect([...requested].sort()).toEqual([...declared].sort());
     });
 
     it('stores a cancelled meeting as Cancelled, not Logged', () => {

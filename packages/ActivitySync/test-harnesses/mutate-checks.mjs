@@ -25,6 +25,7 @@ const WATER = 'src/watermark.ts';
 const LOAD = 'src/load.ts';
 const ACTION = 'src/action-result.ts';
 const TRANSPORT = 'src/providers/GraphCommunicationTransport.ts';
+const ENGINE = 'src/ActivitySyncEngine.ts';
 
 const PRODUCT = [
     {
@@ -158,6 +159,96 @@ const PRODUCT = [
         expect: ['does not report NO_CONNECTIONS when the connection load failed'],
         from: '    if (!fleet.Success && fleet.ConnectionsAttempted === 0) {',
         to: '    if (false && !fleet.Success && fleet.ConnectionsAttempted === 0) {',
+    },
+    // --- Exclusions: switched off, and the window of items they cover. Three columns that existed
+    // --- with no reader, so every one of these mutants was the shipping behaviour until now.
+    {
+        id: 'M-AC31',
+        file: STAGES,
+        expect: ['does not apply when disabled', 'lets the item through when the exclusion is switched off'],
+        from: '    if (exclusion.IsEnabled === false) return false;',
+        to: '',
+    },
+    {
+        // Absence must not read as "off": a row loaded without the column would stop excluding, which
+        // is the direction that lets mail through.
+        id: 'M-AC32',
+        file: STAGES,
+        expect: ['applies when the flag is absent, rather than assuming off'],
+        from: '    if (exclusion.IsEnabled === false) return false;',
+        to: '    if (!exclusion.IsEnabled) return false;',
+    },
+    {
+        id: 'M-AC33',
+        file: STAGES,
+        expect: ['does not apply to an item before EffectiveFrom'],
+        from: '    if (from && occurredAt.getTime() < from.getTime()) return false;',
+        to: '',
+    },
+    {
+        id: 'M-AC34',
+        file: STAGES,
+        expect: ['does not apply to an item after EffectiveTo'],
+        from: '    if (to && occurredAt.getTime() > to.getTime()) return false;',
+        to: '',
+    },
+    {
+        // Both bounds are inclusive, matching RuleRow.DateFrom/DateTo one stage later.
+        id: 'M-AC35',
+        file: STAGES,
+        expect: ['is inclusive at each boundary'],
+        from: '    if (from && occurredAt.getTime() < from.getTime()) return false;',
+        to: '    if (from && occurredAt.getTime() <= from.getTime()) return false;',
+    },
+    {
+        id: 'M-AC36',
+        file: STAGES,
+        expect: ['is inclusive at each boundary'],
+        from: '    if (to && occurredAt.getTime() > to.getTime()) return false;',
+        to: '    if (to && occurredAt.getTime() >= to.getTime()) return false;',
+    },
+    {
+        // One lapsed exclusion must not disarm the rest of the list.
+        id: 'M-AC37',
+        file: STAGES,
+        expect: ['keeps evaluating later exclusions after skipping one'],
+        from: '            if (!ExclusionAppliesTo(exclusion, item.StartedAt)) continue;',
+        to: '            if (!ExclusionAppliesTo(exclusion, item.StartedAt)) break;',
+    },
+    {
+        // Item time, not run time — what keeps a re-run's verdict reproducible.
+        id: 'M-AC38',
+        file: STAGES,
+        expect: ['judges by when the item occurred, not when the sync runs'],
+        from: 'if (!ExclusionAppliesTo(exclusion, item.StartedAt)) continue;',
+        to: 'if (!ExclusionAppliesTo(exclusion, new Date())) continue;',
+    },
+    // --- ActivitySyncProviderType.IsActive: the administrator's off switch, previously unread.
+    {
+        id: 'M-AC39',
+        file: ENGINE,
+        expect: [
+            'refuses the run, naming the type, when the type is switched off',
+            'refuses before fetching anything and writes nothing',
+        ],
+        from: '        if (typeRow?.IsActive === false) {',
+        to: '        if (false && typeRow?.IsActive === false) {',
+    },
+    {
+        id: 'M-AC40',
+        file: ENGINE,
+        expect: ['keeps running when the row carries no IsActive at all'],
+        from: '        if (typeRow?.IsActive === false) {',
+        to: '        if (!typeRow?.IsActive) {',
+    },
+    {
+        // The trap this whole fix walked into: declaring the field without requesting it leaves it
+        // undefined at runtime, so the check above silently never fires.
+        id: 'M-AC41',
+        file: ENGINE,
+        expect: ['asks for every ProviderTypeRow field by name, and no others'],
+        from: "'CalendarDriverClass', 'IsActive'],",
+        to: "'CalendarDriverClass'],",
     },
 ];
 

@@ -170,7 +170,7 @@ describe('MJGraphTransportDeps — resolving the two collaborators', () => {
         // present and correct.
         const deps = MJGraphTransportDeps({
             CredentialName: 'Graph',
-            GetCredentialEngine: () => ({ getCredential: async () => ({ values: CREDENTIAL }) }),
+            GetCredentialEngine: () => ({ getCredential: async () => ({ values: CREDENTIAL }) }) as never,
             GetCommunicationProvider: () => null,
         });
         await expect(deps.ResolveProvider()).rejects.toThrow(new RegExp(GRAPH_COMMUNICATION_PROVIDER));
@@ -181,7 +181,7 @@ describe('MJGraphTransportDeps — resolving the two collaborators', () => {
         const get = vi.fn().mockReturnValue(readerReturning({ Success: true }));
         const deps = MJGraphTransportDeps({
             CredentialName: 'Graph',
-            GetCredentialEngine: () => ({ getCredential: async () => ({ values: CREDENTIAL }) }),
+            GetCredentialEngine: () => ({ getCredential: async () => ({ values: CREDENTIAL }) }) as never,
             GetCommunicationProvider: get,
         });
         await deps.ResolveProvider();

@@ -1,0 +1,12 @@
+{
+  // The build config excludes `src/**/__tests__/**` so test files never reach `dist` — correct for a
+  // published package, but it also meant the test suite was never typechecked by anything. Vitest
+  // transpiles through esbuild and does not typecheck either, so a test could construct a row missing
+  // three required fields and stay green for as long as its assertions happened to hold.
+  //
+  // This config typechecks everything and emits nothing. `pnpm test` runs it before vitest.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
