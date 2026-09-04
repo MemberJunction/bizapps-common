@@ -26,3 +26,6 @@ export * from './providers/FixtureActivitySyncProvider.js';
 export * from './providers/MSGraphActivitySyncProvider.js';
 export * from './providers/MSGraphCalendarSyncProvider.js';
 export * from './providers/GraphMessageMapper.js';
+export * from './providers/MessageTransport.js';
+export * from './providers/GraphCommunicationTransport.js';
+export * from './providers/RecordedMessageTransport.js';

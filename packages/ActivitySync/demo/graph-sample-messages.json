@@ -1,0 +1,229 @@
+{
+  "$comment": [
+    "PROVENANCE — READ THIS BEFORE TRUSTING ANYTHING BELOW.",
+    "",
+    "These are NOT captured from a Microsoft 365 tenant. They are hand-built to the shape of the",
+    "Microsoft Graph `message` resource as Microsoft documents it, using the field names, casing and",
+    "value formats from that published schema. They were written this way because capturing real",
+    "payloads requires a credential, and __mj.Credential is empty on our host — the very gap this",
+    "work exists to close.",
+    "",
+    "WHAT THAT MEANS FOR ANY DEMO USING THEM. The engine, the Graph mapper, participant resolution,",
+    "direction inference, threading and the watermark are all exercised for real. What is NOT proven",
+    "is that Microsoft returns exactly these shapes for these fields. The first live run is still the",
+    "first live run, and the honest thing is to say so rather than let a green demo imply otherwise.",
+    "",
+    "Every address is on example.com / example.org, which RFC 2606 reserves precisely so sample data",
+    "cannot reach a real mailbox.",
+    "",
+    "Fields present here that the mapper does NOT read (isRead, importance, webLink, hasAttachments,",
+    "internetMessageId, parentFolderId, changeKey) are kept deliberately: a real Graph response",
+    "carries them, and stripping them would make the fixture agree with our mapper rather than with",
+    "Microsoft. NormalizedItem.Raw preserves the whole payload, so they should be here."
+  ],
+  "mailbox": "rep@example.com",
+  "capturedAt": "2026-09-01T00:00:00Z",
+  "value": [
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zx\"",
+      "id": "AAMkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQBGAAAAAAA1",
+      "createdDateTime": "2026-08-28T14:02:11Z",
+      "lastModifiedDateTime": "2026-08-28T14:02:14Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zx",
+      "categories": [],
+      "receivedDateTime": "2026-08-28T14:02:12Z",
+      "sentDateTime": "2026-08-28T14:02:09Z",
+      "hasAttachments": false,
+      "internetMessageId": "<CAF9x1a2@mail.customer.example.org>",
+      "subject": "Renewal terms for the platform seats",
+      "bodyPreview": "Hi — following up on the renewal. We are looking at 40 seats for the coming year, starting 1 October.",
+      "importance": "normal",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAA",
+      "conversationId": "AAQkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQAQ",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": true,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhh&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "focused",
+      "body": {
+        "contentType": "text",
+        "content": "Hi — following up on the renewal. We are looking at 40 seats for the coming year, starting 1 October.\n\nThanks,\nDana"
+      },
+      "sender": {
+        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+      },
+      "from": {
+        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+      },
+      "toRecipients": [
+        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+      ],
+      "ccRecipients": [],
+      "bccRecipients": [],
+      "replyTo": []
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zy\"",
+      "id": "AAMkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQBGAAAAAAA2",
+      "createdDateTime": "2026-08-28T16:31:40Z",
+      "lastModifiedDateTime": "2026-08-28T16:31:42Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zy",
+      "categories": [],
+      "receivedDateTime": "2026-08-28T16:31:41Z",
+      "sentDateTime": "2026-08-28T16:31:38Z",
+      "hasAttachments": true,
+      "internetMessageId": "<CAF9x1b7@mail.example.com>",
+      "subject": "RE: Renewal terms for the platform seats",
+      "bodyPreview": "Dana — quote attached for 40 seats, 1 Oct to 30 Sep. Copying Priya who handles the paperwork.",
+      "importance": "normal",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAB",
+      "conversationId": "AAQkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQAQ",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": true,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhi&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "focused",
+      "body": {
+        "contentType": "html",
+        "content": "<html><body><p>Dana — quote attached for 40 seats, 1 Oct to 30 Sep. Copying Priya who handles the paperwork.</p></body></html>"
+      },
+      "sender": {
+        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+      },
+      "from": {
+        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+      },
+      "toRecipients": [
+        { "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" } }
+      ],
+      "ccRecipients": [
+        { "emailAddress": { "name": "Nair, Priya", "address": "priya.nair@customer.example.org" } }
+      ],
+      "bccRecipients": [],
+      "replyTo": []
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zz\"",
+      "id": "AAMkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQBGAAAAAAA3",
+      "createdDateTime": "2026-08-31T09:14:55Z",
+      "lastModifiedDateTime": "2026-08-31T09:14:57Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zz",
+      "categories": ["Renewals"],
+      "receivedDateTime": "2026-08-31T09:14:56Z",
+      "sentDateTime": "2026-08-31T09:14:52Z",
+      "hasAttachments": false,
+      "internetMessageId": "<CAF9x2c1@mail.customer.example.org>",
+      "subject": "RE: Renewal terms for the platform seats",
+      "bodyPreview": "Approved on our side. Priya will send the PO on Tuesday.",
+      "importance": "high",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAA",
+      "conversationId": "AAQkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQAQ",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": false,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhj&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "focused",
+      "body": {
+        "contentType": "text",
+        "content": "Approved on our side. Priya will send the PO on Tuesday."
+      },
+      "sender": {
+        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+      },
+      "from": {
+        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+      },
+      "toRecipients": [
+        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+      ],
+      "ccRecipients": [
+        { "emailAddress": { "name": "Nair, Priya", "address": "priya.nair@customer.example.org" } }
+      ],
+      "bccRecipients": [],
+      "replyTo": []
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A1\"",
+      "id": "AAMkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQBGAAAAAAA4",
+      "createdDateTime": "2026-08-31T11:47:03Z",
+      "lastModifiedDateTime": "2026-08-31T11:47:05Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A1",
+      "categories": [],
+      "receivedDateTime": "2026-08-31T11:47:04Z",
+      "sentDateTime": "2026-08-31T11:47:01Z",
+      "hasAttachments": false,
+      "internetMessageId": "<CAF9x3d4@mail.example.com>",
+      "subject": "Internal: renewal desk check before we book it",
+      "bodyPreview": "Flagging the 40-seat renewal for desk review — term starts 1 Oct, so it lands in this quarter.",
+      "importance": "normal",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAB",
+      "conversationId": "AAQkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQAR",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": true,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhk&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "focused",
+      "body": {
+        "contentType": "text",
+        "content": "Flagging the 40-seat renewal for desk review — term starts 1 Oct, so it lands in this quarter."
+      },
+      "sender": {
+        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+      },
+      "from": {
+        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+      },
+      "toRecipients": [
+        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+      ],
+      "ccRecipients": [],
+      "bccRecipients": [],
+      "replyTo": []
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A2\"",
+      "id": "AAMkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQBGAAAAAAA5",
+      "createdDateTime": "2026-08-31T13:05:20Z",
+      "lastModifiedDateTime": "2026-08-31T13:05:22Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A2",
+      "categories": [],
+      "receivedDateTime": "2026-08-31T13:05:21Z",
+      "sentDateTime": "2026-08-31T13:05:18Z",
+      "hasAttachments": false,
+      "internetMessageId": "<CAF9x4e8@mail.example.net>",
+      "subject": "Automated: delivery status notification",
+      "bodyPreview": "Your message could not be delivered to one or more recipients.",
+      "importance": "low",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAA",
+      "conversationId": "AAQkADhhMmE0YzE5LWRmNzQtNDkzMi04ZmQ4LTNiOGM5YTUxYTRlNQAS",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": false,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhl&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "other",
+      "body": {
+        "contentType": "text",
+        "content": "Your message could not be delivered to one or more recipients."
+      },
+      "sender": {
+        "emailAddress": { "name": "Mail Delivery System", "address": "postmaster@example.net" }
+      },
+      "from": {
+        "emailAddress": { "name": "Mail Delivery System", "address": "postmaster@example.net" }
+      },
+      "toRecipients": [
+        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+      ],
+      "ccRecipients": [
+        { "emailAddress": { "name": "Broken Entry", "address": "undisclosed-recipients" } }
+      ],
+      "bccRecipients": [],
+      "replyTo": []
+    }
+  ]
+}
