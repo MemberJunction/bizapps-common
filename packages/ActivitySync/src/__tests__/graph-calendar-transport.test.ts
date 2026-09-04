@@ -67,6 +67,7 @@ function transport(reader: GraphEventReader, credential: Partial<GraphServicePri
 
 const ATTESTATION: LiveMailboxPolicyAttestation = {
     Confirmed: true,
+    Scope: 'RestrictedToGroup',
     ScopedToGroup: 'activity-sync@bluecypress.io',
     ConfirmedBy: 'Josue Garcia',
     ConfirmedAt: NOW,

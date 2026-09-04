@@ -37,6 +37,24 @@ registry. What it is emphatically NOT is a relaxation. Making a gate reachable m
 and most of the new tests exist to pin that: with nothing registered, an unconfigured host refuses
 exactly as before, and the transport it refused is never called.
 
+**Two decisions are modelled, because two decisions are what organisations make.** The attestation is
+a discriminated union:
+
+- `RestrictedToGroup` — an Exchange assignment binds the app to a named security group.
+- `TenantWideAccepted` — the tenant-wide grant was looked at and accepted, with `AcceptedRisk` saying
+  what was accepted in the deciding person's own words.
+
+An earlier draft demanded a group name, which quietly assumed every deployment would create an
+Exchange RBAC assignment. Most will not: adding an API permission in Entra is one team's five-minute
+job, and RBAC for Applications is a different system that often nobody owns. A gate that accepts only
+"scoped" leaves everyone else choosing between inventing a group name and bypassing the gate — and
+both destroy the record it exists to keep. What stays impossible is the third state, *nobody looked*:
+neither variant can be satisfied without a name, a date, and either a group or a written reason.
+
+`AcceptedRisk` is free text and required rather than a flag, deliberately. A tick-box records that
+somebody clicked; a sentence records that somebody understood, and it is what an audit reads when the
+next person asks why this app can read every mailbox.
+
 **The opt-in is an attestation, not a boolean.** A boolean records that somebody WANTED live fetch.
 `LiveMailboxPolicyAttestation` records that somebody CHECKED — which mail-enabled security group the
 Exchange Application Access Policy names, who confirmed it, and when. Those are the things an audit
