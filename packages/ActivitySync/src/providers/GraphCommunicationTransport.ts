@@ -119,15 +119,35 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
 
         const provider = await this.Deps.ResolveProvider();
 
-        // NO DATE BOUND IS SENT YET, DELIBERATELY. The published Communication API has no
-        // first-class date filter, so expressing "since the watermark" here would mean
-        // ContextData.Filter — a provider-specific escape hatch that ALSO silently discarded any
-        // other clause. MemberJunction/MJ#4123 adds ReceivedAfter and fixes that overwrite. Until it
-        // publishes, the window is applied downstream in Normalize, which already filters on
-        // query.Since. The cost is over-fetching rather than a correctness gap — EXCEPT that Limit
-        // bounds the read, so a mailbox holding more than Limit messages newer than the watermark
-        // will not drain in one pass. Hence the issue recorded below rather than silence.
-        const result = await provider.GetMessages({ Identifier: query.Mailbox, NumMessages: query.Limit }, credential);
+        // NO DATE BOUND IS SENT YET, DELIBERATELY. `GetMessages` has no date parameter, and the
+        // one operation that does — `SearchMessages`, whose FromDate/ToDate become a plain
+        // `receivedDateTime` $filter — returns only MJ's normalized Messages with no SourceData,
+        // which this transport cannot use (see the module header). Expressing "since the
+        // watermark" on GetMessages today would mean ContextData.Filter — a provider-specific
+        // escape hatch that ALSO silently discarded any other clause. MemberJunction/MJ#4123 adds
+        // ReceivedAfter to GetMessages and fixes that overwrite. Until it publishes, the window is
+        // applied downstream in Normalize, which already filters on query.Since. The cost is
+        // over-fetching rather than a correctness gap — EXCEPT that Limit bounds the read, so a
+        // mailbox holding more than Limit messages newer than the watermark will not drain in one
+        // pass. Hence the issue recorded below rather than silence.
+        //
+        // `accountEmail` IS REQUIRED BY MJ. `MSGraphProvider.resolveCredentials` validates four
+        // fields — tenantId, clientId, clientSecret AND accountEmail — before it does anything, and
+        // the "Azure Service Principal" credential carries only the first three. Without this the
+        // very first live call fails with "Missing required credentials: accountEmail" on any host
+        // that does not happen to export AZURE_ACCOUNT_EMAIL, which is exactly the machine-specific
+        // failure this transport exists to end. The request path already targets `Identifier`, so
+        // the value here only satisfies validation — and the mailbox named in the query is the one
+        // correct value per connection, where a host-wide environment variable could never be.
+        //
+        // `disableEnvironmentFallback` MAKES THE HEADER'S PROMISE ENFORCED. MJ resolves each field as
+        // "the value passed, else the AZURE_* environment variable". Without this flag a credential
+        // with a blank field would silently borrow the host's, and read whatever mailbox THAT points
+        // at. With it, an incomplete credential fails loudly on the field name instead.
+        const result = await provider.GetMessages(
+            { Identifier: query.Mailbox, NumMessages: query.Limit },
+            { ...credential, accountEmail: query.Mailbox, disableEnvironmentFallback: true },
+        );
 
         if (!result?.Success) {
             throw new Error(result?.ErrorMessage?.trim() || `Graph returned no result for mailbox "${query.Mailbox}".`);
