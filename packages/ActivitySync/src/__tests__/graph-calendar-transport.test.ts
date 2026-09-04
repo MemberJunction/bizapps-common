@@ -90,7 +90,15 @@ describe('what the transport asks Graph for', () => {
     it('passes the credential through to the call rather than holding it', async () => {
         const reader = readerReturning({ Success: true, SourceData: [] });
         await transport(reader).Fetch(QUERY);
-        expect((reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls[0][1]).toEqual(CREDENTIAL);
+        // toMatchObject: accountEmail rides alongside, because MJ validates a fourth field that its
+        // own "Azure Service Principal" credential type does not declare as required.
+        expect((reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls[0][1]).toMatchObject(CREDENTIAL);
+    });
+
+    it('supplies that accountEmail from the mailbox being read', async () => {
+        const reader = readerReturning({ Success: true, SourceData: [] });
+        await transport(reader).Fetch({ ...QUERY, Mailbox: 'rep@example.com' });
+        expect((reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls[0][1].accountEmail).toBe('rep@example.com');
     });
 
     /**

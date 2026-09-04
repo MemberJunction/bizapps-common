@@ -150,7 +150,12 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
                 // `MapGraphEvent` already carries `Cancelled` through to the Activity.
                 IncludeCancelled: true,
             },
-            credential,
+            // Same MJ requirements as the message path, for the same reasons — see
+            // GraphCommunicationTransport: accountEmail is validated before any request and the
+            // credential type does not carry it, and disableEnvironmentFallback stops a gap being
+            // filled from AZURE_* on the host, which is the difference between failing on a missing
+            // field and reading a calendar nobody asked for.
+            { ...credential, accountEmail: query.Mailbox, disableEnvironmentFallback: true },
         );
 
         if (!result?.Success) {
