@@ -96,3 +96,67 @@ export function MatchesParticipantScope(scope: ParticipantScope, c: ParticipantC
             return c.Internal > 0 && external > 0;
     }
 }
+
+/**
+ * What `ActivitySyncRuleSet.InternalDomains` holds, parsed.
+ *
+ * The column documents itself as "Required for any rule using ParticipantScope" and stores a JSON
+ * array, e.g. `["bluecypress.io"]`. Nothing read it until now — the engine passed a hard-coded empty
+ * list — so every participant classified as External and every participant rule silently inverted.
+ *
+ * A parse failure is NOT degraded to an empty list. Empty is the dangerous value here: it makes
+ * `HasExternal` match the purely internal chatter it exists to exclude. "Internal" is a property of
+ * the deployment, so guessing it is worse than refusing to run.
+ */
+export type InternalDomainsParse = { Ok: true; Domains: string[] } | { Ok: false; Issue: string };
+
+/** Parse one rule set's `InternalDomains`. Blank and null are legitimately "none declared". */
+export function ParseInternalDomains(raw: string | null | undefined, ruleSetName: string): InternalDomainsParse {
+    const text = (raw ?? '').trim();
+    if (!text) return { Ok: true, Domains: [] };
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        return {
+            Ok: false,
+            Issue: `Rule set "${ruleSetName}" has InternalDomains that is not valid JSON. Expected an array like ["bluecypress.io"].`,
+        };
+    }
+    if (!Array.isArray(parsed)) {
+        return {
+            Ok: false,
+            Issue: `Rule set "${ruleSetName}" has InternalDomains that is not a JSON array. Expected e.g. ["bluecypress.io"].`,
+        };
+    }
+    const domains: string[] = [];
+    for (const entry of parsed) {
+        // Normalised exactly as ClassifyParticipants normalises what it compares against, so a list
+        // written "@Bluecypress.IO" still matches an address at bluecypress.io.
+        const d = String(entry ?? '').trim().toLowerCase().replace(/^@/, '');
+        if (d && !domains.includes(d)) domains.push(d);
+    }
+    return { Ok: true, Domains: domains };
+}
+
+/**
+ * The warning for rules that test participants when no domain list exists.
+ *
+ * Returns null when there is nothing to say. This is a WARNING rather than a refusal because the run
+ * is still meaningful — the rules simply do not filter the way they read, and saying so is the
+ * difference between a surprising sync and an inexplicable one.
+ */
+export function ParticipantScopeWarning(
+    rules: readonly { ParticipantScope?: string | null }[],
+    internalDomains: readonly string[],
+): string | null {
+    if (internalDomains.length > 0) return null;
+    const scoped = rules.filter((r) => r.ParticipantScope && r.ParticipantScope !== 'Any');
+    if (scoped.length === 0) return null;
+    return (
+        `${scoped.length} rule(s) test ParticipantScope, but no bound rule set defines InternalDomains. ` +
+        'Every participant therefore counts as External, so those rules do not filter what they appear ' +
+        'to. Set InternalDomains on the rule set.'
+    );
+}
