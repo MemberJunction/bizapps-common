@@ -171,6 +171,30 @@ function failedSurfaceResult(issues: readonly string[]): SyncEngineResult {
     };
 }
 
+
+/**
+ * The driver class of the SURFACE being run, which is not always the connection's.
+ *
+ * `RunConnections` drives a second, calendar surface from the same connection and the same type row,
+ * passing the calendar plugin as `source`. Handing `typeRow.DriverClass` to both told a host factory
+ * "Microsoft365" on the calendar pass too, so a factory serving both surfaces could not tell them
+ * apart: it built a MAIL transport for the calendar, fed Graph message payloads to the event mapper,
+ * and every one was dropped for having no start time. That reads as an empty calendar, not as a
+ * wiring fault — which is why it survived until a calendar fixture ran end to end.
+ *
+ * Pure and exported so the mapping can be pinned without standing up a fleet run.
+ */
+export function SurfaceDriverClass(
+    kind: ActivitySourceKind,
+    typeRow: { DriverClass?: string | null; CalendarDriverClass?: string | null } | null | undefined,
+    fallback: string,
+): string {
+    const declared = kind === 'Calendar' ? typeRow?.CalendarDriverClass : typeRow?.DriverClass;
+    // A blank column is not a driver. Falling through to the plugin's own code keeps a
+    // half-configured provider type working as it did rather than serving an empty string.
+    return declared?.trim() ? declared.trim() : fallback;
+}
+
 export class ActivitySyncEngine {
     public constructor(
         private readonly resolver: IdentityResolver = new IdentityResolver(),
@@ -262,10 +286,21 @@ export class ActivitySyncEngine {
         // Tell the plugin which connection this run is for BEFORE it fetches. This is the only
         // moment it can learn which credential the connection named: ClassFactory builds plugins
         // with no arguments, so nothing is injectable at construction.
+        // THE DRIVER CLASS OF THE SURFACE BEING RUN, not of the connection.
+        //
+        // `RunConnections` drives a second, CALENDAR surface from the same connection and the same
+        // type row, passing the calendar plugin as `source`. Handing `typeRow.DriverClass` to both
+        // told a host factory "Microsoft365" for the calendar pass as well, so a factory serving both
+        // surfaces could not tell them apart and built a MAIL transport for the calendar — which then
+        // fed Graph message payloads to the event mapper, and every one was dropped for having no
+        // start time. It read as an empty calendar rather than as a wiring fault.
+        //
+        // The plugin already knows which surface it is; that is what `Kind` is for.
+        const surfaceDriver = SurfaceDriverClass(plugin.Kind, typeRow, plugin.ProviderTypeCode);
         plugin.Configure({
             CredentialsRef: connection.CredentialsRef ?? null,
             Mailbox: connection.Mailbox ?? null,
-            DriverClass: typeRow?.DriverClass ?? plugin.ProviderTypeCode,
+            DriverClass: surfaceDriver,
             ContextUser: contextUser,
         });
 

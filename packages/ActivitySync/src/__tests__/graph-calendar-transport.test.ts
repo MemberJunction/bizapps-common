@@ -34,6 +34,7 @@ import {
 } from '../providers/MSGraphCalendarSyncProvider.js';
 import { RecordedMessageTransport } from '../providers/RecordedMessageTransport.js';
 import type { ActivitySourceQuery } from '../types.js';
+import { SurfaceDriverClass } from '../ActivitySyncEngine.js';
 
 const CREDENTIAL: GraphServicePrincipal = { tenantId: 't', clientId: 'c', clientSecret: 's' };
 const QUERY: ActivitySourceQuery = { Mailbox: 'rep@example.com', Since: null, Limit: 50 };
@@ -298,5 +299,46 @@ describe('MJGraphCalendarTransportDeps', () => {
             GetCommunicationProvider: () => readerReturning({ Success: true }),
         });
         await expect(deps.ResolveCredential()).rejects.toThrow(/resolved with no values/);
+    });
+});
+
+describe('which driver class a surface is told it is', () => {
+    /**
+     * THE BUG THIS PINS. `RunConnections` runs a second calendar surface from the SAME connection and
+     * the SAME type row. Both passes used to receive `typeRow.DriverClass`, so a host factory serving
+     * both surfaces was told "Microsoft365" for the calendar too — it built a MAIL transport, fed
+     * Graph message payloads to the event mapper, and every one was dropped for having no start time.
+     *
+     * That failure mode is why this went unnoticed: the run reported Success with an empty calendar,
+     * which is indistinguishable from a genuinely empty calendar. It surfaced only when a calendar
+     * fixture was run end to end and five events arrived as five "no usable start time" skips.
+     */
+    const typeRow = { DriverClass: 'Microsoft365', CalendarDriverClass: 'Microsoft365.Calendar' };
+
+    it('tells the calendar surface the CALENDAR driver', () => {
+        expect(SurfaceDriverClass('Calendar', typeRow, 'Microsoft365')).toBe('Microsoft365.Calendar');
+    });
+
+    it('tells the message surface the message driver', () => {
+        expect(SurfaceDriverClass('Message', typeRow, 'Microsoft365')).toBe('Microsoft365');
+    });
+
+    /** A provider type with no calendar driver must not hand the calendar surface the mail one. */
+    it('falls back to the plugin code rather than the other surface driver', () => {
+        expect(SurfaceDriverClass('Calendar', { DriverClass: 'Microsoft365' }, 'Fixture')).toBe('Fixture');
+    });
+
+    it('treats a blank column as absent', () => {
+        expect(SurfaceDriverClass('Calendar', { CalendarDriverClass: '   ' }, 'Fixture')).toBe('Fixture');
+        expect(SurfaceDriverClass('Message', { DriverClass: '' }, 'Fixture')).toBe('Fixture');
+    });
+
+    it('trims what it does use', () => {
+        expect(SurfaceDriverClass('Calendar', { CalendarDriverClass: '  M365.Cal  ' }, 'Fixture')).toBe('M365.Cal');
+    });
+
+    it('survives no type row at all', () => {
+        expect(SurfaceDriverClass('Calendar', null, 'Fixture')).toBe('Fixture');
+        expect(SurfaceDriverClass('Message', undefined, 'Fixture')).toBe('Fixture');
     });
 });
