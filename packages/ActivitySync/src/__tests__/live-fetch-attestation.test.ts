@@ -56,6 +56,7 @@ const recordedTransport = () =>
 
 const ATTESTATION: LiveMailboxPolicyAttestation = {
     Confirmed: true,
+    Scope: 'RestrictedToGroup',
     ScopedToGroup: 'activity-sync-mailboxes@bluecypress.io',
     ConfirmedBy: 'Josue Garcia',
     ConfirmedAt: new Date('2026-09-04T00:00:00Z'),
@@ -157,6 +158,68 @@ describe('a scoped host can enable it through the path that actually ships', () 
 
         expect(batch.Issues[0]).toBe(LIVE_GRAPH_REFUSAL);
         expect(transport.Fetch).not.toHaveBeenCalled();
+    });
+});
+
+describe('the two decisions an organisation actually makes', () => {
+    /**
+     * WHY THIS VARIANT EXISTS. The first version of the attestation demanded `ScopedToGroup`, which
+     * assumed every deployment would create an Exchange RBAC assignment. Most will not: adding an API
+     * permission in Entra is one team's five-minute job, and Exchange RBAC for Applications is a
+     * different system that often nobody owns. A gate that only accepts "scoped" leaves everyone else
+     * choosing between inventing a group name and bypassing the gate — and both destroy the record it
+     * exists to keep. Accepting a tenant-wide grant knowingly is a real decision, so it is modelled.
+     */
+    const ACCEPTED: LiveMailboxPolicyAttestation = {
+        Confirmed: true,
+        Scope: 'TenantWideAccepted',
+        AcceptedRisk: 'No Exchange assignment exists; the app can read every mailbox and we accept that for now.',
+        ConfirmedBy: 'A Person',
+        ConfirmedAt: new Date('2026-09-04T00:00:00Z'),
+    };
+
+    it('accepts a knowingly tenant-wide deployment', () => {
+        AllowLiveMailboxFetch(ACCEPTED);
+        expect(HostAllowsLiveMailboxFetch()).toBe(true);
+    });
+
+    it('records WHAT was accepted, not merely that something was', () => {
+        AllowLiveMailboxFetch(ACCEPTED);
+        const held = HostLiveMailboxPolicy();
+        expect(held?.Scope).toBe('TenantWideAccepted');
+        expect(held && 'AcceptedRisk' in held && held.AcceptedRisk).toMatch(/every mailbox/);
+    });
+
+    /**
+     * A tick-box records that somebody clicked; a sentence records that somebody understood. This is
+     * the whole difference between this variant and simply removing the gate.
+     */
+    it('refuses a tenant-wide claim with no stated reason', () => {
+        expect(() =>
+            AllowLiveMailboxFetch({ ...ACCEPTED, AcceptedRisk: '   ' }),
+        ).toThrow(/AcceptedRisk/);
+        expect(HostAllowsLiveMailboxFetch()).toBe(false);
+    });
+
+    it('still refuses a scoped claim that names no group', () => {
+        expect(() =>
+            AllowLiveMailboxFetch({ ...ATTESTATION, ScopedToGroup: '' }),
+        ).toThrow(/ScopedToGroup/);
+        expect(HostAllowsLiveMailboxFetch()).toBe(false);
+    });
+
+    /** Neither variant can be satisfied without an owner. "Nobody looked" stays impossible. */
+    it('requires a person on either decision', () => {
+        expect(() => AllowLiveMailboxFetch({ ...ACCEPTED, ConfirmedBy: ' ' })).toThrow(/ConfirmedBy/);
+        expect(() => AllowLiveMailboxFetch({ ...ATTESTATION, ConfirmedBy: ' ' })).toThrow(/ConfirmedBy/);
+    });
+
+    it('a tenant-wide attestation opens the gate exactly as a scoped one does', async () => {
+        AllowLiveMailboxFetch(ACCEPTED);
+        const transport = liveTransport();
+        const batch = await providerAsShipped(transport).Fetch(QUERY);
+        expect(transport.Fetch).toHaveBeenCalledOnce();
+        expect(batch.Issues[0]).not.toBe(LIVE_GRAPH_REFUSAL);
     });
 });
 

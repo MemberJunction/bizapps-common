@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AllowLiveMailboxFetch, HostAllowsLiveMailboxFetch, HostLiveMailboxPolicy } from '@mj-biz-apps/common-activity-sync';
 
 import {
+    ENV_ACCEPTED_RISK,
     ENV_CONFIRMED_AT,
     ENV_CONFIRMED_BY,
     ENV_GROUP,
@@ -59,6 +60,7 @@ describe('a fully configured host', () => {
         LoadLiveMailboxPolicyFromEnv(COMPLETE);
         expect(HostLiveMailboxPolicy()).toEqual({
             Confirmed: true,
+            Scope: 'RestrictedToGroup',
             ScopedToGroup: 'activity-sync-mailboxes@bluecypress.io',
             ConfirmedBy: 'Josue Garcia',
             ConfirmedAt: new Date('2026-09-04T00:00:00Z'),
@@ -84,7 +86,7 @@ describe('a fully configured host', () => {
 });
 
 describe('a partial configuration fails loudly instead of quietly staying off', () => {
-    for (const missing of [ENV_GROUP, ENV_CONFIRMED_BY, ENV_CONFIRMED_AT]) {
+    for (const missing of [ENV_CONFIRMED_BY, ENV_CONFIRMED_AT]) {
         it(`throws when ${missing} is the one left out`, () => {
             const env = { ...COMPLETE };
             delete env[missing];
@@ -93,11 +95,17 @@ describe('a partial configuration fails loudly instead of quietly staying off', 
         });
     }
 
-    it('names both what is set and what is missing, so the fix is obvious', () => {
+    /**
+     * The message names what is MISSING. It no longer names what is set: with two possible
+     * decisions, listing the one variable somebody happened to set reads as approval of that
+     * choice rather than as a report of what is absent.
+     */
+    it('names what is missing, so the fix is obvious', () => {
         const env = { [ENV_GROUP]: 'g@bluecypress.io' } as NodeJS.ProcessEnv;
-        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(
-            new RegExp(`${ENV_GROUP}[\\s\\S]*${ENV_CONFIRMED_BY}[\\s\\S]*${ENV_CONFIRMED_AT}`),
-        );
+        // Substrings rather than one regex: the two names can appear in either order, and a
+        // regex that pinned the order would fail on a harmless rewording of the message.
+        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(ENV_CONFIRMED_BY);
+        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(ENV_CONFIRMED_AT);
     });
 
     it('rejects a confirmation date that is not a date', () => {
