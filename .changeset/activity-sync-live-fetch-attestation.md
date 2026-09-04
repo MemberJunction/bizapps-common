@@ -5,6 +5,28 @@
 
 Activity Sync — the live-fetch gate was unreachable, so a scoped host could not turn it on.
 
+> **A DECISION IS REQUIRED BEFORE THIS IS TURNED ON, AND IT IS NOT A CODE DECISION.**
+>
+> `MSGraphProvider` authenticates app-only, so the `Mail.Read` **application** permission is granted
+> against the tenant, not against a mailbox: it can read **every mailbox in the organisation**. The
+> `Mailbox` column on a connection narrows what we *ask* for, never what we are *allowed* to read.
+> The only thing that narrows the grant is an Exchange RBAC-for-Applications assignment binding the
+> app registration to a mail-enabled security group.
+>
+> **We do not know whether that assignment exists**, and could not find out: it is visible only to an
+> Exchange administrator. The app in use (`BizApps Sales - Activity Ingest`) holds application
+> `Mail.Read` and nothing else — confirmed from the token's own `roles` claim.
+>
+> **Merging this changes nothing on its own.** Live fetch stays refused: the default is the host
+> attestation, no host has one, and the attestation cannot be satisfied by a flag — it requires
+> naming the security group, who confirmed it, and when. Whoever deploys has to answer the question
+> deliberately. They cannot skip it by accident.
+>
+> Two legitimate outcomes, both informed: accept the tenant-wide grant and record who accepted it, or
+> scope the app to a group first. `scripts/` carries a check that reports which is in force, and
+> prints the `New-ManagementScope` / `New-ManagementRoleAssignment` commands to create the
+> restriction if the answer is "unscoped".
+
 `AllowLiveFetch` was the FIRST constructor argument of `MSGraphActivitySyncProvider`, defaulting to
 `false`. `MJGlobal.ClassFactory` builds plugins with NO arguments. So through `ActivitySyncEngine` —
 the only path production uses — live fetch was permanently off, and the parameter could be set by
