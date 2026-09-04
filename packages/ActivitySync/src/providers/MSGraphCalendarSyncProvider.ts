@@ -61,6 +61,8 @@ export interface GraphEventLike {
     attendees?: GraphAttendeeLike[];
     isCancelled?: boolean;
     seriesMasterId?: string;
+    /** Graph's own flag. An .ics or a deck attached to the invite lands here. */
+    hasAttachments?: boolean;
 }
 
 function normalize(value: string | null | undefined): string | null {
@@ -117,6 +119,7 @@ export function MapGraphEvent(event: GraphEventLike, issues: string[]): Normaliz
         ExternalID: externalID,
         ExternalThreadID: event.seriesMasterId?.trim() || null,
         TypeCode: 'Meeting',
+        HasAttachments: event.hasAttachments === true,
         Subject: event.subject?.trim() || '(no subject)',
         Body: event.bodyPreview ?? null,
         StartedAt: startedAt,

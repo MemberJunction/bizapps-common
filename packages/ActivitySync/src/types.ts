@@ -93,6 +93,20 @@ export interface NormalizedItem {
     EndedAt: Date | null;
     /** Set for calendar items. */
     Location: string | null;
+    /**
+     * Whether the source says this item carries attachments.
+     *
+     * A FLAG, NOT THE ATTACHMENTS. Graph does not include attachment content in a message payload,
+     * and listing them costs a call PER MESSAGE — which would be paid for every item fetched, including
+     * the ones the rules go on to exclude. Rules are evaluated after fetch, so the cheap boolean rides
+     * along here and the expensive fetch happens later, only for items that were actually included and
+     * only when the deciding rule asked for attachments.
+     *
+     * False when the source does not say. Absent information is not the same as "no attachments", but
+     * a provider that cannot tell us has given us nothing to act on, and guessing would mean a call per
+     * message on the chance there is something there.
+     */
+    HasAttachments: boolean;
     Direction: ActivityDirection;
     Participants: ItemParticipant[];
     /**

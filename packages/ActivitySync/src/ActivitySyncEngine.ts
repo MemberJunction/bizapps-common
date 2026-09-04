@@ -30,6 +30,7 @@ import {
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
 import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
+import { AttachmentPolicyFor, type ActivityFileSink } from './attachments.js';
 import {
     DefaultDeterministicStages,
     type EngineQualificationContext,
@@ -175,6 +176,15 @@ export class ActivitySyncEngine {
         private readonly resolver: IdentityResolver = new IdentityResolver(),
         private readonly writer: ActivityWriter = new ActivityWriter(),
         private readonly stages: IQualificationStage[] = DefaultDeterministicStages(),
+        /**
+         * Where attachment BYTES go, when a rule asks for them.
+         *
+         * Optional and injected rather than imported: storing a file needs MJ's FileStorageEngine and
+         * a configured FileStorageAccount, and a host that syncs only metadata should not have to
+         * have either. Absent, an item whose rule wants attachments is reported rather than quietly
+         * filed without them — the distinction this package exists to keep.
+         */
+        private readonly fileSink?: ActivityFileSink,
     ) {}
 
     public async Run(
@@ -427,6 +437,27 @@ export class ActivitySyncEngine {
                     Reason: 'ContactMethod lookup failed',
                 });
                 continue;
+            }
+
+            // ATTACHMENTS, decided from the rule that actually decided this item.
+            //
+            // `ActivitySyncRule.IncludeAttachments` and `MaxAttachmentBytes` had no reader at all:
+            // a rule that asked for attachments got none and said nothing. The decision is made
+            // here, where both the winning rule and the item are in scope for the first time.
+            //
+            // The BYTES are not moved yet — that needs a file sink, and this host has no
+            // FileStorageAccount configured, so there is nowhere to put them. What changed is that
+            // the request is now honoured or REPORTED, instead of silently discarded.
+            const decidingRule = verdict.ActivitySyncRuleID
+                ? rules.Rows.find((r) => r.ID === verdict.ActivitySyncRuleID)
+                : null;
+            const attachmentPolicy = AttachmentPolicyFor(decidingRule, item);
+            if (attachmentPolicy.Fetch && !this.fileSink) {
+                result.Issues.push(
+                    `Item ${item.ExternalID}: its rule asks for attachments, but no ActivityFile sink is ` +
+                        'registered in this host, so none were stored. Register one at bootstrap, or turn ' +
+                        'IncludeAttachments off so the rule stops claiming something that is not happening.',
+                );
             }
 
             const sourceValue = plugin.IsLive ? 'Integration' : 'System';

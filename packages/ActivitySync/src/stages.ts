@@ -26,6 +26,17 @@ export interface RuleRow {
     DateTo: Date | string | null;
     ParticipantScope: ParticipantScope | null;
     ActivitySyncRuleSetID: string | null;
+    /**
+     * `1 = also pull attachments into ActivityFile rows` — the column's own description.
+     *
+     * On the RULE rather than the connection because it is a per-decision choice: a rule that files
+     * customer threads may well want the contract attached, while one filing internal chatter does
+     * not. It is read at WRITE time from the rule that decided, not at fetch time, because rules run
+     * after the fetch.
+     */
+    IncludeAttachments: boolean;
+    /** Attachments larger than this are skipped and REPORTED. Null means no cap. */
+    MaxAttachmentBytes: number | null;
 }
 
 export interface KnownAddressHit {
