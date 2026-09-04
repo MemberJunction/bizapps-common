@@ -155,12 +155,26 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
 
         const payloads = (result.SourceData ?? []) as Record<string, unknown>[];
 
-        const capped = !!query.Since && payloads.length >= query.Limit;
+        // A FULL PAGE MEANS THERE MAY BE MORE, WATERMARK OR NOT.
+        //
+        // This used to require `query.Since`, which left the FIRST run — the one most likely to
+        // overflow a page — unprotected. No date bound is sent, so Graph returns the newest `Limit`
+        // messages; `BaseActivitySyncProvider` then computes a high watermark from them and the next
+        // run asks for everything AFTER the newest. Every message older than that first page is
+        // skipped permanently, and the run reports Success with no issue. A mailbox with more history
+        // than one page silently loses all of it.
+        //
+        // `Capped` also withholds the watermark upstream, which is what actually prevents the loss;
+        // the issue below is how anyone finds out a re-run is needed.
+        const capped = payloads.length >= query.Limit;
         if (capped) {
+            const context = query.Since
+                ? 'while a watermark was set, so older items may remain unread'
+                : 'on a FIRST run with no watermark, so anything older than this page has not been read';
             issues.push(
-                `Fetched the maximum of ${query.Limit} message(s) for "${query.Mailbox}" while a watermark was set, ` +
-                    'so older items may remain unread. Re-run to continue, or raise the limit. A server-side date ' +
-                    'bound (MemberJunction/MJ#4123) removes this entirely.',
+                `Fetched the maximum of ${query.Limit} message(s) for "${query.Mailbox}" ${context}. ` +
+                    'The watermark is being withheld so nothing is skipped — re-run to continue, or raise ' +
+                    'the limit. A server-side date bound (MemberJunction/MJ#4123) removes this entirely.',
             );
         }
 
