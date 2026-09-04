@@ -19,6 +19,7 @@ export class mjBizAppsCommonActivitySyncRunDetailFormComponent extends BaseFormC
             { sectionKey: 'externalReference', sectionName: 'External Reference', isExpanded: true },
             { sectionKey: 'decisionLogic', sectionName: 'Decision Logic', isExpanded: true },
             { sectionKey: 'messageContent', sectionName: 'Message Content', isExpanded: true },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
