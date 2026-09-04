@@ -20,16 +20,21 @@ import type { UserInfo } from '@memberjunction/core';
 import { MJGlobal } from '@memberjunction/global';
 import {
     GRAPH_COMMUNICATION_PROVIDER,
+    GraphCalendarTransport,
     GraphCommunicationTransport,
+    MJGraphCalendarTransportDeps,
     MJGraphTransportDeps,
     RegisterActivityTransportFactory,
     type ActivityMessageTransport,
     type ActivityTransportContext,
+    type GraphEventReader,
     type GraphMessageReader,
 } from '@mj-biz-apps/common-activity-sync';
 
-/** The `ActivitySyncProviderType.DriverClass` this factory serves. It serves exactly one. */
+/** `ActivitySyncProviderType.DriverClass` — the mail surface. */
 const MICROSOFT_365 = 'Microsoft365';
+/** `ActivitySyncProviderType.CalendarDriverClass` — the calendar surface of the same connection. */
+const MICROSOFT_365_CALENDAR = 'Microsoft365.Calendar';
 
 /**
  * Build a live Graph transport for one connection, or null when this factory cannot serve it.
@@ -45,7 +50,9 @@ const MICROSOFT_365 = 'Microsoft365';
  * Anything else is a wiring fault and is left to throw.
  */
 export function GraphTransportFactory(context: ActivityTransportContext): ActivityMessageTransport | null {
-    if (context.DriverClass !== MICROSOFT_365) {
+    const isMail = context.DriverClass === MICROSOFT_365;
+    const isCalendar = context.DriverClass === MICROSOFT_365_CALENDAR;
+    if (!isMail && !isCalendar) {
         return null;
     }
     const credentialName = (context.CredentialsRef ?? '').trim();
@@ -53,11 +60,28 @@ export function GraphTransportFactory(context: ActivityTransportContext): Activi
         return null;
     }
 
+    // ONE FACTORY, TWO SURFACES, ONE CREDENTIAL. A connection configures a single CredentialsRef and
+    // both of its surfaces resolve through it — the same app registration holds Mail.Read and
+    // Calendars.Read, and the same Exchange policy scopes both. Separate factories would let a
+    // connection end up reading mail as one principal and calendar as another.
+    const shared = {
+        CredentialName: credentialName,
+        ContextUser: context.ContextUser,
+        GetCredentialEngine: () => CredentialLoader(context.ContextUser),
+    };
+
+    if (isCalendar) {
+        return new GraphCalendarTransport(
+            MJGraphCalendarTransportDeps({
+                ...shared,
+                GetCommunicationProvider: ResolveCommunicationProviderForEvents,
+            }),
+        );
+    }
+
     return new GraphCommunicationTransport(
         MJGraphTransportDeps({
-            CredentialName: credentialName,
-            ContextUser: context.ContextUser,
-            GetCredentialEngine: () => CredentialLoader(context.ContextUser),
+            ...shared,
             GetCommunicationProvider: ResolveCommunicationProvider,
         }),
     );
@@ -107,6 +131,17 @@ function ResolveCommunicationProvider(name: string): GraphMessageReader | null {
         return null;
     }
     return instance as unknown as GraphMessageReader;
+}
+
+/**
+ * The same registered provider, viewed as an event reader.
+ *
+ * Delegates rather than duplicating the base-class check: `ClassFactory.CreateInstance` returns an
+ * instance of the BASE class when no registration matches, so a missing provider comes back truthy
+ * and answers nothing usefully. That check is load-bearing and must not exist in two places.
+ */
+function ResolveCommunicationProviderForEvents(name: string): GraphEventReader | null {
+    return ResolveCommunicationProvider(name) as unknown as GraphEventReader | null;
 }
 
 /**

@@ -28,4 +28,5 @@ export * from './providers/MSGraphCalendarSyncProvider.js';
 export * from './providers/GraphMessageMapper.js';
 export * from './providers/MessageTransport.js';
 export * from './providers/GraphCommunicationTransport.js';
+export * from './providers/GraphCalendarTransport.js';
 export * from './providers/RecordedMessageTransport.js';
