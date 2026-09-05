@@ -1699,7 +1699,7 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
     LogoURL: z.string().nullable().describe(`
         * * Field Name: LogoURL
         * * Display Name: Logo URL
-        * * SQL Data Type: nvarchar(1000)
+        * * SQL Data Type: nvarchar(MAX)
         * * Description: URL to organization logo image`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
@@ -1898,7 +1898,7 @@ export const mjBizAppsCommonPersonSchema = z.object({
     PhotoURL: z.string().nullable().describe(`
         * * Field Name: PhotoURL
         * * Display Name: Photo URL
-        * * SQL Data Type: nvarchar(1000)
+        * * SQL Data Type: nvarchar(MAX)
         * * Description: URL to profile photo or avatar image`),
     Bio: z.string().nullable().describe(`
         * * Field Name: Bio
@@ -6566,7 +6566,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: LogoURL
     * * Display Name: Logo URL
-    * * SQL Data Type: nvarchar(1000)
+    * * SQL Data Type: nvarchar(MAX)
     * * Description: URL to organization logo image
     */
     get LogoURL(): string | null {
@@ -7085,7 +7085,7 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     /**
     * * Field Name: PhotoURL
     * * Display Name: Photo URL
-    * * SQL Data Type: nvarchar(1000)
+    * * SQL Data Type: nvarchar(MAX)
     * * Description: URL to profile photo or avatar image
     */
     get PhotoURL(): string | null {
