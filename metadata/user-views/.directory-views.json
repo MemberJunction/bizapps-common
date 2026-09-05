@@ -1,0 +1,58 @@
+[
+  {
+    "_comments": [
+      "People directory bound by the People resource. PhotoURL first so mj-entity-viewer can render thumbnails."
+    ],
+    "fields": {
+      "Name": "Common: People directory",
+      "Description": "Directory people: photo, name, title, organization, email, phone, status.",
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
+      "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
+      "IsShared": true,
+      "GridState": "{\"sortSettings\":[{\"field\":\"DisplayName\",\"dir\":\"asc\"}],\"columnSettings\":[{\"Name\":\"PhotoURL\",\"DisplayName\":\"Photo\",\"orderIndex\":0,\"width\":72,\"format\":{\"type\":\"image\"}},{\"Name\":\"DisplayName\",\"DisplayName\":\"Name\",\"orderIndex\":1,\"width\":220,\"pinned\":\"left\"},{\"Name\":\"Title\",\"DisplayName\":\"Title\",\"orderIndex\":2,\"width\":160},{\"Name\":\"CurrentOrganizationName\",\"DisplayName\":\"Organization\",\"orderIndex\":3,\"width\":200},{\"Name\":\"PrimaryEmail\",\"DisplayName\":\"Email\",\"orderIndex\":4,\"width\":200},{\"Name\":\"PrimaryPhone\",\"DisplayName\":\"Phone\",\"orderIndex\":5,\"width\":140},{\"Name\":\"Status\",\"DisplayName\":\"Status\",\"orderIndex\":6,\"width\":110}]}"
+    },
+    "primaryKey": { "ID": "c0a11e01-0001-4e71-b0a8-3f17c5e2d801" }
+  },
+  {
+    "_comments": [
+      "Latest people strip on the Directory dashboard."
+    ],
+    "fields": {
+      "Name": "Common: Latest people",
+      "Description": "Newest people in the directory, with photo.",
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
+      "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
+      "IsShared": true,
+      "GridState": "{\"sortSettings\":[{\"field\":\"__mj_CreatedAt\",\"dir\":\"desc\"}],\"columnSettings\":[{\"Name\":\"PhotoURL\",\"DisplayName\":\"Photo\",\"orderIndex\":0,\"width\":72,\"format\":{\"type\":\"image\"}},{\"Name\":\"DisplayName\",\"DisplayName\":\"Name\",\"orderIndex\":1,\"width\":220,\"pinned\":\"left\"},{\"Name\":\"CurrentOrganizationName\",\"DisplayName\":\"Organization\",\"orderIndex\":2,\"width\":200},{\"Name\":\"PrimaryEmail\",\"DisplayName\":\"Email\",\"orderIndex\":3,\"width\":200},{\"Name\":\"__mj_CreatedAt\",\"DisplayName\":\"Added\",\"orderIndex\":4,\"width\":140,\"format\":{\"type\":\"date\",\"dateFormat\":\"medium\"}}]}"
+    },
+    "primaryKey": { "ID": "c0a11e02-0001-4e71-b0a8-3f17c5e2d801" }
+  },
+  {
+    "_comments": [
+      "Organizations directory. LogoURL first for thumbnails."
+    ],
+    "fields": {
+      "Name": "Common: Organizations directory",
+      "Description": "Directory organizations: logo, name, type, website, city, status.",
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations",
+      "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
+      "IsShared": true,
+      "GridState": "{\"sortSettings\":[{\"field\":\"Name\",\"dir\":\"asc\"}],\"columnSettings\":[{\"Name\":\"LogoURL\",\"DisplayName\":\"Logo\",\"orderIndex\":0,\"width\":72,\"format\":{\"type\":\"image\"}},{\"Name\":\"Name\",\"DisplayName\":\"Organization\",\"orderIndex\":1,\"width\":240,\"pinned\":\"left\"},{\"Name\":\"OrganizationType\",\"DisplayName\":\"Type\",\"orderIndex\":2,\"width\":140},{\"Name\":\"Website\",\"DisplayName\":\"Website\",\"orderIndex\":3,\"width\":200},{\"Name\":\"PrimaryAddressCity\",\"DisplayName\":\"City\",\"orderIndex\":4,\"width\":140},{\"Name\":\"Status\",\"DisplayName\":\"Status\",\"orderIndex\":5,\"width\":110}]}"
+    },
+    "primaryKey": { "ID": "c0a11e03-0001-4e71-b0a8-3f17c5e2d801" }
+  },
+  {
+    "_comments": [
+      "Latest relationships strip on the Directory dashboard. No photo field — parties stay as names."
+    ],
+    "fields": {
+      "Name": "Common: Latest relationships",
+      "Description": "Newest relationships: type, title, from/to person and organization.",
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
+      "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
+      "IsShared": true,
+      "GridState": "{\"sortSettings\":[{\"field\":\"__mj_CreatedAt\",\"dir\":\"desc\"}],\"columnSettings\":[{\"Name\":\"RelationshipType\",\"DisplayName\":\"Type\",\"orderIndex\":0,\"width\":140},{\"Name\":\"Title\",\"DisplayName\":\"Title\",\"orderIndex\":1,\"width\":200},{\"Name\":\"FromPerson\",\"DisplayName\":\"From person\",\"orderIndex\":2,\"width\":180},{\"Name\":\"FromOrganization\",\"DisplayName\":\"From org\",\"orderIndex\":3,\"width\":180},{\"Name\":\"ToPerson\",\"DisplayName\":\"To person\",\"orderIndex\":4,\"width\":180},{\"Name\":\"ToOrganization\",\"DisplayName\":\"To org\",\"orderIndex\":5,\"width\":180},{\"Name\":\"Status\",\"DisplayName\":\"Status\",\"orderIndex\":6,\"width\":110}]}"
+    },
+    "primaryKey": { "ID": "c0a11e05-0001-4e71-b0a8-3f17c5e2d801" }
+  }
+]
