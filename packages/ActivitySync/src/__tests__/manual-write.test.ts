@@ -21,13 +21,16 @@ import { ActivityWriter, ValidateManualActivityInput, type WriteManualActivityIn
 
 const PEOPLE = 'MJ_BizApps_Common: People';
 const USER = { ID: 'user-1' } as UserInfo;
+// writeLink rejects any RecordID that is not a UUID, so fixtures must use real-shaped ids.
+const PERSON_UUID = 'aaaaaaaa-1111-2222-3333-444444444444';
+const OTHER_UUID = 'bbbbbbbb-1111-2222-3333-444444444444';
 
 function input(overrides: Partial<WriteManualActivityInput> = {}): WriteManualActivityInput {
     return {
         TypeCode: 'SystemEvent',
         Title: 'Person created',
         StartedAt: new Date('2026-08-30T10:00:00Z'),
-        Links: [{ Role: 'Regarding', EntityName: PEOPLE, RecordID: 'person-1' }],
+        Links: [{ Role: 'Regarding', EntityName: PEOPLE, RecordID: PERSON_UUID }],
         ...overrides,
     };
 }
@@ -96,10 +99,10 @@ describe('ActivityWriter.WriteManual', () => {
         const result = await new ActivityWriter().WriteManual(
             input({
                 Links: [
-                    { Role: 'Regarding', EntityName: PEOPLE, RecordID: 'person-1' },
+                    { Role: 'Regarding', EntityName: PEOPLE, RecordID: PERSON_UUID },
                     { Role: 'Participant', IdentityKind: 'Email', IdentityValue: 'a@b.test' },
-                    // duplicate of the first — must be deduped, same as the sync path
-                    { Role: 'Participant', EntityName: PEOPLE, RecordID: 'PERSON-1' },
+                    // duplicate of the first (case-insensitive) — must be deduped, same as the sync path
+                    { Role: 'Participant', EntityName: PEOPLE, RecordID: PERSON_UUID.toUpperCase() },
                 ],
             }),
             provider,
@@ -122,7 +125,7 @@ describe('ActivityWriter.WriteManual', () => {
 
         expect(state.links).toHaveLength(2);
         expect(state.links[0].EntityID).toBe('entity-people');
-        expect(state.links[0].RecordID).toBe('person-1');
+        expect(state.links[0].RecordID).toBe(PERSON_UUID);
         expect(state.links[0].Sequence).toBe(1);
         expect(state.links[1].IdentityKind).toBe('Email');
         expect(state.links[1].IdentityValue).toBe('a@b.test');
@@ -157,7 +160,7 @@ describe('ActivityWriter.WriteManual', () => {
     it('rolls back when a link targets an entity the provider does not know', async () => {
         const { provider, state } = fakeProvider();
         const result = await new ActivityWriter().WriteManual(
-            input({ Links: [{ Role: 'Regarding', EntityName: 'No Such Entity', RecordID: 'x' }] }),
+            input({ Links: [{ Role: 'Regarding', EntityName: 'No Such Entity', RecordID: OTHER_UUID }] }),
             provider,
             USER,
         );
@@ -165,6 +168,20 @@ describe('ActivityWriter.WriteManual', () => {
         expect(result.Issues.join(' ')).toMatch(/Link could not be written/);
         expect(state.rolledBack).toBe(true);
         expect(state.committed).toBe(false);
+    });
+
+    it('rolls back when a link carries a RecordID that is not a UUID', async () => {
+        const { provider, state } = fakeProvider();
+        const result = await new ActivityWriter().WriteManual(
+            input({ Links: [{ Role: 'Regarding', EntityName: PEOPLE, RecordID: `x'; DROP TABLE Activity;--` }] }),
+            provider,
+            USER,
+        );
+        expect(result.Success).toBe(false);
+        expect(result.Issues.join(' ')).toMatch(/must be a UUID/);
+        expect(state.rolledBack).toBe(true);
+        expect(state.committed).toBe(false);
+        expect(state.links.every((l) => l.RecordID === undefined)).toBe(true);
     });
 
     it('refuses a provider that cannot open a transaction', async () => {

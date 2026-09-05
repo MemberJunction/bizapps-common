@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { SearchPeople } from '../data/directory-queries';
-import { EscapeFilterValue, PersonEmail, PersonPhone } from '../data/directory-stats';
+import { EscapeLikeValue, PersonEmail, PersonPhone } from '../data/directory-stats';
 import type { DirectoryPersonRow } from '../data/directory-types';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 
@@ -131,7 +131,7 @@ export class CommonPeoplePageComponent implements OnInit {
     }
 
     private buildFilter(term: string): string {
-        const escaped = EscapeFilterValue(term);
+        const escaped = EscapeLikeValue(term);
         return `(DisplayName LIKE '%${escaped}%' OR Email LIKE '%${escaped}%' OR PrimaryEmail LIKE '%${escaped}%' OR CurrentOrganizationName LIKE '%${escaped}%')`;
     }
 }
