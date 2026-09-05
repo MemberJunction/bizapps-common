@@ -17,6 +17,7 @@ import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -47,10 +48,20 @@ export function LoadBizAppsCommonServer(): void {
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
     // Registers the seam that turns a connection's CredentialsRef into a live Graph transport.
-    // Nothing about this enables a live read on its own — AllowLiveFetch still defaults false.
+    // Nothing about this enables a live read on its own — the provider still refuses until this
+    // host attests that its app registration is scoped.
     LoadGraphTransportFactory();
+    // And that attestation, when this deployment has one. Absent, every live read stays refused;
+    // partially configured, this THROWS during bootstrap rather than leaving a misleading refusal.
+    LoadLiveMailboxPolicyFromEnv();
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+export {
+    LoadLiveMailboxPolicyFromEnv,
+    ENV_GROUP,
+    ENV_CONFIRMED_BY,
+    ENV_CONFIRMED_AT,
+} from './custom/live-mailbox-policy.js';

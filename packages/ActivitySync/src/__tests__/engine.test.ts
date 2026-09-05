@@ -28,6 +28,7 @@ const ITEM: NormalizedItem = {
     StartedAt: new Date('2026-08-05T10:00:00Z'),
     EndedAt: null,
     Location: null,
+    HasAttachments: false,
     Direction: 'Inbound',
     Participants: [{ Address: 'alice@customer.com', Name: 'Alice', Role: 'From', IdentityKind: 'Email' }],
     Cancelled: false,
@@ -65,6 +66,8 @@ describe('load-bearing engine rules', () => {
                     DateTo: null,
                     ParticipantScope: null,
                     ActivitySyncRuleSetID: null,
+                    IncludeAttachments: false,
+                    MaxAttachmentBytes: null,
                 }],
             }),
             'Include',
@@ -153,13 +156,17 @@ describe('load-bearing engine rules', () => {
 
     it('calendar Graph reports observation time, not the event start', async () => {
         const eventStart = '2031-12-01T10:00:00.0000000';
-        const fetcher = {
+        // A transport rather than the old `GraphEventFetcher`: that seam was never implemented and
+        // was reachable only through a constructor ClassFactory does not use. Calendar now rides the
+        // same ActivityMessageTransport as mail.
+        const transport = {
             calls: 0,
-            async GetEvents() {
+            Describe: 'stub',
+            IsLive: true,
+            async Fetch() {
                 this.calls++;
                 return {
-                    Success: true,
-                    Events: [
+                    Payloads: [
                         {
                             id: 'ac21-far-future-event',
                             subject: 'planning',
@@ -168,15 +175,16 @@ describe('load-bearing engine rules', () => {
                             organizer: { emailAddress: { address: 'organiser@example.invalid' } },
                             attendees: [{ emailAddress: { address: 'attendee@example.invalid' } }],
                         },
-                    ],
+                    ] as Record<string, unknown>[],
+                    Issues: [] as string[],
                 };
             },
         };
         const before = Date.now();
-        const source = new MSGraphCalendarSyncProvider(true, fetcher);
+        const source = new MSGraphCalendarSyncProvider(true, transport);
         const batch = await source.Fetch({ Mailbox: 'ac21@example.invalid', Since: null, Limit: 10 });
         const after = Date.now();
-        expect(fetcher.calls).toBe(1);
+        expect(transport.calls).toBe(1);
         expect(batch.Items).toHaveLength(1);
         expect(batch.Items[0].TypeCode).toBe('Meeting');
         expect(batch.HighWatermark).toBeTruthy();

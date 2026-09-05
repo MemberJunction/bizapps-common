@@ -29,6 +29,8 @@ import {
     type ExtensionStamp,
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
+import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
+import { AttachmentPolicyFor, type ActivityFileSink } from './attachments.js';
 import {
     DefaultDeterministicStages,
     type EngineQualificationContext,
@@ -50,7 +52,7 @@ import {
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
-import { RequireUUID } from './sql.js';
+import { RequireUUID, UuidInList } from './sql.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import {
     CanAdvanceWatermark,
@@ -169,11 +171,44 @@ function failedSurfaceResult(issues: readonly string[]): SyncEngineResult {
     };
 }
 
+
+/**
+ * The driver class of the SURFACE being run, which is not always the connection's.
+ *
+ * `RunConnections` drives a second, calendar surface from the same connection and the same type row,
+ * passing the calendar plugin as `source`. Handing `typeRow.DriverClass` to both told a host factory
+ * "Microsoft365" on the calendar pass too, so a factory serving both surfaces could not tell them
+ * apart: it built a MAIL transport for the calendar, fed Graph message payloads to the event mapper,
+ * and every one was dropped for having no start time. That reads as an empty calendar, not as a
+ * wiring fault — which is why it survived until a calendar fixture ran end to end.
+ *
+ * Pure and exported so the mapping can be pinned without standing up a fleet run.
+ */
+export function SurfaceDriverClass(
+    kind: ActivitySourceKind,
+    typeRow: { DriverClass?: string | null; CalendarDriverClass?: string | null } | null | undefined,
+    fallback: string,
+): string {
+    const declared = kind === 'Calendar' ? typeRow?.CalendarDriverClass : typeRow?.DriverClass;
+    // A blank column is not a driver. Falling through to the plugin's own code keeps a
+    // half-configured provider type working as it did rather than serving an empty string.
+    return declared?.trim() ? declared.trim() : fallback;
+}
+
 export class ActivitySyncEngine {
     public constructor(
         private readonly resolver: IdentityResolver = new IdentityResolver(),
         private readonly writer: ActivityWriter = new ActivityWriter(),
         private readonly stages: IQualificationStage[] = DefaultDeterministicStages(),
+        /**
+         * Where attachment BYTES go, when a rule asks for them.
+         *
+         * Optional and injected rather than imported: storing a file needs MJ's FileStorageEngine and
+         * a configured FileStorageAccount, and a host that syncs only metadata should not have to
+         * have either. Absent, an item whose rule wants attachments is reported rather than quietly
+         * filed without them — the distinction this package exists to keep.
+         */
+        private readonly fileSink?: ActivityFileSink,
     ) {}
 
     public async Run(
@@ -251,10 +286,21 @@ export class ActivitySyncEngine {
         // Tell the plugin which connection this run is for BEFORE it fetches. This is the only
         // moment it can learn which credential the connection named: ClassFactory builds plugins
         // with no arguments, so nothing is injectable at construction.
+        // THE DRIVER CLASS OF THE SURFACE BEING RUN, not of the connection.
+        //
+        // `RunConnections` drives a second, CALENDAR surface from the same connection and the same
+        // type row, passing the calendar plugin as `source`. Handing `typeRow.DriverClass` to both
+        // told a host factory "Microsoft365" for the calendar pass as well, so a factory serving both
+        // surfaces could not tell them apart and built a MAIL transport for the calendar — which then
+        // fed Graph message payloads to the event mapper, and every one was dropped for having no
+        // start time. It read as an empty calendar rather than as a wiring fault.
+        //
+        // The plugin already knows which surface it is; that is what `Kind` is for.
+        const surfaceDriver = SurfaceDriverClass(plugin.Kind, typeRow, plugin.ProviderTypeCode);
         plugin.Configure({
             CredentialsRef: connection.CredentialsRef ?? null,
             Mailbox: connection.Mailbox ?? null,
-            DriverClass: typeRow?.DriverClass ?? plugin.ProviderTypeCode,
+            DriverClass: surfaceDriver,
             ContextUser: contextUser,
         });
 
@@ -298,6 +344,30 @@ export class ActivitySyncEngine {
             return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue, stampHealth);
         }
 
+        const internalDomains = await this.loadInternalDomains(bound.Rows, contextUser);
+        if (internalDomains.Failed) {
+            return this.failClosed(
+                connection,
+                options,
+                result,
+                since,
+                provider,
+                contextUser,
+                internalDomains.Issue,
+                stampHealth,
+            );
+        }
+        // A rule that tests participants against NO domain list does not filter — it INVERTS.
+        // `ClassifyParticipants` counts an address as Internal only when its domain is in the list,
+        // so an empty list makes every participant External: `HasExternal` matches everything,
+        // including the purely internal chatter it exists to keep out, and `AllInternal` matches
+        // nothing. That reads as a working filter and is the opposite of one, so it is reported
+        // rather than left to look like a quiet pass.
+        const scopeWarning = ParticipantScopeWarning(rules.Rows, internalDomains.Rows);
+        if (scopeWarning) {
+            result.Issues.push(scopeWarning);
+        }
+
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const extensionStamps: ExtensionStamp[] = [];
         const identities = await this.resolver.Resolve(allParticipants, contextUser);
@@ -333,7 +403,7 @@ export class ActivitySyncEngine {
                 ProviderTypeCode: sourceSystem,
                 Exclusions: exclusions.Rows,
                 Rules: rules.Rows,
-                InternalDomains: [],
+                InternalDomains: internalDomains.Rows,
                 KnownAddresses: identities.Known,
             };
             let verdict;
@@ -402,6 +472,27 @@ export class ActivitySyncEngine {
                     Reason: 'ContactMethod lookup failed',
                 });
                 continue;
+            }
+
+            // ATTACHMENTS, decided from the rule that actually decided this item.
+            //
+            // `ActivitySyncRule.IncludeAttachments` and `MaxAttachmentBytes` had no reader at all:
+            // a rule that asked for attachments got none and said nothing. The decision is made
+            // here, where both the winning rule and the item are in scope for the first time.
+            //
+            // The BYTES are not moved yet — that needs a file sink, and this host has no
+            // FileStorageAccount configured, so there is nowhere to put them. What changed is that
+            // the request is now honoured or REPORTED, instead of silently discarded.
+            const decidingRule = verdict.ActivitySyncRuleID
+                ? rules.Rows.find((r) => r.ID === verdict.ActivitySyncRuleID)
+                : null;
+            const attachmentPolicy = AttachmentPolicyFor(decidingRule, item);
+            if (attachmentPolicy.Fetch && !this.fileSink) {
+                result.Issues.push(
+                    `Item ${item.ExternalID}: its rule asks for attachments, but no ActivityFile sink is ` +
+                        'registered in this host, so none were stored. Register one at bootstrap, or turn ' +
+                        'IncludeAttachments off so the rule stops claiming something that is not happening.',
+                );
             }
 
             const sourceValue = plugin.IsLive ? 'Integration' : 'System';
@@ -787,6 +878,48 @@ export class ActivitySyncEngine {
             Failed: false,
             Rows: (bound.Results ?? []).map((r) => r.ActivitySyncRuleSetID),
         };
+    }
+
+    /**
+     * The domains this deployment calls INTERNAL, merged across every rule set bound to the
+     * connection.
+     *
+     * WHY THIS EXISTS. `ActivitySyncRuleSet.InternalDomains` describes itself as "Required for any
+     * rule using ParticipantScope", `participants.ts` names it as where the list lives, and the
+     * engine passed a hard-coded `[]` — so nothing ever read the column. Same shape as the
+     * `CredentialsRef` gap: a column that documents its own purpose, with no reader.
+     *
+     * MALFORMED IS NOT EMPTY. A list that fails to parse fails the run rather than degrading to
+     * `[]`, because `[]` silently inverts every participant rule (see the caller). Parsing itself
+     * lives in {@link ParseInternalDomains} so it is testable without standing up a RunView.
+     */
+    private async loadInternalDomains(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<string>> {
+        if (setIds.length === 0) {
+            return { Failed: false, Rows: [] };
+        }
+        const rv = new RunView();
+        const res = await rv.RunView<{ ID: string; Name: string; InternalDomains: string | null }>(
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.RuleSets,
+                ExtraFilter: `ID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`,
+                Fields: ['ID', 'Name', 'InternalDomains'],
+                ResultType: 'simple',
+            },
+            user,
+        );
+        if (!res.Success) {
+            return { Failed: true, Issue: 'ActivitySyncRuleSet lookup failed.' };
+        }
+
+        const domains = new Set<string>();
+        for (const row of res.Results ?? []) {
+            const parsed = ParseInternalDomains(row.InternalDomains, row.Name);
+            if (!parsed.Ok) {
+                return { Failed: true, Issue: parsed.Issue };
+            }
+            for (const d of parsed.Domains) domains.add(d);
+        }
+        return { Failed: false, Rows: [...domains] };
     }
 
     private async loadExclusions(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<ExclusionRow>> {

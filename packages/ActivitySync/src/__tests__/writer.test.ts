@@ -30,6 +30,7 @@ const ITEM: NormalizedItem = {
     StartedAt: new Date('2026-08-05T10:00:00Z'),
     EndedAt: null,
     Location: null,
+    HasAttachments: false,
     Direction: 'Inbound',
     Participants: [],
     Cancelled: false,
@@ -43,7 +44,7 @@ describe('ActivityWriter', () => {
             GetEntityObject: async () => {
                 throw new Error('should not write');
             },
-        } as IMetadataProvider;
+        } as unknown as IMetadataProvider;
         const result = await writer.Write(
             {
                 Item: ITEM,

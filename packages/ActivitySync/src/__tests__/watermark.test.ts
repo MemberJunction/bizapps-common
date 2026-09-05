@@ -20,6 +20,7 @@ function item(startedAt: string): NormalizedItem {
         StartedAt: new Date(startedAt),
         EndedAt: null,
         Location: null,
+        HasAttachments: false,
         Direction: 'Inbound',
         Participants: [],
         Cancelled: false,

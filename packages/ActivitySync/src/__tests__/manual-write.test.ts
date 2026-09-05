@@ -172,7 +172,7 @@ describe('ActivityWriter.WriteManual', () => {
             GetEntityObject: async () => {
                 throw new Error('should not write');
             },
-        } as IMetadataProvider;
+        } as unknown as IMetadataProvider;
         const result = await new ActivityWriter().WriteManual(input(), provider, USER);
         expect(result.Success).toBe(false);
         expect(result.Issues[0]).toMatch(/cannot open a transaction/);
