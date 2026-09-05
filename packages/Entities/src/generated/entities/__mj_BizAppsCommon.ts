@@ -647,7 +647,8 @@ export const mjBizAppsCommonActivitySyncExtensionSchema = z.object({
         * * Field Name: ActivitySyncProviderTypeID
         * * Display Name: Activity Sync Provider Type
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)
+        * * Description: Optional provider type this extension is registered for. Null means it runs on every connection. A deal-linker that only makes sense on email can bind here rather than being invoked for a phone transcript.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
@@ -834,7 +835,8 @@ export const mjBizAppsCommonActivitySyncRuleSetSchema = z.object({
         * * Field Name: ActivitySyncProviderTypeID
         * * Display Name: Activity Sync Provider Type ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)
+        * * Description: Optional provider type this rule set is written for. Null means the set applies regardless of source — an org-wide prohibition does not care whether the mailbox is Microsoft365 or Gmail.`),
     InternalDomains: z.string().nullable().describe(`
         * * Field Name: InternalDomains
         * * Display Name: Internal Domains
@@ -1094,6 +1096,10 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Field Name: ActivitySyncRule
         * * Display Name: Activity Sync Rule Name
         * * SQL Data Type: nvarchar(200)`),
+    ActivitySyncExclusion: z.string().nullable().describe(`
+        * * Field Name: ActivitySyncExclusion
+        * * Display Name: Activity Sync Exclusion
+        * * SQL Data Type: nvarchar(320)`),
     Activity: z.string().nullable().describe(`
         * * Field Name: Activity
         * * Display Name: Activity Reference
@@ -1683,12 +1689,12 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Description: Full legal name if different from display name`),
     OrganizationTypeID: z.string().nullable().describe(`
         * * Field Name: OrganizationTypeID
-        * * Display Name: Organization Type
+        * * Display Name: Organization Type ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)`),
     ParentID: z.string().nullable().describe(`
         * * Field Name: ParentID
-        * * Display Name: Parent Organization
+        * * Display Name: Parent ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     Website: z.string().nullable().describe(`
@@ -1699,8 +1705,8 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
     LogoURL: z.string().nullable().describe(`
         * * Field Name: LogoURL
         * * Display Name: Logo URL
-        * * SQL Data Type: nvarchar(1000)
-        * * Description: URL to organization logo image`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Organization logo. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
         * * Display Name: Description
@@ -1749,67 +1755,67 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Default Value: getutcdate()`),
     OrganizationType: z.string().nullable().describe(`
         * * Field Name: OrganizationType
-        * * Display Name: Organization Type Name
+        * * Display Name: Organization Type
         * * SQL Data Type: nvarchar(100)`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
-        * * Display Name: Parent Name
+        * * Display Name: Parent
         * * SQL Data Type: nvarchar(255)`),
     __mj_Latitude: z.number().nullable().describe(`
         * * Field Name: __mj_Latitude
-        * * Display Name: Latitude
+        * * Display Name: Mj Latitude
         * * SQL Data Type: decimal(10, 6)`),
     __mj_Longitude: z.number().nullable().describe(`
         * * Field Name: __mj_Longitude
-        * * Display Name: Longitude
+        * * Display Name: Mj Longitude
         * * SQL Data Type: decimal(10, 6)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
-        * * Display Name: Root Parent
+        * * Display Name: Root Parent ID
         * * SQL Data Type: uniqueidentifier`),
     ParentIDDepth: z.number().nullable().describe(`
         * * Field Name: ParentIDDepth
-        * * Display Name: Hierarchy Depth
+        * * Display Name: Parent ID Depth
         * * SQL Data Type: int`),
     ParentIDPath: z.string().nullable().describe(`
         * * Field Name: ParentIDPath
-        * * Display Name: Hierarchy Path
+        * * Display Name: Parent ID Path
         * * SQL Data Type: nvarchar(MAX)`),
     ParentIDIsLeaf: z.boolean().nullable().describe(`
         * * Field Name: ParentIDIsLeaf
-        * * Display Name: Is Leaf Node
+        * * Display Name: Parent ID Is Leaf
         * * SQL Data Type: bit`),
     ParentIDChildCount: z.number().nullable().describe(`
         * * Field Name: ParentIDChildCount
-        * * Display Name: Child Count
+        * * Display Name: Parent ID Child Count
         * * SQL Data Type: int`),
     PrimaryAddressLine1: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine1
-        * * Display Name: Address Line 1
+        * * Display Name: Primary Address Line 1
         * * SQL Data Type: nvarchar(255)`),
     PrimaryAddressLine2: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine2
-        * * Display Name: Address Line 2
+        * * Display Name: Primary Address Line 2
         * * SQL Data Type: nvarchar(255)`),
     PrimaryAddressCity: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressCity
-        * * Display Name: City
+        * * Display Name: Primary Address City
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressState: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressState
-        * * Display Name: State/Province
+        * * Display Name: Primary Address State
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressPostalCode: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressPostalCode
-        * * Display Name: Postal Code
+        * * Display Name: Primary Address Postal Code
         * * SQL Data Type: nvarchar(20)`),
     PrimaryAddressCountry: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressCountry
-        * * Display Name: Country
+        * * Display Name: Primary Address Country
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressType: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressType
-        * * Display Name: Address Type
+        * * Display Name: Primary Address Type
         * * SQL Data Type: nvarchar(100)`),
     PrimaryEmail: z.string().nullable().describe(`
         * * Field Name: PrimaryEmail
@@ -1821,11 +1827,11 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: nvarchar(500)`),
     ActivePersonCount: z.number().nullable().describe(`
         * * Field Name: ActivePersonCount
-        * * Display Name: Active Staff Count
+        * * Display Name: Active Person Count
         * * SQL Data Type: int`),
     ChildOrgCount: z.number().nullable().describe(`
         * * Field Name: ChildOrgCount
-        * * Display Name: Total Child Organizations
+        * * Display Name: Child Org Count
         * * SQL Data Type: int`),
 });
 
@@ -1898,8 +1904,8 @@ export const mjBizAppsCommonPersonSchema = z.object({
     PhotoURL: z.string().nullable().describe(`
         * * Field Name: PhotoURL
         * * Display Name: Photo URL
-        * * SQL Data Type: nvarchar(1000)
-        * * Description: URL to profile photo or avatar image`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Profile photo or avatar. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).`),
     Bio: z.string().nullable().describe(`
         * * Field Name: Bio
         * * Display Name: Bio
@@ -3779,6 +3785,7 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
     * * Display Name: Activity Sync Provider Type
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)
+    * * Description: Optional provider type this extension is registered for. Null means it runs on every connection. A deal-linker that only makes sense on email can bind here rather than being invoked for a phone transcript.
     */
     get ActivitySyncProviderTypeID(): string | null {
         return this.Get('ActivitySyncProviderTypeID');
@@ -4262,6 +4269,7 @@ export class mjBizAppsCommonActivitySyncRuleSetEntity extends BaseEntity<mjBizAp
     * * Display Name: Activity Sync Provider Type ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Activity Sync Provider Types (vwActivitySyncProviderTypes.ID)
+    * * Description: Optional provider type this rule set is written for. Null means the set applies regardless of source — an org-wide prohibition does not care whether the mailbox is Microsoft365 or Gmail.
     */
     get ActivitySyncProviderTypeID(): string | null {
         return this.Get('ActivitySyncProviderTypeID');
@@ -4902,6 +4910,15 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     */
     get ActivitySyncRule(): string | null {
         return this.Get('ActivitySyncRule');
+    }
+
+    /**
+    * * Field Name: ActivitySyncExclusion
+    * * Display Name: Activity Sync Exclusion
+    * * SQL Data Type: nvarchar(320)
+    */
+    get ActivitySyncExclusion(): string | null {
+        return this.Get('ActivitySyncExclusion');
     }
 
     /**
@@ -6526,7 +6543,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationTypeID
-    * * Display Name: Organization Type
+    * * Display Name: Organization Type ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)
     */
@@ -6539,7 +6556,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentID
-    * * Display Name: Parent Organization
+    * * Display Name: Parent ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
@@ -6566,8 +6583,8 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: LogoURL
     * * Display Name: Logo URL
-    * * SQL Data Type: nvarchar(1000)
-    * * Description: URL to organization logo image
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Organization logo. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).
     */
     get LogoURL(): string | null {
         return this.Get('LogoURL');
@@ -6682,7 +6699,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationType
-    * * Display Name: Organization Type Name
+    * * Display Name: Organization Type
     * * SQL Data Type: nvarchar(100)
     */
     get OrganizationType(): string | null {
@@ -6691,7 +6708,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: Parent
-    * * Display Name: Parent Name
+    * * Display Name: Parent
     * * SQL Data Type: nvarchar(255)
     */
     get Parent(): string | null {
@@ -6700,7 +6717,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: __mj_Latitude
-    * * Display Name: Latitude
+    * * Display Name: Mj Latitude
     * * SQL Data Type: decimal(10, 6)
     */
     get __mj_Latitude(): number | null {
@@ -6709,7 +6726,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: __mj_Longitude
-    * * Display Name: Longitude
+    * * Display Name: Mj Longitude
     * * SQL Data Type: decimal(10, 6)
     */
     get __mj_Longitude(): number | null {
@@ -6718,7 +6735,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: RootParentID
-    * * Display Name: Root Parent
+    * * Display Name: Root Parent ID
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentID(): string | null {
@@ -6727,7 +6744,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDDepth
-    * * Display Name: Hierarchy Depth
+    * * Display Name: Parent ID Depth
     * * SQL Data Type: int
     */
     get ParentIDDepth(): number | null {
@@ -6736,7 +6753,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDPath
-    * * Display Name: Hierarchy Path
+    * * Display Name: Parent ID Path
     * * SQL Data Type: nvarchar(MAX)
     */
     get ParentIDPath(): string | null {
@@ -6745,7 +6762,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDIsLeaf
-    * * Display Name: Is Leaf Node
+    * * Display Name: Parent ID Is Leaf
     * * SQL Data Type: bit
     */
     get ParentIDIsLeaf(): boolean | null {
@@ -6754,7 +6771,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDChildCount
-    * * Display Name: Child Count
+    * * Display Name: Parent ID Child Count
     * * SQL Data Type: int
     */
     get ParentIDChildCount(): number | null {
@@ -6763,7 +6780,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressLine1
-    * * Display Name: Address Line 1
+    * * Display Name: Primary Address Line 1
     * * SQL Data Type: nvarchar(255)
     */
     get PrimaryAddressLine1(): string | null {
@@ -6772,7 +6789,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressLine2
-    * * Display Name: Address Line 2
+    * * Display Name: Primary Address Line 2
     * * SQL Data Type: nvarchar(255)
     */
     get PrimaryAddressLine2(): string | null {
@@ -6781,7 +6798,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressCity
-    * * Display Name: City
+    * * Display Name: Primary Address City
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressCity(): string | null {
@@ -6790,7 +6807,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressState
-    * * Display Name: State/Province
+    * * Display Name: Primary Address State
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressState(): string | null {
@@ -6799,7 +6816,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressPostalCode
-    * * Display Name: Postal Code
+    * * Display Name: Primary Address Postal Code
     * * SQL Data Type: nvarchar(20)
     */
     get PrimaryAddressPostalCode(): string | null {
@@ -6808,7 +6825,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressCountry
-    * * Display Name: Country
+    * * Display Name: Primary Address Country
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressCountry(): string | null {
@@ -6817,7 +6834,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressType
-    * * Display Name: Address Type
+    * * Display Name: Primary Address Type
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressType(): string | null {
@@ -6844,7 +6861,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ActivePersonCount
-    * * Display Name: Active Staff Count
+    * * Display Name: Active Person Count
     * * SQL Data Type: int
     */
     get ActivePersonCount(): number | null {
@@ -6853,7 +6870,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ChildOrgCount
-    * * Display Name: Total Child Organizations
+    * * Display Name: Child Org Count
     * * SQL Data Type: int
     */
     get ChildOrgCount(): number | null {
@@ -7085,8 +7102,8 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     /**
     * * Field Name: PhotoURL
     * * Display Name: Photo URL
-    * * SQL Data Type: nvarchar(1000)
-    * * Description: URL to profile photo or avatar image
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Profile photo or avatar. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).
     */
     get PhotoURL(): string | null {
         return this.Get('PhotoURL');

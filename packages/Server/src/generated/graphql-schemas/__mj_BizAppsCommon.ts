@@ -1492,7 +1492,7 @@ export class mjBizAppsCommonActivitySyncExtension_ {
     @MaxLength(36)
     ActivitySyncConnectionID?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Optional provider type this extension is registered for. Null means it runs on every connection. A deal-linker that only makes sense on email can bind here rather than being invoked for a phone transcript.`}) 
     @MaxLength(36)
     ActivitySyncProviderTypeID?: string;
         
@@ -2010,7 +2010,7 @@ export class mjBizAppsCommonActivitySyncRuleSet_ {
     @Field({nullable: true}) 
     Description?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Optional provider type this rule set is written for. Null means the set applies regardless of source — an org-wide prohibition does not care whether the mailbox is Microsoft365 or Gmail.`}) 
     @MaxLength(36)
     ActivitySyncProviderTypeID?: string;
         
@@ -2540,6 +2540,10 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     @Field({nullable: true}) 
     @MaxLength(200)
     ActivitySyncRule?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(320)
+    ActivitySyncExclusion?: string;
         
     @Field({nullable: true}) 
     @MaxLength(500)
@@ -4444,8 +4448,7 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(1000)
     Website?: string;
         
-    @Field({nullable: true, description: `URL to organization logo image`}) 
-    @MaxLength(1000)
+    @Field({nullable: true, description: `Organization logo. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).`}) 
     LogoURL?: string;
         
     @Field({nullable: true, description: `Description of the organization purpose and scope`}) 
@@ -4788,8 +4791,7 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(50)
     Gender?: string;
         
-    @Field({nullable: true, description: `URL to profile photo or avatar image`}) 
-    @MaxLength(1000)
+    @Field({nullable: true, description: `Profile photo or avatar. May be an HTTP(S) URL or an inline data URI (NVARCHAR(MAX)).`}) 
     PhotoURL?: string;
         
     @Field({nullable: true, description: `Biographical text or notes about this person`}) 
