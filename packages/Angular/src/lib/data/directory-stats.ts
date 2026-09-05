@@ -163,6 +163,19 @@ export function RelationshipParty(row: DirectoryRelationshipRow): string {
     return `${from} → ${to}`;
 }
 
+/** Escape free text for use inside a SQL string literal: drop NULs, double single quotes. */
 export function EscapeFilterValue(value: string): string {
-    return value.replace(/'/g, "''");
+    return value.replace(/\0/g, '').replace(/'/g, "''");
+}
+
+/**
+ * Escape free text for use inside a SQL Server LIKE pattern: everything EscapeFilterValue does,
+ * plus bracket-escaping the LIKE wildcards so a user typing `%`, `_` or `[` searches for the
+ * literal character instead of widening the match.
+ */
+export function EscapeLikeValue(value: string): string {
+    return EscapeFilterValue(value)
+        .replace(/\[/g, '[[]')
+        .replace(/%/g, '[%]')
+        .replace(/_/g, '[_]');
 }

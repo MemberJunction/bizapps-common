@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { SearchOrganizations } from '../data/directory-queries';
-import { EscapeFilterValue } from '../data/directory-stats';
+import { EscapeLikeValue } from '../data/directory-stats';
 import type { DirectoryOrganizationRow } from '../data/directory-types';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 
@@ -122,7 +122,7 @@ export class CommonOrganizationsPageComponent implements OnInit {
     }
 
     private buildFilter(term: string): string {
-        const escaped = EscapeFilterValue(term);
+        const escaped = EscapeLikeValue(term);
         return `(Name LIKE '%${escaped}%' OR OrganizationType LIKE '%${escaped}%' OR Website LIKE '%${escaped}%')`;
     }
 }

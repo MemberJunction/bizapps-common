@@ -4,6 +4,7 @@ import {
     CountByDay,
     CountByLabel,
     EscapeFilterValue,
+    EscapeLikeValue,
     PeopleMissingEmail,
     PersonEmail,
 } from '../directory-stats';
@@ -88,7 +89,15 @@ describe('directory-stats', () => {
         expect(rows[1]).toEqual({ Label: 'Chapter', Value: 1 });
     });
 
-    it('escapes quotes for ExtraFilter', () => {
+    it('escapes quotes and drops NULs for ExtraFilter', () => {
         expect(EscapeFilterValue("O'Brien")).toBe("O''Brien");
+        expect(EscapeFilterValue('a\0b')).toBe('ab');
+    });
+
+    it('bracket-escapes LIKE wildcards in EscapeLikeValue', () => {
+        expect(EscapeLikeValue('100%')).toBe('100[%]');
+        expect(EscapeLikeValue('a_b')).toBe('a[_]b');
+        expect(EscapeLikeValue('[x]')).toBe('[[]x]');
+        expect(EscapeLikeValue("O'Brien\0")).toBe("O''Brien");
     });
 });

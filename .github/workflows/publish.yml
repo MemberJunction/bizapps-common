@@ -116,8 +116,9 @@ jobs:
 
       - name: Update version
         if: steps.changeset_check.outputs.pending != '0'
+        env:
+          EXPECTED_NEXT_VERSION: ${{ github.event.inputs.targetVersion || steps.version_check.outputs.EXPECTED_NEXT_VERSION }}
         run: |
-          EXPECTED_NEXT_VERSION="${{ github.event.inputs.targetVersion || steps.version_check.outputs.EXPECTED_NEXT_VERSION }}"
           echo "Expected next version: $EXPECTED_NEXT_VERSION"
 
           pnpm run version
