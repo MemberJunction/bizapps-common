@@ -61,6 +61,18 @@
             "lastModified": "2026-05-14T15:55:52.299Z",
             "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
           }
+        },
+        {
+          "_comments": [
+            "PhotoURL is an Image (HTTP URL or inline data URI). Pin AutoUpdateExtendedType=0 so CodeGen cannot flip it back to URL."
+          ],
+          "fields": {
+            "ExtendedType": "Image",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PhotoURL&EntityID=@parent:ID"
+          }
         }
       ]
     },
@@ -86,6 +98,22 @@
           }
         }
       }
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "LogoURL is an Image (HTTP URL or inline data URI). Pin AutoUpdateExtendedType=0 so CodeGen cannot flip it back to URL."
+          ],
+          "fields": {
+            "ExtendedType": "Image",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LogoURL&EntityID=@parent:ID"
+          }
+        }
+      ]
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
