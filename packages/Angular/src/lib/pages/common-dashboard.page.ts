@@ -3,26 +3,15 @@ import { CommonModule } from '@angular/common';
 import type { EntityInfo } from '@memberjunction/core';
 import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { NavigationService } from '@memberjunction/ng-shared';
-import { EntityViewerModule, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
+import { EntityViewerModule, type EntityViewerConfig, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJAlertComponent, MJButtonDirective, MJEmptyStateComponent } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
-import { LoadDirectorySnapshot } from '../data/directory-queries';
+import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
 import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
-import {
-    ActiveOrganizations,
-    ActivePeople,
-    BuildAttentionItems,
-    BuildDirectoryQueues,
-    CountByDay,
-    CountByLabel,
-    LatestByCreated,
-} from '../data/directory-stats';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
     DirectoryDayBar,
-    DirectoryOrganizationRow,
-    DirectoryPersonRow,
     DirectoryQueue,
     DirectoryRelationshipRow,
 } from '../data/directory-types';
@@ -31,8 +20,8 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 /**
  * Directory home — is the party file complete, and what needs a person?
  *
- * Every figure is a cheap count over rows already loaded. No on-demand
- * aggregate. Queues sit above the trend because they are what someone acts on.
+ * Headline counts come from MJ Query `Common: Directory Dashboard Summary`
+ * (COUNT over the whole party file). RunView MaxRows must not feed these tiles.
  */
 @Component({
     selector: 'bizapps-common-dashboard-page',
@@ -169,6 +158,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     [Entity]="PersonEntity"
                                     [ViewEntity]="LatestPeopleView"
                                     [ShowRecycleBin]="false"
+                                    [Config]="PeekViewerConfig"
                                     (RecordOpened)="OnPersonOpened($event)">
                                 </mj-entity-viewer>
                             } @else {
@@ -210,6 +200,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                 [Entity]="RelationshipEntity"
                                 [ViewEntity]="LatestRelationshipsView"
                                 [ShowRecycleBin]="false"
+                                [Config]="PeekViewerConfig"
                                 (RecordOpened)="OnRelationshipOpened($event)">
                             </mj-entity-viewer>
                         } @else {
@@ -546,12 +537,13 @@ export class CommonDashboardPageComponent implements OnInit {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly navigation = inject(NavigationService, { optional: true });
 
+    /** Peek cards: no Filter records / Search / pager. Grid toolbar seeded off by entity-viewer. */
+    public readonly PeekViewerConfig: Partial<EntityViewerConfig> = { chrome: 'embedded' };
+
     public IsLoading = true;
     public Queues: DirectoryQueue[] = [];
     public PeoplePerDay: DirectoryDayBar[] = [];
     public OrganizationTypeMix: DirectoryBarRow[] = [];
-    public LatestPeople: DirectoryPersonRow[] = [];
-    public LatestRelationships: DirectoryRelationshipRow[] = [];
     public PersonEntity: EntityInfo | null = null;
     public RelationshipEntity: EntityInfo | null = null;
     public LatestPeopleView: MJUserViewEntityExtended | null = null;
@@ -565,45 +557,33 @@ export class CommonDashboardPageComponent implements OnInit {
     public OrganizationDetail = '';
 
     public async ngOnInit(): Promise<void> {
-        const [snapshot, peopleView, relView] = await Promise.all([
-            LoadDirectorySnapshot(),
+        const [summary, peopleView, relView] = await Promise.all([
+            LoadDirectoryDashboardSummary(),
             LoadLatestPeopleView(),
             LoadLatestRelationshipsView(),
         ]);
-        this.applySnapshot(snapshot.People, snapshot.Organizations, snapshot.Relationships);
+        if (summary) {
+            this.ActivePeopleCount = summary.ActivePeopleCount;
+            this.ActiveOrganizationCount = summary.ActiveOrganizationCount;
+            this.RelationshipCount = summary.RelationshipCount;
+            this.PeopleDetail = summary.TotalPeopleCount === summary.ActivePeopleCount
+                ? 'Everyone currently on file'
+                : `${summary.TotalPeopleCount} total, including inactive`;
+            this.OrganizationDetail = summary.TotalOrganizationCount === summary.ActiveOrganizationCount
+                ? 'Active organizations'
+                : `${summary.TotalOrganizationCount} total, including inactive`;
+            this.Queues = summary.Queues;
+            this.GapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
+            this.PeoplePerDay = summary.PeoplePerDay;
+            this.OrganizationTypeMix = summary.OrganizationTypeMix;
+            this.WorthALook = summary.WorthALook;
+        }
         this.PersonEntity = peopleView.entity;
         this.LatestPeopleView = peopleView.view;
         this.RelationshipEntity = relView.entity;
         this.LatestRelationshipsView = relView.view;
         this.IsLoading = false;
         this.cdr.detectChanges();
-    }
-
-    private applySnapshot(
-        people: DirectoryPersonRow[],
-        orgs: DirectoryOrganizationRow[],
-        relationships: DirectoryRelationshipRow[],
-    ): void {
-        const activePeople = ActivePeople(people);
-        const activeOrgs = ActiveOrganizations(orgs);
-        this.ActivePeopleCount = activePeople.length;
-        this.ActiveOrganizationCount = activeOrgs.length;
-        this.RelationshipCount = relationships.length;
-        this.PeopleDetail = people.length === activePeople.length
-            ? 'Everyone currently on file'
-            : `${people.length} total, including inactive`;
-        this.OrganizationDetail = orgs.length === activeOrgs.length
-            ? 'Active organizations'
-            : `${orgs.length} total, including inactive`;
-        this.Queues = BuildDirectoryQueues(people, orgs);
-        this.GapCount = this.Queues.reduce((sum, queue) => sum + queue.Count, 0);
-        this.PeoplePerDay = CountByDay(people);
-        this.OrganizationTypeMix = CountByLabel(
-            orgs.map((org) => ({ Label: org.OrganizationType || 'Unspecified' })),
-        );
-        this.LatestPeople = LatestByCreated(people);
-        this.LatestRelationships = LatestByCreated(relationships, 6);
-        this.WorthALook = BuildAttentionItems(people, orgs);
     }
 
     public barHeight(bar: DirectoryDayBar): number {

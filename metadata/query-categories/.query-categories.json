@@ -1,0 +1,21 @@
+[
+  {
+    "_comments": [
+      "Must push before metadata/queries. 'queries' sorts before 'query-categories' alphabetically;",
+      "directoryOrder in metadata/.mj-sync.json puts this folder first."
+    ],
+    "fields": {
+      "Name": "Common",
+      "ParentID": null,
+      "Description": "BizApps Common directory read models. Dashboard tiles COUNT the whole party file — they must not be derived from a MaxRows-capped RunView.",
+      "UserID": "@lookup:MJ: Users.Name=System"
+    },
+    "primaryKey": {
+      "ID": "6C0A1000-0000-4000-A000-000000000001"
+    },
+    "sync": {
+      "lastModified": "2026-09-06T23:06:16.456Z",
+      "checksum": "4988821a7d58f2b75b72d00885e0cb6b5dc9dbe4e0020fbf108af2b6adb52785"
+    }
+  }
+]
