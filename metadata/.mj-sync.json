@@ -20,7 +20,9 @@
     "action-filters",
     "agents",
     "entity-actions",
-    "user-views"
+    "user-views",
+    "query-categories",
+    "queries"
   ],
   "sqlLogging": {
     "enabled": true,
