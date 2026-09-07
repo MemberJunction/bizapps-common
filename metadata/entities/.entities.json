@@ -72,6 +72,10 @@
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=PhotoURL&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.894Z",
+            "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
           }
         }
       ]
@@ -111,6 +115,10 @@
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=LogoURL&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.831Z",
+            "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
           }
         },
         {
@@ -191,7 +199,7 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Latitude&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-07T14:08:15.546Z",
+            "lastModified": "2026-09-07T14:18:30.871Z",
             "checksum": "b57c3c6dae60fe7232d06d8202877bb8fc6d09ad42c0bb9796c0f50e563c6896"
           }
         },
@@ -207,14 +215,14 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Longitude&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-07T14:08:15.557Z",
+            "lastModified": "2026-09-07T14:18:30.914Z",
             "checksum": "e9b84a9980343249386f924a17c12b9e64844aefa5b090f118bc27e35faeb440"
           }
         }
       ]
     },
     "sync": {
-      "lastModified": "2026-09-07T14:08:15.378Z",
+      "lastModified": "2026-09-07T14:18:30.702Z",
       "checksum": "ad5c34b3c52e0f3f11a5924fa2fb931d7cae71724a5adbc395eff1e941fb5b66"
     }
   },
