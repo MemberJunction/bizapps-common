@@ -191,25 +191,58 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}].[vwAddresses] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 GO
 
-/* EntityField rows CodeGen registered from the layered vwOrganizations columns.
-   Sequence bump makes room after PrimaryAddressCountry (30). Idempotent. */
-DECLARE @OrgEntityID UNIQUEIDENTIFIER = 'C70448F9-9792-41D7-A82C-784B66429D54';
+/* EntityField rows CodeGen registered from the layered vwOrganizations columns. Idempotent. */
+IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0559B852-FDB4-4231-9053-CB75E60E93F4' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLatitude'))
+BEGIN
+    INSERT INTO [${mjSchema}].[EntityField]
+    (
+        [ID], [EntityID], [Sequence], [Name], [DisplayName], [Description],
+        [Type], [Length], [Precision], [Scale], [AllowsNull], [DefaultValue],
+        [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
+        [RelatedEntityID], [RelatedEntityFieldName], [IsNameField],
+        [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
+        [DefaultInView], [IsPrimaryKey], [IsUnique], [ExtendedType],
+        [AutoUpdateExtendedType], [RelatedEntityDisplayType], [__mj_CreatedAt], [__mj_UpdatedAt]
+    )
+    VALUES
+    (
+        '0559B852-FDB4-4231-9053-CB75E60E93F4',
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        (SELECT COALESCE(MAX([Sequence]), 0) FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54') + 1,
+        'PrimaryAddressLatitude', 'Latitude', NULL,
+        'decimal', 5, 9, 6, 1, NULL,
+        0, 0, 1, 0,
+        NULL, NULL, 0,
+        0, 0,
+        0, 0, 0, 'GeoLatitude',
+        0, 'Search', GETUTCDATE(), GETUTCDATE()
+    );
+END
 
-UPDATE [${mjSchema}].[EntityField]
-SET [Sequence] = [Sequence] + 2
-WHERE [EntityID] = @OrgEntityID
-  AND [Sequence] >= 31
-  AND [Name] NOT IN ('PrimaryAddressLatitude', 'PrimaryAddressLongitude');
-
-IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0559B852-FDB4-4231-9053-CB75E60E93F4' OR (EntityID = @OrgEntityID AND Name = 'PrimaryAddressLatitude'))
-INSERT INTO [${mjSchema}].[EntityField]
-    (ID, EntityID, Sequence, Name, DisplayName, Type, Length, Precision, Scale, AllowsNull, AutoIncrement, AllowUpdateAPI, IsVirtual, IsComputed, IsNameField, IncludeInUserSearchAPI, IncludeRelatedEntityNameFieldInBaseView, DefaultInView, IsPrimaryKey, IsUnique, ExtendedType, AutoUpdateExtendedType, RelatedEntityDisplayType, __mj_CreatedAt, __mj_UpdatedAt)
-VALUES
-    ('0559B852-FDB4-4231-9053-CB75E60E93F4', @OrgEntityID, 31, 'PrimaryAddressLatitude', 'Latitude', 'decimal', 5, 9, 6, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'GeoLatitude', 0, 'Search', GETUTCDATE(), GETUTCDATE());
-
-IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9838E6B2-AB89-4D38-A8AF-512AC28B5CC7' OR (EntityID = @OrgEntityID AND Name = 'PrimaryAddressLongitude'))
-INSERT INTO [${mjSchema}].[EntityField]
-    (ID, EntityID, Sequence, Name, DisplayName, Type, Length, Precision, Scale, AllowsNull, AutoIncrement, AllowUpdateAPI, IsVirtual, IsComputed, IsNameField, IncludeInUserSearchAPI, IncludeRelatedEntityNameFieldInBaseView, DefaultInView, IsPrimaryKey, IsUnique, ExtendedType, AutoUpdateExtendedType, RelatedEntityDisplayType, __mj_CreatedAt, __mj_UpdatedAt)
-VALUES
-    ('9838E6B2-AB89-4D38-A8AF-512AC28B5CC7', @OrgEntityID, 32, 'PrimaryAddressLongitude', 'Longitude', 'decimal', 5, 9, 6, 1, 0, 0, 1, 0, 0, 0, 0, 0, 'GeoLongitude', 0, 'Search', GETUTCDATE(), GETUTCDATE());
+IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9838E6B2-AB89-4D38-A8AF-512AC28B5CC7' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLongitude'))
+BEGIN
+    INSERT INTO [${mjSchema}].[EntityField]
+    (
+        [ID], [EntityID], [Sequence], [Name], [DisplayName], [Description],
+        [Type], [Length], [Precision], [Scale], [AllowsNull], [DefaultValue],
+        [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
+        [RelatedEntityID], [RelatedEntityFieldName], [IsNameField],
+        [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
+        [DefaultInView], [IsPrimaryKey], [IsUnique], [ExtendedType],
+        [AutoUpdateExtendedType], [RelatedEntityDisplayType], [__mj_CreatedAt], [__mj_UpdatedAt]
+    )
+    VALUES
+    (
+        '9838E6B2-AB89-4D38-A8AF-512AC28B5CC7',
+        'C70448F9-9792-41D7-A82C-784B66429D54',
+        (SELECT COALESCE(MAX([Sequence]), 0) FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54') + 1,
+        'PrimaryAddressLongitude', 'Longitude', NULL,
+        'decimal', 5, 9, 6, 1, NULL,
+        0, 0, 1, 0,
+        NULL, NULL, 0,
+        0, 0,
+        0, 0, 0, 'GeoLongitude',
+        0, 'Search', GETUTCDATE(), GETUTCDATE()
+    );
+END
 GO
