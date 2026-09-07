@@ -15,6 +15,12 @@ naming the type and lands in the connection's health stamp. It follows the shape
 provider is resolved and before any fetch, so it cannot be reached only through a driver lookup
 failure, and no mailbox is read on the way to it.
 
+**What an operator will see when they switch a type off.** Every connection using it reports the
+refusal on the next fleet tick, so each flips to `Status = 'Error'` with the reason in `LastError`.
+That is the existing behaviour for any failed run, not something new here, and it is self-healing:
+errored connections are still selected by the fleet query, so the next successful run after the type
+is reactivated clears `LastError` and returns them to `Active` with no manual step.
+
 **Absence keeps running.** The comparison is `=== false`, so a row loaded without the field still
 syncs. Absence means the query did not ask for the column, and turning one trimmed `Fields` list into
 a silent total halt of every sync is a worse failure than the one being guarded against. SQL `BIT`
