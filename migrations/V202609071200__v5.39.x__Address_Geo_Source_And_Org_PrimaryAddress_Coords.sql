@@ -1,8 +1,10 @@
 -- =============================================================================
 -- Migration: V202609071200__v5.39.x__Address_Geo_Source_And_Org_PrimaryAddress_Coords.sql
--- Description: Address is the geo WRITE source (native lat/lng aliased as __mj_Latitude).
---              Organizations/People layered views bubble primary Address coords as
---              PrimaryAddressLatitude/Longitude and __mj_Latitude/__mj_Longitude.
+-- Description: Address is the geo WRITE source (native lat/lng aliased as __mj_Latitude
+--              on vwAddresses). Organizations layered view gains PrimaryAddressLatitude/
+--              Longitude from the primary Address. Do not re-alias __mj_Latitude on
+--              People/Org overlays — vw*Generated already exposes it (RecordGeoCode join
+--              from earlier CodeGen); a second alias fails CREATE VIEW (duplicate name).
 --
 --              Entity metadata (SupportsGeoCoding, ExtendedType pins) lives in
 --              metadata/entities/.entities.json and is applied by `mj sync push`.
@@ -12,101 +14,9 @@
 --              local `mj codegen --skipfiles` (includeSchemas Common) → fold emit below.
 -- =============================================================================
 
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwPeople]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwPeople];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwPeople]
-AS
-SELECT
-    -- Everything CodeGen generates: base columns, DisplayName, LinkedUser, and any
-    -- foreign-key display field added from here on, without this file changing.
-    g.*,
-
-    -- Primary address, resolved through the polymorphic AddressLink (IsPrimary = 1).
-    addr.Line1          AS [PrimaryAddressLine1],
-    addr.Line2          AS [PrimaryAddressLine2],
-    addr.City           AS [PrimaryAddressCity],
-    addr.StateProvince  AS [PrimaryAddressState],
-    addr.PostalCode     AS [PrimaryAddressPostalCode],
-    addr.Country        AS [PrimaryAddressCountry],
-    addr.Latitude       AS [PrimaryAddressLatitude],
-    addr.Longitude      AS [PrimaryAddressLongitude],
-    addr.Latitude       AS [__mj_Latitude],
-    addr.Longitude      AS [__mj_Longitude],
-    addrType.Name       AS [PrimaryAddressType],
-
-    -- Primary contact methods, falling back to the columns on Person itself.
-    COALESCE(cm_email.Value, g.Email) AS [PrimaryEmail],
-    COALESCE(cm_phone.Value, g.Phone) AS [PrimaryPhone],
-
-    -- Current employer: most recent active Employee relationship.
-    emp_org.ID          AS [CurrentOrganizationID],
-    emp_org.Name        AS [CurrentOrganizationName],
-    emp_rel.Title       AS [CurrentJobTitle]
-
-FROM
-    [${flyway:defaultSchema}].[vwPeopleGenerated] AS g
-
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[AddressLink] AS al
-  ON
-    al.[RecordID] = CAST(g.[ID] AS NVARCHAR(MAX))
-    AND al.[EntityID] = (
-        SELECT [ID] FROM [__mj].[Entity]
-        WHERE [Name] = 'MJ_BizApps_Common: People'
-    )
-    AND al.[IsPrimary] = 1
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[Address] AS addr
-  ON
-    addr.[ID] = al.[AddressID]
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[AddressType] AS addrType
-  ON
-    addrType.[ID] = al.[AddressTypeID]
-
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ContactMethod] AS cm_email
-  ON
-    cm_email.[PersonID] = g.[ID]
-    AND cm_email.[IsPrimary] = 1
-    AND cm_email.[ContactTypeID] = (
-        SELECT [ID] FROM [${flyway:defaultSchema}].[ContactType]
-        WHERE [Name] = 'Email'
-    )
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[ContactMethod] AS cm_phone
-  ON
-    cm_phone.[PersonID] = g.[ID]
-    AND cm_phone.[IsPrimary] = 1
-    AND cm_phone.[ContactTypeID] = (
-        SELECT [ID] FROM [${flyway:defaultSchema}].[ContactType]
-        WHERE [Name] = 'Mobile Phone'
-    )
-
-OUTER APPLY (
-    SELECT TOP 1
-        r.[Title],
-        r.[ToOrganizationID]
-    FROM
-        [${flyway:defaultSchema}].[Relationship] AS r
-    INNER JOIN
-        [${flyway:defaultSchema}].[RelationshipType] AS rt
-      ON
-        rt.[ID] = r.[RelationshipTypeID]
-    WHERE
-        rt.[Name] = 'Employee'
-        AND r.[FromPersonID] = g.[ID]
-        AND r.[Status] = 'Active'
-    ORDER BY
-        r.[StartDate] DESC
-) AS emp_rel
-LEFT OUTER JOIN
-    [${flyway:defaultSchema}].[Organization] AS emp_org
-  ON
-    emp_org.[ID] = emp_rel.[ToOrganizationID];
-GO
+-- vwPeople is not recreated here. V202608132240 already bubbles PrimaryAddressLatitude/
+-- Longitude. vwPeopleGenerated already exposes __mj_Latitude (RecordGeoCode join from
+-- V202609051800 CodeGen). Aliasing addr.Latitude AS __mj_Latitude again duplicates the name.
 
 -- -----------------------------------------------------------------------------
 -- Organizations
@@ -130,8 +40,6 @@ SELECT
     addr.Country        AS [PrimaryAddressCountry],
     addr.Latitude       AS [PrimaryAddressLatitude],
     addr.Longitude      AS [PrimaryAddressLongitude],
-    addr.Latitude       AS [__mj_Latitude],
-    addr.Longitude      AS [__mj_Longitude],
     addrType.Name       AS [PrimaryAddressType],
 
     COALESCE(cm_email.Value, g.Email) AS [PrimaryEmail],
