@@ -164,7 +164,7 @@ GO
  **  and the layered overlays above were applied. DO NOT hand-edit below this line.              **
  **                                                                                              **
  **  Source: SQL Scripts/generated/__mj_BizAppsCommon/vwAddresses.view.generated.sql             **
- **          plus EntityField rows CodeGen registered for vwOrganizations PrimaryAddress* coords.**
+ **          plus MJ/migrations/v5/CodeGen_Run_2026-09-07_14-06-05.sql (Org lat/lng INSERTs only).**
  **                                                                                              **
  **************************************************************************************************
  **************************************************************************************************/
@@ -191,58 +191,149 @@ GO
 GRANT SELECT ON [${flyway:defaultSchema}].[vwAddresses] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
 GO
 
-/* EntityField rows CodeGen registered from the layered vwOrganizations columns. Idempotent. */
-IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0559B852-FDB4-4231-9053-CB75E60E93F4' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLatitude'))
-BEGIN
-    INSERT INTO [${mjSchema}].[EntityField]
-    (
-        [ID], [EntityID], [Sequence], [Name], [DisplayName], [Description],
-        [Type], [Length], [Precision], [Scale], [AllowsNull], [DefaultValue],
-        [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
-        [RelatedEntityID], [RelatedEntityFieldName], [IsNameField],
-        [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
-        [DefaultInView], [IsPrimaryKey], [IsUnique], [ExtendedType],
-        [AutoUpdateExtendedType], [RelatedEntityDisplayType], [__mj_CreatedAt], [__mj_UpdatedAt]
-    )
-    VALUES
-    (
-        '0559B852-FDB4-4231-9053-CB75E60E93F4',
-        'C70448F9-9792-41D7-A82C-784B66429D54',
-        (SELECT COALESCE(MAX([Sequence]), 0) FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54') + 1,
-        'PrimaryAddressLatitude', 'Latitude', NULL,
-        'decimal', 5, 9, 6, 1, NULL,
-        0, 0, 1, 0,
-        NULL, NULL, 0,
-        0, 0,
-        0, 0, 0, 'GeoLatitude',
-        0, 'Search', GETUTCDATE(), GETUTCDATE()
-    );
-END
+/* SQL text to insert new entity field(s) — Org PrimaryAddressLatitude/Longitude
+   verbatim from CodeGen_Run_2026-09-07_14-06-05.sql (IDs, Sequence 31/32, DisplayName).
+   ExtendedType is NOT in this INSERT; metadata/entities/.entities.json pins it on sync. */
+UPDATE [${mjSchema}].[EntityField]
+         SET [Sequence] = [Sequence] + 100000
+       WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54'
+         AND [Sequence] < 100000
+         AND NOT EXISTS (
+             SELECT 1 FROM [${mjSchema}].[EntityField]
+              WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54'
+                AND [Sequence] >= 100000
+         );
 
-IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9838E6B2-AB89-4D38-A8AF-512AC28B5CC7' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLongitude'))
-BEGIN
-    INSERT INTO [${mjSchema}].[EntityField]
-    (
-        [ID], [EntityID], [Sequence], [Name], [DisplayName], [Description],
-        [Type], [Length], [Precision], [Scale], [AllowsNull], [DefaultValue],
-        [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
-        [RelatedEntityID], [RelatedEntityFieldName], [IsNameField],
-        [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
-        [DefaultInView], [IsPrimaryKey], [IsUnique], [ExtendedType],
-        [AutoUpdateExtendedType], [RelatedEntityDisplayType], [__mj_CreatedAt], [__mj_UpdatedAt]
-    )
-    VALUES
-    (
-        '9838E6B2-AB89-4D38-A8AF-512AC28B5CC7',
-        'C70448F9-9792-41D7-A82C-784B66429D54',
-        (SELECT COALESCE(MAX([Sequence]), 0) FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54') + 1,
-        'PrimaryAddressLongitude', 'Longitude', NULL,
-        'decimal', 5, 9, 6, 1, NULL,
-        0, 0, 1, 0,
-        NULL, NULL, 0,
-        0, 0,
-        0, 0, 0, 'GeoLongitude',
-        0, 'Search', GETUTCDATE(), GETUTCDATE()
-    );
-END
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0559b852-fdb4-4231-9053-cb75e60e93f4' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLatitude')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '0559b852-fdb4-4231-9053-cb75e60e93f4',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ_BizApps_Common: Organizations
+            31,
+            'PrimaryAddressLatitude',
+            'Primary Address Latitude',
+            NULL,
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9838e6b2-ab89-4d38-a8af-512ac28b5cc7' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLongitude')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '9838e6b2-ab89-4d38-a8af-512ac28b5cc7',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ_BizApps_Common: Organizations
+            32,
+            'PrimaryAddressLongitude',
+            'Primary Address Longitude',
+            NULL,
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+-- Recurring in a full CodeGen run (omitted from CodeGen_Run when
+-- omitRecurringScriptsFromLog=true). Required after Sequence+100000 park so
+-- existing Org fields return to live BaseView ordinals.
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema]
+    @ExcludedSchemaNames = 'sys,staging',
+    @IncludedSchemaNames = '${flyway:defaultSchema}';
 GO
