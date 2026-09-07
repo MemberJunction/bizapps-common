@@ -1,0 +1,339 @@
+-- =============================================================================
+-- Migration: V202609071200__v5.39.x__Address_Geo_Source_And_Org_PrimaryAddress_Coords.sql
+-- Description: Address is the geo WRITE source (native lat/lng aliased as __mj_Latitude
+--              on vwAddresses). Organizations layered view gains PrimaryAddressLatitude/
+--              Longitude from the primary Address. Do not re-alias __mj_Latitude on
+--              People/Org overlays — vw*Generated already exposes it (RecordGeoCode join
+--              from earlier CodeGen); a second alias fails CREATE VIEW (duplicate name).
+--
+--              Entity metadata (SupportsGeoCoding, ExtendedType pins) lives in
+--              metadata/entities/.entities.json and is applied by `mj sync push`.
+--              Do NOT UPDATE Entity/EntityField SupportsGeoCoding or ExtendedType here.
+--
+--              Authoring: overlay views on DB → mj sync push metadata/entities →
+--              local `mj codegen --skipfiles` (includeSchemas Common) → fold emit below.
+-- =============================================================================
+
+-- vwPeople is not recreated here. V202608132240 already bubbles PrimaryAddressLatitude/
+-- Longitude. vwPeopleGenerated already exposes __mj_Latitude (RecordGeoCode join from
+-- V202609051800 CodeGen). Aliasing addr.Latitude AS __mj_Latitude again duplicates the name.
+
+-- -----------------------------------------------------------------------------
+-- Organizations
+-- -----------------------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwOrganizations]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwOrganizations];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwOrganizations]
+AS
+SELECT
+    -- Everything CodeGen generates: base columns, OrganizationType, Parent, and the
+    -- recursive RootParentID — all of which the hand-written view used to restate.
+    g.*,
+
+    addr.Line1          AS [PrimaryAddressLine1],
+    addr.Line2          AS [PrimaryAddressLine2],
+    addr.City           AS [PrimaryAddressCity],
+    addr.StateProvince  AS [PrimaryAddressState],
+    addr.PostalCode     AS [PrimaryAddressPostalCode],
+    addr.Country        AS [PrimaryAddressCountry],
+    addr.Latitude       AS [PrimaryAddressLatitude],
+    addr.Longitude      AS [PrimaryAddressLongitude],
+    addrType.Name       AS [PrimaryAddressType],
+
+    COALESCE(cm_email.Value, g.Email) AS [PrimaryEmail],
+    COALESCE(cm_phone.Value, g.Phone) AS [PrimaryPhone],
+
+    (
+        SELECT COUNT(*)
+        FROM [${flyway:defaultSchema}].[Relationship] AS r
+        INNER JOIN [${flyway:defaultSchema}].[RelationshipType] AS rt
+          ON rt.[ID] = r.[RelationshipTypeID]
+        WHERE rt.[Category] = 'PersonToOrganization'
+          AND r.[ToOrganizationID] = g.[ID]
+          AND r.[Status] = 'Active'
+    ) AS [ActivePersonCount],
+
+    (
+        SELECT COUNT(*)
+        FROM [${flyway:defaultSchema}].[Organization] AS child
+        WHERE child.[ParentID] = g.[ID]
+          AND child.[Status] = 'Active'
+    ) AS [ChildOrgCount]
+
+FROM
+    [${flyway:defaultSchema}].[vwOrganizationsGenerated] AS g
+
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[AddressLink] AS al
+  ON
+    al.[RecordID] = CAST(g.[ID] AS NVARCHAR(MAX))
+    AND al.[EntityID] = (
+        SELECT [ID] FROM [__mj].[Entity]
+        WHERE [Name] = 'MJ_BizApps_Common: Organizations'
+    )
+    AND al.[IsPrimary] = 1
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[Address] AS addr
+  ON
+    addr.[ID] = al.[AddressID]
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[AddressType] AS addrType
+  ON
+    addrType.[ID] = al.[AddressTypeID]
+
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[ContactMethod] AS cm_email
+  ON
+    cm_email.[OrganizationID] = g.[ID]
+    AND cm_email.[IsPrimary] = 1
+    AND cm_email.[ContactTypeID] = (
+        SELECT [ID] FROM [${flyway:defaultSchema}].[ContactType]
+        WHERE [Name] = 'Email'
+    )
+LEFT OUTER JOIN
+    [${flyway:defaultSchema}].[ContactMethod] AS cm_phone
+  ON
+    cm_phone.[OrganizationID] = g.[ID]
+    AND cm_phone.[IsPrimary] = 1
+    AND cm_phone.[ContactTypeID] = (
+        SELECT [ID] FROM [${flyway:defaultSchema}].[ContactType]
+        WHERE [Name] = 'Mobile Phone'
+    );
+GO
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**************************************************************************************************
+ **************************************************************************************************
+ **                                                                                              **
+ **                 CODEGEN OUTPUT — Address native geo aliases + Org PrimaryAddress coords     **
+ **                                                                                              **
+ **  Everything below this banner is generated by local `mj codegen --skipfiles` AFTER           **
+ **  metadata/entities/.entities.json was pushed (SupportsGeoCoding + GeoLatitude/GeoLongitude)  **
+ **  and the layered overlays above were applied. DO NOT hand-edit below this line.              **
+ **                                                                                              **
+ **  Source: SQL Scripts/generated/__mj_BizAppsCommon/vwAddresses.view.generated.sql             **
+ **          plus MJ/migrations/v5/CodeGen_Run_2026-09-07_14-06-05.sql (Org lat/lng INSERTs only).**
+ **                                                                                              **
+ **************************************************************************************************
+ **************************************************************************************************/
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Addresses
+-----               SCHEMA:      ${flyway:defaultSchema}
+-----               BASE TABLE:  Address
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwAddresses]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwAddresses];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwAddresses]
+AS
+SELECT
+    a.*,
+    [a].[Latitude] AS [__mj_Latitude],
+    [a].[Longitude] AS [__mj_Longitude]
+FROM
+    [${flyway:defaultSchema}].[Address] AS a
+GO
+GRANT SELECT ON [${flyway:defaultSchema}].[vwAddresses] TO [cdp_UI], [cdp_Developer], [cdp_Integration]
+GO
+
+/* SQL text to insert new entity field(s) — Org PrimaryAddressLatitude/Longitude
+   verbatim from CodeGen_Run_2026-09-07_14-06-05.sql (IDs, Sequence 31/32, DisplayName).
+   ExtendedType is NOT in this INSERT; metadata/entities/.entities.json pins it on sync. */
+UPDATE [${mjSchema}].[EntityField]
+         SET [Sequence] = [Sequence] + 100000
+       WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54'
+         AND [Sequence] < 100000
+         AND NOT EXISTS (
+             SELECT 1 FROM [${mjSchema}].[EntityField]
+              WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54'
+                AND [Sequence] >= 100000
+         );
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0559b852-fdb4-4231-9053-cb75e60e93f4' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLatitude')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '0559b852-fdb4-4231-9053-cb75e60e93f4',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ_BizApps_Common: Organizations
+            31,
+            'PrimaryAddressLatitude',
+            'Primary Address Latitude',
+            NULL,
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '9838e6b2-ab89-4d38-a8af-512ac28b5cc7' OR (EntityID = 'C70448F9-9792-41D7-A82C-784B66429D54' AND Name = 'PrimaryAddressLongitude')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '9838e6b2-ab89-4d38-a8af-512ac28b5cc7',
+            'C70448F9-9792-41D7-A82C-784B66429D54', -- Entity: MJ_BizApps_Common: Organizations
+            32,
+            'PrimaryAddressLongitude',
+            'Primary Address Longitude',
+            NULL,
+            'decimal',
+            5,
+            9,
+            6,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+-- Recurring in a full CodeGen run (omitted from CodeGen_Run when
+-- omitRecurringScriptsFromLog=true). Required after Sequence+100000 park so
+-- existing Org fields return to live BaseView ordinals.
+EXEC [${mjSchema}].[spUpdateExistingEntityFieldsFromSchema]
+    @ExcludedSchemaNames = 'sys,staging',
+    @IncludedSchemaNames = '${flyway:defaultSchema}';
+GO
