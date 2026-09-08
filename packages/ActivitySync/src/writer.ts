@@ -27,7 +27,7 @@ import type {
 
 import type { ResolvedParty, UnresolvedParty, ActivityWriteContext } from './BaseActivitySyncExtension.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
-import { EscapeText } from './sql.js';
+import { EscapeText, RequireUUID } from './sql.js';
 import type { ActivityDirection, ActivityIdentityKind, ActivityLinkRole, NormalizedItem } from './types.js';
 
 function isDatabaseProvider(provider: IMetadataProvider): provider is DatabaseProviderBase {
@@ -465,6 +465,12 @@ export class ActivityWriter {
         provider: IMetadataProvider,
         contextUser: UserInfo,
     ): Promise<mjBizAppsCommonActivityLinkEntity | null> {
+        // Every legitimate RecordID is an MJ record id (UNIQUEIDENTIFIER) — reject anything
+        // else before it can be stored. Throws InvalidFilterInputError; the transactional
+        // core rolls back and surfaces the message as an Issue.
+        if (link.RecordID) {
+            RequireUUID(link.RecordID, `ActivityLink.RecordID (role ${link.Role})`);
+        }
         const entityID = link.EntityName
             ? provider.Entities.find((e) => e.Name === link.EntityName)?.ID
             : undefined;

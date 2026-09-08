@@ -1,5 +1,8 @@
 name: Build All Packages
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:

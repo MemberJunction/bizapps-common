@@ -1,0 +1,19 @@
+{
+  "entity": "MJ: Queries",
+  "filePattern": "**/.*.json",
+  "defaults": {
+    "Status": "Pending"
+  },
+  "pull": {
+    "createNewFileIfNotFound": true,
+    "newFileName": ".queries.json",
+    "appendRecordsToExistingFile": true,
+    "updateExistingRecords": true,
+    "relatedEntities": {
+      "MJ: Query Parameters": {
+        "entity": "MJ: Query Parameters",
+        "foreignKey": "QueryID"
+      }
+    }
+  }
+}

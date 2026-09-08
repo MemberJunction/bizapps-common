@@ -107,6 +107,12 @@ interface ProviderTypeRow {
     DefaultQualificationPolicy: QualificationPolicy;
     /** Companion calendar ClassFactory key. Null = this type has no second surface. */
     CalendarDriverClass: string | null;
+    /**
+     * The administrator's switch for the whole connector type. Every field here must also appear in
+     * `loadProviderType`'s `Fields` list — declaring one without listing it yields `undefined` at
+     * runtime and any check against it quietly never fires.
+     */
+    IsActive: boolean;
 }
 
 interface RunSurfaceOptions {
@@ -234,6 +240,14 @@ export class ActivitySyncEngine {
                 return result;
             }
             typeRow = loadedType.Rows[0] ?? null;
+        }
+        // Switched off by an administrator. Refusing loudly rather than skipping quietly: a connection
+        // that stops syncing while still reporting success is the failure this whole subsystem exists
+        // to make impossible. `=== false` so that a row loaded without the field — an injected test row,
+        // or a Fields list someone trims later — keeps running rather than halting every sync silently.
+        if (typeRow?.IsActive === false) {
+            result.Issues.push(`Provider type '${typeRow.Code}' is not active.`);
+            return result;
         }
         // Missing type row: the cascade still needs a default, and that default is
         // Exclude — never `?? 'Include'`.
@@ -761,7 +775,7 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
                 ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncProviderTypeID')}'`,
-                Fields: ['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass'],
+                Fields: ['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass', 'IsActive'],
                 MaxRows: 1,
                 ResultType: 'simple',
             },

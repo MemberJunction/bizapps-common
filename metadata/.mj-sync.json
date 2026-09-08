@@ -15,11 +15,15 @@
     "actions",
     "scheduled-jobs",
     "entities",
+    "entity-fields",
     "entity-relationships",
     "application-roles",
     "action-filters",
     "agents",
-    "entity-actions"
+    "entity-actions",
+    "user-views",
+    "query-categories",
+    "queries"
   ],
   "sqlLogging": {
     "enabled": true,

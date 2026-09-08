@@ -164,10 +164,9 @@
             [Record]="record"
             [ShowLabel]="true"
             FieldName="LogoURL"
-            Type="textbox"
+            Type="textarea"
             [EditMode]="EditMode"
             [FormContext]="formContext"
-            LinkType="URL"
         ></mj-form-field>
         <mj-form-field 
             [Record]="record"
@@ -257,6 +256,22 @@
             [Record]="record"
             [ShowLabel]="true"
             FieldName="PrimaryAddressCountry"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLatitude"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLongitude"
             Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
