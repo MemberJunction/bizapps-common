@@ -4533,6 +4533,12 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(100)
     PrimaryAddressCountry?: string;
         
+    @Field(() => Float, {nullable: true}) 
+    PrimaryAddressLatitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    PrimaryAddressLongitude?: number;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     PrimaryAddressType?: string;
