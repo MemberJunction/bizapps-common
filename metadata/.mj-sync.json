@@ -15,6 +15,7 @@
     "actions",
     "scheduled-jobs",
     "entities",
+    "entity-fields",
     "entity-relationships",
     "application-roles",
     "action-filters",
