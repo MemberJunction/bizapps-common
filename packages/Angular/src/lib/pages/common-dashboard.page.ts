@@ -1,25 +1,17 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { EntityInfo } from '@memberjunction/core';
+import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { NavigationService } from '@memberjunction/ng-shared';
+import { EntityViewerModule, type EntityViewerConfig, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJAlertComponent, MJButtonDirective, MJEmptyStateComponent } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
-import { LoadDirectorySnapshot } from '../data/directory-queries';
-import {
-    ActiveOrganizations,
-    ActivePeople,
-    BuildAttentionItems,
-    BuildDirectoryQueues,
-    CountByDay,
-    CountByLabel,
-    LatestByCreated,
-    PersonEmail,
-} from '../data/directory-stats';
+import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
+import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
     DirectoryDayBar,
-    DirectoryOrganizationRow,
-    DirectoryPersonRow,
     DirectoryQueue,
     DirectoryRelationshipRow,
 } from '../data/directory-types';
@@ -28,13 +20,13 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 /**
  * Directory home — is the party file complete, and what needs a person?
  *
- * Every figure is a cheap count over rows already loaded. No on-demand
- * aggregate. Queues sit above the trend because they are what someone acts on.
+ * Headline counts come from MJ Query `Common: Directory Dashboard Summary`
+ * (COUNT over the whole party file). RunView MaxRows must not feed these tiles.
  */
 @Component({
     selector: 'bizapps-common-dashboard-page',
     standalone: true,
-    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent],
+    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule],
     template: `
         <div class="mjc-dash">
             <div class="mjc-hero">
@@ -160,27 +152,18 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                             <h2>Latest people</h2>
                             <button type="button" class="mjc-link" (click)="OpenPeople()">All people →</button>
                         </header>
-                        <div class="mjc-table-wrap">
-                            <table class="mjc-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Organization</th>
-                                        <th>Email</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (person of LatestPeople; track person.ID) {
-                                        <tr (click)="OpenPerson(person.ID)">
-                                            <td>{{ person.DisplayName }}</td>
-                                            <td>{{ person.CurrentOrganizationName || '—' }}</td>
-                                            <td>{{ emailOf(person) || '—' }}</td>
-                                        </tr>
-                                    } @empty {
-                                        <tr><td colspan="3" class="mjc-muted">No people yet.</td></tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <div class="mjc-viewer-host">
+                            @if (PersonEntity && LatestPeopleView) {
+                                <mj-entity-viewer
+                                    [Entity]="PersonEntity"
+                                    [ViewEntity]="LatestPeopleView"
+                                    [ShowRecycleBin]="false"
+                                    [Config]="PeekViewerConfig"
+                                    (RecordOpened)="OnPersonOpened($event)">
+                                </mj-entity-viewer>
+                            } @else {
+                                <p class="mjc-muted">No people yet.</p>
+                            }
                         </div>
                     </section>
 
@@ -206,36 +189,25 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                     </section>
                 </div>
 
-                @if (LatestRelationships.length) {
-                    <section class="mjc-card">
-                        <header class="mjc-card__head">
-                            <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
-                            <h2>Latest relationships</h2>
-                        </header>
-                        <div class="mjc-table-wrap">
-                            <table class="mjc-table">
-                                <thead>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>From</th>
-                                        <th></th>
-                                        <th>To</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (rel of LatestRelationships; track rel.ID) {
-                                        <tr (click)="OpenRelationship(rel)">
-                                            <td>{{ rel.Title || rel.RelationshipType }}</td>
-                                            <td>{{ rel.FromPerson || rel.FromOrganization || '—' }}</td>
-                                            <td class="mjc-muted">→</td>
-                                            <td>{{ rel.ToPerson || rel.ToOrganization || '—' }}</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                }
+                <section class="mjc-card">
+                    <header class="mjc-card__head">
+                        <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+                        <h2>Latest relationships</h2>
+                    </header>
+                    <div class="mjc-viewer-host">
+                        @if (RelationshipEntity && LatestRelationshipsView) {
+                            <mj-entity-viewer
+                                [Entity]="RelationshipEntity"
+                                [ViewEntity]="LatestRelationshipsView"
+                                [ShowRecycleBin]="false"
+                                [Config]="PeekViewerConfig"
+                                (RecordOpened)="OnRelationshipOpened($event)">
+                            </mj-entity-viewer>
+                        } @else {
+                            <p class="mjc-muted">No relationships yet.</p>
+                        }
+                    </div>
+                </section>
             }
         </div>
     `,
@@ -536,6 +508,10 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 color: var(--mj-text-muted);
                 font-size: 0.8125rem;
             }
+            .mjc-viewer-host {
+                height: 280px;
+                min-height: 220px;
+            }
             @media (max-width: 1200px) {
                 .mjc-tiles {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -561,12 +537,17 @@ export class CommonDashboardPageComponent implements OnInit {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly navigation = inject(NavigationService, { optional: true });
 
+    /** Peek cards: no Filter records / Search / pager. Grid toolbar seeded off by entity-viewer. */
+    public readonly PeekViewerConfig: Partial<EntityViewerConfig> = { chrome: 'embedded' };
+
     public IsLoading = true;
     public Queues: DirectoryQueue[] = [];
     public PeoplePerDay: DirectoryDayBar[] = [];
     public OrganizationTypeMix: DirectoryBarRow[] = [];
-    public LatestPeople: DirectoryPersonRow[] = [];
-    public LatestRelationships: DirectoryRelationshipRow[] = [];
+    public PersonEntity: EntityInfo | null = null;
+    public RelationshipEntity: EntityInfo | null = null;
+    public LatestPeopleView: MJUserViewEntityExtended | null = null;
+    public LatestRelationshipsView: MJUserViewEntityExtended | null = null;
     public WorthALook: DirectoryAttentionItem[] = [];
     public ActivePeopleCount = 0;
     public ActiveOrganizationCount = 0;
@@ -576,41 +557,33 @@ export class CommonDashboardPageComponent implements OnInit {
     public OrganizationDetail = '';
 
     public async ngOnInit(): Promise<void> {
-        const snapshot = await LoadDirectorySnapshot();
-        this.applySnapshot(snapshot.People, snapshot.Organizations, snapshot.Relationships);
+        const [summary, peopleView, relView] = await Promise.all([
+            LoadDirectoryDashboardSummary(),
+            LoadLatestPeopleView(),
+            LoadLatestRelationshipsView(),
+        ]);
+        if (summary) {
+            this.ActivePeopleCount = summary.ActivePeopleCount;
+            this.ActiveOrganizationCount = summary.ActiveOrganizationCount;
+            this.RelationshipCount = summary.RelationshipCount;
+            this.PeopleDetail = summary.TotalPeopleCount === summary.ActivePeopleCount
+                ? 'Everyone currently on file'
+                : `${summary.TotalPeopleCount} total, including inactive`;
+            this.OrganizationDetail = summary.TotalOrganizationCount === summary.ActiveOrganizationCount
+                ? 'Active organizations'
+                : `${summary.TotalOrganizationCount} total, including inactive`;
+            this.Queues = summary.Queues;
+            this.GapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
+            this.PeoplePerDay = summary.PeoplePerDay;
+            this.OrganizationTypeMix = summary.OrganizationTypeMix;
+            this.WorthALook = summary.WorthALook;
+        }
+        this.PersonEntity = peopleView.entity;
+        this.LatestPeopleView = peopleView.view;
+        this.RelationshipEntity = relView.entity;
+        this.LatestRelationshipsView = relView.view;
         this.IsLoading = false;
         this.cdr.detectChanges();
-    }
-
-    private applySnapshot(
-        people: DirectoryPersonRow[],
-        orgs: DirectoryOrganizationRow[],
-        relationships: DirectoryRelationshipRow[],
-    ): void {
-        const activePeople = ActivePeople(people);
-        const activeOrgs = ActiveOrganizations(orgs);
-        this.ActivePeopleCount = activePeople.length;
-        this.ActiveOrganizationCount = activeOrgs.length;
-        this.RelationshipCount = relationships.length;
-        this.PeopleDetail = people.length === activePeople.length
-            ? 'Everyone currently on file'
-            : `${people.length} total, including inactive`;
-        this.OrganizationDetail = orgs.length === activeOrgs.length
-            ? 'Active organizations'
-            : `${orgs.length} total, including inactive`;
-        this.Queues = BuildDirectoryQueues(people, orgs);
-        this.GapCount = this.Queues.reduce((sum, queue) => sum + queue.Count, 0);
-        this.PeoplePerDay = CountByDay(people);
-        this.OrganizationTypeMix = CountByLabel(
-            orgs.map((org) => ({ Label: org.OrganizationType || 'Unspecified' })),
-        );
-        this.LatestPeople = LatestByCreated(people);
-        this.LatestRelationships = LatestByCreated(relationships, 6);
-        this.WorthALook = BuildAttentionItems(people, orgs);
-    }
-
-    public emailOf(person: DirectoryPersonRow): string | null {
-        return PersonEmail(person);
     }
 
     public barHeight(bar: DirectoryDayBar): number {
@@ -646,6 +619,16 @@ export class CommonDashboardPageComponent implements OnInit {
 
     public OpenPerson(id: string): void {
         OpenCommonRecord(COMMON_ENTITIES.Person, id);
+    }
+
+    public OnPersonOpened(event: RecordOpenedEvent): void {
+        const id = (event.compositeKey?.GetValueByFieldName('ID') ?? event.record?.['ID']) as string | undefined;
+        this.OpenPerson(id ?? '');
+    }
+
+    public OnRelationshipOpened(event: RecordOpenedEvent): void {
+        const id = (event.compositeKey?.GetValueByFieldName('ID') ?? event.record?.['ID']) as string | undefined;
+        OpenCommonRecord(COMMON_ENTITIES.Relationship, id);
     }
 
     public OpenAttention(item: DirectoryAttentionItem): void {

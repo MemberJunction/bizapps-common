@@ -61,6 +61,22 @@
             "lastModified": "2026-05-14T15:55:52.299Z",
             "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
           }
+        },
+        {
+          "_comments": [
+            "PhotoURL is an Image (HTTP URL or inline data URI). Pin AutoUpdateExtendedType=0 so CodeGen cannot flip it back to URL."
+          ],
+          "fields": {
+            "ExtendedType": "Image",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PhotoURL&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.894Z",
+            "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
+          }
         }
       ]
     },
@@ -87,12 +103,127 @@
         }
       }
     },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "LogoURL is an Image (HTTP URL or inline data URI). Pin AutoUpdateExtendedType=0 so CodeGen cannot flip it back to URL."
+          ],
+          "fields": {
+            "ExtendedType": "Image",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LogoURL&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.831Z",
+            "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
+          }
+        },
+        {
+          "_comments": [
+            "Virtual display coords from the primary Address (layered vwOrganizations).",
+            "Not writable — GeoCodeSyncService must not run on Organizations.",
+            "Pin AutoUpdateExtendedType=0 so CodeGen cannot strip the GeoLatitude tag."
+          ],
+          "fields": {
+            "ExtendedType": "GeoLatitude",
+            "AutoUpdateExtendedType": false,
+            "AllowUpdateAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PrimaryAddressLatitude&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:08:15.502Z",
+            "checksum": "ffab319905b3f9f12d005599062724a6e38c6deac07830a930dc0710c44d3723"
+          }
+        },
+        {
+          "_comments": [
+            "Virtual display coords from the primary Address (layered vwOrganizations).",
+            "Pin AutoUpdateExtendedType=0 so CodeGen cannot strip the GeoLongitude tag."
+          ],
+          "fields": {
+            "ExtendedType": "GeoLongitude",
+            "AutoUpdateExtendedType": false,
+            "AllowUpdateAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PrimaryAddressLongitude&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:08:15.529Z",
+            "checksum": "cbf8700d9dc30460cce4f3d2a7003b85310b1fc74f009da79ea9079e91c47d85"
+          }
+        }
+      ]
+    },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
       "lastModified": "2026-09-02T04:04:09.803Z",
       "checksum": "4588ca1a5f9bd7f494e231885f279173474c14064d7d7b9c90c575148dbc677b"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Addresses"
+    },
+    "fields": {
+      "SupportsGeoCoding": true,
+      "Configuration": {
+        "UI": {
+          "Form": {
+            "Layout": "left-nav",
+            "RelatedRolePolicy": "smart",
+            "PrimaryRelatedBudget": 6
+          }
+        }
+      }
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "Address is the geo WRITE source. Native Latitude is GeoLatitude, not generic Geo.",
+            "Pin AutoUpdateExtendedType=0 so CodeGen cannot flip it back to Geo."
+          ],
+          "fields": {
+            "ExtendedType": "GeoLatitude",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Latitude&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.871Z",
+            "checksum": "b57c3c6dae60fe7232d06d8202877bb8fc6d09ad42c0bb9796c0f50e563c6896"
+          }
+        },
+        {
+          "_comments": [
+            "Native Longitude is GeoLongitude. Pin AutoUpdateExtendedType=0."
+          ],
+          "fields": {
+            "ExtendedType": "GeoLongitude",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Longitude&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-07T14:18:30.914Z",
+            "checksum": "e9b84a9980343249386f924a17c12b9e64844aefa5b090f118bc27e35faeb440"
+          }
+        }
+      ]
+    },
+    "sync": {
+      "lastModified": "2026-09-07T14:18:30.702Z",
+      "checksum": "ad5c34b3c52e0f3f11a5924fa2fb931d7cae71724a5adbc395eff1e941fb5b66"
     }
   },
   {
