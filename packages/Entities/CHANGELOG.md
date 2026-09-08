@@ -1,5 +1,17 @@
 # Change Log - mj_generatedentities
 
+## 5.40.0
+
+### Minor Changes
+
+- e21b2db: Address is the geo write source (`SupportsGeoCoding=1`, Latitude/Longitude tagged GeoLatitude/GeoLongitude). Organizations layered view bubbles PrimaryAddressLatitude/Longitude (virtual display fields) like People. GeoCodeSyncService does not run on Person/Org (no writable Geo\*).
+- b4387e4: Widen Person.PhotoURL and Organization.LogoURL to NVARCHAR(MAX) (DDL) and fold scoped CodeGen emit (`includeSchemas: __mj_BizAppsCommon`) for views, CRUD procs, and generated TS/HTML (loom #12 WP1).
+- 22f6624: Widen Person.PhotoURL and Organization.LogoURL to NVARCHAR(MAX) so illustrated avatars and logos can be stored as inline data URIs (loom #12 WP1).
+
+### Patch Changes
+
+- dc7693c: Replay-safe PhotoURL/LogoURL NVARCHAR(MAX) migration: DDL only, then inlined R\_\_RefreshMetadata, then CodeGen emit authored while EntityField.Length still showed the old size so Person/Org CRUD procs pick up MAX.
+
 ## 5.39.0
 
 ### Patch Changes

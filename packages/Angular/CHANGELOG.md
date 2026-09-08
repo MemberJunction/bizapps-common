@@ -1,5 +1,21 @@
 # @mj-biz-apps/common-ng
 
+## 5.40.0
+
+### Minor Changes
+
+- 06ea2b3: Directory dashboard Latest People / Latest Relationships and the People and Organizations resources use `mj-entity-viewer` bound to stored User Views (`Common: People directory`, `Common: Latest people`, `Common: Organizations directory`, `Common: Latest relationships`) with PhotoURL / LogoURL in GridState.
+
+### Patch Changes
+
+- 5994721: Directory dashboard tiles use MJ Query Common: Directory Dashboard Summary (COUNT over the whole party file) instead of counting a RunView MaxRows=1000 snapshot. Latest people/relationships viewers use entity-viewer chrome: embedded so Filter records and the extra grid Search box are gone.
+- cd879e6: Classify People.PhotoURL and Organizations.LogoURL as EntityField.ExtendedType=Image and lock AutoUpdateExtendedType so CodeGen cannot revert them to URL. mj-entity-viewer and ng-base-forms then render thumbnails / image upload from metadata.
+- Updated dependencies [e21b2db]
+- Updated dependencies [b4387e4]
+- Updated dependencies [dc7693c]
+- Updated dependencies [22f6624]
+  - @mj-biz-apps/common-entities@5.40.0
+
 ## 5.39.0
 
 ### Patch Changes

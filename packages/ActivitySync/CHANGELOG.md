@@ -1,5 +1,96 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.40.0
+
+### Minor Changes
+
+- de47552: Activity Sync — an exclusion could not be switched off, and one dated to lapse never lapsed.
+
+  `ActivitySyncExclusion` carries `IsEnabled`, `EffectiveFrom` and `EffectiveTo`. The qualification
+  cascade read none of the three. Same shape as the `CredentialsRef` and `InternalDomains` gaps:
+  columns written, migrated, documented, and consumed by nothing.
+
+  Two independent failures, both silent:
+
+  | set by an operator            | intended                    | what actually happened                |
+  | ----------------------------- | --------------------------- | ------------------------------------- |
+  | `IsEnabled = 0`               | stop excluding this address | kept excluding, indefinitely          |
+  | `EffectiveTo` in the past     | the exclusion lapses        | never lapsed                          |
+  | `EffectiveFrom` in the future | starts excluding later      | excluded from the moment it was saved |
+
+  None of it is visible from the outside. The run reports success, `ActivitySyncRunDetail` records the
+  exclusion as matched, and the only symptom is mail that quietly never arrives — typically noticed
+  months after whoever set the date stopped watching for it. Rules honoured their own `IsEnabled` from
+  the first commit, so the two halves of one cascade disagreed about whether an off switch meant
+  anything.
+
+  **The window is matched against the item, not the wall clock.** `RuleRow.DateFrom`/`DateTo` are
+  already compared against `item.StartedAt` one stage later in the same cascade. Had an exclusion's
+  window meant "while this record is in force" instead, the same two dates would mean different things
+  one stage apart — a trap for whoever writes the second rule set. Item time also keeps a re-run
+  reproducible: `ActivitySyncRunDetail` exists to answer "which rule ate my message", and an answer
+  that moves with the clock is a narrative rather than evidence.
+
+  **Absence reads as enabled.** A row that does not carry `IsEnabled` still excludes. An exclusion
+  exists to stop something being ingested, so the missing-flag case has to fail in the direction that
+  keeps it stopped.
+
+  **The check lives in memory, not in `ExclusionsExtraFilter`.** One place decides, matching how rules
+  are handled — a SQL half and a TypeScript half would be two places to keep in agreement.
+
+  `ExclusionAppliesTo` is a pure exported function, so the three ways an exclusion can fail to apply
+  are testable without standing up a cascade. 16 tests, each mutation-checked (M-AC31–M-AC38): dropping
+  either bound, dropping the enabled check, reading absence as off, making either boundary exclusive,
+  abandoning the cascade instead of skipping one lapsed row, and judging by run time instead of item
+  time are all caught.
+
+- de47552: Activity Sync — deactivating a provider type did nothing, and no test file was ever typechecked.
+
+  `ActivitySyncProviderType.IsActive` had no reader anywhere: not on `ProviderTypeRow`, not in
+  `loadProviderType`'s `Fields` list, not in the run path. An administrator switching a connector type
+  off changed nothing — every connection pointing at it kept fetching mail and kept reporting success.
+
+  **It refuses rather than skipping quietly.** A connection that stops syncing while still showing
+  green is the failure this subsystem exists to make impossible, so an inactive type produces an issue
+  naming the type and lands in the connection's health stamp. It follows the shape already set by
+  "Connection X is not in its Active window" directly above it. The refusal is taken before any
+  provider is resolved and before any fetch, so it cannot be reached only through a driver lookup
+  failure, and no mailbox is read on the way to it.
+
+  **What an operator will see when they switch a type off.** Every connection using it reports the
+  refusal on the next fleet tick, so each flips to `Status = 'Error'` with the reason in `LastError`.
+  That is the existing behaviour for any failed run, not something new here, and it is self-healing:
+  errored connections are still selected by the fleet query, so the next successful run after the type
+  is reactivated clears `LastError` and returns them to `Active` with no manual step.
+
+  **Absence keeps running.** The comparison is `=== false`, so a row loaded without the field still
+  syncs. Absence means the query did not ask for the column, and turning one trimmed `Fields` list into
+  a silent total halt of every sync is a worse failure than the one being guarded against. SQL `BIT`
+  arrives through `RunView` as a real JS boolean — measured against the database rather than assumed —
+  so the strict comparison is safe.
+
+  **The trap that caused it is now a test.** A field declared on `ProviderTypeRow` but absent from the
+  `Fields` list is `undefined` at runtime, so any check written against it silently never fires. That
+  is exactly how `IsActive` came to be ignored. The existing `SELECT *` tripwire now pins the interface
+  and the field list to each other and fails until a new column is added to both.
+
+  **Separately: the test suite was never typechecked.** `tsconfig.json` excludes
+  `src/**/__tests__/**` so test files never reach `dist` — correct for a published package — but
+  nothing else checked them either, and vitest transpiles through esbuild without typechecking. Six
+  errors were sitting in the suite, including a test constructing an `ExclusionRow` missing three
+  required fields. A `noEmit` config now covers everything, and `pnpm test` runs it before vitest,
+  which is the only hook available: CI runs `build`, `changes` and `publish`, and never the tests.
+
+  11 mutants added to the package harness (M-AC31–M-AC41); all 27 pass.
+
+### Patch Changes
+
+- Updated dependencies [e21b2db]
+- Updated dependencies [b4387e4]
+- Updated dependencies [dc7693c]
+- Updated dependencies [22f6624]
+  - @mj-biz-apps/common-entities@5.40.0
+
 ## 5.39.0
 
 ### Minor Changes
