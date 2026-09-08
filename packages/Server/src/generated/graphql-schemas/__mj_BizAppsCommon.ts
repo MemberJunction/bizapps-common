@@ -4487,12 +4487,6 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(255)
     Parent?: string;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(36)
     RootParentID?: string;
@@ -4538,6 +4532,12 @@ export class mjBizAppsCommonOrganization_ {
         
     @Field(() => Float, {nullable: true}) 
     PrimaryAddressLongitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
         
     @Field({nullable: true}) 
     @MaxLength(100)
@@ -4825,12 +4825,6 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(100)
     LinkedUser?: string;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(255)
     PrimaryAddressLine1?: string;
@@ -4860,6 +4854,12 @@ export class mjBizAppsCommonPerson_ {
         
     @Field(() => Float, {nullable: true}) 
     PrimaryAddressLongitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
         
     @Field({nullable: true}) 
     @MaxLength(100)
