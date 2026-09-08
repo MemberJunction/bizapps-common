@@ -538,7 +538,12 @@ export class CommonDashboardPageComponent implements OnInit {
     private readonly navigation = inject(NavigationService, { optional: true });
 
     /** Peek cards: no Filter records / Search / pager. Grid toolbar seeded off by entity-viewer. */
-    public readonly PeekViewerConfig: Partial<EntityViewerConfig> = { chrome: 'embedded' };
+    public readonly PeekViewerConfig: Partial<EntityViewerConfig> = {
+        showFilter: false,
+        showPagination: false,
+        showRecordCount: false,
+        showViewModeToggle: false,
+    };
 
     public IsLoading = true;
     public Queues: DirectoryQueue[] = [];

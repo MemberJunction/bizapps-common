@@ -6,8 +6,6 @@ import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { EntityViewerModule, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
-import { SearchOrganizations } from '../data/directory-queries';
-import { EscapeLikeValue } from '../data/directory-stats';
 import type { DirectoryOrganizationRow } from '../data/directory-types';
 import { LoadOrganizationsDirectoryView } from '../data/directory-views';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
@@ -87,18 +85,5 @@ export class CommonOrganizationsPageComponent implements OnInit {
 
     public NewOrganization(): void {
         OpenNewCommonRecord(COMMON_ENTITIES.Organization);
-    }
-
-    private async reload(): Promise<void> {
-        const term = this.Search.trim();
-        const filter = term ? this.buildFilter(term) : undefined;
-        this.Organizations = await SearchOrganizations(filter);
-        this.EmptyText = term ? `No organizations match “${term}”.` : 'No organizations yet.';
-        this.cdr.detectChanges();
-    }
-
-    private buildFilter(term: string): string {
-        const escaped = EscapeLikeValue(term);
-        return `(Name LIKE '%${escaped}%' OR OrganizationType LIKE '%${escaped}%' OR Website LIKE '%${escaped}%')`;
     }
 }

@@ -6,8 +6,7 @@ import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { EntityViewerModule, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { COMMON_ENTITIES } from '../data/entity-names';
-import { SearchPeople } from '../data/directory-queries';
-import { EscapeLikeValue, PersonEmail, PersonPhone } from '../data/directory-stats';
+import { PersonEmail, PersonPhone } from '../data/directory-stats';
 import type { DirectoryPersonRow } from '../data/directory-types';
 import { LoadPeopleDirectoryView } from '../data/directory-views';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
@@ -87,18 +86,5 @@ export class CommonPeoplePageComponent implements OnInit {
 
     public NewPerson(): void {
         OpenNewCommonRecord(COMMON_ENTITIES.Person);
-    }
-
-    private async reload(): Promise<void> {
-        const term = this.Search.trim();
-        const filter = term ? this.buildFilter(term) : undefined;
-        this.People = await SearchPeople(filter);
-        this.EmptyText = term ? `No people match “${term}”.` : 'No people yet.';
-        this.cdr.detectChanges();
-    }
-
-    private buildFilter(term: string): string {
-        const escaped = EscapeLikeValue(term);
-        return `(DisplayName LIKE '%${escaped}%' OR Email LIKE '%${escaped}%' OR PrimaryEmail LIKE '%${escaped}%' OR CurrentOrganizationName LIKE '%${escaped}%')`;
     }
 }
