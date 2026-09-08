@@ -43,7 +43,7 @@ describe('ActivityWriter', () => {
             GetEntityObject: async () => {
                 throw new Error('should not write');
             },
-        } as IMetadataProvider;
+        } as unknown as IMetadataProvider;
         const result = await writer.Write(
             {
                 Item: ITEM,
