@@ -1,0 +1,103 @@
+[
+  {
+    "_comments": [
+      "People already show First/Last/Title/Email/Status. Add org + phone for directory scans.",
+      "PhotoURL stays off the grid (URL column); the form hero uses it.",
+      "Activity Files / Links / Relationships were Name-less so Explorer showed no useful columns."
+    ],
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=CurrentOrganizationName"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:41.950Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=PrimaryPhone"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:41.919Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=FromPerson"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:41.976Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=ToPerson"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:42.001Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activity Files&Name=Kind"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:42.025Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activity Files&Name=Sequence"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:42.051Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activity Links&Name=Role"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:42.078Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  },
+  {
+    "fields": {
+      "DefaultInView": true
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activity Links&Name=Entity"
+    },
+    "sync": {
+      "lastModified": "2026-09-02T01:02:42.098Z",
+      "checksum": "3980a054b5d6fcb2805ae6a0b030e114ef8da0fb49036cc2ea1cd1b3823228cd"
+    }
+  }
+]

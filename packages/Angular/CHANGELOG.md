@@ -1,5 +1,81 @@
 # @mj-biz-apps/common-ng
 
+## 5.40.0
+
+### Minor Changes
+
+- 06ea2b3: Directory dashboard Latest People / Latest Relationships and the People and Organizations resources use `mj-entity-viewer` bound to stored User Views (`Common: People directory`, `Common: Latest people`, `Common: Organizations directory`, `Common: Latest relationships`) with PhotoURL / LogoURL in GridState.
+
+### Patch Changes
+
+- 5994721: Directory dashboard tiles use MJ Query Common: Directory Dashboard Summary (COUNT over the whole party file) instead of counting a RunView MaxRows=1000 snapshot. Latest people/relationships viewers use entity-viewer chrome: embedded so Filter records and the extra grid Search box are gone.
+- cd879e6: Classify People.PhotoURL and Organizations.LogoURL as EntityField.ExtendedType=Image and lock AutoUpdateExtendedType so CodeGen cannot revert them to URL. mj-entity-viewer and ng-base-forms then render thumbnails / image upload from metadata.
+- Updated dependencies [e21b2db]
+- Updated dependencies [b4387e4]
+- Updated dependencies [dc7693c]
+- Updated dependencies [22f6624]
+  - @mj-biz-apps/common-entities@5.40.0
+
+## 5.39.0
+
+### Patch Changes
+
+- 7887d5d: License declarations now agree on BUSL-1.1 everywhere.
+
+  `LICENSE`, `package.json`, `mj-app.json` and every workspace package already declared
+  BUSL-1.1. Two statements still said ISC: the README badge, which is the first license
+  statement a reader meets and so outranked all of them in practice, and the `mj-app.json`
+  sample in `docs/open-app.md` — this repo is the reference Open App, so that snippet is
+  copied into new repos and is how the wrong value spreads. The badge now links to `LICENSE`.
+
+- Updated dependencies [7887d5d]
+  - @mj-biz-apps/common-entities@5.39.0
+
+## 5.38.0
+
+### Patch Changes
+
+- Updated dependencies [4c27078]
+- Updated dependencies [4c27078]
+  - @mj-biz-apps/common-entities@5.38.0
+
+## 5.37.0
+
+### Minor Changes
+
+- d73a3af: Activity Sync Engine P2 — CodeGen objects folded into the schema V, plus provider-type seeds.
+
+  Entity metadata, views, and CRUD for the seven new Activity Sync tables append under the
+  banner in `V202608291500` (one migration for the whole schema; no standalone CodeGen V).
+  Seeds Microsoft365, Gmail, Zoom, and Generic as metadata, with
+  `DefaultQualificationPolicy=Exclude` on mailbox-shaped types.
+
+- d73a3af: Fold CodeGen output for ActivitySyncProviderType.CalendarDriverClass into V202608301900.
+
+  Hand DDL is the ALTER TABLE only. Microsoft365's CalendarDriverClass value stays in
+  metadata JSON. CodeGen SQL (EntityField, view, spCreate/spUpdate/spDelete, trigger)
+  is appended after the standard banner.
+
+### Patch Changes
+
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+  - @mj-biz-apps/common-entities@5.37.0
+
+## 5.36.0
+
+### Minor Changes
+
+- 60804ac: Ship CodeGen entity metadata, base views, and CRUD procedures for the six Activity tables introduced in V202608171935. A clean migrate previously left those tables without \_\_mj.Entity rows, so metadata sync of activity-types failed.
+- 6fe1f09: Register the Activity related-name virtual EntityFields on Activity Links and Activity Files so save-capture ResultTables match the base views. Also covers the consumer-blind CodeGen V (no Orders in Common), Organizations CascadeDeletes off, and Activity Types hierarchy virtuals.
+
+### Patch Changes
+
+- Updated dependencies [60804ac]
+- Updated dependencies [6fe1f09]
+  - @mj-biz-apps/common-entities@5.36.0
+
 ## 5.35.1
 
 ### Patch Changes

@@ -1,5 +1,74 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.40.0
+
+### Patch Changes
+
+- Updated dependencies [de47552]
+- Updated dependencies [de47552]
+- Updated dependencies [e21b2db]
+- Updated dependencies [b4387e4]
+- Updated dependencies [dc7693c]
+- Updated dependencies [22f6624]
+  - @mj-biz-apps/common-activity-sync@5.40.0
+  - @mj-biz-apps/common-entities@5.40.0
+
+## 5.39.0
+
+### Patch Changes
+
+- 7887d5d: License declarations now agree on BUSL-1.1 everywhere.
+
+  `LICENSE`, `package.json`, `mj-app.json` and every workspace package already declared
+  BUSL-1.1. Two statements still said ISC: the README badge, which is the first license
+  statement a reader meets and so outranked all of them in practice, and the `mj-app.json`
+  sample in `docs/open-app.md` — this repo is the reference Open App, so that snippet is
+  copied into new repos and is how the wrong value spreads. The badge now links to `LICENSE`.
+
+- Updated dependencies [8657091]
+- Updated dependencies [b6b2b64]
+- Updated dependencies [7887d5d]
+  - @mj-biz-apps/common-activity-sync@5.39.0
+  - @mj-biz-apps/common-entities@5.39.0
+
+## 5.38.0
+
+### Patch Changes
+
+- Updated dependencies [4c27078]
+- Updated dependencies [4c27078]
+  - @mj-biz-apps/common-entities@5.38.0
+  - @mj-biz-apps/common-activity-sync@5.38.0
+
+## 5.37.0
+
+### Minor Changes
+
+- d73a3af: Activity Sync Engine P4/P5 — engine, writer, identity resolver, fixture and Graph providers.
+
+  Graph refuses live fetch until an Exchange Application Access Policy exists. Synced
+  activities are Visibility=Private. Unmatched addresses become unresolved ActivityLinks.
+  Dry runs never set WatermarkAfter. Exclusions run first and are absolute.
+
+### Patch Changes
+
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+  - @mj-biz-apps/common-entities@5.37.0
+  - @mj-biz-apps/common-activity-sync@5.37.0
+
+## 5.36.0
+
+### Patch Changes
+
+- Updated dependencies [60804ac]
+- Updated dependencies [6fe1f09]
+  - @mj-biz-apps/common-entities@5.36.0
+
 ## 5.35.1
 
 ### Patch Changes

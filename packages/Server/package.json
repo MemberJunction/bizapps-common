@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-server",
   "type": "module",
-  "version": "5.35.1",
+  "version": "5.40.0",
   "description": "BizApps Common server bootstrap - GraphQL resolvers and class registrations for the Common business entities Open App",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,24 +13,30 @@
   ],
   "scripts": {
     "build": "tsc && tsc-alias -f",
-    "test": "echo \"No tests configured yet\""
+    "test": "vitest run"
   },
   "author": "MemberJunction.com",
   "license": "BUSL-1.1",
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@mj-biz-apps/common-core-entities-server": "5.35.1",
-    "@mj-biz-apps/common-entities": "5.35.1",
-    "@mj-biz-apps/common-actions": "5.35.1",
+    "@mj-biz-apps/common-activity-sync": "5.40.0",
+    "@mj-biz-apps/common-core-entities-server": "5.40.0",
+    "@mj-biz-apps/common-entities": "5.40.0",
+    "@mj-biz-apps/common-actions": "5.40.0",
     "class-validator": "^0.14.3"
   },
   "peerDependencies": {
-    "@memberjunction/core": "^6.1.0-edge.3",
-    "@memberjunction/global": "^6.1.0-edge.3",
-    "@memberjunction/server": "^6.1.0-edge.3",
-    "@memberjunction/sqlserver-dataprovider": "^6.1.0-edge.3"
+    "@memberjunction/actions": "^6.1.0-edge.5",
+    "@memberjunction/actions-base": "^6.1.0-edge.5",
+    "@memberjunction/communication-types": "^6.1.0-edge.5",
+    "@memberjunction/core": "^6.1.0-edge.5",
+    "@memberjunction/credentials": "^6.1.0-edge.5",
+    "@memberjunction/global": "^6.1.0-edge.5",
+    "@memberjunction/server": "^6.1.0-edge.5",
+    "@memberjunction/sqlserver-dataprovider": "^6.1.0-edge.5"
   },
   "repository": {
     "type": "git",

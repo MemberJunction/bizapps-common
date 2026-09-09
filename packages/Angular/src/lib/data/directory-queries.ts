@@ -1,6 +1,160 @@
-import { RunView } from '@memberjunction/core';
+import { LogError, RunQuery, RunView } from '@memberjunction/core';
 import { COMMON_ENTITIES } from './entity-names';
-import type { DirectoryOrganizationRow, DirectoryPersonRow, DirectoryRelationshipRow } from './directory-types';
+import type {
+    DirectoryAttentionItem,
+    DirectoryBarRow,
+    DirectoryDayBar,
+    DirectoryOrganizationRow,
+    DirectoryPersonRow,
+    DirectoryQueue,
+    DirectoryRelationshipRow,
+} from './directory-types';
+
+const DIRECTORY_SUMMARY_QUERY = 'Common: Directory Dashboard Summary';
+const DIRECTORY_SUMMARY_CATEGORY = 'Common';
+
+export interface DirectoryDashboardSummary {
+    ActivePeopleCount: number;
+    TotalPeopleCount: number;
+    ActiveOrganizationCount: number;
+    TotalOrganizationCount: number;
+    RelationshipCount: number;
+    PeopleMissingEmail: number;
+    PeopleMissingOrganization: number;
+    OrganizationsMissingType: number;
+    OrganizationsMissingWebsite: number;
+    PeoplePerDay: DirectoryDayBar[];
+    OrganizationTypeMix: DirectoryBarRow[];
+    WorthALook: DirectoryAttentionItem[];
+    Queues: DirectoryQueue[];
+}
+
+function num(v: unknown): number {
+    return v === null || v === undefined || v === '' ? 0 : Number(v);
+}
+
+function str(v: unknown): string | null {
+    if (v === null || v === undefined) return null;
+    const s = String(v).trim();
+    return s.length ? s : null;
+}
+
+function weekdayUtc(daysAgo: number): string {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - daysAgo);
+    return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+}
+
+export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboardSummary | null> {
+    const result = await new RunQuery().RunQuery({
+        QueryName: DIRECTORY_SUMMARY_QUERY,
+        CategoryPath: DIRECTORY_SUMMARY_CATEGORY,
+    });
+    if (!result?.Success) {
+        LogError(`Common: Directory Dashboard Summary failed — ${result?.ErrorMessage ?? 'unknown error'}`);
+        return null;
+    }
+    const row = (result.Results ?? [])[0] as Record<string, unknown> | undefined;
+    if (!row) {
+        return null;
+    }
+
+    const queues: DirectoryQueue[] = [
+        {
+            Label: 'People without email',
+            Note: 'Hard to reach, and every other app asks for it',
+            Count: num(row['PeopleMissingEmail']),
+            Icon: 'fa-solid fa-envelope',
+            Tone: 'warning',
+            PageId: 'people',
+        },
+        {
+            Label: 'People without an organization',
+            Note: 'Not linked to a current employer or member org',
+            Count: num(row['PeopleMissingOrganization']),
+            Icon: 'fa-solid fa-building-user',
+            Tone: 'info',
+            PageId: 'people',
+        },
+        {
+            Label: 'Organizations without a type',
+            Note: 'Company, chapter, vendor — the directory cannot sort them',
+            Count: num(row['OrganizationsMissingType']),
+            Icon: 'fa-solid fa-tags',
+            Tone: 'warning',
+            PageId: 'organizations',
+        },
+        {
+            Label: 'Organizations without a website',
+            Note: 'The first thing a person looks up',
+            Count: num(row['OrganizationsMissingWebsite']),
+            Icon: 'fa-solid fa-globe',
+            Tone: 'neutral',
+            PageId: 'organizations',
+        },
+    ];
+
+    const mixRaw = str(row['OrgTypeMixJson']);
+    let mix: DirectoryBarRow[] = [];
+    if (mixRaw) {
+        try {
+            const parsed = JSON.parse(mixRaw) as Array<{ Label?: string; Value?: number }>;
+            mix = parsed
+                .map((item) => ({ Label: item.Label || 'Unspecified', Value: num(item.Value) }))
+                .sort((a, b) => b.Value - a.Value);
+        } catch (e) {
+            LogError(`Common: Directory Dashboard Summary OrgTypeMixJson parse failed — ${e}`);
+        }
+    }
+
+    const worth: DirectoryAttentionItem[] = [];
+    const emailId = str(row['AttentionEmailPersonID']);
+    if (emailId && num(row['PeopleMissingEmail']) > 0) {
+        const name = str(row['AttentionEmailName']) || 'Someone';
+        const org = str(row['AttentionEmailOrg']);
+        worth.push({
+            Kind: 'person',
+            RecordID: emailId,
+            Tone: 'warning',
+            Icon: 'fa-solid fa-envelope',
+            Headline: `${name} has no email.`,
+            Detail: org ? `Active at ${org}.` : 'No organization on file either.',
+        });
+    }
+    const typeId = str(row['AttentionTypeOrgID']);
+    if (typeId && num(row['OrganizationsMissingType']) > 0) {
+        const name = str(row['AttentionTypeOrgName']) || 'An organization';
+        const site = str(row['AttentionTypeWebsite']);
+        worth.push({
+            Kind: 'organization',
+            RecordID: typeId,
+            Tone: 'warning',
+            Icon: 'fa-solid fa-tags',
+            Headline: `${name} has no organization type.`,
+            Detail: site ? site : 'No website on file either.',
+        });
+    }
+
+    return {
+        ActivePeopleCount: num(row['ActivePeople']),
+        TotalPeopleCount: num(row['TotalPeople']),
+        ActiveOrganizationCount: num(row['ActiveOrganizations']),
+        TotalOrganizationCount: num(row['TotalOrganizations']),
+        RelationshipCount: num(row['RelationshipCount']),
+        PeopleMissingEmail: num(row['PeopleMissingEmail']),
+        PeopleMissingOrganization: num(row['PeopleMissingOrganization']),
+        OrganizationsMissingType: num(row['OrganizationsMissingType']),
+        OrganizationsMissingWebsite: num(row['OrganizationsMissingWebsite']),
+        PeoplePerDay: [6, 5, 4, 3, 2, 1, 0].map((ago) => ({
+            Label: weekdayUtc(ago),
+            Value: num(row[`PeopleAddedD${ago}`]),
+            Current: ago === 0,
+        })),
+        OrganizationTypeMix: mix,
+        WorthALook: worth,
+        Queues: queues.filter((q) => q.Count > 0),
+    };
+}
 
 const PERSON_FIELDS = [
     'ID',

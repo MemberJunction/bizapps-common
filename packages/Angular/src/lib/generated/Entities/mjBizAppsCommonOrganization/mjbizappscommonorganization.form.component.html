@@ -133,6 +133,14 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="ChildOrgCount"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
 
     </mj-collapsible-panel>
 
@@ -156,10 +164,9 @@
             [Record]="record"
             [ShowLabel]="true"
             FieldName="LogoURL"
-            Type="textbox"
+            Type="textarea"
             [EditMode]="EditMode"
             [FormContext]="formContext"
-            LinkType="URL"
         ></mj-form-field>
         <mj-form-field 
             [Record]="record"
@@ -198,10 +205,10 @@
 
     </mj-collapsible-panel>
 
-    <!-- Address Information Section -->
+    <!-- Location and Address Section -->
     <mj-collapsible-panel
-        SectionKey="addressInformation"
-        SectionName="Address Information"
+        SectionKey="locationAndAddress"
+        SectionName="Location and Address"
         Icon="fa fa-map-marker-alt"
         [Form]="this"
         [FormContext]="formContext">
@@ -256,6 +263,22 @@
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
+            FieldName="PrimaryAddressLatitude"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
+            FieldName="PrimaryAddressLongitude"
+            Type="textbox"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
             FieldName="PrimaryAddressType"
             Type="textbox"
             [EditMode]="EditMode"
@@ -264,25 +287,17 @@
 
     </mj-collapsible-panel>
 
-    <!-- Organizational Metrics Section -->
+    <!-- Organization Metrics Section -->
     <mj-collapsible-panel
-        SectionKey="organizationalMetrics"
-        SectionName="Organizational Metrics"
+        SectionKey="organizationMetrics"
+        SectionName="Organization Metrics"
         Icon="fa fa-chart-line"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
-            [ShowLabel]="true"
+            [ShowLabel]="false"
             FieldName="ActivePersonCount"
-            Type="textbox"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="ChildOrgCount"
             Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"

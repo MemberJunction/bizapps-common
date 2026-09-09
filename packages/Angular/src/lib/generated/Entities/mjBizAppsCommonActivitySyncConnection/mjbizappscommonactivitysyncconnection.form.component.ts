@@ -16,9 +16,17 @@ export class mjBizAppsCommonActivitySyncConnectionFormComponent extends BaseForm
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
+            { sectionKey: 'connectionDetails', sectionName: 'Connection Details', isExpanded: true },
+            { sectionKey: 'operationalStatus', sectionName: 'Operational Status', isExpanded: true },
+            { sectionKey: 'accessAndConfiguration', sectionName: 'Access and Configuration', isExpanded: true },
+            { sectionKey: 'activationWindow', sectionName: 'Activation Window', isExpanded: true },
+            { sectionKey: 'securityAndStorage', sectionName: 'Security and Storage', isExpanded: true },
+            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivities', sectionName: 'Activities', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncRules', sectionName: 'Activity Sync Rules', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivities', sectionName: 'Activities', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncExtensions', sectionName: 'Activity Sync Extensions', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivitySyncRuns', sectionName: 'Activity Sync Runs', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonActivitySyncConnectionRuleSets', sectionName: 'Activity Sync Connection Rule Sets', isExpanded: false }
         ]);
     }
 }

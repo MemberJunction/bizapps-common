@@ -1,5 +1,142 @@
 # @mj-biz-apps/common-server
 
+## 5.40.0
+
+### Patch Changes
+
+- Updated dependencies [de47552]
+- Updated dependencies [de47552]
+- Updated dependencies [e21b2db]
+- Updated dependencies [b4387e4]
+- Updated dependencies [dc7693c]
+- Updated dependencies [22f6624]
+  - @mj-biz-apps/common-activity-sync@5.40.0
+  - @mj-biz-apps/common-entities@5.40.0
+  - @mj-biz-apps/common-core-entities-server@5.40.0
+  - @mj-biz-apps/common-actions@5.40.0
+
+## 5.39.0
+
+### Minor Changes
+
+- b6b2b64: Activity Sync — the transport factory seam is finally reachable, and a host implements it.
+
+  `ActivityTransportFactory` was declared as "how a HOST supplies a transport", exported, documented,
+  and reachable **only as the third constructor argument**. `MJGlobal.ClassFactory` builds plugins with
+  no arguments, so through `ActivitySyncEngine` — the only path production uses — a factory could never
+  arrive. Every test that exercised one passed it to the constructor, which production never does. A
+  seam that is exported and unreachable is the same class of defect this package keeps being written
+  against, one layer up.
+
+  **A host registry replaces the unreachable parameter.** `RegisterActivityTransportFactory` is called
+  once at bootstrap and `Configure` consults it. A transport or factory passed to the CONSTRUCTOR still
+  wins, so tests and the demo keep supplying their own and a process-wide registration cannot reach in
+  and replace them.
+
+  **`ActivityTransportContext` gains `ContextUser`.** MJ's Credentials engine documents `contextUser` as
+  required server-side, so a factory that resolves a credential cannot work without it. It stays
+  optional because a factory serving recordings needs no user.
+
+  **`common-server` now implements the factory.** `GraphTransportFactory` turns a connection's
+  `CredentialsRef` into a `GraphCommunicationTransport`, resolving the credential through MJ's
+  Credentials engine and the provider through `ClassFactory` — including the base-class check copied
+  from `CommunicationEngine.GetProvider`, because `CreateInstance` returns a BASE instance when no
+  registration matches, so a missing provider otherwise comes back as a truthy object that answers no
+  call usefully. It lives in the host rather than in ActivitySync because ActivitySync takes both
+  engines as peers deliberately: a host syncing only fixtures should install neither.
+
+  **This enables nothing on its own.** `AllowLiveFetch` still defaults false, so a live read is still
+  refused until someone who has confirmed the Exchange Application Access Policy opts in. What ends is
+  the state where a correctly configured credential could not be resolved at all.
+
+### Patch Changes
+
+- 7887d5d: License declarations now agree on BUSL-1.1 everywhere.
+
+  `LICENSE`, `package.json`, `mj-app.json` and every workspace package already declared
+  BUSL-1.1. Two statements still said ISC: the README badge, which is the first license
+  statement a reader meets and so outranked all of them in practice, and the `mj-app.json`
+  sample in `docs/open-app.md` — this repo is the reference Open App, so that snippet is
+  copied into new repos and is how the wrong value spreads. The badge now links to `LICENSE`.
+
+- Updated dependencies [8657091]
+- Updated dependencies [b6b2b64]
+- Updated dependencies [7887d5d]
+  - @mj-biz-apps/common-activity-sync@5.39.0
+  - @mj-biz-apps/common-actions@5.39.0
+  - @mj-biz-apps/common-core-entities-server@5.39.0
+  - @mj-biz-apps/common-entities@5.39.0
+
+## 5.38.0
+
+### Patch Changes
+
+- Updated dependencies [4c27078]
+- Updated dependencies [4c27078]
+  - @mj-biz-apps/common-entities@5.38.0
+  - @mj-biz-apps/common-activity-sync@5.38.0
+  - @mj-biz-apps/common-core-entities-server@5.38.0
+  - @mj-biz-apps/common-actions@5.38.0
+
+## 5.37.0
+
+### Minor Changes
+
+- d73a3af: Fold CodeGen output for ActivitySyncProviderType.CalendarDriverClass into V202608301900.
+
+  Hand DDL is the ALTER TABLE only. Microsoft365's CalendarDriverClass value stays in
+  metadata JSON. CodeGen SQL (EntityField, view, spCreate/spUpdate/spDelete, trigger)
+  is appended after the standard banner.
+
+- d73a3af: Entity Action workflow adoption — the Common side (plans/mj-entity-action-workflow-adoption.md).
+
+  `Common.LogActivity` is the declarative entry point to the unified timeline: a thin action over the
+  new `ActivityWriter.WriteManual`, the second entry point on the ONE writer (manual defaults —
+  Visibility Internal, no connection, no sync-extension dispatch; same transactional core, dedupe and
+  link writing as the sync path). Takes only serializable params ('Entity Object Data', never
+  'Entity Object'), with EventKey per-record idempotency and LinkFields declarative link routing.
+
+  Ships the §5 bindings as metadata: People·AfterCreate → LogActivity, People·AfterUpdate (Status
+  changed) → the Person Lifecycle Changed flow agent, Organizations·AfterUpdate scoped to an
+  OrganizationType, Relationships·AfterCreate/ended scoped to the Employee RelationshipType — all
+  RunMode Durable, all Status Active at every level. Two reusable ActionFilter rows (MJ ships no
+  seeds — verified) and the SystemEvent activity type.
+
+- d73a3af: Activity sync trigger, calendar companion as data, and per-connection health.
+
+  Seeds Common.SyncActivities (Action, Limit, result codes, hourly job) as JSON.
+  CalendarDriverClass on ActivitySyncProviderType drives the companion surface through
+  ClassFactory. Connection health is stamped once from combined surfaces. A failed
+  connection list load is ERROR, not NO_CONNECTIONS.
+
+### Patch Changes
+
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+- Updated dependencies [d73a3af]
+  - @mj-biz-apps/common-entities@5.37.0
+  - @mj-biz-apps/common-activity-sync@5.37.0
+  - @mj-biz-apps/common-core-entities-server@5.37.0
+  - @mj-biz-apps/common-actions@5.37.0
+
+## 5.36.0
+
+### Minor Changes
+
+- 60804ac: Ship CodeGen entity metadata, base views, and CRUD procedures for the six Activity tables introduced in V202608171935. A clean migrate previously left those tables without \_\_mj.Entity rows, so metadata sync of activity-types failed.
+- 6fe1f09: Register the Activity related-name virtual EntityFields on Activity Links and Activity Files so save-capture ResultTables match the base views. Also covers the consumer-blind CodeGen V (no Orders in Common), Organizations CascadeDeletes off, and Activity Types hierarchy virtuals.
+
+### Patch Changes
+
+- Updated dependencies [60804ac]
+- Updated dependencies [6fe1f09]
+  - @mj-biz-apps/common-entities@5.36.0
+  - @mj-biz-apps/common-core-entities-server@5.36.0
+  - @mj-biz-apps/common-actions@5.36.0
+
 ## 5.35.1
 
 ### Patch Changes

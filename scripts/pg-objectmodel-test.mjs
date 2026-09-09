@@ -6,13 +6,31 @@
 // TVF, the Person.LinkedUserID unique constraint), and full CRUD round-trips. Self-cleaning.
 //
 // Run (PG stack up on postgres-claude:5433/BizApps_PG_Test):
-//   node scripts/pg-objectmodel-test.mjs
+//   PGPASSWORD=... node scripts/pg-objectmodel-test.mjs
+//
+// Connection settings come from the standard PG* env vars. The password has no default —
+// set PGPASSWORD before running.
 import { Pool } from 'pg';
+
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing required environment variable ${name}.`);
+    process.exit(1);
+  }
+  return value;
+}
 
 const S = '__mj_bizappscommon';
 const ENT_PERSON = '7a94ada9-7880-4fae-97d8-db0e934c3f5f';
 const ENT_ORG = 'c70448f9-9792-41d7-a82c-784b66429d54';
-const pool = new Pool({ host: 'localhost', port: 5433, user: 'mj_admin', password: 'Claude2Pg99', database: 'BizApps_PG_Test' });
+const pool = new Pool({
+  host: process.env.PGHOST ?? 'localhost',
+  port: Number(process.env.PGPORT ?? 5433),
+  user: process.env.PGUSER ?? 'mj_admin',
+  password: requireEnv('PGPASSWORD'),
+  database: process.env.PGDATABASE ?? 'BizApps_PG_Test',
+});
 const q = (sql, p) => pool.query(sql, p);
 
 let pass = 0, fail = 0;
