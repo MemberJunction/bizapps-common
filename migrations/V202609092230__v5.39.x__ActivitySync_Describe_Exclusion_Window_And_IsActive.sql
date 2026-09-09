@@ -60,6 +60,7 @@ IF EXISTS (
     WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]')
       AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]'), N'IsEnabled', 'ColumnId')
       AND name = N'MS_Description'
+      AND class = 1  -- column, not an index or the table itself
 )
     EXEC sp_dropextendedproperty
         @name = N'MS_Description',
@@ -84,6 +85,7 @@ IF EXISTS (
     WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]')
       AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]'), N'EffectiveFrom', 'ColumnId')
       AND name = N'MS_Description'
+      AND class = 1  -- column, not an index or the table itself
 )
     EXEC sp_dropextendedproperty
         @name = N'MS_Description',
@@ -108,6 +110,7 @@ IF EXISTS (
     WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]')
       AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncExclusion]'), N'EffectiveTo', 'ColumnId')
       AND name = N'MS_Description'
+      AND class = 1  -- column, not an index or the table itself
 )
     EXEC sp_dropextendedproperty
         @name = N'MS_Description',
@@ -132,6 +135,7 @@ IF EXISTS (
     WHERE major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncProviderType]')
       AND minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[ActivitySyncProviderType]'), N'IsActive', 'ColumnId')
       AND name = N'MS_Description'
+      AND class = 1  -- column, not an index or the table itself
 )
     EXEC sp_dropextendedproperty
         @name = N'MS_Description',
@@ -174,5 +178,6 @@ CROSS APPLY (
     WHERE x.major_id = OBJECT_ID(N'[${flyway:defaultSchema}].[' + t.TableName + N']')
       AND x.minor_id = COLUMNPROPERTY(OBJECT_ID(N'[${flyway:defaultSchema}].[' + t.TableName + N']'), t.ColumnName, 'ColumnId')
       AND x.[name] = N'MS_Description'
+      AND x.class = 1
 ) ep;
 GO
