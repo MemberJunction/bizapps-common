@@ -20,6 +20,7 @@
  *
  * @module @mj-biz-apps/common-server
  */
+import { LogStatus } from '@memberjunction/core';
 import { AllowLiveMailboxFetch } from '@mj-biz-apps/common-activity-sync';
 
 /**
@@ -106,6 +107,23 @@ export function LoadLiveMailboxPolicyFromEnv(env: NodeJS.ProcessEnv = process.en
         group
             ? { ...common, Scope: 'RestrictedToGroup', ScopedToGroup: group }
             : { ...common, Scope: 'TenantWideAccepted', AcceptedRisk: acceptedRisk },
+    );
+
+    /**
+     * Say it out loud, once, at bootstrap.
+     *
+     * Without this the attestation is written and never read by anything: `ConfirmedAt` in particular
+     * exists because "policies get deleted; staleness should be visible", and nothing was making it
+     * visible — it was reachable only through `HostLiveMailboxPolicy()`, which has no callers. A
+     * recorded decision nobody surfaces is the same silent shape this package is being cleaned of.
+     *
+     * It also puts the fact in the host log at the moment it starts mattering: this line is the
+     * difference between an operator discovering that a host reads real mailboxes, and not.
+     */
+    LogStatus(
+        `Activity Sync: LIVE mailbox fetch ENABLED — ${
+            group ? `restricted to group "${group}"` : `tenant-wide grant accepted ("${acceptedRisk}")`
+        }, confirmed by ${set(ENV_CONFIRMED_BY)} on ${confirmedAt.toISOString().slice(0, 10)}.`,
     );
     return true;
 }

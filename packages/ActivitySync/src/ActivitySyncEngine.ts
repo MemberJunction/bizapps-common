@@ -507,6 +507,18 @@ export class ActivitySyncEngine {
                         'registered in this host, so none were stored. Register one at bootstrap, or turn ' +
                         'IncludeAttachments off so the rule stops claiming something that is not happening.',
                 );
+            } else if (attachmentPolicy.Fetch) {
+                // A sink IS registered, and `ActivityFileSink.Store` still has no caller: selection and
+                // transfer are written (`SelectAttachments`, `AttachmentSkipReport`) but not yet wired to
+                // it. Saying so is the entire point of the branch above — leaving this case silent would
+                // reward a host for filling the seam correctly with exactly the quiet nothing that the
+                // rest of this work exists to remove, and it is the more misleading of the two, because
+                // everything on the host's side is right.
+                result.Issues.push(
+                    `Item ${item.ExternalID}: its rule asks for attachments and a sink is registered, but ` +
+                        'attachment transfer is not implemented yet, so none were stored. This is a gap in ' +
+                        'Activity Sync, not in the host configuration.',
+                );
             }
 
             const sourceValue = plugin.IsLive ? 'Integration' : 'System';
