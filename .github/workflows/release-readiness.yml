@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true # resolves the previous release via `git tag --list 'v*'`
 
-      - name: A release carrying migrations must be at least a minor
+      - name: A release carrying migrations or metadata must be at least a minor
         env:
           BUMP_LEVEL_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'bump-level-exempt') }}
         run: ./ci/check-bump-level.sh
