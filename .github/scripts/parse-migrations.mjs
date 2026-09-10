@@ -51,6 +51,10 @@ function findExecutionMethod() {
                             '-P', password,
                             '-C',
                             '-b',
+                            // The migrations carry non-ASCII bytes (em dashes, arrows) in comments and
+                            // MS_Description literals. Without -f, sqlcmd decodes the file with the host
+                            // codepage, so what the server parses depends on the runner. 65001 = UTF-8.
+                            '-f', '65001',
                             '-i', tempFile
                         ], { stdio: 'pipe' });
                     } finally {
@@ -87,9 +91,16 @@ if (isSelfTest) {
     try {
         runner.execute("SET PARSEONLY ON;\nGO\nPRINT 'item's';\nGO\n");
     } catch (err) {
+        const msg = (err.stdout?.toString() || '') + (err.stderr?.toString() || '') || err.message;
+        // A throw alone proves nothing — a missing temp dir, a bad flag or a dropped connection all
+        // throw, and each would read as "the gate caught a syntax error". Require the server's own
+        // diagnostic, so the gate is proven able to fail for the RIGHT reason on every run.
+        if (!/Msg \d+, Level \d+/.test(msg)) {
+            console.error('Self-test threw, but not with a SQL Server error — the gate is NOT proven:\n' + msg.trim());
+            process.exit(1);
+        }
         failedAsExpected = true;
-        const msg = err.stdout?.toString() || err.stderr?.toString() || err.message;
-        console.log('✓ Self-test caught invalid syntax as expected:\n  ' + msg.trim().split('\n')[0]);
+        console.log('✓ Self-test caught invalid syntax as expected:\n  ' + msg.trim().split('\n').find(l => /Msg \d+, Level \d+/.test(l)));
     }
     if (!failedAsExpected) {
         console.error('Self-test failed: syntax error was not caught!');
@@ -126,8 +137,17 @@ for (const file of files) {
         runner.execute(wrapped);
         parsedCount++;
     } catch (err) {
-        const output = err.stdout?.toString() || err.stderr?.toString() || err.message;
-        console.error(`\n::error file=migrations/${file}::Syntax error parsing ${file}:\n${output.trim()}\n`);
+        const output = ((err.stdout?.toString() || '') + (err.stderr?.toString() || '')) || err.message;
+        // The same discrimination the self-test makes, for the same reason. Only `Msg N, Level N` is
+        // the SERVER rejecting this file. Everything else — sqlcmd vanishing mid-run, a dropped
+        // connection, a full tmpdir — is infrastructure, and reporting it as a syntax error sends
+        // whoever reads the log hunting a defect that is not in the migration. Both paths still
+        // exit 1; only the attribution changes.
+        if (/Msg \d+, Level \d+/.test(output)) {
+            console.error(`\n::error file=migrations/${file}::Syntax error parsing ${file}:\n${output.trim()}\n`);
+        } else {
+            console.error(`\n::error::Parse gate could not run against ${file} — this is NOT a syntax error in the migration:\n${output.trim()}\n`);
+        }
         process.exit(1);
     }
 }

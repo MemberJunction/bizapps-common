@@ -64,6 +64,21 @@ jobs:
           MAX_EXISTING=$(git show ${{ steps.base.outputs.sha }}:migrations/ 2>/dev/null | \
             grep -oE 'V[0-9]{12}' | sed 's/^V//' | sort -n | tail -1 || echo "0")
 
+          # Fail on any modified existing migration files (migrations are append-only).
+          # bizapps-orders has carried this since its gate was written; this repo did not, which is
+          # why V202609092230's in-place quote fix — legitimate, but the highest-risk category of
+          # change this repo permits — merged with no signal at all. Nothing asked anyone to look.
+          # MRD, not M alone. A delete and a rename are as fatal to Flyway as an edit (validate
+          # reports an unresolved applied migration, or a description mismatch, and migrate aborts).
+          # And `git mv` + edit in one commit is reported as R, which an M-only filter skips — and
+          # --diff-filter=A skips it too, so the timestamp loop below never sees it either. That
+          # combination is an in-place edit of an applied migration with no CI signal at all.
+          TOUCHED_FILES=$(git diff --diff-filter=MRD --name-only ${{ steps.base.outputs.sha }} ${{ github.sha }} -- migrations/ | grep -E '\.sql$' || true)
+          if [ -n "$TOUCHED_FILES" ]; then
+            echo "::error::Existing migration files were modified, renamed or deleted: $TOUCHED_FILES. Migrations are append-only — add a new forward migration instead."
+            exit 1
+          fi
+
           # Check only newly added migration files (not modified existing ones, not renames)
           NEW_FILES=$(git diff --diff-filter=A --name-only ${{ steps.base.outputs.sha }} ${{ github.sha }} -- migrations/ | grep -E '\.sql$' || true)
           for file in $NEW_FILES; do
