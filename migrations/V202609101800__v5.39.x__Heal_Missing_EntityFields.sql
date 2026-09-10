@@ -33,6 +33,7 @@ BEGIN
         [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
         [IsNameField], [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
         [DefaultInView], [IsPrimaryKey], [IsUnique], [RelatedEntityDisplayType],
+        [ExtendedType],
         [__mj_CreatedAt], [__mj_UpdatedAt]
     ) VALUES (
         '7b94ad01-7880-4fae-97d8-db0e934c3f5f',
@@ -43,8 +44,17 @@ BEGIN
         0, 0, 1, 0,
         0, 0, 0,
         0, 0, 0, 'Search',
+        'GeoLatitude',
         GETUTCDATE(), GETUTCDATE()
     );
+END;
+ELSE
+BEGIN
+    UPDATE [${mjSchema}].[EntityField]
+    SET [ExtendedType] = 'GeoLatitude', [__mj_UpdatedAt] = GETUTCDATE()
+    WHERE [EntityID] = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E'
+      AND [Name] = '__mj_Latitude'
+      AND ([ExtendedType] IS NULL OR [ExtendedType] <> 'GeoLatitude');
 END;
 GO
 
@@ -60,6 +70,7 @@ BEGIN
         [AutoIncrement], [AllowUpdateAPI], [IsVirtual], [IsComputed],
         [IsNameField], [IncludeInUserSearchAPI], [IncludeRelatedEntityNameFieldInBaseView],
         [DefaultInView], [IsPrimaryKey], [IsUnique], [RelatedEntityDisplayType],
+        [ExtendedType],
         [__mj_CreatedAt], [__mj_UpdatedAt]
     ) VALUES (
         '7b94ad02-7880-4fae-97d8-db0e934c3f5f',
@@ -70,8 +81,17 @@ BEGIN
         0, 0, 1, 0,
         0, 0, 0,
         0, 0, 0, 'Search',
+        'GeoLongitude',
         GETUTCDATE(), GETUTCDATE()
     );
+END;
+ELSE
+BEGIN
+    UPDATE [${mjSchema}].[EntityField]
+    SET [ExtendedType] = 'GeoLongitude', [__mj_UpdatedAt] = GETUTCDATE()
+    WHERE [EntityID] = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E'
+      AND [Name] = '__mj_Longitude'
+      AND ([ExtendedType] IS NULL OR [ExtendedType] <> 'GeoLongitude');
 END;
 GO
 
