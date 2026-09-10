@@ -71,7 +71,7 @@ GO
 
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
-    @value = N'Whether this exclusion is in force. Unchecked, it is ignored entirely and the messages it names are qualified as if it did not exist. Rules honoured their own IsEnabled from the start; exclusions did not until v5.39, so an exclusion switched off before then kept excluding.',
+    @value = N'Whether this exclusion is in force. Unchecked, it is ignored entirely and the messages it names are qualified as if it did not exist.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion',
     @level2type = N'COLUMN', @level2name = N'IsEnabled';
