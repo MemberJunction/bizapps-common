@@ -13,9 +13,10 @@
  * which compiles batches and fails when views/SPs reference tables created in earlier batches).
  */
 
-import { execSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { execFileSync, execSync } from 'node:child_process';
+import { readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const isSelfTest = process.argv.includes('--self-test');
 const dir = process.argv.find((_, i, arr) => arr[i - 1] === '--dir') || './migrations';
@@ -39,11 +40,22 @@ function findExecutionMethod() {
             execSync(`${c} -?`, { stdio: 'ignore' });
             return {
                 type: 'local',
+                cmd: c,
                 execute: (sql) => {
-                    execSync(`"${c}" -S "${host},${port}" -U "${user}" -P "${password}" -C -b`, {
-                        input: sql,
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                    });
+                    const tempFile = join(tmpdir(), `parse_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`);
+                    try {
+                        writeFileSync(tempFile, sql, 'utf8');
+                        execFileSync(c, [
+                            '-S', `${host},${port}`,
+                            '-U', user,
+                            '-P', password,
+                            '-C',
+                            '-b',
+                            '-i', tempFile
+                        ], { stdio: 'pipe' });
+                    } finally {
+                        try { unlinkSync(tempFile); } catch {}
+                    }
                 }
             };
         } catch {
@@ -51,38 +63,17 @@ function findExecutionMethod() {
         }
     }
 
-    // Try finding running docker container for mssql
-    try {
-        const out = execSync('docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest', {
-            stdio: ['ignore', 'pipe', 'ignore'],
-        }).toString().trim();
-        const containerId = out.split('\n')[0];
-        if (containerId) {
-            return {
-                type: 'docker',
-                execute: (sql) => {
-                    execSync(`docker exec -i ${containerId} /opt/mssql-tools18/bin/sqlcmd -S localhost -U "${user}" -P "${password}" -C -b`, {
-                        input: sql,
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                    });
-                }
-            };
-        }
-    } catch {
-        // docker not available
-    }
-
     return null;
 }
 
 const runner = findExecutionMethod();
 if (!runner) {
-    console.error('::error::Neither sqlcmd nor mssql docker container was found to parse migrations.');
+    console.error('::error::sqlcmd utility was not found in PATH or standard locations.');
     process.exit(1);
 }
 
 if (isSelfTest) {
-    console.log(`Running parse-migrations self-test (via ${runner.type})...`);
+    console.log(`Running parse-migrations self-test (via ${runner.cmd})...`);
     // Valid batch test
     try {
         runner.execute('SET PARSEONLY ON;\nGO\nSELECT 1 AS [Test];\nGO\n');
@@ -95,8 +86,10 @@ if (isSelfTest) {
     let failedAsExpected = false;
     try {
         runner.execute("SET PARSEONLY ON;\nGO\nPRINT 'item's';\nGO\n");
-    } catch {
+    } catch (err) {
         failedAsExpected = true;
+        const msg = err.stdout?.toString() || err.stderr?.toString() || err.message;
+        console.log('✓ Self-test caught invalid syntax as expected:\n  ' + msg.trim().split('\n')[0]);
     }
     if (!failedAsExpected) {
         console.error('Self-test failed: syntax error was not caught!');
@@ -115,7 +108,7 @@ if (files.length === 0) {
     process.exit(1);
 }
 
-console.log(`Checking ${files.length} migration files in ${dir} with SQL Server SET PARSEONLY ON (via ${runner.type})...`);
+console.log(`Checking ${files.length} migration files in ${dir} with SQL Server SET PARSEONLY ON (via ${runner.cmd})...`);
 
 let parsedCount = 0;
 for (const file of files) {
