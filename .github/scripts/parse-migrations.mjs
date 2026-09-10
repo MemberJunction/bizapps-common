@@ -137,8 +137,17 @@ for (const file of files) {
         runner.execute(wrapped);
         parsedCount++;
     } catch (err) {
-        const output = err.stdout?.toString() || err.stderr?.toString() || err.message;
-        console.error(`\n::error file=migrations/${file}::Syntax error parsing ${file}:\n${output.trim()}\n`);
+        const output = ((err.stdout?.toString() || '') + (err.stderr?.toString() || '')) || err.message;
+        // The same discrimination the self-test makes, for the same reason. Only `Msg N, Level N` is
+        // the SERVER rejecting this file. Everything else — sqlcmd vanishing mid-run, a dropped
+        // connection, a full tmpdir — is infrastructure, and reporting it as a syntax error sends
+        // whoever reads the log hunting a defect that is not in the migration. Both paths still
+        // exit 1; only the attribution changes.
+        if (/Msg \d+, Level \d+/.test(output)) {
+            console.error(`\n::error file=migrations/${file}::Syntax error parsing ${file}:\n${output.trim()}\n`);
+        } else {
+            console.error(`\n::error::Parse gate could not run against ${file} — this is NOT a syntax error in the migration:\n${output.trim()}\n`);
+        }
         process.exit(1);
     }
 }
