@@ -96,7 +96,7 @@ GO
 
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
-    @value = N'Start of the window of MESSAGES this exclusion covers, matched against the item's own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no lower bound. This is deliberately different from ActivitySyncConnection.StartAt, which is evaluated against the clock: setting this to today does not mean "exclude from today onwards", it means "exclude messages dated today or later", so a later backfill of older mail is not covered by it. Item time is also what keeps a re-run reproducible, so the run log can answer which rule excluded a message and give the same answer next time.',
+    @value = N'Start of the window of MESSAGES this exclusion covers, matched against the item''s own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no lower bound. This is deliberately different from ActivitySyncConnection.StartAt, which is evaluated against the clock: setting this to today does not mean "exclude from today onwards", it means "exclude messages dated today or later", so a later backfill of older mail is not covered by it. Item time is also what keeps a re-run reproducible, so the run log can answer which rule excluded a message and give the same answer next time.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion',
     @level2type = N'COLUMN', @level2name = N'EffectiveFrom';
@@ -121,7 +121,7 @@ GO
 
 EXEC sp_addextendedproperty
     @name = N'MS_Description',
-    @value = N'End of the window of MESSAGES this exclusion covers, matched against the item's own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no upper bound. Inclusive of the instant given, matching how ActivitySyncRule DateFrom/DateTo compare. See EffectiveFrom for why this is item time rather than clock time.',
+    @value = N'End of the window of MESSAGES this exclusion covers, matched against the item''s own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no upper bound. Inclusive of the instant given, matching how ActivitySyncRule DateFrom/DateTo compare. See EffectiveFrom for why this is item time rather than clock time.',
     @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
     @level1type = N'TABLE',  @level1name = N'ActivitySyncExclusion',
     @level2type = N'COLUMN', @level2name = N'EffectiveTo';
