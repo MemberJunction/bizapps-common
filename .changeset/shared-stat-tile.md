@@ -11,6 +11,13 @@ rendered as three unstyled spans. Styles are now the component's own, design tok
 a `bizapps-stat` prefix that collides with neither `.mj-stat` (orders-kit) nor `.mjc-stat`
 (contracts-kit).
 
-Two behaviours the tile guarantees: a `null` value renders an em dash rather than `0`, so an
-unreadable count can never read as an empty queue; and the tile is focusable, announced as a
-button and keyboard-activatable only when something subscribes to `Clicked`.
+Two behaviours the tile guarantees. A `null` or `undefined` value renders an em dash rather
+than `0`, so an unreadable count can never read as an empty queue — a real `0` still renders
+as `0`. And a tile that does nothing is not focusable, not announced as a button and not
+keyboard-activatable: the `Clickable` input decides, and when it is unset the tile falls back
+to whether anything subscribes to `Clicked`. Passing `Clickable` overrides that inference in
+both directions, which a row mixing live and inert tiles needs — Angular subscribes to an
+output whenever a template binds it, whatever the handler expression later evaluates to.
+
+`bizapps-stat-tile` takes `Label`, `Icon`, `Value`, `Detail`, `Tone` and `Clickable`, and emits
+`Clicked`. `bizapps-stat-row` takes `Error` and renders the row's one shared error line.

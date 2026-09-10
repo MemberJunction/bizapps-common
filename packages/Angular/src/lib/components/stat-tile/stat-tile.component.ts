@@ -61,7 +61,6 @@ export type StatTileTone = 'none' | 'warn' | 'error';
             [class.bizapps-stat--clickable]="IsClickable"
             [attr.role]="IsClickable ? 'button' : null"
             [attr.tabindex]="IsClickable ? 0 : null"
-            [attr.aria-label]="IsClickable ? Label : null"
             [title]="Detail ?? ''"
             (click)="OnActivate()"
             (keydown.enter)="OnActivate()"
@@ -135,19 +134,27 @@ export type StatTileTone = 'none' | 'warn' | 'error';
     ],
 })
 export class StatTileComponent {
-    /** What the number is. Also the accessible name when the tile is clickable. */
+    /**
+     * What the number is. Part of the accessible name, which a clickable tile takes from its
+     * visible content — label, value and detail — rather than an `aria-label` that would hide
+     * the count from a screen reader.
+     */
     @Input() Label = '';
 
     /** Font Awesome class for the small icon beside the label. Optional. */
     @Input() Icon: string | null = null;
 
     /**
-     * The number, or `null` for "could not be read".
+     * The number, or `null`/`undefined` for "could not be read".
+     *
+     * `undefined` is accepted because that is the shape a missing property arrives as, and this
+     * package sets `strictTemplates` — without it, `[Value]="counts.awaiting"` on an optional
+     * property does not compile.
      *
      * A string is accepted so a caller can pass an already-formatted value (`'1,204'`); the tile
      * never formats, because formatting rules belong to the app that owns the number.
      */
-    @Input() Value: number | string | null = null;
+    @Input() Value: number | string | null | undefined = null;
 
     /** One line under the number — the footnote that qualifies it. Optional. */
     @Input() Detail: string | null = null;

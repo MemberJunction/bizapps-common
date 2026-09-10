@@ -18,7 +18,7 @@ describe('StatTileComponent', () => {
 
         it('renders an em dash for undefined, the shape a missing property arrives as', () => {
             const tile = new StatTileComponent();
-            tile.Value = undefined as unknown as null;
+            tile.Value = undefined;
             expect(tile.DisplayValue).toBe('—');
         });
 
