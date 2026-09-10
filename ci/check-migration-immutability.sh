@@ -11,16 +11,12 @@
 # `next` and then corrected on `next` before it ever released is fine — it was never in main,
 # so nobody has applied it. That is the case this check must NOT flag, and two-dot would.
 #
-# MIGRATION_IMMUTABILITY_EXEMPT=true skips it, for the rare deliberate case (a coordinated
-# Flyway repair). Expect to explain it in the PR.
+# MIGRATION_IMMUTABILITY_EXEMPT=true (the `migration-immutability-exempt` label) overrides it —
+# but does NOT silence it: the offending files are still listed, in the log and the job summary.
+# An override is a decision someone made, and it should be legible to whoever reviews the PR.
 set -euo pipefail
 
 BASE="${1:-origin/main}"
-
-if [ "${MIGRATION_IMMUTABILITY_EXEMPT:-false}" = "true" ]; then
-  echo "Exempt via label — skipping the migration immutability check"
-  exit 0
-fi
 
 if ! git rev-parse --verify --quiet "$BASE" >/dev/null; then
   echo "::error::Cannot resolve '$BASE'. This check needs the base branch fetched (fetch-depth: 0)."
@@ -35,6 +31,29 @@ if [ -z "$TOUCHED" ]; then
   exit 0
 fi
 
-echo "::error::A migration already on $BASE was modified, deleted or renamed. Flyway checksums the file at apply time, so editing it breaks validation on every database that already ran it, while a fresh database silently gets the new text. Add a NEW migration that makes the correction instead. Offending files:"
+# The override is deliberately NOT a skip. A skip leaves no trace of what was edited, which
+# is the opposite of what an exception needs: the whole value of overriding a gate is that a
+# human decided to, on the record. So the list is computed either way and reported either way
+# — into the log AND the job summary, where a reviewer sees it without opening the run.
+if [ "${MIGRATION_IMMUTABILITY_EXEMPT:-false}" = "true" ]; then
+  echo "::warning::Migration immutability OVERRIDDEN via the 'migration-immutability-exempt' label. These already-released migrations were modified, deleted or renamed:"
+  echo "$TOUCHED" | sed 's/^/  /'
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    {
+      echo "### ⚠ Migration immutability overridden"
+      echo
+      echo "The \`migration-immutability-exempt\` label was applied. Already-released migrations changed:"
+      echo
+      echo "$TOUCHED" | sed 's/^/- `/;s/$/`/'
+      echo
+      echo "This is only safe if the migration has not been applied anywhere yet. If it has, every"
+      echo "database that already ran it keeps the OLD schema and fails Flyway validation, while a"
+      echo "fresh database gets the new text — add a forward migration instead."
+    } >> "$GITHUB_STEP_SUMMARY"
+  fi
+  exit 0
+fi
+
+echo "::error::A migration already on $BASE was modified, deleted or renamed. Flyway checksums the file at apply time, so editing it breaks validation on every database that already ran it, while a fresh database silently gets the new text. Add a NEW migration that makes the correction instead. If the migration has genuinely never been applied anywhere — caught within minutes, nothing deployed, nobody pulled it — label the PR 'migration-immutability-exempt'. Offending files:"
 echo "$TOUCHED" | sed 's/^/  /'
 exit 1
