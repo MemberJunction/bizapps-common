@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
 
 /**
  * How a tile's number should read. `none` is the ordinary case; `warn` and `error` colour the value
@@ -36,6 +35,12 @@ export type StatTileTone = 'none' | 'warn' | 'error';
  * `bizapps-stat` class prefix: the app kits are global under `ViewEncapsulation.None`, and both
  * `.mj-stat` (orders-kit) and `.mjc-stat` (contracts-kit) are already taken by unrelated things.
  *
+ * ## Projected content
+ *
+ * Anything placed between the tags renders inside the box, under the detail line. It is for the
+ * rare tile that needs more than label/value/detail — a sparkline, a second smaller count — without
+ * growing the input list for every tile that does not. Most tiles project nothing.
+ *
  * ## Example
  *
  * ```html
@@ -51,8 +56,8 @@ export type StatTileTone = 'none' | 'warn' | 'error';
 @Component({
     selector: 'bizapps-stat-tile',
     standalone: true,
-    imports: [CommonModule],
     encapsulation: ViewEncapsulation.None,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div
             class="bizapps-stat"
@@ -61,7 +66,6 @@ export type StatTileTone = 'none' | 'warn' | 'error';
             [class.bizapps-stat--clickable]="IsClickable"
             [attr.role]="IsClickable ? 'button' : null"
             [attr.tabindex]="IsClickable ? 0 : null"
-            [title]="Detail ?? ''"
             (click)="OnActivate()"
             (keydown.enter)="OnActivate()"
             (keydown.space)="OnActivate($event)">
@@ -108,7 +112,7 @@ export type StatTileTone = 'none' | 'warn' | 'error';
                 color: var(--mj-text-muted);
             }
             .bizapps-stat__value {
-                font-size: 25px;
+                font-size: var(--mj-text-2xl);
                 font-weight: var(--mj-font-bold);
                 font-variant-numeric: tabular-nums;
                 letter-spacing: -0.02em;
@@ -197,6 +201,10 @@ export class StatTileComponent {
      *
      * An explicit {@link Clickable} always wins; otherwise fall back to whether anything is
      * listening, which is right for the common case of a row where every tile navigates.
+     *
+     * Safe under `OnPush` even though `Clicked.observed` is not an input: Angular subscribes to
+     * outputs when it creates the view, before the first check, and a template binding never
+     * comes or goes afterwards.
      */
     public get IsClickable(): boolean {
         return this.Clickable ?? this.Clicked.observed;

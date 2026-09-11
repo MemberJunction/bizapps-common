@@ -1,5 +1,4 @@
-import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@angular/core';
 
 /**
  * `bizapps-stat-row` — the row a set of {@link StatTileComponent}s sits in, plus the one place their
@@ -24,8 +23,8 @@ import { CommonModule } from '@angular/common';
 @Component({
     selector: 'bizapps-stat-row',
     standalone: true,
-    imports: [CommonModule],
     encapsulation: ViewEncapsulation.None,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="bizapps-stat-row">
             <ng-content />
