@@ -23,7 +23,8 @@
     "mergemain": "node ci/merge_main.mjs",
     "mergemain:update-lock": "node ci/merge_main_and_update_lock.mjs",
     "test:objectmodel:pg": "node scripts/pg-objectmodel-test.mjs",
-    "test:integration": "node test-harnesses/integration.mjs"
+    "test:integration": "node test-harnesses/integration.mjs",
+    "check:published-mj": "node scripts/check-against-published-mj.mjs"
   },
   "repository": {
     "type": "git",
