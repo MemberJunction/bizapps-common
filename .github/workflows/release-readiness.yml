@@ -23,7 +23,9 @@ on:
     # `ready_for_review` is NOT in the default type set (opened/synchronize/reopened), and the
     # jobs skip while the PR is a draft — without it, marking a release PR ready would not
     # re-trigger anything and a required check would never report.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # `labeled`/`unlabeled`: two of these honour labels, so without them adding an exempt
+    # label re-triggers nothing and removing one leaves a stale green.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     branches: [main]
 
 permissions:
@@ -87,5 +89,8 @@ jobs:
         env:
           MIGRATION_IMMUTABILITY_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'migration-immutability-exempt') }}
         run: |
-          git fetch --no-tags --depth=0 origin "${{ github.base_ref }}" 2>/dev/null || git fetch --no-tags origin "${{ github.base_ref }}"
+          # NOT --depth=0: git rejects it outright ("depth 0 is not a positive number"), so the
+          # old `--depth=0 || plain` pair never once ran its first command. A full fetch is what
+          # is wanted anyway — the three-dot compare needs history on both sides.
+          git fetch --no-tags origin "${{ github.base_ref }}"
           ./ci/check-migration-immutability.sh "origin/${{ github.base_ref }}"

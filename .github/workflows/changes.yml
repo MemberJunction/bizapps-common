@@ -18,7 +18,10 @@ on:
     # `ready_for_review` is NOT in the default type set (opened/synchronize/reopened), and the
     # jobs below skip while the PR is a draft — without it, marking a PR ready would not
     # re-trigger anything and the checks would never report.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # `labeled`/`unlabeled` matter because two of these checks honour labels: without them,
+    # adding `bump-level-exempt` to a red PR re-triggers nothing (you have to push a no-op
+    # commit), and REMOVING it leaves the stale green standing.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     branches: [next]
 
 concurrency:
@@ -138,39 +141,39 @@ jobs:
           git fetch --no-tags origin "${{ github.base_ref }}"
           echo "sha=$(git merge-base FETCH_HEAD HEAD)" >> "$GITHUB_OUTPUT"
 
+      # `--self-test` first: the plain invocation exits 0 when no migration changed, so the
+      # self-test is what makes a green run mean something. It also pins the quote-style cases
+      # that the previous inline regex got wrong.
       - name: Migrations require a minor or major changeset
         env:
-          EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'bump-level-exempt') }}
+          BUMP_LEVEL_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'bump-level-exempt') }}
         run: |
-          MIGRATION_FILES=$(git diff --name-only ${{ steps.mb.outputs.sha }} HEAD | grep -E '^migrations/.*\.sql$' || true)
-          if [ -z "$MIGRATION_FILES" ]; then
-            echo "No migration changes — any bump level is fine"
-            exit 0
-          fi
+          ./.github/scripts/check-migration-changeset.sh --self-test
+          ./.github/scripts/check-migration-changeset.sh ${{ steps.mb.outputs.sha }} HEAD
 
-          if [ "$EXEMPT" = "true" ]; then
-            echo "::warning::Exempt via the bump-level-exempt label. Migrations changed:"
-            echo "$MIGRATION_FILES" | sed 's/^/  /'
-            exit 0
-          fi
+  # 2.3 — the same rule release-readiness enforces, but at the door.
+  #
+  # Immutability used to be checked only on the release PR into `main`, which meant a PR editing
+  # an already-shipped migration sailed into `next` and was caught weeks later, on a
+  # machine-generated PR, with the author's context gone. That is the exact failure the
+  # per-PR changeset check exists to avoid, so it gets the same treatment: first net here,
+  # backstop on the release PR. Both run the one script.
+  migration-immutability:
+    name: 'migration immutability'
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          CHANGESET_FILES=$(git diff --name-only ${{ steps.mb.outputs.sha }} HEAD | grep -E '^\.changeset/.*\.md$' | grep -v 'README.md' || true)
-          if [ -z "$CHANGESET_FILES" ]; then
-            echo "::error::This PR adds migrations but no changeset. A schema change is a feature: run 'pnpm exec changeset' and pick minor. If the migration genuinely is not a feature — a re-captured baseline, a comment fix — label the PR 'bump-level-exempt'. Migrations changed:"
-            echo "$MIGRATION_FILES" | sed 's/^/  /'
-            exit 1
-          fi
-
-          for f in $CHANGESET_FILES; do
-            if grep -qE "^'[^']+': (minor|major)$" "$f"; then
-              echo "Found a minor/major changeset: $f"
-              exit 0
-            fi
-          done
-
-          echo "::error::This PR adds migrations, and its changeset(s) only request a patch. A consumer upgrading on a patch would not expect the schema to change — raise one to minor. If the migration genuinely is not a feature, label the PR 'bump-level-exempt'. Changesets in this PR:"
-          echo "$CHANGESET_FILES" | sed 's/^/  /'
-          exit 1
+      - name: No already-released migration may be edited
+        env:
+          MIGRATION_IMMUTABILITY_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'migration-immutability-exempt') }}
+        run: |
+          git fetch --no-tags origin main
+          ./ci/check-migration-immutability.sh origin/main
 
   # Does the T-SQL actually parse? Stands up a real SQL Server rather than pattern-matching,
   # which is why it is the most expensive job here — and why the draft guard matters most on it.

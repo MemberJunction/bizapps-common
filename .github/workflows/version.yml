@@ -31,9 +31,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # Mint a short-lived installation token. App-created PRs DO trigger other
-      # workflows, so build.yml runs on the Version Packages PR and verifies
-      # --frozen-lockfile before merge rather than after.
+      # Mint a short-lived installation token. The reason this matters is that App-created PRs
+      # DO trigger other workflows, whereas a PR opened with the default GITHUB_TOKEN creates
+      # runs in `action_required` that sit until a maintainer clicks "Approve and run" — on
+      # every push.
+      #
+      # It does NOT mean build.yml runs here: that workflow deliberately skips
+      # `changeset-release/next`, so the lockfile this PR exists to refresh is first verified
+      # against --frozen-lockfile on the release PR into `main`. An earlier version of this
+      # comment claimed otherwise.
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:
@@ -44,7 +50,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
-          fetch-tags: true # the bump-level check compares migrations/ against the last v* tag
+          fetch-tags: true # changeset version reads tags when generating CHANGELOG links
 
       # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
       - uses: pnpm/action-setup@v4
