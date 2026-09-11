@@ -532,9 +532,38 @@ describe('a capped read must not advance the watermark past mail it never fetche
         expect(batch.Capped).toBe(true);
     });
 
-    it('does NOT flag a first sync, which has no watermark to strand mail behind', async () => {
+    /**
+     * REVERSED, DELIBERATELY. This previously asserted the opposite — that a first sync is not capped,
+     * "which has no watermark to strand mail behind". That rationale does not survive contact with a
+     * real mailbox, and a live run against one is what exposed it.
+     *
+     * There is no watermark BEFORE a first run. The run CREATES one: no date bound is sent, so Graph
+     * returns the newest `Limit` messages, `ResolveHighWatermark` takes the newest of those for a
+     * Message surface, and the next run asks for everything after it. Every message older than that
+     * first page is then permanently below the watermark, unread, with the run reporting Success and
+     * no issue at all.
+     *
+     * So the first run is not the safe case — it is the case most likely to overflow a page, and the
+     * one where overflowing costs the most.
+     */
+    it('DOES flag a first sync, which is the run most likely to overflow a page', async () => {
         const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
         const batch = await t.Fetch({ ...QUERY, Since: null, Limit: 2 });
+        expect(batch.Capped).toBe(true);
+        expect(batch.Issues.join(' ')).toMatch(/FIRST run/);
+    });
+
+    it('withholds the watermark on a capped FIRST run too, so nothing older is stranded', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const provider = new MSGraphActivitySyncProvider(true, t);
+        const batch = await provider.Fetch({ ...QUERY, Since: null, Limit: 2 });
+        // Without this the watermark becomes 2026-08-30 and the entire history before it is skipped.
+        expect(batch.HighWatermark).toBeNull();
+    });
+
+    it('does not flag a partial page, which means the mailbox is drained', async () => {
+        const t = liveTransport(readerReturning({ Success: true, SourceData: TWO }));
+        const batch = await t.Fetch({ ...QUERY, Since: null, Limit: 50 });
         expect(batch.Capped).toBeFalsy();
     });
 

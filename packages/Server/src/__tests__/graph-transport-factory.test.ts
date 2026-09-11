@@ -60,11 +60,23 @@ vi.mock('@memberjunction/global', () => ({
 vi.mock('@mj-biz-apps/common-activity-sync', () => ({
     GRAPH_COMMUNICATION_PROVIDER: 'Microsoft Graph',
     GraphCommunicationTransport: class {
+        // Describe/IsLive mirror the real class so a test can tell the two surfaces apart by the
+        // transport it got back, rather than by trusting which branch it believes ran.
+        public readonly Describe = 'Microsoft Graph (live, via MJ Communication)';
+        public readonly IsLive = true;
+        constructor(deps: unknown) {
+            H.transportBuilt(deps);
+        }
+    },
+    GraphCalendarTransport: class {
+        public readonly Describe = 'Microsoft Graph calendar (live, via MJ Communication)';
+        public readonly IsLive = true;
         constructor(deps: unknown) {
             H.transportBuilt(deps);
         }
     },
     MJGraphTransportDeps: H.deps,
+    MJGraphCalendarTransportDeps: H.deps,
     RegisterActivityTransportFactory: H.register,
 }));
 
@@ -130,6 +142,41 @@ describe('it builds a transport when it can serve the connection', () => {
         const user = { ID: 'user-1', Name: 'Rep' };
         GraphTransportFactory(ctx({ ContextUser: user }) as never);
         expect(lastDeps().ContextUser).toBe(user);
+    });
+});
+
+describe('one factory, two surfaces', () => {
+    /**
+     * A connection has ONE CredentialsRef and two surfaces. Before this, the factory served only the
+     * message driver, so a calendar connection with a perfectly good credential got "no transport
+     * factory is registered in this host" — a message pointing at host wiring when the wiring was
+     * fine and the driver simply was not served.
+     */
+    it('serves the calendar driver, not just the message one', () => {
+        expect(GraphTransportFactory(ctx({ DriverClass: 'Microsoft365.Calendar' }) as never)).not.toBeNull();
+    });
+
+    it('builds a LIVE calendar transport, which the provider then gates', () => {
+        const built = GraphTransportFactory(ctx({ DriverClass: 'Microsoft365.Calendar' }) as never);
+        expect(built?.IsLive).toBe(true);
+        expect(built?.Describe).toMatch(/calendar/i);
+    });
+
+    it('builds the message transport for the message driver', () => {
+        const built = GraphTransportFactory(ctx({ DriverClass: 'Microsoft365' }) as never);
+        expect(built?.Describe).not.toMatch(/calendar/i);
+    });
+
+    /** Still declines anything it does not serve — widening must not become "serves everything". */
+    it('still returns null for an unrelated driver', () => {
+        expect(GraphTransportFactory(ctx({ DriverClass: 'Microsoft365.Chat' }) as never)).toBeNull();
+        expect(GraphTransportFactory(ctx({ DriverClass: 'Gmail' }) as never)).toBeNull();
+    });
+
+    it('still needs a credential for the calendar surface too', () => {
+        expect(
+            GraphTransportFactory(ctx({ DriverClass: 'Microsoft365.Calendar', CredentialsRef: '   ' }) as never),
+        ).toBeNull();
     });
 });
 

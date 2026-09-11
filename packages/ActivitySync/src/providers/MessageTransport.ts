@@ -107,3 +107,117 @@ export function RegisterActivityTransportFactory(factory: ActivityTransportFacto
 export function HostActivityTransportFactory(): ActivityTransportFactory | null {
     return hostFactory;
 }
+
+/**
+ * WHAT A HOST MUST WRITE DOWN BEFORE IT MAY READ A REAL MAILBOX.
+ *
+ * `MSGraphProvider` authenticates app-only, so the `Mail.Read` APPLICATION permission is granted
+ * against the tenant and not against a mailbox: it reads EVERY mailbox in the organisation. The
+ * `Mailbox` on a connection narrows what we ASK for, not what we are ALLOWED to read. The only thing
+ * that narrows the grant is an Exchange Application Access Policy binding the app registration to a
+ * mail-enabled security group.
+ *
+ * So the opt-in is not a boolean. A boolean records that somebody wanted live fetch; this records
+ * that somebody CHECKED, which group they found, and who is answerable for it — the things an audit
+ * actually asks for, and the things a person is forced to look up rather than guess. `Confirmed` is
+ * the literal `true` rather than `boolean` deliberately: a variable that happens to be false will
+ * not type-check, so the attestation cannot be satisfied by passing a flag through.
+ */
+interface AttestationBase {
+    /** Literal `true`. See above — a `boolean` variable is rejected by the compiler. */
+    Confirmed: true;
+    /** Who decided. A person, so the decision has an owner. */
+    ConfirmedBy: string;
+    /** When they decided. Policies get deleted; a stale attestation should be visible as stale. */
+    ConfirmedAt: Date;
+}
+
+/**
+ * The app registration is restricted, and this names the restriction.
+ */
+export interface ScopedMailboxAttestation extends AttestationBase {
+    Scope: 'RestrictedToGroup';
+    /** The mail-enabled security group the Exchange assignment binds the app to. */
+    ScopedToGroup: string;
+}
+
+/**
+ * The tenant-wide grant was looked at and ACCEPTED. A real outcome, not a failure state.
+ *
+ * WHY THIS EXISTS AT ALL. The first version of this type demanded `ScopedToGroup`, which quietly
+ * assumed every deployment would create an Exchange RBAC assignment. Most do not — adding an API
+ * permission in Entra is one team's five-minute job, and Exchange RBAC for Applications is a
+ * different system that often nobody owns. A gate that only accepts "scoped" leaves an organisation
+ * that decided otherwise with two options: invent a group name, or bypass the gate. Both are worse
+ * than what it was protecting, because both destroy the record.
+ *
+ * So the shape now matches the decisions people actually make. What stays impossible is the third
+ * state — nobody looked — because neither variant can be satisfied without a name, a date, and
+ * either a group or a written reason.
+ */
+export interface TenantWideMailboxAttestation extends AttestationBase {
+    Scope: 'TenantWideAccepted';
+    /**
+     * What is being accepted, in the deciding person's own words.
+     *
+     * Free text and REQUIRED, deliberately. A boolean here would be a tick-box, and a tick-box records
+     * that somebody clicked rather than that somebody understood. Writing the sentence is the point:
+     * it is what an audit reads, and what the next person finds when they ask why this app can read
+     * every mailbox in the tenant.
+     */
+    AcceptedRisk: string;
+}
+
+export type LiveMailboxPolicyAttestation = ScopedMailboxAttestation | TenantWideMailboxAttestation;
+
+let hostLivePolicy: LiveMailboxPolicyAttestation | null = null;
+
+/**
+ * Record that this host is scoped, and may therefore read real mailboxes. Pass null to revoke.
+ *
+ * DELIBERATELY NOT DRIVEN BY DATA. `ActivitySyncConnection` is an ordinary editable entity, and
+ * anyone who can edit a row could otherwise turn on tenant-wide mail reading by typing in a form.
+ * The same reasoning already applies to the transport itself — "a database row should not be able to
+ * reach in and swap it" — and it applies with more force here. This is a bootstrap-time decision in
+ * code, made by whoever deploys the host.
+ *
+ * The blank checks are the point rather than defensive noise: an attestation with an empty group or
+ * no name records nothing, and silently accepting one would turn this back into a boolean.
+ */
+export function AllowLiveMailboxFetch(attestation: LiveMailboxPolicyAttestation | null): void {
+    if (attestation === null) {
+        hostLivePolicy = null;
+        return;
+    }
+    if (!attestation.ConfirmedBy?.trim()) {
+        throw new Error('AllowLiveMailboxFetch requires ConfirmedBy — who made this decision.');
+    }
+    if (attestation.Scope === 'RestrictedToGroup') {
+        if (!attestation.ScopedToGroup?.trim()) {
+            throw new Error(
+                'A RestrictedToGroup attestation requires ScopedToGroup — the mail-enabled security ' +
+                    'group the Exchange assignment binds the app registration to. Run ' +
+                    'Get-ManagementRoleAssignment (or Get-ApplicationAccessPolicy on older tenants) to find it.',
+            );
+        }
+    } else {
+        if (!attestation.AcceptedRisk?.trim()) {
+            throw new Error(
+                'A TenantWideAccepted attestation requires AcceptedRisk — a sentence saying what is ' +
+                    'being accepted. Accepting that this app can read every mailbox in the tenant is a ' +
+                    'legitimate decision; recording it as a bare flag is not.',
+            );
+        }
+    }
+    hostLivePolicy = attestation;
+}
+
+/** The recorded attestation, or null when this host has not opted in. */
+export function HostLiveMailboxPolicy(): LiveMailboxPolicyAttestation | null {
+    return hostLivePolicy;
+}
+
+/** Whether this host has attested that its app registration is scoped. */
+export function HostAllowsLiveMailboxFetch(): boolean {
+    return hostLivePolicy !== null;
+}
