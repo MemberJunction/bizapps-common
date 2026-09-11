@@ -80,8 +80,15 @@ export type StatTileTone = 'none' | 'warn' | 'error';
     `,
     styles: [
         `
+            /* The grid item in a bizapps-stat-row is this unstyled host, not the bordered box one
+               level in: the host stretches to the row height, the box would stay content-height and
+               fall short whenever a sibling has more content. The host passes the stretch through. */
+            bizapps-stat-tile {
+                display: flex;
+            }
             .bizapps-stat {
                 display: flex;
+                flex: 1;
                 flex-direction: column;
                 gap: 2px;
                 min-width: 0;
