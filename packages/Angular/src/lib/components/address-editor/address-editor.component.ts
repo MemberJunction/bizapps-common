@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Metadata, RunView } from '@memberjunction/core';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
+import { EscapeFilterValue } from '../../data/directory-stats';
+import { RequireUUID } from '../../data/sql-guards';
 import {
     mjBizAppsCommonAddressEntity,
     mjBizAppsCommonAddressLinkEntity,
@@ -364,7 +366,7 @@ export class AddressEditorComponent {
             const [linksResult, typesResult] = await rv.RunViews([
                 {
                     EntityName: 'MJ_BizApps_Common: Address Links',
-                    ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
+                    ExtraFilter: `EntityID='${RequireUUID(this.resolvedEntityID, 'EntityID')}' AND RecordID='${EscapeFilterValue(this._recordID)}'`,
                     ResultType: 'entity_object'
                 },
                 {

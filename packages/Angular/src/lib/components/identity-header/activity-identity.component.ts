@@ -154,7 +154,10 @@ export class ActivityIdentityComponent implements OnInit {
         if (!this.Record.Details) return null;
         try {
             const parsed = JSON.parse(this.Record.Details);
-            return parsed.MeetingURL || parsed.JoinURL || parsed.ConferenceURL || null;
+            const url = parsed.MeetingURL || parsed.JoinURL || parsed.ConferenceURL || null;
+            // Details is synced from external calendar providers, so the URL is
+            // authored by the meeting organizer — render only http(s) links.
+            return typeof url === 'string' && /^https?:\/\//i.test(url) ? url : null;
         } catch {
             return null;
         }
