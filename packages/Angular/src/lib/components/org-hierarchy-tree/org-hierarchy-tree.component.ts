@@ -5,6 +5,7 @@ import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-b
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities';
+import { RequireUUID } from '../../data/sql-guards';
 
 /**
  * Represents a single node in the organization hierarchy tree outline.
@@ -105,7 +106,7 @@ export class OrgHierarchyTreeComponent implements OnInit {
 
             const currentResult = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${this._organizationID}'`,
+                ExtraFilter: `ID='${RequireUUID(this._organizationID, 'OrganizationID')}'`,
                 ResultType: 'entity_object'
             });
 
@@ -138,14 +139,14 @@ export class OrgHierarchyTreeComponent implements OnInit {
         if (parentID) {
             queries.push({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${parentID}'`,
+                ExtraFilter: `ID='${RequireUUID(parentID, 'ParentID')}'`,
                 ResultType: 'entity_object'
             });
         }
 
         queries.push({
             EntityName: 'MJ_BizApps_Common: Organizations',
-            ExtraFilter: `ParentID='${this._organizationID}'`,
+            ExtraFilter: `ParentID='${RequireUUID(this._organizationID, 'OrganizationID')}'`,
             OrderBy: 'Name ASC',
             ResultType: 'entity_object'
         });

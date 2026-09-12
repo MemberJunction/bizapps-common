@@ -4,6 +4,7 @@ import { CompositeKey, RunView } from '@memberjunction/core';
 import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
+import { RequireUUID } from '../../data/sql-guards';
 
 interface ActivityFileRow {
     ID: string;
@@ -216,7 +217,7 @@ export class ActivityFilesPanel extends BaseFormPanel<mjBizAppsCommonActivityEnt
             const rv = new RunView();
             const res = await rv.RunView<ActivityFileRow>({
                 EntityName: 'MJ_BizApps_Common: Activity Files',
-                ExtraFilter: `ActivityID = '${this.Record.ID}'`,
+                ExtraFilter: `ActivityID = '${RequireUUID(this.Record.ID, 'ActivityID')}'`,
                 OrderBy: '__mj_CreatedAt DESC',
                 ResultType: 'simple',
             });
