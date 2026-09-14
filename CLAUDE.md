@@ -111,17 +111,62 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
 3. `changes.yml` + `build.yml` run validation on the PR
 4. Merge to `next`
 
-**Release flow:**
-1. Open a single PR from `next` → `main` ("Release vX.Y.Z" coordinating PR)
-2. Merge to `main` triggers `publish.yml`:
-   - Validates, builds, runs `changeset version`, publishes to npm, tags the release, commits the version bump back to `main`
-   - Then automatically: checks out `next`, merges main into it, runs `npm install --package-lock-only`, commits the updated lockfile as `chore: Update package-lock.json with vX.Y.Z dependencies`, and pushes to `next`
-3. `next` is now ready for the next round of feature work, with a lockfile matching the just-published versions
+**Release flow:** versioning and publishing are separate, and neither writes to a
+protected branch. The version bump arrives as a PR on `next`; publishing reads it.
+
+1. `version.yml` fires on every push to `next` and maintains a **"Version Packages" PR**
+   into `next` — every package bumped, CHANGELOGs generated, `mj-app.json`'s `version` and
+   `mjVersionRange` synced, and **`pnpm-lock.yaml` refreshed**. Review and merge it when you
+   are ready to cut a release. A GitHub App opens the PR, so its checks run without anyone
+   clicking "Approve and run". Note what is NOT checked there: `build.yml` deliberately skips
+   `changeset-release/next`, so the refreshed lockfile is first verified against
+   `--frozen-lockfile` on the release PR into `main`, not on the version PR itself. A bad
+   lockfile can therefore sit on `next` and break every PR's build until the release PR
+   catches it.
+2. Open a single PR from `next` → `main` ("Release vX.Y.Z"). `release-readiness.yml` asserts
+   no changesets are still pending, and that a release carrying migrations is at least a
+   minor.
+3. Merging it triggers `publish.yml`, which validates, builds, runs `changeset publish`
+   (publishing every package whose version is not already on the registry), and tags
+   `vX.Y.Z`. It computes no version and writes to no branch.
 
 **Rules:**
-- **Never commit directly to `main`.** Always go through `next` first (except for the release coordinating PR itself).
-- **Never hand-author the `chore: Update package-lock.json with vX.Y.Z dependencies` commit on `next`.** That commit is created automatically by the publish workflow. If you find yourself wanting to write one manually, something is wrong upstream.
-- **Hotfixes that genuinely must bypass `next`** still go through a PR to `main`, but the next release-coordinating PR from `next` will need to merge main's hotfix commit back into next before merging next → main again. The publish workflow's automated merge-back handles this for you; you should rarely need to do it manually.
+- **Never commit directly to `main`.** Always go through `next` first (except for the release
+  coordinating PR itself).
+- **Never publish by dispatching `publish.yml` on `next`.** That was how 5.x releases were cut,
+  and it no longer works: the job is guarded to `refs/heads/main` and will not run. It is
+  guarded because a dispatch on `next` right after the version PR merges would publish `next`'s
+  versions and tag a `next` commit with none of the `rr:` gates having run. Releases go through
+  the PR into `main`; re-running the resulting push run is the safe way to retry one.
+- **Never hand-edit the version bump.** It is `changeset version`'s output, delivered by the
+  Version Packages PR. Bumping a package.json by hand desynchronises it from the lockfile —
+  `changeset version` rewrites internal dependency ranges and does NOT touch the lockfile,
+  which is why the version script refreshes it in the same PR.
+- **Hotfixes that genuinely must bypass `next`** go through a PR to `main` — and that PR
+  **must carry its own version bump**, or it will publish nothing. Recipe:
+
+  ```sh
+  git checkout -b hotfix/<thing> origin/main
+  # ... the fix ...
+  pnpm exec changeset          # describe it; pick the level
+  pnpm run version:ci          # consumes the changeset: bumps, CHANGELOGs, mj-app.json, lockfile
+  git add -A && git commit -m "release: hotfix vX.Y.Z"
+  ```
+
+  Commit the bump **and** the consumed changeset in the same PR, so `main` arrives with a new
+  version and nothing pending. This is not a hand-edit — it is `changeset version`'s output,
+  just run locally because there is no version PR on this path. Both halves matter: a hotfix
+  carrying a *pending* changeset fails `rr: changesets`, and one carrying *no* changeset
+  publishes zero packages (every version is already on npm). `publish.yml` now fails loudly on
+  that second case rather than printing "Released". **Then open an ordinary `main` → `next` PR**
+  to carry the fix home: there is no automated merge-back any more. It used to exist because the old flow created the version
+  commit ON `main` and had to push it back to `next`; the bump now originates on `next`, so
+  nothing travels in that direction except a hotfix. Until that PR merges, the fix exists
+  only on `main`.
+- **`main` will read as a commit or two "ahead" of `next` indefinitely.** Those are the
+  release PRs' own merge commits, with trees identical to `next` — GitHub creates a merge
+  commit even when the base is strictly behind. `git diff next main` (empty) is the check
+  that means something; `git log next..main` is noise.
 
 ---
 
