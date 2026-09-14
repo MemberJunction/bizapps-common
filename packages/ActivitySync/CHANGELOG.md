@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.42.0
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.42.0
+
 ## 5.41.0
 
 ### Patch Changes
