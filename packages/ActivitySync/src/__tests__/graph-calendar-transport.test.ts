@@ -84,8 +84,31 @@ describe('what the transport asks Graph for', () => {
         await transport(reader).Fetch({ ...QUERY, Since: new Date('2026-09-01T00:00:00Z') });
 
         const params = (reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls[0][0];
-        expect(params.StartDateTime).toEqual(new Date('2026-09-01T00:00:00Z'));
+        expect(params.StartDateTime).toBeInstanceOf(Date);
         expect(params.EndDateTime).toBeInstanceOf(Date);
+    });
+
+    it('does NOT start the window at the watermark, because the two are different quantities', async () => {
+        /**
+         * `WatermarkBasisForKind('Calendar')` is `ObservationTime` — when we last LOOKED.
+         * `StartDateTime` filters on the event's OWN time. Passing one as the other loses data with no
+         * issue raised: a meeting held last week but added to the calendar tomorrow starts before the
+         * watermark, so it falls outside this window and outside every later one, since each starts
+         * later still. It would never be read, on any run.
+         *
+         * The window is therefore rolling and ignores `Since`. Re-reading is cheap — the writer
+         * de-duplicates on ExternalID — and a missed event is unrecoverable.
+         */
+        const reader = readerReturning({ Success: true, SourceData: [] });
+        const watermark = new Date('2026-09-01T00:00:00Z');
+        await transport(reader).Fetch({ ...QUERY, Since: watermark });
+
+        const params = (reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        const rolling = new Date(NOW.getTime() - DEFAULT_FIRST_RUN_LOOKBACK_DAYS * 86_400_000);
+        expect(params.StartDateTime).toEqual(rolling);
+        expect(params.StartDateTime).not.toEqual(watermark);
+        // And the window must still reach back BEHIND the watermark, which is the whole point.
+        expect(params.StartDateTime.getTime()).toBeLessThan(watermark.getTime());
     });
 
     it('passes the credential through to the call rather than holding it', async () => {
@@ -128,7 +151,7 @@ describe('the first run, where there is no watermark', () => {
     it('falls back to a lookback and says so', async () => {
         const reader = readerReturning({ Success: true, SourceData: [] });
         const batch = await transport(reader).Fetch({ ...QUERY, Since: null });
-        expect(batch.Issues.join(' ')).toMatch(/no watermark/);
+        expect(batch.Issues.join(' ')).toMatch(/First calendar run/);
         expect(batch.Issues.join(' ')).toMatch(new RegExp(`${DEFAULT_FIRST_RUN_LOOKBACK_DAYS} days back`));
     });
 

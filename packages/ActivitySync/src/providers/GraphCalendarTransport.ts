@@ -128,14 +128,35 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
         }
 
         const now = this.Now();
-        const start = query.Since ?? new Date(now.getTime() - this.LookbackDays * 86_400_000);
+        /**
+         * THE WINDOW IS ROLLING, AND DELIBERATELY IGNORES THE WATERMARK.
+         *
+         * `WatermarkBasisForKind('Calendar')` is `ObservationTime` — for a calendar the watermark
+         * records WHEN WE LAST LOOKED, not how far through the data we got. That basis is correct and
+         * the reason is in its own docblock: a meeting can be dated in the future, so an item-time
+         * watermark would skip straight past anything scheduled earlier than the newest thing seen.
+         *
+         * This used to pass that same value as `StartDateTime`, which filters on the EVENT'S OWN time.
+         * The two are different quantities and using one as the other loses data silently: run 1 at T0
+         * sets the watermark to T0, and a meeting that took place last week but is added to the
+         * calendar tomorrow starts before T0, so it falls outside run 2's window — and outside every
+         * later window, since each one starts later still. It is never read, on any run, with no issue
+         * raised and `Success = true`. Retroactive additions and back-dated invitations are ordinary
+         * calendar behaviour, not an edge case.
+         *
+         * So the window is always `[now - LookbackDays, now + ForwardDays]` and the same events are
+         * re-read every run. That is not waste: de-duplication is by `ExternalID` in the writer, so a
+         * re-read costs one lookup and writes nothing, while a missed event is unrecoverable.
+         */
+        const start = new Date(now.getTime() - this.LookbackDays * 86_400_000);
         const end = new Date(now.getTime() + this.ForwardDays * 86_400_000);
 
         if (!query.Since) {
-            // Said out loud, because "no watermark" reads as "read everything" and this is not that.
+            // Said out loud on the FIRST run only, because that is when someone expects full history.
+            // On later runs the same bound applies and saying so every time would be noise.
             issues.push(
-                `First calendar run for ${query.Mailbox}: no watermark, so the window starts ` +
-                    `${this.LookbackDays} days back (${start.toISOString()}). Anything older was not read.`,
+                `First calendar run for ${query.Mailbox}: the window starts ${this.LookbackDays} days ` +
+                    `back (${start.toISOString()}). Anything older was not read.`,
             );
         }
 
