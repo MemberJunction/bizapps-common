@@ -26,8 +26,84 @@ const LOAD = 'src/load.ts';
 const ACTION = 'src/action-result.ts';
 const TRANSPORT = 'src/providers/GraphCommunicationTransport.ts';
 const ENGINE = 'src/ActivitySyncEngine.ts';
+// Added with the attestation and calendar work. The harness covered neither file, so every
+// mutation aimed at the gate or the calendar window reported all-clear by never opening them.
+const MSGTRANSPORT = 'src/providers/MessageTransport.ts';
+const CALENDAR = 'src/providers/GraphCalendarTransport.ts';
 
 const PRODUCT = [
+    /**
+     * THE ATTESTATION. Three mutants, because the gate guards reading an organisation's mail and its
+     * description promised more than it enforced: `Confirmed` and `ConfirmedAt` were compile-time
+     * shapes only, so any untyped caller opened tenant-wide Mail.Read AND Calendars.Read with neither.
+     */
+    {
+        id: 'M-LM1',
+        file: MSGTRANSPORT,
+        expect: ['requires a person on either decision'],
+        from: '    if (attestation.Confirmed !== true) {',
+        to: '    if (false) {',
+    },
+    {
+        id: 'M-LM2',
+        file: MSGTRANSPORT,
+        expect: ['requires a person on either decision'],
+        from: '    if (!(confirmedAt instanceof Date) || Number.isNaN(confirmedAt.getTime())) {',
+        to: '    if (false) {',
+    },
+    {
+        id: 'M-LM3',
+        file: MSGTRANSPORT,
+        expect: ['rejects an attestation with nobody answerable for it'],
+        from: "    if (!attestation.ConfirmedBy?.trim()) {",
+        to: '    if (false) {',
+    },
+    /**
+     * DEFECT #2, both halves. Reverting the engine to a hard-coded `[]` -- the literal original defect
+     * -- passed 330 of 330 before `engine.internal-domains.test.ts` existed, because the only test
+     * driving `Run` stubbed every lookup to empty.
+     */
+    {
+        id: 'M-ID1',
+        file: ENGINE,
+        expect: ['passes the rule set'],
+        from: '                InternalDomains: internalDomains.Rows,',
+        to: '                InternalDomains: [],',
+    },
+    {
+        id: 'M-ID2',
+        file: ENGINE,
+        expect: ['fails the run when the column cannot be parsed, rather than degrading to empty'],
+        from: '        if (internalDomains.Failed)',
+        to: '        if (false)',
+    },
+    /** THE REPORTING PATH. A run that succeeds still has to record what it reported. */
+    {
+        id: 'M-RP1',
+        file: ENGINE,
+        expect: ['writes its issues to the run row, not just to memory'],
+        from: "            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ').slice(0, 4000) : null;",
+        to: '            run.ErrorMessage = null;',
+    },
+    {
+        id: 'M-RP2',
+        file: ENGINE,
+        expect: ['defaults to the registered sink when none is passed'],
+        from: '        private readonly fileSink: ActivityFileSink | null = HostActivityFileSink(),',
+        to: '        private readonly fileSink: ActivityFileSink | null = null,',
+    },
+    /**
+     * THE CALENDAR WINDOW. `WatermarkBasisForKind('Calendar')` is ObservationTime -- when we last
+     * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
+     * back-dated meeting is never read, on any run, with no issue and Success = true.
+     */
+    {
+        id: 'M-CW1',
+        file: CALENDAR,
+        expect: ['does NOT start the window at the watermark'],
+        from: '        const start = new Date(now.getTime() - this.LookbackDays * 86_400_000);',
+        to: '        const start = query.Since ?? new Date(now.getTime() - this.LookbackDays * 86_400_000);',
+    },
     {
         id: 'M-AC6',
         file: STAGES,
