@@ -29,6 +29,9 @@ const POLICY = 'src/custom/live-mailbox-policy.ts';
 // are "all caught", and nothing was registered for this file. It is the seam that decides WHICH
 // transport a surface gets, and getting it wrong reports a successful, empty calendar.
 const FACTORY = 'src/custom/graph-transport-factory.ts';
+// The wiring. Both loaders had thorough unit tests and nothing checked that anything CALLS them;
+// commenting out either line left all 43 tests green.
+const BOOTSTRAP = 'src/index.ts';
 
 const PRODUCT = [
     /**
@@ -108,6 +111,26 @@ const PRODUCT = [
         expect: ['enabling live fetch is announced at bootstrap'],
         from: '    LogStatus(',
         to: '    (() => undefined)(',
+    },
+    /**
+     * MJAPI STARTUP. `DynamicPackageLoader` calls `LoadBizAppsCommonServer`, and these two lines are
+     * the only thing that makes either registry in this branch reachable on a real host. Neither
+     * omission is loud: without the policy load a correctly configured host is refused and told to
+     * set the variables it already set; without the factory no connection ever gets a transport.
+     */
+    {
+        id: 'M-BOOT1',
+        file: BOOTSTRAP,
+        expect: ['reads this host attestation from the environment'],
+        from: '    LoadLiveMailboxPolicyFromEnv();',
+        to: '    void LoadLiveMailboxPolicyFromEnv;',
+    },
+    {
+        id: 'M-BOOT2',
+        file: BOOTSTRAP,
+        expect: ['registers the Graph transport factory'],
+        from: '    LoadGraphTransportFactory();',
+        to: '    void LoadGraphTransportFactory;',
     },
     /**
      * THE SURFACE DISPATCH. One connection drives two surfaces from the same type row, and this
