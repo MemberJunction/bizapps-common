@@ -89,9 +89,7 @@ jobs:
         env:
           MIGRATION_IMMUTABILITY_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'migration-immutability-exempt') }}
         run: |
-          # NOT --depth=0: git rejects it outright ("depth 0 is not a positive number"), so the
-          # old `--depth=0 || plain` pair never once ran its first command. A full fetch is what
-          # is wanted anyway — the three-dot compare needs history on both sides.
+          # A full fetch, not a shallow one: the three-dot compare needs history on both sides.
           git fetch --no-tags origin "${{ github.base_ref }}"
           ./ci/check-migration-immutability.sh "origin/${{ github.base_ref }}"
 
