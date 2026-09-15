@@ -108,7 +108,9 @@ export function TodayIn(zone: string, now: Date = new Date()): CalendarDay {
 export function AddDays(day: CalendarDay, days: number): CalendarDay {
     const start = FromCalendarDay(day);
     start.setUTCDate(start.getUTCDate() + days);
-    return ToCalendarDay(start) ?? day;
+    const moved = ToCalendarDay(start);
+    if (moved === null) throw new RangeError(`Not a calendar day: ${day}`);
+    return moved;
 }
 
 /** Fixed-width ISO days sort lexically in chronological order, so a string compare is exact. */

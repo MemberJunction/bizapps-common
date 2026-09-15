@@ -52,3 +52,8 @@ jobs:
 
       - name: Build all packages
         run: pnpm run build:packages
+
+      # Narrow to this package: other packages' test state is unknown, and this job already
+      # has node_modules and the built packages the tests need.
+      - name: Test common-entities
+        run: pnpm --filter @mj-biz-apps/common-entities test

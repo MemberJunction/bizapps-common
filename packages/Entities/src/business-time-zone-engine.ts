@@ -35,9 +35,15 @@ export interface BusinessTimeZoneSetting {
     Iana: string;
     Sql: string;
     Source: (typeof BUSINESS_TIME_ZONE_KEYS)[number] | 'fallback';
+    Warning?: string;
 }
 
 const FALLBACK: BusinessTimeZoneSetting = { Iana: UTC_ZONE, Sql: UTC_ZONE, Source: 'fallback' };
+
+/** The UTC fallback, carrying why resolution landed there. */
+function fallback(reason: string): BusinessTimeZoneSetting {
+    return { Iana: UTC_ZONE, Sql: UTC_ZONE, Source: 'fallback', Warning: reason };
+}
 
 interface ParsedZone {
     iana?: unknown;
@@ -55,12 +61,20 @@ function parseZone(text: string | null | undefined): ParsedZone | null {
     }
 }
 
-function settingFrom(row: InstanceConfigurationRow): BusinessTimeZoneSetting | null {
+function settingFrom(row: InstanceConfigurationRow, key: (typeof BUSINESS_TIME_ZONE_KEYS)[number]): BusinessTimeZoneSetting | null {
     const raw = (row.Value ?? '').trim();
     const parsed = raw.length === 0 ? parseZone(row.DefaultValue) : parseZone(raw);
     if (!parsed || typeof parsed.iana !== 'string' || !IsKnownTimeZone(parsed.iana)) return null;
-    const sql = typeof parsed.sql === 'string' && parsed.sql.trim().length > 0 ? parsed.sql.trim() : parsed.iana;
-    return { Iana: parsed.iana, Sql: sql, Source: row.FeatureKey as BusinessTimeZoneSetting['Source'] };
+    const sqlRaw = typeof parsed.sql === 'string' ? parsed.sql.trim() : '';
+    if (sqlRaw.length === 0) {
+        return {
+            Iana: parsed.iana,
+            Sql: parsed.iana,
+            Source: key,
+            Warning: `row ${row.FeatureKey} sets iana but not sql; SQL Server views will fall back to UTC until sql is set`,
+        };
+    }
+    return { Iana: parsed.iana, Sql: sqlRaw, Source: key };
 }
 
 /** The setting the rows describe, in key precedence order, or the UTC fallback. Pure, for tests. */
@@ -68,16 +82,17 @@ export function ResolveBusinessTimeZoneSetting(rows: ReadonlyArray<InstanceConfi
     for (const key of BUSINESS_TIME_ZONE_KEYS) {
         const row = rows.find((r) => r.FeatureKey === key);
         if (!row) continue;
-        const setting = settingFrom(row);
-        if (setting) return setting;
+        // The first key present wins, readable or not; an unreadable preferred row means UTC on
+        // every tier rather than a code/view split.
+        return settingFrom(row, key) ?? fallback(`row ${key} is unreadable or names an unknown zone`);
     }
-    return FALLBACK;
+    return fallback('no BizApps.BusinessTimeZone or Business.TimeZone row');
 }
 
 @RegisterForStartup()
 export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
     private _configurations: InstanceConfigurationRow[] = [];
-    private warned = false;
+    private warned = new Set<string>();
 
     public static get Instance(): BusinessTimeZoneEngine {
         return super.getInstance<BusinessTimeZoneEngine>();
@@ -98,7 +113,9 @@ export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
 
     /** The resolved setting; UTC before load, on any unreadable row, or without read permission. */
     public get Setting(): BusinessTimeZoneSetting {
-        if (!this.Loaded) return FALLBACK;
+        if (!this.Loaded) {
+            return this.warnOnce('engine not configured — call BusinessTimeZoneEngine.Instance.Config() where you configure your other engines');
+        }
         let rows: InstanceConfigurationRow[];
         try {
             rows = this.GetConfigData<InstanceConfigurationRow>('_configurations');
@@ -106,7 +123,8 @@ export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
             return this.warnOnce('the current user cannot read MJ: Instance Configurations');
         }
         const setting = ResolveBusinessTimeZoneSetting(rows);
-        return setting.Source === 'fallback' ? this.warnOnce('no readable BizApps.BusinessTimeZone row') : setting;
+        if (setting.Warning) this.warnOnce(setting.Warning);
+        return setting;
     }
 
     /** IANA zone name for code. */
@@ -137,8 +155,8 @@ export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
     }
 
     private warnOnce(reason: string): BusinessTimeZoneSetting {
-        if (!this.warned) {
-            this.warned = true;
+        if (!this.warned.has(reason)) {
+            this.warned.add(reason);
             LogStatus(`BusinessTimeZoneEngine: ${reason}; dates default to UTC until it is set.`);
         }
         return FALLBACK;

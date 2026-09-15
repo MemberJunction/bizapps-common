@@ -88,6 +88,9 @@ describe('day arithmetic never touches a zone', () => {
         expect(LastDayOfPriorMonth('2026-03-01')).toBe('2026-02-28');
         expect(LastDayOfPriorMonth('2026-01-15')).toBe('2025-12-31');
     });
+    it('AddDays throws on a malformed day rather than silently returning it unchanged', () => {
+        expect(() => AddDays('2026-9-3', 1)).toThrow(RangeError);
+    });
     it('IsCalendarDay accepts only zero-padded YYYY-MM-DD', () => {
         expect(IsCalendarDay('2026-08-10')).toBe(true);
         expect(IsCalendarDay('2026-8-10')).toBe(false);
@@ -111,6 +114,11 @@ describe('DayStartUtc and DayEndUtc are the instants a day covers in a zone', ()
     });
     it('UTC is the identity', () => {
         expect(DayStartUtc('2026-08-27', 'UTC').toISOString()).toBe('2026-08-27T00:00:00.000Z');
+    });
+    it('the day the clocks fall back is 25 hours long and still starts at local midnight', () => {
+        // 2026-11-01: CDT until 02:00, then CST. Midnight is CDT (-05:00); the next midnight is CST (-06:00).
+        expect(DayStartUtc('2026-11-01', CENTRAL).toISOString()).toBe('2026-11-01T05:00:00.000Z');
+        expect(DayEndUtc('2026-11-01', CENTRAL).toISOString()).toBe('2026-11-02T05:59:59.999Z');
     });
 });
 

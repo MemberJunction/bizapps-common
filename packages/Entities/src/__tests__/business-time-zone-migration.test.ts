@@ -48,9 +48,10 @@ describe('the business time zone migration', () => {
     });
 
     it('the PostgreSQL twin degrades an unreadable value to UTC instead of raising into every view', () => {
-        expect(pgFlat).toContain('CREATE OR REPLACE FUNCTION "__mj_BizAppsCommon"."fnBusinessZoneIana"(p_value text)');
+        expect(pgFlat).toContain('CREATE OR REPLACE FUNCTION __mj_bizappscommon."fnBusinessZoneIana"(p_value text)');
         expect(pgFlat).toContain('EXCEPTION WHEN OTHERS THEN RETURN NULL;');
-        expect(pgFlat).toContain('"__mj_BizAppsCommon"."fnBusinessZoneIana"(c."Value")');
-        expect(pgFlat).not.toContain('::jsonb ->> \'iana\'), \'\'),');
+        expect(pgFlat).toContain('__mj_bizappscommon."fnBusinessZoneIana"(c."Value")');
+        expect(pgFlat).not.toMatch(/"__mj_[A-Za-z]*[A-Z]/); // a quoted mixed-case schema does not exist on PG
+        expect(pgFlat).not.toMatch(/"Value"\)?,? ?''\)::jsonb|c\."Value"::jsonb|c\."DefaultValue"::jsonb/);
     });
 });

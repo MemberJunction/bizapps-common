@@ -7,9 +7,9 @@
 --   1. One MJ: Instance Configurations row, FeatureKey 'BizApps.BusinessTimeZone',
 --      JSON with the IANA name code reads ('iana') and the Windows name SQL
 --      Server's AT TIME ZONE accepts ('sql'). Shipped with an EMPTY value so the
---      DefaultValue (UTC) applies; the host sets the value (aidp-next sets Central).
+--      DefaultValue (UTC) applies; the host instance sets the value (for example to Central).
 --      Seeded through the MJ procedure, guarded by the fixed ID, so a host that
---      seeded it first (aidp-next's upsert uses the same ID) is left alone.
+--      seeded it first (a host's own upsert using the same ID) is left alone.
 --      Not a metadata-sync file, deliberately: a later `mj sync push` from this
 --      repo cannot overwrite the instance's value.
 --   2. fnBusinessToday(): an INLINE table-valued function, not a scalar one. A
@@ -47,12 +47,14 @@ AS RETURN (
     SELECT CAST(SYSDATETIMEOFFSET() AT TIME ZONE v.SqlZone AS date) AS [Today],
            v.SqlZone AS [SqlZone]
     FROM (
-        SELECT CASE WHEN EXISTS (SELECT 1 FROM sys.time_zone_info t WHERE t.[name] = z.SqlZone)
+        SELECT CASE WHEN EXISTS (SELECT 1 FROM sys.time_zone_info t WHERE t.[name] = z.SqlZone COLLATE DATABASE_DEFAULT)
                     THEN z.SqlZone ELSE N'UTC' END AS SqlZone
         FROM (
+            -- The first key present wins, readable or not; an unreadable preferred row means UTC
+            -- on every tier rather than a code/view split.
             SELECT COALESCE(
-                       NULLIF(JSON_VALUE(NULLIF(LTRIM(RTRIM(c.[Value])), N''), '$.sql'), N''),
-                       NULLIF(JSON_VALUE(c.[DefaultValue], '$.sql'), N''),
+                       NULLIF(CASE WHEN ISJSON(c.[Value]) = 1 THEN JSON_VALUE(NULLIF(LTRIM(RTRIM(c.[Value])), N''), '$.sql') END, N''),
+                       NULLIF(CASE WHEN ISJSON(c.[DefaultValue]) = 1 THEN JSON_VALUE(c.[DefaultValue], '$.sql') END, N''),
                        N'UTC') AS SqlZone
             FROM (SELECT TOP (1) [Value], [DefaultValue]
                   FROM [${mjSchema}].[InstanceConfiguration]

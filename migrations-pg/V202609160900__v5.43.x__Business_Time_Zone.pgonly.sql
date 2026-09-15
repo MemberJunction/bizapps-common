@@ -15,7 +15,7 @@ WHERE NOT EXISTS (SELECT 1 FROM "__mj"."InstanceConfiguration"
 -- The zone name a config row holds, or NULL when its JSON is unreadable. plpgsql so a
 -- malformed Value degrades to the fallback instead of raising into every view that
 -- joins fnBusinessToday() — the same lax behaviour SQL Server's JSON_VALUE has.
-CREATE OR REPLACE FUNCTION "__mj_BizAppsCommon"."fnBusinessZoneIana"(p_value text)
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."fnBusinessZoneIana"(p_value text)
 RETURNS text
 LANGUAGE plpgsql IMMUTABLE
 AS $$
@@ -29,16 +29,18 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION "__mj_BizAppsCommon"."fnBusinessToday"()
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."fnBusinessToday"()
 RETURNS TABLE ("Today" date, "SqlZone" text)
 LANGUAGE sql STABLE
 AS $$
     WITH picked AS (
         SELECT COALESCE(
-                   "__mj_BizAppsCommon"."fnBusinessZoneIana"(c."Value"),
-                   "__mj_BizAppsCommon"."fnBusinessZoneIana"(c."DefaultValue"),
+                   __mj_bizappscommon."fnBusinessZoneIana"(c."Value"),
+                   __mj_bizappscommon."fnBusinessZoneIana"(c."DefaultValue"),
                    'UTC') AS zone
         FROM "__mj"."InstanceConfiguration" c
+        -- The first key present wins, readable or not; an unreadable preferred row means UTC on
+        -- every tier rather than a code/view split.
         WHERE c."FeatureKey" IN ('Business.TimeZone', 'BizApps.BusinessTimeZone')
         ORDER BY CASE c."FeatureKey" WHEN 'Business.TimeZone' THEN 0 ELSE 1 END
         LIMIT 1
@@ -48,6 +50,11 @@ AS $$
                          WHERE EXISTS (SELECT 1 FROM pg_timezone_names n WHERE n.name = p.zone)),
                         'UTC') AS zone
     )
+    -- "SqlZone" is the IANA name here: PostgreSQL's AT TIME ZONE takes IANA names, so the two
+    -- columns coincide.
     SELECT (now() AT TIME ZONE z.zone)::date AS "Today", z.zone AS "SqlZone"
     FROM zone z;
 $$;
+
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."fnBusinessZoneIana" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_bizappscommon."fnBusinessToday" TO "cdp_UI", "cdp_Developer", "cdp_Integration"; EXCEPTION WHEN others THEN NULL; END $$;

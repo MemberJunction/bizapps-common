@@ -63,7 +63,7 @@ UTC midnight — `ToCalendarDay` / `FromCalendarDay` in `@mj-biz-apps/common-ent
 one thing that needs a zone: read it from `BusinessTimeZoneEngine.Instance.Today()`, never from
 `new Date().toISOString()` or the browser's local day. Views get the same answer from
 `CROSS JOIN [__mj_BizAppsCommon].[fnBusinessToday]() AS bt` and `bt.Today`. The zone is the
-`BizApps.BusinessTimeZone` instance configuration row; the host sets it (AIDP Next: Central).
+`BizApps.BusinessTimeZone` instance configuration row; the host instance sets the value (for example to Central).
 
 ## Metadata Sync
 ```bash
