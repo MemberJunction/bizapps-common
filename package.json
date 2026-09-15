@@ -20,7 +20,7 @@
     "setup": "echo 'Please run: pnpm run mj:migrate && pnpm run mj:codegen && pnpm run build'",
     "change": "changeset",
     "version": "changeset version",
-    "version:ci": "changeset version && node ci/sync-mj-app-version.mjs && pnpm install --lockfile-only",
+    "version:prepare": "changeset version && node ci/sync-mj-app-version.mjs && pnpm install --lockfile-only",
     "test:objectmodel:pg": "node scripts/pg-objectmodel-test.mjs",
     "test:integration": "node test-harnesses/integration.mjs"
   },

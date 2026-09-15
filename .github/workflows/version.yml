@@ -81,7 +81,7 @@ jobs:
           # PR title falling back to the default "Version Packages".
           #
           # No `publish` input: this workflow only ever versions.
-          version: pnpm run version:ci
+          version: pnpm run version:prepare
           title: 'chore(release): version packages'
           commit: 'chore(release): version packages'
           github-token: ${{ steps.app-token.outputs.token }}

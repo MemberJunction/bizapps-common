@@ -7,7 +7,7 @@
 # .changeset/*.md — only `changeset version` does.
 #
 # Removed on purpose: the version prediction and its mismatch guard (the bump is now a
-# reviewed diff, not a computed surprise), the mj-app.json write (moved into version:ci),
+# reviewed diff, not a computed surprise), the mj-app.json write (moved into version:prepare),
 # `commitpush`, and the main->next merge-back. Those two pushed straight to `main` and
 # `next` — see bizapps-common#79 for why depending on that is a liability.
 name: Build and Publish
@@ -143,7 +143,7 @@ jobs:
             exit 0
           fi
 
-          echo "::error::Published 0 packages, but $VERSION was not yet tagged. Every package version on main already exists on npm, which means this commit reached main WITHOUT a version bump — most likely a hotfix merged straight to main without running 'pnpm exec changeset' + 'pnpm run version:ci' first. The fix is on main but will never reach a consumer. Raise a changeset, run version:ci, and merge the bump."
+          echo "::error::Published 0 packages, but $VERSION was not yet tagged. Every package version on main already exists on npm, which means this commit reached main WITHOUT a version bump — most likely a hotfix merged straight to main without running 'pnpm exec changeset' + 'pnpm run version:prepare' first. The fix is on main but will never reach a consumer. Raise a changeset, run version:prepare, and merge the bump."
           {
             echo "## Nothing published"
             echo

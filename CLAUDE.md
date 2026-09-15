@@ -149,7 +149,7 @@ protected branch. The version bump arrives as a PR on `next`; publishing reads i
   git checkout -b hotfix/<thing> origin/main
   # ... the fix ...
   pnpm exec changeset          # describe it; pick the level
-  pnpm run version:ci          # consumes the changeset: bumps, CHANGELOGs, mj-app.json, lockfile
+  pnpm run version:prepare          # consumes the changeset: bumps, CHANGELOGs, mj-app.json, lockfile
   git add -A && git commit -m "release: hotfix vX.Y.Z"
   ```
 
