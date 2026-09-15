@@ -31,6 +31,13 @@ const ENGINE = 'src/ActivitySyncEngine.ts';
 const MSGTRANSPORT = 'src/providers/MessageTransport.ts';
 const CALENDAR = 'src/providers/GraphCalendarTransport.ts';
 const RECORDED = 'src/providers/RecordedMessageTransport.ts';
+// Both of these had changesets enumerating mutations that were "all caught" and NO registered
+// mutants at all. The mutations were run by hand at the time and nothing kept them, which is the
+// defect this package keeps being written against, applied to its own evidence.
+const PARTS = 'src/participants.ts';
+const ATTACH = 'src/attachments.ts';
+const CALPROVIDER = 'src/providers/MSGraphCalendarSyncProvider.ts';
+const MAPPER = 'src/providers/GraphMessageMapper.ts';
 
 const PRODUCT = [
     /**
@@ -99,6 +106,154 @@ const PRODUCT = [
      * back-dated meeting is never read, on any run, with no issue and Success = true.
      */
     /**
+     * INTERNAL DOMAINS, the parsing half. An empty list is not a disabled filter, it is an INVERTED
+     * one -- every participant counts as External -- so each way of quietly producing an empty or
+     * wrong list is its own mutant.
+     */
+    /**
+     * THE REFUSAL'S ACTIONABLE HALF. Every other assertion in the suite compares against the
+     * `LIVE_GRAPH_REFUSAL` constant, so the message could be trimmed back to "Live Graph fetch is
+     * disabled." with the suite still green -- which is how it came to name only the scoped decision,
+     * and a function rather than the environment variables a deployment actually sets.
+     */
+    {
+        id: 'M-REF1',
+        file: GRAPH,
+        expect: ['names the configuration a deployment actually sets'],
+        from: "    'sets its ACTIVITY_SYNC_MAILBOX_POLICY_* variables (see @mj-biz-apps/common-server); anything ' +",
+        to: "    'is configured by whoever deploys it; anything ' +",
+    },
+    {
+        id: 'M-REF2',
+        file: GRAPH,
+        expect: ['offers BOTH decisions, not only the scoped one'],
+        from: "    'not and the tenant-wide grant is accepted deliberately, in writing, by a named person on a ' +",
+        to: "    'not, in which case scope it first. Also ' +",
+    },
+    /**
+     * THE MAPPER'S READ of Graph's own flag. If it stopped reading `hasAttachments`, every rule that
+     * asks for attachments would quietly find none on every real message -- the attachment feature
+     * doing nothing, on a run that reports success.
+     */
+    {
+        id: 'M-MAP1',
+        file: MAPPER,
+        expect: ['marks exactly the one message that carries attachments'],
+        from: '        HasAttachments: message.hasAttachments === true,',
+        to: '        HasAttachments: false,',
+    },
+    {
+        id: 'M-PA1',
+        file: PARTS,
+        expect: ['refuses text that is not JSON'],
+        from: "            Issue: `Rule set \"${ruleSetName}\" has InternalDomains that is not valid JSON. Expected an array like [\"bluecypress.io\"].`,",
+        to: '            Issue: undefined,',
+    },
+    {
+        id: 'M-PA2',
+        file: PARTS,
+        expect: ['refuses valid JSON that is not an array'],
+        from: '    if (!Array.isArray(parsed)) {',
+        to: '    if (false) {',
+    },
+    {
+        id: 'M-PA3',
+        file: PARTS,
+        expect: ['normalises case and a leading @', 'de-duplicates rather than counting a domain twice'],
+        from: "        const d = String(entry ?? '').trim().toLowerCase().replace(/^@/, '');",
+        to: "        const d = String(entry ?? '').trim();",
+    },
+    {
+        id: 'M-PA4',
+        file: PARTS,
+        expect: ['de-duplicates rather than counting a domain twice'],
+        from: '        if (d && !domains.includes(d)) domains.push(d);',
+        to: '        if (d) domains.push(d);',
+    },
+    {
+        id: 'M-PA5',
+        file: PARTS,
+        expect: ['drops empty entries instead of matching an empty domain'],
+        from: '        if (d && !domains.includes(d)) domains.push(d);',
+        to: '        if (!domains.includes(d)) domains.push(d);',
+    },
+    /** The warning is how the ORIGINAL defect would have been visible. Silencing it is the regression. */
+    {
+        id: 'M-PA6',
+        file: PARTS,
+        expect: ['warns when a scoped rule has no domains to work with'],
+        from: '    if (internalDomains.length > 0) return null;',
+        to: '    if (true) return null;',
+    },
+    {
+        id: 'M-PA7',
+        file: PARTS,
+        expect: ['does not treat Any as a participant test'],
+        from: "    const scoped = rules.filter((r) => r.ParticipantScope && r.ParticipantScope !== 'Any');",
+        to: '    const scoped = rules.filter((r) => r.ParticipantScope);',
+    },
+    /**
+     * ATTACHMENTS. Same situation: an enumerated "all caught" list with nothing registered behind it.
+     * Every one of these is a file silently not stored on a run that reports success.
+     */
+    {
+        id: 'M-AT1',
+        file: ATTACH,
+        expect: ['does not look when the rule did not ask'],
+        from: '    const wanted = rule?.IncludeAttachments === true;',
+        to: '    const wanted = rule?.IncludeAttachments !== false;',
+    },
+    {
+        id: 'M-AT2',
+        file: ATTACH,
+        expect: ['does not look when the source says there are none'],
+        from: '    const fetch = wanted && item?.HasAttachments === true;',
+        to: '    const fetch = wanted;',
+    },
+    {
+        id: 'M-AT3',
+        file: ATTACH,
+        expect: ['treats zero and negative as no cap rather than "keep nothing"'],
+        from: "        MaxBytes: typeof cap === 'number' && cap > 0 ? cap : null,",
+        to: "        MaxBytes: typeof cap === 'number' ? cap : null,",
+    },
+    {
+        id: 'M-AT4',
+        file: ATTACH,
+        expect: ['keeps nothing at all when the policy says not to fetch'],
+        from: '    if (!policy.Fetch) return selection;',
+        to: '    if (false) return selection;',
+    },
+    {
+        id: 'M-AT5',
+        file: ATTACH,
+        expect: ['drops inline images but records that it did'],
+        from: '        if (candidate.IsInline === true) {',
+        to: '        if (false) {',
+    },
+    {
+        id: 'M-AT6',
+        file: ATTACH,
+        expect: ['skips an unmeasurable file while a cap is in force'],
+        from: "        if (policy.MaxBytes !== null && !(typeof candidate.Size === 'number' && candidate.Size >= 0)) {",
+        to: '        if (false) {',
+    },
+    /** Off-by-one at the cap boundary: `>` keeps a file exactly at the cap, `>=` discards it. */
+    {
+        id: 'M-AT7',
+        file: ATTACH,
+        expect: ['keeps a file exactly at the cap'],
+        from: '        if (policy.MaxBytes !== null && candidate.Size > policy.MaxBytes) {',
+        to: '        if (policy.MaxBytes !== null && candidate.Size >= policy.MaxBytes) {',
+    },
+    {
+        id: 'M-AT8',
+        file: ATTACH,
+        expect: ['says nothing when nothing was dropped'],
+        from: '    if (selection.Skipped.length === 0) return null;',
+        to: '    if (false) return null;',
+    },
+    /**
      * THE REPLAY CAP, on a FIRST run. `capped && !!query.Since` left the first run of a truncated
      * replay uncapped, so a newest-first recording wrote a watermark NEWER than the payloads it had
      * withheld -- the live defect, reached without a prior watermark, in durable state a later live
@@ -110,6 +265,87 @@ const PRODUCT = [
         expect: ['a truncated first replay yields no watermark'],
         from: '        return { Payloads: payloads, Issues: issues, Capped: capped };',
         to: '        return { Payloads: payloads, Issues: issues, Capped: capped && !!query.Since };',
+    },
+    /**
+     * THE REST OF THE CALENDAR READ. Its changeset enumerated these as "all caught" while the harness
+     * carried exactly one mutant for the file. Each is a way for a calendar sync to report Success
+     * over data it did not read, or read wrongly.
+     */
+    {
+        id: 'M-CAL1',
+        file: CALENDAR,
+        expect: ['sends BOTH bounds, which is what makes Graph expand recurring series', 'reaches forward as well as back'],
+        from: '                EndDateTime: end,',
+        to: '                EndDateTime: undefined,',
+    },
+    {
+        id: 'M-CAL2',
+        file: CALENDAR,
+        expect: ['falls back to a lookback and says so'],
+        from: '        if (!query.Since) {',
+        to: '        if (false) {',
+    },
+    {
+        id: 'M-CAL3',
+        file: CALENDAR,
+        expect: ['asks for cancelled events, because the mapper models them'],
+        from: '                IncludeCancelled: true,',
+        to: '                IncludeCancelled: false,',
+    },
+    {
+        id: 'M-CAL4',
+        file: CALENDAR,
+        expect: ['reads SourceData, not the normalized Events'],
+        from: '        const payloads = (result.SourceData ?? []) as Record<string, unknown>[];',
+        to: '        const payloads = (result.Events ?? []) as Record<string, unknown>[];',
+    },
+    {
+        id: 'M-CAL5',
+        file: CALENDAR,
+        expect: ['warns when recurrence was not expanded despite a bounded window'],
+        from: '        if (result.RecurrenceExpanded === false) {',
+        to: '        if (false) {',
+    },
+    {
+        id: 'M-CAL6',
+        file: CALENDAR,
+        expect: ['throws when Graph refuses, instead of reporting an empty calendar'],
+        from: '        if (!result?.Success) {',
+        to: '        if (false) {',
+    },
+    {
+        id: 'M-CAL7',
+        file: CALENDAR,
+        expect: ['flags a capped read, which may have left events behind'],
+        from: '        return { Payloads: payloads, Issues: issues, Capped: capped };',
+        to: '        return { Payloads: payloads, Issues: issues, Capped: false };',
+    },
+    /** A replayed calendar run that claims to be live writes rows indistinguishable from real ones. */
+    {
+        id: 'M-CAL8',
+        file: CALPROVIDER,
+        expect: ['reports IsLive from the transport rather than claiming true'],
+        from: '        return this.Transport?.IsLive ?? true;',
+        to: '        return true;',
+    },
+    /**
+     * SURFACE DISPATCH. One connection drives two surfaces from the same type row; handing the mail
+     * driver to the calendar pass built a MAIL transport, fed message payloads to the event mapper,
+     * and dropped every one for having no start time -- reported as a successful, empty calendar.
+     */
+    {
+        id: 'M-SD1',
+        file: ENGINE,
+        expect: ['tells the calendar surface the CALENDAR driver'],
+        from: "    const declared = kind === 'Calendar' ? typeRow?.CalendarDriverClass : typeRow?.DriverClass;",
+        to: '    const declared = typeRow?.DriverClass;',
+    },
+    {
+        id: 'M-SD2',
+        file: ENGINE,
+        expect: ['treats a blank column as absent'],
+        from: '    return declared?.trim() ? declared.trim() : fallback;',
+        to: '    return declared ?? fallback;',
     },
     {
         id: 'M-CW1',

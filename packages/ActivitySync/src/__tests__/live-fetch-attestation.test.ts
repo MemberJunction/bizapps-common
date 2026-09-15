@@ -275,3 +275,41 @@ describe('the attestation has to actually say something', () => {
         expect(HostLiveMailboxPolicy()).toEqual(ATTESTATION);
     });
 });
+
+
+/**
+ * THE REFUSAL HAS TO BE ACTIONABLE, and nothing checked that it was.
+ *
+ * Every other test in this file compares against the `LIVE_GRAPH_REFUSAL` constant, so the message
+ * could have been trimmed to "Live Graph fetch is disabled." and the suite would have stayed green.
+ * That is the shape this package keeps being fixed for: a promise made in a changeset -- "the refusal
+ * now names the way out" -- with no reader.
+ *
+ * These pin the three things an operator needs and cannot guess: that there are TWO legitimate
+ * answers rather than one, what to set, and that a blocked-looking tenant is not actually blocked.
+ */
+describe('the refusal tells an operator what to do next', () => {
+    it('names the configuration a deployment actually sets', () => {
+        // The path that ships is LoadLiveMailboxPolicyFromEnv, already wired into common-server's
+        // bootstrap. An earlier version named only the function, which is code nobody needs to write.
+        expect(LIVE_GRAPH_REFUSAL).toContain('ACTIVITY_SYNC_MAILBOX_POLICY_');
+        expect(LIVE_GRAPH_REFUSAL).toContain('common-server');
+    });
+
+    it('offers BOTH decisions, not only the scoped one', () => {
+        // Adding an API permission in Entra and creating an Exchange RBAC assignment are different
+        // jobs owned by different people. A refusal that only describes "scoped" leaves everyone
+        // else choosing between inventing a group name and bypassing the gate.
+        expect(LIVE_GRAPH_REFUSAL).toMatch(/tenant-wide grant is accepted/i);
+        expect(LIVE_GRAPH_REFUSAL).toMatch(/name the group/i);
+        expect(LIVE_GRAPH_REFUSAL).toMatch(/both are legitimate/i);
+    });
+
+    it('still leads with what is at stake, not with the remedy', () => {
+        // Order matters. Someone who reads only the first sentence must come away knowing the grant
+        // is tenant-wide, not knowing which variable turns it on.
+        expect(LIVE_GRAPH_REFUSAL.indexOf('EVERY mailbox')).toBeLessThan(
+            LIVE_GRAPH_REFUSAL.indexOf('ACTIVITY_SYNC_MAILBOX_POLICY_'),
+        );
+    });
+});

@@ -33,14 +33,35 @@ import type {
     ActivityTransportFactory,
 } from './MessageTransport.js';
 
+/**
+ * Why live fetch is off, and what to do about it.
+ *
+ * NAMING THE WAY OUT MATTERS AS MUCH AS THE REFUSAL: without it an operator who HAS checked the
+ * policy has no supported next step, and the tempting one is to go editing a database row.
+ *
+ * An earlier version of this string named only one of them — "call AllowLiveMailboxFetch() with the
+ * group the policy names" — which was wrong twice over. It assumed every deployment ends up with an
+ * Exchange RBAC assignment, when `TenantWideAccepted` exists precisely because most will not; an
+ * operator in a tenant with no RBAC owner read that as "you are blocked" and was left with inventing
+ * a group name or bypassing the gate. And it pointed at a FUNCTION when the path a deployment
+ * actually takes is `LoadLiveMailboxPolicyFromEnv`, already wired into `common-server`'s bootstrap,
+ * which reads environment variables. Telling someone to write code they do not need to write is the
+ * same defect in miniature: a documented route that is not the route.
+ *
+ * The variable names are referenced rather than imported — `common-server` depends on this package,
+ * not the other way round — which is the same way the attestation's own docblock already refers to
+ * `LoadLiveMailboxPolicyFromEnv` by name.
+ */
 export const LIVE_GRAPH_REFUSAL =
     'Live Graph fetch is disabled. MSGraphProvider uses app-only auth, so Mail.Read reads ' +
     'EVERY mailbox in the tenant until an Exchange Application Access Policy scopes the ' +
-    'app registration to a security group. Confirm that policy exists before enabling ' +
+    'app registration to a security group. Find out whether that policy exists before enabling ' +
     'this, and use a recorded transport or FixtureActivitySyncProvider until then. ' +
-    // Naming the way out matters as much as the refusal: without it an operator who HAS checked the
-    // policy has no supported next step, and the tempting one is to edit a database row.
-    'Once confirmed, call AllowLiveMailboxFetch() at host bootstrap with the group the policy names.';
+    'Then record the answer, whichever it is: the app IS scoped and you name the group, or it is ' +
+    'not and the tenant-wide grant is accepted deliberately, in writing, by a named person on a ' +
+    'date. Both are legitimate. Not knowing is not. A host that reads deployment configuration ' +
+    'sets its ACTIVITY_SYNC_MAILBOX_POLICY_* variables (see @mj-biz-apps/common-server); anything ' +
+    'else calls AllowLiveMailboxFetch() once at bootstrap.';
 
 export const NO_TRANSPORT_REFUSAL =
     'No mailbox transport was supplied. Construct this provider with a GraphCommunicationTransport ' +

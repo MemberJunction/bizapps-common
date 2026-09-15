@@ -25,6 +25,10 @@ import { fileURLToPath } from 'node:url';
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const POLICY = 'src/custom/live-mailbox-policy.ts';
+// The calendar changeset enumerated "refusing to serve the calendar driver" among mutations that
+// are "all caught", and nothing was registered for this file. It is the seam that decides WHICH
+// transport a surface gets, and getting it wrong reports a successful, empty calendar.
+const FACTORY = 'src/custom/graph-transport-factory.ts';
 
 const PRODUCT = [
     /**
@@ -104,6 +108,47 @@ const PRODUCT = [
         expect: ['enabling live fetch is announced at bootstrap'],
         from: '    LogStatus(',
         to: '    (() => undefined)(',
+    },
+    /**
+     * THE SURFACE DISPATCH. One connection drives two surfaces from the same type row, and this
+     * is what decides which transport each gets. Handing the calendar pass a MAIL transport fed
+     * message payloads to the event mapper and dropped every one for having no start time --
+     * reported as a successful, EMPTY calendar, which is indistinguishable from a real one.
+     */
+{
+        id: 'M-GTF1',
+        file: FACTORY,
+        expect: ['serves the calendar driver, not just the message one'],
+        from: '    const isCalendar = context.DriverClass === MICROSOFT_365_CALENDAR;',
+        to: '    const isCalendar = false;',
+    },
+    {
+        id: 'M-GTF2',
+        file: FACTORY,
+        expect: ['builds the message transport for the message driver'],
+        from: '    if (isCalendar) {',
+        to: '    if (isMail || isCalendar) {',
+    },
+    {
+        id: 'M-GTF3',
+        file: FACTORY,
+        expect: ['returns null for a driver it does not serve'],
+        from: '    if (!isMail && !isCalendar) {',
+        to: '    if (false) {',
+    },
+    {
+        id: 'M-GTF4',
+        file: FACTORY,
+        expect: ['still needs a credential for the calendar surface too'],
+        from: '    if (!credentialName) {',
+        to: '    if (false) {',
+    },
+    {
+        id: 'M-GTF5',
+        file: FACTORY,
+        expect: ['trims the credential name before resolving it'],
+        from: "    const credentialName = (context.CredentialsRef ?? '').trim();",
+        to: "    const credentialName = context.CredentialsRef ?? '';",
     },
 ];
 
