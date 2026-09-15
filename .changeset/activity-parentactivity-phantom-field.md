@@ -46,3 +46,18 @@ All three paths exercised against a real database: the defect reproduced (`Faile
 written), the migration applied (`Included: 5`, five Activities and seventeen links written), a second
 and third application were clean no-ops, and with the column artificially present the migration
 correctly declined to remove the field.
+
+**The generated artifacts are deliberately left stale, and this is the record of that.**
+`get ParentActivity()` stays in the generated entity class and Zod schema, and `ParentActivity?:
+string` in the GraphQL type. Where this migration removes the field those read `null` rather than
+throwing — `BaseEntity.Get` falls through both the raw path and `GetFieldByName` — so the positional
+save-capture fix holds either way.
+
+They are not regenerated because the deletion does not stop at generated files.
+`activity-identity.component.html` DISPLAYS the field: `@if (Record.ParentActivity)` gates a
+"Thread / Parent" stat in the Activity header, and the Angular package compiles with
+`strictTemplates: true`, so removing the getter makes that template a build error. Regenerating means
+changing a hand-written component that shows a user something — a different change from this one.
+
+The cost is drift: the next `mj codegen` on a healed database emits a three-file deletion, and
+whoever sees it should know it belongs here.

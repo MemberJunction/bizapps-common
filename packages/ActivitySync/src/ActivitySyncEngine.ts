@@ -1058,8 +1058,15 @@ export class ActivitySyncEngine {
              * still right: it is the run's only free-text column, it is NVARCHAR(MAX), and a warning
              * nobody can read is worth less than one filed under an imperfect name. Connection HEALTH
              * stays keyed on failure — a warned run must not make a working connection look broken.
+             *
+             * NOT TRUNCATED, and that is a change from the two older writes above. Both slice at 4000,
+             * an inherited habit rather than a constraint: every candidate column here is NVARCHAR(MAX)
+             * and none is 4000 wide. It cost nothing while those held a single failure message. This one
+             * is the first write that GROWS WITH THE ITEM COUNT — the attachment gap is reported once per
+             * item at roughly 250-320 characters, so a fifty-item run would lose most of its tail, in the
+             * field this commit added so those warnings could be read at all.
              */
-            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ').slice(0, 4000) : null;
+            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ') : null;
             if (!(await run.Save())) {
                 result.Issues.push(run.LatestResult?.CompleteMessage ?? 'ActivitySyncRun.Save failed.');
                 return;
