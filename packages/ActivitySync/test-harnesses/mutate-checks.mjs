@@ -30,6 +30,7 @@ const ENGINE = 'src/ActivitySyncEngine.ts';
 // mutation aimed at the gate or the calendar window reported all-clear by never opening them.
 const MSGTRANSPORT = 'src/providers/MessageTransport.ts';
 const CALENDAR = 'src/providers/GraphCalendarTransport.ts';
+const RECORDED = 'src/providers/RecordedMessageTransport.ts';
 
 const PRODUCT = [
     /**
@@ -97,6 +98,19 @@ const PRODUCT = [
      * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
      * back-dated meeting is never read, on any run, with no issue and Success = true.
      */
+    /**
+     * THE REPLAY CAP, on a FIRST run. `capped && !!query.Since` left the first run of a truncated
+     * replay uncapped, so a newest-first recording wrote a watermark NEWER than the payloads it had
+     * withheld -- the live defect, reached without a prior watermark, in durable state a later live
+     * transport inherits.
+     */
+    {
+        id: 'M-RC1',
+        file: RECORDED,
+        expect: ['a truncated first replay yields no watermark'],
+        from: '        return { Payloads: payloads, Issues: issues, Capped: capped };',
+        to: '        return { Payloads: payloads, Issues: issues, Capped: capped && !!query.Since };',
+    },
     {
         id: 'M-CW1',
         file: CALENDAR,

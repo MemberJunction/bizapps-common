@@ -678,11 +678,15 @@ describe('the host transport registry — making the seam reachable at all', () 
 
 describe('a capped REPLAY withholds the watermark too', () => {
     /**
-     * The live path was fixed first, and fixing only it left the seam inconsistent. A replay
-     * truncates with `slice(0, Limit)` — the FIRST N — so a recording ordered oldest-first produces
-     * a batch contiguous with the watermark, and advancing happens to be safe. That safety is an
-     * accident of FILE ORDER. A recording captured newest-first, or re-sorted by an editor, becomes
-     * the live data-loss bug with no code change anywhere and nothing to notice it.
+     * The live path was fixed first, and fixing only it left the seam inconsistent — and the
+     * inconsistency was worse than "an accident of file order", which is what an earlier version of
+     * this comment and the test below both claimed.
+     *
+     * `slice(0, Limit)` is POSITIONAL and the window is applied downstream in Normalize, so a
+     * truncated replay re-takes the SAME first N payloads on every run and then filters them against
+     * `Since`. Once a first run advances the watermark past the newest item in that page, no later
+     * run can reach the payloads after index Limit-1: they are filtered out of the same slice
+     * forever. Ascending order does not save it; ascending order is the case measured below.
      */
     const SINCE = new Date('2026-08-01T00:00:00Z');
     const msg = (id: string, when: string) => ({ ...GRAPH_MESSAGE, id, receivedDateTime: when, sentDateTime: when });
@@ -699,9 +703,50 @@ describe('a capped REPLAY withholds the watermark too', () => {
         expect(batch.Capped).toBe(true);
     });
 
-    it('does NOT flag a first sync — there is no watermark to strand anything behind', async () => {
+    it('flags a truncated FIRST sync too — the watermark it would create is the problem', async () => {
         const batch = await recorded(THREE).Fetch({ ...QUERY, Since: null, Limit: 2 });
-        expect(batch.Capped).toBeFalsy();
+        expect(batch.Capped).toBe(true);
+    });
+
+    /**
+     * WHAT THE CAP IS ACTUALLY FOR, on a first run, reproduced rather than described.
+     *
+     * A recording ordered NEWEST-FIRST is the dangerous one, and nothing enforces file order. With
+     * Limit 2 the first run returns the two newest and never returns r-1. Uncapped, the provider
+     * computes a watermark from what it DID return — r-3's time — and writes it to the connection.
+     * r-1 is then permanently behind the watermark: it is older than a mark that claims to cover it.
+     *
+     * That mark is durable state, and the transport behind it is swappable. A host that replays a
+     * truncated recording and later points the same connection at the live transport inherits the
+     * lie, and the live run skips real mail it was never told about.
+     */
+    const NEWEST_FIRST = [...THREE].reverse();
+
+    it('a truncated first replay yields no watermark, so nothing lands behind one', async () => {
+        const provider = new MSGraphActivitySyncProvider(false, recorded(NEWEST_FIRST));
+        const batch = await provider.Fetch({ ...QUERY, Since: null, Limit: 2 });
+
+        expect(batch.Items.map((i) => i.ExternalID), 'the oldest message is not in this page').toEqual([
+            'r-3',
+            'r-2',
+        ]);
+        expect(
+            batch.HighWatermark,
+            'r-1 is older than every item here; a watermark computed from this page would bury it',
+        ).toBeNull();
+    });
+
+    /**
+     * And the limitation this does NOT fix, stated rather than left to be rediscovered.
+     *
+     * `slice(0, Limit)` is positional and the window is applied downstream, so a truncated replay
+     * re-takes the same first N payloads on every run. Withholding the watermark stops the loss from
+     * becoming permanent in the DATABASE; it does not give the fixture transport paging it has never
+     * had. A recording longer than Limit still cannot be replayed in full, and the Issues say so.
+     */
+    it('says out loud that the rest of the recording was not returned', async () => {
+        const batch = await recorded(THREE).Fetch({ ...QUERY, Since: null, Limit: 2 });
+        expect(batch.Issues.join(' | ')).toContain('Recording holds 3 message(s); Limit is 2');
     });
 
     it('does NOT flag a replay that fitted', async () => {
