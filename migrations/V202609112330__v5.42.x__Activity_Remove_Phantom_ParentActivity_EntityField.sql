@@ -56,6 +56,26 @@
 --     recreate the defect mirrored. So this acts only where the view genuinely
 --     lacks it.
 -- Idempotent: re-running finds nothing to do.
+--
+-- THE GENERATED ARTIFACTS ARE DELIBERATELY NOT REGENERATED HERE, and a reader
+-- should know that rather than discover it.
+--
+-- `get ParentActivity()` stays in the generated entity class and Zod schema,
+-- `ParentActivity?: string` stays in the GraphQL type. On a host where this
+-- migration actually removes the field, those read `null`: BaseEntity.Get falls
+-- through both the raw path and GetFieldByName for an unknown field, so nothing
+-- throws and the positional save-capture fix works regardless.
+--
+-- They are not regenerated because deleting the getter does not stop at the
+-- generated files. `activity-identity.component.html` DISPLAYS the field --
+-- `@if (Record.ParentActivity)` gates a "Thread / Parent" stat in the Activity
+-- header -- and the Angular package compiles with `strictTemplates: true`, so
+-- removing the getter turns that template into a build error. Regenerating
+-- therefore means changing a hand-written component that shows something to a
+-- user, which is a different change from this one.
+--
+-- The cost is drift: the next `mj codegen` on a healed database emits that
+-- deletion and whoever sees it has to work out whose it is. It is this one's.
 -- =============================================================================
 
 DECLARE @ActivityEntityID UNIQUEIDENTIFIER = (

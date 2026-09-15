@@ -98,7 +98,7 @@ function recordingEntity() {
     });
 }
 
-async function runOnce() {
+async function runOnce(issues: readonly string[] = [WARNING]) {
     savedRuns.length = 0;
     const known: IdentityResolution = {
         LookupFailed: false,
@@ -132,7 +132,7 @@ async function runOnce() {
         { ID: 'user-1' } as UserInfo,
         // The third argument is the batch's Issues — a surface that SUCCEEDS while still having
         // something to report, which is the exact case that used to vanish.
-        new FixtureActivitySyncProvider([ITEM], 'Message', [WARNING]),
+        new FixtureActivitySyncProvider([ITEM], 'Message', [...issues]),
     );
     return result;
 }
@@ -199,5 +199,31 @@ describe('a host can actually supply a file sink', () => {
         expect(HostActivityFileSink()).toBeNull();
         const engine = new ActivitySyncEngine();
         expect((engine as unknown as { fileSink: ActivityFileSink | null }).fileSink).toBeNull();
+    });
+});
+
+describe('the run keeps its tail, however many items reported', () => {
+    /**
+     * `run.ErrorMessage` used to be written as `.slice(0, 4000)`.
+     *
+     * That was inherited from two older writes in this file and was never a constraint: every
+     * candidate column is NVARCHAR(MAX) and none is 4000 wide. It cost nothing while those held a
+     * single failure message. It costs something HERE, because this is the first write that grows with
+     * the item count -- the attachment gap is reported once per item -- so a large run lost most of the
+     * warnings this column exists to deliver, and lost them silently.
+     */
+    it('records every issue, past the 4000 characters it used to stop at', async () => {
+        // Fifty items' worth, at the real length of the attachment report.
+        const many = Array.from({ length: 50 }, (_, i) => `${WARNING} [item ${i + 1}]`);
+        const joined = many.join(' | ');
+        expect(joined.length, 'the fixture must exceed the old cap or this proves nothing')
+            .toBeGreaterThan(4000);
+
+        await runOnce(many);
+
+        const run = savedRuns.find((r) => 'Fetched' in r);
+        const recorded = String(run?.ErrorMessage ?? '');
+        expect(recorded.length, 'the write must not truncate').toBe(joined.length);
+        expect(recorded, 'the LAST item is the one truncation ate').toContain('[item 50]');
     });
 });
