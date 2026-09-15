@@ -6,6 +6,7 @@ export type {
 } from './activity-json-types';
 
 export * from './business-day.js';
+export * from './business-time-zone-engine.js';
 
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.
