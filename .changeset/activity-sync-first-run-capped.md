@@ -24,6 +24,24 @@ reversed, with the reasoning recorded so nobody re-derives the original conclusi
 is what actually prevents the loss. The issue text distinguishes a first run from an incremental one,
 because the remedy differs: raise the limit, or re-run until it drains.
 
+**The replay transport had the same hole, and it was found by auditing this branch against itself.**
+`RecordedMessageTransport` kept `capped && !!query.Since` after the live path dropped it, with a
+comment claiming parity with the live path and a test asserting the first-run case was safe "because
+there is no watermark to strand anything behind" — the reasoning this note had already rejected,
+still sitting two files away. Nothing enforces the order of a recording: a newest-first one truncated
+to `Limit` returns the newest N and withholds the oldest, and an uncapped run then computes a
+watermark from what it did return. It reaches past the fixture because that mark is durable and the
+transport behind it is swappable, so a host that replays a truncated recording and later points the
+same connection at live mail skips real messages on a fixture's say-so. Now `Capped: capped`, with
+the newest-first case reproduced in a test rather than argued about.
+
+What that does NOT fix is stated in the file rather than left to be rediscovered: `slice(0, Limit)`
+is positional and the window is applied downstream, so a truncated replay re-takes the same first N
+payloads on every run. A recording longer than `Limit` cannot be replayed in full in any order,
+capped or not — measured. The flag keeps that from becoming a false watermark in the database; giving
+the fixture transport real paging is a separate change, and the Issues already name the shortfall on
+every run.
+
 **Found by running the engine against a real mailbox.** Every recorded fixture is smaller than the
 limit, so no replayed test could ever produce a full page. This is the second defect today that only
 a live run could surface, after MJ's undeclared `accountEmail`.

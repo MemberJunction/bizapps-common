@@ -92,16 +92,25 @@ and an unparseable date is rejected by name.
 how to enable it, which left an operator who HAD verified the policy with no supported next step —
 and the tempting unsupported one is to go editing rows.
 
-338 tests in `common-activity-sync` and 40 in `common-server`. The mutation driver at
-`packages/ActivitySync/test-harnesses/mutate-checks.mjs` registers 35 mutants and catches all 35:
-reverting the default to `false`, allowing everything, dropping any of the three runtime attestation
-checks, accepting whitespace as a group name, treating a partial env as complete, skipping date
+340 tests in `common-activity-sync` and 43 in `common-server`, with a mutation driver in each:
+36 mutants in `packages/ActivitySync/test-harnesses/mutate-checks.mjs` and 8 in
+`packages/Server/test-harnesses/mutate-checks.mjs`, all 44 caught. Between them they fell reverting
+the default to `false`, allowing everything, dropping any of the three runtime attestation checks,
+accepting whitespace as a group name, treating a partial env as complete, claiming both decisions at
+once, claiming neither, filing a tenant-wide acceptance as a group restriction, skipping date
 validation, and misreporting the result.
 
-Four later commits on this branch fix defects of the same class found in the branch itself: the
-attestation was a compile-time shape with no runtime check; the `InternalDomains` fix had no test
-that could fail; the calendar window keyed on the watermark rather than on a lookback span, which
-silently skipped back-dated meetings; and issues raised by a run that SUCCEEDED were never written
-anywhere, which discarded the delivery mechanism for every deliberate report this package makes.
-`ActivityFileSink` also gained a host registry, because its only production construction passes no
-arguments and `Store()` therefore had no caller.
+Later commits on this branch fix defects of the same class found in the branch itself. The
+attestation was a compile-time shape with no runtime check. The `InternalDomains` fix had no test
+that could fail. The calendar window keyed on the watermark rather than on a lookback span, which
+silently skipped back-dated meetings, and the replay transport had the matching hole on its first
+run. Issues raised by a run that SUCCEEDED were never written anywhere, which discarded the delivery
+mechanism for every deliberate report this package makes. `ActivityFileSink` gained a host registry,
+because its only production construction passes no arguments and `Store()` therefore had no caller.
+
+Two of those were found by asking the suites to prove they could fail. `common-server` had no
+mutation driver, and deleting either of the two guards that decide WHICH attestation was made left
+all 40 of its tests green — both rules are described above and neither had a reader. It also had no
+typecheck step over its tests, because its build config excludes them and vitest does not typecheck;
+adding one surfaced six type errors in test code, including assertions indexing an empty tuple, which
+could not have been reading what they claimed to.
