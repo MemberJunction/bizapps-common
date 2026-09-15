@@ -30,7 +30,7 @@ import {
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
 import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
-import { AttachmentPolicyFor, type ActivityFileSink } from './attachments.js';
+import { AttachmentPolicyFor, HostActivityFileSink, type ActivityFileSink } from './attachments.js';
 import {
     DefaultDeterministicStages,
     type EngineQualificationContext,
@@ -213,8 +213,12 @@ export class ActivitySyncEngine {
          * a configured FileStorageAccount, and a host that syncs only metadata should not have to
          * have either. Absent, an item whose rule wants attachments is reported rather than quietly
          * filed without them — the distinction this package exists to keep.
+         *
+         * DEFAULTS TO THE HOST REGISTRY, because the only production construction of this class is
+         * `new ActivitySyncEngine()` inside an Action, where nothing can pass one. Without that
+         * default a host could implement the interface and still never be called.
          */
-        private readonly fileSink?: ActivityFileSink,
+        private readonly fileSink: ActivityFileSink | null = HostActivityFileSink(),
     ) {}
 
     public async Run(
@@ -684,9 +688,12 @@ export class ActivitySyncEngine {
                 typeRow,
             });
             fleet.Results.push({ ConnectionID: connection.ID, Surface: 'primary', Result: primary });
+            // Issues travel whether or not the surface succeeded; only `Success` keys on failure. The
+            // previous shape meant a caller inspecting `fleet.Issues` saw nothing from a run that
+            // completed with warnings, which is most of what this engine has to say.
+            fleet.Issues.push(...primary.Issues);
             if (!primary.Success) {
                 fleet.Success = false;
-                fleet.Issues.push(...primary.Issues);
             }
             const surfaces: SyncEngineResult[] = [primary];
             const calendarDriver = typeRow?.CalendarDriverClass?.trim();
@@ -708,9 +715,10 @@ export class ActivitySyncEngine {
                         source: calendarPlugin,
                     });
                     fleet.Results.push({ ConnectionID: connection.ID, Surface: 'Calendar', Result: calendar });
+                    // Same as the primary surface above: issues travel regardless of success.
+                    fleet.Issues.push(...calendar.Issues);
                     if (!calendar.Success) {
                         fleet.Success = false;
-                        fleet.Issues.push(...calendar.Issues);
                     }
                     surfaces.push(calendar);
                 }
@@ -1036,6 +1044,22 @@ export class ActivitySyncEngine {
             run.StartedAt = new Date();
             run.EndedAt = new Date();
             run.Status = result.Failed > 0 ? 'Failed' : 'Completed';
+            /**
+             * EVERY ISSUE IS RECORDED, INCLUDING ON A RUN THAT SUCCEEDED.
+             *
+             * This row used to keep none of them. `healthErrorFromResults` filters to `!r.Success` and
+             * the fleet collected issues only from failed surfaces, so a warning raised by a run that
+             * completed existed in an in-memory array and nowhere else. That silently discarded the
+             * ENTIRE delivery mechanism for several deliberate reports: the attachment gap a rule asked
+             * for and no sink could fill, the participant-scope warning, the capped-read notice, and the
+             * calendar's first-run lookback bound. Each was written to be seen, and none could be.
+             *
+             * The column is named ErrorMessage and these are not all errors. Recording them here is
+             * still right: it is the run's only free-text column, it is NVARCHAR(MAX), and a warning
+             * nobody can read is worth less than one filed under an imperfect name. Connection HEALTH
+             * stays keyed on failure — a warned run must not make a working connection look broken.
+             */
+            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ').slice(0, 4000) : null;
             if (!(await run.Save())) {
                 result.Issues.push(run.LatestResult?.CompleteMessage ?? 'ActivitySyncRun.Save failed.');
                 return;

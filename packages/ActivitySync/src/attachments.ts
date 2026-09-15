@@ -154,6 +154,42 @@ export function AttachmentSkipReport(
  * implementation's job is to put the bytes wherever this deployment keeps files, create the `File`
  * row, and hand back its id for linking.
  */
+/**
+ * The sink this host stores attachment bytes through, if it has one.
+ *
+ * ── WHY A REGISTRY AND NOT ONLY A CONSTRUCTOR ARGUMENT ──────────────────────────────────────────
+ *
+ * `ActivitySyncEngine` takes a sink as its fourth constructor parameter, and the only production
+ * construction is `new ActivitySyncEngine()` with no arguments — in `sync-activities.action.ts`,
+ * which an Action framework calls, so there is nowhere for a host to pass one. A host that
+ * implemented `ActivityFileSink` exactly as documented had no supported way to hand it over, and
+ * `Store()` therefore had no caller on any real path.
+ *
+ * That is the same shape as the defects this package was just fixed for: a seam described in detail,
+ * exported, and reachable only through a door nothing opens. It needed the treatment
+ * `RegisterActivityTransportFactory` already gives the transport — a host registers once at
+ * bootstrap, and the engine asks.
+ *
+ * A sink passed to the CONSTRUCTOR still wins, for the same reason it does there: tests and the demo
+ * supply their own, and a process-wide registration must not reach in and replace it.
+ */
+let hostFileSink: ActivityFileSink | null = null;
+
+/**
+ * Register the sink this host stores attachment bytes through. Pass null to clear it.
+ *
+ * Idempotent and last-call-wins, matching the transport factory: a host that boots twice in one
+ * process must not end up with two, and there is no sensible way to merge them.
+ */
+export function RegisterActivityFileSink(sink: ActivityFileSink | null): void {
+    hostFileSink = sink;
+}
+
+/** The registered sink, or null when this host stores no attachment bytes. */
+export function HostActivityFileSink(): ActivityFileSink | null {
+    return hostFileSink;
+}
+
 export interface ActivityFileSink {
     /**
      * Store one attachment and return the `__mj.File` id to link, or null when it could not be
