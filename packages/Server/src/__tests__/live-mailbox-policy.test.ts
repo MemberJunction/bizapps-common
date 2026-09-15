@@ -73,8 +73,15 @@ describe('a fully configured host', () => {
             [ENV_GROUP]: '  group@bluecypress.io  ',
             [ENV_CONFIRMED_BY]: '  Josue  ',
         } as NodeJS.ProcessEnv);
-        expect(HostLiveMailboxPolicy()?.ScopedToGroup).toBe('group@bluecypress.io');
-        expect(HostLiveMailboxPolicy()?.ConfirmedBy).toBe('Josue');
+        // Narrowed rather than reached into. The attestation is a discriminated union and
+        // `ScopedToGroup` exists on only one arm, so `?.ScopedToGroup` on the union does not
+        // typecheck — it read as fine for as long as nothing typechecked this file.
+        const held = HostLiveMailboxPolicy();
+        if (held?.Scope !== 'RestrictedToGroup') {
+            throw new Error(`expected a RestrictedToGroup attestation, got ${String(held?.Scope)}`);
+        }
+        expect(held.ScopedToGroup).toBe('group@bluecypress.io');
+        expect(held.ConfirmedBy).toBe('Josue');
     });
 
     /**

@@ -25,8 +25,14 @@ const H = vi.hoisted(() => {
     return {
         BaseCommunicationProvider,
         createInstance: vi.fn(),
-        ensureLoaded: vi.fn(async () => undefined),
-        getCredential: vi.fn(async () => ({ values: { ClientID: 'client', TenantID: 'tenant' } })),
+        // Parameters declared, not inferred. `vi.fn(async () => ...)` infers a ZERO-ARG mock, which
+        // made every call below a type error and every `mock.calls[0][1]` an index into an empty
+        // tuple. Vitest transpiles through esbuild and never noticed; this package had no typecheck
+        // step until now, so neither did anything else.
+        ensureLoaded: vi.fn(async (_user: unknown): Promise<void> => undefined),
+        getCredential: vi.fn(async (_name: string, _options?: unknown) => ({
+            values: { ClientID: 'client', TenantID: 'tenant' },
+        })),
         deps: vi.fn((args: Record<string, unknown>) => ({ __deps: args })),
         register: vi.fn(),
         transportBuilt: vi.fn(),
@@ -43,11 +49,11 @@ vi.mock('@memberjunction/credentials', () => ({
         Instance: {
             EnsureLoaded: async (user: unknown) => {
                 H.order.push('EnsureLoaded');
-                return H.ensureLoaded(user as never);
+                return H.ensureLoaded(user);
             },
             getCredential: async (name: string, options: unknown) => {
                 H.order.push('getCredential');
-                return H.getCredential(name as never, options as never);
+                return H.getCredential(name, options);
             },
         },
     },
