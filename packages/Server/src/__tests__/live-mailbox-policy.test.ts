@@ -77,6 +77,27 @@ describe('a fully configured host', () => {
         expect(HostLiveMailboxPolicy()?.ConfirmedBy).toBe('Josue');
     });
 
+    /**
+     * THE OTHER DECISION, recorded as its own shape rather than as a group-shaped one with a blank.
+     * Nothing here exercised `TenantWideAccepted` at all, so the discriminant could have been wired
+     * to the wrong variant and every assertion above would still have passed.
+     */
+    it('records an accepted tenant-wide grant as tenant-wide, in the words it was accepted in', () => {
+        const env = {
+            [ENV_ACCEPTED_RISK]: 'No RBAC owner in this tenant; read scope accepted for the pilot.',
+            [ENV_CONFIRMED_BY]: 'Josue Garcia',
+            [ENV_CONFIRMED_AT]: '2026-09-04T00:00:00Z',
+        } as NodeJS.ProcessEnv;
+        expect(LoadLiveMailboxPolicyFromEnv(env)).toBe(true);
+        expect(HostLiveMailboxPolicy()).toEqual({
+            Confirmed: true,
+            Scope: 'TenantWideAccepted',
+            AcceptedRisk: 'No RBAC owner in this tenant; read scope accepted for the pilot.',
+            ConfirmedBy: 'Josue Garcia',
+            ConfirmedAt: new Date('2026-09-04T00:00:00Z'),
+        });
+    });
+
     it('does not require process.env — the environment is injected', () => {
         // Proof the function under test reads its argument. If it read process.env instead, this
         // would return false, because nothing set these on the real environment.
@@ -111,6 +132,32 @@ describe('a partial configuration fails loudly instead of quietly staying off', 
     it('rejects a confirmation date that is not a date', () => {
         const env = { ...COMPLETE, [ENV_CONFIRMED_AT]: 'last tuesday' } as NodeJS.ProcessEnv;
         expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(/not a valid date/);
+        expect(HostAllowsLiveMailboxFetch()).toBe(false);
+    });
+
+    /**
+     * WHICH DECISION WAS MADE IS ALSO PART OF THE CONFIGURATION, and both ways of failing to say so
+     * went untested until now. Deleting either guard below left all 40 tests green — measured, then
+     * fixed, which is the whole subject of this branch.
+     *
+     * Both at once is the more interesting one. It is not a typo: it is a host claiming the app is
+     * restricted to a group AND that the tenant-wide grant was knowingly accepted. Those describe
+     * different Exchange configurations and cannot both be true, so guessing which one to keep would
+     * silently file an attestation nobody made.
+     */
+    it('refuses a host that claims BOTH a group and an accepted tenant-wide risk', () => {
+        const env = { ...COMPLETE, [ENV_ACCEPTED_RISK]: 'we accept it' } as NodeJS.ProcessEnv;
+        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(/not both/);
+        expect(HostAllowsLiveMailboxFetch(), 'and it must stay off').toBe(false);
+    });
+
+    it('refuses a host that names a person and a date but neither decision', () => {
+        const env = { ...COMPLETE } as NodeJS.ProcessEnv;
+        delete env[ENV_GROUP];
+        // Everything an audit wants is present except the answer itself. Staying quietly off here
+        // would be the trap: refusals would look like an Exchange fault rather than a missing line.
+        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(ENV_GROUP);
+        expect(() => LoadLiveMailboxPolicyFromEnv(env)).toThrow(ENV_ACCEPTED_RISK);
         expect(HostAllowsLiveMailboxFetch()).toBe(false);
     });
 
