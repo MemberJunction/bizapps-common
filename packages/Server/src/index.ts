@@ -62,6 +62,7 @@ export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph
 export {
     LoadLiveMailboxPolicyFromEnv,
     ENV_GROUP,
+    ENV_ACCEPTED_RISK,
     ENV_CONFIRMED_BY,
     ENV_CONFIRMED_AT,
 } from './custom/live-mailbox-policy.js';

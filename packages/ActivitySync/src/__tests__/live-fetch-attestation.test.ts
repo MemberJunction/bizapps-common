@@ -211,6 +211,29 @@ describe('the two decisions an organisation actually makes', () => {
     /** Neither variant can be satisfied without an owner. "Nobody looked" stays impossible. */
     it('requires a person on either decision', () => {
         expect(() => AllowLiveMailboxFetch({ ...ACCEPTED, ConfirmedBy: ' ' })).toThrow(/ConfirmedBy/);
+        /**
+         * CONFIRMED AND CONFIRMEDAT ARE CHECKED HERE, NOT ONLY IN THE ENV LOADER.
+         *
+         * The loader validates both and is the path a deployment takes -- but this function is
+         * exported, and a host bootstrap or a .mjs harness reaches it directly, where `Confirmed: true`
+         * and `ConfirmedAt: Date` are compile-time shapes enforcing nothing. Before this, an
+         * attestation with no date, or with Confirmed: false, was accepted and opened tenant-wide mail
+         * AND calendar for the whole host. The casts below are the point of the test: they are exactly
+         * what an untyped caller does for free.
+         */
+        expect(
+            () => AllowLiveMailboxFetch({ ...ATTESTATION, Confirmed: false } as unknown as LiveMailboxPolicyAttestation),
+        ).toThrow(/Confirmed/);
+        expect(
+            () => AllowLiveMailboxFetch({ ...ATTESTATION, ConfirmedAt: undefined } as unknown as LiveMailboxPolicyAttestation),
+        ).toThrow(/ConfirmedAt/);
+        expect(
+            () => AllowLiveMailboxFetch({ ...ATTESTATION, ConfirmedAt: new Date('not a date') }),
+        ).toThrow(/ConfirmedAt/);
+        expect(
+            () => AllowLiveMailboxFetch({ ...ACCEPTED, ConfirmedAt: undefined } as unknown as LiveMailboxPolicyAttestation),
+        ).toThrow(/ConfirmedAt/);
+
         expect(() => AllowLiveMailboxFetch({ ...ATTESTATION, ConfirmedBy: ' ' })).toThrow(/ConfirmedBy/);
     });
 

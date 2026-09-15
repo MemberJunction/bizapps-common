@@ -183,14 +183,45 @@ let hostLivePolicy: LiveMailboxPolicyAttestation | null = null;
  *
  * The blank checks are the point rather than defensive noise: an attestation with an empty group or
  * no name records nothing, and silently accepting one would turn this back into a boolean.
+ *
+ * ── EVERY INVARIANT IS ENFORCED HERE, NOT ONLY IN THE ENV LOADER ────────────────────────────────
+ *
+ * `LoadLiveMailboxPolicyFromEnv` validates all of this and is the path a deployment takes. It is not
+ * the only path: this function is exported, and a host bootstrap, a `.mjs` harness or any TypeScript
+ * caller with a cast reaches it directly — where `Confirmed: true` and `ConfirmedAt: Date` are
+ * compile-time shapes that enforce nothing at runtime. Checking them only in the loader made the
+ * guarantee a property of one caller rather than of the gate, so an attestation with no date, or with
+ * `Confirmed: false`, was accepted and opened tenant-wide mail AND calendar for the whole host.
+ *
+ * WHAT IS DELIBERATELY NOT CHECKED is staleness. An attestation that expired on a date boundary would
+ * turn live fetch off on a working deployment with no one having changed anything, which trades a
+ * reviewed decision for a silent outage. The date is required so the record is honest about WHEN, not
+ * so it can lapse.
  */
 export function AllowLiveMailboxFetch(attestation: LiveMailboxPolicyAttestation | null): void {
     if (attestation === null) {
         hostLivePolicy = null;
         return;
     }
+    // `Confirmed: true` is a literal type, so TypeScript rejects `false` at a typed call site and
+    // nothing rejects it anywhere else. An unconfirmed attestation is a decision not yet made.
+    if (attestation.Confirmed !== true) {
+        throw new Error(
+            'AllowLiveMailboxFetch requires Confirmed === true. An attestation that does not confirm ' +
+                'anything is not a decision, and live fetch stays off until one is made.',
+        );
+    }
     if (!attestation.ConfirmedBy?.trim()) {
         throw new Error('AllowLiveMailboxFetch requires ConfirmedBy — who made this decision.');
+    }
+    // WHEN, and a real date. The whole point of the record is that someone can later ask when this was
+    // agreed; an Invalid Date answers that question with silence.
+    const confirmedAt = attestation.ConfirmedAt;
+    if (!(confirmedAt instanceof Date) || Number.isNaN(confirmedAt.getTime())) {
+        throw new Error(
+            'AllowLiveMailboxFetch requires ConfirmedAt — a valid Date saying when this was decided. ' +
+                'Reading the mail of an entire organisation on an undated say-so is not auditable.',
+        );
     }
     if (attestation.Scope === 'RestrictedToGroup') {
         if (!attestation.ScopedToGroup?.trim()) {
