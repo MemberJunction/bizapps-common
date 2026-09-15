@@ -94,3 +94,30 @@ jobs:
           # is wanted anyway — the three-dot compare needs history on both sides.
           git fetch --no-tags origin "${{ github.base_ref }}"
           ./ci/check-migration-immutability.sh "origin/${{ github.base_ref }}"
+
+  # Would a publish abort on this tree? `changeset publish` can only publish a package that
+  # already exists on npm, because a trusted publisher is configured per package on npmjs.com
+  # and cannot be set on a package that has never been published. A newly added package
+  # therefore has to be bootstrapped by hand (a 0.0.0 placeholder) first.
+  #
+  # publish.yml keeps this same gate as the backstop — it is the last thing before an
+  # irreversible publish. Running it here as well moves the failure to where it is cheap: today
+  # a new package lets the release PR merge clean and then aborts the publish, leaving new
+  # versions on `main` with nothing on npm. Same door-plus-backstop shape as immutability.
+  #
+  # Costs ~3.5s for this repo's six packages.
+  packages-on-npm:
+    name: 'rr: packages on npm'
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned node so `npm view` is a known version rather than whatever the image ships.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Every publishable package must already exist on npm
+        run: ./.github/scripts/validate-npm-packages.sh
