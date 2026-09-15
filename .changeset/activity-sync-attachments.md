@@ -34,9 +34,18 @@ corporate logo per email. Still reported, so a deployment that wants them can se
 **The bytes are not moved yet, and that is now said out loud.** `ActivityFile.FileID` is a foreign key
 into `__mj.File`, so storing an attachment needs MJ's `FileStorageEngine` and a configured
 `FileStorageAccount` — every MJ storage driver is a remote service, and a host may legitimately have
-none. `ActivityFileSink` is the seam a host fills, exactly as it fills the transport factory. With no
-sink registered, an item whose rule asked for attachments produces an issue naming the item and both
-ways out, instead of an activity quietly filed without them.
+none. `ActivityFileSink` is the seam a host fills, exactly as it fills the transport factory — and it is
+now fillable the same way, through `RegisterActivityFileSink()` at bootstrap. It was not: the only
+production construction is `new ActivitySyncEngine()` inside an Action, so the constructor parameter
+that took a sink was unreachable and `Store()` had no caller on any real path. A host could implement
+the interface exactly as documented and get nothing. A sink passed to the constructor still wins,
+because tests and the demo supply their own.
+
+BOTH ENDS REPORT. With no sink registered, an item whose rule asked for attachments produces an issue
+naming the item and both ways out, instead of an activity quietly filed without them. With a sink
+registered it reports too, because `Store()` is still not wired to the selection: rewarding a host for
+filling the seam correctly with the same quiet nothing would be the more misleading of the two, since
+everything on the host's side is right. It says the gap is in Activity Sync, not in the host.
 
 19 tests, each mutation-checked: fetching with no rule, ignoring the item's flag, reading a zero cap
 as "keep nothing", keeping inline images, allowing an unmeasurable file past a cap, an off-by-one at

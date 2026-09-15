@@ -33,9 +33,19 @@ calendar run could claim to be live — the resulting rows would be indistinguis
 
 **Three things a calendar read can do quietly, now said out loud:**
 
-- *A first run has no watermark*, and `/calendarView` refuses an unbounded request — so a lookback is
-  invented. An invented bound nobody mentions reads as "we synced your calendar" when it means "we
-  synced a month of it".
+- *The window is a rolling lookback and never the watermark.* `/calendarView` refuses an unbounded
+  request, so a bound is invented — and an invented bound nobody mentions reads as "we synced your
+  calendar" when it means "we synced a month of it". It is said out loud on the first run, where
+  somebody expects full history; the same bound applies on every later run.
+
+  An earlier version of this branch passed the watermark as `StartDateTime`, which is a different
+  quantity used as if it were the same one. `WatermarkBasisForKind('Calendar')` is `ObservationTime`
+  — when we last LOOKED — and `StartDateTime` filters on the EVENT'S own time. So a meeting held
+  last week but added to the calendar tomorrow starts before the watermark, falls outside the next
+  run's window, and outside every later one, since each starts later still. Never read, on any run,
+  no issue, `Success = true`. Retroactive additions and back-dated invitations are ordinary calendar
+  behaviour. The same events are now re-read every run, which costs one de-duplication lookup each
+  and writes nothing, while a missed event is unrecoverable.
 - *Recurrence may not have been expanded.* A series master and a single occurrence look alike, so
   without this a weekly meeting is filed once, at whatever date the series began, and every
   downstream check still passes.
@@ -52,3 +62,6 @@ seam is the defect this change exists to end.
 lookback notice, discarding cancelled events, reading the normalized `Events` instead of `SourceData`,
 omitting the recurrence warning, turning a Graph failure into an empty batch, hard-coding `IsLive`,
 opening the gate, ignoring the attestation, and refusing to serve the calendar driver are all caught.
+Restoring the watermark as the window start is caught too (`M-CW1`), which it was not when that bug
+was live: the harness did not open this file at all, so every mutation aimed at it reported all-clear
+by never reaching it.

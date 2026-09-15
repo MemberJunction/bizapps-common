@@ -37,3 +37,10 @@ Parsing and the warning are pure functions in `participants.ts` (`ParseInternalD
 degrading a malformed list to empty, accepting a non-array, dropping the case/`@` normalisation that
 keeps the list comparable with the addresses it is matched against, losing de-duplication, silencing
 the warning, and treating `Any` as a participant test are all caught.
+
+**And the wiring itself, which those 21 did not reach.** Reverting the engine to the hard-coded `[]`
+— the literal original defect — passed every test in the package, because the only test driving `Run`
+stubbed each lookup to empty, so `[]` and the real rows were indistinguishable. The fix was real and
+the evidence for it was not, which is the same shape as the defect. `engine.internal-domains.test.ts`
+observes the rule set the engine actually hands the qualifier, and `M-ID1`/`M-ID2` fell both the
+revert and the swallowed parse failure.
