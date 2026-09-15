@@ -5,6 +5,8 @@ export type {
     ActivitySyncRuleFilter,
 } from './activity-json-types';
 
+export * from './business-day.js';
+
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.
  * If you don't import this function and execute it, then the generated entities will not be included in the build. This is because the entities are not directly
