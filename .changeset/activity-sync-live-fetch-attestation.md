@@ -18,14 +18,15 @@ Activity Sync — the live-fetch gate was unreachable, so a scoped host could no
 > `Mail.Read` and nothing else — confirmed from the token's own `roles` claim.
 >
 > **Merging this changes nothing on its own.** Live fetch stays refused: the default is the host
-> attestation, no host has one, and the attestation cannot be satisfied by a flag — it requires
-> naming the security group, who confirmed it, and when. Whoever deploys has to answer the question
-> deliberately. They cannot skip it by accident.
+> attestation, no host has one, and the attestation cannot be satisfied by a flag. Whichever way the
+> question is answered it needs a person and a date, plus EITHER the security group an Exchange
+> assignment scopes the app to OR a written sentence accepting the tenant-wide grant. Whoever deploys
+> has to answer the question deliberately. They cannot skip it by accident.
 >
 > Two legitimate outcomes, both informed: accept the tenant-wide grant and record who accepted it, or
-> scope the app to a group first. `scripts/` carries a check that reports which is in force, and
-> prints the `New-ManagementScope` / `New-ManagementRoleAssignment` commands to create the
-> restriction if the answer is "unscoped".
+> scope the app to a group first. Creating the restriction is an Exchange administrator's job
+> (`New-ManagementScope` and `New-ManagementRoleAssignment`), and it is not something this package
+> can do or check from inside the application.
 
 `AllowLiveFetch` was the FIRST constructor argument of `MSGraphActivitySyncProvider`, defaulting to
 `false`. `MJGlobal.ClassFactory` builds plugins with NO arguments. So through `ActivitySyncEngine` —
@@ -60,8 +61,15 @@ next person asks why this app can read every mailbox.
 Exchange Application Access Policy names, who confirmed it, and when. Those are the things an audit
 asks for, and the things a person has to look up rather than guess. `Confirmed` is the literal `true`
 rather than `boolean`, so a variable that happens to be false will not type-check and the attestation
-cannot be satisfied by threading a flag through. An attestation with a blank group or no name is
-rejected: accepting one would turn this straight back into a boolean with extra steps.
+cannot be satisfied by threading a flag through. The types are not the only guard, because a type is
+not a guard at all against an untyped caller: `AllowLiveMailboxFetch` CHECKS at runtime that
+`Confirmed` is literally `true`, that `ConfirmedBy` is not blank, and that `ConfirmedAt` is a real
+`Date` — each refusing by name. Whichever variant is used, a blank group or a blank accepted-risk
+sentence is rejected: accepting one would turn this straight back into a boolean with extra steps.
+
+Staleness is deliberately NOT enforced. `ConfirmedAt` is recorded and logged at bootstrap so an
+operator can SEE that an attestation is two years old; expiring it in code would take a working
+deployment off the air on a date nobody scheduled, which is a worse failure than a visible old date.
 
 **Deliberately not driven by data.** `ActivitySyncConnection` is an ordinary editable entity. Had the
 opt-in lived there, anyone who could edit a row could enable tenant-wide mail reading from a form —
@@ -71,16 +79,29 @@ transport; this applies the same rule to the more dangerous switch. `AllowLiveMa
 bootstrap-time call, and the host reads it from deployment configuration.
 
 **A partial configuration throws rather than quietly staying off.** `LoadLiveMailboxPolicyFromEnv`
-requires all three of `ACTIVITY_SYNC_MAILBOX_POLICY_GROUP`, `..._CONFIRMED_BY` and `..._CONFIRMED_AT`,
-or none. Silently ignoring a half-written opt-in is the exact trap this codebase keeps being written
-against: an operator who set two of three would see the provider refuse, believe the Exchange policy
-was wrong, and go hunting for a fault that is in their `.env`. Blank and whitespace-only values read
-as absent, and an unparseable date is rejected by name.
+wants `ACTIVITY_SYNC_MAILBOX_POLICY_CONFIRMED_BY` and `..._CONFIRMED_AT` whichever decision was made,
+and then EXACTLY ONE of `..._GROUP` or `..._ACCEPTED_RISK` — the two are mutually exclusive, because
+setting both claims the app is restricted and knowingly unrestricted at the same time. Setting none
+of the four is the ordinary un-opted-in case and is silent; setting some of them throws. Silently
+ignoring a half-written opt-in is the exact trap this codebase keeps being written against: an
+operator who set two of three would see the provider refuse, believe the Exchange policy was wrong,
+and go hunting for a fault that is in their `.env`. Blank and whitespace-only values read as absent,
+and an unparseable date is rejected by name.
 
 **The refusal now names the way out.** `LIVE_GRAPH_REFUSAL` explained why live fetch was off but not
 how to enable it, which left an operator who HAD verified the policy with no supported next step —
 and the tempting unsupported one is to go editing rows.
 
-25 tests across the two packages, each mutation-checked: reverting the default to `false`, allowing
-everything, dropping either blank check, accepting whitespace as a group name, treating a partial
-env as complete, skipping date validation, and misreporting the result are all caught.
+338 tests in `common-activity-sync` and 40 in `common-server`. The mutation driver at
+`packages/ActivitySync/test-harnesses/mutate-checks.mjs` registers 35 mutants and catches all 35:
+reverting the default to `false`, allowing everything, dropping any of the three runtime attestation
+checks, accepting whitespace as a group name, treating a partial env as complete, skipping date
+validation, and misreporting the result.
+
+Four later commits on this branch fix defects of the same class found in the branch itself: the
+attestation was a compile-time shape with no runtime check; the `InternalDomains` fix had no test
+that could fail; the calendar window keyed on the watermark rather than on a lookback span, which
+silently skipped back-dated meetings; and issues raised by a run that SUCCEEDED were never written
+anywhere, which discarded the delivery mechanism for every deliberate report this package makes.
+`ActivityFileSink` also gained a host registry, because its only production construction passes no
+arguments and `Store()` therefore had no caller.
