@@ -49,9 +49,17 @@ import {
 import {
     AsDryRunDecision,
     IsConnectionActive,
+    ResolveCapturePlan,
+    ResolvePolicy,
+    type SkippedContentPolicy,
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
+import {
+    ContentToCapture,
+    HostActivityContentCipher,
+    type ActivityContentCipher,
+} from './content-capture.js';
 import { RequireUUID, UuidInList } from './sql.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import {
@@ -98,7 +106,10 @@ interface ConnectionRow {
     EndAt: Date | string | null;
     LastSyncAt: Date | string | null;
     ActivitySyncProviderTypeID: string | null;
+    /** Overrides the provider type's default. Null means "use the type's". */
     SkippedContentPolicy: string | null;
+    /** Overrides the provider type's default key. Null means "use the type's". */
+    EncryptionKeyID: string | null;
     Settings: string | null;
 }
 
@@ -115,6 +126,14 @@ interface ProviderTypeRow {
      * runtime and any check against it quietly never fires.
      */
     IsActive: boolean;
+    /**
+     * Audit retention for messages this connector declines to ingest, and the key that protects it.
+     *
+     * Both are the TYPE-level default; a connection overrides either. Neither had a reader before
+     * this change, so "Overridable per connection" described a fallback chain that did not exist.
+     */
+    DefaultSkippedContentPolicy: string | null;
+    DefaultEncryptionKeyID: string | null;
 }
 
 interface RunSurfaceOptions {
@@ -219,6 +238,14 @@ export class ActivitySyncEngine {
          * default a host could implement the interface and still never be called.
          */
         private readonly fileSink: ActivityFileSink | null = HostActivityFileSink(),
+        /**
+         * How captured content is protected, when a policy says to keep any.
+         *
+         * Same shape and same reason as `fileSink`: this package implements no crypto, and the only
+         * production construction of this class passes no arguments, so the default has to come from
+         * the host registry or the seam is unreachable. `common-server` fills it at bootstrap.
+         */
+        private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),
     ) {}
 
     public async Run(
@@ -288,6 +315,44 @@ export class ActivitySyncEngine {
             result.Issues.push(`Provider type '${typeRow.Code}' is not active.`);
             return result;
         }
+        /**
+         * AUDIT RETENTION IS SETTLED BEFORE ANYTHING IS READ, not at persist time.
+         *
+         * `ResolveCapturePlan` refuses a policy above `None` with no key, and refusing AFTER a
+         * mailbox has been read is the wrong order: it costs a fetch, and the run then has content it
+         * has been told it may not keep. Deciding here means a misconfigured connection stops before
+         * it touches anyone's mail.
+         *
+         * Failing the run rather than reporting and carrying on is what the policy asks for. An
+         * operator who set this asked for the record to exist; producing runs that look successful
+         * while retaining nothing is the failure this subsystem is written against, and it is exactly
+         * what happened before this was wired at all.
+         */
+        let capture: { Capture: 'None' | 'Subject' | 'Full'; EncryptionKeyID: string | null };
+        try {
+            capture = ResolveCapturePlan(
+                ResolvePolicy<SkippedContentPolicy>(
+                    (typeRow?.DefaultSkippedContentPolicy as SkippedContentPolicy | null) ?? 'None',
+                    connection.SkippedContentPolicy as SkippedContentPolicy | null,
+                ),
+                connection.EncryptionKeyID ?? typeRow?.DefaultEncryptionKeyID ?? null,
+            );
+        } catch (err) {
+            result.Issues.push(String(err instanceof Error ? err.message : err));
+            return result;
+        }
+        if (capture.Capture !== 'None' && !this.cipher) {
+            // The ActivityFileSink lesson, applied. A host that asked for retention and cannot
+            // encrypt must not quietly proceed: plaintext is forbidden outright, and writing nothing
+            // would leave the operator believing an audit trail exists.
+            result.Issues.push(
+                `SkippedContentPolicy is "${capture.Capture === 'Subject' ? 'SubjectEncrypted' : 'FullEncrypted'}" ` +
+                    'but this host registered no content cipher, so captured content could not be encrypted. ' +
+                    'Call RegisterActivityContentCipher() at bootstrap, or set the policy to "None".',
+            );
+            return result;
+        }
+
         // Missing type row: the cascade still needs a default, and that default is
         // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
@@ -392,7 +457,7 @@ export class ActivitySyncEngine {
         if (identities.LookupFailed) {
             result.Failed += batch.Items.length;
             result.Issues.push('ContactMethod lookup failed — watermark will not advance.');
-            await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+            await this.persistRun(connection, options, result, since, null, provider, contextUser, capture, []);
             if (!options.DryRun && stampHealth) {
                 await this.stampConnectionHealth(
                     connection.ID,
@@ -613,7 +678,17 @@ export class ActivitySyncEngine {
             }
         }
 
-        await this.persistRun(connection, options, result, since, options.DryRun ? null : result.WatermarkAdvancedTo, provider, contextUser, details);
+        await this.persistRun(
+            connection,
+            options,
+            result,
+            since,
+            options.DryRun ? null : result.WatermarkAdvancedTo,
+            provider,
+            contextUser,
+            capture,
+            details,
+        );
         result.Success = result.Failed === 0;
         if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(
@@ -766,7 +841,12 @@ export class ActivitySyncEngine {
         result.Issues.push(issue);
         result.Failed += result.Fetched;
         if (result.Failed < 1) result.Failed = 1;
-        await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+        // No capture plan, and none needed: this path writes ZERO run details, so there is no row for
+        // content to land on. Reaching for the connection's real policy here would be a decision
+        // dressed up as caution — this method exists to record a run that never got as far as
+        // deciding anything about a message.
+        const noCapture = { Capture: 'None' as const, EncryptionKeyID: null };
+        await this.persistRun(connection, options, result, since, null, provider, contextUser, noCapture, []);
         if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
         }
@@ -886,7 +966,21 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
                 ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncProviderTypeID')}'`,
-                Fields: ['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass', 'IsActive'],
+                // Every name here must match ProviderTypeRow exactly, both ways round. The docblock
+                // there is not decoration: a field declared and not listed reads `undefined`, and a
+                // capture policy that reads undefined silently means "None". A test pins the two
+                // lists against each other, and it parses this array literally -- keep comments out
+                // of it.
+                Fields: [
+                    'ID',
+                    'Code',
+                    'DriverClass',
+                    'DefaultQualificationPolicy',
+                    'CalendarDriverClass',
+                    'IsActive',
+                    'DefaultSkippedContentPolicy',
+                    'DefaultEncryptionKeyID',
+                ],
                 MaxRows: 1,
                 ResultType: 'simple',
             },
@@ -1014,6 +1108,7 @@ export class ActivitySyncEngine {
         watermarkAfter: Date | null,
         provider: IMetadataProvider,
         user: UserInfo,
+        capture: { Capture: 'None' | 'Subject' | 'Full'; EncryptionKeyID: string | null },
         details: Array<{
             Item: NormalizedItem;
             Decision: SyncDecision;
@@ -1081,6 +1176,38 @@ export class ActivitySyncEngine {
                 row.ActivitySyncRuleID = detail.RuleID ?? null;
                 row.ActivitySyncExclusionID = detail.ExclusionID ?? null;
                 row.ActivityID = detail.Decision === 'Included' ? (detail.ActivityID ?? null) : null;
+                /**
+                 * CAPTURED CONTENT, for messages this run declined to file.
+                 *
+                 * Only on a real skip. `Included` has an Activity carrying the content already, and a
+                 * DRY RUN decided nothing — `WouldExclude` is a preview, and writing ciphertext for a
+                 * message the engine has not actually declined would put real content behind a
+                 * retention policy on the strength of a rehearsal.
+                 *
+                 * `Failed` is deliberately included: a message that could not be written is exactly
+                 * the one an auditor asks about, and it is the case where nothing else holds a copy.
+                 *
+                 * Ciphertext and key are written together or not at all, mirroring
+                 * CK_ActivitySyncRunDetail_ContentKey. Encryption failing is reported and the row is
+                 * still saved without content: losing the whole run record because one message could
+                 * not be encrypted would be a worse trade than an audit gap that says so.
+                 */
+                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';
+                if (capture.Capture !== 'None' && skipped && !options.DryRun && this.cipher && capture.EncryptionKeyID) {
+                    const plaintext = ContentToCapture(capture.Capture, detail.Item);
+                    if (plaintext !== null) {
+                        try {
+                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);
+                            row.EncryptionKeyID = capture.EncryptionKeyID;
+                        } catch (err) {
+                            result.Issues.push(
+                                `Could not encrypt captured content for ${detail.Item.ExternalID}: ` +
+                                    `${err instanceof Error ? err.message : String(err)}. The decision was recorded; ` +
+                                    'the content was not.',
+                            );
+                        }
+                    }
+                }
                 if (!(await row.Save())) {
                     result.Issues.push(
                         row.LatestResult?.CompleteMessage ??

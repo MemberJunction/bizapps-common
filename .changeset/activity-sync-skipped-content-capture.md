@@ -1,0 +1,66 @@
+---
+'@mj-biz-apps/common-activity-sync': minor
+'@mj-biz-apps/common-server': minor
+---
+
+Activity Sync — audit retention for skipped messages was migrated, documented and unreachable.
+
+A deployment could set `SkippedContentPolicy` to `SubjectEncrypted`, point it at an encryption key,
+watch every run complete successfully, and retain **nothing**. No error, no warning, no row. An
+auditor asking "what was in the message you declined to file?" would have been told the record
+existed, and it did not.
+
+Every piece of the feature was already here and none of it was reachable:
+
+| piece | state before |
+|---|---|
+| `ActivitySyncProviderType.DefaultSkippedContentPolicy` | *"Overridable per connection"* — no reader, so there was no chain to override |
+| `ActivitySyncProviderType.DefaultEncryptionKeyID` | no reader |
+| `ActivitySyncConnection.SkippedContentPolicy` | loaded into a TypeScript interface, never read off the row |
+| `ActivitySyncConnection.EncryptionKeyID` | not on the interface at all |
+| `ActivitySyncRunDetail.CapturedContent` | *"Ciphertext, always"* — never written by anything |
+| `ActivitySyncRunDetail.EncryptionKeyID` | never written |
+| `ResolveCapturePlan()` | written, documented, unit-tested — **zero callers** |
+| `ResolvePolicy()` | the fallback helper; its only mention was in a doc comment |
+
+Two CHECK constraints — `CK_ActivitySyncProviderType_KeyRequired` and
+`CK_ActivitySyncRunDetail_ContentKey` — were enforcing invariants for a feature no code participated
+in. This is the same shape as the six defects `#116` was opened for, in the same subsystem, and it is
+why that PR's audit went looking: a column that documents its own purpose and has no reader.
+
+**The misconfiguration it exists to refuse never fired either.** `ResolveCapturePlan` rejects a policy
+above `None` with no key — retaining content from a message deliberately not ingested is only
+permissible encrypted. Nothing called it, so that refusal was unreachable too.
+
+**Resolved before anything is read, not at persist time.** Refusing after a mailbox has been fetched
+costs the read and leaves the run holding content it has just been told it may not keep. A
+misconfigured connection now stops before it touches anyone's mail, and the run fails rather than
+reporting success over an audit trail that does not exist.
+
+**Only on a real skip.** `Included` already has an Activity carrying the content, so capturing it
+again would put an encrypted duplicate of ordinary mail in a column meant for messages that were not
+filed. A DRY RUN captures nothing: `WouldExclude` is a rehearsal, and a preview must not put real
+content behind a retention policy on the strength of one. `Failed` **is** captured — a message that
+could not be written is exactly the one an auditor asks about, and the case where nothing else holds
+a copy.
+
+**The cipher is a seam, and it ships with its implementation.** `CapturedContent` is documented as
+encrypted *"through MJ's EncryptionEngine... this app never implements its own crypto"*, so
+`common-activity-sync` takes no runtime dependency on the Encryption engine and asks a host for an
+`ActivityContentCipher` — one method, encrypt only, because the sync engine never needs to read
+captured content back and an engine that cannot decrypt cannot leak.
+
+The difference from `ActivityFileSink`, whose `Store()` still has no caller on any real path:
+`common-server` **fills** this seam at bootstrap, beside the transport factory and the mailbox
+policy. A seam nothing implements is the defect this subsystem keeps being cleaned of, so the
+interface does not ship alone. A host that asked for retention and registered no cipher is refused by
+name rather than quietly retaining nothing.
+
+Encryption failing for one message reports and still saves the decision: losing a whole run record
+because one message could not be encrypted is a worse trade than an audit gap that says so.
+
+23 tests across the two packages and 13 registered mutants, all caught — including `M-CAP1`, the
+literal revert to the previous behaviour, and `M-CAP8`, which sets the key before the ciphertext so a
+throw leaves `CK_ActivitySyncRunDetail_ContentKey` violated. One coverage gap was found by a mutant
+rather than by reading: nothing tested that an **included** message keeps its content out of the
+audit column, so capturing on every decision survived until that test existed.

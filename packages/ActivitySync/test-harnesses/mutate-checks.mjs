@@ -38,6 +38,7 @@ const PARTS = 'src/participants.ts';
 const ATTACH = 'src/attachments.ts';
 const CALPROVIDER = 'src/providers/MSGraphCalendarSyncProvider.ts';
 const MAPPER = 'src/providers/GraphMessageMapper.ts';
+const CAPTURE = 'src/content-capture.ts';
 
 const PRODUCT = [
     /**
@@ -101,15 +102,91 @@ const PRODUCT = [
         to: '        private readonly fileSink: ActivityFileSink | null = null,',
     },
     /**
-     * THE CALENDAR WINDOW. `WatermarkBasisForKind('Calendar')` is ObservationTime -- when we last
-     * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
-     * back-dated meeting is never read, on any run, with no issue and Success = true.
+     * SKIPPED-CONTENT RETENTION. The whole feature was migrated, documented, CHECK-constrained and
+     * unreachable: ResolveCapturePlan had zero callers, so a policy of SubjectEncrypted retained
+     * nothing and the misconfiguration it refuses never fired. M-CAP1 is the literal revert.
      */
-    /**
-     * INTERNAL DOMAINS, the parsing half. An empty list is not a disabled filter, it is an INVERTED
-     * one -- every participant counts as External -- so each way of quietly producing an empty or
-     * wrong list is its own mutant.
-     */
+    {
+        id: 'M-CAP1',
+        file: ENGINE,
+        expect: ['writes ciphertext and the key that opens it, together'],
+        from: '                    const plaintext = ContentToCapture(capture.Capture, detail.Item);',
+        to: '                    const plaintext = null;',
+    },
+    {
+        id: 'M-CAP2',
+        file: ENGINE,
+        expect: ['refuses a policy above None with no key anywhere'],
+        from: '            capture = ResolveCapturePlan(',
+        to: "            capture = ((a, b) => ({ Capture: 'None', EncryptionKeyID: b }))(",
+    },
+    {
+        id: 'M-CAP3',
+        file: ENGINE,
+        expect: ['refuses when the host registered no cipher, naming the way out'],
+        from: "        if (capture.Capture !== 'None' && !this.cipher) {",
+        to: '        if (false) {',
+    },
+    {
+        id: 'M-CAP4',
+        file: ENGINE,
+        expect: ['writes nothing for a message it DID file'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';",
+        to: '                const skipped = true;',
+    },
+    {
+        id: 'M-CAP5',
+        file: ENGINE,
+        expect: ['takes the provider type default when the connection says nothing'],
+        from: "                    (typeRow?.DefaultSkippedContentPolicy as SkippedContentPolicy | null) ?? 'None',",
+        to: "                    'None',",
+    },
+    {
+        id: 'M-CAP6',
+        file: ENGINE,
+        expect: ['lets the connection override the key'],
+        from: '                connection.EncryptionKeyID ?? typeRow?.DefaultEncryptionKeyID ?? null,',
+        to: '                typeRow?.DefaultEncryptionKeyID ?? null,',
+    },
+    {
+        id: 'M-CAP7',
+        file: ENGINE,
+        expect: ['is what the engine defaults to'],
+        from: '        private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),',
+        to: '        private readonly cipher: ActivityContentCipher | null = null,',
+    },
+    /** A key recorded without ciphertext violates CK_ActivitySyncRunDetail_ContentKey. */
+    {
+        id: 'M-CAP8',
+        file: ENGINE,
+        expect: ['the key must not be recorded without the ciphertext'],
+        from: [
+            '                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);',
+            '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
+            // CRLF: every .ts in this package uses it, so a two-line anchor must too. A mismatch
+            // here reports SKIP rather than a false OK, which is why the driver checks the count.
+        ].join('\r\n'),
+        to: [
+            '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
+            '                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);',
+        ].join('\r\n'),
+    },
+    {
+        id: 'M-CAP9',
+        file: CAPTURE,
+        expect: ['keeps subject and body for FullEncrypted'],
+        // Backslash-n twice over: the source holds the two-character escape inside a template
+        // literal, not an actual line break.
+        from: '    return body ? `${subject}\\n\\n${body}` : subject;',
+        to: '    return subject;',
+    },
+    {
+        id: 'M-CAP10',
+        file: CAPTURE,
+        expect: ['still reports a subject-less message rather than returning nothing'],
+        from: "    const subject = item.Subject?.trim() || '(no subject)';",
+        to: "    const subject = item.Subject ?? '';",
+    },
     /**
      * THE REFUSAL'S ACTIONABLE HALF. Every other assertion in the suite compares against the
      * `LIVE_GRAPH_REFUSAL` constant, so the message could be trimmed back to "Live Graph fetch is
@@ -142,6 +219,11 @@ const PRODUCT = [
         from: '        HasAttachments: message.hasAttachments === true,',
         to: '        HasAttachments: false,',
     },
+    /**
+     * INTERNAL DOMAINS, the parsing half. An empty list is not a disabled filter, it is an INVERTED
+     * one -- every participant counts as External -- so each way of quietly producing an empty or
+     * wrong list is its own mutant.
+     */
     {
         id: 'M-PA1',
         file: PARTS,
@@ -347,6 +429,11 @@ const PRODUCT = [
         from: '    return declared?.trim() ? declared.trim() : fallback;',
         to: '    return declared ?? fallback;',
     },
+    /**
+     * THE CALENDAR WINDOW. `WatermarkBasisForKind('Calendar')` is ObservationTime -- when we last
+     * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
+     * back-dated meeting is never read, on any run, with no issue and Success = true.
+     */
     {
         id: 'M-CW1',
         file: CALENDAR,
@@ -573,8 +660,10 @@ const PRODUCT = [
         id: 'M-AC41',
         file: ENGINE,
         expect: ['asks for every ProviderTypeRow field by name, and no others'],
-        from: "'CalendarDriverClass', 'IsActive'],",
-        to: "'CalendarDriverClass'],",
+        // Re-anchored when the Fields list went multi-line. Same mutation: drop one field the
+        // interface declares, so the two lists disagree and the runtime reads `undefined`.
+        from: "                    'IsActive',\r\n",
+        to: '',
     },
 ];
 
