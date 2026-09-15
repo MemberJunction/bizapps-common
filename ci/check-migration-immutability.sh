@@ -7,9 +7,21 @@
 # repair on each existing installation. So: once a migration is on `main`, it is published,
 # and the only legal change to `migrations/` is a NEW file.
 #
-# Compares against the MERGE BASE (three-dot), not the tip of main. A migration added on
-# `next` and then corrected on `next` before it ever released is fine — it was never in main,
-# so nobody has applied it. That is the case this check must NOT flag, and two-dot would.
+# Compares against the MERGE BASE with the ref it is given (three-dot), not that ref`s tip —
+# and the reason is WHICH ref. This is called with `origin/main`, which on a PR into `next` is
+# not the PR`s own base. Two-dot against main would report everything that differs between
+# main and this branch — including migrations sitting on `next` awaiting release — as though
+# this PR had edited them. Three-dot asks the narrower question the rule cares about: has
+# anything that was ALREADY on main at the branch point been changed?
+#
+# (Against the PR`s own base the two forms coincide: on a pull_request event HEAD is GitHub`s
+# merge ref, whose base parent is the base tip. The distinction is about the ref, not the dots.)
+#
+# ONE CONSEQUENCE, once an exemption is used. After someone edits a shipped migration on `next`
+# under `migration-immutability-exempt`, that edit sits inside the three-dot range of EVERY
+# later PR into `next`, so they all fail this check until the next release moves main forward.
+# Release promptly after an exemption, or expect to label the follow-ups too. (Baseline is
+# clean today: `git diff --diff-filter=MDR origin/main...origin/next -- migrations/` is empty.)
 #
 # MIGRATION_IMMUTABILITY_EXEMPT=true (the `migration-immutability-exempt` label) overrides it —
 # but does NOT silence it: the offending files are still listed, in the log and the job summary.
