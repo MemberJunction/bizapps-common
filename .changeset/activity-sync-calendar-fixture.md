@@ -30,9 +30,13 @@ green wall with one column now empty. Among other things these pin that the time
 *skipped*, so a later "fix" that guesses at a named zone fails here rather than filing meetings hours
 from when they happened.
 
-`engine-dry-run.mjs` gains `--fleet`, which drives `RunConnections` — the path the scheduled Action
-uses, and the only one that reaches the calendar surface at all. Its recorded factory dispatches on
-`DriverClass`, so each surface replays its own payloads.
+**How it was exercised.** `RunConnections` is the path the scheduled Action uses and the only one
+that reaches the calendar surface at all, so it was driven end to end against a real database through
+a local harness, with a recorded factory dispatching on `DriverClass` so each surface replays its own
+payloads. That harness is a local investigation script and is deliberately not part of this change:
+it constructs the provider with `AllowLiveFetch` directly, which is exactly the gate the rest of this
+work exists to install. The behaviour it exercised is pinned by `engine.fixture-run` and the fixture
+tests instead, which run in CI and do not need a database.
 
 Verified against the database: a fleet run writes 5 Email and 5 Meeting activities, with the sixth
 event correctly skipped by name.

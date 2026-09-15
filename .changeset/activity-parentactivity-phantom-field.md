@@ -14,6 +14,15 @@ threading correctly, then wrote nothing: `Failed: 5, Success: false`. The waterm
 failure, so it retried the same messages on every pass and never made progress. Nothing about the
 message named the real cause.
 
+**WHICH DATABASES ARE IN THAT STATE, since on many this migration will print and do nothing.**
+`V202608252150` ships `vwActivities` WITH a `ParentActivity` column and the matching EntityField, so a
+database built from this repo's Flyway chain and never regenerated is aligned at 34/34 and the guard
+below leaves it alone. The mismatch appears once someone runs `mj codegen` against such a host: for a
+self-referencing FK, CodeGen rebuilds the view with the hierarchy columns and no `ParentActivity`,
+while the EntityField row stays — 34 slots against 33. That is the state the development database was
+in. The closing assertion runs on every host regardless, so an aligned database proves it rather than
+being assumed to be.
+
 This is the same defect `V202608261015` fixed for Activity Links and Activity Files, in the opposite
 direction — that one added a virtual field the view HAD and metadata lacked (N slots against N+1
 columns); this removes one metadata HAS and the view lacks.
