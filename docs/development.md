@@ -57,6 +57,14 @@ npm run mj:migrate
   - Never create indexes for FK columns - CodeGen creates them automatically
 - `mj migrate` must be `@memberjunction/cli` **6.1.0-edge.4 or later**. edge.3 dies on `ToEpochMs` (`@memberjunction/global`). Applying the SQL some other way skips the Open App metadata-heal (`R__RefreshMetadata` equivalent in `migration-runner.ts`), which is what rewrites `EntityField.Sequence` to match the base view after this app's Flyway history. A worktree `node_modules/.bin/mj` that resolves older than edge.4 is not the host path.
 
+## Business time zone
+Dates that are calendar days (`DATE` columns) are read from the UTC parts of the value and written as
+UTC midnight — `ToCalendarDay` / `FromCalendarDay` in `@mj-biz-apps/common-entities`. "Today" is the
+one thing that needs a zone: read it from `BusinessTimeZoneEngine.Instance.Today()`, never from
+`new Date().toISOString()` or the browser's local day. Views get the same answer from
+`CROSS JOIN [__mj_BizAppsCommon].[fnBusinessToday]() AS bt` and `bt.Today`. The zone is the
+`BizApps.BusinessTimeZone` instance configuration row; the host sets it (AIDP Next: Central).
+
 ## Metadata Sync
 ```bash
 npx mj-sync push --dir ./metadata
