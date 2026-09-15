@@ -62,6 +62,10 @@ seam is the defect this change exists to end.
 lookback notice, discarding cancelled events, reading the normalized `Events` instead of `SourceData`,
 omitting the recurrence warning, turning a Graph failure into an empty batch, hard-coding `IsLive`,
 opening the gate, ignoring the attestation, and refusing to serve the calendar driver are all caught.
-Restoring the watermark as the window start is caught too (`M-CW1`), which it was not when that bug
-was live: the harness did not open this file at all, so every mutation aimed at it reported all-clear
-by never reaching it.
+All of them are now REGISTERED rather than verified once by hand — `M-CAL1`–`M-CAL8` for the
+transport and the provider's `IsLive`, `M-GTF1`–`M-GTF5` for the factory's surface dispatch, and
+`M-SD1`/`M-SD2` for `SurfaceDriverClass`. Restoring the watermark as the window start is caught too
+(`M-CW1`), which it was not when that bug was live: the harness did not open this file at all, so
+every mutation aimed at it reported all-clear by never reaching it. That is the reason the list is
+worth registering rather than writing down — an enumerated "all caught" over a file the harness never
+opens reads exactly like coverage.

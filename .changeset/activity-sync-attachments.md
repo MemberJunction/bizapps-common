@@ -47,8 +47,11 @@ registered it reports too, because `Store()` is still not wired to the selection
 filling the seam correctly with the same quiet nothing would be the more misleading of the two, since
 everything on the host's side is right. It says the gap is in Activity Sync, not in the host.
 
-19 tests, each mutation-checked: fetching with no rule, ignoring the item's flag, reading a zero cap
-as "keep nothing", keeping inline images, allowing an unmeasurable file past a cap, an off-by-one at
-the cap boundary, ignoring `Fetch: false`, and suppressing or over-listing the skip report are all
-caught. Verified end to end against the database: with the rule switched on, exactly one of five demo
+19 tests, each mutation-checked and now registered as `M-AT1`–`M-AT8`: fetching with no rule,
+ignoring the item's flag, reading a zero cap as "keep nothing", keeping inline images, allowing an
+unmeasurable file past a cap, an off-by-one at the cap boundary, ignoring `Fetch: false`, and
+suppressing the skip report are all caught — as is the mapper quietly ceasing to read Graph's own
+`hasAttachments` flag (`M-MAP1`), which would make the whole feature do nothing on every real message
+while reporting success. That list had been verified by hand and not kept, which left it describing
+evidence that no longer existed. Verified end to end against the database: with the rule switched on, exactly one of five demo
 items reported — the one whose payload says it has attachments.

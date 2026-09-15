@@ -43,4 +43,6 @@ the warning, and treating `Any` as a participant test are all caught.
 stubbed each lookup to empty, so `[]` and the real rows were indistinguishable. The fix was real and
 the evidence for it was not, which is the same shape as the defect. `engine.internal-domains.test.ts`
 observes the rule set the engine actually hands the qualifier, and `M-ID1`/`M-ID2` fell both the
-revert and the swallowed parse failure.
+revert and the swallowed parse failure. The seven parsing mutations named above are registered too
+(`M-PA1`–`M-PA7`): they had been run by hand when the work was done and nothing kept them, so the
+list described evidence that no longer existed.
