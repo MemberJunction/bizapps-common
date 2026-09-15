@@ -114,40 +114,55 @@ jobs:
           echo "count=$PUBLISHED" >> "$GITHUB_OUTPUT"
           echo "Packages published: $PUBLISHED"
 
+      # Decide the outcome BEFORE writing the tag.
+      #
+      # Two defects Ian caught in the first version of this, both of which made a failed release
+      # look like a finished one:
+      #
+      #   * the tag was pushed before the outcome was known, so the failure path left the tag on
+      #     origin — and a re-run then took the "tag already exists" branch and reported success.
+      #   * the hotfix check only fired when the tag was MISSING, which is the rare case. A hotfix
+      #     merged to `main` with no version bump sits at a version that is already published AND
+      #     already tagged by the previous release, so it took the benign branch and exited 0.
+      #
+      # The tree is what separates the two: a genuine re-run of a completed release has the same
+      # `packages/` as the tag; a hotfix that skipped the bump does not.
       - name: Tag the release
         run: |
           VERSION="v$(jq -r .version packages/Entities/package.json)"
           PUBLISHED="${{ steps.publish.outputs.count }}"
+
           TAG_EXISTED=false
           if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
             TAG_EXISTED=true
+          fi
+
+          if [ "$PUBLISHED" -eq 0 ]; then
+            if [ "$TAG_EXISTED" != "true" ]; then
+              echo "::error::Published 0 packages, and $VERSION is not tagged. Every package version on main already exists on npm, so this commit reached main WITHOUT a version bump — most likely a hotfix merged straight to main without running 'pnpm exec changeset' + 'pnpm run version:prepare' first. The fix is on main but will never reach a consumer. Raise a changeset, run version:prepare, and merge the bump."
+              exit 1
+            fi
+
+            # Make sure the tag object is local before diffing against it.
+            git fetch --no-tags origin "refs/tags/$VERSION:refs/tags/$VERSION" 2>/dev/null || true
+            if ! git diff --quiet "$VERSION" HEAD -- packages/; then
+              echo "::error::$VERSION is already tagged and already on npm, but packages/ has changed since that tag. This commit reached main WITHOUT a version bump — a genuine re-run of a completed release would have an identical tree. Raise a changeset, run 'pnpm run version:prepare', and merge the bump."
+              git --no-pager diff --stat "$VERSION" HEAD -- packages/ | tail -20
+              exit 1
+            fi
+
+            echo "## Nothing published — $VERSION is already on npm" >> "$GITHUB_STEP_SUMMARY"
+            echo "Every package version already exists on the registry, the tag is already pushed, and packages/ is identical to it — this is a re-run of a completed release." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Something shipped, so the tag is now safe to write.
+          if [ "$TAG_EXISTED" = "true" ]; then
             echo "Tag $VERSION already exists on origin — leaving it alone"
           else
             git tag "$VERSION"
             git push origin "refs/tags/$VERSION"
             echo "Tagged $VERSION"
           fi
-
-          if [ "$PUBLISHED" -gt 0 ]; then
-            echo "## Released $VERSION" >> "$GITHUB_STEP_SUMMARY"
-            echo "$PUBLISHED package(s) published." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          # Nothing shipped. Re-running an already-successful release is the one legitimate way
-          # to land here, and in that case the tag was already on origin. A NEW tag plus zero
-          # published packages cannot be a re-run — it is a version that never got bumped.
-          if [ "$TAG_EXISTED" = "true" ]; then
-            echo "## Nothing published — $VERSION is already on npm" >> "$GITHUB_STEP_SUMMARY"
-            echo "Every package version already exists on the registry and the tag was already pushed, so this looks like a re-run of a completed release." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          echo "::error::Published 0 packages, but $VERSION was not yet tagged. Every package version on main already exists on npm, which means this commit reached main WITHOUT a version bump — most likely a hotfix merged straight to main without running 'pnpm exec changeset' + 'pnpm run version:prepare' first. The fix is on main but will never reach a consumer. Raise a changeset, run version:prepare, and merge the bump."
-          {
-            echo "## Nothing published"
-            echo
-            echo "\`$VERSION\` was newly tagged but **0 packages were published** — every version on \`main\` is already on npm."
-            echo "This commit reached \`main\` without a version bump. See the hotfix recipe in CLAUDE.md."
-          } >> "$GITHUB_STEP_SUMMARY"
-          exit 1
+          echo "## Released $VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "$PUBLISHED package(s) published." >> "$GITHUB_STEP_SUMMARY"
