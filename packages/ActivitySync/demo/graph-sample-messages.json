@@ -16,6 +16,13 @@
     "Every address is on example.com / example.org, which RFC 2606 reserves precisely so sample data",
     "cannot reach a real mailbox.",
     "",
+    "VALIDATED AGAINST LIVE PAYLOADS on 2026-09-04. 25 real messages were compared field-name by",
+    "field-name (never by value) against this file. Every field the mapper reads was present in the",
+    "live data, and nothing here was absent from it. Three real fields WERE missing and have since",
+    "been added: conversationIndex, flag, and a populated replyTo — that last had always been [], so",
+    "its nested shape never appeared, and MJ's own GetMessages derives its normalized `To` from",
+    "replyTo[0]. Hand-built is still hand-built, but it is no longer unchecked.",
+    "",
     "Fields present here that the mapper does NOT read (isRead, importance, webLink, hasAttachments,",
     "internetMessageId, parentFolderId, changeKey) are kept deliberately: a real Graph response",
     "carries them, and stripping them would make the fixture agree with our mapper rather than with",
@@ -51,17 +58,32 @@
         "content": "Hi — following up on the renewal. We are looking at 40 seats for the coming year, starting 1 October.\n\nThanks,\nDana"
       },
       "sender": {
-        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+        "emailAddress": {
+          "name": "Dana Whitfield",
+          "address": "dana.whitfield@customer.example.org"
+        }
       },
       "from": {
-        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+        "emailAddress": {
+          "name": "Dana Whitfield",
+          "address": "dana.whitfield@customer.example.org"
+        }
       },
       "toRecipients": [
-        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+        {
+          "emailAddress": {
+            "name": "Alex Rep",
+            "address": "rep@example.com"
+          }
+        }
       ],
       "ccRecipients": [],
       "bccRecipients": [],
-      "replyTo": []
+      "replyTo": [],
+      "conversationIndex": "AdyBnQ5FMk0xQ0hRR0hRR0hRR0hRR0hRQQ==",
+      "flag": {
+        "flagStatus": "notFlagged"
+      }
     },
     {
       "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zy\"",
@@ -90,19 +112,46 @@
         "content": "<html><body><p>Dana — quote attached for 40 seats, 1 Oct to 30 Sep. Copying Priya who handles the paperwork.</p></body></html>"
       },
       "sender": {
-        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+        "emailAddress": {
+          "name": "Alex Rep",
+          "address": "rep@example.com"
+        }
       },
       "from": {
-        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+        "emailAddress": {
+          "name": "Alex Rep",
+          "address": "rep@example.com"
+        }
       },
       "toRecipients": [
-        { "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" } }
+        {
+          "emailAddress": {
+            "name": "Dana Whitfield",
+            "address": "dana.whitfield@customer.example.org"
+          }
+        }
       ],
       "ccRecipients": [
-        { "emailAddress": { "name": "Nair, Priya", "address": "priya.nair@customer.example.org" } }
+        {
+          "emailAddress": {
+            "name": "Nair, Priya",
+            "address": "priya.nair@customer.example.org"
+          }
+        }
       ],
       "bccRecipients": [],
-      "replyTo": []
+      "replyTo": [
+        {
+          "emailAddress": {
+            "name": "Alex Rep",
+            "address": "rep@example.com"
+          }
+        }
+      ],
+      "conversationIndex": "AdyBnQ5FMk0xQ0hRR0hRR0hRR0hRR0hRQQECAw==",
+      "flag": {
+        "flagStatus": "notFlagged"
+      }
     },
     {
       "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zz\"",
@@ -110,7 +159,9 @@
       "createdDateTime": "2026-08-31T09:14:55Z",
       "lastModifiedDateTime": "2026-08-31T09:14:57Z",
       "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zz",
-      "categories": ["Renewals"],
+      "categories": [
+        "Renewals"
+      ],
       "receivedDateTime": "2026-08-31T09:14:56Z",
       "sentDateTime": "2026-08-31T09:14:52Z",
       "hasAttachments": false,
@@ -131,19 +182,46 @@
         "content": "Approved on our side. Priya will send the PO on Tuesday."
       },
       "sender": {
-        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+        "emailAddress": {
+          "name": "Dana Whitfield",
+          "address": "dana.whitfield@customer.example.org"
+        }
       },
       "from": {
-        "emailAddress": { "name": "Dana Whitfield", "address": "dana.whitfield@customer.example.org" }
+        "emailAddress": {
+          "name": "Dana Whitfield",
+          "address": "dana.whitfield@customer.example.org"
+        }
       },
       "toRecipients": [
-        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+        {
+          "emailAddress": {
+            "name": "Alex Rep",
+            "address": "rep@example.com"
+          }
+        }
       ],
       "ccRecipients": [
-        { "emailAddress": { "name": "Nair, Priya", "address": "priya.nair@customer.example.org" } }
+        {
+          "emailAddress": {
+            "name": "Nair, Priya",
+            "address": "priya.nair@customer.example.org"
+          }
+        }
       ],
       "bccRecipients": [],
-      "replyTo": []
+      "replyTo": [
+        {
+          "emailAddress": {
+            "name": "Dana Whitfield",
+            "address": "dana.whitfield@customer.example.org"
+          }
+        }
+      ],
+      "conversationIndex": "AdyBnQ5FMk0xQ0hRR0hRR0hRR0hRR0hRQQECAwQF",
+      "flag": {
+        "flagStatus": "notFlagged"
+      }
     },
     {
       "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A1\"",
@@ -172,17 +250,32 @@
         "content": "Flagging the 40-seat renewal for desk review — term starts 1 Oct, so it lands in this quarter."
       },
       "sender": {
-        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+        "emailAddress": {
+          "name": "Alex Rep",
+          "address": "rep@example.com"
+        }
       },
       "from": {
-        "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" }
+        "emailAddress": {
+          "name": "Alex Rep",
+          "address": "rep@example.com"
+        }
       },
       "toRecipients": [
-        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+        {
+          "emailAddress": {
+            "name": "Alex Rep",
+            "address": "rep@example.com"
+          }
+        }
       ],
       "ccRecipients": [],
       "bccRecipients": [],
-      "replyTo": []
+      "replyTo": [],
+      "conversationIndex": "AdyBnQ6GNl4yRElSSElSSElSSElSSElSQg==",
+      "flag": {
+        "flagStatus": "notFlagged"
+      }
     },
     {
       "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2A2\"",
@@ -211,19 +304,39 @@
         "content": "Your message could not be delivered to one or more recipients."
       },
       "sender": {
-        "emailAddress": { "name": "Mail Delivery System", "address": "postmaster@example.net" }
+        "emailAddress": {
+          "name": "Mail Delivery System",
+          "address": "postmaster@example.net"
+        }
       },
       "from": {
-        "emailAddress": { "name": "Mail Delivery System", "address": "postmaster@example.net" }
+        "emailAddress": {
+          "name": "Mail Delivery System",
+          "address": "postmaster@example.net"
+        }
       },
       "toRecipients": [
-        { "emailAddress": { "name": "Alex Rep", "address": "rep@example.com" } }
+        {
+          "emailAddress": {
+            "name": "Alex Rep",
+            "address": "rep@example.com"
+          }
+        }
       ],
       "ccRecipients": [
-        { "emailAddress": { "name": "Broken Entry", "address": "undisclosed-recipients" } }
+        {
+          "emailAddress": {
+            "name": "Broken Entry",
+            "address": "undisclosed-recipients"
+          }
+        }
       ],
       "bccRecipients": [],
-      "replyTo": []
+      "replyTo": [],
+      "conversationIndex": "AdyBnQ7HOm9zVEpTVEpTVEpTVEpTVEpTQw==",
+      "flag": {
+        "flagStatus": "notFlagged"
+      }
     }
   ]
 }

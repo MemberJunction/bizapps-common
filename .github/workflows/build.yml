@@ -10,11 +10,18 @@ on:
     paths:
       - 'pnpm-lock.yaml'
       - 'packages/**'
+      # migrations/** and migrations-pg/** are here because business-time-zone-migration.test.ts
+      # reads those files: a PR that renames fnBusinessToday or drops its GRANT touches no package
+      # and would otherwise never run the test that pins the contract.
+      - 'migrations/**'
+      - 'migrations-pg/**'
   pull_request:
     branches: [next]
     paths:
       - 'pnpm-lock.yaml'
       - 'packages/**'
+      - 'migrations/**'
+      - 'migrations-pg/**'
 
 concurrency:
   group: build-${{ github.ref }}
@@ -52,3 +59,8 @@ jobs:
 
       - name: Build all packages
         run: pnpm run build:packages
+
+      # Narrow to this package: other packages' test state is unknown, and this job already
+      # has node_modules and the built packages the tests need.
+      - name: Test common-entities
+        run: pnpm --filter @mj-biz-apps/common-entities test
