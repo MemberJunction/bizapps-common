@@ -151,6 +151,6 @@ if [ "$NMAJ" -gt "$PMAJ" ] || { [ "$NMAJ" -eq "$PMAJ" ] && [ "$NMIN" -gt "$PMIN"
   exit 0
 fi
 
-echo "::error::This release bumps $PREV -> $VERSION, a patch, but $CHANGED changed since $LAST_TAG. A consumer upgrading on a patch would not expect the schema or the seeded metadata to change. Raise one changeset on next to minor and the Version Packages PR will regenerate itself; or label this PR 'bump-level-exempt' if the change genuinely is not a feature. Changed:"
+echo "::error::This release bumps $PREV -> $VERSION, a patch, but $CHANGED changed since $LAST_TAG. A consumer upgrading on a patch would not expect the schema or the seeded metadata to change. Raise one changeset on next to minor, then MERGE the Version Packages PR it regenerates — the fix only takes effect once that merge puts the new version on next; or label this PR 'bump-level-exempt' if the change genuinely is not a feature. Changed:"
 printf '%s\n%s\n' "$MIGRATIONS" "$METADATA" | grep -v '^$' | sed 's/^/  /'
 exit 1
