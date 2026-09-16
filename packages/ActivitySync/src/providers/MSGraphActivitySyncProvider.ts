@@ -11,10 +11,13 @@
  * provider and MJ's Credentials engine; a recorded one replays captured payloads through the same
  * mapping. Only the outermost call differs between them.
  *
- * THE TENANT-WIDE READ IS STILL REFUSED BY DEFAULT. `AllowLiveFetch` remains false, and the reason
- * is unchanged: app-only `Mail.Read` reads EVERY mailbox in the tenant until an Exchange Application
- * Access Policy scopes the app registration to a security group. Wiring a transport does not make
- * that safe, so the gate stays, and stays default-off.
+ * THE TENANT-WIDE READ IS STILL REFUSED BY DEFAULT. The reason is unchanged: app-only `Mail.Read`
+ * reads EVERY mailbox in the tenant until an Exchange Application Access Policy scopes the app
+ * registration to a security group. Wiring a transport does not make that safe, so the gate stays.
+ *
+ * What changed is that the gate is now REACHABLE. It defaults to the host's attestation
+ * (`AllowLiveMailboxFetch`) rather than to a bare `false` that `ClassFactory` could never override —
+ * an unconfigured host still refuses, but a scoped one can say so in the one place that ships.
  *
  * @module @mj-biz-apps/common-activity-sync
  */
@@ -23,18 +26,42 @@ import { RegisterClass } from '@memberjunction/global';
 import { BaseActivitySyncProvider } from '../BaseActivitySyncProvider.js';
 import type { ActivitySourceQuery, NormalizedItem, RawBatch } from '../types.js';
 import { MapGraphMessages } from './GraphMessageMapper.js';
-import { HostActivityTransportFactory } from './MessageTransport.js';
+import { HostActivityTransportFactory, HostAllowsLiveMailboxFetch } from './MessageTransport.js';
 import type {
     ActivityMessageTransport,
     ActivityTransportContext,
     ActivityTransportFactory,
 } from './MessageTransport.js';
 
+/**
+ * Why live fetch is off, and what to do about it.
+ *
+ * NAMING THE WAY OUT MATTERS AS MUCH AS THE REFUSAL: without it an operator who HAS checked the
+ * policy has no supported next step, and the tempting one is to go editing a database row.
+ *
+ * An earlier version of this string named only one of them — "call AllowLiveMailboxFetch() with the
+ * group the policy names" — which was wrong twice over. It assumed every deployment ends up with an
+ * Exchange RBAC assignment, when `TenantWideAccepted` exists precisely because most will not; an
+ * operator in a tenant with no RBAC owner read that as "you are blocked" and was left with inventing
+ * a group name or bypassing the gate. And it pointed at a FUNCTION when the path a deployment
+ * actually takes is `LoadLiveMailboxPolicyFromEnv`, already wired into `common-server`'s bootstrap,
+ * which reads environment variables. Telling someone to write code they do not need to write is the
+ * same defect in miniature: a documented route that is not the route.
+ *
+ * The variable names are referenced rather than imported — `common-server` depends on this package,
+ * not the other way round — which is the same way the attestation's own docblock already refers to
+ * `LoadLiveMailboxPolicyFromEnv` by name.
+ */
 export const LIVE_GRAPH_REFUSAL =
     'Live Graph fetch is disabled. MSGraphProvider uses app-only auth, so Mail.Read reads ' +
     'EVERY mailbox in the tenant until an Exchange Application Access Policy scopes the ' +
-    'app registration to a security group. Confirm that policy exists before enabling ' +
-    'this, and use a recorded transport or FixtureActivitySyncProvider until then.';
+    'app registration to a security group. Find out whether that policy exists before enabling ' +
+    'this, and use a recorded transport or FixtureActivitySyncProvider until then. ' +
+    'Then record the answer, whichever it is: the app IS scoped and you name the group, or it is ' +
+    'not and the tenant-wide grant is accepted deliberately, in writing, by a named person on a ' +
+    'date. Both are legitimate. Not knowing is not. A host that reads deployment configuration ' +
+    'sets its ACTIVITY_SYNC_MAILBOX_POLICY_* variables (see @mj-biz-apps/common-server); anything ' +
+    'else calls AllowLiveMailboxFetch() once at bootstrap.';
 
 export const NO_TRANSPORT_REFUSAL =
     'No mailbox transport was supplied. Construct this provider with a GraphCommunicationTransport ' +
@@ -67,13 +94,21 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
 
     public constructor(
         /**
-         * Default FALSE. Turning it on is a deliberate act by someone who has confirmed the
-         * Application Access Policy exists. Nothing in this package does that for you.
+         * Turning it on is a deliberate act by someone who has confirmed the Application Access
+         * Policy exists. Nothing in this package does that for you.
          *
          * It gates the LIVE transport only — a recorded transport needs no such confirmation
          * because it reaches no mailbox, and is allowed through below.
+         *
+         * DEFAULTS TO THE HOST'S ATTESTATION, NOT TO FALSE. A bare `false` made this unreachable in
+         * the only way that ships: `MJGlobal.ClassFactory` builds plugins with no arguments, so
+         * through the engine this was permanently off and the parameter could be set by tests and
+         * the demo alone. That is the same defect the transport factory had — a seam that was
+         * described, exported, and impossible to reach — so it gets the same fix, a host registry.
+         * With no attestation registered the default is still false, so an unconfigured host refuses
+         * exactly as before.
          */
-        private readonly AllowLiveFetch: boolean = false,
+        private readonly AllowLiveFetch: boolean = HostAllowsLiveMailboxFetch(),
         /** Where messages come from. Without one this provider refuses rather than pretending. */
         private Transport?: ActivityMessageTransport,
         /** How a host builds a transport for a connection. See {@link Configure}. */
