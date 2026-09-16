@@ -3,9 +3,10 @@
  *
  * Stored as one `MJ: Instance Configurations` row whose JSON value carries the IANA name code uses
  * (`Intl` knows only those) and the Windows name SQL Server's `AT TIME ZONE` accepts (it knows only
- * those). bizapps-common defines the row; the host sets its value. MJ 6.2 defines its own key,
- * `Business.TimeZone`; when that row exists it wins, so nothing here changes when the framework
- * catches up.
+ * those). bizapps-common defines the row; the host sets its value. MJ 6.2 is asked to define its
+ * own key, `Business.TimeZone`, with the same two-name shape (MemberJunction/MJ#4541); when that
+ * row exists it wins, so nothing here changes when the framework catches up — provided the shape
+ * matches, which is why that issue pins it.
  *
  * Fail open to UTC. A missing row, a blank value, unreadable JSON, an unknown zone, or a user
  * without read permission on the configuration entity all resolve to UTC, with one warning per

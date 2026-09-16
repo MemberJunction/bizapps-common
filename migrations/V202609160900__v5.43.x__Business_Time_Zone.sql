@@ -17,7 +17,8 @@
 --      run once per row inside a view predicate; an inline TVF is expanded into
 --      the query and the config lookup runs once. Views use
 --        CROSS JOIN [__mj_BizAppsCommon].[fnBusinessToday]() AS bt ... < bt.Today
---      MJ 6.2 will define 'Business.TimeZone'; when that row exists it wins.
+--      MJ 6.2 is asked to define 'Business.TimeZone' with the same two-name shape
+--      (MemberJunction/MJ#4541); when that row exists it wins.
 --      A name sys.time_zone_info does not know falls back to UTC rather than
 --      failing every view that joins the function.
 -- No table DDL. No CodeGen capture. Idempotent.
