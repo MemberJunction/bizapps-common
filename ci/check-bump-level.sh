@@ -51,15 +51,17 @@ normalize_metadata_json() {
 # parse is reported as changed — a check that guesses "unchanged" on a file it failed to read
 # is worse than one that asks a human.
 substantive_metadata_changes() {
-  local base="$1" head="$2" file changed="" a b
+  local base="$1" head="$2" file changed="" base_normalized head_normalized
   for file in $(git diff --name-only "$base" "$head" -- metadata/ || true); do
     case "$file" in
       *.json) ;;
       *) changed="${changed}${file}"$'\n'; continue ;;   # not JSON: cannot normalize, so it counts
     esac
-    a=$(git show "$base:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || a="<unreadable-base>"
-    b=$(git show "$head:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || b="<unreadable-head>"
-    if [ "$a" != "$b" ]; then
+    base_normalized=$(git show "$base:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || base_normalized="<unreadable-at-base>"
+    head_normalized=$(git show "$head:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || head_normalized="<unreadable-at-head>"
+    # The two sentinels differ on purpose: a file unreadable on BOTH sides still compares
+    # unequal, so it counts as changed rather than slipping through as "the same".
+    if [ "$base_normalized" != "$head_normalized" ]; then
       changed="${changed}${file}"$'\n'
     fi
   done
