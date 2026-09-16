@@ -47,24 +47,67 @@ normalize_metadata_json() {
          strip'
 }
 
-# Echoes the metadata files that changed substantively between two refs. Anything it cannot
-# parse is reported as changed — a check that guesses "unchanged" on a file it failed to read
-# is worse than one that asks a human.
+# Echoes the metadata files that changed substantively between two refs, one per line, and
+# explains each decision on stderr so a CI log says WHY a file counted rather than just that it
+# did. Three outcomes per file:
+#
+#   added / deleted   a normal, substantive change — a metadata record appearing or disappearing
+#                     is exactly what this rule exists to catch. Reported as such, not as an error.
+#   unreadable        genuinely could not be parsed. Counted as changed, loudly, naming the ref
+#                     and the reason: guessing "unchanged" on a file you failed to read is worse
+#                     than asking a human.
+#   compared          both sides parsed; counted only if they differ once every `sync` block is
+#                     stripped, so a rewritten checksum or a reserialized file is not a change.
 substantive_metadata_changes() {
-  local base="$1" head="$2" file changed="" base_normalized head_normalized
-  for file in $(git diff --name-only "$base" "$head" -- metadata/ || true); do
+  local base="$1" head="$2" file base_json head_json changed=""
+  local in_base in_head
+
+  # `while read`, not `for $(...)`: a metadata path containing a space would otherwise be split
+  # into fragments and silently mis-handled.
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+
+    in_base=false; in_head=false
+    git cat-file -e "$base:$file" 2>/dev/null && in_base=true
+    git cat-file -e "$head:$file" 2>/dev/null && in_head=true
+
+    if [ "$in_base" = false ] && [ "$in_head" = true ]; then
+      echo "  ADDED    $file — a new metadata file is a substantive change" >&2
+      changed="${changed}${file}"$'\n'; continue
+    fi
+    if [ "$in_base" = true ] && [ "$in_head" = false ]; then
+      echo "  DELETED  $file — a removed metadata file is a substantive change" >&2
+      changed="${changed}${file}"$'\n'; continue
+    fi
+    if [ "$in_base" = false ] && [ "$in_head" = false ]; then
+      echo "  MISSING  $file — git reported it as changed but it exists at neither ref; counting it" >&2
+      changed="${changed}${file}"$'\n'; continue
+    fi
+
     case "$file" in
       *.json) ;;
-      *) changed="${changed}${file}"$'\n'; continue ;;   # not JSON: cannot normalize, so it counts
+      *) echo "  NOT JSON $file — cannot strip sync bookkeeping from a non-JSON file; counting it" >&2
+         changed="${changed}${file}"$'\n'; continue ;;
     esac
-    base_normalized=$(git show "$base:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || base_normalized="<unreadable-at-base>"
-    head_normalized=$(git show "$head:$file" 2>/dev/null | normalize_metadata_json 2>/dev/null) || head_normalized="<unreadable-at-head>"
-    # The two sentinels differ on purpose: a file unreadable on BOTH sides still compares
-    # unequal, so it counts as changed rather than slipping through as "the same".
-    if [ "$base_normalized" != "$head_normalized" ]; then
+
+    if ! base_json=$(git show "$base:$file" 2>/dev/null | normalize_metadata_json 2>&1); then
+      echo "  UNREADABLE $file at $base — not valid JSON, so a cosmetic-vs-real comparison is" >&2
+      echo "             impossible; counting it as changed. jq said: ${base_json%%$'\n'*}" >&2
+      changed="${changed}${file}"$'\n'; continue
+    fi
+    if ! head_json=$(git show "$head:$file" 2>/dev/null | normalize_metadata_json 2>&1); then
+      echo "  UNREADABLE $file at $head — not valid JSON, so a cosmetic-vs-real comparison is" >&2
+      echo "             impossible; counting it as changed. jq said: ${head_json%%$'\n'*}" >&2
+      changed="${changed}${file}"$'\n'; continue
+    fi
+
+    if [ "$base_json" != "$head_json" ]; then
       changed="${changed}${file}"$'\n'
     fi
-  done
+  done <<EOF
+$(git diff --name-only "$base" "$head" -- metadata/ || true)
+EOF
+
   printf '%s' "$changed"
 }
 
