@@ -34,6 +34,7 @@ const item = (occurredAt: Date): NormalizedItem => ({
     StartedAt: occurredAt,
     EndedAt: null,
     Location: null,
+    HasAttachments: false,
     Direction: 'Inbound',
     Participants: [{ Address: 'alice@customer.com', Name: null, Role: 'From', IdentityKind: 'Email' }],
     Cancelled: false,

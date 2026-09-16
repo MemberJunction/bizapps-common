@@ -82,19 +82,33 @@ export class RecordedMessageTransport implements ActivityMessageTransport {
         }
 
         /**
-         * A CAPPED REPLAY WITHHOLDS THE WATERMARK TOO, and not only for symmetry.
+         * A CAPPED REPLAY WITHHOLDS THE WATERMARK. ON EVERY RUN, INCLUDING THE FIRST.
          *
-         * The live transport already does this: Graph returns newest-first, so a truncated live batch
-         * strands everything between the old watermark and its oldest item. A replay truncates the
-         * other way — `slice(0, Limit)` takes the FIRST N of the recording — so if a recording happens
-         * to be ordered oldest-first, the batch IS contiguous with the watermark and advancing would
-         * be safe.
+         * This used to read `capped && !!query.Since`, on the reasoning that a first run has no
+         * watermark and so nothing to strand behind one. That reasoning is wrong, and the way it is
+         * wrong is worth writing down, because it is the same shape as the live-path defect this
+         * package was just fixed for.
          *
-         * That safety is an accident of file order, and nothing enforces it. A recording captured
-         * newest-first, or re-sorted by an editor, silently becomes the live bug with no code change
-         * anywhere. Withholding costs a re-read that de-duplication absorbs, so the flag is set
-         * whenever the limit binds and a watermark is in play, exactly as on the live path.
+         * The loss on a first run is not about an EXISTING watermark. It is about the watermark the
+         * run CREATES. Nothing enforces the order of a recording, and a NEWEST-FIRST one truncated to
+         * Limit returns the newest N and withholds the oldest; a watermark computed from what it DID
+         * return is then NEWER than the payloads it did not, and those are buried behind a mark that
+         * claims to cover them. That is the live bug exactly, reached without a prior watermark.
+         *
+         * It matters past the fixture because the mark is DURABLE and the transport behind it is
+         * swappable: a host that replays a truncated recording and later points the same connection
+         * at the live transport inherits the claim, and the live run skips real mail.
+         *
+         * So the flag is set whenever the limit binds, exactly as the live path now does. Withholding
+         * costs a re-read that de-duplication absorbs. Advancing costs correctness of the watermark.
+         *
+         * WHAT THIS DOES NOT FIX, so nobody reads more into it. `slice(0, Limit)` is POSITIONAL and
+         * the window is applied downstream, so a truncated replay re-takes the same first N payloads
+         * on every run whatever `Since` says. A recording longer than Limit cannot be replayed in
+         * full, in any order, capped or not — measured, not assumed. This flag keeps that from
+         * becoming a false watermark in the database; giving the fixture transport real paging is a
+         * separate change, and the Issues above already name the shortfall on every run.
          */
-        return { Payloads: payloads, Issues: issues, Capped: capped && !!query.Since };
+        return { Payloads: payloads, Issues: issues, Capped: capped };
     }
 }
