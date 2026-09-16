@@ -153,12 +153,18 @@ interface RunSurfaceOptions {
 /**
  * LastError must name the failure, not whatever happened to be Issues[0].
  * Mapping warnings ("Event X had no usable start time") sort ahead of the actual miss.
+ *
+ * NOT TRUNCATED. This used to end `.slice(0, 4000)`, the same inherited habit removed from the run's
+ * issue list: `ActivitySyncConnection.LastError` is NVARCHAR(MAX), and none of the columns this app
+ * writes free text to is 4000 wide. It flattens the issues of EVERY failed surface, so it grows with
+ * the number of failures — a run that fails broadly truncates its own diagnosis, which is the one
+ * occasion the text is worth reading in full.
  */
 export function healthErrorFromResults(results: readonly SyncEngineResult[]): string | null {
     const failed = results.filter((r) => !r.Success);
     if (failed.length === 0) return null;
     const issues = failed.flatMap((r) => r.Issues).filter((m) => m.trim().length > 0);
-    return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);
+    return issues.join(' | ') || 'Activity sync run failed.';
 }
 
 /**
