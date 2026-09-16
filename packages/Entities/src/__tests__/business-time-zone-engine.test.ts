@@ -43,10 +43,14 @@ describe('ResolveBusinessTimeZoneSetting', () => {
         expect(ResolveBusinessTimeZoneSetting([row('BizApps.BusinessTimeZone', '{"iana":"America/Chicagoo","sql":"Central Standard Time"}')]).Source).toBe('fallback');
     });
 
-    it('fills a missing sql name with the iana name, so a SQL Server host at least sees something', () => {
-        const setting = ResolveBusinessTimeZoneSetting([row('BizApps.BusinessTimeZone', '{"iana":"UTC"}')]);
-        expect(setting).toMatchObject({ Iana: 'UTC', Sql: 'UTC', Source: 'BizApps.BusinessTimeZone' });
-        expect(setting.Warning).toMatch(/sets iana but not sql/);
+    it('refuses a row that sets only one of the two names — both tiers would answer differently', () => {
+        expect(ResolveBusinessTimeZoneSetting([row('BizApps.BusinessTimeZone', '{"iana":"America/Chicago"}')]).Source).toBe('fallback');
+        expect(ResolveBusinessTimeZoneSetting([row('BizApps.BusinessTimeZone', '{"sql":"Central Standard Time"}')]).Source).toBe('fallback');
+    });
+
+    it('never reports an IANA name as the SQL zone', () => {
+        const setting = ResolveBusinessTimeZoneSetting([row('BizApps.BusinessTimeZone', '{"iana":"America/Chicago"}')]);
+        expect(setting.Sql).toBe('UTC');
     });
 
     it('does not fall through to the BizApps row when an unreadable Business.TimeZone row exists — the views would not either', () => {

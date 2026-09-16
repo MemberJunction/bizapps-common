@@ -16,12 +16,16 @@ const sql = readFileSync(MIGRATIONS_DIR + file, 'utf8');
 const flat = sql.replace(/\s+/g, ' ');
 
 const MIGRATIONS_PG_DIR = fileURLToPath(new URL('../../../../migrations-pg/', import.meta.url));
-const pgFile = readdirSync(MIGRATIONS_PG_DIR).filter((f) => /__Business_Time_Zone\.pgonly\.sql$/.test(f)).sort().pop();
+const pgFile = readdirSync(MIGRATIONS_PG_DIR).filter((f) => /__Business_Time_Zone\.pg\.sql$/.test(f)).sort().pop();
 if (!pgFile) throw new Error('No Business_Time_Zone PostgreSQL migration found');
 const pgSql = readFileSync(MIGRATIONS_PG_DIR + pgFile, 'utf8');
 const pgFlat = pgSql.replace(/\s+/g, ' ');
 
 describe('the business time zone migration', () => {
+    it('names the PostgreSQL twin .pg.sql so the converter recognizes it as already converted', () => {
+        expect(pgFile, 'the twin must be .pg.sql so the converter skips it').not.toMatch(/\.pgonly\.sql$/);
+    });
+
     it('seeds the BizApps.BusinessTimeZone row with its fixed ID, idempotently, through the MJ procedure', () => {
         expect(flat).toContain("'B12A9C15-0168-4C0E-9D3A-4B7E2F1C6A08'");
         expect(flat).toContain("N'BizApps.BusinessTimeZone'");
@@ -45,6 +49,12 @@ describe('the business time zone migration', () => {
 
     it('grants the function to the roles that read the views', () => {
         expect(flat).toContain('GRANT SELECT ON [${flyway:defaultSchema}].[fnBusinessToday] TO [cdp_UI], [cdp_Developer], [cdp_Integration]');
+    });
+
+    it('consults DefaultValue only when Value is blank, on both engines', () => {
+        expect(flat).toMatch(/WHEN NULLIF\(LTRIM\(RTRIM\(c\.\[Value\]\)\), N''\) IS NULL/);
+        expect(flat).not.toMatch(/COALESCE\(\s*NULLIF\(CASE WHEN ISJSON\(c\.\[Value\]\)[\s\S]{0,400}?ISJSON\(c\.\[DefaultValue\]\)/);
+        expect(pgFlat).toContain('WHEN NULLIF(BTRIM(c."Value"), \'\') IS NULL');
     });
 
     it('the PostgreSQL twin degrades an unreadable value to UTC instead of raising into every view', () => {

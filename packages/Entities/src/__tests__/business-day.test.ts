@@ -26,6 +26,7 @@ import {
 
 const CENTRAL = 'America/Chicago';
 const KOLKATA = 'Asia/Kolkata';
+const SANTIAGO = 'America/Santiago';
 
 describe('ToCalendarDay reads a stored date as the day the driver meant', () => {
     it('takes the UTC parts of a Date, so a date column does not slip a day west of Greenwich', () => {
@@ -97,6 +98,12 @@ describe('day arithmetic never touches a zone', () => {
         expect(IsCalendarDay('2026-08-10T00:00:00Z')).toBe(false);
         expect(IsCalendarDay(20260810)).toBe(false);
     });
+    it('rejects a day that cannot exist, not just one that is the wrong shape', () => {
+        expect(IsCalendarDay('2026-02-30')).toBe(false);
+        expect(IsCalendarDay('2026-99-99')).toBe(false);
+        expect(ToCalendarDay('2026-02-30T00:00:00Z')).toBeNull();
+        expect(() => FromCalendarDay('2026-02-30')).toThrow(RangeError);
+    });
 });
 
 describe('DayStartUtc and DayEndUtc are the instants a day covers in a zone', () => {
@@ -119,6 +126,22 @@ describe('DayStartUtc and DayEndUtc are the instants a day covers in a zone', ()
         // 2026-11-01: CDT until 02:00, then CST. Midnight is CDT (-05:00); the next midnight is CST (-06:00).
         expect(DayStartUtc('2026-11-01', CENTRAL).toISOString()).toBe('2026-11-01T05:00:00.000Z');
         expect(DayEndUtc('2026-11-01', CENTRAL).toISOString()).toBe('2026-11-02T05:59:59.999Z');
+    });
+    it('a day whose clocks spring forward AT midnight starts at the first instant it exists', () => {
+        // Santiago 2026-09-06 has no 00:00: the clock jumps 23:59:59 (-04) to 01:00 (-03).
+        const start = DayStartUtc('2026-09-06', SANTIAGO);
+        expect(start.toISOString()).toBe('2026-09-06T04:00:00.000Z');
+        expect(CalendarDayIn(start, SANTIAGO)).toBe('2026-09-06');
+    });
+    it('and the day before it still ends the moment that day begins', () => {
+        expect(DayEndUtc('2026-09-05', SANTIAGO).toISOString()).toBe('2026-09-06T03:59:59.999Z');
+    });
+    it('never returns an instant that falls on a different day than the one asked for', () => {
+        for (const zone of [CENTRAL, KOLKATA, SANTIAGO, 'America/Havana', 'Australia/Lord_Howe', 'UTC']) {
+            for (const day of ['2026-03-08', '2026-09-06', '2026-11-01', '2026-10-04', '2026-01-01']) {
+                expect(CalendarDayIn(DayStartUtc(day, zone), zone), `${zone} ${day}`).toBe(day);
+            }
+        }
     });
 });
 

@@ -23,6 +23,8 @@ import { CalendarDay, FromCalendarDay, IsKnownTimeZone, TodayIn, UTC_ZONE } from
 
 export const BUSINESS_TIME_ZONE_KEYS = ['Business.TimeZone', 'BizApps.BusinessTimeZone'] as const;
 
+export type BusinessTimeZoneKey = (typeof BUSINESS_TIME_ZONE_KEYS)[number];
+
 export const BUSINESS_TIME_ZONE_ENTITY = 'MJ: Instance Configurations';
 
 export interface InstanceConfigurationRow {
@@ -34,7 +36,7 @@ export interface InstanceConfigurationRow {
 export interface BusinessTimeZoneSetting {
     Iana: string;
     Sql: string;
-    Source: (typeof BUSINESS_TIME_ZONE_KEYS)[number] | 'fallback';
+    Source: BusinessTimeZoneKey | 'fallback';
     Warning?: string;
 }
 
@@ -61,20 +63,16 @@ function parseZone(text: string | null | undefined): ParsedZone | null {
     }
 }
 
-function settingFrom(row: InstanceConfigurationRow, key: (typeof BUSINESS_TIME_ZONE_KEYS)[number]): BusinessTimeZoneSetting | null {
+function settingFrom(row: InstanceConfigurationRow, key: BusinessTimeZoneKey): BusinessTimeZoneSetting | null {
     const raw = (row.Value ?? '').trim();
     const parsed = raw.length === 0 ? parseZone(row.DefaultValue) : parseZone(raw);
     if (!parsed || typeof parsed.iana !== 'string' || !IsKnownTimeZone(parsed.iana)) return null;
-    const sqlRaw = typeof parsed.sql === 'string' ? parsed.sql.trim() : '';
-    if (sqlRaw.length === 0) {
-        return {
-            Iana: parsed.iana,
-            Sql: parsed.iana,
-            Source: key,
-            Warning: `row ${row.FeatureKey} sets iana but not sql; SQL Server views will fall back to UTC until sql is set`,
-        };
-    }
-    return { Iana: parsed.iana, Sql: sqlRaw, Source: key };
+    // BOTH names or neither. `iana` is what code reads and `sql` is what SQL Server's AT TIME ZONE
+    // takes, so a row carrying one of them would have code and views answering different days —
+    // and substituting the IANA name for the missing `sql` makes AT TIME ZONE throw, not fall back.
+    const sql = typeof parsed.sql === 'string' ? parsed.sql.trim() : '';
+    if (sql.length === 0) return null;
+    return { Iana: parsed.iana, Sql: sql, Source: key };
 }
 
 /** The setting the rows describe, in key precedence order, or the UTC fallback. Pure, for tests. */
@@ -84,7 +82,7 @@ export function ResolveBusinessTimeZoneSetting(rows: ReadonlyArray<InstanceConfi
         if (!row) continue;
         // The first key present wins, readable or not; an unreadable preferred row means UTC on
         // every tier rather than a code/view split.
-        return settingFrom(row, key) ?? fallback(`row ${key} is unreadable or names an unknown zone`);
+        return settingFrom(row, key) ?? fallback(`row ${key} is unreadable, names an unknown zone, or sets only one of iana/sql; dates fall back to UTC`);
     }
     return fallback('no BizApps.BusinessTimeZone or Business.TimeZone row');
 }

@@ -65,9 +65,13 @@ function dayOf(year: number, month: number, day: number): CalendarDay {
     return `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}`;
 }
 
-/** Whether a value is a zero-padded `YYYY-MM-DD` and nothing more. */
+/** Whether a value is a real calendar day written as zero-padded `YYYY-MM-DD`. */
 export function IsCalendarDay(value: unknown): value is CalendarDay {
-    return typeof value === 'string' && CALENDAR_DAY.test(value);
+    if (typeof value !== 'string' || !CALENDAR_DAY.test(value)) return false;
+    // The regex is shape only: '2026-02-30' and '2026-99-99' pass it. A date that survives the
+    // round trip through UTC parts is a day that exists.
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
 /**
@@ -84,13 +88,17 @@ export function ToCalendarDay(value: unknown): CalendarDay | null {
         return dayOf(value.getUTCFullYear(), value.getUTCMonth() + 1, value.getUTCDate());
     }
     if (typeof value === 'string') {
-        return LEADING_DAY.test(value) ? value.slice(0, 10) : null;
+        const candidate = LEADING_DAY.test(value) ? value.slice(0, 10) : null;
+        return candidate !== null && IsCalendarDay(candidate) ? candidate : null;
     }
     return null;
 }
 
 /** UTC midnight of the day: the shape a `date` column round-trips as, safe to assign to a date field. */
 export function FromCalendarDay(day: CalendarDay): Date {
+    if (!IsCalendarDay(day)) {
+        throw new RangeError(`Not a calendar day: ${day}`);
+    }
     return new Date(`${day}T00:00:00.000Z`);
 }
 
@@ -140,14 +148,24 @@ function offsetMs(instant: Date, zone: string): number {
 /**
  * The instant a calendar day begins in `zone`.
  *
- * Two passes: the offset at the UTC-midnight guess, then the offset at the corrected instant, so a
- * day whose midnight sits on the other side of a DST change still lands on local midnight.
+ * Two passes converge on local midnight for the ordinary case and for a day whose midnight sits on
+ * the other side of a transition that happens later in the day. A zone whose clocks change AT
+ * midnight is the case they cannot settle: spring-forward means the day has no 00:00 at all
+ * (America/Santiago, 2026-09-06) and fall-back means it has two. So the candidates are checked
+ * against the day they actually land on, and the EARLIEST one that is really on that day wins —
+ * the first instant the day exists, and the first of two midnights where there are two.
  */
 export function DayStartUtc(day: CalendarDay, zone: string): Date {
     const guess = FromCalendarDay(day).getTime();
     const first = guess - offsetMs(new Date(guess), zone);
     const second = guess - offsetMs(new Date(first), zone);
-    return new Date(second);
+    const candidates = first === second ? [first] : [Math.min(first, second), Math.max(first, second)];
+    for (const candidate of candidates) {
+        if (CalendarDayIn(new Date(candidate), zone) === day) {
+            return new Date(candidate);
+        }
+    }
+    return new Date(first);
 }
 
 /** The last millisecond of a calendar day in `zone`: an end date covers its whole day. */

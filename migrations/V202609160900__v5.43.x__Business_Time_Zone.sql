@@ -52,10 +52,17 @@ AS RETURN (
         FROM (
             -- The first key present wins, readable or not; an unreadable preferred row means UTC
             -- on every tier rather than a code/view split.
-            SELECT COALESCE(
-                       NULLIF(CASE WHEN ISJSON(c.[Value]) = 1 THEN JSON_VALUE(NULLIF(LTRIM(RTRIM(c.[Value])), N''), '$.sql') END, N''),
-                       NULLIF(CASE WHEN ISJSON(c.[DefaultValue]) = 1 THEN JSON_VALUE(c.[DefaultValue], '$.sql') END, N''),
-                       N'UTC') AS SqlZone
+            -- Value when non-blank, else DefaultValue — never a fall-through from an unreadable
+            -- Value to DefaultValue, which would answer Central here while code answered UTC.
+            SELECT CASE
+                       WHEN NULLIF(LTRIM(RTRIM(c.[Value])), N'') IS NULL
+                       THEN COALESCE(NULLIF(CASE WHEN ISJSON(c.[DefaultValue]) = 1
+                                                  AND JSON_VALUE(c.[DefaultValue], '$.iana') IS NOT NULL
+                                                 THEN JSON_VALUE(c.[DefaultValue], '$.sql') END, N''), N'UTC')
+                       ELSE COALESCE(NULLIF(CASE WHEN ISJSON(c.[Value]) = 1
+                                                  AND JSON_VALUE(c.[Value], '$.iana') IS NOT NULL
+                                                 THEN JSON_VALUE(c.[Value], '$.sql') END, N''), N'UTC')
+                   END AS SqlZone
             FROM (SELECT TOP (1) [Value], [DefaultValue]
                   FROM [${mjSchema}].[InstanceConfiguration]
                   WHERE [FeatureKey] IN (N'Business.TimeZone', N'BizApps.BusinessTimeZone')
