@@ -137,8 +137,9 @@ export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
     }
 
     /**
-     * The zone for a record. `companyID` is accepted from day one and ignored until MJ 6.2 carries a
-     * TimeZone column on Companies; call sites do not change when it arrives.
+     * The zone for a record. `companyID` is accepted from day one and ignored until MJ carries a
+     * TimeZone column on Companies (MemberJunction/MJ#4541); call sites do not change when it
+     * arrives.
      */
     public Resolve(companyID?: string): string {
         void companyID;
