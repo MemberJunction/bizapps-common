@@ -28,6 +28,8 @@ export interface GraphMessage {
     ccRecipients?: GraphRecipient[] | null;
     bccRecipients?: GraphRecipient[] | null;
     [key: string]: unknown;
+    /** Graph's own flag. Cheap; the attachment LIST costs a separate call per message. */
+    hasAttachments?: boolean;
 }
 
 export interface MapResult {
@@ -104,6 +106,9 @@ export function MapGraphMessage(
         ExternalID: id,
         ExternalThreadID: (message.conversationId ?? '').trim() || null,
         TypeCode: 'Email',
+        // Graph's flag, taken at face value. Absent means "not told", which we treat as none rather
+        // than paying a per-message list call on the chance something is there.
+        HasAttachments: message.hasAttachments === true,
         Subject: (message.subject ?? '').trim() || '(no subject)',
         Body: (message.bodyPreview ?? message.body?.content ?? '').trim() || null,
         StartedAt: startedAt,
