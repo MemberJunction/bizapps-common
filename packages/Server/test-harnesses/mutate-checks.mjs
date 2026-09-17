@@ -133,6 +133,18 @@ const PRODUCT = [
         to: '    void LoadGraphTransportFactory;',
     },
     /**
+     * The registration that keeps the content cipher from being another `ActivityFileSink` — a seam
+     * exported, documented and filled by nobody. That is the whole argument for shipping the interface
+     * with an implementation, so the test making it true needs a mutant like every other claim here.
+     */
+    {
+        id: 'M-BOOT3',
+        file: BOOTSTRAP,
+        expect: ['registers the content cipher'],
+        from: '    LoadActivityContentCipher();',
+        to: '    void LoadActivityContentCipher;',
+    },
+    /**
      * THE SURFACE DISPATCH. One connection drives two surfaces from the same type row, and this
      * is what decides which transport each gets. Handing the calendar pass a MAIL transport fed
      * message payloads to the event mapper and dropped every one for having no start time --

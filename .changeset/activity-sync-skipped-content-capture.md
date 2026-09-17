@@ -59,8 +59,19 @@ name rather than quietly retaining nothing.
 Encryption failing for one message reports and still saves the decision: losing a whole run record
 because one message could not be encrypted is a worse trade than an audit gap that says so.
 
-23 tests across the two packages and 13 registered mutants, all caught — including `M-CAP1`, the
+**Setting a policy above `None` also requires the host's encryption key to be usable** — for the
+default `Base Encryption Key`, that means `MJ_BASE_ENCRYPTION_KEY` set to a base64 32-byte value. The
+pre-flight refuses a host with no cipher REGISTERED, but it cannot tell whether the key behind it has
+material without attempting an encrypt. On a host missing that variable the run still records every
+decision, and every message adds an issue saying its content could not be encrypted. Nothing is lost
+and nothing is silent, but the audit trail is empty, so set the variable before setting the policy.
+
+22 tests across the two packages and 11 registered mutants, all caught — including `M-CAP1`, the
 literal revert to the previous behaviour, and `M-CAP8`, which sets the key before the ciphertext so a
 throw leaves `CK_ActivitySyncRunDetail_ContentKey` violated. One coverage gap was found by a mutant
 rather than by reading: nothing tested that an **included** message keeps its content out of the
 audit column, so capturing on every decision survived until that test existed.
+
+`M-BOOT3` covers the bootstrap registration itself. Without it the test making this seam different
+from `ActivityFileSink` — that `LoadBizAppsCommonServer` actually calls it — was the one claim here with
+nothing proving it could fail.
