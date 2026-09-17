@@ -4,6 +4,7 @@ import {
     Component,
     EventEmitter,
     Input,
+    type OnDestroy,
     Output,
     ViewEncapsulation,
     inject,
@@ -142,7 +143,7 @@ import {
         `,
     ],
 })
-export class RelatedChipsComponent {
+export class RelatedChipsComponent implements OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
 
     /** Chips that resolved. A link that resolved to nothing is absent here, never a blank chip. */
@@ -150,12 +151,22 @@ export class RelatedChipsComponent {
 
     private links: BizAppsRelatedLink[] = [];
 
+    private provider: IMetadataProvider | null = null;
+
     /**
      * Guards against a slower read for a PREVIOUS set of links landing after the caller moved on —
      * a form navigating between records is the ordinary way that happens. Every resolve captures the
      * generation it started in and discards itself if it no longer matches.
      */
     private generation = 0;
+
+    /**
+     * The OTHER way a resolve becomes irrelevant, and the one the generation cannot see: the view it
+     * would publish into is gone. `detectChanges()` has no destroyed-view guard of its own, so a read
+     * still in flight when the user closes the tab would run change detection over a torn-down
+     * `LView`.
+     */
+    private destroyed = false;
 
     /**
      * The relationships to offer, in the order they should read.
@@ -167,7 +178,7 @@ export class RelatedChipsComponent {
     @Input()
     public set Links(value: BizAppsRelatedLink[] | null | undefined) {
         this.links = value ?? [];
-        void this.resolve(++this.generation);
+        this.scheduleResolve();
     }
     public get Links(): BizAppsRelatedLink[] {
         return this.links;
@@ -180,8 +191,22 @@ export class RelatedChipsComponent {
      * the record they describe came from. In a host with more than one provider the fallback reads
      * the wrong database and the failure is a wrong ANSWER rather than an error, which is why this
      * is worth passing even when there is only one today.
+     *
+     * A SETTER, and re-resolving, for the same reason. Angular assigns bound inputs in template
+     * order, and the usage above binds `[Links]` first — so a plain field would be read as `null` by
+     * the resolve the `Links` setter kicks off, silently reading the ambient provider, and would
+     * never be re-read once the real one arrived. `FormComponent?.ProviderToUse` starting out `null`
+     * and resolving a tick later has the same shape. Both resolve against the wrong database, and a
+     * wrong database here is a wrong answer rather than an error.
      */
-    @Input() public Provider: IMetadataProvider | null = null;
+    @Input()
+    public set Provider(value: IMetadataProvider | null | undefined) {
+        this.provider = value ?? null;
+        this.scheduleResolve();
+    }
+    public get Provider(): IMetadataProvider | null {
+        return this.provider;
+    }
 
     /**
      * Emitted when a chip is clicked, with `OpenInNewTab` set for ctrl/cmd-click.
@@ -194,12 +219,40 @@ export class RelatedChipsComponent {
 
     /** The provider actually used — the one passed in, or the ambient one. */
     public get ProviderToUse(): IMetadataProvider {
-        return this.Provider ?? Metadata.Provider;
+        return this.provider ?? Metadata.Provider;
     }
 
     public Open(chip: ResolvedRelatedChip, event: MouseEvent): void {
         event.preventDefault();
         this.Navigate.emit(RelatedChipNavigation(chip, event));
+    }
+
+    public ngOnDestroy(): void {
+        this.destroyed = true;
+    }
+
+    /**
+     * Drop what is on screen and queue a fresh resolve for the next microtask.
+     *
+     * CLEARED FIRST because the chips on screen describe the record we just left. A form container
+     * reuses this instance across records, so a header moving from Deal A to Deal B that kept A's
+     * chips for the length of the reads would offer a click that navigates to A's related record —
+     * a wrong destination, not a slow one.
+     *
+     * QUEUED because every input that feeds a resolve is assigned in the same change-detection pass,
+     * one after another. Resolving inside the setter would read a half-applied set of inputs, and
+     * would read twice. The microtask runs once both have landed; the generation it was queued under
+     * makes each superseded one drop itself.
+     */
+    private scheduleResolve(): void {
+        const generation = ++this.generation;
+        this.Chips = [];
+        void Promise.resolve().then(() => {
+            if (this.generation !== generation || this.destroyed) {
+                return;
+            }
+            return this.resolve(generation);
+        });
     }
 
     /**
@@ -212,7 +265,6 @@ export class RelatedChipsComponent {
     private async resolve(generation: number): Promise<void> {
         const links = this.links;
         if (links.length === 0) {
-            this.Chips = [];
             return;
         }
 
@@ -228,7 +280,7 @@ export class RelatedChipsComponent {
             ),
         );
 
-        if (this.generation !== generation) {
+        if (this.generation !== generation || this.destroyed) {
             return;
         }
 

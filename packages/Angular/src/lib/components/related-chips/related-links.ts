@@ -149,18 +149,28 @@ export function LabelForRelatedLink(link: BizAppsRelatedLink, entity: RelatedLin
  * name field produces no chip rather than a GUID wearing a label.
  *
  * **A CHIP THAT CANNOT NAVIGATE IS NOT RENDERED.** A link that goes nowhere is worse than an absent
- * one: it invites a click and spends the reader's trust. Four ways a link produces nothing — the
+ * one: it invites a click and spends the reader's trust. Five ways a link produces nothing — the
  * entity is not in the catalog, the entity has no name field, the link names neither a record nor a
- * filter, and the read succeeded while matching zero rows.
+ * filter, the read succeeded while matching zero rows, and the read was refused.
  *
- * ## Why a read that THREW is treated differently from one that found nothing
+ * ## Why a read that THREW is treated differently from one that FAILED or found nothing
  *
- * These are not the same fact. Zero rows from a successful read means the record is not there —
- * `bizapps-contracts` hit exactly this with CTR-000026, whose hand-typed provenance pair names a row
- * that does not exist, and whose header rendered an "Open" button that navigated nowhere. A thrown
- * read means we do not know: the record may well exist and simply be unreadable this moment. So a
- * throw keeps the chip when we already hold the id to open — labelled, with "Open" where the name
- * would go — and drops it for a reverse link, where the throw also cost us the id.
+ * Three different facts, and the line between them is whether the server answered.
+ *
+ * **Zero rows from a successful read** means the record is not there — `bizapps-contracts` hit
+ * exactly this with CTR-000026, whose hand-typed provenance pair names a row that does not exist,
+ * and whose header rendered an "Open" button that navigated nowhere. No chip.
+ *
+ * **`Success: false`** is the server answering and refusing. In MJ that is the channel for a
+ * permission denial as much as for a bad filter: `GraphQLDataProvider.InternalRunView` throws when
+ * the transport fails and returns `Success: false` with an `ErrorMessage` when the request reached
+ * the server and was turned down. A reader who may not read Orders would otherwise get an
+ * "Order · Open" chip that navigates to a record that will not open — the dead link this component
+ * exists to prevent. So a refusal produces NO chip.
+ *
+ * **A thrown read** means we do not know: the record may well exist and simply be unreachable this
+ * moment. So a throw keeps the chip when we already hold the id to open — labelled, with "Open"
+ * where the name would go — and drops it for a reverse link, where the throw also cost us the id.
  */
 export async function ResolveRelatedChip(
     link: BizAppsRelatedLink,
@@ -192,6 +202,9 @@ export async function ResolveRelatedChip(
             ExtraFilter: filter,
             MaxRows: 1,
         });
+        if (result?.Success === false) {
+            return null;
+        }
         const row = result?.Success ? result.Results?.[0] : undefined;
         if (result?.Success && !row) {
             return null;
@@ -252,17 +265,26 @@ export interface RelatedChipClick {
  * The navigation event a chip click produces.
  *
  * Ctrl (Windows/Linux) and Cmd (macOS) both mean "new tab", which is the idiom MJ uses everywhere a
- * record link is clicked. Shift-click needs nothing here — `NavigationService` detects it globally.
+ * record link is clicked.
+ *
+ * `OpenInNewTab` is OMITTED rather than set to `false` on a plain click, and that is the whole of
+ * what makes shift-click work. `NavigationService.shouldForceNewTab` returns `options.forceNewTab`
+ * whenever it is `!== undefined` and only otherwise consults its global shift-key state, and
+ * Explorer passes `forceNewTab: event.OpenInNewTab` straight through. An explicit `false` therefore
+ * does not mean "no opinion" — it means "same tab", and it suppresses the shift detection outright.
  *
  * `CompositeKey.FromKeyValuePair` rather than `FromID`: the latter assumes the target's primary key
  * is literally called `ID`, which is true of these apps today and is not a thing a shared component
  * gets to assume.
  */
 export function RelatedChipNavigation(chip: ResolvedRelatedChip, event: RelatedChipClick): RecordNavigationEvent {
-    return {
+    const navigation: RecordNavigationEvent = {
         Kind: 'record',
         EntityName: chip.EntityName,
         PrimaryKey: CompositeKey.FromKeyValuePair(chip.PrimaryKeyField, chip.RecordID),
-        OpenInNewTab: event.ctrlKey || event.metaKey,
     };
+    if (event.ctrlKey || event.metaKey) {
+        navigation.OpenInNewTab = true;
+    }
+    return navigation;
 }

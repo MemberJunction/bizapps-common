@@ -19,18 +19,28 @@ Three behaviours it guarantees, and the reason each is behaviour rather than sty
 never shows a raw id** — the name comes from the entity's name field, and an entity with no name
 field produces no chip rather than a GUID wearing a label. **A chip that cannot navigate is not
 rendered** — an entity missing from the catalog (the app is not installed here, or this user may
-not read it, which are deliberately one outcome) and a read that succeeded while matching zero
-rows both produce nothing, because a link that goes nowhere is worse than an absent one. **A read
-that threw is not a record that is absent** — a throw keeps the chip when the link already carried
-the id to open, since the record may exist and merely be unreadable this moment.
+not read it, which are deliberately one outcome), a read that succeeded while matching zero rows,
+and a read the server answered with `Success: false` all produce nothing, because a link that goes
+nowhere is worse than an absent one. **A read that THREW is not a read that was refused** — the
+line is whether the server answered. `Success: false` is MJ's channel for a permission denial as
+much as for a bad filter, so it drops the chip; a throw means the request never got an answer, so
+it keeps the chip when the link already carried the id to open.
 
-Clicking a chip emits a `record` navigation event; ctrl or cmd-click sets `OpenInNewTab`. The
-component never touches `NavigationService` — a host form wires `Navigate` to its own
-`OnFormNavigate`, which keeps it usable from a `BaseFormPanel` hero and a form component override
-alike.
+Clicking a chip emits a `record` navigation event; ctrl or cmd-click sets `OpenInNewTab`, and a
+plain click OMITS it rather than sending `false` — `NavigationService.shouldForceNewTab` honours
+any defined `forceNewTab` and only otherwise consults its global shift-key state, so an explicit
+`false` would disable shift-click. The component never touches `NavigationService` — a host form
+wires `Navigate` to its own `OnFormNavigate`, which keeps it usable from a `BaseFormPanel` hero and
+a form component override alike.
 
 Styles are the component's own, design tokens only, under a `bizapps-related` class prefix that
 collides with none of the app kits, which are global under `ViewEncapsulation.None`.
+
+`Links` and `Provider` are both setters that queue a single re-resolve on the next microtask, and
+the row clears before it re-reads. Angular assigns bound inputs in template order, so a resolve
+kicked off synchronously from the `Links` setter would read `Provider` as `null` and silently fall
+back to the ambient `Metadata.Provider`; and a row that kept the previous record's chips while the
+new reads ran would offer a click that navigates to the record the reader just left.
 
 The resolve-and-hide rules live in `related-links.ts` rather than in the component, so they can be
 tested without standing up Angular DI: `ResolveRelatedChip`, `FilterForRelatedLink`,

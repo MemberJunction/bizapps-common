@@ -96,7 +96,7 @@ describe('a chip that cannot navigate is not rendered', () => {
     });
 });
 
-describe('a read that threw is not the same as a record that is absent', () => {
+describe('a read that threw, a read that was refused, and a record that is absent', () => {
     it('keeps a forward link when the read throws — the record may exist and merely be unreadable', async () => {
         const chip = await ResolveRelatedChip(DEAL_LINK, CATALOG, throwingReader());
         expect(chip).not.toBeNull();
@@ -105,8 +105,22 @@ describe('a read that threw is not the same as a record that is absent', () => {
         expect(chip?.Label).toBe('Source Deal');
     });
 
-    it('keeps a forward link when the read reports failure without throwing', async () => {
+    it('drops a forward link when the read REPORTS failure — the server answered and refused', async () => {
         const chip = await ResolveRelatedChip(DEAL_LINK, CATALOG, readerReturning({ Success: false }));
+        expect(chip).toBeNull();
+    });
+
+    it('drops a reverse link when the read reports failure', async () => {
+        const chip = await ResolveRelatedChip(
+            { Key: 'deal', EntityName: DEALS.Name, Filter: `OrderID = 'O1'` },
+            CATALOG,
+            readerReturning({ Success: false }),
+        );
+        expect(chip).toBeNull();
+    });
+
+    it('keeps a forward link when the reader answers nothing at all — still unknown', async () => {
+        const chip = await ResolveRelatedChip(DEAL_LINK, CATALOG, async () => undefined as unknown as RelatedLinkReadResult);
         expect(chip?.RecordID).toBe('D1');
         expect(chip?.Name).toBe('');
     });
@@ -232,8 +246,16 @@ describe('navigation', () => {
         return { ctrlKey: false, metaKey: false, ...modifiers };
     }
 
-    it('opens in the current tab on a plain click', () => {
-        expect(RelatedChipNavigation(chip, mouse({})).OpenInNewTab).toBe(false);
+    /**
+     * NOT `toBe(false)`. `NavigationService.shouldForceNewTab` returns `options.forceNewTab`
+     * whenever it is `!== undefined` and only otherwise consults its global shift-key state, and
+     * Explorer passes `forceNewTab: event.OpenInNewTab` straight through — so an explicit `false`
+     * on a plain click silently disables shift-click for the whole row.
+     */
+    it('leaves OpenInNewTab UNSET on a plain click, so shift-click still reaches NavigationService', () => {
+        const event = RelatedChipNavigation(chip, mouse({}));
+        expect(event.OpenInNewTab).toBeUndefined();
+        expect('OpenInNewTab' in event).toBe(false);
     });
 
     it('opens a new tab on ctrl-click', () => {
