@@ -108,10 +108,17 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <i class="fa-solid fa-chevron-right mjc-queue__chev" aria-hidden="true"></i>
                                 </button>
                             } @empty {
-                                <mj-empty-state
-                                    Icon="fa-solid fa-circle-check"
-                                    Title="Nothing is waiting"
-                                    Size="compact" />
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <mj-empty-state
+                                        Icon="fa-solid fa-circle-check"
+                                        Title="Nothing is waiting"
+                                        Size="compact" />
+                                }
                             }
                         </div>
                     </section>
@@ -123,15 +130,22 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                             <span class="mjc-card__meta">last 7 days</span>
                         </header>
                         <div class="mjc-card__body">
-                            <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
-                                @for (bar of PeoplePerDay; track bar.Label) {
-                                    <div class="mjc-bars__col">
-                                        <span class="mjc-bars__value">{{ bar.Value }}</span>
-                                        <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
-                                        <span class="mjc-bars__label">{{ bar.Label }}</span>
-                                    </div>
-                                }
-                            </div>
+                            @if (Headline.ReadFailed) {
+                                <mj-empty-state
+                                    Variant="warning"
+                                    Title="Could not be read"
+                                    Size="compact" />
+                            } @else {
+                                <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
+                                    @for (bar of PeoplePerDay; track bar.Label) {
+                                        <div class="mjc-bars__col">
+                                            <span class="mjc-bars__value">{{ bar.Value }}</span>
+                                            <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
+                                            <span class="mjc-bars__label">{{ bar.Label }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     </section>
 
@@ -150,7 +164,14 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <span class="mjc-mix__value">{{ row.Value }}</span>
                                 </div>
                             } @empty {
-                                <p class="mjc-muted">No organizations yet.</p>
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <p class="mjc-muted">No organizations yet.</p>
+                                }
                             }
                         </div>
                     </section>
@@ -191,10 +212,17 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <button type="button" class="mjc-link" (click)="OpenAttention(item)">Work it →</button>
                                 </mj-alert>
                             } @empty {
-                                <mj-empty-state
-                                    Icon="fa-solid fa-circle-check"
-                                    Title="Nothing is asking for attention"
-                                    Size="compact" />
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <mj-empty-state
+                                        Icon="fa-solid fa-circle-check"
+                                        Title="Nothing is asking for attention"
+                                        Size="compact" />
+                                }
                             }
                         </div>
                     </section>

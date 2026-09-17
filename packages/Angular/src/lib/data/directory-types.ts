@@ -93,6 +93,12 @@ export interface DirectoryAttentionItem {
  * the one thing a dashboard must not say.
  */
 export interface DirectoryHeadline {
+    /**
+     * True when the summary query did not return. Every section fed by that one read consults this
+     * before it reports itself empty: a list that is empty because nothing was read is not "nothing
+     * to do", and a green check over an unread directory is the same lie as a zero count.
+     */
+    ReadFailed: boolean;
     ActivePeopleCount: number | null;
     ActiveOrganizationCount: number | null;
     RelationshipCount: number | null;

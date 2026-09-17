@@ -33,3 +33,10 @@ every count on a failed read and a sentence for `bizapps-stat-row`'s previously 
 input. The counts come from a single query, so the headline is all-or-nothing by construction —
 there is no state in which some of the numbers are trustworthy and others are not. An unread gap
 count also stays `Tone="none"`: "we could not check" must not read as "there is something to fix".
+
+The three cards fed by that same read no longer claim success when it fails. "Needs someone" and
+"Worth a look" showed a green check over an unread directory, "Organization types" said "No
+organizations yet", and "People added" drew an empty element still labelled as a seven-day chart —
+all four from the same empty arrays the failed read leaves behind. `DirectoryHeadline` now carries
+`ReadFailed`, and each section consults it before reporting itself empty: a list that is empty
+because nothing was read is not "nothing to do".

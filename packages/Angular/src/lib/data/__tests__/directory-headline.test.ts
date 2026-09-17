@@ -39,6 +39,10 @@ describe('BuildDirectoryHeadline', () => {
             expect(BuildDirectoryHeadline(null).Error).toBe(DIRECTORY_HEADLINE_UNREADABLE);
         });
 
+        it('flags the read as failed, so no section reports itself empty', () => {
+            expect(BuildDirectoryHeadline(null).ReadFailed).toBe(true);
+        });
+
         it('drops the footnotes, which have no count left to qualify', () => {
             const headline = BuildDirectoryHeadline(null);
             expect(headline.PeopleDetail).toBeNull();
@@ -58,6 +62,14 @@ describe('BuildDirectoryHeadline', () => {
             expect(headline.ActiveOrganizationCount).toBe(30);
             expect(headline.RelationshipCount).toBe(88);
             expect(headline.Error).toBeNull();
+            expect(headline.ReadFailed).toBe(false);
+        });
+
+        it('leaves ReadFailed false for a genuinely empty directory, so the sections still read empty', () => {
+            const headline = BuildDirectoryHeadline(
+                summary({ ActivePeopleCount: 0, TotalPeopleCount: 0, ActiveOrganizationCount: 0, TotalOrganizationCount: 0, RelationshipCount: 0 }),
+            );
+            expect(headline.ReadFailed).toBe(false);
         });
 
         it('keeps a real zero as zero — nothing on file is a legitimate answer, unlike an unread count', () => {

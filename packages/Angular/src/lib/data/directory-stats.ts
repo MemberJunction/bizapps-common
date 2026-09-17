@@ -207,6 +207,7 @@ export const DIRECTORY_HEADLINE_UNREADABLE = 'The directory counts could not be 
 export function BuildDirectoryHeadline(summary: DirectorySummaryCounts | null | undefined): DirectoryHeadline {
     if (!summary) {
         return {
+            ReadFailed: true,
             ActivePeopleCount: null,
             ActiveOrganizationCount: null,
             RelationshipCount: null,
@@ -219,6 +220,7 @@ export function BuildDirectoryHeadline(summary: DirectorySummaryCounts | null | 
     }
     const gapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
     return {
+        ReadFailed: false,
         ActivePeopleCount: summary.ActivePeopleCount,
         ActiveOrganizationCount: summary.ActiveOrganizationCount,
         RelationshipCount: summary.RelationshipCount,
