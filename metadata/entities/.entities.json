@@ -3,6 +3,8 @@
     "fields": {
       "GeneratedBaseViewName": "vwPeopleGenerated",
       "BaseViewGenerated": false,
+      "AllowUserSearchAPI": true,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -22,7 +24,11 @@
           ],
           "fields": {
             "IsNameField": true,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
@@ -39,7 +45,9 @@
           ],
           "fields": {
             "IsNameField": false,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=FirstName&EntityID=@parent:ID"
@@ -52,7 +60,11 @@
         {
           "fields": {
             "IsNameField": false,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=LastName&EntityID=@parent:ID"
@@ -77,6 +89,73 @@
             "lastModified": "2026-09-07T14:18:30.894Z",
             "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
           }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PrimaryEmail&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Email&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=MiddleName&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PreferredName&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Title&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Phone&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=ID&EntityID=@parent:ID"
+          }
         }
       ]
     },
@@ -93,6 +172,8 @@
       "CascadeDeletes": false,
       "GeneratedBaseViewName": "vwOrganizationsGenerated",
       "BaseViewGenerated": false,
+      "AllowUserSearchAPI": true,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -157,6 +238,77 @@
             "lastModified": "2026-09-07T14:08:15.529Z",
             "checksum": "cbf8700d9dc30460cce4f3d2a7003b85310b1fc74f009da79ea9079e91c47d85"
           }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Name&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LegalName&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=TaxID&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Email&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Website&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Phone&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=ID&EntityID=@parent:ID"
+          }
         }
       ]
     },
@@ -174,6 +326,8 @@
     },
     "fields": {
       "SupportsGeoCoding": true,
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -244,6 +398,78 @@
     "sync": {
       "lastModified": "2026-08-24T20:06:03.051Z",
       "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Address Links"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Types"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Files"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Connections"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Rule Sets"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Rules"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Exclusions"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
     }
   }
 ]
