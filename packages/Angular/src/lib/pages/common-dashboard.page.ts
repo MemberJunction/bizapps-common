@@ -9,11 +9,13 @@ import { StatRowComponent } from '../components/stat-tile/stat-row.component';
 import { StatTileComponent } from '../components/stat-tile/stat-tile.component';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
+import { BuildDirectoryHeadline } from '../data/directory-stats';
 import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
     DirectoryDayBar,
+    DirectoryHeadline,
     DirectoryQueue,
     DirectoryRelationshipRow,
 } from '../data/directory-types';
@@ -54,33 +56,33 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
             @if (IsLoading) {
                 <div class="mjc-muted">Loading the directory…</div>
             } @else {
-                <bizapps-stat-row>
+                <bizapps-stat-row [Error]="Headline.Error">
                     <bizapps-stat-tile
                         Label="People"
                         Icon="fa-solid fa-user"
-                        [Value]="ActivePeopleCount"
-                        [Detail]="PeopleDetail"
+                        [Value]="Headline.ActivePeopleCount"
+                        [Detail]="Headline.PeopleDetail"
                         [Clickable]="true"
                         (Clicked)="OpenPeople()" />
                     <bizapps-stat-tile
                         Label="Organizations"
                         Icon="fa-solid fa-building"
-                        [Value]="ActiveOrganizationCount"
-                        [Detail]="OrganizationDetail"
+                        [Value]="Headline.ActiveOrganizationCount"
+                        [Detail]="Headline.OrganizationDetail"
                         [Clickable]="true"
                         (Clicked)="OpenOrganizations()" />
                     <bizapps-stat-tile
                         Label="Relationships"
                         Icon="fa-solid fa-link"
-                        [Value]="RelationshipCount"
+                        [Value]="Headline.RelationshipCount"
                         Detail="Who reports to whom, who works where"
                         [Clickable]="false" />
                     <bizapps-stat-tile
                         Label="Gaps"
                         Icon="fa-solid fa-clipboard-check"
-                        [Value]="GapCount"
+                        [Value]="Headline.GapCount"
                         Detail="Missing email, org, type, or website"
-                        [Tone]="GapCount > 0 ? 'warn' : 'none'"
+                        [Tone]="Headline.GapTone"
                         [Clickable]="false" />
                 </bizapps-stat-row>
 
@@ -514,12 +516,12 @@ export class CommonDashboardPageComponent implements OnInit {
     public LatestPeopleView: MJUserViewEntityExtended | null = null;
     public LatestRelationshipsView: MJUserViewEntityExtended | null = null;
     public WorthALook: DirectoryAttentionItem[] = [];
-    public ActivePeopleCount = 0;
-    public ActiveOrganizationCount = 0;
-    public RelationshipCount = 0;
-    public GapCount = 0;
-    public PeopleDetail = '';
-    public OrganizationDetail = '';
+    /**
+     * The four headline counts as one value. Built by {@link BuildDirectoryHeadline} so that a failed
+     * summary read leaves every count `null` — an em dash in each tile and one sentence under the row
+     * — rather than four zeros claiming an empty directory.
+     */
+    public Headline: DirectoryHeadline = BuildDirectoryHeadline(null);
 
     public async ngOnInit(): Promise<void> {
         const [summary, peopleView, relView] = await Promise.all([
@@ -527,18 +529,9 @@ export class CommonDashboardPageComponent implements OnInit {
             LoadLatestPeopleView(),
             LoadLatestRelationshipsView(),
         ]);
+        this.Headline = BuildDirectoryHeadline(summary);
         if (summary) {
-            this.ActivePeopleCount = summary.ActivePeopleCount;
-            this.ActiveOrganizationCount = summary.ActiveOrganizationCount;
-            this.RelationshipCount = summary.RelationshipCount;
-            this.PeopleDetail = summary.TotalPeopleCount === summary.ActivePeopleCount
-                ? 'Everyone currently on file'
-                : `${summary.TotalPeopleCount} total, including inactive`;
-            this.OrganizationDetail = summary.TotalOrganizationCount === summary.ActiveOrganizationCount
-                ? 'Active organizations'
-                : `${summary.TotalOrganizationCount} total, including inactive`;
             this.Queues = summary.Queues;
-            this.GapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
             this.PeoplePerDay = summary.PeoplePerDay;
             this.OrganizationTypeMix = summary.OrganizationTypeMix;
             this.WorthALook = summary.WorthALook;

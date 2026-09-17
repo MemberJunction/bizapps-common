@@ -24,3 +24,12 @@ faint in dark. That is a property of the status token ramp, not of this page.
 Responsive behaviour changes below 1200px: the page's own breakpoints dropped the row to 2 columns
 and then 1, while the shared row keeps 4 columns down to 808px and reflows from there. Desktop width
 is unchanged.
+
+A failed summary read now shows em dashes, not zeros. The four counts were plain `number` fields
+defaulting to `0`, so when `Common: Directory Dashboard Summary` failed the page rendered "0 people,
+0 organizations, 0 gaps" — the exact false reassurance the tile's null rule exists to prevent. They
+are now one `DirectoryHeadline` value built by `BuildDirectoryHeadline`, which returns `null` for
+every count on a failed read and a sentence for `bizapps-stat-row`'s previously unbound `Error`
+input. The counts come from a single query, so the headline is all-or-nothing by construction —
+there is no state in which some of the numbers are trustworthy and others are not. An unread gap
+count also stays `Tone="none"`: "we could not check" must not read as "there is something to fix".

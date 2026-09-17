@@ -2,6 +2,7 @@ import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
     DirectoryDayBar,
+    DirectoryHeadline,
     DirectoryOrganizationRow,
     DirectoryPersonRow,
     DirectoryQueue,
@@ -178,4 +179,59 @@ export function EscapeLikeValue(value: string): string {
         .replace(/\[/g, '[[]')
         .replace(/%/g, '[%]')
         .replace(/_/g, '[_]');
+}
+
+/**
+ * The summary fields {@link BuildDirectoryHeadline} reads. Declared structurally so this module stays
+ * free of the query layer — `DirectoryDashboardSummary` in `directory-queries.ts` satisfies it.
+ */
+export interface DirectorySummaryCounts {
+    ActivePeopleCount: number;
+    TotalPeopleCount: number;
+    ActiveOrganizationCount: number;
+    TotalOrganizationCount: number;
+    RelationshipCount: number;
+    Queues: readonly DirectoryQueue[];
+}
+
+/** What the row says when the summary query did not return. Muted, not red — see `StatRowComponent`. */
+export const DIRECTORY_HEADLINE_UNREADABLE = 'The directory counts could not be read just now.';
+
+/**
+ * Turn one summary read into the four headline tiles.
+ *
+ * A `null` summary is the failed read, and every count comes back `null` so each tile shows an em
+ * dash and the row carries the sentence. It is deliberately all-or-nothing: the counts come from a
+ * single query, so there is no state in which some of them are known.
+ */
+export function BuildDirectoryHeadline(summary: DirectorySummaryCounts | null | undefined): DirectoryHeadline {
+    if (!summary) {
+        return {
+            ActivePeopleCount: null,
+            ActiveOrganizationCount: null,
+            RelationshipCount: null,
+            GapCount: null,
+            GapTone: 'none',
+            PeopleDetail: null,
+            OrganizationDetail: null,
+            Error: DIRECTORY_HEADLINE_UNREADABLE,
+        };
+    }
+    const gapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
+    return {
+        ActivePeopleCount: summary.ActivePeopleCount,
+        ActiveOrganizationCount: summary.ActiveOrganizationCount,
+        RelationshipCount: summary.RelationshipCount,
+        GapCount: gapCount,
+        GapTone: gapCount > 0 ? 'warn' : 'none',
+        PeopleDetail:
+            summary.TotalPeopleCount === summary.ActivePeopleCount
+                ? 'Everyone currently on file'
+                : `${summary.TotalPeopleCount} total, including inactive`,
+        OrganizationDetail:
+            summary.TotalOrganizationCount === summary.ActiveOrganizationCount
+                ? 'Active organizations'
+                : `${summary.TotalOrganizationCount} total, including inactive`,
+        Error: null,
+    };
 }
