@@ -1,5 +1,96 @@
 # @mj-biz-apps/common-ng
 
+## 5.44.0
+
+### Minor Changes
+
+- 549a57e: Add the shared BizApps "Related records" chip row: `bizapps-related-chips`.
+
+  A tester walking Deal → Order → Contract found no consistent way to get from a record to the
+  records linked to it. The Contract header linked its source Deal, the Deal form buried its Order
+  in a panel, the Order form pointed at nothing, and where a link did exist it sometimes rendered a
+  GUID instead of a name. Each app had solved a slice of it differently; this is the one they
+  collapse into.
+
+  A caller passes link descriptors naming an entity and either the id it holds (`RecordID`) or a
+  filter that finds the record holding the id (`Filter`, for a reverse link such as Order → Deal).
+  The component resolves the entity, reads the record's name, and decides whether the chip may be
+  drawn at all.
+
+  Three behaviours it guarantees, and the reason each is behaviour rather than styling. **A chip
+  never shows a raw id** — the name comes from the entity's name field, and an entity with no name
+  field produces no chip rather than a GUID wearing a label. **A chip that cannot navigate is not
+  rendered** — an entity missing from the catalog (the app is not installed here, or this user may
+  not read it, which are deliberately one outcome), a read that succeeded while matching zero rows,
+  and a read the server answered with `Success: false` all produce nothing, because a link that goes
+  nowhere is worse than an absent one. **A read that THREW is not a read that was refused** — the
+  line is whether the server answered. `Success: false` is MJ's channel for a permission denial as
+  much as for a bad filter, so it drops the chip; a throw means the request never got an answer, so
+  it keeps the chip when the link already carried the id to open.
+
+  Clicking a chip emits a `record` navigation event; ctrl or cmd-click sets `OpenInNewTab`, and a
+  plain click OMITS it rather than sending `false` — `NavigationService.shouldForceNewTab` honours
+  any defined `forceNewTab` and only otherwise consults its global shift-key state, so an explicit
+  `false` would disable shift-click. The component never touches `NavigationService` — a host form
+  wires `Navigate` to its own `OnFormNavigate`, which keeps it usable from a `BaseFormPanel` hero and
+  a form component override alike.
+
+  Styles are the component's own, design tokens only, under a `bizapps-related` class prefix that
+  collides with none of the app kits, which are global under `ViewEncapsulation.None`.
+
+  `Links` and `Provider` are both setters that queue a single re-resolve on the next microtask, and
+  the row clears before it re-reads. Angular assigns bound inputs in template order, so a resolve
+  kicked off synchronously from the `Links` setter would read `Provider` as `null` and silently fall
+  back to the ambient `Metadata.Provider`; and a row that kept the previous record's chips while the
+  new reads ran would offer a click that navigates to the record the reader just left.
+
+  The resolve-and-hide rules live in `related-links.ts` rather than in the component, so they can be
+  tested without standing up Angular DI: `ResolveRelatedChip`, `FilterForRelatedLink`,
+  `LabelForRelatedLink` and `RelatedChipNavigation` are exported alongside the component.
+
+### Patch Changes
+
+- e0c5680: Directory dashboard now renders the shared `bizapps-stat-tile` instead of its own tiles.
+
+  The page carried a fifth near-copy of the dashboard tile — same label/value/detail structure, same
+  tokens, same hover rule as the shared component, and living in the same package that exports the
+  replacement, which made it the copy most likely to drift.
+
+  Two things were not a mechanical swap:
+
+  `Clickable` is now passed explicitly on every tile. Two of the four were real buttons and two were
+  inert `div`s, and the component's default inference — "is anything listening to `Clicked`" — cannot
+  tell them apart, because a template binding counts as a subscriber whatever its handler does. The
+  two inert tiles pass `[Clickable]="false"` and stay unfocusable, with no `role` and no pointer.
+
+  The Gaps tile's whole-tile alert is now `Tone="warn"` on the value. The shared component colours the
+  number only, so the tinted background and amber border are gone. Note that in dark theme
+  `--mj-status-warning-text` resolves to `--mj-color-warning-100` (`#fef3c7`), which sits very close to
+  the primary text colour on `--mj-bg-surface` — the warn tone reads clearly in light theme but is
+  faint in dark. That is a property of the status token ramp, not of this page.
+
+  Responsive behaviour changes below 1200px: the page's own breakpoints dropped the row to 2 columns
+  and then 1, while the shared row keeps 4 columns down to 808px and reflows from there. Desktop width
+  is unchanged.
+
+  A failed summary read now shows em dashes, not zeros. The four counts were plain `number` fields
+  defaulting to `0`, so when `Common: Directory Dashboard Summary` failed the page rendered "0 people,
+  0 organizations, 0 gaps" — the exact false reassurance the tile's null rule exists to prevent. They
+  are now one `DirectoryHeadline` value built by `BuildDirectoryHeadline`, which returns `null` for
+  every count on a failed read and a sentence for `bizapps-stat-row`'s previously unbound `Error`
+  input. The counts come from a single query, so the headline is all-or-nothing by construction —
+  there is no state in which some of the numbers are trustworthy and others are not. An unread gap
+  count also stays `Tone="none"`: "we could not check" must not read as "there is something to fix".
+
+  The three cards fed by that same read no longer claim success when it fails. "Needs someone" and
+  "Worth a look" showed a green check over an unread directory, "Organization types" said "No
+  organizations yet", and "People added" drew an empty element still labelled as a seven-day chart —
+  all four from the same empty arrays the failed read leaves behind. `DirectoryHeadline` now carries
+  `ReadFailed`, and each section consults it before reporting itself empty: a list that is empty
+  because nothing was read is not "nothing to do".
+
+  - @mj-biz-apps/common-entities@5.44.0
+
 ## 5.43.0
 
 ### Minor Changes
