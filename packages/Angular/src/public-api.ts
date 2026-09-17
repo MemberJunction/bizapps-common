@@ -31,6 +31,20 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { StatTileComponent, type StatTileTone } from './lib/components/stat-tile/stat-tile.component';
 export { StatRowComponent } from './lib/components/stat-tile/stat-row.component';
+export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
+export {
+    FilterForRelatedLink,
+    LabelForRelatedLink,
+    PrimaryKeyFieldFor,
+    RelatedChipNavigation,
+    ResolveRelatedChip,
+    type BizAppsRelatedLink,
+    type RelatedChipClick,
+    type RelatedLinkEntity,
+    type RelatedLinkReadResult,
+    type RelatedLinkReader,
+    type ResolvedRelatedChip,
+} from './lib/components/related-chips/related-links';
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
