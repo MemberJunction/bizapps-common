@@ -1200,12 +1200,31 @@ export class ActivitySyncEngine {
                  * `Failed` is deliberately included: a message that could not be written is exactly
                  * the one an auditor asks about, and it is the case where nothing else holds a copy.
                  *
+                 * ── `Duplicate` IS EXCLUDED, FOR THE SAME REASON AS `Included` ────────────────────
+                 *
+                 * A duplicate is filed. The writer reports `AlreadyPresent` and the detail carries
+                 * `ActivityID`, so the content is already retrievable from the Activity holding it —
+                 * which is precisely the argument that keeps `Included` out. Capturing it puts an
+                 * encrypted second copy of ordinary filed mail in a column meant for messages that were
+                 * NOT filed, and `row.ActivityID` is nulled for every non-`Included` decision, so that
+                 * copy would not even link back to the Activity holding the same text.
+                 *
+                 * The cost is not theoretical. The calendar window ignores `Since` and is always
+                 * `[now - 30d, now + 30d]`, so every run re-reads the whole window and every event
+                 * already filed comes back a duplicate. A meeting sits in that window across roughly
+                 * sixty daily runs: one files it, the rest would re-encrypt its subject and body onto a
+                 * fresh run-detail row each time. Under `FullEncrypted` that is about sixty encrypted
+                 * copies of every meeting.
+                 *
+                 * It was captured until golive#116's follow-up review asked whether that was deliberate.
+                 * It was not.
+                 *
                  * Ciphertext and key are written together or not at all, mirroring
                  * CK_ActivitySyncRunDetail_ContentKey. Encryption failing is reported and the row is
                  * still saved without content: losing the whole run record because one message could
                  * not be encrypted would be a worse trade than an audit gap that says so.
                  */
-                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';
+                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';
                 if (capture.Capture !== 'None' && skipped && !options.DryRun && this.cipher && capture.EncryptionKeyID) {
                     const plaintext = ContentToCapture(capture.Capture, detail.Item);
                     if (plaintext !== null) {

@@ -128,7 +128,10 @@ function setRows(opts: {
     };
 }
 
-async function run(dryRun = false, known = false) {
+/** What the writer reports back, which is what decides `Duplicate` and `Failed`. */
+type WriteOutcome = { Success?: boolean; AlreadyPresent?: boolean };
+
+async function run(dryRun = false, known = false, write: WriteOutcome = {}) {
     savedDetails.length = 0;
     // By default nothing resolves, so nothing is a known participant and the Exclude default decides
     // — which is the whole point: these are the messages a retention policy is about. `known` flips
@@ -153,12 +156,14 @@ async function run(dryRun = false, known = false) {
     const resolver = { Resolve: async () => resolution } as unknown as IdentityResolver;
     const writer = {
         Write: async () => ({
-            Success: true,
-            ActivityID: known ? 'act-1' : null,
-            AlreadyPresent: false,
+            Success: write.Success ?? true,
+            // A duplicate carries the Activity that already holds this content -- which is the whole
+            // reason it must not be captured a second time.
+            ActivityID: write.AlreadyPresent ? 'act-1' : known ? 'act-1' : null,
+            AlreadyPresent: write.AlreadyPresent ?? false,
             Links: [],
-            Activity: known ? { ID: 'act-1' } : null,
-            Issues: [],
+            Activity: write.AlreadyPresent || known ? { ID: 'act-1' } : null,
+            Issues: write.Success === false ? ['the write failed'] : [],
         }),
     } as unknown as ActivityWriter;
     const provider = {
@@ -248,6 +253,50 @@ describe('the engine writes captured content for a skipped message', () => {
         expect(detail?.Decision, 'this message must have been filed').toBe('Included');
         expect(detail?.CapturedContent).toBeUndefined();
         expect(detail?.EncryptionKeyID).toBeUndefined();
+    });
+
+    it('writes nothing for a DUPLICATE, which is already filed', async () => {
+        /**
+         * The same argument as `Included`, and it took a review to notice. The writer reports
+         * `AlreadyPresent` and the detail carries an `ActivityID`, so the content is already
+         * retrievable from the Activity holding it. Capturing it puts an encrypted second copy of
+         * ordinary filed mail in a column meant for messages that were NOT filed.
+         *
+         * The cost is what settled it: the calendar window is always `[now - 30d, now + 30d]`, so a
+         * meeting comes back a duplicate on roughly sixty subsequent daily runs. Under `FullEncrypted`
+         * that was about sixty encrypted copies of every meeting.
+         */
+        RegisterActivityContentCipher(SPY_CIPHER);
+        setRows({ policy: 'FullEncrypted', key: KEY });
+        const { detail } = await run(false, true, { AlreadyPresent: true });
+
+        expect(detail?.Decision, 'this message must have been seen as a duplicate').toBe('Duplicate');
+        expect(detail?.CapturedContent).toBeUndefined();
+        expect(detail?.EncryptionKeyID).toBeUndefined();
+    });
+
+    it('DOES write for a Failed message, which is the one nothing else holds', async () => {
+        /**
+         * The other half, and the reason dropping `Duplicate` is not simply "capture less". A message
+         * that could not be written has no Activity behind it, so this column is the only place its
+         * content survives at all — it is exactly what an auditor asks about.
+         *
+         * The PR flagged this as its most arguable call and nothing pinned it either way, which is
+         * how a later tidy-up could have swept it out alongside `Duplicate`.
+         */
+        RegisterActivityContentCipher(SPY_CIPHER);
+        setRows({ policy: 'FullEncrypted', key: KEY });
+        // KNOWN, so the message is INCLUDED and the writer actually runs -- then the write fails.
+        // With nothing resolving, the Exclude default decides first and the writer never sees it.
+        const { detail } = await run(false, true, { Success: false });
+
+        expect(detail?.Decision, 'the write must have failed').toBe('Failed');
+        expect(detail?.CapturedContent, 'nothing else holds this message').toBe(
+            `enc(${KEY}):Q3 renewal terms
+
+The numbers we discussed.`,
+        );
+        expect(detail?.EncryptionKeyID).toBe(KEY);
     });
 
     it('writes nothing on a dry run, because nothing was actually declined', async () => {

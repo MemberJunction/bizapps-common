@@ -66,7 +66,19 @@ material without attempting an encrypt. On a host missing that variable the run 
 decision, and every message adds an issue saying its content could not be encrypted. Nothing is lost
 and nothing is silent, but the audit trail is empty, so set the variable before setting the policy.
 
-22 tests across the two packages and 11 registered mutants, all caught — including `M-CAP1`, the
+**A correction to an earlier claim in this changeset.** It read "74 of 74, driver exits 0", and that
+was true only on the machine that measured it. Three anchors were written with CRLF; this repo commits
+LF and carries no `.gitattributes`, so on a clean checkout `M-CAP8` and `M-AC41` matched nothing and
+the driver exited 1. `M-CAP8` had therefore never run anywhere, and `M-AC41` **worked on `next` until
+this branch re-anchored it** — it guards `ProviderTypeRow` staying in sync with the `Fields` list, and
+this change adds two fields to both, so the mutant that would catch a mismatch was off in the change
+that most needed it.
+
+The driver now normalises to LF before matching and writes back in the file's own ending, so every
+anchor is portable rather than two being fixed and the trap moved. Verified against a purpose-built
+pure-LF tree: 57 files, 0 CRLF, **76 anchors, 0 skips**.
+
+24 tests across the two packages and 13 registered mutants, all caught — including `M-CAP1`, the
 literal revert to the previous behaviour, and `M-CAP8`, which sets the key before the ciphertext so a
 throw leaves `CK_ActivitySyncRunDetail_ContentKey` violated. One coverage gap was found by a mutant
 rather than by reading: nothing tested that an **included** message keeps its content out of the

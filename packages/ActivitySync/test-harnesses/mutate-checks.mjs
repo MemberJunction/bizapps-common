@@ -133,11 +133,34 @@ const PRODUCT = [
         from: "        if (capture.Capture !== 'None' && !this.cipher) {",
         to: '        if (false) {',
     },
+    /**
+     * `Duplicate` back in the captured set — the state this PR shipped with until review. A duplicate is
+     * filed and its Activity holds the content, so capturing it is an encrypted second copy of ordinary
+     * mail; on the calendar surface, about sixty of them per meeting.
+     */
+    {
+        id: 'M-CAP11',
+        file: ENGINE,
+        expect: ['writes nothing for a DUPLICATE, which is already filed'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
+        to: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';",
+    },
+    /**
+     * `Failed` OUT of it — the direction a tidy-up would take while dropping `Duplicate`, and the one
+     * case where nothing else holds the message at all.
+     */
+    {
+        id: 'M-CAP12',
+        file: ENGINE,
+        expect: ['DOES write for a Failed message, which is the one nothing else holds'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
+        to: "                const skipped = detail.Decision === 'Excluded';",
+    },
     {
         id: 'M-CAP4',
         file: ENGINE,
         expect: ['writes nothing for a message it DID file'],
-        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';",
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
         to: '                const skipped = true;',
     },
     {
@@ -171,11 +194,11 @@ const PRODUCT = [
             '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
             // CRLF: every .ts in this package uses it, so a two-line anchor must too. A mismatch
             // here reports SKIP rather than a false OK, which is why the driver checks the count.
-        ].join('\r\n'),
+        ].join('\n'),
         to: [
             '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
             '                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);',
-        ].join('\r\n'),
+        ].join('\n'),
     },
     {
         id: 'M-CAP9',
@@ -668,7 +691,7 @@ const PRODUCT = [
         expect: ['asks for every ProviderTypeRow field by name, and no others'],
         // Re-anchored when the Fields list went multi-line. Same mutation: drop one field the
         // interface declares, so the two lists disagree and the runtime reads `undefined`.
-        from: "                    'IsActive',\r\n",
+        from: "                    'IsActive',\n",
         to: '',
     },
 ];
@@ -695,7 +718,23 @@ for (const m of selected) {
     const backup = join(dir, 'backup');
     const full = join(PKG, m.file);
     copyFileSync(full, backup);
-    const original = readFileSync(full, 'utf8');
+    const onDisk = readFileSync(full, 'utf8');
+
+    /**
+     * ── ANCHORS ARE MATCHED AGAINST LF, WHATEVER IS ON DISK ────────────────────────
+     *
+     * This repo commits LF and carries no `.gitattributes`, so a checkout with `core.autocrlf=true`
+     * has CRLF in the working tree and LF in the blob. An anchor written with the platform's endings
+     * matches on the machine that wrote it and nowhere else — and it fails as `SKIP`, which reads as
+     * covered while testing nothing. That is the exact failure this driver exists to catch, so it
+     * must not be able to produce it.
+     *
+     * Every anchor below is therefore written with `\n`, and the file is normalised here before
+     * matching. The original bytes are kept for the write-back, so a CRLF working tree stays CRLF and
+     * the restore still compares byte-for-byte.
+     */
+    const original = onDisk.split('\r\n').join('\n');
+    const eol = onDisk.includes('\r\n') ? '\r\n' : '\n';
     const count = original.split(m.from).length - 1;
     if (count !== 1) {
         copyFileSync(backup, full);
@@ -704,7 +743,8 @@ for (const m of selected) {
         failed++;
         continue;
     }
-    writeFileSync(full, original.replace(m.from, m.to));
+    const mutated = original.replace(m.from, m.to);
+    writeFileSync(full, eol === '\r\n' ? mutated.split('\n').join('\r\n') : mutated);
     let output = '';
     let threw = false;
     try {
@@ -714,7 +754,9 @@ for (const m of selected) {
         output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
     }
     copyFileSync(backup, full);
-    const restored = readFileSync(full, 'utf8');
+    // `original` is normalised, so the comparison normalises too -- otherwise a CRLF working
+    // tree reports a false restore failure on every mutant.
+    const restored = readFileSync(full, 'utf8').split('\r\n').join('\n');
     if (restored !== original) {
         writeFileSync(full, original);
         console.error(`FAIL ${m.id}: restore did not match the copy`);
