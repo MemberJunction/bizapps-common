@@ -5,6 +5,8 @@ import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { NavigationService } from '@memberjunction/ng-shared';
 import { EntityViewerModule, type EntityViewerConfig, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJAlertComponent, MJButtonDirective, MJEmptyStateComponent } from '@memberjunction/ng-ui-components';
+import { StatRowComponent } from '../components/stat-tile/stat-row.component';
+import { StatTileComponent } from '../components/stat-tile/stat-tile.component';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
 import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
@@ -26,7 +28,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 @Component({
     selector: 'bizapps-common-dashboard-page',
     standalone: true,
-    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule],
+    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule, StatRowComponent, StatTileComponent],
     template: `
         <div class="mjc-dash">
             <div class="mjc-hero">
@@ -52,28 +54,35 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
             @if (IsLoading) {
                 <div class="mjc-muted">Loading the directory…</div>
             } @else {
-                <div class="mjc-tiles">
-                    <button type="button" class="mjc-tile" (click)="OpenPeople()">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-user" aria-hidden="true"></i> People</span>
-                        <span class="mjc-tile__value">{{ ActivePeopleCount }}</span>
-                        <span class="mjc-tile__detail">{{ PeopleDetail }}</span>
-                    </button>
-                    <button type="button" class="mjc-tile" (click)="OpenOrganizations()">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-building" aria-hidden="true"></i> Organizations</span>
-                        <span class="mjc-tile__value">{{ ActiveOrganizationCount }}</span>
-                        <span class="mjc-tile__detail">{{ OrganizationDetail }}</span>
-                    </button>
-                    <div class="mjc-tile">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-link" aria-hidden="true"></i> Relationships</span>
-                        <span class="mjc-tile__value">{{ RelationshipCount }}</span>
-                        <span class="mjc-tile__detail">Who reports to whom, who works where</span>
-                    </div>
-                    <div class="mjc-tile" [class.mjc-tile--alert]="GapCount > 0">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Gaps</span>
-                        <span class="mjc-tile__value">{{ GapCount }}</span>
-                        <span class="mjc-tile__detail">Missing email, org, type, or website</span>
-                    </div>
-                </div>
+                <bizapps-stat-row>
+                    <bizapps-stat-tile
+                        Label="People"
+                        Icon="fa-solid fa-user"
+                        [Value]="ActivePeopleCount"
+                        [Detail]="PeopleDetail"
+                        [Clickable]="true"
+                        (Clicked)="OpenPeople()" />
+                    <bizapps-stat-tile
+                        Label="Organizations"
+                        Icon="fa-solid fa-building"
+                        [Value]="ActiveOrganizationCount"
+                        [Detail]="OrganizationDetail"
+                        [Clickable]="true"
+                        (Clicked)="OpenOrganizations()" />
+                    <bizapps-stat-tile
+                        Label="Relationships"
+                        Icon="fa-solid fa-link"
+                        [Value]="RelationshipCount"
+                        Detail="Who reports to whom, who works where"
+                        [Clickable]="false" />
+                    <bizapps-stat-tile
+                        Label="Gaps"
+                        Icon="fa-solid fa-clipboard-check"
+                        [Value]="GapCount"
+                        Detail="Missing email, org, type, or website"
+                        [Tone]="GapCount > 0 ? 'warn' : 'none'"
+                        [Clickable]="false" />
+                </bizapps-stat-row>
 
                 <div class="mjc-split">
                     <section class="mjc-card">
@@ -265,51 +274,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 display: flex;
                 gap: var(--mj-space-2);
                 flex-wrap: wrap;
-            }
-            .mjc-tiles {
-                display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-                gap: var(--mj-space-4);
-            }
-            .mjc-tile {
-                display: flex;
-                flex-direction: column;
-                gap: var(--mj-space-1);
-                align-items: flex-start;
-                text-align: left;
-                padding: var(--mj-space-4);
-                background: var(--mj-bg-surface);
-                border: 1px solid var(--mj-border-default);
-                border-radius: var(--mj-radius-md);
-                color: inherit;
-                cursor: default;
-            }
-            button.mjc-tile {
-                cursor: pointer;
-            }
-            button.mjc-tile:hover {
-                border-color: var(--mj-brand-primary);
-            }
-            .mjc-tile--alert {
-                border-color: var(--mj-status-warning-border);
-                background: color-mix(in srgb, var(--mj-status-warning) 8%, var(--mj-bg-surface));
-            }
-            .mjc-tile__label {
-                font-size: 0.75rem;
-                color: var(--mj-text-secondary);
-                display: flex;
-                align-items: center;
-                gap: var(--mj-space-2);
-            }
-            .mjc-tile__value {
-                font-size: 1.75rem;
-                font-weight: 700;
-                color: var(--mj-text-primary);
-                line-height: 1.1;
-            }
-            .mjc-tile__detail {
-                font-size: 0.75rem;
-                color: var(--mj-text-muted);
             }
             .mjc-split {
                 display: grid;
@@ -513,9 +477,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 min-height: 220px;
             }
             @media (max-width: 1200px) {
-                .mjc-tiles {
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
-                }
                 .mjc-split {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
@@ -524,7 +485,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 .mjc-dash {
                     padding: var(--mj-space-4);
                 }
-                .mjc-tiles,
                 .mjc-split,
                 .mjc-split--wide {
                     grid-template-columns: 1fr;
