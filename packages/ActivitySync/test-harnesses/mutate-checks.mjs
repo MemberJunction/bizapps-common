@@ -86,12 +86,18 @@ const PRODUCT = [
         from: '        if (internalDomains.Failed)',
         to: '        if (false)',
     },
-    /** THE REPORTING PATH. A run that succeeds still has to record what it reported. */
+    /**
+     * THE REPORTING PATH. A run that succeeds still has to record what it reported.
+     *
+     * RE-AIMED. The anchor carried `.slice(0, 4000)`, which was removed when that truncation came out
+     * of the run's issue list -- so it matched nothing and reported SKIP, which reads as covered while
+     * testing nothing. It had been skipping on `next` since, not only here.
+     */
     {
         id: 'M-RP1',
         file: ENGINE,
         expect: ['writes its issues to the run row, not just to memory'],
-        from: "            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ').slice(0, 4000) : null;",
+        from: "            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ') : null;",
         to: '            run.ErrorMessage = null;',
     },
     {
