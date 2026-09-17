@@ -1,5 +1,13 @@
 # @mj-biz-apps/common-integration-tests
 
+## 5.43.0
+
+### Patch Changes
+
+- Updated dependencies [23b6827]
+- Updated dependencies [ec6fab7]
+  - @mj-biz-apps/common-entities@5.43.0
+
 ## 5.42.0
 
 ### Patch Changes
