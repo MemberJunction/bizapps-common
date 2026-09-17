@@ -46,9 +46,6 @@ importers:
       rollup:
         specifier: ^4.43.0
         version: 4.62.4
-      simple-git:
-        specifier: ^3.31.1
-        version: 3.36.0
       tsc-alias:
         specifier: ^1.8.16
         version: 1.9.1
@@ -114,7 +111,7 @@ importers:
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6
       '@mj-biz-apps/common-entities':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Entities
     devDependencies:
       typescript:
@@ -163,7 +160,7 @@ importers:
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6(f555aaaffc2013cbecd9ce8e8e312d81)
       '@mj-biz-apps/common-entities':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Entities
     devDependencies:
       '@angular/animations':
@@ -206,10 +203,10 @@ importers:
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6
       '@mj-biz-apps/common-activity-sync':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../ActivitySync
       '@mj-biz-apps/common-entities':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Entities
     devDependencies:
       typescript:
@@ -234,6 +231,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@25.9.6)(jsdom@26.1.0)
 
   packages/IntegrationTests:
     dependencies:
@@ -247,7 +247,7 @@ importers:
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6(@aws-sdk/credential-provider-node@3.972.83)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.3)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.21.3)(zod@3.25.76)
       '@mj-biz-apps/common-entities':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Entities
     devDependencies:
       '@types/node':
@@ -293,16 +293,16 @@ importers:
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6(@aws-sdk/credential-provider-node@3.972.83)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.3)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.21.3)(zod@3.25.76)
       '@mj-biz-apps/common-actions':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Actions
       '@mj-biz-apps/common-activity-sync':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../ActivitySync
       '@mj-biz-apps/common-core-entities-server':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../CoreEntitiesServer
       '@mj-biz-apps/common-entities':
-        specifier: 5.42.0
+        specifier: 5.43.0
         version: link:../Entities
       class-validator:
         specifier: ^0.14.3
