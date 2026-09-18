@@ -57,12 +57,12 @@ export interface ActivityContentCipher {
      *        `'For server-side use of all engine classes, you must provide the contextUser parameter'`
      *        the moment it configures against a database provider without one.
      *
-     *        It matters more than usual because of how this seam fails. A throw here is caught by the
-     *        engine, reported as a run issue, and the decision row is saved WITHOUT content — so a
-     *        cipher that cannot reach its key produces exactly the outcome this whole feature exists
-     *        to remove: successful-looking runs that retain nothing. Nothing pre-configures MJ's
-     *        encryption engine at startup, so without this it would depend on whether some earlier
-     *        request in the same process happened to configure it first.
+     *        MJAPI does normally configure MJ's encryption engine at startup, so on a healthy host the
+     *        lazy path never runs. It is the unhealthy host that matters: when startup validation
+     *        fails — a missing or unusable key, which is the whole reason an operator would be reading
+     *        these issues — the engine stays unloaded and the first capture configures it lazily. Without
+     *        a user that reports `'you must provide the contextUser parameter'`, naming the wrong
+     *        fault on the one path where naming the right one matters most.
      *
      * @returns the ciphertext to store. Throwing is correct when the key is missing or unusable —
      *          the caller records the failure as a run issue rather than storing plaintext.

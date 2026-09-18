@@ -95,19 +95,22 @@ and was sliced at 500. It matters most for exactly the rows this feature is abou
 detail's Reason is the writer's issues joined, and it sits beside `CapturedContent` as the account of
 why the message was not filed. `M-ERR3` puts it back.
 
-**The cipher is handed a user, and without one this would have retained nothing.** MJ's
+**The cipher is handed a user, so a failing host reports the fault it actually has.** MJ's
 `EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws *"For server-side
 use of all engine classes, you must provide the contextUser parameter"* when it configures against a
-database provider without one. Nothing configures that engine at MJAPI startup — no consumer
-references `EncryptionStartupValidator` and there is no startup-sink wiring — so it is loaded only if
-some earlier request in the process touched an encrypted field. MJ's own `ResolverBase` passes the
-user at both of its call sites.
+database provider without one. MJ's own `ResolverBase` passes the user at both of its call sites.
 
-The seam originally took none, so the throw would have been caught here, reported as a run issue, and
-the decision row saved WITHOUT content: a successful-looking run retaining nothing, intermittently.
-That is the defect this feature was written to remove, reappearing inside it. `ActivityContentCipher`
-now takes a `contextUser`, the engine hands over the same user the rest of the run reads as, and
-`M-CAP13` drops it.
+MJAPI configures that engine at startup, so on a healthy host the lazy path never runs. The case this
+protects is the unhealthy one, and it is not hypothetical: booting MJAPI on a host with no
+`MJ_BASE_ENCRYPTION_KEY` prints *"Error loading EncryptionStartupValidator... the server will continue
+to start, but encrypted field operations may fail"*. The engine stays unloaded, and the first capture
+configures it lazily. Without a user the run issue then reads *"you must provide the contextUser
+parameter"* — naming the wrong fault on the one path where an operator most needs to be told their KEY
+is wrong. `ActivityContentCipher` now takes a `contextUser`; `M-CAP13` drops it.
+
+*(An earlier revision of this paragraph said nothing configures the engine at startup. That was wrong:
+the validator registers through a `@RegisterForStartup` decorator, which the grep behind that claim
+could not see. Booting the server is what showed it.)*
 
 `M-CAP8` needed re-anchoring as a consequence: threading the argument through made the `Encrypt` call
 multi-line and its anchor was the single-line form, so it matched nothing and reported SKIP — on the

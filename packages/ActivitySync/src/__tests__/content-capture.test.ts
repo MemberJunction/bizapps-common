@@ -232,14 +232,16 @@ describe('the engine writes captured content for a skipped message', () => {
      *
      * MJ's `EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws
      * `'For server-side use of all engine classes, you must provide the contextUser parameter'` when
-     * it configures against a database provider without one. Nothing configures that engine at MJAPI
-     * startup, so without this argument it would work only when some earlier request in the same
-     * process had already configured it — that is, intermittently.
+     * it configures against a database provider without one.
      *
-     * The failure would not have been loud. The engine catches the throw, records it as a run issue
-     * and saves the decision WITHOUT content: a run that looks successful and retains nothing, which
-     * is the precise defect this feature exists to remove. So the argument is asserted here rather
-     * than left to the type signature, which only binds callers that typecheck against it.
+     * MJAPI does configure that engine at startup, so on a healthy host the lazy path never runs. The
+     * case this protects is the unhealthy one: startup validation fails whenever the key is missing or
+     * unusable, the engine stays unloaded, and the first capture configures it lazily. Without a user
+     * the run issue then reads `'you must provide the contextUser parameter'` — naming the wrong fault
+     * on the exact path where an operator needs to be told their KEY is wrong.
+     *
+     * Asserted here rather than left to the type signature, which binds only callers that typecheck
+     * against it.
      */
     it('hands the cipher the run user, because the key lookup runs as somebody', async () => {
         RegisterActivityContentCipher(SPY_CIPHER);

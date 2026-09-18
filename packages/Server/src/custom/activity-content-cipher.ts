@@ -37,15 +37,20 @@ export class MJActivityContentCipher implements ActivityContentCipher {
      *
      * `Encrypt` lazily calls `Config(false, contextUser)` when the engine has not been configured,
      * and `BaseEngine.Load` throws `'For server-side use of all engine classes, you must provide the
-     * contextUser parameter'` on a database provider when it is absent. Nothing configures this
-     * engine at MJAPI startup — no consumer references `EncryptionStartupValidator` and there is no
-     * startup-sink wiring — so whether it happens to be loaded depends on whether an earlier request
-     * in the same process touched an encrypted field. MJ's own `ResolverBase` passes the user at both
-     * of its call sites for the same reason.
+     * contextUser parameter'` on a database provider when it is absent.
      *
-     * Getting this wrong would not have failed loudly. The engine catches the throw, reports it as a
-     * run issue and saves the decision without content — a successful-looking run that retains
-     * nothing, which is the exact defect this feature was written to remove.
+     * MJAPI normally configures this engine at startup — `StartupManager.Startup()` runs
+     * `EncryptionStartupValidator` with a system user — and when that succeeds the lazy path never runs
+     * and the missing argument would never have shown. It is the FAILURE case that matters: that
+     * validator fails on any host whose key is missing or unusable (`MJ_BASE_ENCRYPTION_KEY` unset is
+     * the common one), the engine stays unloaded, and the first capture then configures it lazily.
+     *
+     * Without the user, that reports `'you must provide the contextUser parameter'` — naming the wrong
+     * fault entirely, on the one path where an operator most needs to be told their KEY is wrong. With
+     * it, the engine configures and fails on the real problem. Either way the row is saved without
+     * content, so the difference is entirely in whether the run issue is true.
+     *
+     * MJ's own `ResolverBase` passes the user at both of its call sites.
      *
      * @throws whatever `EncryptionEngine` throws for a missing or unusable key. Throwing is correct:
      *         the engine records the failure as a run issue and saves the decision without content.
