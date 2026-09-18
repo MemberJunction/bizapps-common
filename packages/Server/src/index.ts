@@ -18,6 +18,7 @@ import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
+import { LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -54,11 +55,17 @@ export function LoadBizAppsCommonServer(): void {
     // And that attestation, when this deployment has one. Absent, every live read stays refused;
     // partially configured, this THROWS during bootstrap rather than leaving a misleading refusal.
     LoadLiveMailboxPolicyFromEnv();
+    // And the cipher that protects content captured from messages the engine declined to ingest.
+    // Registering it turns nothing on: retention is off unless a policy asks for it. What it does is
+    // make the engine's refusal, when a policy DOES ask, be about the policy rather than about this
+    // host being half-wired.
+    LoadActivityContentCipher();
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 export {
     LoadLiveMailboxPolicyFromEnv,
     ENV_GROUP,

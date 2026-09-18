@@ -38,6 +38,7 @@ const PARTS = 'src/participants.ts';
 const ATTACH = 'src/attachments.ts';
 const CALPROVIDER = 'src/providers/MSGraphCalendarSyncProvider.ts';
 const MAPPER = 'src/providers/GraphMessageMapper.ts';
+const CAPTURE = 'src/content-capture.ts';
 
 const PRODUCT = [
     /**
@@ -85,12 +86,18 @@ const PRODUCT = [
         from: '        if (internalDomains.Failed)',
         to: '        if (false)',
     },
-    /** THE REPORTING PATH. A run that succeeds still has to record what it reported. */
+    /**
+     * THE REPORTING PATH. A run that succeeds still has to record what it reported.
+     *
+     * RE-AIMED. The anchor carried `.slice(0, 4000)`, which was removed when that truncation came out
+     * of the run's issue list -- so it matched nothing and reported SKIP, which reads as covered while
+     * testing nothing. It had been skipping on `next` since, not only here.
+     */
     {
         id: 'M-RP1',
         file: ENGINE,
         expect: ['writes its issues to the run row, not just to memory'],
-        from: "            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ').slice(0, 4000) : null;",
+        from: "            run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ') : null;",
         to: '            run.ErrorMessage = null;',
     },
     {
@@ -101,15 +108,132 @@ const PRODUCT = [
         to: '        private readonly fileSink: ActivityFileSink | null = null,',
     },
     /**
-     * THE CALENDAR WINDOW. `WatermarkBasisForKind('Calendar')` is ObservationTime -- when we last
-     * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
-     * back-dated meeting is never read, on any run, with no issue and Success = true.
+     * SKIPPED-CONTENT RETENTION. The whole feature was migrated, documented, CHECK-constrained and
+     * unreachable: ResolveCapturePlan had zero callers, so a policy of SubjectEncrypted retained
+     * nothing and the misconfiguration it refuses never fired. M-CAP1 is the literal revert.
      */
+    {
+        id: 'M-CAP1',
+        file: ENGINE,
+        expect: ['writes ciphertext and the key that opens it, together'],
+        from: '                    const plaintext = ContentToCapture(capture.Capture, detail.Item);',
+        to: '                    const plaintext = null;',
+    },
+    {
+        id: 'M-CAP2',
+        file: ENGINE,
+        expect: ['refuses a policy above None with no key anywhere'],
+        from: '            capture = ResolveCapturePlan(',
+        to: "            capture = ((a, b) => ({ Capture: 'None', EncryptionKeyID: b }))(",
+    },
+    {
+        id: 'M-CAP3',
+        file: ENGINE,
+        expect: ['refuses when the host registered no cipher, naming the way out'],
+        from: "        if (capture.Capture !== 'None' && !this.cipher) {",
+        to: '        if (false) {',
+    },
     /**
-     * INTERNAL DOMAINS, the parsing half. An empty list is not a disabled filter, it is an INVERTED
-     * one -- every participant counts as External -- so each way of quietly producing an empty or
-     * wrong list is its own mutant.
+     * `Duplicate` back in the captured set — the state this PR shipped with until review. A duplicate is
+     * filed and its Activity holds the content, so capturing it is an encrypted second copy of ordinary
+     * mail; on the calendar surface, about sixty of them per meeting.
      */
+    {
+        id: 'M-CAP11',
+        file: ENGINE,
+        expect: ['writes nothing for a DUPLICATE, which is already filed'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
+        to: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Duplicate' || detail.Decision === 'Failed';",
+    },
+    /**
+     * `Failed` OUT of it — the direction a tidy-up would take while dropping `Duplicate`, and the one
+     * case where nothing else holds the message at all.
+     */
+    {
+        id: 'M-CAP12',
+        file: ENGINE,
+        expect: ['DOES write for a Failed message, which is the one nothing else holds'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
+        to: "                const skipped = detail.Decision === 'Excluded';",
+    },
+    {
+        id: 'M-CAP4',
+        file: ENGINE,
+        expect: ['writes nothing for a message it DID file'],
+        from: "                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';",
+        to: '                const skipped = true;',
+    },
+    {
+        id: 'M-CAP5',
+        file: ENGINE,
+        expect: ['takes the provider type default when the connection says nothing'],
+        from: "                    (typeRow?.DefaultSkippedContentPolicy as SkippedContentPolicy | null) ?? 'None',",
+        to: "                    'None',",
+    },
+    {
+        id: 'M-CAP6',
+        file: ENGINE,
+        expect: ['lets the connection override the key'],
+        from: '                connection.EncryptionKeyID ?? typeRow?.DefaultEncryptionKeyID ?? null,',
+        to: '                typeRow?.DefaultEncryptionKeyID ?? null,',
+    },
+    {
+        id: 'M-CAP7',
+        file: ENGINE,
+        expect: ['is what the engine defaults to'],
+        from: '        private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),',
+        to: '        private readonly cipher: ActivityContentCipher | null = null,',
+    },
+    /**
+     * A key recorded without ciphertext violates CK_ActivitySyncRunDetail_ContentKey, so the
+     * ciphertext is assigned FIRST and a throw from Encrypt leaves neither. This mutant swaps the
+     * two.
+     *
+     * RE-ANCHORED when Encrypt grew a `contextUser` argument and the call went multi-line. The old
+     * anchor was the single-line form, so it matched zero times and reported SKIP -- covered-looking
+     * while testing nothing, on the mutant this PR's description singles out, for the second time.
+     * The FULL run is what caught it; running only the mutant added alongside would not have.
+     *
+     * Anchors are matched against LF by the driver, so what appears below is the two-character
+     * escape, never an actual line break.
+     */
+    {
+        id: 'M-CAP8',
+        file: ENGINE,
+        expect: ['the key must not be recorded without the ciphertext'],
+        from: [
+            '                            row.CapturedContent = await this.cipher.Encrypt(',
+            '                                plaintext,',
+            '                                capture.EncryptionKeyID,',
+            '                                user,',
+            '                            );',
+            '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
+        ].join('\n'),
+        to: [
+            '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
+            '                            row.CapturedContent = await this.cipher.Encrypt(',
+            '                                plaintext,',
+            '                                capture.EncryptionKeyID,',
+            '                                user,',
+            '                            );',
+        ].join('\n'),
+    },
+    {
+        id: 'M-CAP9',
+        file: CAPTURE,
+        expect: ['keeps subject and body for FullEncrypted'],
+        // Backslash-n twice over: the source holds the two-character escape inside a template
+        // literal, not an actual line break.
+        from: '    return body ? `${subject}\\n\\n${body}` : subject;',
+        to: '    return subject;',
+    },
+    {
+        id: 'M-CAP10',
+        file: CAPTURE,
+        expect: ['still reports a subject-less message rather than returning nothing'],
+        from: "    const subject = item.Subject?.trim() || '(no subject)';",
+        to: "    const subject = item.Subject ?? '';",
+    },
     /**
      * THE REFUSAL'S ACTIONABLE HALF. Every other assertion in the suite compares against the
      * `LIVE_GRAPH_REFUSAL` constant, so the message could be trimmed back to "Live Graph fetch is
@@ -142,6 +266,11 @@ const PRODUCT = [
         from: '        HasAttachments: message.hasAttachments === true,',
         to: '        HasAttachments: false,',
     },
+    /**
+     * INTERNAL DOMAINS, the parsing half. An empty list is not a disabled filter, it is an INVERTED
+     * one -- every participant counts as External -- so each way of quietly producing an empty or
+     * wrong list is its own mutant.
+     */
     {
         id: 'M-PA1',
         file: PARTS,
@@ -347,6 +476,11 @@ const PRODUCT = [
         from: '    return declared?.trim() ? declared.trim() : fallback;',
         to: '    return declared ?? fallback;',
     },
+    /**
+     * THE CALENDAR WINDOW. `WatermarkBasisForKind('Calendar')` is ObservationTime -- when we last
+     * LOOKED -- and StartDateTime filters on the EVENT'S own time. Using one as the other means a
+     * back-dated meeting is never read, on any run, with no issue and Success = true.
+     */
     {
         id: 'M-CW1',
         file: CALENDAR,
@@ -573,8 +707,62 @@ const PRODUCT = [
         id: 'M-AC41',
         file: ENGINE,
         expect: ['asks for every ProviderTypeRow field by name, and no others'],
-        from: "'CalendarDriverClass', 'IsActive'],",
-        to: "'CalendarDriverClass'],",
+        // Re-anchored when the Fields list went multi-line. Same mutation: drop one field the
+        // interface declares, so the two lists disagree and the runtime reads `undefined`.
+        from: "                    'IsActive',\n",
+        to: '',
+    },
+    /**
+     * The cap back on the WRITE SITE only, which is the state this PR was in until the second pass.
+     * `healthErrorFromResults` was uncapped and unit-tested, and `stampConnectionHealth` sliced the
+     * same string to 4000 on its way to the column — so nothing an operator reads had changed.
+     *
+     * The unit test on the pure function CANNOT catch this, which is the whole reason the check that
+     * does drives a run all the way to what lands on the row. If this mutant ever starts felling the
+     * pure-function check too, the two have been collapsed into one and the gap is back.
+     */
+    {
+        id: 'M-ERR1',
+        file: ENGINE,
+        expect: ['writes the WHOLE diagnosis to LastError on a broadly failing run'],
+        from: "                row.LastError = error ?? 'Activity sync run failed.';",
+        to: "                row.LastError = (error ?? 'Activity sync run failed.').slice(0, 4000);",
+    },
+    /**
+     * And the other half, for completeness: the cap back on the pure function, where it started.
+     * Both checks fall, because the capped string is what reaches the row either way.
+     */
+    {
+        id: 'M-ERR2',
+        file: ENGINE,
+        expect: ['keeps the whole diagnosis when many surfaces fail, past the old 4000 cap', 'writes the WHOLE diagnosis to LastError on a broadly failing run'],
+        from: "    return issues.join(' | ') || 'Activity sync run failed.';",
+        to: "    return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);",
+    },
+    /**
+     * The third cap, on the run detail's `Reason`. It is the explanation sitting beside
+     * `CapturedContent` on exactly the decisions this feature captures content for, so a truncated one
+     * leaves an audit row holding the message and no usable account of why it was not filed.
+     */
+    {
+        id: 'M-ERR3',
+        file: ENGINE,
+        expect: ['writes the WHOLE reason on a failed run detail, beside any captured content'],
+        from: '                row.Reason = detail.Reason;',
+        to: '                row.Reason = detail.Reason.slice(0, 500);',
+    },
+    /**
+     * The user dropped on its way to the cipher. TypeScript would object, which is exactly why this
+     * exists: the seam's failure mode is a caught throw reported as a run issue and a decision row
+     * saved WITHOUT content, so a host whose cipher cannot reach its key produces successful-looking
+     * runs that retain nothing — the defect this whole feature removes, reappearing inside it.
+     */
+    {
+        id: 'M-CAP13',
+        file: ENGINE,
+        expect: ['hands the cipher the run user, because the key lookup runs as somebody'],
+        from: '                                capture.EncryptionKeyID,\n                                user,\n',
+        to: '                                capture.EncryptionKeyID,\n                                undefined as unknown as UserInfo,\n',
     },
 ];
 
@@ -600,7 +788,23 @@ for (const m of selected) {
     const backup = join(dir, 'backup');
     const full = join(PKG, m.file);
     copyFileSync(full, backup);
-    const original = readFileSync(full, 'utf8');
+    const onDisk = readFileSync(full, 'utf8');
+
+    /**
+     * ── ANCHORS ARE MATCHED AGAINST LF, WHATEVER IS ON DISK ────────────────────────
+     *
+     * This repo commits LF and carries no `.gitattributes`, so a checkout with `core.autocrlf=true`
+     * has CRLF in the working tree and LF in the blob. An anchor written with the platform's endings
+     * matches on the machine that wrote it and nowhere else — and it fails as `SKIP`, which reads as
+     * covered while testing nothing. That is the exact failure this driver exists to catch, so it
+     * must not be able to produce it.
+     *
+     * Every anchor below is therefore written with `\n`, and the file is normalised here before
+     * matching. The original bytes are kept for the write-back, so a CRLF working tree stays CRLF and
+     * the restore still compares byte-for-byte.
+     */
+    const original = onDisk.split('\r\n').join('\n');
+    const eol = onDisk.includes('\r\n') ? '\r\n' : '\n';
     const count = original.split(m.from).length - 1;
     if (count !== 1) {
         copyFileSync(backup, full);
@@ -609,7 +813,8 @@ for (const m of selected) {
         failed++;
         continue;
     }
-    writeFileSync(full, original.replace(m.from, m.to));
+    const mutated = original.replace(m.from, m.to);
+    writeFileSync(full, eol === '\r\n' ? mutated.split('\n').join('\r\n') : mutated);
     let output = '';
     let threw = false;
     try {
@@ -619,7 +824,9 @@ for (const m of selected) {
         output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
     }
     copyFileSync(backup, full);
-    const restored = readFileSync(full, 'utf8');
+    // `original` is normalised, so the comparison normalises too -- otherwise a CRLF working
+    // tree reports a false restore failure on every mutant.
+    const restored = readFileSync(full, 'utf8').split('\r\n').join('\n');
     if (restored !== original) {
         writeFileSync(full, original);
         console.error(`FAIL ${m.id}: restore did not match the copy`);
