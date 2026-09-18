@@ -33,9 +33,9 @@
     "@memberjunction/actions": "^6.1.0-edge.6",
     "@memberjunction/actions-base": "^6.1.0-edge.6",
     "@memberjunction/communication-types": "^6.1.0-edge.6",
-    "@memberjunction/encryption": "^6.1.0-edge.6",
     "@memberjunction/core": "^6.1.0-edge.6",
     "@memberjunction/credentials": "^6.1.0-edge.6",
+    "@memberjunction/encryption": "^6.1.0-edge.6",
     "@memberjunction/global": "^6.1.0-edge.6",
     "@memberjunction/server": "^6.1.0-edge.6",
     "@memberjunction/sqlserver-dataprovider": "^6.1.0-edge.6"
