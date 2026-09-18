@@ -15,7 +15,17 @@ import { COMMON_ENTITIES, WORLD_EMAIL_DOMAIN } from '../entity-names.js';
 import { FindRows, Quote, RequireSave } from '../wire.js';
 import { GetOrLoadWorld } from '../world/load-world.js';
 
-const SYSTEM_CODES = ['Email', 'Call', 'Meeting', 'Note', 'SMS', 'Chat'] as const;
+/**
+ * The system Activity Types this app seeds, in the order `metadata/activity-types/.activity-types.json`
+ * declares them. That file is the source of truth; this list is a SECOND OPINION on it, so a type that
+ * appears in the database without going through metadata is caught rather than accepted.
+ *
+ * KEEP IT IN STEP WITH THAT FILE. `SystemEvent` was seeded by the 5.37.0 Activity Sync Engine release
+ * and this list was not updated, so A1 asserted six against a database holding seven from 2026-09-01
+ * until it was noticed. The check did its job — it failed loudly and named the difference — but nothing
+ * connected that failure back to the release that caused it.
+ */
+const SYSTEM_CODES = ['Email', 'Call', 'Meeting', 'Note', 'SMS', 'Chat', 'SystemEvent'] as const;
 
 async function RequireTypeId(ctx: Parameters<NamedCheck['Fn']>[0], code: string): Promise<string> {
     const rows = await FindRows<{ ID: string }>(
@@ -31,7 +41,7 @@ async function RequireTypeId(ctx: Parameters<NamedCheck['Fn']>[0], code: string)
 const checks: NamedCheck[] = [
     {
         Id: 'activities.A1',
-        Name: 'A1 — six system Activity Types are seeded and unique by Code',
+        Name: 'A1 — every system Activity Type is seeded and unique by Code',
         RequiresMutation: false,
         Fn: async (ctx) => {
             const rows = await FindRows<Pick<mjBizAppsCommonActivityTypeEntity, 'ID' | 'Code' | 'IsSystem'>>(
