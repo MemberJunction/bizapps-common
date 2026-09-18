@@ -76,7 +76,7 @@ that most needed it.
 
 The driver now normalises to LF before matching and writes back in the file's own ending, so every
 anchor is portable rather than two being fixed and the trap moved. Verified against a purpose-built
-pure-LF tree: 57 files, 0 CRLF, **79 anchors, 0 skips**.
+pure-LF tree: 57 files, 0 CRLF, **80 anchors, 0 skips**.
 
 **The three inherited truncations are off, and the two that were missed now actually are.** The
 docblock this change added to `run.ErrorMessage` already argued the case: every free-text column here
@@ -95,7 +95,27 @@ and was sliced at 500. It matters most for exactly the rows this feature is abou
 detail's Reason is the writer's issues joined, and it sits beside `CapturedContent` as the account of
 why the message was not filed. `M-ERR3` puts it back.
 
-26 tests across the two packages and 16 registered mutants, all caught — including `M-CAP1`, the
+**The cipher is handed a user, and without one this would have retained nothing.** MJ's
+`EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws *"For server-side
+use of all engine classes, you must provide the contextUser parameter"* when it configures against a
+database provider without one. Nothing configures that engine at MJAPI startup — no consumer
+references `EncryptionStartupValidator` and there is no startup-sink wiring — so it is loaded only if
+some earlier request in the process touched an encrypted field. MJ's own `ResolverBase` passes the
+user at both of its call sites.
+
+The seam originally took none, so the throw would have been caught here, reported as a run issue, and
+the decision row saved WITHOUT content: a successful-looking run retaining nothing, intermittently.
+That is the defect this feature was written to remove, reappearing inside it. `ActivityContentCipher`
+now takes a `contextUser`, the engine hands over the same user the rest of the run reads as, and
+`M-CAP13` drops it.
+
+`M-CAP8` needed re-anchoring as a consequence: threading the argument through made the `Encrypt` call
+multi-line and its anchor was the single-line form, so it matched nothing and reported SKIP — on the
+mutant this description singles out, for the second time. It now anchors on both statements and
+reorders them, which is what the mutation always meant. **The FULL run caught it; running only the
+mutant added alongside would have reported success while switching this one off.**
+
+27 tests across the two packages and 17 registered mutants, all caught — including `M-CAP1`, the
 literal revert to the previous behaviour, and `M-CAP8`, which sets the key before the ciphertext so a
 throw leaves `CK_ActivitySyncRunDetail_ContentKey` violated. One coverage gap was found by a mutant
 rather than by reading: nothing tested that an **included** message keeps its content out of the

@@ -92,9 +92,15 @@ function recordingEntity(sink: Array<Record<string, unknown>>) {
     });
 }
 
+/** Everything the cipher was handed on the last call, so a dropped argument is visible. */
+const cipherCalls: Array<{ plaintext: string; keyID: string; user: UserInfo | undefined }> = [];
+
 /** A cipher that marks what it protected, so the test can tell ciphertext from plaintext. */
 const SPY_CIPHER: ActivityContentCipher = {
-    Encrypt: async (plaintext: string, keyID: string) => `enc(${keyID}):${plaintext}`,
+    Encrypt: async (plaintext: string, keyID: string, contextUser: UserInfo) => {
+        cipherCalls.push({ plaintext, keyID, user: contextUser });
+        return `enc(${keyID}):${plaintext}`;
+    },
 };
 
 function setRows(opts: {
@@ -133,6 +139,7 @@ type WriteOutcome = { Success?: boolean; AlreadyPresent?: boolean };
 
 async function run(dryRun = false, known = false, write: WriteOutcome = {}) {
     savedDetails.length = 0;
+    cipherCalls.length = 0;
     // By default nothing resolves, so nothing is a known participant and the Exclude default decides
     // — which is the whole point: these are the messages a retention policy is about. `known` flips
     // it so one test can check the opposite case.
@@ -218,6 +225,29 @@ describe('the engine writes captured content for a skipped message', () => {
         // THE ASSERTION THAT DID NOT EXIST. Before this, CapturedContent was never set by anything.
         expect(detail?.CapturedContent).toBe(`enc(${KEY}):Q3 renewal terms`);
         expect(detail?.EncryptionKeyID, 'CK_ActivitySyncRunDetail_ContentKey pairs them').toBe(KEY);
+    });
+
+    /**
+     * A CIPHER HAS TO READ SOMETHING TO ANSWER, AND ON THE SERVER THAT READ NEEDS A USER.
+     *
+     * MJ's `EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws
+     * `'For server-side use of all engine classes, you must provide the contextUser parameter'` when
+     * it configures against a database provider without one. Nothing configures that engine at MJAPI
+     * startup, so without this argument it would work only when some earlier request in the same
+     * process had already configured it — that is, intermittently.
+     *
+     * The failure would not have been loud. The engine catches the throw, records it as a run issue
+     * and saves the decision WITHOUT content: a run that looks successful and retains nothing, which
+     * is the precise defect this feature exists to remove. So the argument is asserted here rather
+     * than left to the type signature, which only binds callers that typecheck against it.
+     */
+    it('hands the cipher the run user, because the key lookup runs as somebody', async () => {
+        RegisterActivityContentCipher(SPY_CIPHER);
+        setRows({ policy: 'SubjectEncrypted', key: KEY });
+        await run();
+
+        expect(cipherCalls, 'the cipher was reached at all').toHaveLength(1);
+        expect(cipherCalls[0].user?.ID, 'the same user the rest of the run reads as').toBe('user-1');
     });
 
     it('keeps the body too when the policy says Full', async () => {

@@ -184,20 +184,38 @@ const PRODUCT = [
         from: '        private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),',
         to: '        private readonly cipher: ActivityContentCipher | null = null,',
     },
-    /** A key recorded without ciphertext violates CK_ActivitySyncRunDetail_ContentKey. */
+    /**
+     * A key recorded without ciphertext violates CK_ActivitySyncRunDetail_ContentKey, so the
+     * ciphertext is assigned FIRST and a throw from Encrypt leaves neither. This mutant swaps the
+     * two.
+     *
+     * RE-ANCHORED when Encrypt grew a `contextUser` argument and the call went multi-line. The old
+     * anchor was the single-line form, so it matched zero times and reported SKIP -- covered-looking
+     * while testing nothing, on the mutant this PR's description singles out, for the second time.
+     * The FULL run is what caught it; running only the mutant added alongside would not have.
+     *
+     * Anchors are matched against LF by the driver, so what appears below is the two-character
+     * escape, never an actual line break.
+     */
     {
         id: 'M-CAP8',
         file: ENGINE,
         expect: ['the key must not be recorded without the ciphertext'],
         from: [
-            '                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);',
+            '                            row.CapturedContent = await this.cipher.Encrypt(',
+            '                                plaintext,',
+            '                                capture.EncryptionKeyID,',
+            '                                user,',
+            '                            );',
             '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
-            // CRLF: every .ts in this package uses it, so a two-line anchor must too. A mismatch
-            // here reports SKIP rather than a false OK, which is why the driver checks the count.
         ].join('\n'),
         to: [
             '                            row.EncryptionKeyID = capture.EncryptionKeyID;',
-            '                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);',
+            '                            row.CapturedContent = await this.cipher.Encrypt(',
+            '                                plaintext,',
+            '                                capture.EncryptionKeyID,',
+            '                                user,',
+            '                            );',
         ].join('\n'),
     },
     {
@@ -732,6 +750,19 @@ const PRODUCT = [
         expect: ['writes the WHOLE reason on a failed run detail, beside any captured content'],
         from: '                row.Reason = detail.Reason;',
         to: '                row.Reason = detail.Reason.slice(0, 500);',
+    },
+    /**
+     * The user dropped on its way to the cipher. TypeScript would object, which is exactly why this
+     * exists: the seam's failure mode is a caught throw reported as a run issue and a decision row
+     * saved WITHOUT content, so a host whose cipher cannot reach its key produces successful-looking
+     * runs that retain nothing — the defect this whole feature removes, reappearing inside it.
+     */
+    {
+        id: 'M-CAP13',
+        file: ENGINE,
+        expect: ['hands the cipher the run user, because the key lookup runs as somebody'],
+        from: '                                capture.EncryptionKeyID,\n                                user,\n',
+        to: '                                capture.EncryptionKeyID,\n                                undefined as unknown as UserInfo,\n',
     },
 ];
 

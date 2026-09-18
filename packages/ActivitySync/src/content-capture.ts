@@ -35,6 +35,8 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
+import type { UserInfo } from '@memberjunction/core';
+
 import type { NormalizedItem } from './types.js';
 
 /**
@@ -48,10 +50,24 @@ export interface ActivityContentCipher {
     /**
      * @param plaintext what to protect.
      * @param encryptionKeyID the `MJ: Encryption Keys` row to encrypt against.
+     * @param contextUser who the key lookup runs as.
+     *
+     *        NOT OPTIONAL, and this is the half that was missing. A cipher has to READ the key row to
+     *        answer, and on the server that read needs a user: MJ's engine base throws
+     *        `'For server-side use of all engine classes, you must provide the contextUser parameter'`
+     *        the moment it configures against a database provider without one.
+     *
+     *        It matters more than usual because of how this seam fails. A throw here is caught by the
+     *        engine, reported as a run issue, and the decision row is saved WITHOUT content — so a
+     *        cipher that cannot reach its key produces exactly the outcome this whole feature exists
+     *        to remove: successful-looking runs that retain nothing. Nothing pre-configures MJ's
+     *        encryption engine at startup, so without this it would depend on whether some earlier
+     *        request in the same process happened to configure it first.
+     *
      * @returns the ciphertext to store. Throwing is correct when the key is missing or unusable —
      *          the caller records the failure as a run issue rather than storing plaintext.
      */
-    Encrypt(plaintext: string, encryptionKeyID: string): Promise<string>;
+    Encrypt(plaintext: string, encryptionKeyID: string, contextUser: UserInfo): Promise<string>;
 }
 
 let hostCipher: ActivityContentCipher | null = null;

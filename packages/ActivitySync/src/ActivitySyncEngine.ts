@@ -1241,7 +1241,11 @@ export class ActivitySyncEngine {
                     const plaintext = ContentToCapture(capture.Capture, detail.Item);
                     if (plaintext !== null) {
                         try {
-                            row.CapturedContent = await this.cipher.Encrypt(plaintext, capture.EncryptionKeyID);
+                            row.CapturedContent = await this.cipher.Encrypt(
+                                plaintext,
+                                capture.EncryptionKeyID,
+                                user,
+                            );
                             row.EncryptionKeyID = capture.EncryptionKeyID;
                         } catch (err) {
                             result.Issues.push(

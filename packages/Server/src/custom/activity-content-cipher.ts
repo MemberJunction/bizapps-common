@@ -19,6 +19,7 @@
  *
  * @module @mj-biz-apps/common-server
  */
+import type { UserInfo } from '@memberjunction/core';
 import { EncryptionEngine } from '@memberjunction/encryption';
 import { RegisterActivityContentCipher, type ActivityContentCipher } from '@mj-biz-apps/common-activity-sync';
 
@@ -32,13 +33,27 @@ import { RegisterActivityContentCipher, type ActivityContentCipher } from '@mj-b
  */
 export class MJActivityContentCipher implements ActivityContentCipher {
     /**
+     * THE USER IS NOT OPTIONAL HERE, although the engine's signature makes it look that way.
+     *
+     * `Encrypt` lazily calls `Config(false, contextUser)` when the engine has not been configured,
+     * and `BaseEngine.Load` throws `'For server-side use of all engine classes, you must provide the
+     * contextUser parameter'` on a database provider when it is absent. Nothing configures this
+     * engine at MJAPI startup — no consumer references `EncryptionStartupValidator` and there is no
+     * startup-sink wiring — so whether it happens to be loaded depends on whether an earlier request
+     * in the same process touched an encrypted field. MJ's own `ResolverBase` passes the user at both
+     * of its call sites for the same reason.
+     *
+     * Getting this wrong would not have failed loudly. The engine catches the throw, reports it as a
+     * run issue and saves the decision without content — a successful-looking run that retains
+     * nothing, which is the exact defect this feature was written to remove.
+     *
      * @throws whatever `EncryptionEngine` throws for a missing or unusable key. Throwing is correct:
      *         the engine records the failure as a run issue and saves the decision without content.
      *         The alternative — returning the plaintext, or an empty string — would put unprotected
      *         content in a column whose contract is "ciphertext, always".
      */
-    public async Encrypt(plaintext: string, encryptionKeyID: string): Promise<string> {
-        return EncryptionEngine.Instance.Encrypt(plaintext, encryptionKeyID);
+    public async Encrypt(plaintext: string, encryptionKeyID: string, contextUser: UserInfo): Promise<string> {
+        return EncryptionEngine.Instance.Encrypt(plaintext, encryptionKeyID, contextUser);
     }
 }
 
