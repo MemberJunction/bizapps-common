@@ -283,6 +283,9 @@ importers:
       '@memberjunction/credentials':
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6
+      '@memberjunction/encryption':
+        specifier: ^6.1.0-edge.6
+        version: 6.1.0-edge.6(typescript@5.9.3)
       '@memberjunction/global':
         specifier: ^6.1.0-edge.6
         version: 6.1.0-edge.6

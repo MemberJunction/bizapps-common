@@ -29,6 +29,7 @@ const H = vi.hoisted(() => ({
     loadLog: vi.fn(),
     loadFactory: vi.fn(),
     loadPolicy: vi.fn(() => false),
+    loadCipher: vi.fn(),
 }));
 
 vi.mock('@mj-biz-apps/common-entities', () => ({}));
@@ -53,6 +54,10 @@ vi.mock('../custom/live-mailbox-policy.js', () => ({
     ENV_CONFIRMED_BY: 'ACTIVITY_SYNC_MAILBOX_POLICY_CONFIRMED_BY',
     ENV_CONFIRMED_AT: 'ACTIVITY_SYNC_MAILBOX_POLICY_CONFIRMED_AT',
 }));
+vi.mock('../custom/activity-content-cipher.js', () => ({
+    MJActivityContentCipher: class {},
+    LoadActivityContentCipher: H.loadCipher,
+}));
 vi.mock('../generated/generated.js', () => ({}));
 vi.mock('../generated/class-registrations-manifest.js', () => ({ CLASS_REGISTRATIONS: [] }));
 
@@ -63,6 +68,7 @@ describe('MJAPI startup wires the seams this package adds', () => {
         H.loadFactory.mockClear();
         H.loadPolicy.mockClear();
         H.loadEngine.mockClear();
+        H.loadCipher.mockClear();
     });
 
     it('registers the Graph transport factory', () => {
@@ -75,6 +81,14 @@ describe('MJAPI startup wires the seams this package adds', () => {
         expect(
             H.loadPolicy,
             'without this a correctly configured host is refused, and told to set what it set',
+        ).toHaveBeenCalled();
+    });
+
+    it('registers the content cipher', () => {
+        LoadBizAppsCommonServer();
+        expect(
+            H.loadCipher,
+            'without this a connection that asks for audit retention refuses, blaming the policy',
         ).toHaveBeenCalled();
     });
 
@@ -94,5 +108,6 @@ describe('MJAPI startup wires the seams this package adds', () => {
         LoadBizAppsCommonServer();
         expect(H.loadFactory).toHaveBeenCalledTimes(2);
         expect(H.loadPolicy).toHaveBeenCalledTimes(2);
+        expect(H.loadCipher).toHaveBeenCalledTimes(2);
     });
 });

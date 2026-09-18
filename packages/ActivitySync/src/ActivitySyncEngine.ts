@@ -49,9 +49,17 @@ import {
 import {
     AsDryRunDecision,
     IsConnectionActive,
+    ResolveCapturePlan,
+    ResolvePolicy,
+    type SkippedContentPolicy,
     type SyncDecision,
     type SyncRunOptions,
 } from './run.js';
+import {
+    ContentToCapture,
+    HostActivityContentCipher,
+    type ActivityContentCipher,
+} from './content-capture.js';
 import { RequireUUID, UuidInList } from './sql.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import {
@@ -98,7 +106,10 @@ interface ConnectionRow {
     EndAt: Date | string | null;
     LastSyncAt: Date | string | null;
     ActivitySyncProviderTypeID: string | null;
+    /** Overrides the provider type's default. Null means "use the type's". */
     SkippedContentPolicy: string | null;
+    /** Overrides the provider type's default key. Null means "use the type's". */
+    EncryptionKeyID: string | null;
     Settings: string | null;
 }
 
@@ -115,6 +126,14 @@ interface ProviderTypeRow {
      * runtime and any check against it quietly never fires.
      */
     IsActive: boolean;
+    /**
+     * Audit retention for messages this connector declines to ingest, and the key that protects it.
+     *
+     * Both are the TYPE-level default; a connection overrides either. Neither had a reader before
+     * this change, so "Overridable per connection" described a fallback chain that did not exist.
+     */
+    DefaultSkippedContentPolicy: string | null;
+    DefaultEncryptionKeyID: string | null;
 }
 
 interface RunSurfaceOptions {
@@ -134,12 +153,18 @@ interface RunSurfaceOptions {
 /**
  * LastError must name the failure, not whatever happened to be Issues[0].
  * Mapping warnings ("Event X had no usable start time") sort ahead of the actual miss.
+ *
+ * NOT TRUNCATED. This used to end `.slice(0, 4000)`, the same inherited habit removed from the run's
+ * issue list: `ActivitySyncConnection.LastError` is NVARCHAR(MAX), and none of the columns this app
+ * writes free text to is 4000 wide. It flattens the issues of EVERY failed surface, so it grows with
+ * the number of failures — a run that fails broadly truncates its own diagnosis, which is the one
+ * occasion the text is worth reading in full.
  */
 export function healthErrorFromResults(results: readonly SyncEngineResult[]): string | null {
     const failed = results.filter((r) => !r.Success);
     if (failed.length === 0) return null;
     const issues = failed.flatMap((r) => r.Issues).filter((m) => m.trim().length > 0);
-    return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);
+    return issues.join(' | ') || 'Activity sync run failed.';
 }
 
 /**
@@ -219,6 +244,14 @@ export class ActivitySyncEngine {
          * default a host could implement the interface and still never be called.
          */
         private readonly fileSink: ActivityFileSink | null = HostActivityFileSink(),
+        /**
+         * How captured content is protected, when a policy says to keep any.
+         *
+         * Same shape and same reason as `fileSink`: this package implements no crypto, and the only
+         * production construction of this class passes no arguments, so the default has to come from
+         * the host registry or the seam is unreachable. `common-server` fills it at bootstrap.
+         */
+        private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),
     ) {}
 
     public async Run(
@@ -288,6 +321,44 @@ export class ActivitySyncEngine {
             result.Issues.push(`Provider type '${typeRow.Code}' is not active.`);
             return result;
         }
+        /**
+         * AUDIT RETENTION IS SETTLED BEFORE ANYTHING IS READ, not at persist time.
+         *
+         * `ResolveCapturePlan` refuses a policy above `None` with no key, and refusing AFTER a
+         * mailbox has been read is the wrong order: it costs a fetch, and the run then has content it
+         * has been told it may not keep. Deciding here means a misconfigured connection stops before
+         * it touches anyone's mail.
+         *
+         * Failing the run rather than reporting and carrying on is what the policy asks for. An
+         * operator who set this asked for the record to exist; producing runs that look successful
+         * while retaining nothing is the failure this subsystem is written against, and it is exactly
+         * what happened before this was wired at all.
+         */
+        let capture: { Capture: 'None' | 'Subject' | 'Full'; EncryptionKeyID: string | null };
+        try {
+            capture = ResolveCapturePlan(
+                ResolvePolicy<SkippedContentPolicy>(
+                    (typeRow?.DefaultSkippedContentPolicy as SkippedContentPolicy | null) ?? 'None',
+                    connection.SkippedContentPolicy as SkippedContentPolicy | null,
+                ),
+                connection.EncryptionKeyID ?? typeRow?.DefaultEncryptionKeyID ?? null,
+            );
+        } catch (err) {
+            result.Issues.push(String(err instanceof Error ? err.message : err));
+            return result;
+        }
+        if (capture.Capture !== 'None' && !this.cipher) {
+            // The ActivityFileSink lesson, applied. A host that asked for retention and cannot
+            // encrypt must not quietly proceed: plaintext is forbidden outright, and writing nothing
+            // would leave the operator believing an audit trail exists.
+            result.Issues.push(
+                `SkippedContentPolicy is "${capture.Capture === 'Subject' ? 'SubjectEncrypted' : 'FullEncrypted'}" ` +
+                    'but this host registered no content cipher, so captured content could not be encrypted. ' +
+                    'Call RegisterActivityContentCipher() at bootstrap, or set the policy to "None".',
+            );
+            return result;
+        }
+
         // Missing type row: the cascade still needs a default, and that default is
         // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
@@ -392,7 +463,7 @@ export class ActivitySyncEngine {
         if (identities.LookupFailed) {
             result.Failed += batch.Items.length;
             result.Issues.push('ContactMethod lookup failed — watermark will not advance.');
-            await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+            await this.persistRun(connection, options, result, since, null, provider, contextUser, capture, []);
             if (!options.DryRun && stampHealth) {
                 await this.stampConnectionHealth(
                     connection.ID,
@@ -613,7 +684,17 @@ export class ActivitySyncEngine {
             }
         }
 
-        await this.persistRun(connection, options, result, since, options.DryRun ? null : result.WatermarkAdvancedTo, provider, contextUser, details);
+        await this.persistRun(
+            connection,
+            options,
+            result,
+            since,
+            options.DryRun ? null : result.WatermarkAdvancedTo,
+            provider,
+            contextUser,
+            capture,
+            details,
+        );
         result.Success = result.Failed === 0;
         if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(
@@ -766,7 +847,12 @@ export class ActivitySyncEngine {
         result.Issues.push(issue);
         result.Failed += result.Fetched;
         if (result.Failed < 1) result.Failed = 1;
-        await this.persistRun(connection, options, result, since, null, provider, contextUser, []);
+        // No capture plan, and none needed: this path writes ZERO run details, so there is no row for
+        // content to land on. Reaching for the connection's real policy here would be a decision
+        // dressed up as caution — this method exists to record a run that never got as far as
+        // deciding anything about a message.
+        const noCapture = { Capture: 'None' as const, EncryptionKeyID: null };
+        await this.persistRun(connection, options, result, since, null, provider, contextUser, noCapture, []);
         if (!options.DryRun && stampHealth) {
             await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
         }
@@ -844,7 +930,10 @@ export class ActivitySyncEngine {
                 if (row.Status === 'Error') row.Status = 'Active';
             } else {
                 row.Status = 'Error';
-                row.LastError = (error ?? 'Activity sync run failed.').slice(0, 4000);
+                // Not truncated here either. Removing the cap from `healthErrorFromResults` and
+                // leaving it on the only write site would have changed nothing an operator can
+                // see — the column is NVARCHAR(MAX), and this is where the text lands.
+                row.LastError = error ?? 'Activity sync run failed.';
             }
             await row.Save();
         } catch (err) {
@@ -886,7 +975,21 @@ export class ActivitySyncEngine {
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
                 ExtraFilter: `ID = '${RequireUUID(id, 'ActivitySyncProviderTypeID')}'`,
-                Fields: ['ID', 'Code', 'DriverClass', 'DefaultQualificationPolicy', 'CalendarDriverClass', 'IsActive'],
+                // Every name here must match ProviderTypeRow exactly, both ways round. The docblock
+                // there is not decoration: a field declared and not listed reads `undefined`, and a
+                // capture policy that reads undefined silently means "None". A test pins the two
+                // lists against each other, and it parses this array literally -- keep comments out
+                // of it.
+                Fields: [
+                    'ID',
+                    'Code',
+                    'DriverClass',
+                    'DefaultQualificationPolicy',
+                    'CalendarDriverClass',
+                    'IsActive',
+                    'DefaultSkippedContentPolicy',
+                    'DefaultEncryptionKeyID',
+                ],
                 MaxRows: 1,
                 ResultType: 'simple',
             },
@@ -1014,6 +1117,7 @@ export class ActivitySyncEngine {
         watermarkAfter: Date | null,
         provider: IMetadataProvider,
         user: UserInfo,
+        capture: { Capture: 'None' | 'Subject' | 'Full'; EncryptionKeyID: string | null },
         details: Array<{
             Item: NormalizedItem;
             Decision: SyncDecision;
@@ -1059,12 +1163,14 @@ export class ActivitySyncEngine {
              * nobody can read is worth less than one filed under an imperfect name. Connection HEALTH
              * stays keyed on failure — a warned run must not make a working connection look broken.
              *
-             * NOT TRUNCATED, and that is a change from the two older writes above. Both slice at 4000,
-             * an inherited habit rather than a constraint: every candidate column here is NVARCHAR(MAX)
-             * and none is 4000 wide. It cost nothing while those held a single failure message. This one
-             * is the first write that GROWS WITH THE ITEM COUNT — the attachment gap is reported once per
-             * item at roughly 250-320 characters, so a fifty-item run would lose most of its tail, in the
-             * field this commit added so those warnings could be read at all.
+             * NOT TRUNCATED, and neither is anything else this engine writes any more. Three writes
+             * capped free text against MAX columns — this one and `LastError` at 4000, the run detail's
+             * `Reason` at 500 — an inherited habit rather than a constraint, since none of the columns is
+             * that wide. It cost nothing while each held a single failure message. This one is the first
+             * that GROWS WITH THE ITEM COUNT: the attachment gap is reported once per item at roughly
+             * 250-320 characters, so a fifty-item run would lose most of its tail, in the field this
+             * commit added so those warnings could be read at all. The other two came off with it, and
+             * each has a mutant putting it back.
              */
             run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ') : null;
             if (!(await run.Save())) {
@@ -1084,10 +1190,72 @@ export class ActivitySyncEngine {
                 row.OccurredAt = detail.Item.StartedAt;
                 row.Decision = options.DryRun ? AsDryRunDecision(detail.Decision) : detail.Decision;
                 row.DecidedByStage = detail.Stage;
-                row.Reason = detail.Reason.slice(0, 500);
+                /**
+                 * The third cap, and the same finding as the other two: `Reason` is NVARCHAR(MAX) and
+                 * this sliced it at 500. It matters most for the decision this feature is about — a
+                 * `Failed` detail's Reason is the writer's issues joined, and it sits beside
+                 * `CapturedContent` as the explanation of why the message was not filed. Losing the tail
+                 * of that leaves an audit row holding content and no usable account of the failure.
+                 */
+                row.Reason = detail.Reason;
                 row.ActivitySyncRuleID = detail.RuleID ?? null;
                 row.ActivitySyncExclusionID = detail.ExclusionID ?? null;
                 row.ActivityID = detail.Decision === 'Included' ? (detail.ActivityID ?? null) : null;
+                /**
+                 * CAPTURED CONTENT, for messages this run declined to file.
+                 *
+                 * Only on a real skip. `Included` has an Activity carrying the content already, and a
+                 * DRY RUN decided nothing — `WouldExclude` is a preview, and writing ciphertext for a
+                 * message the engine has not actually declined would put real content behind a
+                 * retention policy on the strength of a rehearsal.
+                 *
+                 * `Failed` is deliberately included: a message that could not be written is exactly
+                 * the one an auditor asks about, and it is the case where nothing else holds a copy.
+                 *
+                 * ── `Duplicate` IS EXCLUDED, FOR THE SAME REASON AS `Included` ────────────────────
+                 *
+                 * A duplicate is filed. The writer reports `AlreadyPresent` and the detail carries
+                 * `ActivityID`, so the content is already retrievable from the Activity holding it —
+                 * which is precisely the argument that keeps `Included` out. Capturing it puts an
+                 * encrypted second copy of ordinary filed mail in a column meant for messages that were
+                 * NOT filed, and `row.ActivityID` is nulled for every non-`Included` decision, so that
+                 * copy would not even link back to the Activity holding the same text.
+                 *
+                 * The cost is not theoretical. The calendar window ignores `Since` and is always
+                 * `[now - 30d, now + 30d]`, so every run re-reads the whole window and every event
+                 * already filed comes back a duplicate. A meeting sits in that window across roughly
+                 * sixty daily runs: one files it, the rest would re-encrypt its subject and body onto a
+                 * fresh run-detail row each time. Under `FullEncrypted` that is about sixty encrypted
+                 * copies of every meeting.
+                 *
+                 * It was captured until golive#116's follow-up review asked whether that was deliberate.
+                 * It was not.
+                 *
+                 * Ciphertext and key are written together or not at all, mirroring
+                 * CK_ActivitySyncRunDetail_ContentKey. Encryption failing is reported and the row is
+                 * still saved without content: losing the whole run record because one message could
+                 * not be encrypted would be a worse trade than an audit gap that says so.
+                 */
+                const skipped = detail.Decision === 'Excluded' || detail.Decision === 'Failed';
+                if (capture.Capture !== 'None' && skipped && !options.DryRun && this.cipher && capture.EncryptionKeyID) {
+                    const plaintext = ContentToCapture(capture.Capture, detail.Item);
+                    if (plaintext !== null) {
+                        try {
+                            row.CapturedContent = await this.cipher.Encrypt(
+                                plaintext,
+                                capture.EncryptionKeyID,
+                                user,
+                            );
+                            row.EncryptionKeyID = capture.EncryptionKeyID;
+                        } catch (err) {
+                            result.Issues.push(
+                                `Could not encrypt captured content for ${detail.Item.ExternalID}: ` +
+                                    `${err instanceof Error ? err.message : String(err)}. The decision was recorded; ` +
+                                    'the content was not.',
+                            );
+                        }
+                    }
+                }
                 if (!(await row.Save())) {
                     result.Issues.push(
                         row.LatestResult?.CompleteMessage ??
