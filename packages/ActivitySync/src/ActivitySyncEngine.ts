@@ -930,7 +930,10 @@ export class ActivitySyncEngine {
                 if (row.Status === 'Error') row.Status = 'Active';
             } else {
                 row.Status = 'Error';
-                row.LastError = (error ?? 'Activity sync run failed.').slice(0, 4000);
+                // Not truncated here either. Removing the cap from `healthErrorFromResults` and
+                // leaving it on the only write site would have changed nothing an operator can
+                // see — the column is NVARCHAR(MAX), and this is where the text lands.
+                row.LastError = error ?? 'Activity sync run failed.';
             }
             await row.Save();
         } catch (err) {
@@ -1160,12 +1163,14 @@ export class ActivitySyncEngine {
              * nobody can read is worth less than one filed under an imperfect name. Connection HEALTH
              * stays keyed on failure — a warned run must not make a working connection look broken.
              *
-             * NOT TRUNCATED, and that is a change from the two older writes above. Both slice at 4000,
-             * an inherited habit rather than a constraint: every candidate column here is NVARCHAR(MAX)
-             * and none is 4000 wide. It cost nothing while those held a single failure message. This one
-             * is the first write that GROWS WITH THE ITEM COUNT — the attachment gap is reported once per
-             * item at roughly 250-320 characters, so a fifty-item run would lose most of its tail, in the
-             * field this commit added so those warnings could be read at all.
+             * NOT TRUNCATED, and neither is anything else this engine writes any more. Three writes
+             * capped free text against MAX columns — this one and `LastError` at 4000, the run detail's
+             * `Reason` at 500 — an inherited habit rather than a constraint, since none of the columns is
+             * that wide. It cost nothing while each held a single failure message. This one is the first
+             * that GROWS WITH THE ITEM COUNT: the attachment gap is reported once per item at roughly
+             * 250-320 characters, so a fifty-item run would lose most of its tail, in the field this
+             * commit added so those warnings could be read at all. The other two came off with it, and
+             * each has a mutant putting it back.
              */
             run.ErrorMessage = result.Issues.length > 0 ? result.Issues.join(' | ') : null;
             if (!(await run.Save())) {
@@ -1185,7 +1190,14 @@ export class ActivitySyncEngine {
                 row.OccurredAt = detail.Item.StartedAt;
                 row.Decision = options.DryRun ? AsDryRunDecision(detail.Decision) : detail.Decision;
                 row.DecidedByStage = detail.Stage;
-                row.Reason = detail.Reason.slice(0, 500);
+                /**
+                 * The third cap, and the same finding as the other two: `Reason` is NVARCHAR(MAX) and
+                 * this sliced it at 500. It matters most for the decision this feature is about — a
+                 * `Failed` detail's Reason is the writer's issues joined, and it sits beside
+                 * `CapturedContent` as the explanation of why the message was not filed. Losing the tail
+                 * of that leaves an audit row holding content and no usable account of the failure.
+                 */
+                row.Reason = detail.Reason;
                 row.ActivitySyncRuleID = detail.RuleID ?? null;
                 row.ActivitySyncExclusionID = detail.ExclusionID ?? null;
                 row.ActivityID = detail.Decision === 'Included' ? (detail.ActivityID ?? null) : null;

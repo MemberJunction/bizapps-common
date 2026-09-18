@@ -76,9 +76,26 @@ that most needed it.
 
 The driver now normalises to LF before matching and writes back in the file's own ending, so every
 anchor is portable rather than two being fixed and the trap moved. Verified against a purpose-built
-pure-LF tree: 57 files, 0 CRLF, **76 anchors, 0 skips**.
+pure-LF tree: 57 files, 0 CRLF, **79 anchors, 0 skips**.
 
-24 tests across the two packages and 13 registered mutants, all caught — including `M-CAP1`, the
+**The three inherited truncations are off, and the two that were missed now actually are.** The
+docblock this change added to `run.ErrorMessage` already argued the case: every free-text column here
+is NVARCHAR(MAX) and none is 4000 wide, so the caps were habit rather than constraint. It then took
+one of them off and left the others.
+
+`.slice(0, 4000)` came off `healthErrorFromResults`, with a unit test pinning it — and
+`stampConnectionHealth` sliced the same string back to 4000 on its way to `LastError`, so nothing an
+operator reads had changed. Testing the pure function could not tell those two states apart, which is
+why it did not. The check that replaces it drives a broadly failing run to what actually lands on the
+row, and `M-ERR1` puts the cap back on the write site alone: it fells the new check and leaves the
+pure-function one passing, which is the gap itself.
+
+The third was three lines from the capture block: `ActivitySyncRunDetail.Reason` is also NVARCHAR(MAX)
+and was sliced at 500. It matters most for exactly the rows this feature is about — a `Failed`
+detail's Reason is the writer's issues joined, and it sits beside `CapturedContent` as the account of
+why the message was not filed. `M-ERR3` puts it back.
+
+26 tests across the two packages and 16 registered mutants, all caught — including `M-CAP1`, the
 literal revert to the previous behaviour, and `M-CAP8`, which sets the key before the ciphertext so a
 throw leaves `CK_ActivitySyncRunDetail_ContentKey` violated. One coverage gap was found by a mutant
 rather than by reading: nothing tested that an **included** message keeps its content out of the

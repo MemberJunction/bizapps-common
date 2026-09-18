@@ -694,6 +694,45 @@ const PRODUCT = [
         from: "                    'IsActive',\n",
         to: '',
     },
+    /**
+     * The cap back on the WRITE SITE only, which is the state this PR was in until the second pass.
+     * `healthErrorFromResults` was uncapped and unit-tested, and `stampConnectionHealth` sliced the
+     * same string to 4000 on its way to the column — so nothing an operator reads had changed.
+     *
+     * The unit test on the pure function CANNOT catch this, which is the whole reason the check that
+     * does drives a run all the way to what lands on the row. If this mutant ever starts felling the
+     * pure-function check too, the two have been collapsed into one and the gap is back.
+     */
+    {
+        id: 'M-ERR1',
+        file: ENGINE,
+        expect: ['writes the WHOLE diagnosis to LastError on a broadly failing run'],
+        from: "                row.LastError = error ?? 'Activity sync run failed.';",
+        to: "                row.LastError = (error ?? 'Activity sync run failed.').slice(0, 4000);",
+    },
+    /**
+     * And the other half, for completeness: the cap back on the pure function, where it started.
+     * Both checks fall, because the capped string is what reaches the row either way.
+     */
+    {
+        id: 'M-ERR2',
+        file: ENGINE,
+        expect: ['keeps the whole diagnosis when many surfaces fail, past the old 4000 cap', 'writes the WHOLE diagnosis to LastError on a broadly failing run'],
+        from: "    return issues.join(' | ') || 'Activity sync run failed.';",
+        to: "    return (issues.join(' | ') || 'Activity sync run failed.').slice(0, 4000);",
+    },
+    /**
+     * The third cap, on the run detail's `Reason`. It is the explanation sitting beside
+     * `CapturedContent` on exactly the decisions this feature captures content for, so a truncated one
+     * leaves an audit row holding the message and no usable account of why it was not filed.
+     */
+    {
+        id: 'M-ERR3',
+        file: ENGINE,
+        expect: ['writes the WHOLE reason on a failed run detail, beside any captured content'],
+        from: '                row.Reason = detail.Reason;',
+        to: '                row.Reason = detail.Reason.slice(0, 500);',
+    },
 ];
 
 function runVitest() {
