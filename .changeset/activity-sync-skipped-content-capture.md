@@ -59,6 +59,25 @@ name rather than quietly retaining nothing.
 Encryption failing for one message reports and still saves the decision: losing a whole run record
 because one message could not be encrypted is a worse trade than an audit gap that says so.
 
+**KEY ROTATION DOES NOT REACH THIS COLUMN, and an auditor is the person who finds out.** MJ's
+serialized ciphertext is `$ENC$keyId$algorithm$iv$ciphertext$authTag` — it records which KEY encrypted
+a value but not which VERSION of it. `Decrypt` rebuilds the key configuration from the key row as it
+stands at read time, so it always reaches for the current version's material.
+
+`RotateEncryptionKeyAction` handles that by re-encrypting everything before bumping the version — but
+it finds what to re-encrypt by enumerating `EntityField` rows matching
+`EncryptionKeyID = '<key>' AND Encrypt = 1`. `CapturedContent` is not one: this app encrypts through
+the engine by hand rather than declaring the field encrypted, which is the same decision that keeps
+the crypto out of `common-activity-sync`. So a rotation re-encrypts every declared field and leaves
+captured content behind, at a version nothing records.
+
+Live operational data is re-encrypted as part of the rotation, which is why this has not bitten
+anything before. An audit archive is the one kind of column where the read can come years after the
+write. **Nothing here should change to fix that** — recording a version, or declaring the field
+MJ-encrypted, are both platform decisions rather than this PR's. It is written down because this is
+the change that tells an operator to switch long-lived retention on, and *"Ciphertext, always"* reads
+like a promise that it stays readable.
+
 **Setting a policy above `None` also requires the host's encryption key to be usable** — for the
 default `Base Encryption Key`, that means `MJ_BASE_ENCRYPTION_KEY` set to a base64 32-byte value. The
 pre-flight refuses a host with no cipher REGISTERED, but it cannot tell whether the key behind it has
