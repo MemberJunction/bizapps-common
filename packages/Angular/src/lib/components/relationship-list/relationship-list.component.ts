@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
 import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
+import { RequireUUID } from '../../data/sql-guards';
 import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     mjBizAppsCommonRelationshipEntity,
@@ -381,9 +382,9 @@ export class RelationshipListComponent {
                 // Load incoming relationships to show complete 360-degree timeline
                 let incomingFilter = '';
                 if (this._personID) {
-                    incomingFilter = `ToPersonID='${this._personID}'`;
+                    incomingFilter = `ToPersonID='${RequireUUID(this._personID, 'PersonID')}'`;
                 } else if (this._organizationID) {
-                    incomingFilter = `ToOrganizationID='${this._organizationID}'`;
+                    incomingFilter = `ToOrganizationID='${RequireUUID(this._organizationID, 'OrganizationID')}'`;
                 }
 
                 if (incomingFilter) {
@@ -403,9 +404,11 @@ export class RelationshipListComponent {
                 // Standalone mode: query both from and to
                 let filter = '';
                 if (this._personID) {
-                    filter = `FromPersonID='${this._personID}' OR ToPersonID='${this._personID}'`;
+                    const personID = RequireUUID(this._personID, 'PersonID');
+                    filter = `FromPersonID='${personID}' OR ToPersonID='${personID}'`;
                 } else if (this._organizationID) {
-                    filter = `FromOrganizationID='${this._organizationID}' OR ToOrganizationID='${this._organizationID}'`;
+                    const organizationID = RequireUUID(this._organizationID, 'OrganizationID');
+                    filter = `FromOrganizationID='${organizationID}' OR ToOrganizationID='${organizationID}'`;
                 } else {
                     return;
                 }

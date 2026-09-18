@@ -27,6 +27,7 @@ import {
     type ViewportTransformEventArgs
 } from '@memberjunction/ng-graph-view';
 import { COMMON_ENTITIES } from '../../data/entity-names';
+import { RequireUUID } from '../../data/sql-guards';
 import type { DirectoryRelationshipRow } from '../../data/directory-types';
 
 /**
@@ -188,11 +189,13 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             let filter = '';
 
             if (this.PersonID) {
-                this.FocalNodeID = `person:${this.PersonID}`;
-                filter = `FromPersonID = '${this.PersonID}' OR ToPersonID = '${this.PersonID}'`;
+                const personID = RequireUUID(this.PersonID, 'PersonID');
+                this.FocalNodeID = `person:${personID}`;
+                filter = `FromPersonID = '${personID}' OR ToPersonID = '${personID}'`;
             } else if (this.OrganizationID) {
-                this.FocalNodeID = `org:${this.OrganizationID}`;
-                filter = `FromOrganizationID = '${this.OrganizationID}' OR ToOrganizationID = '${this.OrganizationID}'`;
+                const organizationID = RequireUUID(this.OrganizationID, 'OrganizationID');
+                this.FocalNodeID = `org:${organizationID}`;
+                filter = `FromOrganizationID = '${organizationID}' OR ToOrganizationID = '${organizationID}'`;
             }
 
             const result = await rv.RunView<DirectoryRelationshipRow>({
