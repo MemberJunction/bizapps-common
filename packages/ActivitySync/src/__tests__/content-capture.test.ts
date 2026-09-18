@@ -230,15 +230,16 @@ describe('the engine writes captured content for a skipped message', () => {
     /**
      * A CIPHER HAS TO READ SOMETHING TO ANSWER, AND ON THE SERVER THAT READ NEEDS A USER.
      *
-     * MJ's `EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws
-     * `'For server-side use of all engine classes, you must provide the contextUser parameter'` when
-     * it configures against a database provider without one.
+     * THE SEAM'S CONTRACT, not a behaviour of MJ's engine.
      *
-     * MJAPI does configure that engine at startup, so on a healthy host the lazy path never runs. The
-     * case this protects is the unhealthy one: startup validation fails whenever the key is missing or
-     * unusable, the engine stays unloaded, and the first capture configures it lazily. Without a user
-     * the run issue then reads `'you must provide the contextUser parameter'` — naming the wrong fault
-     * on the exact path where an operator needs to be told their KEY is wrong.
+     * A cipher is asked to reach key material, and the engine is the only code here that knows whose
+     * run this is. A host whose cipher reads its own key table, or calls a KMS as the caller, has no
+     * other way to find out. The order-line edit veto in Orders is handed a user for the same reason.
+     *
+     * What this deliberately does NOT claim: that MJ's `EncryptionEngine` needs it. It does not today
+     * — `setupSQLServerClient` runs `StartupManager`, which configures that engine with a system user
+     * before any capture happens, so with and without a user it returns the identical error on a host
+     * with no usable key. Measured, not assumed.
      *
      * Asserted here rather than left to the type signature, which binds only callers that typecheck
      * against it.

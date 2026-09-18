@@ -52,17 +52,18 @@ export interface ActivityContentCipher {
      * @param encryptionKeyID the `MJ: Encryption Keys` row to encrypt against.
      * @param contextUser who the key lookup runs as.
      *
-     *        NOT OPTIONAL, and this is the half that was missing. A cipher has to READ the key row to
-     *        answer, and on the server that read needs a user: MJ's engine base throws
-     *        `'For server-side use of all engine classes, you must provide the contextUser parameter'`
-     *        the moment it configures against a database provider without one.
+     *        A cipher is asked to perform a PRIVILEGED READ — it has to reach key material to answer —
+     *        and the engine is the only code here that knows whose run this is. A host whose cipher
+     *        reads its own key table, or calls a KMS under the caller's identity, cannot get that from
+     *        anywhere else. The order-line edit veto in Orders is handed a user for exactly this
+     *        reason, and a seam that asks a question without saying who is asking is incomplete.
      *
-     *        MJAPI does normally configure MJ's encryption engine at startup, so on a healthy host the
-     *        lazy path never runs. It is the unhealthy host that matters: when startup validation
-     *        fails — a missing or unusable key, which is the whole reason an operator would be reading
-     *        these issues — the engine stays unloaded and the first capture configures it lazily. Without
-     *        a user that reports `'you must provide the contextUser parameter'`, naming the wrong
-     *        fault on the one path where naming the right one matters most.
+     *        BE CLEAR ABOUT WHAT THIS DOES NOT DO. MJ's own `EncryptionEngine` does not currently
+     *        consult it: `setupSQLServerClient` runs `StartupManager`, which configures that engine
+     *        with a system user, so `ensureConfigured` is a no-op by the time any capture happens.
+     *        Measured in a fresh process against a host with no usable key — with and without a user,
+     *        `Encrypt` returns the identical error. This argument is the seam's contract, not a
+     *        workaround for MJ.
      *
      * @returns the ciphertext to store. Throwing is correct when the key is missing or unusable —
      *          the caller records the failure as a run issue rather than storing plaintext.

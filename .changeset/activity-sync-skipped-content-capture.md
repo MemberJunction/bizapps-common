@@ -61,7 +61,8 @@ because one message could not be encrypted is a worse trade than an audit gap th
 
 **KEY ROTATION DOES NOT REACH THIS COLUMN, and an auditor is the person who finds out.** MJ's
 serialized ciphertext is `$ENC$keyId$algorithm$iv$ciphertext$authTag` — it records which KEY encrypted
-a value but not which VERSION of it. `Decrypt` rebuilds the key configuration from the key row as it
+a value but not which VERSION of it, confirmed against a blob this change produced: six parts,
+key ID present, no version anywhere. `Decrypt` rebuilds the key configuration from the key row as it
 stands at read time, so it always reaches for the current version's material.
 
 `RotateEncryptionKeyAction` handles that by re-encrypting everything before bumping the version — but
@@ -114,22 +115,31 @@ and was sliced at 500. It matters most for exactly the rows this feature is abou
 detail's Reason is the writer's issues joined, and it sits beside `CapturedContent` as the account of
 why the message was not filed. `M-ERR3` puts it back.
 
-**The cipher is handed a user, so a failing host reports the fault it actually has.** MJ's
-`EncryptionEngine.Encrypt` configures itself lazily, and `BaseEngine.Load` throws *"For server-side
-use of all engine classes, you must provide the contextUser parameter"* when it configures against a
-database provider without one. MJ's own `ResolverBase` passes the user at both of its call sites.
+**The capture path was run against a real key for the first time.** Every automated check stubs the
+cipher, so "`CapturedContent` holds ciphertext an auditor can open" rested on MJ's engine behaving as
+documented. Driven end to end against the real `SQLServerDataProvider` with a throwaway key: both
+policies produce a real `$ENC$` blob, neither contains the plaintext, `Decrypt` returns the exact
+subject and the exact subject-plus-body, and an unknown key throws rather than returning plaintext —
+which is the fail-closed contract the engine depends on.
 
-MJAPI configures that engine at startup, so on a healthy host the lazy path never runs. The case this
-protects is the unhealthy one, and it is not hypothetical: booting MJAPI on a host with no
-`MJ_BASE_ENCRYPTION_KEY` prints *"Error loading EncryptionStartupValidator... the server will continue
-to start, but encrypted field operations may fail"*. The engine stays unloaded, and the first capture
-configures it lazily. Without a user the run issue then reads *"you must provide the contextUser
-parameter"* — naming the wrong fault on the one path where an operator most needs to be told their KEY
-is wrong. `ActivityContentCipher` now takes a `contextUser`; `M-CAP13` drops it.
+**`ActivityContentCipher` now takes a `contextUser`, and it is worth being exact about why.** A cipher
+is asked to perform a privileged read, and the engine is the only code that knows whose run it is; a
+host whose cipher reads its own key table, or calls a KMS as the caller, has no other way to find out.
+The order-line edit veto in Orders is handed a user for the same reason. `M-CAP13` pins that the
+engine forwards it.
 
-*(An earlier revision of this paragraph said nothing configures the engine at startup. That was wrong:
-the validator registers through a `@RegisterForStartup` decorator, which the grep behind that claim
-could not see. Booting the server is what showed it.)*
+What it does NOT do is fix a fault in MJ's engine, and two earlier revisions of this paragraph claimed
+it did. `setupSQLServerClient` calls `StartupManager.Startup()`, which configures `EncryptionEngine`
+with a system user — and that holds even when key validation fails, because `Loaded` means the metadata
+loaded and the key-material check is separate. Measured in a fresh process against a host with no
+usable key: with and without a user, `Encrypt` returns the identical error. The argument is the seam's
+contract, not a workaround.
+
+*(The first revision said nothing configures the engine at startup, which a `@RegisterForStartup`
+decorator made invisible to the grep behind the claim. The second said the lazy path runs when startup
+validation fails, which running it disproved. Both are recorded here rather than quietly rewritten,
+because the same habit — asserting from source without executing it — is what this changeset keeps
+finding in the code it describes.)*
 
 `M-CAP8` needed re-anchoring as a consequence: threading the argument through made the `Encrypt` call
 multi-line and its anchor was the single-line form, so it matched nothing and reported SKIP — on the

@@ -33,24 +33,18 @@ import { RegisterActivityContentCipher, type ActivityContentCipher } from '@mj-b
  */
 export class MJActivityContentCipher implements ActivityContentCipher {
     /**
-     * THE USER IS NOT OPTIONAL HERE, although the engine's signature makes it look that way.
+     * The user is forwarded because the SEAM carries it, not because this engine needs it.
      *
-     * `Encrypt` lazily calls `Config(false, contextUser)` when the engine has not been configured,
-     * and `BaseEngine.Load` throws `'For server-side use of all engine classes, you must provide the
-     * contextUser parameter'` on a database provider when it is absent.
+     * `Encrypt` only consults `contextUser` when the engine has not been configured, and by the time
+     * any capture runs it always has: `setupSQLServerClient` calls `StartupManager.Startup()`, which
+     * configures this engine with a system user. That holds even when key validation FAILS — `Loaded`
+     * means the metadata loaded, and the key-material check is a separate step. Measured in a fresh
+     * process against a host with no usable key: with and without a user, `Encrypt` returns the same
+     * error either way.
      *
-     * MJAPI normally configures this engine at startup — `StartupManager.Startup()` runs
-     * `EncryptionStartupValidator` with a system user — and when that succeeds the lazy path never runs
-     * and the missing argument would never have shown. It is the FAILURE case that matters: that
-     * validator fails on any host whose key is missing or unusable (`MJ_BASE_ENCRYPTION_KEY` unset is
-     * the common one), the engine stays unloaded, and the first capture then configures it lazily.
-     *
-     * Without the user, that reports `'you must provide the contextUser parameter'` — naming the wrong
-     * fault entirely, on the one path where an operator most needs to be told their KEY is wrong. With
-     * it, the engine configures and fails on the real problem. Either way the row is saved without
-     * content, so the difference is entirely in whether the run issue is true.
-     *
-     * MJ's own `ResolverBase` passes the user at both of its call sites.
+     * So this forwards an argument MJ does not presently read. It is still right to forward: MJ's own
+     * `ResolverBase` passes the user at both of its call sites rather than trusting startup, and the
+     * interface's contract is written for hosts whose cipher must reach key material as somebody.
      *
      * @throws whatever `EncryptionEngine` throws for a missing or unusable key. Throwing is correct:
      *         the engine records the failure as a run issue and saves the decision without content.
