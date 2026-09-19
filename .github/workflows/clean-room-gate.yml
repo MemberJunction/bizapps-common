@@ -52,7 +52,10 @@ jobs:
     env:
       DB_HOST: localhost
       DB_PORT: 1433
-      DB_DATABASE: bizapps_common_cleanroom
+      # Per-run name, never a fixed one that reads like a shared environment: these same steps are
+      # what someone runs locally, and there a fixed name is another agent's database. The service
+      # container is thrown away with the job, so nothing cleans this up afterwards.
+      DB_DATABASE: bizapps_common_cleanroom_${{ github.run_id }}_${{ github.run_attempt }}
       DB_USERNAME: sa
       DB_PASSWORD: 'yourStrong(!)Password123'
       # The heal that closes an Open App migrate connects as the CodeGen login.
@@ -115,7 +118,7 @@ jobs:
       # the build below. A gate nobody has watched fail is indistinguishable from one that returns
       # pass; this order means a weakened detector fails before it ever gets to report clean.
       - name: Check the gate itself still fires
-        run: node .github/scripts/check-entityfield-drift.mjs --self-test
+        run: pnpm run lint:entityfield-drift:test
 
       # Owned by sa: created under any other login, that login becomes dbo and MJ's core baseline
       # dies ~12 batches in with "The login already has an account under a different user name".
@@ -134,4 +137,4 @@ jobs:
         run: pnpm exec mj migrate --schema __mj_BizAppsCommon --dir ./migrations --verbose
 
       - name: No EntityField drift in __mj_BizAppsCommon
-        run: node .github/scripts/check-entityfield-drift.mjs
+        run: pnpm run lint:entityfield-drift
