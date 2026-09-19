@@ -95,9 +95,9 @@ export interface ResolvedRelatedChip {
     AriaLabel: string;
 }
 
-/** Single-quote escaping for a value going into an `ExtraFilter`. */
+/** Escaping for a value going into an `ExtraFilter` literal: drop NULs, double single quotes. */
 function quote(value: string): string {
-    return value.replace(/'/g, "''");
+    return value.replace(/\0/g, '').replace(/'/g, "''");
 }
 
 /** `true` for a value that actually names a record — not null, not undefined, not blank. */
