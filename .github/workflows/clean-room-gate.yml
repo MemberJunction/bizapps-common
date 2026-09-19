@@ -73,10 +73,16 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
+      # `--batch --yes` on the dearmor: the runner image already ships
+      # /usr/share/keyrings/microsoft-prod.gpg but not sqlcmd, so this block runs and gpg then
+      # asks to overwrite a file that is already there. With no tty it cannot ask and exits 2
+      # ("cannot open '/dev/tty'"). The sibling block in changes.yml survives the same failure
+      # only because it appends `|| true` to every line; that is not wanted here — a genuinely
+      # broken install must still fail this step rather than reach the check as a missing tool.
       - name: Install sqlcmd
         run: |
           if ! command -v sqlcmd &> /dev/null && [ ! -x /opt/mssql-tools18/bin/sqlcmd ]; then
-            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
             curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
             sudo apt-get update -qq
             sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev
