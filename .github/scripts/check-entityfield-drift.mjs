@@ -48,7 +48,8 @@
  *   node check-entityfield-drift.mjs --database <db>  # check a named database
  *   node check-entityfield-drift.mjs --self-test      # prove the detectors still fire
  *
- * Connection comes from DB_HOST / DB_PORT / DB_DATABASE / DB_USERNAME / DB_PASSWORD.
+ * Connection comes from DB_HOST / DB_PORT / DB_DATABASE / DB_USERNAME / DB_PASSWORD. The self-test
+ * names its own throwaway fixture database per process; DRIFT_SELFTEST_DB overrides that name.
  * Exit codes: 0 clean, 1 drift found, 2 the check could not run.
  */
 
@@ -60,8 +61,15 @@ const APP_SCHEMA = argValue('--schema') || '__mj_BizAppsCommon';
 const CORE_SCHEMA = argValue('--core-schema') || '__mj';
 /** The placeholder band CodeGen writes on the generating database (MAX + 100000 + ordinal). */
 const SEQUENCE_BAND = 100000;
-/** Self-test fixture database. Dropped before and after; never a database anyone else owns. */
-const SELF_TEST_DB = 'mj_bizappscommon_drift_selftest';
+/**
+ * Self-test fixture database, CREATEd and DROPped by the self-test. Per-process by default, never
+ * a fixed name: two runs against the same server would otherwise drop each other's fixture
+ * mid-assertion, and on a shared server a fixed name is somebody else's database. The prefix is
+ * stable so an orphan left by a hard kill is still recognisable — the normal exit path drops it.
+ * DRIFT_SELFTEST_DB overrides, which is also how an orphan gets cleaned up by name.
+ */
+const SELF_TEST_DB = process.env.DRIFT_SELFTEST_DB
+    || `mj_bizappscommon_drift_selftest_${process.pid}_${Math.random().toString(36).slice(2, 8)}`;
 
 const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || '1433';
