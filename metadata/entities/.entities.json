@@ -1,5 +1,11 @@
 [
   {
+    "_comments": [
+      "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
+      "The disjoint default mis-chains silently when two children share the parent key.",
+      "AllowRecordMerge: the directory merges duplicates from day one. MJ's merge is transactional",
+      "and repoints polymorphic soft links as well as hard foreign keys."
+    ],
     "fields": {
       "GeneratedBaseViewName": "vwPeopleGenerated",
       "BaseViewGenerated": false,
@@ -13,7 +19,9 @@
             "PrimaryRelatedBudget": 6
           }
         }
-      }
+      },
+      "AllowMultipleSubtypes": true,
+      "AllowRecordMerge": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
@@ -131,9 +139,17 @@
           }
         },
         {
+          "_comments": [
+            "The picker's second line reads 'Title at Organization'; searching it lets someone find a person",
+            "they know by role rather than by name. BeginsWith keeps 'Director' from matching mid-title",
+            "everywhere, and a title hit ranks below a name hit in the picker regardless.",
+            "FirstName is deliberately left off: DisplayName is First + Last and is already searched."
+          ],
           "fields": {
-            "IncludeInUserSearchAPI": false,
-            "AutoUpdateIncludeInUserSearchAPI": false
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=Title&EntityID=@parent:ID"
@@ -168,6 +184,12 @@
     }
   },
   {
+    "_comments": [
+      "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
+      "The disjoint default mis-chains silently when two children share the parent key.",
+      "AllowRecordMerge: the directory merges duplicates from day one. MJ's merge is transactional",
+      "and repoints polymorphic soft links as well as hard foreign keys."
+    ],
     "fields": {
       "CascadeDeletes": false,
       "GeneratedBaseViewName": "vwOrganizationsGenerated",
@@ -182,7 +204,9 @@
             "PrimaryRelatedBudget": 6
           }
         }
-      }
+      },
+      "AllowMultipleSubtypes": true,
+      "AllowRecordMerge": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
@@ -284,9 +308,18 @@
           }
         },
         {
+          "_comments": [
+            "A domain is often the only thing that tells two same-named organizations apart, so the party",
+            "picker shows it on the second line and search has to be able to reach it. BeginsWith, not",
+            "Contains: an acronym typed into the picker should find the domain that starts with it,",
+            "not every domain with those letters somewhere inside it.",
+            "Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+          ],
           "fields": {
-            "IncludeInUserSearchAPI": false,
-            "AutoUpdateIncludeInUserSearchAPI": false
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=Website&EntityID=@parent:ID"

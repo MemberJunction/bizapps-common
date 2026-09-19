@@ -1,0 +1,22 @@
+[
+  {
+    "_comments": [
+      "Ships EMPTY on purpose. The row exists here so the setting is part of the app's own",
+      "definition — named, documented, and present the moment Common installs — while the value",
+      "is per-instance and belongs to the host, which overrides this row by its primary key.",
+      "The primary key is fixed so a host overriding the value updates THIS row rather than",
+      "creating a second one; a duplicated selling-company setting would be the same class of",
+      "defect as the duplicated company rows this work exists to fix.",
+      "Empty means no default: the field is left blank and nothing is confirmed."
+    ],
+    "fields": {
+      "ApplicationID": "@lookup:MJ: Applications.Name=Common",
+      "Name": "DefaultSellingCompanyID",
+      "Value": "",
+      "Comments": "ID of the __mj.Company row that new orders and contracts default their selling company to, when the current user's employee record does not name one. Choosing any other company asks the user to confirm before the value is written, because this field decides which legal entity books the revenue. Empty disables the default and the confirmation."
+    },
+    "primaryKey": {
+      "ID": "6C0A1000-0002-4000-A000-000000000001"
+    }
+  }
+]
