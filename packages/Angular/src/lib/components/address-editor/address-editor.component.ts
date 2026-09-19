@@ -9,6 +9,7 @@ import {
     mjBizAppsCommonAddressLinkEntity,
     mjBizAppsCommonAddressTypeEntity
 } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Represents a single address row in the editor, pairing the physical
@@ -364,7 +365,9 @@ export class AddressEditorComponent {
             const [linksResult, typesResult] = await rv.RunViews([
                 {
                     EntityName: 'MJ_BizApps_Common: Address Links',
-                    ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
+                    // RecordID is NVARCHAR — a consuming app can bind a string primary key here,
+                    // so it must be escaped before entering the filter literal.
+                    ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${EscapeFilterValue(this._recordID)}'`,
                     ResultType: 'entity_object'
                 },
                 {
