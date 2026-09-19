@@ -41,9 +41,11 @@ and written only on confirm; an unanswered question reverts, because it must not
 revenue lands. It wraps `mj-form-field`, so the dropdown, keyboard behaviour and link rendering
 stay the platform's.
 
-**Metadata.** `AllowMultipleSubtypes` and `AllowRecordMerge` are now set on Organizations and People
-— the first because both are extended as IsA children and the disjoint default mis-chains silently,
-the second so duplicates can be merged from the directories. `Organizations.Website` and
+**Metadata.** `AllowMultipleSubtypes` is now set on Organizations and People, because both are
+extended as IsA children and the disjoint default mis-chains silently. `AllowRecordMerge` is not:
+`CK_Entity_AllowRecordMerge` requires `AllowDeleteAPI = 1` and `DeleteType = 'Soft'`, and both
+parties are hard-delete, so enabling merge is a schema change rather than a flag and belongs in its
+own release. `Organizations.Website` and
 `People.Title` join user search, with `BeginsWith` predicates and `AutoUpdate` pins so CodeGen
 cannot flip them back; the other identifying fields were already flagged.
 

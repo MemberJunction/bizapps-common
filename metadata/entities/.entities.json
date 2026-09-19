@@ -3,8 +3,12 @@
     "_comments": [
       "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
       "The disjoint default mis-chains silently when two children share the parent key.",
-      "AllowRecordMerge: the directory merges duplicates from day one. MJ's merge is transactional",
-      "and repoints polymorphic soft links as well as hard foreign keys."
+      "AllowRecordMerge is deliberately NOT set here. CK_Entity_AllowRecordMerge requires",
+      "AllowDeleteAPI = 1 AND DeleteType = 'Soft', and both parties are hard-delete with no",
+      "soft-delete column, so the flag is a schema change rather than a metadata one: a merge is",
+      "only allowed where the losing record's deletion can be undone. Enabling it means converting",
+      "both entities to soft delete, regenerating their stored procedures, and accepting the new",
+      "delete semantics everywhere they are used. That is its own change."
     ],
     "fields": {
       "GeneratedBaseViewName": "vwPeopleGenerated",
@@ -20,8 +24,7 @@
           }
         }
       },
-      "AllowMultipleSubtypes": true,
-      "AllowRecordMerge": true
+      "AllowMultipleSubtypes": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
@@ -187,8 +190,12 @@
     "_comments": [
       "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
       "The disjoint default mis-chains silently when two children share the parent key.",
-      "AllowRecordMerge: the directory merges duplicates from day one. MJ's merge is transactional",
-      "and repoints polymorphic soft links as well as hard foreign keys."
+      "AllowRecordMerge is deliberately NOT set here. CK_Entity_AllowRecordMerge requires",
+      "AllowDeleteAPI = 1 AND DeleteType = 'Soft', and both parties are hard-delete with no",
+      "soft-delete column, so the flag is a schema change rather than a metadata one: a merge is",
+      "only allowed where the losing record's deletion can be undone. Enabling it means converting",
+      "both entities to soft delete, regenerating their stored procedures, and accepting the new",
+      "delete semantics everywhere they are used. That is its own change."
     ],
     "fields": {
       "CascadeDeletes": false,
@@ -205,8 +212,7 @@
           }
         }
       },
-      "AllowMultipleSubtypes": true,
-      "AllowRecordMerge": true
+      "AllowMultipleSubtypes": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
