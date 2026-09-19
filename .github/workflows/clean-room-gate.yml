@@ -1,0 +1,131 @@
+name: Clean-Room Metadata Gate
+
+# Builds this repo's chain from nothing on every change and asserts the result has no EntityField
+# drift in __mj_BizAppsCommon — no base-view column without its metadata row, and none the other
+# way round. See .github/scripts/check-entityfield-drift.mjs for why, and #157.
+#
+# This is the first job in the repo that stands a database UP rather than reading migration text.
+# It has to be: the defect it catches is the ABSENCE of a statement, which no text scanner can see.
+# The two sibling EntityField guards in changes.yml stay as they are — they catch different things
+# (a literal Sequence, a prune in a versioned migration) and they catch them without a database.
+#
+# `push` as well as `pull_request`: the PR trigger alone would let a direct commit to next/main land
+# a chain that ships metadata work for a neighbouring app to do, without the gate ever running.
+# No `paths:` filter: a workflow skipped by `on: paths:` creates no check run at all, which hangs a
+# pull request on "Expected" forever if this is a required check. The whole job is ~3 minutes, most
+# of it the MJ core baseline, so it simply always runs.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [next, main]
+  pull_request:
+    branches: [next, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-room-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  entityfield-drift:
+    name: Clean-room EntityField drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'yourStrong(!)Password123'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password123' -C -Q 'SELECT 1'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 1433
+      DB_DATABASE: bizapps_common_cleanroom
+      DB_USERNAME: sa
+      DB_PASSWORD: 'yourStrong(!)Password123'
+      # The heal that closes an Open App migrate connects as the CodeGen login.
+      CODEGEN_DB_USERNAME: sa
+      CODEGEN_DB_PASSWORD: 'yourStrong(!)Password123'
+      DB_ENCRYPT: 'false'
+      DB_TRUST_SERVER_CERTIFICATE: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install sqlcmd
+        run: |
+          if ! command -v sqlcmd &> /dev/null && [ ! -x /opt/mssql-tools18/bin/sqlcmd ]; then
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+            curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            sudo apt-get update -qq
+            sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev
+            echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
+          fi
+
+      # Fail here rather than let the check exit 2 later: "the gate could not run" and "the gate ran
+      # and found nothing" must never be reachable by the same path.
+      - name: Verify sqlcmd is usable
+        run: sqlcmd -S "$DB_HOST,$DB_PORT" -U "$DB_USERNAME" -P "$DB_PASSWORD" -C -b -Q "SELECT @@VERSION"
+
+      # One source of truth for which MJ this app is built against. Unparsable range = hard stop,
+      # never a silent fall back to some other version's core.
+      - name: Resolve the MJ core tag from mj-app.json
+        id: mj
+        run: |
+          TAG=$(node -e "
+            const range = require('./mj-app.json').mjVersionRange || '';
+            const m = range.match(/>=\s*([0-9][^\s]*)/);
+            if (!m) { console.error('Cannot parse mjVersionRange: ' + JSON.stringify(range)); process.exit(1); }
+            console.log('v' + m[1]);
+          ")
+          echo "Building against MJ core $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      # The self-test runs FIRST and against its own throwaway fixture database, so it needs none of
+      # the build below. A gate nobody has watched fail is indistinguishable from one that returns
+      # pass; this order means a weakened detector fails before it ever gets to report clean.
+      - name: Check the gate itself still fires
+        run: node .github/scripts/check-entityfield-drift.mjs --self-test
+
+      # Owned by sa: created under any other login, that login becomes dbo and MJ's core baseline
+      # dies ~12 batches in with "The login already has an account under a different user name".
+      - name: Create the clean-room database
+        run: |
+          sqlcmd -S "$DB_HOST,$DB_PORT" -U "$DB_USERNAME" -P "$DB_PASSWORD" -C -b -Q \
+            "CREATE DATABASE [$DB_DATABASE]; ALTER AUTHORIZATION ON DATABASE::[$DB_DATABASE] TO [sa];"
+
+      - name: Install MJ core
+        run: pnpm exec mj migrate --tag ${{ steps.mj.outputs.tag }} --verbose
+
+      # Ends with the Open App metadata heal. Checking AFTER the heal is the point: a finding is
+      # then work genuinely left over for a neighbour's CodeGen, not something the ordinary install
+      # would have fixed on its own.
+      - name: Apply this repo's migration chain
+        run: pnpm exec mj migrate --schema __mj_BizAppsCommon --dir ./migrations --verbose
+
+      - name: No EntityField drift in __mj_BizAppsCommon
+        run: node .github/scripts/check-entityfield-drift.mjs
