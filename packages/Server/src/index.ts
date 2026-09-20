@@ -16,6 +16,7 @@ import '@mj-biz-apps/common-core-entities-server';
 import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
+import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
 import { LoadActivityContentCipher } from './custom/activity-content-cipher.js';
@@ -48,6 +49,10 @@ export function LoadBizAppsCommonServer(): void {
     LoadActivitySyncEngine();
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
+    // The one server-side answer to "which organizations and people are our customers", unioned
+    // from every query apps ship in the Party Signals category. Explorer uses the client store;
+    // Skip, agents, MCP and reports come through here so the two definitions cannot drift.
+    LoadGetPartySignalsAction();
     // Registers the seam that turns a connection's CredentialsRef into a live Graph transport.
     // Nothing about this enables a live read on its own — the provider still refuses until this
     // host attests that its app registration is scoped.
@@ -64,6 +69,7 @@ export function LoadBizAppsCommonServer(): void {
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
+export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 export {

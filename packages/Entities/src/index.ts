@@ -6,6 +6,7 @@ export type {
 } from './activity-json-types';
 
 export * from './business-day.js';
+export * from './party-signals.js';
 export * from './business-time-zone-engine.js';
 
 /**

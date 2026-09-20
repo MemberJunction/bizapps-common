@@ -6,6 +6,7 @@
   "directoryOrder": [
     "schema-info",
     "applications",
+    "application-settings",
     "address-types",
     "contact-types",
     "organization-types",
