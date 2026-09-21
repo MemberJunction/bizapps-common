@@ -2217,6 +2217,8 @@ AS
 SELECT
     p.*,
     MJUser_LinkedUserID.[Name] AS [LinkedUser],
+    ${mjSchema}_rgc.[Latitude] AS [${mjSchema}_Latitude],
+    ${mjSchema}_rgc.[Longitude] AS [${mjSchema}_Longitude],
     mjBizAppsCommonSeniorityLevel_SeniorityLevelID.[Name] AS [SeniorityLevel]
 FROM
     [${flyway:defaultSchema}].[Person] AS p
@@ -2224,6 +2226,12 @@ LEFT OUTER JOIN
     [${mjSchema}].[User] AS MJUser_LinkedUserID
   ON
     [p].[LinkedUserID] = MJUser_LinkedUserID.[ID]
+LEFT OUTER JOIN
+    [${mjSchema}].[vwRecordGeoCodes] AS ${mjSchema}_rgc
+  ON
+    ${mjSchema}_rgc.[EntityID] = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
+    AND ${mjSchema}_rgc.[RecordID] = CAST([p].[ID] AS NVARCHAR(450))
+    AND ${mjSchema}_rgc.[LocationType] = 'Primary'
 LEFT OUTER JOIN
     [${flyway:defaultSchema}].[SeniorityLevel] AS mjBizAppsCommonSeniorityLevel_SeniorityLevelID
   ON
