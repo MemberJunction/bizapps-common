@@ -1,0 +1,90 @@
+[
+  {
+    "fields": {
+      "Name": "Individual Contributor",
+      "Description": "Entry to senior individual contributor / professional.",
+      "Sequence": 10,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000001"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Team Lead",
+      "Description": "Technical or functional lead guiding project teams.",
+      "Sequence": 20,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000002"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Manager",
+      "Description": "Frontline people manager overseeing an operational team.",
+      "Sequence": 30,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000003"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Director",
+      "Description": "Department or practice leader overseeing multiple managers and initiatives.",
+      "Sequence": 40,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000004"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Vice President",
+      "Description": "Vice president responsible for a function, division, or geography.",
+      "Sequence": 50,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000005"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Senior Vice President",
+      "Description": "Senior vice president or executive vice president.",
+      "Sequence": 60,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000006"
+    }
+  },
+  {
+    "fields": {
+      "Name": "C-Level",
+      "Description": "Chief Executive, Chief Technology, Chief Financial, or other C-suite officer.",
+      "Sequence": 70,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000007"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Board Member",
+      "Description": "Member of the board of directors or advisory board.",
+      "Sequence": 80,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E020001-A101-4B01-8C01-000000000008"
+    }
+  }
+]

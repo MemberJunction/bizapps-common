@@ -24,7 +24,32 @@
                     People
                 </span>
                 <span class="biz-hero__chip" [attr.data-tone]="StatusTone">{{ Record.Status }}</span>
+                @if (Record.SeniorityLevel) {
+                    <span class="biz-hero__chip" data-tone="muted" title="Seniority Level">
+                        <i class="fa-solid fa-layer-group"></i>
+                        {{ Record.SeniorityLevel }}
+                    </span>
+                }
+                @if (Record.PrimaryJobFunction) {
+                    <button type="button" class="biz-hero__chip biz-hero__chip--interactive"
+                            [title]="ShowAllFunctions ? 'Hide job functions' : 'Show all job functions'"
+                            (click)="ToggleAllFunctions()">
+                        <i class="fa-solid fa-briefcase"></i>
+                        {{ Record.PrimaryJobFunction }}
+                        @if (AllJobFunctions.length > 1) {
+                            <span class="biz-hero__chip-count">+{{ AllJobFunctions.length - 1 }}</span>
+                        }
+                    </button>
+                }
             </div>
+            @if (ShowAllFunctions && AllJobFunctions.length > 0) {
+                <div class="biz-hero__secondary-chips">
+                    <span class="biz-hero__secondary-label">Job Functions:</span>
+                    @for (fn of AllJobFunctions; track fn) {
+                        <span class="biz-hero__sub-chip">{{ fn }}</span>
+                    }
+                </div>
+            }
         </div>
 
         <button type="button"
@@ -106,6 +131,10 @@
                 <div class="biz-hero__field">
                     <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Gender"
                         Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+                </div>
+                <div class="biz-hero__field">
+                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="SeniorityLevelID"
+                        Type="dropdownlist" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
                 </div>
                 <div class="biz-hero__field biz-hero__field--span">
                     <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PhotoURL"

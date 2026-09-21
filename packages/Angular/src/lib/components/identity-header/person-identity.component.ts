@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey } from '@memberjunction/core';
+import { CompositeKey, RunView } from '@memberjunction/core';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
@@ -24,6 +24,30 @@ export class PersonIdentityComponent implements OnInit {
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
 
     public Collapsed = false;
+    public AllJobFunctions: string[] = [];
+    public ShowAllFunctions = false;
+    public LoadingFunctions = false;
+
+    public async ToggleAllFunctions(): Promise<void> {
+        this.ShowAllFunctions = !this.ShowAllFunctions;
+        if (this.ShowAllFunctions && this.AllJobFunctions.length === 0 && this.Record.ID) {
+            this.LoadingFunctions = true;
+            try {
+                const rv = new RunView();
+                const result = await rv.RunView({
+                    EntityName: 'MJ_BizApps_Common: Person Job Functions',
+                    ExtraFilter: `PersonID = '${this.Record.ID}'`,
+                    OrderBy: 'Sequence ASC',
+                    ResultType: 'simple',
+                });
+                if (result.Success && result.Results) {
+                    this.AllJobFunctions = (result.Results as Array<{ JobFunction: string }>).map(r => r.JobFunction).filter(Boolean);
+                }
+            } finally {
+                this.LoadingFunctions = false;
+            }
+        }
+    }
 
     public ngOnInit(): void {
         const raw = UserInfoEngine.Instance.GetSetting('mj.identityHeader.collapsed.person');
