@@ -587,5 +587,92 @@
       "lastModified": "2026-09-02T04:04:08.607Z",
       "checksum": "0e787a52b73ed45ea68a7f1fab3abd853bb64d89ac75e46a8b37939113374733"
     }
+  },
+  {
+    "_comments": [
+      "The server-side half of the party pickers. Explorer's pickers union the Party Signals",
+      "queries in the browser; everything that is not Angular — agents, MCP, reports, scripts —",
+      "calls this, so there is one definition of 'customer' rather than two that can drift.",
+      "Discovers its inputs from the query category at run time: an app joins the answer by",
+      "shipping a query, with no change to this action."
+    ],
+    "fields": {
+      "Name": "Common.GetPartySignals",
+      "Description": "Returns the merged roster of organizations and people that any installed app counts as a customer, by running every query in the 'Party Signals' query category as the calling user and unioning the results by party. Each query contributes PartyKind ('organization'|'person'), PartyID, Count and LastActivityAt, and declares its chip nouns with a [signal: noun|nouns] marker in its own Description. Takes no input. Permission-filtered: a query the caller cannot read contributes nothing and is named in Warnings rather than failing the call, so a missing signal weakens ranking instead of breaking the picker.",
+      "DriverClass": "Common.GetPartySignals",
+      "Type": "Custom",
+      "Status": "Active",
+      "IconClass": "fa-solid fa-people-group"
+    },
+    "relatedEntities": {
+      "MJ: Action Params": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Roster",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "JSON array of roster entries: PartyID, Kind, TotalCount, LastActivityAt, and one Signals element per contributing query with its QueryKey, nouns, Count and date."
+          },
+          "primaryKey": {
+            "ID": "F419F06F-A8A7-40E3-A3BC-D1207DA46ED9"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Warnings",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "JSON array of strings, one per signal query that could not be read or did not run. Empty on a complete roster."
+          },
+          "primaryKey": {
+            "ID": "6ABC24B7-0F1E-42F2-B294-C9415301F820"
+          }
+        }
+      ],
+      "MJ: Action Result Codes": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "SUCCESS",
+            "IsSuccess": true,
+            "Description": "The roster was built. Check Warnings: it can be non-empty on success when a query was unreadable."
+          },
+          "primaryKey": {
+            "ID": "DE9E7C39-0D50-4EFD-8F67-E5883D2A056A"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "VALIDATION_ERROR",
+            "IsSuccess": false,
+            "Description": "No ContextUser was supplied. The roster is permission-filtered per user, so there is no correct answer without one."
+          },
+          "primaryKey": {
+            "ID": "749540CC-3050-483A-92C3-429B84DBC11A"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "ERROR",
+            "IsSuccess": false,
+            "Description": "The query metadata could not be read at all. Individual query failures are warnings, not this."
+          },
+          "primaryKey": {
+            "ID": "434C4CDB-9114-4FFD-8F3C-0F1473FEB900"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "16A3561D-A295-46DD-A3CA-8ADD0671D2FE"
+    }
   }
 ]

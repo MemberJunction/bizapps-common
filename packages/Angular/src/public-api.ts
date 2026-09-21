@@ -71,6 +71,13 @@ export { CommonPeoplePageComponent } from './lib/pages/people-list.page';
 export { CommonOrganizationsPageComponent } from './lib/pages/organizations-list.page';
 export { CommonActivitiesPageComponent } from './lib/pages/activities-dashboard.page';
 
+// Party pickers. The Party Signals contract itself lives in @mj-biz-apps/common-entities; these are
+// the client-side reader, the per-instance settings, and the selling-company field.
+export { PartySignalStore } from './lib/data/party-signal-store';
+export { CommonSettings, COMMON_SETTING } from './lib/data/common-settings';
+export { SellingCompanyFieldComponent } from './lib/components/selling-company-field/selling-company-field.component';
+export { SellingCompanyConfirm } from './lib/components/selling-company-field/selling-company-confirm';
+
 /**
  * Bootstrap function called during MJExplorer initialization.
  * Static imports above handle all registration.
