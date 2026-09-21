@@ -101,6 +101,9 @@ export class mjBizAppsCommonActivity_ {
     @Field({nullable: true, description: `JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`}) 
     Details?: string;
         
+    @Field(() => Float, {nullable: true, description: `Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`}) 
+    SentimentScore?: number;
+        
     @Field() 
     _mj__CreatedAt: Date;
         
@@ -219,6 +222,9 @@ export class CreatemjBizAppsCommonActivityInput {
     @Field({ nullable: true })
     Details: string | null;
 
+    @Field(() => Float, { nullable: true })
+    SentimentScore: number | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -288,6 +294,9 @@ export class UpdatemjBizAppsCommonActivityInput {
 
     @Field({ nullable: true })
     Details?: string | null;
+
+    @Field(() => Float, { nullable: true })
+    SentimentScore?: number | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];

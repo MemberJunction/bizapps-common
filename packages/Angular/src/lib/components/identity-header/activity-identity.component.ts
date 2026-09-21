@@ -144,7 +144,7 @@ export class ActivityIdentityComponent implements OnInit {
         return `${sign}${score.toFixed(2)}`;
     }
 
-    public get SentimentTone(): 'success' | 'warning' | 'danger' | 'info' | 'muted' {
+    public get SentimentTone(): 'success' | 'danger' | 'info' {
         const score = Number(this.Record.SentimentScore ?? 0);
         if (score >= 0.25) return 'success';
         if (score <= -0.25) return 'danger';

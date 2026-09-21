@@ -5,6 +5,9 @@
 ALTER TABLE [${flyway:defaultSchema}].[Activity] ADD [SentimentScore] DECIMAL(4,3) NULL;
 GO
 
+ALTER TABLE [${flyway:defaultSchema}].[Activity] ADD CONSTRAINT [CK_Activity_SentimentScore] CHECK ([SentimentScore] IS NULL OR ([SentimentScore] >= -1.000 AND [SentimentScore] <= 1.000));
+GO
+
 EXEC sp_addextendedproperty 
     @name = N'MS_Description', 
     @value = N'Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.', 
