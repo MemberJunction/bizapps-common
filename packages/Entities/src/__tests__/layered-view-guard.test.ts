@@ -23,7 +23,10 @@
  *    column keeps its name, keeps its type, and starts answering a different question. That is the
  *    half a diff does not show and a column check cannot reach.
  *
- * 3. A RE-CREATION MAY ADD COLUMNS BUT NEVER DROP ONE. Cheap and needs no curation.
+ * 3. A RE-CREATION MAY ADD COLUMNS BUT NEVER DROP ONE. Cheap and needs no curation. Both sides of the comparison are read
+ *    through `producedColumns`, so the columns inherited through `g.*` from the generated
+ *    inner view are protected too — an alias-only BEFORE left every one of them free to
+ *    disappear the moment a re-creation spelled the star out as an explicit list.
  *
  * There is no business-day assertion here: neither view joins `fnBusinessToday()`, and an
  * assertion about a predicate a view does not have would pass forever without reading anything.
@@ -31,10 +34,8 @@
 import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import {
-    derivedColumns,
     newestViewDefiner,
     producedColumns,
-    readMigration,
     viewBody,
 } from './helpers/view-definer';
 
@@ -51,11 +52,15 @@ const REQUIRED: Record<string, RegExp[]> = {
         // a foreign key added later silently lost its display column.
         /FROM\s+\[\$\{flyway:defaultSchema\}\]\.\[vwPeopleGenerated\]/i,
         // THE POLYMORPHIC ADDRESSLINK NARROWING, and the single most dangerous line in the file.
+        // BOTH SPELLINGS OF THE MJ SCHEMA ARE ACCEPTED. This repo's migrations write it as
+        // `[${mjSchema}]` 2044 times and as a literal `[__mj]` 553 times, and CodeGen emits the
+        // placeholder — so pinning the literal failed the guard on correct SQL the moment anyone
+        // re-created the view the way the generator writes it.
         // AddressLink rows for every entity share one table, so without this subquery the join
         // matches another entity's addresses. The prefix is UNDERSCORED; the dotted spelling
         // returns NULL, `al.EntityID = NULL` matches nothing, and every primary-address column
         // comes back NULL — indistinguishable from "this person has no address".
-        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+\[__mj\]\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: People'\s*\)/i,
+        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+(?:\[__mj\]|\[\$\{mjSchema\}\])\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: People'\s*\)/i,
         // Without IsPrimary the address join fans out over every linked address and the row
         // duplicates — silently, since each copy looks plausible on its own.
         /al\.\[IsPrimary\]\s*=\s*1/i,
@@ -77,7 +82,7 @@ const REQUIRED: Record<string, RegExp[]> = {
     vwOrganizations: [
         /FROM\s+\[\$\{flyway:defaultSchema\}\]\.\[vwOrganizationsGenerated\]/i,
         // Same polymorphic narrowing, same underscored-prefix trap, same silent all-NULL result.
-        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+\[__mj\]\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: Organizations'\s*\)/i,
+        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+(?:\[__mj\]|\[\$\{mjSchema\}\])\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: Organizations'\s*\)/i,
         /al\.\[IsPrimary\]\s*=\s*1/i,
         /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Email'/i,
         /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Mobile Phone'/i,
@@ -136,7 +141,12 @@ describe('layered views: the newest definer is resolvable and loses nothing', ()
                 const { chain } = newestViewDefiner(MIGRATIONS, view);
                 if (chain.length < 2) return;
                 const previous = chain[chain.length - 2];
-                const before = derivedColumns(viewBody(readMigration(MIGRATIONS, previous), view));
+                // BOTH SIDES ARE READ THE SAME WAY: own columns plus the ones inherited through
+                // `g.*`, each measured as of the migration it belongs to. Comparing an alias-only
+                // BEFORE against an inheritance-aware NOW left every inherited column unprotected —
+                // a re-creation that replaced `g.*` with an explicit list minus one column passed.
+                const before = producedColumns(MIGRATIONS, view, previous);
+                expect(before, `${previous} produced no readable columns — this check is vacuous`).not.toEqual([]);
                 const now = producedColumns(MIGRATIONS, view);
                 const lost = before.filter((column) => !now.includes(column));
                 expect(lost, `columns ${previous} produced and the newest definer does not`).toEqual([]);
