@@ -8,7 +8,9 @@ import {
     mjBizAppsCommonRelationshipEntity,
     mjBizAppsCommonRelationshipTypeEntity,
     mjBizAppsCommonPersonEntity,
-    mjBizAppsCommonOrganizationEntity
+    mjBizAppsCommonOrganizationEntity,
+    mjBizAppsCommonJobFunctionEntity,
+    mjBizAppsCommonSeniorityLevelEntity
 } from '@mj-biz-apps/common-entities';
 
 /**
@@ -114,6 +116,12 @@ interface AddFormData {
 
     /** ISO date string (`YYYY-MM-DD`) for the relationship end date. */
     EndDate: string;
+
+    /** Optional job function record ID for this relationship. */
+    JobFunctionID: string;
+
+    /** Optional seniority level record ID for this relationship. */
+    SeniorityLevelID: string;
 }
 
 /**
@@ -137,6 +145,12 @@ interface EditFormData {
 
     /** The current status of the relationship. */
     Status: 'Active' | 'Inactive' | 'Ended';
+
+    /** Optional job function record ID for this relationship. */
+    JobFunctionID: string;
+
+    /** Optional seniority level record ID for this relationship. */
+    SeniorityLevelID: string;
 }
 
 /**
@@ -294,6 +308,26 @@ export class RelationshipListComponent {
     RelationshipTypes: mjBizAppsCommonRelationshipTypeEntity[] = [];
 
     /**
+     * All active job functions available for selection.
+     */
+    JobFunctions: mjBizAppsCommonJobFunctionEntity[] = [];
+
+    /**
+     * All active seniority levels available for selection.
+     */
+    SeniorityLevels: mjBizAppsCommonSeniorityLevelEntity[] = [];
+
+    /**
+     * Progressive disclosure toggle for advanced role fields in Add Form.
+     */
+    ShowAddAdvanced = false;
+
+    /**
+     * Progressive disclosure toggle for advanced role fields in Edit Form.
+     */
+    ShowEditAdvanced = false;
+
+    /**
      * Indicates whether the component is performing the initial data load.
      * The template shows a loading spinner while this is `true`.
      */
@@ -334,12 +368,12 @@ export class RelationshipListComponent {
 
     /** Creates a blank {@link AddFormData} with empty defaults. */
     private createEmptyAddForm(): AddFormData {
-        return { TypeID: '', TargetSearch: '', TargetID: '', TargetName: '', Title: '', StartDate: '', EndDate: '' };
+        return { TypeID: '', TargetSearch: '', TargetID: '', TargetName: '', Title: '', StartDate: '', EndDate: '', JobFunctionID: '', SeniorityLevelID: '' };
     }
 
     /** Creates a blank {@link EditFormData} with default status of Active. */
     private createEmptyEditForm(): EditFormData {
-        return { TypeID: '', Title: '', StartDate: '', EndDate: '', Status: 'Active' };
+        return { TypeID: '', Title: '', StartDate: '', EndDate: '', Status: 'Active', JobFunctionID: '', SeniorityLevelID: '' };
     }
 
     /**
@@ -368,6 +402,30 @@ export class RelationshipListComponent {
                     for (const rt of this.RelationshipTypes) {
                         this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
                     }
+                }
+            }
+
+            if (this.JobFunctions.length === 0) {
+                const jfResult = await rv.RunView<mjBizAppsCommonJobFunctionEntity>({
+                    EntityName: 'MJ_BizApps_Common: Job Functions',
+                    ExtraFilter: "Status='Active'",
+                    OrderBy: 'Sequence ASC, Name ASC',
+                    ResultType: 'entity_object'
+                });
+                if (jfResult.Success && jfResult.Results) {
+                    this.JobFunctions = jfResult.Results;
+                }
+            }
+
+            if (this.SeniorityLevels.length === 0) {
+                const slResult = await rv.RunView<mjBizAppsCommonSeniorityLevelEntity>({
+                    EntityName: 'MJ_BizApps_Common: Seniority Levels',
+                    ExtraFilter: "Status='Active'",
+                    OrderBy: 'Sequence ASC, Name ASC',
+                    ResultType: 'entity_object'
+                });
+                if (slResult.Success && slResult.Results) {
+                    this.SeniorityLevels = slResult.Results;
                 }
             }
 
@@ -719,6 +777,8 @@ export class RelationshipListComponent {
             this.DraftRelationship.RelationshipTypeID = this.AddForm.TypeID;
             this.DraftRelationship.Title = this.AddForm.Title || null;
             this.DraftRelationship.Status = 'Active';
+            this.DraftRelationship.JobFunctionID = this.AddForm.JobFunctionID || null;
+            this.DraftRelationship.SeniorityLevelID = this.AddForm.SeniorityLevelID || null;
 
             if (this.AddForm.StartDate) {
                 this.DraftRelationship.StartDate = new Date(this.AddForm.StartDate);
@@ -766,8 +826,11 @@ export class RelationshipListComponent {
             Title: rel.Title || '',
             StartDate: rel.StartDate ? this.formatDateForInput(rel.StartDate) : '',
             EndDate: rel.EndDate ? this.formatDateForInput(rel.EndDate) : '',
-            Status: rel.Status as 'Active' | 'Inactive' | 'Ended'
+            Status: rel.Status as 'Active' | 'Inactive' | 'Ended',
+            JobFunctionID: rel.JobFunctionID || '',
+            SeniorityLevelID: rel.SeniorityLevelID || '',
         };
+        this.ShowEditAdvanced = !!(rel.JobFunctionID || rel.SeniorityLevelID);
         this.EditingId = rel.ID;
         this.ShowAddForm = false;
         this.cdr.detectChanges();
@@ -831,6 +894,8 @@ export class RelationshipListComponent {
             rel.Status = this.EditForm.Status;
             rel.StartDate = this.EditForm.StartDate ? new Date(this.EditForm.StartDate) : null;
             rel.EndDate = this.EditForm.EndDate ? new Date(this.EditForm.EndDate) : null;
+            rel.JobFunctionID = this.EditForm.JobFunctionID || null;
+            rel.SeniorityLevelID = this.EditForm.SeniorityLevelID || null;
 
             if (this._collection && this._collection.Items.some(i => i.ID === rel!.ID)) {
                 this.EditingId = null;

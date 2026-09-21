@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey } from '@memberjunction/core';
+import { CompositeKey, LogError, RunView } from '@memberjunction/core';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
@@ -24,6 +24,35 @@ export class PersonIdentityComponent implements OnInit {
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
 
     public Collapsed = false;
+    public AllJobFunctions: string[] = [];
+    public ShowAllFunctions = false;
+    public LoadingFunctions = false;
+
+    public async ToggleAllFunctions(): Promise<void> {
+        this.ShowAllFunctions = !this.ShowAllFunctions;
+        if (this.ShowAllFunctions && this.AllJobFunctions.length === 0 && this.Record.ID) {
+            this.LoadingFunctions = true;
+            try {
+                const rv = new RunView();
+                const result = await rv.RunView<{ JobFunction: string }>({
+                    EntityName: 'MJ_BizApps_Common: Person Job Functions',
+                    Fields: ['JobFunction'],
+                    ExtraFilter: `PersonID = '${this.Record.ID}'`,
+                    OrderBy: 'Sequence ASC, JobFunction ASC',
+                    ResultType: 'simple',
+                });
+                if (result.Success && result.Results) {
+                    this.AllJobFunctions = result.Results.map(r => r.JobFunction).filter(Boolean);
+                } else if (!result.Success) {
+                    LogError(`PersonIdentity: failed to load job functions for person '${this.Record.ID}': ${result.ErrorMessage ?? 'unknown error'}`);
+                }
+            } catch (err) {
+                LogError('PersonIdentity: error loading job functions', undefined, err);
+            } finally {
+                this.LoadingFunctions = false;
+            }
+        }
+    }
 
     public ngOnInit(): void {
         const raw = UserInfoEngine.Instance.GetSetting('mj.identityHeader.collapsed.person');

@@ -67,6 +67,16 @@
                                         @if (item.Relationship.Title) {
                                             <span class="rel-timeline-title">{{ item.Relationship.Title }}</span>
                                         }
+                                        @if (item.Relationship.JobFunction) {
+                                            <span class="badge badge-subtle" title="Job Function">
+                                                <i class="fa-solid fa-briefcase"></i> {{ item.Relationship.JobFunction }}
+                                            </span>
+                                        }
+                                        @if (item.Relationship.SeniorityLevel) {
+                                            <span class="badge badge-subtle" title="Seniority Level">
+                                                <i class="fa-solid fa-layer-group"></i> {{ item.Relationship.SeniorityLevel }}
+                                            </span>
+                                        }
                                         @if (item.DateDisplay) {
                                             <span class="rel-timeline-dates">
                                                 <i class="fa-regular fa-calendar"></i> {{ item.DateDisplay }}
@@ -193,6 +203,36 @@
                         <input type="date" [(ngModel)]="AddForm.EndDate">
                     </div>
                 </div>
+
+                <!-- Progressive Disclosure: Role Details (Function & Seniority) -->
+                <div class="rel-form-progressive">
+                    <button type="button" class="rel-form-progressive-toggle" (click)="ShowAddAdvanced = !ShowAddAdvanced">
+                        <i [class]="ShowAddAdvanced ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'"></i>
+                        Role Classification (Function & Seniority)
+                    </button>
+                    @if (ShowAddAdvanced) {
+                        <div class="form-row form-row--classification">
+                            <div class="form-field">
+                                <label>Job Function</label>
+                                <select [(ngModel)]="AddForm.JobFunctionID">
+                                    <option value="">— None —</option>
+                                    @for (jf of JobFunctions; track jf.ID) {
+                                        <option [value]="jf.ID">{{ jf.Name }}</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Seniority Level</label>
+                                <select [(ngModel)]="AddForm.SeniorityLevelID">
+                                    <option value="">— None —</option>
+                                    @for (sl of SeniorityLevels; track sl.ID) {
+                                        <option [value]="sl.ID">{{ sl.Name }}</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
 
             <div class="rel-form-footer">
@@ -265,6 +305,36 @@
                         <label>End Date</label>
                         <input type="date" [(ngModel)]="EditForm.EndDate">
                     </div>
+                </div>
+
+                <!-- Progressive Disclosure: Role Details (Function & Seniority) -->
+                <div class="rel-form-progressive">
+                    <button type="button" class="rel-form-progressive-toggle" (click)="ShowEditAdvanced = !ShowEditAdvanced">
+                        <i [class]="ShowEditAdvanced ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'"></i>
+                        Role Classification (Function & Seniority)
+                    </button>
+                    @if (ShowEditAdvanced) {
+                        <div class="form-row form-row--classification">
+                            <div class="form-field">
+                                <label>Job Function</label>
+                                <select [(ngModel)]="EditForm.JobFunctionID">
+                                    <option value="">— None —</option>
+                                    @for (jf of JobFunctions; track jf.ID) {
+                                        <option [value]="jf.ID">{{ jf.Name }}</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Seniority Level</label>
+                                <select [(ngModel)]="EditForm.SeniorityLevelID">
+                                    <option value="">— None —</option>
+                                    @for (sl of SeniorityLevels; track sl.ID) {
+                                        <option [value]="sl.ID">{{ sl.Name }}</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 

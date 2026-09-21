@@ -20,11 +20,13 @@ export class mjBizAppsCommonPersonFormComponent extends BaseFormComponent {
             { sectionKey: 'professionalAndProfile', sectionName: 'Professional and Profile', isExpanded: true },
             { sectionKey: 'accountAndStatus', sectionName: 'Account and Status', isExpanded: true },
             { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
+            { sectionKey: 'locationDetails', sectionName: 'Location Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsToPersonID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsFromPersonID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonActivitySyncExclusions', sectionName: 'Activity Sync Exclusions', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonActivitySyncExclusions', sectionName: 'Activity Sync Exclusions', isExpanded: false },
+            { sectionKey: 'mJBizAppsCommonPersonJobFunctions', sectionName: 'Person Job Functions', isExpanded: false }
         ]);
     }
 }
