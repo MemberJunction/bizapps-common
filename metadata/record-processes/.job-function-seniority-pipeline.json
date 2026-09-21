@@ -3,14 +3,15 @@
     "fields": {
       "Name": "Job Function and Seniority Derivation",
       "Description": "Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.",
-      "CategoryID": "DF605624-5E5F-4508-A691-9E573FF3F3C3",
+      "CategoryID": "@lookup:MJ: Record Process Categories.Name=Feature Pipeline",
+      "PromptID": "@lookup:MJ: AI Prompts.Name=Job Function and Seniority Derivation",
       "WorkType": "Infer",
       "Status": "Active",
       "ScopeType": "Filter",
-      "ScopeFilter": "CurrentJobTitle IS NOT NULL AND (SeniorityLevelID IS NULL OR NOT EXISTS (SELECT 1 FROM [__mj_BizAppsCommon].[PersonJobFunction] pjf WHERE pjf.PersonID = ID))",
+      "ScopeFilter": "CurrentJobTitle IS NOT NULL AND (SeniorityLevelID IS NULL OR NOT EXISTS (SELECT 1 FROM vwPersonJobFunctions pjf WHERE pjf.PersonID = ID))",
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
       "OutputMapping": "{\"fields\":{\"SeniorityLevelID\":\"$.SeniorityLevel\"}}",
-      "Configuration": "{\"Name\":\"Job Function and Seniority Derivation\",\"Description\":\"Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.\",\"PromptID\":\"DF605624-5E5F-4508-A691-9E573FF3F3C3\",\"Context\":{\"Fields\":[\"CurrentJobTitle\"]},\"Outputs\":[{\"Ref\":\"$.Functions\",\"Name\":\"JobFunctions\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"child\",\"EntityName\":\"MJ_BizApps_Common: Person Job Functions\",\"ParentField\":\"PersonID\",\"Map\":{\"JobFunctionID\":\"$.JobFunctionID\",\"Confidence\":\"$.Confidence\",\"Sequence\":\"$.Sequence\"},\"FanOutRef\":\"Functions\"}},{\"Ref\":\"$.SeniorityLevel\",\"Name\":\"SeniorityLevel\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"field\",\"EntityFieldName\":\"SeniorityLevelID\",\"LookupMatchField\":\"Name\",\"OnLookupMiss\":\"null\"}}],\"Caching\":{\"Cacheable\":true,\"KeyFields\":[\"CurrentJobTitle\"],\"TTLSeconds\":2592000,\"Scope\":\"pipeline\"},\"CaptureReasoning\":true}"
+      "Configuration": "{\"Name\":\"Job Function and Seniority Derivation\",\"Description\":\"Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.\",\"PromptID\":\"@lookup:MJ: AI Prompts.Name=Job Function and Seniority Derivation\",\"Context\":{\"Fields\":[\"CurrentJobTitle\"]},\"Outputs\":[{\"Ref\":\"$.Functions\",\"Name\":\"JobFunctions\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"child\",\"EntityName\":\"MJ_BizApps_Common: Person Job Functions\",\"ParentField\":\"PersonID\",\"Map\":{\"JobFunctionID\":\"$.JobFunctionID\",\"Confidence\":\"$.Confidence\",\"Sequence\":\"$.Sequence\"},\"FanOutRef\":\"Functions\"}},{\"Ref\":\"$.SeniorityLevel\",\"Name\":\"SeniorityLevel\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"field\",\"EntityFieldName\":\"SeniorityLevelID\",\"LookupMatchField\":\"Name\",\"OnLookupMiss\":\"null\"}}],\"Caching\":{\"Cacheable\":true,\"KeyFields\":[\"CurrentJobTitle\"],\"TTLSeconds\":2592000,\"Scope\":\"pipeline\"},\"CaptureReasoning\":true}"
     },
     "primaryKey": {
       "ID": "7E030001-A101-4B01-8C01-000000000001"

@@ -238,7 +238,8 @@ OUTER APPLY (
     WHERE
         pjf.[PersonID] = g.[ID]
     ORDER BY
-        pjf.[Sequence] ASC
+        pjf.[Sequence] ASC,
+        jf.[Name] ASC
 ) AS primary_jf;
 GO
 
@@ -247,10 +248,35 @@ GO
 ---------------------------------------------------------------------------
 EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Business job functions (Engineering, Marketing, Sales, etc.) for categorizing roles and career paths.',
     @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'JobFunction';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Unique display name of the job function.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'JobFunction', @level2type=N'COLUMN', @level2name=N'Name';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Detailed description of the job function and the roles it encompasses.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'JobFunction', @level2type=N'COLUMN', @level2name=N'Description';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Display sort sequence order.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'JobFunction', @level2type=N'COLUMN', @level2name=N'Sequence';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Lifecycle status (Active, Inactive) of the job function.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'JobFunction', @level2type=N'COLUMN', @level2name=N'Status';
+
 EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Career seniority levels carrying rank order (IC, Manager, Director, VP, C-Level) for skill and scope classification.',
     @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'SeniorityLevel';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Unique display name of the seniority level.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'SeniorityLevel', @level2type=N'COLUMN', @level2name=N'Name';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Detailed description of the seniority level and role expectations.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'SeniorityLevel', @level2type=N'COLUMN', @level2name=N'Description';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Rank order sequence from entry-level/IC to executive/C-level.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'SeniorityLevel', @level2type=N'COLUMN', @level2name=N'Sequence';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Lifecycle status (Active, Inactive) of the seniority level.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'SeniorityLevel', @level2type=N'COLUMN', @level2name=N'Status';
+
 EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'1:M assignment of job functions to a person, supporting plural functions and ranking order.',
     @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'PersonJobFunction';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Rank order sequence for a person with multiple job functions (Sequence 1 = primary).',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'PersonJobFunction', @level2type=N'COLUMN', @level2name=N'Sequence';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Provenance of this function assignment (Manual by user, or Derived by automated pipeline).',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'PersonJobFunction', @level2type=N'COLUMN', @level2name=N'Source';
+EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.',
+    @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'PersonJobFunction', @level2type=N'COLUMN', @level2name=N'Confidence';
+
 EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Current primary seniority level for this person.',
     @level0type=N'SCHEMA', @level0name=N'${flyway:defaultSchema}', @level1type=N'TABLE', @level1name=N'Person', @level2type=N'COLUMN', @level2name=N'SeniorityLevelID';
 EXEC sp_addextendedproperty @name=N'MS_Description', @value=N'Company-specific job function for this relationship/employment link.',
