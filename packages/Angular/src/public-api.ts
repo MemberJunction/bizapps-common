@@ -46,6 +46,8 @@ export {
     type ResolvedRelatedChip,
 } from './lib/components/related-chips/related-links';
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
+export { PersonJobFunctionsComponent } from './lib/components/person-job-functions/person-job-functions.component';
+export { PersonJobFunctionsPanel } from './lib/custom/panels/person-job-functions.panel';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';

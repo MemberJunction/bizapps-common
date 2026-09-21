@@ -10,19 +10,69 @@
       "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
       "IsShared": true,
       "GridState": {
-        "sortSettings": [{ "field": "DisplayName", "dir": "asc" }],
+        "sortSettings": [
+          {
+            "field": "DisplayName",
+            "dir": "asc"
+          }
+        ],
         "columnSettings": [
-          { "Name": "PhotoURL", "DisplayName": "Photo", "orderIndex": 0, "width": 72, "format": { "type": "image" } },
-          { "Name": "DisplayName", "DisplayName": "Name", "orderIndex": 1, "width": 220, "pinned": "left" },
-          { "Name": "Title", "DisplayName": "Title", "orderIndex": 2, "width": 160 },
-          { "Name": "CurrentOrganizationName", "DisplayName": "Organization", "orderIndex": 3, "width": 200 },
-          { "Name": "PrimaryEmail", "DisplayName": "Email", "orderIndex": 4, "width": 200 },
-          { "Name": "PrimaryPhone", "DisplayName": "Phone", "orderIndex": 5, "width": 140 },
-          { "Name": "Status", "DisplayName": "Status", "orderIndex": 6, "width": 110 }
+          {
+            "Name": "PhotoURL",
+            "DisplayName": "Photo",
+            "orderIndex": 0,
+            "width": 72,
+            "format": {
+              "type": "image"
+            }
+          },
+          {
+            "Name": "DisplayName",
+            "DisplayName": "Name",
+            "orderIndex": 1,
+            "width": 220,
+            "pinned": "left"
+          },
+          {
+            "Name": "Title",
+            "DisplayName": "Title",
+            "orderIndex": 2,
+            "width": 160
+          },
+          {
+            "Name": "CurrentOrganizationName",
+            "DisplayName": "Organization",
+            "orderIndex": 3,
+            "width": 200
+          },
+          {
+            "Name": "PrimaryEmail",
+            "DisplayName": "Email",
+            "orderIndex": 4,
+            "width": 200
+          },
+          {
+            "Name": "PrimaryPhone",
+            "DisplayName": "Phone",
+            "orderIndex": 5,
+            "width": 140
+          },
+          {
+            "Name": "Status",
+            "DisplayName": "Status",
+            "orderIndex": 6,
+            "width": 110
+          }
         ]
       }
     },
-    "primaryKey": { "ID": "c0a11e01-0001-4e71-b0a8-3f17c5e2d801" }
+    "primaryKey": {
+      "ID": "C0A11E01-0001-4E71-B0A8-3F17C5E2D801"
+    },
+    "sync": {
+      "lastModified": "2026-09-10T23:26:53.007Z",
+      "checksum": "006c064ceb62c994a9da3c4732a1c0f2b32306c3b42f2de074d5c17672385e07"
+    }
   },
   {
     "_comments": [
@@ -35,17 +85,61 @@
       "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
       "IsShared": true,
       "GridState": {
-        "sortSettings": [{ "field": "__mj_CreatedAt", "dir": "desc" }],
+        "sortSettings": [
+          {
+            "field": "__mj_CreatedAt",
+            "dir": "desc"
+          }
+        ],
         "columnSettings": [
-          { "Name": "PhotoURL", "DisplayName": "Photo", "orderIndex": 0, "width": 72, "format": { "type": "image" } },
-          { "Name": "DisplayName", "DisplayName": "Name", "orderIndex": 1, "width": 220, "pinned": "left" },
-          { "Name": "CurrentOrganizationName", "DisplayName": "Organization", "orderIndex": 2, "width": 200 },
-          { "Name": "PrimaryEmail", "DisplayName": "Email", "orderIndex": 3, "width": 200 },
-          { "Name": "__mj_CreatedAt", "DisplayName": "Added", "orderIndex": 4, "width": 140, "format": { "type": "date", "dateFormat": "medium" } }
+          {
+            "Name": "PhotoURL",
+            "DisplayName": "Photo",
+            "orderIndex": 0,
+            "width": 72,
+            "format": {
+              "type": "image"
+            }
+          },
+          {
+            "Name": "DisplayName",
+            "DisplayName": "Name",
+            "orderIndex": 1,
+            "width": 220,
+            "pinned": "left"
+          },
+          {
+            "Name": "CurrentOrganizationName",
+            "DisplayName": "Organization",
+            "orderIndex": 2,
+            "width": 200
+          },
+          {
+            "Name": "PrimaryEmail",
+            "DisplayName": "Email",
+            "orderIndex": 3,
+            "width": 200
+          },
+          {
+            "Name": "__mj_CreatedAt",
+            "DisplayName": "Added",
+            "orderIndex": 4,
+            "width": 140,
+            "format": {
+              "type": "date",
+              "dateFormat": "medium"
+            }
+          }
         ]
       }
     },
-    "primaryKey": { "ID": "c0a11e02-0001-4e71-b0a8-3f17c5e2d801" }
+    "primaryKey": {
+      "ID": "C0A11E02-0001-4E71-B0A8-3F17C5E2D801"
+    },
+    "sync": {
+      "lastModified": "2026-09-10T23:26:53.006Z",
+      "checksum": "9b71b4c88b657452c3285d1e0dc08b2c15ba1a02513fcdc2e8ba188c917c1a02"
+    }
   },
   {
     "_comments": [
@@ -58,18 +152,63 @@
       "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
       "IsShared": true,
       "GridState": {
-        "sortSettings": [{ "field": "Name", "dir": "asc" }],
+        "sortSettings": [
+          {
+            "field": "Name",
+            "dir": "asc"
+          }
+        ],
         "columnSettings": [
-          { "Name": "LogoURL", "DisplayName": "Logo", "orderIndex": 0, "width": 72, "format": { "type": "image" } },
-          { "Name": "Name", "DisplayName": "Organization", "orderIndex": 1, "width": 240, "pinned": "left" },
-          { "Name": "OrganizationType", "DisplayName": "Type", "orderIndex": 2, "width": 140 },
-          { "Name": "Website", "DisplayName": "Website", "orderIndex": 3, "width": 200 },
-          { "Name": "PrimaryAddressCity", "DisplayName": "City", "orderIndex": 4, "width": 140 },
-          { "Name": "Status", "DisplayName": "Status", "orderIndex": 5, "width": 110 }
+          {
+            "Name": "LogoURL",
+            "DisplayName": "Logo",
+            "orderIndex": 0,
+            "width": 72,
+            "format": {
+              "type": "image"
+            }
+          },
+          {
+            "Name": "Name",
+            "DisplayName": "Organization",
+            "orderIndex": 1,
+            "width": 240,
+            "pinned": "left"
+          },
+          {
+            "Name": "OrganizationType",
+            "DisplayName": "Type",
+            "orderIndex": 2,
+            "width": 140
+          },
+          {
+            "Name": "Website",
+            "DisplayName": "Website",
+            "orderIndex": 3,
+            "width": 200
+          },
+          {
+            "Name": "PrimaryAddressCity",
+            "DisplayName": "City",
+            "orderIndex": 4,
+            "width": 140
+          },
+          {
+            "Name": "Status",
+            "DisplayName": "Status",
+            "orderIndex": 5,
+            "width": 110
+          }
         ]
       }
     },
-    "primaryKey": { "ID": "c0a11e03-0001-4e71-b0a8-3f17c5e2d801" }
+    "primaryKey": {
+      "ID": "C0A11E03-0001-4E71-B0A8-3F17C5E2D801"
+    },
+    "sync": {
+      "lastModified": "2026-09-10T23:26:53.007Z",
+      "checksum": "9524ed8c5e696bd8f1a313504b4936d9f3413e09c6eb33c820986cbcfa9400f0"
+    }
   },
   {
     "_comments": [
@@ -82,18 +221,64 @@
       "UserID": "ECAFCCEC-6A37-EF11-86D4-000D3A4E707E",
       "IsShared": true,
       "GridState": {
-        "sortSettings": [{ "field": "__mj_CreatedAt", "dir": "desc" }],
+        "sortSettings": [
+          {
+            "field": "__mj_CreatedAt",
+            "dir": "desc"
+          }
+        ],
         "columnSettings": [
-          { "Name": "RelationshipType", "DisplayName": "Type", "orderIndex": 0, "width": 140 },
-          { "Name": "Title", "DisplayName": "Title", "orderIndex": 1, "width": 200 },
-          { "Name": "FromPerson", "DisplayName": "From person", "orderIndex": 2, "width": 180 },
-          { "Name": "FromOrganization", "DisplayName": "From org", "orderIndex": 3, "width": 180 },
-          { "Name": "ToPerson", "DisplayName": "To person", "orderIndex": 4, "width": 180 },
-          { "Name": "ToOrganization", "DisplayName": "To org", "orderIndex": 5, "width": 180 },
-          { "Name": "Status", "DisplayName": "Status", "orderIndex": 6, "width": 110 }
+          {
+            "Name": "RelationshipType",
+            "DisplayName": "Type",
+            "orderIndex": 0,
+            "width": 140
+          },
+          {
+            "Name": "Title",
+            "DisplayName": "Title",
+            "orderIndex": 1,
+            "width": 200
+          },
+          {
+            "Name": "FromPerson",
+            "DisplayName": "From person",
+            "orderIndex": 2,
+            "width": 180
+          },
+          {
+            "Name": "FromOrganization",
+            "DisplayName": "From org",
+            "orderIndex": 3,
+            "width": 180
+          },
+          {
+            "Name": "ToPerson",
+            "DisplayName": "To person",
+            "orderIndex": 4,
+            "width": 180
+          },
+          {
+            "Name": "ToOrganization",
+            "DisplayName": "To org",
+            "orderIndex": 5,
+            "width": 180
+          },
+          {
+            "Name": "Status",
+            "DisplayName": "Status",
+            "orderIndex": 6,
+            "width": 110
+          }
         ]
       }
     },
-    "primaryKey": { "ID": "c0a11e05-0001-4e71-b0a8-3f17c5e2d801" }
+    "primaryKey": {
+      "ID": "C0A11E05-0001-4E71-B0A8-3F17C5E2D801"
+    },
+    "sync": {
+      "lastModified": "2026-09-10T23:26:53.007Z",
+      "checksum": "5deef9f7a2c3a8972bc05e88cabdf2d174a3113b06f10cfaf7fbef6752298468"
+    }
   }
 ]

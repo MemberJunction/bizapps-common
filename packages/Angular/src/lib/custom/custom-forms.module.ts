@@ -18,6 +18,8 @@ import { ActivityHeaderPanel } from './panels/activity-header.panel';
 import { PersonAddressesPanel } from './panels/person-addresses.panel';
 import { PersonContactMethodsPanel } from './panels/person-contact-methods.panel';
 import { PersonRelationshipsPanel } from './panels/person-relationships.panel';
+import { PersonJobFunctionsPanel } from './panels/person-job-functions.panel';
+import { PersonJobFunctionsComponent } from '../components/person-job-functions/person-job-functions.component';
 import { OrganizationAddressesPanel } from './panels/organization-addresses.panel';
 import { OrganizationContactMethodsPanel } from './panels/organization-contact-methods.panel';
 import { OrganizationRelationshipsPanel } from './panels/organization-relationships.panel';
@@ -35,6 +37,7 @@ const PANELS = [
     PersonAddressesPanel,
     PersonContactMethodsPanel,
     PersonRelationshipsPanel,
+    PersonJobFunctionsPanel,
     OrganizationAddressesPanel,
     OrganizationContactMethodsPanel,
     OrganizationRelationshipsPanel,
@@ -55,6 +58,7 @@ const PANELS = [
         OrgHierarchyTreeComponent,
         CommonRelationshipGraphComponent,
         PersonIdentityComponent,
+        PersonJobFunctionsComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,
@@ -66,6 +70,7 @@ const PANELS = [
     exports: [
         ...PANELS,
         PersonIdentityComponent,
+        PersonJobFunctionsComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,

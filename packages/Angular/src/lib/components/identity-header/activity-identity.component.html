@@ -30,6 +30,12 @@
                         {{ Record.Outcome }}
                     </span>
                 }
+                @if (SentimentDisplay) {
+                    <span class="biz-hero__chip" [attr.data-tone]="SentimentTone" title="Derived Sentiment Score">
+                        <i [class]="SentimentIcon"></i>
+                        Sentiment {{ SentimentDisplay }}
+                    </span>
+                }
             </div>
         </div>
 
