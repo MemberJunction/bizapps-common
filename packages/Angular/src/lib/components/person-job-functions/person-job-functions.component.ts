@@ -111,9 +111,14 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
 
             if (catalogRes.Success && catalogRes.Results) {
                 this.AvailableFunctions = catalogRes.Results;
+            } else if (!catalogRes.Success) {
+                this.ErrorMessage = catalogRes.ErrorMessage || 'Failed to load job function catalog';
             }
+
             if (assignedRes.Success && assignedRes.Results) {
                 this.Items = [...assignedRes.Results].sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0));
+            } else if (!assignedRes.Success) {
+                this.ErrorMessage = assignedRes.ErrorMessage || 'Failed to load assigned job functions';
             }
         } catch (err) {
             console.error('[PersonJobFunctions] Failed to load job functions:', err);
@@ -150,7 +155,7 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
 
             const saved = await newRecord.Save();
             if (!saved) {
-                throw new Error(newRecord.LatestResult?.Message || 'Failed to save job function');
+                throw new Error(newRecord.LatestResult?.CompleteMessage || 'Failed to save job function');
             }
 
             this.SelectedFunctionIDToAdd = '';
@@ -177,7 +182,7 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
         try {
             const deleted = await item.Delete();
             if (!deleted) {
-                throw new Error(item.LatestResult?.Message || 'Failed to remove job function');
+                throw new Error(item.LatestResult?.CompleteMessage || 'Failed to remove job function');
             }
 
             // Renumber remaining items to ensure sequential 1..N order
@@ -261,7 +266,10 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
             const expectedSeq = i + 1;
             if (items[i].Sequence !== expectedSeq) {
                 items[i].Sequence = expectedSeq;
-                await items[i].Save();
+                const saved = await items[i].Save();
+                if (!saved) {
+                    throw new Error(items[i].LatestResult?.CompleteMessage || `Failed to update sequence for job function ${items[i].JobFunction}`);
+                }
             }
         }
     }
