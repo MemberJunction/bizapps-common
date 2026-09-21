@@ -23,7 +23,12 @@
     "entity-actions",
     "user-views",
     "query-categories",
-    "queries"
+    "queries",
+    "tags",
+    "job-functions",
+    "seniority-levels",
+    "prompts",
+    "record-processes"
   ],
   "sqlLogging": {
     "enabled": true,

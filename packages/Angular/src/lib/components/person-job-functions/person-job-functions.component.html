@@ -1,0 +1,177 @@
+<div class="pjf-container">
+    <!-- Top Action Bar -->
+    <div class="pjf-header">
+        <div class="pjf-header-left">
+            <span class="pjf-count-badge">
+                {{ Items.length }} {{ Items.length === 1 ? 'Job Function' : 'Job Functions' }}
+            </span>
+            @if (Items.length > 0) {
+                <span class="pjf-primary-summary">
+                    Primary: <strong>{{ Items[0].JobFunction }}</strong>
+                </span>
+            }
+        </div>
+        <div class="pjf-header-right">
+            @if (EditMode && unassignedFunctions.length > 0) {
+                <button
+                    mjButton
+                    size="sm"
+                    variant="primary"
+                    [disabled]="Saving"
+                    (click)="ShowAddPicker = !ShowAddPicker">
+                    <i class="fa-solid" [class.fa-plus]="!ShowAddPicker" [class.fa-xmark]="ShowAddPicker"></i>
+                    {{ ShowAddPicker ? 'Cancel' : 'Add Function' }}
+                </button>
+            }
+            <button
+                mjButton
+                size="sm"
+                variant="flat"
+                [disabled]="Loading || Saving"
+                (click)="loadAll()">
+                <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="Loading"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Add Picker -->
+    @if (ShowAddPicker && EditMode) {
+        <div class="pjf-add-card">
+            <div class="pjf-add-title">
+                <i class="fa-solid fa-plus-circle"></i> Add Job Function
+            </div>
+            <div class="pjf-add-form">
+                <select
+                    class="pjf-select"
+                    [(ngModel)]="SelectedFunctionIDToAdd"
+                    [disabled]="Saving">
+                    <option value="" disabled>— Select Job Function to Assign —</option>
+                    @for (fn of unassignedFunctions; track fn.ID) {
+                        <option [value]="fn.ID">{{ fn.Name }}</option>
+                    }
+                </select>
+                <button
+                    mjButton
+                    size="sm"
+                    variant="primary"
+                    [disabled]="!SelectedFunctionIDToAdd || Saving"
+                    (click)="onAddFunction()">
+                    <i class="fa-solid fa-check"></i> Assign
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Error Banner -->
+    @if (ErrorMessage) {
+        <div class="pjf-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ ErrorMessage }}</span>
+        </div>
+    }
+
+    <!-- Loading State -->
+    @if (Loading && Items.length === 0) {
+        <div class="pjf-loading">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Loading job functions...</span>
+        </div>
+    } @else if (Items.length === 0) {
+        <!-- Empty State -->
+        <div class="pjf-empty">
+            <i class="fa-solid fa-briefcase"></i>
+            <h4>No Job Functions Assigned</h4>
+            <p>Assign one or more job functions to prioritize this person's functional specialties.</p>
+            @if (EditMode && unassignedFunctions.length > 0) {
+                <button mjButton size="sm" variant="secondary" (click)="ShowAddPicker = true">
+                    <i class="fa-solid fa-plus"></i> Assign First Function
+                </button>
+            }
+        </div>
+    } @else {
+        <!-- Job Functions List -->
+        <div class="pjf-list">
+            @for (item of Items; track item.ID; let idx = $index; let first = $first; let last = $last) {
+                <div class="pjf-item-card" [class.is-primary]="first">
+                    <!-- Sequence / Rank Column -->
+                    <div class="pjf-seq-col">
+                        @if (first) {
+                            <div class="pjf-rank-badge primary" title="Primary Job Function">
+                                <i class="fa-solid fa-star"></i>
+                                <span>#1 Primary</span>
+                            </div>
+                        } @else {
+                            <div class="pjf-rank-badge" title="Secondary Job Function">
+                                <span>#{{ idx + 1 }}</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Main Info Column -->
+                    <div class="pjf-info-col">
+                        <div class="pjf-name-row">
+                            <span class="pjf-function-name">{{ item.JobFunction }}</span>
+                            <div class="pjf-pill-group">
+                                @if (item.Source === 'Derived') {
+                                    <span class="pjf-source-pill derived" title="Derived by Feature Pipeline">
+                                        <i class="fa-solid fa-sparkles"></i> Derived
+                                        @if (item.Confidence != null) {
+                                            <span class="pjf-conf">({{ formatConfidence(item.Confidence) }})</span>
+                                        }
+                                    </span>
+                                } @else {
+                                    <span class="pjf-source-pill manual" title="Manually assigned">
+                                        <i class="fa-solid fa-user-pen"></i> Manual
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reorder & Actions Column -->
+                    @if (EditMode) {
+                        <div class="pjf-actions-col">
+                            @if (!first) {
+                                <button
+                                    class="pjf-action-btn primary-btn"
+                                    type="button"
+                                    title="Set as Primary"
+                                    [disabled]="Saving"
+                                    (click)="onSetPrimary(idx)">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span>Make Primary</span>
+                                </button>
+                            }
+                            <div class="pjf-order-buttons">
+                                <button
+                                    class="pjf-icon-btn"
+                                    type="button"
+                                    title="Move Up"
+                                    [disabled]="first || Saving"
+                                    (click)="onMoveUp(idx)">
+                                    <i class="fa-solid fa-chevron-up"></i>
+                                </button>
+                                <button
+                                    class="pjf-icon-btn"
+                                    type="button"
+                                    title="Move Down"
+                                    [disabled]="last || Saving"
+                                    (click)="onMoveDown(idx)">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <button
+                                class="pjf-icon-btn delete-btn"
+                                type="button"
+                                title="Remove Job Function"
+                                [disabled]="Saving"
+                                (click)="onRemove(item)">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

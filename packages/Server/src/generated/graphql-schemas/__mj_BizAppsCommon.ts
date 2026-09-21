@@ -4741,6 +4741,12 @@ export class mjBizAppsCommonOrganization_ {
     @Field(() => Int, {nullable: true}) 
     ParentIDChildCount?: number;
         
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
     @Field({nullable: true}) 
     @MaxLength(255)
     PrimaryAddressLine1?: string;
@@ -5063,6 +5069,12 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     LinkedUser?: string;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
         
     @Field({nullable: true}) 
     @MaxLength(100)

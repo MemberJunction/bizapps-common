@@ -1,10 +1,10 @@
 [
   {
     "fields": {
-      "Name": "Activity Tagging and Sentiment Derivation",
-      "Description": "Analyzes an activity and the linked contact's prior interaction history to extract relative sentiment score and sentiment taxonomy tags.",
+      "Name": "Job Function and Seniority Derivation",
+      "Description": "Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.",
       "TypeID": "@lookup:MJ: AI Prompt Types.Name=Chat",
-      "TemplateText": "@file:templates/activity-tagging-sentiment.template.md",
+      "TemplateText": "@file:templates/job-function-seniority.template.md",
       "Status": "Active",
       "ResponseFormat": "JSON",
       "SelectionStrategy": "Specific",
@@ -27,21 +27,21 @@
             "Priority": 1
           },
           "primaryKey": {
-            "ID": "29E25958-922D-4148-A9DB-01770ED9F3B1"
+            "ID": "FE550867-CA64-4578-9912-083314D3AEF2"
           },
           "sync": {
-            "lastModified": "2026-09-21T18:02:42.508Z",
+            "lastModified": "2026-09-21T18:02:43.624Z",
             "checksum": "71ee991d8e0ab07b2e4ea296274c871739fbb9068ae94df729251a82c42f9641"
           }
         }
       ]
     },
     "primaryKey": {
-      "ID": "8A250001-A101-4B01-8C01-000000000001"
+      "ID": "7C46041F-0412-4C2E-9B9E-3ED61D32210C"
     },
     "sync": {
-      "lastModified": "2026-09-21T18:02:42.449Z",
-      "checksum": "b89735b8c34488364d8b4398691c034cb2230ea7de45e2111ceb0b8339cb0fef"
+      "lastModified": "2026-09-21T18:02:43.601Z",
+      "checksum": "2055e71111d54e1d4e09a4bd7a18f71ea033a47d7bf550cf67a5ea5a47f48517"
     }
   }
 ]

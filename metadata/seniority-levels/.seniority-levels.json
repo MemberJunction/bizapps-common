@@ -8,6 +8,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000001"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.708Z",
+      "checksum": "b8806feb3a8da18a340b898cdcbbc85a2809b30d3bd3dedc5d23207c1face667"
     }
   },
   {
@@ -19,6 +23,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000002"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.726Z",
+      "checksum": "80c1dc321ccbfdb158c2d4a0ea88401941efcae4083e3c110a70012cfb3f72f0"
     }
   },
   {
@@ -30,6 +38,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000003"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.742Z",
+      "checksum": "f62c0411c1e1d4b08da3ebe0c96b9f4af36899a192ed5ae52094db5286fe934f"
     }
   },
   {
@@ -41,6 +53,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000004"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.756Z",
+      "checksum": "4d03bb94c1f09d477b709a20c85c7bd7a1d0eaddd97db6dc46f537d6ff266c80"
     }
   },
   {
@@ -52,6 +68,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000005"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.769Z",
+      "checksum": "ea8b981a67edec2252f0222ada632adfc766ad11aac90069d01faf6b0625e76e"
     }
   },
   {
@@ -63,6 +83,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000006"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.784Z",
+      "checksum": "1ab50d61400ef1ca6e96be6a5432e5e60d357301a14e26ef72170a92cb80545b"
     }
   },
   {
@@ -74,6 +98,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000007"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.798Z",
+      "checksum": "e8bb7af39ffacd1337bc8ec09dcd13e0de246712876edddbdf00047278cd6ff3"
     }
   },
   {
@@ -85,6 +113,10 @@
     },
     "primaryKey": {
       "ID": "7E020001-A101-4B01-8C01-000000000008"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.811Z",
+      "checksum": "ce079db2763a1869457656a4c72665d8d96215cc1a8b1c3157a472e70101eaa5"
     }
   }
 ]
