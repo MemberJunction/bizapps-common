@@ -136,6 +136,28 @@ export class ActivityIdentityComponent implements OnInit {
         }
     }
 
+    public get SentimentDisplay(): string | null {
+        if (this.Record.SentimentScore === null || this.Record.SentimentScore === undefined) return null;
+        const score = Number(this.Record.SentimentScore);
+        if (isNaN(score)) return null;
+        const sign = score > 0 ? '+' : '';
+        return `${sign}${score.toFixed(2)}`;
+    }
+
+    public get SentimentTone(): 'success' | 'warning' | 'danger' | 'info' | 'muted' {
+        const score = Number(this.Record.SentimentScore ?? 0);
+        if (score >= 0.25) return 'success';
+        if (score <= -0.25) return 'danger';
+        return 'info';
+    }
+
+    public get SentimentIcon(): string {
+        const score = Number(this.Record.SentimentScore ?? 0);
+        if (score >= 0.25) return 'fa-solid fa-face-smile';
+        if (score <= -0.25) return 'fa-solid fa-face-frown';
+        return 'fa-solid fa-face-meh';
+    }
+
     public get DurationText(): string | null {
         if (!this.Record.StartedAt || !this.Record.EndedAt) return null;
         const start = new Date(this.Record.StartedAt).getTime();

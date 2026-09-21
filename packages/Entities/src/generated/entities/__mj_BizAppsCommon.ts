@@ -141,6 +141,11 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Details
         * * SQL Data Type: nvarchar(MAX)
         * * Description: JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`),
+    SentimentScore: z.number().nullable().describe(`
+        * * Field Name: SentimentScore
+        * * Display Name: Sentiment Score
+        * * SQL Data Type: decimal(4, 3)
+        * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2776,6 +2781,19 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
     set Details(value: string | null) {
         this.Set('Details', value);
+    }
+
+    /**
+    * * Field Name: SentimentScore
+    * * Display Name: Sentiment Score
+    * * SQL Data Type: decimal(4, 3)
+    * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.
+    */
+    get SentimentScore(): number | null {
+        return this.Get('SentimentScore');
+    }
+    set SentimentScore(value: number | null) {
+        this.Set('SentimentScore', value);
     }
 
     /**

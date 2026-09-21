@@ -1,0 +1,20 @@
+[
+  {
+    "fields": {
+      "Name": "Activity Tagging and Sentiment",
+      "Description": "Analyzes an activity and the linked contact's prior interaction history to derive sentiment score and taxonomy tags.",
+      "CategoryID": "@lookup:MJ: Record Process Categories.Name=Feature Pipeline",
+      "PromptID": "@lookup:MJ: AI Prompts.Name=Activity Tagging and Sentiment Derivation",
+      "WorkType": "Infer",
+      "Status": "Active",
+      "ScopeType": "Filter",
+      "ScopeFilter": "Description IS NOT NULL OR Details IS NOT NULL",
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities",
+      "OutputMapping": "{\"fields\":{\"SentimentScore\":\"$.SentimentScore\"},\"tags\":[{\"ref\":\"$.Tags\",\"rootTagID\":\"A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D\",\"growth\":\"constrained\",\"matchThreshold\":0.8}]}",
+      "Configuration": "{\"Name\":\"Activity Tagging and Sentiment\",\"Description\":\"Analyzes an activity and the linked contact's prior interaction history to derive sentiment score and taxonomy tags.\",\"PromptID\":\"8A250001-A101-4B01-8C01-000000000001\",\"Context\":{\"QueryID\":\"6C0A1000-0001-4000-A000-00000000000F\",\"QueryParams\":{\"ActivityID\":\"ID\"}},\"Outputs\":[{\"Ref\":\"$.SentimentScore\",\"Name\":\"SentimentScore\",\"FeatureKind\":\"numeric\",\"Constraint\":{\"Type\":\"numeric\",\"Min\":-1.0,\"Max\":1.0,\"OnViolation\":\"null\"},\"Target\":{\"Mode\":\"field\",\"EntityFieldName\":\"SentimentScore\"}},{\"Ref\":\"$.Tags\",\"Name\":\"ActivityTags\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"tags\",\"RootTagID\":\"A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D\",\"Growth\":\"constrained\",\"MatchThreshold\":0.8}}],\"Caching\":{\"Cacheable\":false},\"Watermark\":{\"Enabled\":true,\"Strategy\":\"Checksum\"},\"CaptureReasoning\":true}"
+    },
+    "primaryKey": {
+      "ID": "7E030001-A101-4B01-8C01-000000000002"
+    }
+  }
+]
