@@ -9,7 +9,43 @@
  * (V202609071200 added two coordinate columns to a 100-line view), which is the exact manoeuvre
  * that lost #59 its predicates.
  *
- * Three assertions per view, and they fail for different reasons on purpose.
+ * ---------------------------------------------------------------------------------------------
+ * WHAT A CURATED PREDICATE IS ALLOWED TO BE. Adversarial review found the previous list failing in
+ * BOTH directions, which is the worst place a guard can be: it passed semantics-breaking rewrites
+ * and failed semantics-preserving ones.
+ *
+ * So only two kinds of thing are curated here, because only two kinds survive a legitimate rewrite:
+ *
+ *   - A STRING LITERAL. `'MJ_BizApps_Common: People'` is the same text however the SQL around it is
+ *     formatted, and it cannot be reformatted away. If it is gone, the meaning changed.
+ *   - A REFERENCED OBJECT NAME, matched through `references()` — the selector's own name matcher, so
+ *     bracketed, bare and `${...}`-qualified spellings are all the same name, because to the
+ *     database they are.
+ *
+ * Everything that was SYNTAX is gone, each entry for a measured reason:
+ *
+ *   - The `al.[EntityID] = (SELECT [ID] FROM [__mj].[Entity] WHERE …)` pattern spelled out a
+ *     subquery, two bracketed columns, a keyword order and BOTH accepted spellings of the MJ schema.
+ *     Every one of those is reformattable; the entity NAME inside it is not, and that name is the
+ *     whole narrowing. So the literal stays and the scaffolding goes.
+ *   - `cm_email.[IsPrimary] = 1`, `cm_phone.[IsPrimary] = 1`, `al.[IsPrimary] = 1`, `rt.[Name] =`,
+ *     `r.[Status] =`, `child.[Status] =`, `rt.[Category] =` all pinned ALIASES. Renaming
+ *     `cm_email` to `email` is a no-op to the database and was a red build here.
+ *   - `SELECT TOP 1 [\s\S]*? ORDER BY r.[StartDate] DESC` bridged two clauses with a wildcard. That
+ *     kind of pattern is how a false GREEN happens too: the wildcard spans whatever sits between,
+ *     so it goes on matching across edits that broke the pairing it was written to protect.
+ *   - `FROM \[\$\{flyway:defaultSchema\}\]\.\[vwPeopleGenerated\]` pinned one spelling of a name
+ *     this repo writes both ways — `[${mjSchema}]` 2044 times and a literal `[__mj]` 553 times, and
+ *     CodeGen emits the placeholder.
+ *
+ * WHAT THIS DELIBERATELY NO LONGER CATCHES, so nobody is surprised: a rewrite that keeps every
+ * literal and every object name but changes a join's CARDINALITY — turning an outer join inner,
+ * dropping `IsPrimary = 1` so the address join fans out, dropping `TOP 1`'s `ORDER BY` — passes
+ * here. That is not an oversight, it is the price of a list that never fails correct work.
+ * `producedColumns` covers the "a column vanished" half; the row-count half belongs to a test with
+ * a database behind it, not to a regex over DDL.
+ *
+ * Four assertions per view, and they fail for different reasons on purpose.
  *
  * 1. THE NEWEST DEFINER IS THE ONE WE THINK IT IS. `newestViewDefiner` matches any DDL naming the
  *    view and throws if a later migration carries view DDL naming it without matching. The previous
@@ -18,15 +54,17 @@
  *    reporting success. Both views here are defined with `DROP` + `CREATE`, so under the old
  *    selector a guard over them would have resolved NOTHING.
  *
- * 2. THE LOAD-BEARING PREDICATES SURVIVE. Curated by hand, because only a person knows which
- *    predicates carry meaning. Every entry below narrows a join or a subquery; drop one and the
- *    column keeps its name, keeps its type, and starts answering a different question. That is the
- *    half a diff does not show and a column check cannot reach.
+ * 2. THE LOAD-BEARING LITERALS AND NAMES SURVIVE. Curated by hand, because only a person knows
+ *    which ones carry meaning. Every entry below is the identity of something the view looks up;
+ *    drop one and the column keeps its name, keeps its type, and starts answering a different
+ *    question. That is the half a diff does not show and a column check cannot reach.
  *
- * 3. A RE-CREATION MAY ADD COLUMNS BUT NEVER DROP ONE. Cheap and needs no curation. Both sides of the comparison are read
- *    through `producedColumns`, so the columns inherited through `g.*` from the generated
- *    inner view are protected too — an alias-only BEFORE left every one of them free to
- *    disappear the moment a re-creation spelled the star out as an explicit list.
+ * 3. A FRAGMENT KNOWN TO FAIL SILENTLY NEVER COMES BACK.
+ *
+ * 4. A RE-CREATION MAY ADD COLUMNS BUT NEVER DROP ONE. Cheap and needs no curation. Both sides of
+ *    the comparison are read through `producedColumns`, so the columns inherited through `g.*` from
+ *    the generated inner view are protected too — an alias-only BEFORE left every one of them free
+ *    to disappear the moment a re-creation spelled the star out as an explicit list.
  *
  * There is no business-day assertion here: neither view joins `fnBusinessToday()`, and an
  * assertion about a predicate a view does not have would pass forever without reading anything.
@@ -36,67 +74,55 @@ import { fileURLToPath } from 'node:url';
 import {
     newestViewDefiner,
     producedColumns,
+    references,
     viewBody,
 } from './helpers/view-definer';
 
 const MIGRATIONS = fileURLToPath(new URL('../../../../migrations', import.meta.url));
 
 /**
- * Predicates that must survive every re-creation, per view. Matched against the view's own body
- * with comments stripped, so a copied comment block cannot satisfy one.
+ * Literals and object names that must survive every re-creation, per view. Matched against the
+ * view's own body with comments stripped, so a copied comment block cannot satisfy one.
+ *
+ * String literals are matched CASE-SENSITIVELY: under a case-sensitive collation `'active'` and
+ * `'Active'` are different values, so a guard that accepted either would be lying about which.
  */
 const REQUIRED: Record<string, RegExp[]> = {
     vwPeople: [
         // The outer view must read the CodeGen base view, never the Person table. Reaching past it
         // is how the archived vwPeopleExtended had to restate the FK-denormalisation block, and how
         // a foreign key added later silently lost its display column.
-        /FROM\s+\[\$\{flyway:defaultSchema\}\]\.\[vwPeopleGenerated\]/i,
+        references('vwPeopleGenerated'),
         // THE POLYMORPHIC ADDRESSLINK NARROWING, and the single most dangerous line in the file.
-        // BOTH SPELLINGS OF THE MJ SCHEMA ARE ACCEPTED. This repo's migrations write it as
-        // `[${mjSchema}]` 2044 times and as a literal `[__mj]` 553 times, and CodeGen emits the
-        // placeholder — so pinning the literal failed the guard on correct SQL the moment anyone
-        // re-created the view the way the generator writes it.
-        // AddressLink rows for every entity share one table, so without this subquery the join
+        // AddressLink rows for every entity share one table, so without this entity name the join
         // matches another entity's addresses. The prefix is UNDERSCORED; the dotted spelling
         // returns NULL, `al.EntityID = NULL` matches nothing, and every primary-address column
         // comes back NULL — indistinguishable from "this person has no address".
-        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+(?:\[__mj\]|\[\$\{mjSchema\}\])\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: People'\s*\)/i,
-        // Without IsPrimary the address join fans out over every linked address and the row
-        // duplicates — silently, since each copy looks plausible on its own.
-        /al\.\[IsPrimary\]\s*=\s*1/i,
-        // PrimaryEmail / PrimaryPhone are ContactMethod rows selected BY TYPE. Lose either
-        // subquery and the column returns whichever contact method happens to sort first — a phone
+        /'MJ_BizApps_Common: People'/,
+        // PrimaryEmail / PrimaryPhone are ContactMethod rows selected BY TYPE NAME. Lose either
+        // name and the column returns whichever contact method happens to sort first — a phone
         // number in the email column is the failure mode.
-        /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Email'/i,
-        /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Mobile Phone'/i,
-        /cm_email\.\[IsPrimary\]\s*=\s*1/i,
-        /cm_phone\.\[IsPrimary\]\s*=\s*1/i,
-        // CURRENT EMPLOYER is three predicates wearing one name. `rt.Name = 'Employee'` is what
-        // makes it employment rather than any relationship at all; `Status = 'Active'` is what
-        // makes it current; TOP 1 with ORDER BY StartDate DESC is what makes it the latest. Drop
-        // the ORDER BY and TOP 1 returns an arbitrary row that is right most of the time.
-        /rt\.\[Name\]\s*=\s*'Employee'/i,
-        /r\.\[Status\]\s*=\s*'Active'/i,
-        /SELECT\s+TOP\s+1\b[\s\S]*?ORDER\s+BY\s+r\.\[StartDate\]\s+DESC/i,
+        /'Email'/,
+        /'Mobile Phone'/,
+        // CURRENT EMPLOYER is two identities wearing one column name. `'Employee'` is what makes it
+        // employment rather than any relationship at all, and `'Active'` is what makes it current.
+        /'Employee'/,
+        /'Active'/,
     ],
     vwOrganizations: [
-        /FROM\s+\[\$\{flyway:defaultSchema\}\]\.\[vwOrganizationsGenerated\]/i,
+        references('vwOrganizationsGenerated'),
         // Same polymorphic narrowing, same underscored-prefix trap, same silent all-NULL result.
-        /al\.\[EntityID\]\s*=\s*\(\s*SELECT\s+\[ID\]\s+FROM\s+(?:\[__mj\]|\[\$\{mjSchema\}\])\.\[Entity\]\s+WHERE\s+\[Name\]\s*=\s*'MJ_BizApps_Common: Organizations'\s*\)/i,
-        /al\.\[IsPrimary\]\s*=\s*1/i,
-        /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Email'/i,
-        /\[ContactType\]\s*WHERE\s+\[Name\]\s*=\s*'Mobile Phone'/i,
-        /cm_email\.\[IsPrimary\]\s*=\s*1/i,
-        /cm_phone\.\[IsPrimary\]\s*=\s*1/i,
-        // ActivePersonCount counts PEOPLE. RelationshipType.Category is the only thing separating
-        // a person-to-organization row from an organization-to-organization one, and both live in
-        // the same table pointing at the same ToOrganizationID. Drop the category and a holding
-        // company's subsidiaries start counting as staff — a number that stays plausible.
-        /rt\.\[Category\]\s*=\s*'PersonToOrganization'/i,
-        /r\.\[Status\]\s*=\s*'Active'/i,
-        // ChildOrgCount is a COUNT of active children. Without the status filter, organizations
-        // merged away years ago keep inflating it.
-        /child\.\[Status\]\s*=\s*'Active'/i,
+        /'MJ_BizApps_Common: Organizations'/,
+        /'Email'/,
+        /'Mobile Phone'/,
+        // ActivePersonCount counts PEOPLE. This category is the only thing separating a
+        // person-to-organization row from an organization-to-organization one, and both live in the
+        // same table pointing at the same ToOrganizationID. Drop it and a holding company's
+        // subsidiaries start counting as staff — a number that stays plausible.
+        /'PersonToOrganization'/,
+        // Both counts are of ACTIVE rows: without it, relationships ended years ago and
+        // organizations merged away years ago keep inflating them.
+        /'Active'/,
     ],
 };
 
@@ -112,6 +138,17 @@ const FORBIDDEN: Record<string, RegExp[]> = {
 };
 
 describe('layered views: the newest definer is resolvable and loses nothing', () => {
+    /**
+     * A forbidden entry that names a view nobody guards, or that is present but empty, asserts
+     * nothing while looking like it does. Both are caught here rather than by a silently empty loop.
+     */
+    it('curates no forbidden list for a view this file does not guard', () => {
+        for (const [view, forbidden] of Object.entries(FORBIDDEN)) {
+            expect(REQUIRED[view], `FORBIDDEN names ${view}, which is not a guarded view`).toBeDefined();
+            expect(forbidden, `FORBIDDEN[${view}] is empty — remove it or fill it in`).not.toEqual([]);
+        }
+    });
+
     for (const view of Object.keys(REQUIRED)) {
         describe(view, () => {
             it('resolves a newest definer, and nothing later redefines it unseen', () => {
@@ -129,17 +166,33 @@ describe('layered views: the newest definer is resolvable and loses nothing', ()
                 }
             });
 
-            it('never reintroduces a fragment known to fail silently', () => {
+            it('never reintroduces a fragment known to fail silently', (context) => {
+                const forbidden = FORBIDDEN[view];
+                // NOT `?? []`. A view with no forbidden entry used to run this test with an empty
+                // loop and report a PASS — a green tick standing for zero assertions, which on a
+                // results page is indistinguishable from a check that actually ran.
+                if (forbidden === undefined) {
+                    context.skip(`nothing is forbidden for ${view}, so this asserts nothing`);
+                    return;
+                }
                 const { code, file } = newestViewDefiner(MIGRATIONS, view);
                 const body = viewBody(code, view);
-                for (const forbidden of FORBIDDEN[view] ?? []) {
-                    expect(body, `${file} reintroduced ${forbidden}`).not.toMatch(forbidden);
+                expect(body, `${file} has no CREATE VIEW body for ${view}`).toBeTruthy();
+                for (const pattern of forbidden) {
+                    expect(body, `${file} reintroduced ${pattern}`).not.toMatch(pattern);
                 }
             });
 
-            it('drops no column a previous definer produced', () => {
+            it('drops no column a previous definer produced', (context) => {
                 const { chain } = newestViewDefiner(MIGRATIONS, view);
-                if (chain.length < 2) return;
+                // A view with a single definer has no BEFORE to compare a re-creation against. This
+                // used to `return` quietly and report a pass, so the day someone consolidated the
+                // history into one migration the column guard would have switched itself off with
+                // nothing in the output to say so.
+                if (chain.length < 2) {
+                    context.skip(`${view} has one definer (${chain[0]}) — there is no BEFORE to compare`);
+                    return;
+                }
                 const previous = chain[chain.length - 2];
                 // BOTH SIDES ARE READ THE SAME WAY: own columns plus the ones inherited through
                 // `g.*`, each measured as of the migration it belongs to. Comparing an alias-only
