@@ -60,6 +60,7 @@ export { ActivityContentPanel } from './lib/custom/panels/activity-content.panel
 // Directory dashboard + People / Organizations lists / Graph / Activities (Explorer Custom nav)
 import './lib/sections/common-sections.component';
 import { LoadCommonSectionResources } from './lib/sections/common-sections.component';
+import { LoadPartyLookupStrategies } from './lib/data/party-lookup-strategy';
 export {
     LoadCommonSectionResources,
     CommonDirectoryResource,
@@ -76,6 +77,13 @@ export { CommonActivitiesPageComponent } from './lib/pages/activities-dashboard.
 // Party pickers. The Party Signals contract itself lives in @mj-biz-apps/common-entities; these are
 // the client-side reader, the per-instance settings, and the selling-company field.
 export { PartySignalStore } from './lib/data/party-signal-store';
+export {
+    PartyLookupStrategy,
+    OrganizationLookupStrategy,
+    PersonLookupStrategy,
+    LoadPartyLookupStrategies,
+} from './lib/data/party-lookup-strategy';
+export { RankPartyMatches, type RosterLookup } from './lib/data/rank-party-matches';
 export { CommonSettings, COMMON_SETTING } from './lib/data/common-settings';
 export { SellingCompanyFieldComponent } from './lib/components/selling-company-field/selling-company-field.component';
 export { SellingCompanyConfirm } from './lib/components/selling-company-field/selling-company-confirm';
@@ -86,4 +94,7 @@ export { SellingCompanyConfirm } from './lib/components/selling-company-field/se
  */
 export function LoadBizAppsCommonClient(): void {
     LoadCommonSectionResources();
+    // Registers the party picker against Organizations and People, so every foreign key pointing
+    // at either one offers customers first without the consuming app knowing this exists.
+    LoadPartyLookupStrategies();
 }
