@@ -17,5 +17,23 @@
       "lastModified": "2026-09-06T23:06:16.456Z",
       "checksum": "4988821a7d58f2b75b72d00885e0cb6b5dc9dbe4e0020fbf108af2b6adb52785"
     }
+  },
+  {
+    "_comments": [
+      "The Party Signals registry. Each app ships ONE query here answering 'which organizations and",
+      "people are our customers, and how recently' for its own records. The party pickers and the",
+      "Get Party Signals action discover queries by this category, so Common never imports an app.",
+      "Contract: PartyKind ('organization'|'person'), PartyID, Count, LastActivityAt, and a",
+      "[signal: noun|nouns] marker in the query Description for the picker's chip text."
+    ],
+    "fields": {
+      "Name": "Party Signals",
+      "ParentID": "@lookup:MJ: Query Categories.Name=Common",
+      "Description": "Per-app answers to 'which organizations and people are our customers, and how recently'. Contract: PartyKind ('organization'|'person'), PartyID, Count, LastActivityAt; the Description carries [signal: noun|nouns].",
+      "UserID": "@lookup:MJ: Users.Name=System"
+    },
+    "primaryKey": {
+      "ID": "6C0A1000-0000-4000-A000-000000000002"
+    }
   }
 ]

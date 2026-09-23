@@ -620,3 +620,41 @@ span.rel-timeline-target {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+.badge-subtle {
+    background: var(--mj-bg-surface-card);
+    color: var(--mj-text-secondary);
+    border: 1px solid var(--mj-border-default);
+    text-transform: none;
+    font-weight: 500;
+}
+
+.rel-form-progressive {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--mj-border-default);
+}
+
+.rel-form-progressive-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mj-brand-primary);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 0;
+}
+
+.rel-form-progressive-toggle:hover {
+    text-decoration: underline;
+}
+
+.form-row--classification {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}

@@ -6,6 +6,7 @@
   "directoryOrder": [
     "schema-info",
     "applications",
+    "application-settings",
     "address-types",
     "contact-types",
     "organization-types",
@@ -23,7 +24,12 @@
     "entity-actions",
     "user-views",
     "query-categories",
-    "queries"
+    "queries",
+    "tags",
+    "job-functions",
+    "seniority-levels",
+    "prompts",
+    "record-processes"
   ],
   "sqlLogging": {
     "enabled": true,

@@ -5,13 +5,17 @@ import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { NavigationService } from '@memberjunction/ng-shared';
 import { EntityViewerModule, type EntityViewerConfig, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
 import { MJAlertComponent, MJButtonDirective, MJEmptyStateComponent } from '@memberjunction/ng-ui-components';
+import { StatRowComponent } from '../components/stat-tile/stat-row.component';
+import { StatTileComponent } from '../components/stat-tile/stat-tile.component';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
+import { BuildDirectoryHeadline } from '../data/directory-stats';
 import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
     DirectoryDayBar,
+    DirectoryHeadline,
     DirectoryQueue,
     DirectoryRelationshipRow,
 } from '../data/directory-types';
@@ -26,7 +30,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 @Component({
     selector: 'bizapps-common-dashboard-page',
     standalone: true,
-    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule],
+    imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule, StatRowComponent, StatTileComponent],
     template: `
         <div class="mjc-dash">
             <div class="mjc-hero">
@@ -52,28 +56,35 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
             @if (IsLoading) {
                 <div class="mjc-muted">Loading the directory…</div>
             } @else {
-                <div class="mjc-tiles">
-                    <button type="button" class="mjc-tile" (click)="OpenPeople()">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-user" aria-hidden="true"></i> People</span>
-                        <span class="mjc-tile__value">{{ ActivePeopleCount }}</span>
-                        <span class="mjc-tile__detail">{{ PeopleDetail }}</span>
-                    </button>
-                    <button type="button" class="mjc-tile" (click)="OpenOrganizations()">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-building" aria-hidden="true"></i> Organizations</span>
-                        <span class="mjc-tile__value">{{ ActiveOrganizationCount }}</span>
-                        <span class="mjc-tile__detail">{{ OrganizationDetail }}</span>
-                    </button>
-                    <div class="mjc-tile">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-link" aria-hidden="true"></i> Relationships</span>
-                        <span class="mjc-tile__value">{{ RelationshipCount }}</span>
-                        <span class="mjc-tile__detail">Who reports to whom, who works where</span>
-                    </div>
-                    <div class="mjc-tile" [class.mjc-tile--alert]="GapCount > 0">
-                        <span class="mjc-tile__label"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Gaps</span>
-                        <span class="mjc-tile__value">{{ GapCount }}</span>
-                        <span class="mjc-tile__detail">Missing email, org, type, or website</span>
-                    </div>
-                </div>
+                <bizapps-stat-row [Error]="Headline.Error">
+                    <bizapps-stat-tile
+                        Label="People"
+                        Icon="fa-solid fa-user"
+                        [Value]="Headline.ActivePeopleCount"
+                        [Detail]="Headline.PeopleDetail"
+                        [Clickable]="true"
+                        (Clicked)="OpenPeople()" />
+                    <bizapps-stat-tile
+                        Label="Organizations"
+                        Icon="fa-solid fa-building"
+                        [Value]="Headline.ActiveOrganizationCount"
+                        [Detail]="Headline.OrganizationDetail"
+                        [Clickable]="true"
+                        (Clicked)="OpenOrganizations()" />
+                    <bizapps-stat-tile
+                        Label="Relationships"
+                        Icon="fa-solid fa-link"
+                        [Value]="Headline.RelationshipCount"
+                        Detail="Who reports to whom, who works where"
+                        [Clickable]="false" />
+                    <bizapps-stat-tile
+                        Label="Gaps"
+                        Icon="fa-solid fa-clipboard-check"
+                        [Value]="Headline.GapCount"
+                        Detail="Missing email, org, type, or website"
+                        [Tone]="Headline.GapTone"
+                        [Clickable]="false" />
+                </bizapps-stat-row>
 
                 <div class="mjc-split">
                     <section class="mjc-card">
@@ -97,10 +108,17 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <i class="fa-solid fa-chevron-right mjc-queue__chev" aria-hidden="true"></i>
                                 </button>
                             } @empty {
-                                <mj-empty-state
-                                    Icon="fa-solid fa-circle-check"
-                                    Title="Nothing is waiting"
-                                    Size="compact" />
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <mj-empty-state
+                                        Icon="fa-solid fa-circle-check"
+                                        Title="Nothing is waiting"
+                                        Size="compact" />
+                                }
                             }
                         </div>
                     </section>
@@ -112,15 +130,22 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                             <span class="mjc-card__meta">last 7 days</span>
                         </header>
                         <div class="mjc-card__body">
-                            <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
-                                @for (bar of PeoplePerDay; track bar.Label) {
-                                    <div class="mjc-bars__col">
-                                        <span class="mjc-bars__value">{{ bar.Value }}</span>
-                                        <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
-                                        <span class="mjc-bars__label">{{ bar.Label }}</span>
-                                    </div>
-                                }
-                            </div>
+                            @if (Headline.ReadFailed) {
+                                <mj-empty-state
+                                    Variant="warning"
+                                    Title="Could not be read"
+                                    Size="compact" />
+                            } @else {
+                                <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
+                                    @for (bar of PeoplePerDay; track bar.Label) {
+                                        <div class="mjc-bars__col">
+                                            <span class="mjc-bars__value">{{ bar.Value }}</span>
+                                            <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
+                                            <span class="mjc-bars__label">{{ bar.Label }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     </section>
 
@@ -139,7 +164,14 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <span class="mjc-mix__value">{{ row.Value }}</span>
                                 </div>
                             } @empty {
-                                <p class="mjc-muted">No organizations yet.</p>
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <p class="mjc-muted">No organizations yet.</p>
+                                }
                             }
                         </div>
                     </section>
@@ -180,10 +212,17 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                                     <button type="button" class="mjc-link" (click)="OpenAttention(item)">Work it →</button>
                                 </mj-alert>
                             } @empty {
-                                <mj-empty-state
-                                    Icon="fa-solid fa-circle-check"
-                                    Title="Nothing is asking for attention"
-                                    Size="compact" />
+                                @if (Headline.ReadFailed) {
+                                    <mj-empty-state
+                                        Variant="warning"
+                                        Title="Could not be read"
+                                        Size="compact" />
+                                } @else {
+                                    <mj-empty-state
+                                        Icon="fa-solid fa-circle-check"
+                                        Title="Nothing is asking for attention"
+                                        Size="compact" />
+                                }
                             }
                         </div>
                     </section>
@@ -265,51 +304,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 display: flex;
                 gap: var(--mj-space-2);
                 flex-wrap: wrap;
-            }
-            .mjc-tiles {
-                display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-                gap: var(--mj-space-4);
-            }
-            .mjc-tile {
-                display: flex;
-                flex-direction: column;
-                gap: var(--mj-space-1);
-                align-items: flex-start;
-                text-align: left;
-                padding: var(--mj-space-4);
-                background: var(--mj-bg-surface);
-                border: 1px solid var(--mj-border-default);
-                border-radius: var(--mj-radius-md);
-                color: inherit;
-                cursor: default;
-            }
-            button.mjc-tile {
-                cursor: pointer;
-            }
-            button.mjc-tile:hover {
-                border-color: var(--mj-brand-primary);
-            }
-            .mjc-tile--alert {
-                border-color: var(--mj-status-warning-border);
-                background: color-mix(in srgb, var(--mj-status-warning) 8%, var(--mj-bg-surface));
-            }
-            .mjc-tile__label {
-                font-size: 0.75rem;
-                color: var(--mj-text-secondary);
-                display: flex;
-                align-items: center;
-                gap: var(--mj-space-2);
-            }
-            .mjc-tile__value {
-                font-size: 1.75rem;
-                font-weight: 700;
-                color: var(--mj-text-primary);
-                line-height: 1.1;
-            }
-            .mjc-tile__detail {
-                font-size: 0.75rem;
-                color: var(--mj-text-muted);
             }
             .mjc-split {
                 display: grid;
@@ -513,9 +507,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 min-height: 220px;
             }
             @media (max-width: 1200px) {
-                .mjc-tiles {
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
-                }
                 .mjc-split {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
@@ -524,7 +515,6 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                 .mjc-dash {
                     padding: var(--mj-space-4);
                 }
-                .mjc-tiles,
                 .mjc-split,
                 .mjc-split--wide {
                     grid-template-columns: 1fr;
@@ -554,12 +544,12 @@ export class CommonDashboardPageComponent implements OnInit {
     public LatestPeopleView: MJUserViewEntityExtended | null = null;
     public LatestRelationshipsView: MJUserViewEntityExtended | null = null;
     public WorthALook: DirectoryAttentionItem[] = [];
-    public ActivePeopleCount = 0;
-    public ActiveOrganizationCount = 0;
-    public RelationshipCount = 0;
-    public GapCount = 0;
-    public PeopleDetail = '';
-    public OrganizationDetail = '';
+    /**
+     * The four headline counts as one value. Built by {@link BuildDirectoryHeadline} so that a failed
+     * summary read leaves every count `null` — an em dash in each tile and one sentence under the row
+     * — rather than four zeros claiming an empty directory.
+     */
+    public Headline: DirectoryHeadline = BuildDirectoryHeadline(null);
 
     public async ngOnInit(): Promise<void> {
         const [summary, peopleView, relView] = await Promise.all([
@@ -567,18 +557,9 @@ export class CommonDashboardPageComponent implements OnInit {
             LoadLatestPeopleView(),
             LoadLatestRelationshipsView(),
         ]);
+        this.Headline = BuildDirectoryHeadline(summary);
         if (summary) {
-            this.ActivePeopleCount = summary.ActivePeopleCount;
-            this.ActiveOrganizationCount = summary.ActiveOrganizationCount;
-            this.RelationshipCount = summary.RelationshipCount;
-            this.PeopleDetail = summary.TotalPeopleCount === summary.ActivePeopleCount
-                ? 'Everyone currently on file'
-                : `${summary.TotalPeopleCount} total, including inactive`;
-            this.OrganizationDetail = summary.TotalOrganizationCount === summary.ActiveOrganizationCount
-                ? 'Active organizations'
-                : `${summary.TotalOrganizationCount} total, including inactive`;
             this.Queues = summary.Queues;
-            this.GapCount = summary.Queues.reduce((sum, queue) => sum + queue.Count, 0);
             this.PeoplePerDay = summary.PeoplePerDay;
             this.OrganizationTypeMix = summary.OrganizationTypeMix;
             this.WorthALook = summary.WorthALook;

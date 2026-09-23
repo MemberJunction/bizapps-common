@@ -1,0 +1,47 @@
+[
+  {
+    "fields": {
+      "Name": "Activity Tagging and Sentiment Derivation",
+      "Description": "Analyzes an activity and the linked contact's prior interaction history to extract relative sentiment score and sentiment taxonomy tags.",
+      "TypeID": "@lookup:MJ: AI Prompt Types.Name=Chat",
+      "TemplateText": "@file:templates/activity-tagging-sentiment.template.md",
+      "Status": "Active",
+      "ResponseFormat": "JSON",
+      "SelectionStrategy": "Specific",
+      "PowerPreference": "Lowest",
+      "ParallelizationMode": "None",
+      "MaxRetries": 3,
+      "RetryDelayMS": 3000,
+      "RetryStrategy": "Exponential",
+      "PromptRole": "System",
+      "PromptPosition": "First",
+      "CategoryID": "@lookup:MJ: AI Prompt Categories.Name=MJ: System"
+    },
+    "relatedEntities": {
+      "MJ: AI Prompt Models": [
+        {
+          "fields": {
+            "PromptID": "@parent:ID",
+            "ModelID": "@lookup:MJ: AI Models.Name=Gemini 3.1 Flash-Lite",
+            "VendorID": "@lookup:MJ: AI Vendors.Name=Google",
+            "Priority": 1
+          },
+          "primaryKey": {
+            "ID": "29E25958-922D-4148-A9DB-01770ED9F3B1"
+          },
+          "sync": {
+            "lastModified": "2026-09-21T18:02:42.508Z",
+            "checksum": "71ee991d8e0ab07b2e4ea296274c871739fbb9068ae94df729251a82c42f9641"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "8A250001-A101-4B01-8C01-000000000001"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:42.449Z",
+      "checksum": "b89735b8c34488364d8b4398691c034cb2230ea7de45e2111ceb0b8339cb0fef"
+    }
+  }
+]

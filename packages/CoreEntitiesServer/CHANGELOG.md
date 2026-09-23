@@ -1,5 +1,69 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.46.0
+
+### Patch Changes
+
+- Updated dependencies [12a6de8]
+- Updated dependencies [2f28572]
+  - @mj-biz-apps/common-entities@5.46.0
+  - @mj-biz-apps/common-activity-sync@5.46.0
+
+## 5.45.0
+
+### Patch Changes
+
+- Updated dependencies [868b125]
+  - @mj-biz-apps/common-entities@5.45.0
+  - @mj-biz-apps/common-activity-sync@5.45.0
+
+## 5.44.0
+
+### Patch Changes
+
+- Updated dependencies [701e505]
+- Updated dependencies [7056463]
+  - @mj-biz-apps/common-activity-sync@5.44.0
+  - @mj-biz-apps/common-entities@5.44.0
+
+## 5.43.0
+
+### Minor Changes
+
+- b2a310b: Require the MemberJunction release this branch actually needs, in every package that asks for it.
+
+  The calendar transport compiles against `GetEvents`, which `6.1.0-edge.5` does not carry, so the
+  declared range moved to `^6.1.0-edge.6` across the workspace. Three published packages took that
+  bump without a changeset naming them — `common-actions`, `common-ng` and
+  `common-core-entities-server` — so they would never have versioned, and the raised floor would
+  never have reached npm. A consumer installing them would resolve a MemberJunction that cannot
+  satisfy their own dependency range.
+
+  `mj-app.json`'s `mjVersionRange` moves with them, from `>=6.1.0-edge.5` to `>=6.1.0-edge.6`. It is
+  the manifest `mj app install` checks, and leaving it behind meant a host sitting on exactly edge.5
+  satisfied the manifest and then failed to install.
+
+### Patch Changes
+
+- Updated dependencies [23b6827]
+- Updated dependencies [192cc39]
+- Updated dependencies [4ad78ac]
+- Updated dependencies [9d5cb06]
+- Updated dependencies [b1e8650]
+- Updated dependencies [9fc60ef]
+- Updated dependencies [3aeb4a1]
+- Updated dependencies [7e6e87c]
+- Updated dependencies [ec6fab7]
+  - @mj-biz-apps/common-entities@5.43.0
+  - @mj-biz-apps/common-activity-sync@5.43.0
+
+## 5.42.0
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.42.0
+- @mj-biz-apps/common-entities@5.42.0
+
 ## 5.41.0
 
 ### Patch Changes

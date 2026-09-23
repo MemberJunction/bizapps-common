@@ -1,0 +1,47 @@
+[
+  {
+    "fields": {
+      "Name": "Job Function and Seniority Derivation",
+      "Description": "Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.",
+      "TypeID": "@lookup:MJ: AI Prompt Types.Name=Chat",
+      "TemplateText": "@file:templates/job-function-seniority.template.md",
+      "Status": "Active",
+      "ResponseFormat": "JSON",
+      "SelectionStrategy": "Specific",
+      "PowerPreference": "Lowest",
+      "ParallelizationMode": "None",
+      "MaxRetries": 3,
+      "RetryDelayMS": 3000,
+      "RetryStrategy": "Exponential",
+      "PromptRole": "System",
+      "PromptPosition": "First",
+      "CategoryID": "@lookup:MJ: AI Prompt Categories.Name=MJ: System"
+    },
+    "relatedEntities": {
+      "MJ: AI Prompt Models": [
+        {
+          "fields": {
+            "PromptID": "@parent:ID",
+            "ModelID": "@lookup:MJ: AI Models.Name=Gemini 3.1 Flash-Lite",
+            "VendorID": "@lookup:MJ: AI Vendors.Name=Google",
+            "Priority": 1
+          },
+          "primaryKey": {
+            "ID": "FE550867-CA64-4578-9912-083314D3AEF2"
+          },
+          "sync": {
+            "lastModified": "2026-09-21T18:02:43.624Z",
+            "checksum": "71ee991d8e0ab07b2e4ea296274c871739fbb9068ae94df729251a82c42f9641"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "7C46041F-0412-4C2E-9B9E-3ED61D32210C"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:43.601Z",
+      "checksum": "2055e71111d54e1d4e09a4bd7a18f71ea033a47d7bf550cf67a5ea5a47f48517"
+    }
+  }
+]

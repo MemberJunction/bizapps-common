@@ -1,0 +1,182 @@
+[
+  {
+    "fields": {
+      "Name": "Engineering",
+      "Description": "Software engineering, hardware, architecture, QA, DevOps, and infrastructure.",
+      "Sequence": 10,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000001"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.498Z",
+      "checksum": "4bea10aeacb1d9dcd4c905f2602b0824099368aee113e33fd8f3191e5aaf983d"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Product",
+      "Description": "Product management, technical program management, and product strategy.",
+      "Sequence": 20,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000002"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.516Z",
+      "checksum": "79ce5e702c9d165f457c1061ea272cdfb397a23ea9784469b9832fa21a5a7c52"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Design",
+      "Description": "UI/UX design, product design, user research, and creative direction.",
+      "Sequence": 30,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000003"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.532Z",
+      "checksum": "004568132fc69560e5e5cbac23cb1e32b9471dfeb3fc6b52fe479c33125cae03"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Marketing",
+      "Description": "Product marketing, demand gen, brand, communications, and growth.",
+      "Sequence": 40,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000004"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.547Z",
+      "checksum": "1d5c400f3ac6f17fb7c1dc145f1ea5b6780ffb8cecbbceb14150fb849d87d0a8"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Sales",
+      "Description": "Direct sales, account executives, sales engineering, and business development.",
+      "Sequence": 50,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000005"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.564Z",
+      "checksum": "ce7e377858e0abfb1b5c96c3bf070eb5fb6829e6a7763979a4d76eaada4609bc"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Customer Success",
+      "Description": "Customer success management, implementation, client onboarding, and technical support.",
+      "Sequence": 60,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000006"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.577Z",
+      "checksum": "7e5c4188317835ec5f00830750e388630bb552a0628c41c3779245fc82010f4f"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Operations",
+      "Description": "Business operations, revenue operations, IT operations, and supply chain.",
+      "Sequence": 70,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000007"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.591Z",
+      "checksum": "2e108ea16f7ab0d849394efa0e91596bb95e275fe2c508ac000e140e9148d81c"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Finance",
+      "Description": "Corporate finance, accounting, payroll, treasury, and financial planning & analysis.",
+      "Sequence": 80,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000008"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.606Z",
+      "checksum": "8ca0dde5413ffe3192be5078e2e0fb3b7db44212fbc00bce8e3f5e4d2afa3c3a"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Human Resources",
+      "Description": "People operations, talent acquisition, recruiting, and employee relations.",
+      "Sequence": 90,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000009"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.619Z",
+      "checksum": "119b4f6a18b56244bd817a751bb4b092cc22f2bab37433634a0c0e55d4c29101"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Legal",
+      "Description": "Corporate counsel, compliance, regulatory affairs, and intellectual property.",
+      "Sequence": 100,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000010"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.634Z",
+      "checksum": "e7ead64869387d19bf5226f2f6eb71b759e9d8cba101a6fbac7b65a8c05d5ec5"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Information Technology",
+      "Description": "Internal systems, security, network administration, and enterprise applications.",
+      "Sequence": 110,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000011"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.663Z",
+      "checksum": "cf7e5b42fad37445c6144858d6d829fa2f6da8f7ba392e3c93323fcc118a5adf"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Executive",
+      "Description": "Executive leadership, general management, and corporate strategy.",
+      "Sequence": 120,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "7E010001-A101-4B01-8C01-000000000012"
+    },
+    "sync": {
+      "lastModified": "2026-09-21T18:02:39.677Z",
+      "checksum": "a0c5e1e1073f51bdd47e311adf4d9d26715f49cdc9c1de61dbcb14d928fa8030"
+    }
+  }
+]

@@ -1,0 +1,16 @@
+<mj-collapsible-panel
+    SectionKey="personJobFunctions"
+    SectionName="Job Functions"
+    Icon="fa-solid fa-user-tag"
+    Variant="related-entity"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-person-job-functions
+            [PersonID]="Record.ID"
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
+        </bizapps-person-job-functions>
+    }
+</mj-collapsible-panel>

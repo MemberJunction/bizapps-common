@@ -126,6 +126,49 @@
     border: 1px solid var(--mj-border-default);
 }
 
+.biz-hero__chip--interactive {
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.biz-hero__chip--interactive:hover {
+    background: var(--mj-bg-surface-card);
+    border-color: var(--mj-brand-primary);
+    color: var(--mj-text-primary);
+}
+
+.biz-hero__chip-count {
+    font-size: 10px;
+    padding: 0 4px;
+    border-radius: var(--mj-radius-full);
+    background: var(--mj-status-info-bg);
+    color: var(--mj-brand-primary);
+}
+
+.biz-hero__secondary-chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--mj-space-2);
+    margin-top: var(--mj-space-1);
+    font-size: var(--mj-text-xs);
+}
+
+.biz-hero__secondary-label {
+    color: var(--mj-text-muted);
+    font-size: 11px;
+    font-weight: var(--mj-font-medium);
+}
+
+.biz-hero__sub-chip {
+    padding: 1px 7px;
+    border-radius: var(--mj-radius-sm);
+    background: var(--mj-bg-surface-sunken);
+    border: 1px solid var(--mj-border-subtle, var(--mj-border-default));
+    color: var(--mj-text-secondary);
+    font-size: 11px;
+}
+
 .biz-hero__chip[data-tone='success'] {
     background: var(--mj-status-success-bg);
     color: var(--mj-status-success-text);

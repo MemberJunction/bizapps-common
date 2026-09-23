@@ -1,5 +1,278 @@
 # @mj-biz-apps/common-ng
 
+## 5.46.0
+
+### Minor Changes
+
+- 12a6de8: Add Activity Tagging & Sentiment feature pipeline (FP-7 / P2-1).
+
+  - Database schema and migration:
+    - `Activity.SentimentScore`: Bounded decimal column `DECIMAL(4,3)` (-1.000 to +1.000) for activity sentiment.
+    - Recreates `vwActivities` to include `SentimentScore`.
+    - Updates `spCreateActivity` and `spUpdateActivity` with `@SentimentScore` parameter.
+    - Appends `EntityField` for `SentimentScore` on `MJ_BizApps_Common: Activities`.
+  - Metadata:
+    - `Common: Activity With Contact History` query retrieving target activity and linked contact's historical baseline.
+    - `Activity Tagging and Sentiment Derivation` prompt with contact baseline analysis.
+    - `Sentiment` taxonomy root tag with child tags (`Positive`, `Neutral`, `Negative`, `EscalationRisk`, `Urgent`).
+    - `Activity Tagging and Sentiment` Feature Pipeline Record Process (`WorkType: 'Infer'`, `Cacheable: false`, `Watermark: 'Checksum'`).
+
+- 2f28572: Add Job Function & Seniority people model and feature pipeline integration (FP-6).
+
+  - Database schema and migration:
+    - `JobFunction`: Type table (`MJ_BizApps_Common: Job Functions`) with seed data in `metadata/job-functions/`.
+    - `SeniorityLevel`: Type table (`MJ_BizApps_Common: Seniority Levels`) with seed data in `metadata/seniority-levels/` carrying rank order (IC -> Manager -> Director -> VP -> C-Level).
+    - `PersonJobFunction`: 1:M bridge (`MJ_BizApps_Common: Person Job Functions`) with `Source` ('Manual' | 'Derived') and `Confidence`.
+    - `Person.SeniorityLevelID` foreign key to `SeniorityLevel`.
+    - `Relationship.JobFunctionID` and `Relationship.SeniorityLevelID` foreign keys for per-company role classification.
+    - `vwPeople`: Virtual view columns `PrimaryJobFunctionID` and `PrimaryJobFunction` derived from the lowest Sequence `PersonJobFunction` row.
+    - `metadata/record-processes/`: Dogfood RecordProcess feature pipeline configuration for Job Function and Seniority classification.
+  - Progressive disclosure UX:
+    - `PersonIdentityComponent`: Compact chips for `PrimaryJobFunction` and `SeniorityLevel` in the identity header badges, with interactive disclosure for multiple job functions, and `SeniorityLevelID` in EditMode.
+    - `RelationshipListComponent`: Displays `JobFunction` and `SeniorityLevel` badges on timeline items when set; provides progressive disclosure section in Add and Edit forms so role classification is invisible until expanded or set.
+
+### Patch Changes
+
+- Updated dependencies [12a6de8]
+- Updated dependencies [2f28572]
+  - @mj-biz-apps/common-entities@5.46.0
+
+## 5.45.0
+
+### Minor Changes
+
+- 868b125: Party Signals: a shared answer to "which organizations and people are our customers", plus a
+  selling-company field that defaults and confirms.
+
+  Common owns Organizations and People but cannot see the orders, contracts or sales schemas, and
+  neither party carries a customer flag or a last-activity date. So nothing that renders a party —
+  a foreign-key picker above all — has ever been able to tell a customer from any other row in a
+  directory that can run to hundreds of thousands. It offers the first twenty rows that contain the
+  typed letters, in no particular order.
+
+  **The contract.** An app declares its own customers by shipping ONE query in the new `Party Signals`
+  query category, returning `PartyKind` (`'organization'` | `'person'`), `PartyID`, `Count` and
+  `LastActivityAt`, and carrying a `[signal: noun|nouns]` marker in its own `Description` so a caller
+  can label "4 orders" without knowing what an order is. The category is the registry: Common never
+  imports an app, and an app joins the answer by shipping metadata, with no code change here.
+
+  `@mj-biz-apps/common-entities` exports the contract and the pure union — `PARTY_SIGNALS_CATEGORY`,
+  the row and roster types, `MergePartySignalRows`, `ParseSignalNouns`, `ChipText`. Party IDs are
+  matched case-insensitively, because GUIDs arrive in whichever case the provider produced and two
+  spellings of one organization would otherwise read as two customers.
+
+  **Two readers, one definition.** `PartySignalStore` (common-ng) discovers the category through
+  metadata and runs each query once per session, for Explorer. `Common.GetPartySignals`
+  (common-server) does the same union server-side for everything that is not Angular — agents, MCP,
+  reports, scripts. Both run every query as the calling user, so the roster is permission-filtered; a
+  query the caller cannot read contributes nothing and is named in warnings rather than failing the
+  call, so a missing signal weakens ranking instead of breaking the field.
+
+  **`bizapps-selling-company-field`.** The company on an order or a contract decides which legal
+  entity books the revenue, and the picker behind it lists every company row the instance has. Apps
+  have defaulted it by whichever company sorted first alphabetically, or by the first product on the
+  order — rules nobody wrote down. This field defaults to the current user's own company when they
+  have one and it is a company the instance knows, otherwise to the new Common `DefaultSellingCompanyID`
+  setting, otherwise to nothing. Anything else is held, named back to the user against the default,
+  and written only on confirm; an unanswered question reverts, because it must not decide where
+  revenue lands. It wraps `mj-form-field`, so the dropdown, keyboard behaviour and link rendering
+  stay the platform's.
+
+  **Metadata.** `AllowMultipleSubtypes` is now set on Organizations and People, because both are
+  extended as IsA children and the disjoint default mis-chains silently. `AllowRecordMerge` is not:
+  `CK_Entity_AllowRecordMerge` requires `AllowDeleteAPI = 1` and `DeleteType = 'Soft'`, and both
+  parties are hard-delete, so enabling merge is a schema change rather than a flag and belongs in its
+  own release. `Organizations.Website` and
+  `People.Title` join user search, with `BeginsWith` predicates and `AutoUpdate` pins so CodeGen
+  cannot flip them back; the other identifying fields were already flagged.
+
+  The party lookup strategy that consumes all of this is a separate release: it needs the platform
+  foreign-key lookup-strategy seam, which nothing here waits on.
+
+### Patch Changes
+
+- Updated dependencies [868b125]
+  - @mj-biz-apps/common-entities@5.45.0
+
+## 5.44.0
+
+### Minor Changes
+
+- 549a57e: Add the shared BizApps "Related records" chip row: `bizapps-related-chips`.
+
+  A tester walking Deal → Order → Contract found no consistent way to get from a record to the
+  records linked to it. The Contract header linked its source Deal, the Deal form buried its Order
+  in a panel, the Order form pointed at nothing, and where a link did exist it sometimes rendered a
+  GUID instead of a name. Each app had solved a slice of it differently; this is the one they
+  collapse into.
+
+  A caller passes link descriptors naming an entity and either the id it holds (`RecordID`) or a
+  filter that finds the record holding the id (`Filter`, for a reverse link such as Order → Deal).
+  The component resolves the entity, reads the record's name, and decides whether the chip may be
+  drawn at all.
+
+  Three behaviours it guarantees, and the reason each is behaviour rather than styling. **A chip
+  never shows a raw id** — the name comes from the entity's name field, and an entity with no name
+  field produces no chip rather than a GUID wearing a label. **A chip that cannot navigate is not
+  rendered** — an entity missing from the catalog (the app is not installed here, or this user may
+  not read it, which are deliberately one outcome), a read that succeeded while matching zero rows,
+  and a read the server answered with `Success: false` all produce nothing, because a link that goes
+  nowhere is worse than an absent one. **A read that THREW is not a read that was refused** — the
+  line is whether the server answered. `Success: false` is MJ's channel for a permission denial as
+  much as for a bad filter, so it drops the chip; a throw means the request never got an answer, so
+  it keeps the chip when the link already carried the id to open.
+
+  Clicking a chip emits a `record` navigation event; ctrl or cmd-click sets `OpenInNewTab`, and a
+  plain click OMITS it rather than sending `false` — `NavigationService.shouldForceNewTab` honours
+  any defined `forceNewTab` and only otherwise consults its global shift-key state, so an explicit
+  `false` would disable shift-click. The component never touches `NavigationService` — a host form
+  wires `Navigate` to its own `OnFormNavigate`, which keeps it usable from a `BaseFormPanel` hero and
+  a form component override alike.
+
+  Styles are the component's own, design tokens only, under a `bizapps-related` class prefix that
+  collides with none of the app kits, which are global under `ViewEncapsulation.None`.
+
+  `Links` and `Provider` are both setters that queue a single re-resolve on the next microtask, and
+  the row clears before it re-reads. Angular assigns bound inputs in template order, so a resolve
+  kicked off synchronously from the `Links` setter would read `Provider` as `null` and silently fall
+  back to the ambient `Metadata.Provider`; and a row that kept the previous record's chips while the
+  new reads ran would offer a click that navigates to the record the reader just left.
+
+  The resolve-and-hide rules live in `related-links.ts` rather than in the component, so they can be
+  tested without standing up Angular DI: `ResolveRelatedChip`, `FilterForRelatedLink`,
+  `LabelForRelatedLink` and `RelatedChipNavigation` are exported alongside the component.
+
+### Patch Changes
+
+- e0c5680: Directory dashboard now renders the shared `bizapps-stat-tile` instead of its own tiles.
+
+  The page carried a fifth near-copy of the dashboard tile — same label/value/detail structure, same
+  tokens, same hover rule as the shared component, and living in the same package that exports the
+  replacement, which made it the copy most likely to drift.
+
+  Two things were not a mechanical swap:
+
+  `Clickable` is now passed explicitly on every tile. Two of the four were real buttons and two were
+  inert `div`s, and the component's default inference — "is anything listening to `Clicked`" — cannot
+  tell them apart, because a template binding counts as a subscriber whatever its handler does. The
+  two inert tiles pass `[Clickable]="false"` and stay unfocusable, with no `role` and no pointer.
+
+  The Gaps tile's whole-tile alert is now `Tone="warn"` on the value. The shared component colours the
+  number only, so the tinted background and amber border are gone. Note that in dark theme
+  `--mj-status-warning-text` resolves to `--mj-color-warning-100` (`#fef3c7`), which sits very close to
+  the primary text colour on `--mj-bg-surface` — the warn tone reads clearly in light theme but is
+  faint in dark. That is a property of the status token ramp, not of this page.
+
+  Responsive behaviour changes below 1200px: the page's own breakpoints dropped the row to 2 columns
+  and then 1, while the shared row keeps 4 columns down to 808px and reflows from there. Desktop width
+  is unchanged.
+
+  A failed summary read now shows em dashes, not zeros. The four counts were plain `number` fields
+  defaulting to `0`, so when `Common: Directory Dashboard Summary` failed the page rendered "0 people,
+  0 organizations, 0 gaps" — the exact false reassurance the tile's null rule exists to prevent. They
+  are now one `DirectoryHeadline` value built by `BuildDirectoryHeadline`, which returns `null` for
+  every count on a failed read and a sentence for `bizapps-stat-row`'s previously unbound `Error`
+  input. The counts come from a single query, so the headline is all-or-nothing by construction —
+  there is no state in which some of the numbers are trustworthy and others are not. An unread gap
+  count also stays `Tone="none"`: "we could not check" must not read as "there is something to fix".
+
+  The three cards fed by that same read no longer claim success when it fails. "Needs someone" and
+  "Worth a look" showed a green check over an unread directory, "Organization types" said "No
+  organizations yet", and "People added" drew an empty element still labelled as a seven-day chart —
+  all four from the same empty arrays the failed read leaves behind. `DirectoryHeadline` now carries
+  `ReadFailed`, and each section consults it before reporting itself empty: a list that is empty
+  because nothing was read is not "nothing to do".
+
+- Updated dependencies [7056463]
+  - @mj-biz-apps/common-entities@5.44.0
+
+## 5.43.0
+
+### Minor Changes
+
+- b2a310b: Require the MemberJunction release this branch actually needs, in every package that asks for it.
+
+  The calendar transport compiles against `GetEvents`, which `6.1.0-edge.5` does not carry, so the
+  declared range moved to `^6.1.0-edge.6` across the workspace. Three published packages took that
+  bump without a changeset naming them — `common-actions`, `common-ng` and
+  `common-core-entities-server` — so they would never have versioned, and the raised floor would
+  never have reached npm. A consumer installing them would resolve a MemberJunction that cannot
+  satisfy their own dependency range.
+
+  `mj-app.json`'s `mjVersionRange` moves with them, from `>=6.1.0-edge.5` to `>=6.1.0-edge.6`. It is
+  the manifest `mj app install` checks, and leaving it behind meant a host sitting on exactly edge.5
+  satisfied the manifest and then failed to install.
+
+### Patch Changes
+
+- 41b12f2: Angular — `ng-graph-view` and `ng-hierarchy-tree` were regular dependencies, so every consumer got a second copy of MJ.
+
+  `@mj-biz-apps/common-ng` declared `@memberjunction/ng-graph-view` and `@memberjunction/ng-hierarchy-tree` under
+  `dependencies`. Every other MJ package this library consumes — eleven of them, including `ng-base-forms`,
+  `ng-entity-viewer` and `core-entities` — is a peer. These two were the exception, and `ng-graph-view` was in fact
+  listed in _both_ sections.
+
+  **A published Angular library must not depend on MJ directly.** A peer says "the host supplies this"; a dependency
+  says "install your own." For MJ that difference is not cosmetic: a second physical copy of an MJ package means a
+  second `MJGlobal` class registry and a second set of Angular component/DI tokens, so `@RegisterClass` lookups and
+  `instanceof` checks silently resolve against the wrong copy. The failure surfaces far from the cause — a component
+  that renders blank, or a registration that "already exists" — which is exactly the class of bug the peer convention
+  across the other eleven packages exists to prevent.
+
+  **This was reachable, not theoretical.** Both packages are imported at runtime: `ng-graph-view` by
+  `common-relationship-graph.component.ts`, and `ng-hierarchy-tree` by `org-hierarchy-tree.component.ts`,
+  `activity-hierarchy.panel.ts` and `activity-type-hierarchy.panel.ts`. A host on a different 6.1.x patch than the one
+  npm resolved for the nested copy would get two, and npm is free to nest rather than dedupe whenever the host's
+  resolved version differs from the declared range.
+
+  `ng-hierarchy-tree` is added to `peerDependencies` at the same `^6.1.0-edge.6` range the rest of the package already
+  uses; `ng-graph-view` simply loses its duplicate `dependencies` entry and keeps the peer it already had. The
+  internal `@mj-biz-apps/common-entities` pin stays a real dependency — it is a sibling released in lockstep, not a
+  host-supplied package.
+
+  **No version ranges were changed.** `^6.1.0-edge.6` already admits 6.1.2 (`semver.satisfies('6.1.2',
+'^6.1.0-edge.6')` is `true`), and `ci/sync-mj-app-version.mjs` documents the retained `-edge.N` suffix as
+  deliberate — it states the floor the code actually needs, since the package imports `MJCard*` components that first
+  appeared in `6.1.0-edge.3`. Stripping it is recorded there as a previously-reverted mistake, so it is left alone.
+
+  Verified by building `@mj-biz-apps/common-ng` before and after the change against an identical tree: three
+  pre-existing `TS2345` errors in both runs, none of them new. Those three are a local-environment artifact — the
+  globally linked `@memberjunction/cli` symlink resolves a second `@memberjunction/*` tree out of the MJ checkout, so
+  `FormNavigationEvent` has two declarations. That duplication is itself the same hazard this change removes from the
+  published manifest.
+
+- Updated dependencies [23b6827]
+- Updated dependencies [ec6fab7]
+  - @mj-biz-apps/common-entities@5.43.0
+
+## 5.42.0
+
+### Minor Changes
+
+- b61b440: Add the shared BizApps dashboard stat tile: `bizapps-stat-tile` and `bizapps-stat-row`.
+
+  Orders grew the first version of this tile and the other apps each grew a near-copy; this is
+  the one they collapse into. It is a rewrite rather than a move — Orders' version rendered
+  `class="mj-stat"` with every rule living in `orders-kit.css`, so copied into another app it
+  rendered as three unstyled spans. Styles are now the component's own, design tokens only, under
+  a `bizapps-stat` prefix that collides with neither `.mj-stat` (orders-kit) nor `.mjc-stat`
+  (contracts-kit).
+
+  Two behaviours the tile guarantees. A `null` or `undefined` value renders an em dash rather
+  than `0`, so an unreadable count can never read as an empty queue — a real `0` still renders
+  as `0`. And a tile that does nothing is not focusable, not announced as a button and not
+  keyboard-activatable: the `Clickable` input decides, and when it is unset the tile falls back
+  to whether anything subscribes to `Clicked`. Passing `Clickable` overrides that inference in
+  both directions, which a row mixing live and inert tiles needs — Angular subscribes to an
+  output whenever a template binds it, whatever the handler expression later evaluates to.
+
+  `bizapps-stat-tile` takes `Label`, `Icon`, `Value`, `Detail`, `Tone` and `Clickable`, and emits
+  `Clicked`. `bizapps-stat-row` takes `Error` and renders the row's one shared error line.
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.42.0
+
 ## 5.41.0
 
 ### Patch Changes

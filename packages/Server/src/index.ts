@@ -16,7 +16,10 @@ import '@mj-biz-apps/common-core-entities-server';
 import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
+import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
+import { LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -46,11 +49,33 @@ export function LoadBizAppsCommonServer(): void {
     LoadActivitySyncEngine();
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
+    // The one server-side answer to "which organizations and people are our customers", unioned
+    // from every query apps ship in the Party Signals category. Explorer uses the client store;
+    // Skip, agents, MCP and reports come through here so the two definitions cannot drift.
+    LoadGetPartySignalsAction();
     // Registers the seam that turns a connection's CredentialsRef into a live Graph transport.
-    // Nothing about this enables a live read on its own — AllowLiveFetch still defaults false.
+    // Nothing about this enables a live read on its own — the provider still refuses until this
+    // host attests that its app registration is scoped.
     LoadGraphTransportFactory();
+    // And that attestation, when this deployment has one. Absent, every live read stays refused;
+    // partially configured, this THROWS during bootstrap rather than leaving a misleading refusal.
+    LoadLiveMailboxPolicyFromEnv();
+    // And the cipher that protects content captured from messages the engine declined to ingest.
+    // Registering it turns nothing on: retention is off unless a policy asks for it. What it does is
+    // make the engine's refusal, when a policy DOES ask, be about the policy rather than about this
+    // host being half-wired.
+    LoadActivityContentCipher();
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
+export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
+export {
+    LoadLiveMailboxPolicyFromEnv,
+    ENV_GROUP,
+    ENV_ACCEPTED_RISK,
+    ENV_CONFIRMED_BY,
+    ENV_CONFIRMED_AT,
+} from './custom/live-mailbox-policy.js';

@@ -17,7 +17,7 @@ import { MaxLength } from 'class-validator';
 import * as mj_core_schema_server_object_types from '@memberjunction/server'
 
 
-import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities';
+import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonJobFunctionEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonPersonJobFunctionEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity, mjBizAppsCommonSeniorityLevelEntity } from '@mj-biz-apps/common-entities';
     
 
 //****************************************************************************
@@ -29,42 +29,42 @@ export class mjBizAppsCommonActivity_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivityTypeID: string;
+    ActivityTypeID?: string;
         
-    @Field({description: `Sort key for every timeline. Instant events use the date/time of the event.`}) 
-    StartedAt: Date;
+    @Field({nullable: true, description: `Sort key for every timeline. Instant events use the date/time of the event.`}) 
+    StartedAt?: Date;
         
     @Field({nullable: true, description: `End of a meeting/call. Leave null for a point-in-time log. Must be >= StartedAt when set. Duration is derived; do not store it.`}) 
     EndedAt?: Date;
         
-    @Field({description: `Subject / one-line card title (e.g. Called Jane about renewal).`}) 
+    @Field({nullable: true, description: `Subject / one-line card title (e.g. Called Jane about renewal).`}) 
     @MaxLength(500)
-    Title: string;
+    Title?: string;
         
     @Field({nullable: true, description: `Notes or a short excerpt. Not the full email body — that lives on an ActivityFile of Kind Body.`}) 
     Description?: string;
         
-    @Field({description: `Inbound, Outbound, or Internal. Channel lives on ActivityType; direction lives here so inbound email is a filter, not a type explosion.`}) 
+    @Field({nullable: true, description: `Inbound, Outbound, or Internal. Channel lives on ActivityType; direction lives here so inbound email is a filter, not a type explosion.`}) 
     @MaxLength(20)
-    Direction: string;
+    Direction?: string;
         
-    @Field({description: `Logged (default for a past event), Scheduled, Completed, Cancelled, or Failed.`}) 
+    @Field({nullable: true, description: `Logged (default for a past event), Scheduled, Completed, Cancelled, or Failed.`}) 
     @MaxLength(20)
-    Status: string;
+    Status?: string;
         
     @Field({nullable: true, description: `Optional disposition: Connected, LeftVoicemail, NoAnswer, NoShow, Bounced, Interested, NotInterested. A filter, not a type.`}) 
     @MaxLength(40)
     Outcome?: string;
         
-    @Field({description: `Internal (anyone who can read a Regarding record) or Private (LoggedByUserID only, until a PermissionEngine domain exists). Manual default is Internal; synced mail should default Private in the engine.`}) 
+    @Field({nullable: true, description: `Internal (anyone who can read a Regarding record) or Private (LoggedByUserID only, until a PermissionEngine domain exists). Manual default is Internal; synced mail should default Private in the engine.`}) 
     @MaxLength(20)
-    Visibility: string;
+    Visibility?: string;
         
-    @Field({description: `How the row was written: Manual, System, or Integration.`}) 
+    @Field({nullable: true, description: `How the row was written: Manual, System, or Integration.`}) 
     @MaxLength(20)
-    Source: string;
+    Source?: string;
         
     @Field({nullable: true, description: `Provider name for idempotent sync (Microsoft365, Gmail, Zoom). Required when ExternalID is set.`}) 
     @MaxLength(80)
@@ -82,9 +82,9 @@ export class mjBizAppsCommonActivity_ {
     @MaxLength(36)
     ParentActivityID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    LoggedByUserID: string;
+    LoggedByUserID?: string;
         
     @Field({nullable: true, description: `Meeting place as text. Optional AddressID is the structured location.`}) 
     @MaxLength(500)
@@ -101,23 +101,26 @@ export class mjBizAppsCommonActivity_ {
     @Field({nullable: true, description: `JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`}) 
     Details?: string;
         
+    @Field(() => Float, {nullable: true, description: `Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`}) 
+    SentimentScore?: number;
+        
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    ActivityType: string;
+    ActivityType?: string;
         
     @Field({nullable: true}) 
     @MaxLength(500)
     ParentActivity?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    LoggedByUser: string;
+    LoggedByUser?: string;
         
     @Field({nullable: true}) 
     @MaxLength(255)
@@ -148,6 +151,9 @@ export class mjBizAppsCommonActivity_ {
         
     @Field(() => Int, {nullable: true}) 
     ParentActivityIDChildCount?: number;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -215,6 +221,9 @@ export class CreatemjBizAppsCommonActivityInput {
 
     @Field({ nullable: true })
     Details: string | null;
+
+    @Field(() => Float, { nullable: true })
+    SentimentScore: number | null;
 
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
@@ -285,6 +294,9 @@ export class UpdatemjBizAppsCommonActivityInput {
 
     @Field({ nullable: true })
     Details?: string | null;
+
+    @Field(() => Float, { nullable: true })
+    SentimentScore?: number | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
@@ -388,20 +400,20 @@ export class mjBizAppsCommonActivityFile_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivityID: string;
+    ActivityID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    FileID: string;
+    FileID?: string;
         
-    @Field({description: `Body (full MIME/HTML, at most one per activity), Attachment, or Ics.`}) 
+    @Field({nullable: true, description: `Body (full MIME/HTML, at most one per activity), Attachment, or Ics.`}) 
     @MaxLength(20)
-    Kind: string;
+    Kind?: string;
         
-    @Field(() => Int, {description: `Display order of attachments.`}) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true, description: `Display order of attachments.`}) 
+    Sequence?: number;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -409,13 +421,16 @@ export class mjBizAppsCommonActivityFile_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(500)
-    Activity: string;
+    Activity?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(500)
-    File: string;
+    File?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -566,13 +581,13 @@ export class mjBizAppsCommonActivityLink_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivityID: string;
+    ActivityID?: string;
         
-    @Field({description: `Why this record is on the activity: Regarding (what it is about), Participant, From/To/Cc/Bcc, Organizer/Attendee, or LoggedFor (the mailbox it was filed under).`}) 
+    @Field({nullable: true, description: `Why this record is on the activity: Regarding (what it is about), Participant, From/To/Cc/Bcc, Organizer/Attendee, or LoggedFor (the mailbox it was filed under).`}) 
     @MaxLength(30)
-    Role: string;
+    Role?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -590,8 +605,8 @@ export class mjBizAppsCommonActivityLink_ {
     @MaxLength(320)
     IdentityValue?: string;
         
-    @Field(() => Int, {description: `Display order within a role (To, then Cc, …).`}) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true, description: `Display order within a role (To, then Cc, …).`}) 
+    Sequence?: number;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -599,13 +614,16 @@ export class mjBizAppsCommonActivityLink_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(500)
-    Activity: string;
+    Activity?: string;
         
     @Field({nullable: true}) 
     @MaxLength(255)
     Entity?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -774,19 +792,19 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSet_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivitySyncConnectionID: string;
+    ActivitySyncConnectionID?: string;
         
-    @Field({description: `The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.`}) 
+    @Field({nullable: true, description: `The rule set bound to this connection. A mailbox composes several sets (org baseline, team overlay, mailbox-specific) through this join; Sequence on the binding is the evaluation order.`}) 
     @MaxLength(36)
-    ActivitySyncRuleSetID: string;
+    ActivitySyncRuleSetID?: string;
         
-    @Field(() => Int) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
         
-    @Field(() => Boolean) 
-    IsEnabled: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsEnabled?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -794,13 +812,16 @@ export class mjBizAppsCommonActivitySyncConnectionRuleSet_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    ActivitySyncConnection: string;
+    ActivitySyncConnection?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    ActivitySyncRuleSet: string;
+    ActivitySyncRuleSet?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -951,25 +972,25 @@ export class mjBizAppsCommonActivitySyncConnection_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Display name of the connection (e.g. Amith / Microsoft 365).`}) 
+    @Field({nullable: true, description: `Display name of the connection (e.g. Amith / Microsoft 365).`}) 
     @MaxLength(200)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `DEPRECATED — use ActivitySyncProviderTypeID. Retained nullable so a published host keeps working; removed in the next major.`}) 
     @MaxLength(40)
     Provider?: string;
         
-    @Field({description: `Active, Paused, Error, or Disabled.`}) 
+    @Field({nullable: true, description: `Active, Paused, Error, or Disabled.`}) 
     @MaxLength(20)
-    Status: string;
+    Status?: string;
         
-    @Field({description: `Inbound (pull into CRM), Outbound, or Bidirectional.`}) 
+    @Field({nullable: true, description: `Inbound (pull into CRM), Outbound, or Bidirectional.`}) 
     @MaxLength(20)
-    Direction: string;
+    Direction?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    OwnerUserID: string;
+    OwnerUserID?: string;
         
     @Field({nullable: true, description: `MJ Credentials engine key. NEVER a secret value at rest.`}) 
     @MaxLength(200)
@@ -1019,9 +1040,9 @@ export class mjBizAppsCommonActivitySyncConnection_ {
     @Field(() => Int, {nullable: true}) 
     MaxAttachmentBytes?: number;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    OwnerUser: string;
+    OwnerUser?: string;
         
     @Field({nullable: true}) 
     @MaxLength(100)
@@ -1034,6 +1055,9 @@ export class mjBizAppsCommonActivitySyncConnection_ {
     @Field({nullable: true}) 
     @MaxLength(50)
     StorageProvider?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -1266,13 +1290,13 @@ export class mjBizAppsCommonActivitySyncExclusion_ {
     @MaxLength(36)
     ActivitySyncRuleSetID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(20)
-    IdentityKind: string;
+    IdentityKind?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(320)
-    IdentityValue: string;
+    IdentityValue?: string;
         
     @Field({nullable: true, description: `Optional link to the Person this identity belongs to. Optional because an address is often excluded before anyone knows whose it is, and because a Person has several ContactMethods — the identity is the durable key here, not the record.`}) 
     @MaxLength(36)
@@ -1281,14 +1305,14 @@ export class mjBizAppsCommonActivitySyncExclusion_ {
     @Field({nullable: true}) 
     Reason?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Start of the window of MESSAGES this exclusion covers, matched against the item's own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no lower bound. This is deliberately different from ActivitySyncConnection.StartAt, which is evaluated against the clock: setting this to today does not mean "exclude from today onwards", it means "exclude messages dated today or later", so a later backfill of older mail is not covered by it. Item time is also what keeps a re-run reproducible, so the run log can answer which rule excluded a message and give the same answer next time.`}) 
     EffectiveFrom?: Date;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `End of the window of MESSAGES this exclusion covers, matched against the item's own time -- when a message was sent or received, or when a meeting starts -- NOT against the current time. Leave empty for no upper bound. Inclusive of the instant given, matching how ActivitySyncRule DateFrom/DateTo compare. See EffectiveFrom for why this is item time rather than clock time.`}) 
     EffectiveTo?: Date;
         
-    @Field(() => Boolean) 
-    IsEnabled: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this exclusion is in force. Unchecked, it is ignored entirely and the messages it names are qualified as if it did not exist.`}) 
+    IsEnabled?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -1303,6 +1327,9 @@ export class mjBizAppsCommonActivitySyncExclusion_ {
     @Field({nullable: true}) 
     @MaxLength(201)
     Person?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -1477,16 +1504,16 @@ export class mjBizAppsCommonActivitySyncExtension_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true}) 
     Description?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    DriverClass: string;
+    DriverClass?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -1496,18 +1523,18 @@ export class mjBizAppsCommonActivitySyncExtension_ {
     @MaxLength(36)
     ActivitySyncProviderTypeID?: string;
         
-    @Field(() => Int, {description: `Ascending run order. REQUIRED rather than incidental: two extensions both adding links must not depend on registration order, which varies with package load order and is not reproducible.`}) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true, description: `Ascending run order. REQUIRED rather than incidental: two extensions both adding links must not depend on registration order, which varies with package load order and is not reproducible.`}) 
+    Sequence?: number;
         
-    @Field({description: `What happens when this extension throws. Skip (the default) records the error and commits the activity without the enrichment; Abort rolls the whole write back. Skip is the default because the activity is worth more than the enrichment, and one buggy consumer app must not be able to halt ingestion for every other app on the host.`}) 
+    @Field({nullable: true, description: `What happens when this extension throws. Skip (the default) records the error and commits the activity without the enrichment; Abort rolls the whole write back. Skip is the default because the activity is worth more than the enrichment, and one buggy consumer app must not be able to halt ingestion for every other app on the host.`}) 
     @MaxLength(20)
-    FailurePolicy: string;
+    FailurePolicy?: string;
         
-    @Field(() => Int) 
-    TimeoutMS: number;
+    @Field(() => Int, {nullable: true}) 
+    TimeoutMS?: number;
         
-    @Field(() => Boolean) 
-    IsEnabled: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsEnabled?: boolean;
         
     @Field({nullable: true}) 
     LastRunAt?: Date;
@@ -1528,6 +1555,9 @@ export class mjBizAppsCommonActivitySyncExtension_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     ActivitySyncProviderType?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -1720,13 +1750,13 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(60)
-    Code: string;
+    Code?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true}) 
     Description?: string;
@@ -1742,13 +1772,13 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     @Field({nullable: true}) 
     SupportedKinds?: string;
         
-    @Field({description: `What an Undecided qualification verdict means for this provider once every rule stage has abstained. Exclude (the default) fails CLOSED — correct for anything mailbox-shaped, where capturing a private message is worse than missing a business one.`}) 
+    @Field({nullable: true, description: `What an Undecided qualification verdict means for this provider once every rule stage has abstained. Exclude (the default) fails CLOSED — correct for anything mailbox-shaped, where capturing a private message is worse than missing a business one.`}) 
     @MaxLength(20)
-    DefaultQualificationPolicy: string;
+    DefaultQualificationPolicy?: string;
         
-    @Field({description: `Whether a SKIPPED message may have content retained for audit, and how much. None keeps only the opaque external id and the decision. SubjectEncrypted and FullEncrypted additionally keep ciphertext, and are only valid with DefaultEncryptionKeyID set — enforced by CK_ActivitySyncProviderType_KeyRequired. Overridable per connection.`}) 
+    @Field({nullable: true, description: `Whether a SKIPPED message may have content retained for audit, and how much. None keeps only the opaque external id and the decision. SubjectEncrypted and FullEncrypted additionally keep ciphertext, and are only valid with DefaultEncryptionKeyID set — enforced by CK_ActivitySyncProviderType_KeyRequired. Overridable per connection.`}) 
     @MaxLength(20)
-    DefaultSkippedContentPolicy: string;
+    DefaultSkippedContentPolicy?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -1761,14 +1791,14 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     @Field(() => Int, {nullable: true}) 
     DefaultMaxAttachmentBytes?: number;
         
-    @Field(() => Int) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
         
-    @Field(() => Boolean) 
-    IsSystem: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsSystem?: boolean;
         
-    @Field(() => Boolean) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this connector type may run. Unchecked, every connection using it refuses on its next fleet tick and reports Status = Error with the reason, rather than appearing to sync -- and each returns to Active by itself once the type is re-enabled and a run succeeds. Nothing is read from any mailbox while it is off.`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -1787,6 +1817,9 @@ export class mjBizAppsCommonActivitySyncProviderType_ {
     @Field({nullable: true}) 
     @MaxLength(50)
     DefaultStorageProvider?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -2003,9 +2036,9 @@ export class mjBizAppsCommonActivitySyncRuleSet_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true}) 
     Description?: string;
@@ -2017,14 +2050,14 @@ export class mjBizAppsCommonActivitySyncRuleSet_ {
     @Field({nullable: true, description: `JSON array of the domains this deployment considers INTERNAL, e.g. ["bluecypress.io"]. Required for any rule using ParticipantScope: "internal" is a property of the deployment, not of a message. Held on the rule set so one definition serves every mailbox bound to it.`}) 
     InternalDomains?: string;
         
-    @Field(() => Int) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
         
-    @Field(() => Boolean) 
-    IsEnabled: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsEnabled?: boolean;
         
-    @Field(() => Boolean) 
-    IsSystem: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsSystem?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -2035,6 +2068,9 @@ export class mjBizAppsCommonActivitySyncRuleSet_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     ActivitySyncProviderType?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -2207,19 +2243,19 @@ export class mjBizAppsCommonActivitySyncRule_ {
     @MaxLength(36)
     ActivitySyncConnectionID?: string;
         
-    @Field({description: `Display name of the rule.`}) 
+    @Field({nullable: true, description: `Display name of the rule.`}) 
     @MaxLength(200)
-    Name: string;
+    Name?: string;
         
-    @Field(() => Boolean, {description: `0 skips the rule without deleting it.`}) 
-    IsEnabled: boolean;
+    @Field(() => Boolean, {nullable: true, description: `0 skips the rule without deleting it.`}) 
+    IsEnabled?: boolean;
         
-    @Field(() => Int, {description: `Evaluation order within the connection. Lower first.`}) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true, description: `Evaluation order within the connection. Lower first.`}) 
+    Sequence?: number;
         
-    @Field({description: `Include or Exclude matching items. With no rules, the engine syncs everything the connection can see.`}) 
+    @Field({nullable: true, description: `Include or Exclude matching items. With no rules, the engine syncs everything the connection can see.`}) 
     @MaxLength(20)
-    Action: string;
+    Action?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -2235,8 +2271,8 @@ export class mjBizAppsCommonActivitySyncRule_ {
     @Field({nullable: true, description: `Inclusive upper bound of the sync window. Null = no upper bound.`}) 
     DateTo?: Date;
         
-    @Field(() => Boolean, {description: `1 = also pull attachments into ActivityFile rows.`}) 
-    IncludeAttachments: boolean;
+    @Field(() => Boolean, {nullable: true, description: `1 = also pull attachments into ActivityFile rows.`}) 
+    IncludeAttachments?: boolean;
         
     @Field({nullable: true, description: `JSON match extras: Folders, ExcludeFolders, Domains, ExcludeDomains, ParticipantMustMatchContactMethod, SubjectContains, SubjectExcludes. See ActivitySyncRuleFilter.`}) 
     Filter?: string;
@@ -2269,6 +2305,9 @@ export class mjBizAppsCommonActivitySyncRule_ {
     @Field({nullable: true}) 
     @MaxLength(200)
     ActivitySyncRuleSet?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -2479,13 +2518,13 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivitySyncRunID: string;
+    ActivitySyncRunID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(400)
-    ExternalID: string;
+    ExternalID?: string;
         
     @Field({nullable: true}) 
     @MaxLength(400)
@@ -2494,9 +2533,9 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     @Field({nullable: true}) 
     OccurredAt?: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(20)
-    Decision: string;
+    Decision?: string;
         
     @Field({nullable: true, description: `Which stage of the qualification cascade decided — a rule set name, KnownParticipant, Inference, or DefaultPolicy. Paired with Reason it explains an outcome without retaining the message that produced it.`}) 
     @MaxLength(100)
@@ -2552,6 +2591,9 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     EncryptionKey?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -2762,44 +2804,44 @@ export class mjBizAppsCommonActivitySyncRun_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ActivitySyncConnectionID: string;
+    ActivitySyncConnectionID?: string;
         
-    @Field() 
-    StartedAt: Date;
+    @Field({nullable: true}) 
+    StartedAt?: Date;
         
     @Field({nullable: true}) 
     EndedAt?: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(20)
-    Status: string;
+    Status?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(20)
-    TriggerType: string;
+    TriggerType?: string;
         
-    @Field(() => Boolean) 
-    IsDryRun: boolean;
+    @Field(() => Boolean, {nullable: true}) 
+    IsDryRun?: boolean;
         
-    @Field(() => Int) 
-    Fetched: number;
+    @Field(() => Int, {nullable: true}) 
+    Fetched?: number;
         
-    @Field(() => Int) 
-    Included: number;
+    @Field(() => Int, {nullable: true}) 
+    Included?: number;
         
-    @Field(() => Int) 
-    Excluded: number;
+    @Field(() => Int, {nullable: true}) 
+    Excluded?: number;
         
-    @Field(() => Int) 
-    Duplicates: number;
+    @Field(() => Int, {nullable: true}) 
+    Duplicates?: number;
         
-    @Field(() => Int) 
-    Failed: number;
+    @Field(() => Int, {nullable: true}) 
+    Failed?: number;
         
-    @Field(() => Int) 
-    ExtensionErrors: number;
+    @Field(() => Int, {nullable: true}) 
+    ExtensionErrors?: number;
         
     @Field({nullable: true}) 
     WatermarkBefore?: Date;
@@ -2816,9 +2858,12 @@ export class mjBizAppsCommonActivitySyncRun_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(200)
-    ActivitySyncConnection: string;
+    ActivitySyncConnection?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -3035,13 +3080,13 @@ export class mjBizAppsCommonActivityType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Stable key targeted by sync and code (Email, Call, Meeting, Note, SMS, Chat). Unique. Names can be renamed; codes cannot.`}) 
+    @Field({nullable: true, description: `Stable key targeted by sync and code (Email, Call, Meeting, Note, SMS, Chat). Unique. Names can be renamed; codes cannot.`}) 
     @MaxLength(50)
-    Code: string;
+    Code?: string;
         
-    @Field({description: `Display name for the picker and timeline.`}) 
+    @Field({nullable: true, description: `Display name for the picker and timeline.`}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Optional longer description of the type.`}) 
     Description?: string;
@@ -3058,14 +3103,14 @@ export class mjBizAppsCommonActivityType_ {
     @MaxLength(30)
     Color?: string;
         
-    @Field(() => Int, {description: `Picker sort order. Lower first.`}) 
-    Sequence: number;
+    @Field(() => Int, {nullable: true, description: `Picker sort order. Lower first.`}) 
+    Sequence?: number;
         
-    @Field(() => Boolean, {description: `1 = seeded system type the sync engine may assume (Email, Call, Meeting, Note, SMS, Chat). Clients add children with IsSystem = 0.`}) 
-    IsSystem: boolean;
+    @Field(() => Boolean, {nullable: true, description: `1 = seeded system type the sync engine may assume (Email, Call, Meeting, Note, SMS, Chat). Clients add children with IsSystem = 0.`}) 
+    IsSystem?: boolean;
         
-    @Field(() => Boolean, {description: `0 hides the type from the picker without deleting historical activities.`}) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `0 hides the type from the picker without deleting historical activities.`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -3092,6 +3137,9 @@ export class mjBizAppsCommonActivityType_ {
         
     @Field(() => Int, {nullable: true}) 
     ParentIDChildCount?: number;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -3272,24 +3320,24 @@ export class mjBizAppsCommonAddressLink_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    AddressID: string;
+    AddressID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    EntityID: string;
+    EntityID?: string;
         
-    @Field({description: `Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys`}) 
+    @Field({nullable: true, description: `Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys`}) 
     @MaxLength(700)
-    RecordID: string;
+    RecordID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    AddressTypeID: string;
+    AddressTypeID?: string;
         
-    @Field(() => Boolean, {description: `Whether this is the primary address for the linked record. Only one address per entity record should be marked primary`}) 
-    IsPrimary: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this is the primary address for the linked record. Only one address per entity record should be marked primary`}) 
+    IsPrimary?: boolean;
         
     @Field(() => Int, {nullable: true, description: `Sort order override for this specific link. When NULL, falls back to AddressType.DefaultRank. Lower values appear first`}) 
     Rank?: number;
@@ -3300,17 +3348,20 @@ export class mjBizAppsCommonAddressLink_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(255)
-    Address: string;
+    Address?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(255)
-    Entity: string;
+    Entity?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    AddressType: string;
+    AddressType?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -3473,9 +3524,9 @@ export class mjBizAppsCommonAddressType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Display name for the address type`}) 
+    @Field({nullable: true, description: `Display name for the address type`}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Detailed description of this address type`}) 
     Description?: string;
@@ -3484,17 +3535,20 @@ export class mjBizAppsCommonAddressType_ {
     @MaxLength(100)
     IconClass?: string;
         
-    @Field(() => Int, {description: `Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank`}) 
-    DefaultRank: number;
+    @Field(() => Int, {nullable: true, description: `Default sort order for this address type in dropdown lists. Lower values appear first. Can be overridden per-record via AddressLink.Rank`}) 
+    DefaultRank?: number;
         
-    @Field(() => Boolean, {description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -3651,9 +3705,9 @@ export class mjBizAppsCommonAddress_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Street address line 1`}) 
+    @Field({nullable: true, description: `Street address line 1`}) 
     @MaxLength(255)
-    Line1: string;
+    Line1?: string;
         
     @Field({nullable: true, description: `Street address line 2 (suite, apt, etc.)`}) 
     @MaxLength(255)
@@ -3663,9 +3717,9 @@ export class mjBizAppsCommonAddress_ {
     @MaxLength(255)
     Line3?: string;
         
-    @Field({description: `City or locality name`}) 
+    @Field({nullable: true, description: `City or locality name`}) 
     @MaxLength(100)
-    City: string;
+    City?: string;
         
     @Field({nullable: true, description: `State, province, or region`}) 
     @MaxLength(100)
@@ -3675,9 +3729,9 @@ export class mjBizAppsCommonAddress_ {
     @MaxLength(20)
     PostalCode?: string;
         
-    @Field({description: `Country code or name, defaults to US`}) 
+    @Field({nullable: true, description: `Country code or name, defaults to US`}) 
     @MaxLength(100)
-    Country: string;
+    Country?: string;
         
     @Field(() => Float, {nullable: true, description: `Geographic latitude for mapping`}) 
     Latitude?: number;
@@ -3690,6 +3744,9 @@ export class mjBizAppsCommonAddress_ {
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -3878,20 +3935,20 @@ export class mjBizAppsCommonContactMethod_ {
     @MaxLength(36)
     OrganizationID?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    ContactTypeID: string;
+    ContactTypeID?: string;
         
-    @Field({description: `The contact value: phone number, email address, URL, social media handle, etc.`}) 
+    @Field({nullable: true, description: `The contact value: phone number, email address, URL, social media handle, etc.`}) 
     @MaxLength(500)
-    Value: string;
+    Value?: string;
         
     @Field({nullable: true, description: `Descriptive label such as Work cell, Personal Gmail, Corporate LinkedIn`}) 
     @MaxLength(100)
     Label?: string;
         
-    @Field(() => Boolean, {description: `Whether this is the primary contact method of its type for the linked person or organization`}) 
-    IsPrimary: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this is the primary contact method of its type for the linked person or organization`}) 
+    IsPrimary?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -3907,9 +3964,12 @@ export class mjBizAppsCommonContactMethod_ {
     @MaxLength(255)
     Organization?: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(100)
-    ContactType: string;
+    ContactType?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -4072,9 +4132,9 @@ export class mjBizAppsCommonContactType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Display name for the contact type`}) 
+    @Field({nullable: true, description: `Display name for the contact type`}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Detailed description of this contact type`}) 
     Description?: string;
@@ -4083,17 +4143,20 @@ export class mjBizAppsCommonContactType_ {
     @MaxLength(100)
     IconClass?: string;
         
-    @Field(() => Int, {description: `Sort order in dropdown lists. Lower values appear first`}) 
-    DisplayRank: number;
+    @Field(() => Int, {nullable: true, description: `Sort order in dropdown lists. Lower values appear first`}) 
+    DisplayRank?: number;
         
-    @Field(() => Boolean, {description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -4242,6 +4305,178 @@ export class mjBizAppsCommonContactTypeResolver extends ResolverBase {
 }
 
 //****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Job Functions
+//****************************************************************************
+@ObjectType({ description: `Business job functions (Engineering, Marketing, Sales, etc.) for categorizing roles and career paths.` })
+export class mjBizAppsCommonJobFunction_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    Name?: string;
+        
+    @Field({nullable: true}) 
+    Description?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(20)
+    Status?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Job Functions
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonJobFunctionInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Job Functions
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonJobFunctionInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Job Functions
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonJobFunctionViewResult {
+    @Field(() => [mjBizAppsCommonJobFunction_])
+    Results: mjBizAppsCommonJobFunction_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonJobFunction_)
+export class mjBizAppsCommonJobFunctionResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonJobFunctionViewResult)
+    async RunmjBizAppsCommonJobFunctionViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonJobFunctionViewResult)
+    async RunmjBizAppsCommonJobFunctionViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonJobFunctionViewResult)
+    async RunmjBizAppsCommonJobFunctionDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Job Functions';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonJobFunction_, { nullable: true })
+    async mjBizAppsCommonJobFunction(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonJobFunction_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Job Functions', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwJobFunctions')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Job Functions', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Job Functions', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonJobFunction_)
+    async CreatemjBizAppsCommonJobFunction(
+        @Arg('input', () => CreatemjBizAppsCommonJobFunctionInput) input: CreatemjBizAppsCommonJobFunctionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Job Functions', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonJobFunction_)
+    async UpdatemjBizAppsCommonJobFunction(
+        @Arg('input', () => UpdatemjBizAppsCommonJobFunctionInput) input: UpdatemjBizAppsCommonJobFunctionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Job Functions', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonJobFunction_)
+    async DeletemjBizAppsCommonJobFunction(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Job Functions', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Organization Types
 //****************************************************************************
 @ObjectType({ description: `Categories of organizations such as Company, Non-Profit, Association, Government` })
@@ -4250,9 +4485,9 @@ export class mjBizAppsCommonOrganizationType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Display name for the organization type`}) 
+    @Field({nullable: true, description: `Display name for the organization type`}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Detailed description of this organization type`}) 
     Description?: string;
@@ -4261,17 +4496,20 @@ export class mjBizAppsCommonOrganizationType_ {
     @MaxLength(100)
     IconClass?: string;
         
-    @Field(() => Int, {description: `Sort order in dropdown lists. Lower values appear first`}) 
-    DisplayRank: number;
+    @Field(() => Int, {nullable: true, description: `Sort order in dropdown lists. Lower values appear first`}) 
+    DisplayRank?: number;
         
-    @Field(() => Boolean, {description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -4428,9 +4666,9 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Common or display name of the organization`}) 
+    @Field({nullable: true, description: `Common or display name of the organization`}) 
     @MaxLength(255)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Full legal name if different from display name`}) 
     @MaxLength(255)
@@ -4469,9 +4707,9 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(50)
     TaxID?: string;
         
-    @Field({description: `Current status: Active, Inactive, or Dissolved`}) 
+    @Field({nullable: true, description: `Current status: Active, Inactive, or Dissolved`}) 
     @MaxLength(50)
-    Status: string;
+    Status?: string;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -4503,6 +4741,12 @@ export class mjBizAppsCommonOrganization_ {
     @Field(() => Int, {nullable: true}) 
     ParentIDChildCount?: number;
         
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
     @Field({nullable: true}) 
     @MaxLength(255)
     PrimaryAddressLine1?: string;
@@ -4533,12 +4777,6 @@ export class mjBizAppsCommonOrganization_ {
     @Field(() => Float, {nullable: true}) 
     PrimaryAddressLongitude?: number;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(100)
     PrimaryAddressType?: string;
@@ -4556,6 +4794,9 @@ export class mjBizAppsCommonOrganization_ {
         
     @Field(() => Int, {nullable: true}) 
     ChildOrgCount?: number;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -4754,13 +4995,13 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `First (given) name`}) 
+    @Field({nullable: true, description: `First (given) name`}) 
     @MaxLength(100)
-    FirstName: string;
+    FirstName?: string;
         
-    @Field({description: `Last (family) name`}) 
+    @Field({nullable: true, description: `Last (family) name`}) 
     @MaxLength(100)
-    LastName: string;
+    LastName?: string;
         
     @Field({nullable: true, description: `Middle name or initial`}) 
     @MaxLength(100)
@@ -4807,9 +5048,9 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(36)
     LinkedUserID?: string;
         
-    @Field({description: `Current status: Active, Inactive, or Deceased`}) 
+    @Field({nullable: true, description: `Current status: Active, Inactive, or Deceased`}) 
     @MaxLength(50)
-    Status: string;
+    Status?: string;
         
     @Field() 
     _mj__CreatedAt: Date;
@@ -4817,13 +5058,27 @@ export class mjBizAppsCommonPerson_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(201)
-    DisplayName: string;
+    DisplayName?: string;
+        
+    @Field({nullable: true, description: `Current primary seniority level for this person.`}) 
+    @MaxLength(36)
+    SeniorityLevelID?: string;
         
     @Field({nullable: true}) 
     @MaxLength(100)
     LinkedUser?: string;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Latitude?: number;
+        
+    @Field(() => Float, {nullable: true}) 
+    _mj__Longitude?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    SeniorityLevel?: string;
         
     @Field({nullable: true}) 
     @MaxLength(255)
@@ -4855,12 +5110,6 @@ export class mjBizAppsCommonPerson_ {
     @Field(() => Float, {nullable: true}) 
     PrimaryAddressLongitude?: number;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(100)
     PrimaryAddressType?: string;
@@ -4884,6 +5133,17 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true}) 
     @MaxLength(255)
     CurrentJobTitle?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    PrimaryJobFunctionID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    PrimaryJobFunction?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -4939,6 +5199,9 @@ export class CreatemjBizAppsCommonPersonInput {
 
     @Field({ nullable: true })
     Status?: string;
+
+    @Field({ nullable: true })
+    SeniorityLevelID: string | null;
 
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
@@ -4997,6 +5260,9 @@ export class UpdatemjBizAppsCommonPersonInput {
 
     @Field({ nullable: true })
     Status?: string;
+
+    @Field({ nullable: true })
+    SeniorityLevelID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
@@ -5092,6 +5358,196 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
 }
 
 //****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Person Job Functions
+//****************************************************************************
+@ObjectType({ description: `1:M assignment of job functions to a person, supporting plural functions and ranking order.` })
+export class mjBizAppsCommonPersonJobFunction_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    PersonID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    JobFunctionID?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(20)
+    Source?: string;
+        
+    @Field(() => Float, {nullable: true}) 
+    Confidence?: number;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field({nullable: true}) 
+    @MaxLength(201)
+    Person?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    JobFunction?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Person Job Functions
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonPersonJobFunctionInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    PersonID?: string;
+
+    @Field({ nullable: true })
+    JobFunctionID?: string;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Source?: string;
+
+    @Field(() => Float, { nullable: true })
+    Confidence: number | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Person Job Functions
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonPersonJobFunctionInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    PersonID?: string;
+
+    @Field({ nullable: true })
+    JobFunctionID?: string;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Source?: string;
+
+    @Field(() => Float, { nullable: true })
+    Confidence?: number | null;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Person Job Functions
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonPersonJobFunctionViewResult {
+    @Field(() => [mjBizAppsCommonPersonJobFunction_])
+    Results: mjBizAppsCommonPersonJobFunction_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonPersonJobFunction_)
+export class mjBizAppsCommonPersonJobFunctionResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonPersonJobFunctionViewResult)
+    async RunmjBizAppsCommonPersonJobFunctionViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonPersonJobFunctionViewResult)
+    async RunmjBizAppsCommonPersonJobFunctionViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonPersonJobFunctionViewResult)
+    async RunmjBizAppsCommonPersonJobFunctionDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Person Job Functions';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonPersonJobFunction_, { nullable: true })
+    async mjBizAppsCommonPersonJobFunction(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonPersonJobFunction_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Person Job Functions', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwPersonJobFunctions')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Person Job Functions', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Person Job Functions', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonPersonJobFunction_)
+    async CreatemjBizAppsCommonPersonJobFunction(
+        @Arg('input', () => CreatemjBizAppsCommonPersonJobFunctionInput) input: CreatemjBizAppsCommonPersonJobFunctionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Person Job Functions', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonPersonJobFunction_)
+    async UpdatemjBizAppsCommonPersonJobFunction(
+        @Arg('input', () => UpdatemjBizAppsCommonPersonJobFunctionInput) input: UpdatemjBizAppsCommonPersonJobFunctionInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Person Job Functions', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonPersonJobFunction_)
+    async DeletemjBizAppsCommonPersonJobFunction(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Person Job Functions', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Relationship Types
 //****************************************************************************
 @ObjectType({ description: `Defines types of relationships between people and organizations with directionality and labeling` })
@@ -5100,19 +5556,19 @@ export class mjBizAppsCommonRelationshipType_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({description: `Display name for the relationship type, e.g. Employee, Spouse, Partner`}) 
+    @Field({nullable: true, description: `Display name for the relationship type, e.g. Employee, Spouse, Partner`}) 
     @MaxLength(100)
-    Name: string;
+    Name?: string;
         
     @Field({nullable: true, description: `Detailed description of this relationship type`}) 
     Description?: string;
         
-    @Field({description: `Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization`}) 
+    @Field({nullable: true, description: `Which entity types this relationship connects: PersonToPerson, PersonToOrganization, or OrganizationToOrganization`}) 
     @MaxLength(50)
-    Category: string;
+    Category?: string;
         
-    @Field(() => Boolean, {description: `Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner`}) 
-    IsDirectional: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether the relationship has a direction. False for symmetric relationships like Spouse or Partner`}) 
+    IsDirectional?: boolean;
         
     @Field({nullable: true, description: `Label describing the From-to-To direction, e.g. is employee of, is parent of`}) 
     @MaxLength(100)
@@ -5122,14 +5578,17 @@ export class mjBizAppsCommonRelationshipType_ {
     @MaxLength(100)
     ReverseLabel?: string;
         
-    @Field(() => Boolean, {description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
-    IsActive: boolean;
+    @Field(() => Boolean, {nullable: true, description: `Whether this type is available for selection in the UI. Inactive types are hidden from dropdowns but preserved for existing records`}) 
+    IsActive?: boolean;
         
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -5298,9 +5757,9 @@ export class mjBizAppsCommonRelationship_ {
     @MaxLength(36)
     ID: string;
         
-    @Field() 
+    @Field({nullable: true}) 
     @MaxLength(36)
-    RelationshipTypeID: string;
+    RelationshipTypeID?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -5328,9 +5787,9 @@ export class mjBizAppsCommonRelationship_ {
     @Field({nullable: true, description: `Date the relationship ended, if applicable`}) 
     EndDate?: Date;
         
-    @Field({description: `Current status: Active, Inactive, or Ended`}) 
+    @Field({nullable: true, description: `Current status: Active, Inactive, or Ended`}) 
     @MaxLength(50)
-    Status: string;
+    Status?: string;
         
     @Field({nullable: true, description: `Additional notes about this relationship`}) 
     Notes?: string;
@@ -5341,9 +5800,17 @@ export class mjBizAppsCommonRelationship_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field() 
+    @Field({nullable: true, description: `Company-specific job function for this relationship/employment link.`}) 
+    @MaxLength(36)
+    JobFunctionID?: string;
+        
+    @Field({nullable: true, description: `Company-specific seniority level for this relationship/employment link.`}) 
+    @MaxLength(36)
+    SeniorityLevelID?: string;
+        
+    @Field({nullable: true}) 
     @MaxLength(100)
-    RelationshipType: string;
+    RelationshipType?: string;
         
     @Field({nullable: true}) 
     @MaxLength(201)
@@ -5360,6 +5827,17 @@ export class mjBizAppsCommonRelationship_ {
     @Field({nullable: true}) 
     @MaxLength(255)
     ToOrganization?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    JobFunction?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    SeniorityLevel?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
         
 }
 
@@ -5400,6 +5878,12 @@ export class CreatemjBizAppsCommonRelationshipInput {
 
     @Field({ nullable: true })
     Notes: string | null;
+
+    @Field({ nullable: true })
+    JobFunctionID: string | null;
+
+    @Field({ nullable: true })
+    SeniorityLevelID: string | null;
 
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
@@ -5443,6 +5927,12 @@ export class UpdatemjBizAppsCommonRelationshipInput {
 
     @Field({ nullable: true })
     Notes?: string | null;
+
+    @Field({ nullable: true })
+    JobFunctionID?: string | null;
+
+    @Field({ nullable: true })
+    SeniorityLevelID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
@@ -5533,6 +6023,178 @@ export class mjBizAppsCommonRelationshipResolver extends ResolverBase {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
         return this.DeleteRecord('MJ_BizApps_Common: Relationships', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Seniority Levels
+//****************************************************************************
+@ObjectType({ description: `Career seniority levels carrying rank order (IC, Manager, Director, VP, C-Level) for skill and scope classification.` })
+export class mjBizAppsCommonSeniorityLevel_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    Name?: string;
+        
+    @Field({nullable: true}) 
+    Description?: string;
+        
+    @Field(() => Int, {nullable: true}) 
+    Sequence?: number;
+        
+    @Field({nullable: true}) 
+    @MaxLength(20)
+    Status?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Seniority Levels
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonSeniorityLevelInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Seniority Levels
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonSeniorityLevelInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field({ nullable: true })
+    Status?: string;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Seniority Levels
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonSeniorityLevelViewResult {
+    @Field(() => [mjBizAppsCommonSeniorityLevel_])
+    Results: mjBizAppsCommonSeniorityLevel_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonSeniorityLevel_)
+export class mjBizAppsCommonSeniorityLevelResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonSeniorityLevelViewResult)
+    async RunmjBizAppsCommonSeniorityLevelViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonSeniorityLevelViewResult)
+    async RunmjBizAppsCommonSeniorityLevelViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonSeniorityLevelViewResult)
+    async RunmjBizAppsCommonSeniorityLevelDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Seniority Levels';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonSeniorityLevel_, { nullable: true })
+    async mjBizAppsCommonSeniorityLevel(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonSeniorityLevel_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Seniority Levels', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwSeniorityLevels')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Seniority Levels', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Seniority Levels', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonSeniorityLevel_)
+    async CreatemjBizAppsCommonSeniorityLevel(
+        @Arg('input', () => CreatemjBizAppsCommonSeniorityLevelInput) input: CreatemjBizAppsCommonSeniorityLevelInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Seniority Levels', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonSeniorityLevel_)
+    async UpdatemjBizAppsCommonSeniorityLevel(
+        @Arg('input', () => UpdatemjBizAppsCommonSeniorityLevelInput) input: UpdatemjBizAppsCommonSeniorityLevelInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Seniority Levels', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonSeniorityLevel_)
+    async DeletemjBizAppsCommonSeniorityLevel(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Seniority Levels', key, options, provider, userPayload, pubSub);
     }
     
 }

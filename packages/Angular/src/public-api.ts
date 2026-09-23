@@ -29,7 +29,25 @@ export { ContactMethodListComponent } from './lib/components/contact-method-list
 export { RelationshipListComponent } from './lib/components/relationship-list/relationship-list.component';
 export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hierarchy-tree/org-hierarchy-tree.component';
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
+export { StatTileComponent, type StatTileTone } from './lib/components/stat-tile/stat-tile.component';
+export { StatRowComponent } from './lib/components/stat-tile/stat-row.component';
+export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
+export {
+    FilterForRelatedLink,
+    LabelForRelatedLink,
+    PrimaryKeyFieldFor,
+    RelatedChipNavigation,
+    ResolveRelatedChip,
+    type BizAppsRelatedLink,
+    type RelatedChipClick,
+    type RelatedLinkEntity,
+    type RelatedLinkReadResult,
+    type RelatedLinkReader,
+    type ResolvedRelatedChip,
+} from './lib/components/related-chips/related-links';
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
+export { PersonJobFunctionsComponent } from './lib/components/person-job-functions/person-job-functions.component';
+export { PersonJobFunctionsPanel } from './lib/custom/panels/person-job-functions.panel';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';
@@ -54,6 +72,13 @@ export { CommonDashboardPageComponent } from './lib/pages/common-dashboard.page'
 export { CommonPeoplePageComponent } from './lib/pages/people-list.page';
 export { CommonOrganizationsPageComponent } from './lib/pages/organizations-list.page';
 export { CommonActivitiesPageComponent } from './lib/pages/activities-dashboard.page';
+
+// Party pickers. The Party Signals contract itself lives in @mj-biz-apps/common-entities; these are
+// the client-side reader, the per-instance settings, and the selling-company field.
+export { PartySignalStore } from './lib/data/party-signal-store';
+export { CommonSettings, COMMON_SETTING } from './lib/data/common-settings';
+export { SellingCompanyFieldComponent } from './lib/components/selling-company-field/selling-company-field.component';
+export { SellingCompanyConfirm } from './lib/components/selling-company-field/selling-company-confirm';
 
 /**
  * Bootstrap function called during MJExplorer initialization.

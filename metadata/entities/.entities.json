@@ -1,8 +1,20 @@
 [
   {
+    "_comments": [
+      "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
+      "The disjoint default mis-chains silently when two children share the parent key.",
+      "AllowRecordMerge is deliberately NOT set here. CK_Entity_AllowRecordMerge requires",
+      "AllowDeleteAPI = 1 AND DeleteType = 'Soft', and both parties are hard-delete with no",
+      "soft-delete column, so the flag is a schema change rather than a metadata one: a merge is",
+      "only allowed where the losing record's deletion can be undone. Enabling it means converting",
+      "both entities to soft delete, regenerating their stored procedures, and accepting the new",
+      "delete semantics everywhere they are used. That is its own change."
+    ],
     "fields": {
       "GeneratedBaseViewName": "vwPeopleGenerated",
       "BaseViewGenerated": false,
+      "AllowUserSearchAPI": true,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -11,7 +23,8 @@
             "PrimaryRelatedBudget": 6
           }
         }
-      }
+      },
+      "AllowMultipleSubtypes": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
@@ -22,14 +35,18 @@
           ],
           "fields": {
             "IsNameField": true,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-05-14T15:55:52.243Z",
-            "checksum": "7eed61d7e6b053a30e312c82208b59beeffaa35465e6bbaf1ce6e42980f9884d"
+            "lastModified": "2026-09-17T23:07:00.563Z",
+            "checksum": "92c3ba4f86122a839f4542652f14accddcd58c54858e72dee6b4f67dc0a99ecb"
           }
         },
         {
@@ -39,27 +56,33 @@
           ],
           "fields": {
             "IsNameField": false,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=FirstName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-08-24T20:06:03.203Z",
-            "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
+            "lastModified": "2026-09-17T23:07:00.602Z",
+            "checksum": "65992a2b498e78cc9278a757b98e394e0d36d33e304b62cb75f35205a482fc69"
           }
         },
         {
           "fields": {
             "IsNameField": false,
-            "AutoUpdateIsNameField": false
+            "AutoUpdateIsNameField": false,
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=LastName&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-05-14T15:55:52.299Z",
-            "checksum": "687c5d5cddb289a19771ed8721c6d226abed403abe2d7bf8d0bc884685394fbc"
+            "lastModified": "2026-09-17T23:07:00.649Z",
+            "checksum": "10174ad79f418c4a9af4738bd75b5f32251396aebc0a4de09d3204fab71a2c00"
           }
         },
         {
@@ -77,6 +100,109 @@
             "lastModified": "2026-09-07T14:18:30.894Z",
             "checksum": "6c752d9cc7a927d6ed9c69059189231ff525b3ff7ef78991989fb7ca949d86b1"
           }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PrimaryEmail&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.700Z",
+            "checksum": "111cb3d7435cdf5bda9406a1599a35e781d000d8bb629ddad324328b6017e113"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Email&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.739Z",
+            "checksum": "111cb3d7435cdf5bda9406a1599a35e781d000d8bb629ddad324328b6017e113"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=MiddleName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.785Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PreferredName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.827Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "_comments": [
+            "The picker's second line reads 'Title at Organization'; searching it lets someone find a person",
+            "they know by role rather than by name. BeginsWith keeps 'Director' from matching mid-title",
+            "everywhere, and a title hit ranks below a name hit in the picker regardless.",
+            "FirstName is deliberately left off: DisplayName is First + Last and is already searched."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Title&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.859Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Phone&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.889Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=ID&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.915Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
         }
       ]
     },
@@ -84,15 +210,27 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-08-24T20:06:03.013Z",
-      "checksum": "d8abd2c17935ca208a98ccc50a8485cf98f875bdd7211fdad4d11e3a7986d285"
+      "lastModified": "2026-09-17T23:07:00.418Z",
+      "checksum": "1c480d9b20aad85919da1336c65cca326233eb1c688671a950d803bcb59092e0"
     }
   },
   {
+    "_comments": [
+      "AllowMultipleSubtypes: sales extends this entity as an IsA child and a second app will too.",
+      "The disjoint default mis-chains silently when two children share the parent key.",
+      "AllowRecordMerge is deliberately NOT set here. CK_Entity_AllowRecordMerge requires",
+      "AllowDeleteAPI = 1 AND DeleteType = 'Soft', and both parties are hard-delete with no",
+      "soft-delete column, so the flag is a schema change rather than a metadata one: a merge is",
+      "only allowed where the losing record's deletion can be undone. Enabling it means converting",
+      "both entities to soft delete, regenerating their stored procedures, and accepting the new",
+      "delete semantics everywhere they are used. That is its own change."
+    ],
     "fields": {
       "CascadeDeletes": false,
       "GeneratedBaseViewName": "vwOrganizationsGenerated",
       "BaseViewGenerated": false,
+      "AllowUserSearchAPI": true,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -101,7 +239,8 @@
             "PrimaryRelatedBudget": 6
           }
         }
-      }
+      },
+      "AllowMultipleSubtypes": true
     },
     "relatedEntities": {
       "MJ: Entity Fields": [
@@ -157,6 +296,114 @@
             "lastModified": "2026-09-07T14:08:15.529Z",
             "checksum": "cbf8700d9dc30460cce4f3d2a7003b85310b1fc74f009da79ea9079e91c47d85"
           }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Name&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.564Z",
+            "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LegalName&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.601Z",
+            "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=TaxID&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.648Z",
+            "checksum": "111cb3d7435cdf5bda9406a1599a35e781d000d8bb629ddad324328b6017e113"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "Exact",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Email&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.700Z",
+            "checksum": "111cb3d7435cdf5bda9406a1599a35e781d000d8bb629ddad324328b6017e113"
+          }
+        },
+        {
+          "_comments": [
+            "A domain is often the only thing that tells two same-named organizations apart, so the party",
+            "picker shows it on the second line and search has to be able to reach it. BeginsWith, not",
+            "Contains: an acronym typed into the picker should find the domain that starts with it,",
+            "not every domain with those letters somewhere inside it.",
+            "Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Website&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.740Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Phone&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.785Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
+        },
+        {
+          "fields": {
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=ID&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-09-17T23:07:00.827Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+          }
         }
       ]
     },
@@ -164,8 +411,8 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
-      "lastModified": "2026-09-02T04:04:09.803Z",
-      "checksum": "4588ca1a5f9bd7f494e231885f279173474c14064d7d7b9c90c575148dbc677b"
+      "lastModified": "2026-09-17T23:07:00.419Z",
+      "checksum": "d2a719f7f7720f0859fb4d7864b184fc4be1458faaf9727615ae16d55fe98a4b"
     }
   },
   {
@@ -174,6 +421,8 @@
     },
     "fields": {
       "SupportsGeoCoding": true,
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false,
       "Configuration": {
         "UI": {
           "Form": {
@@ -222,8 +471,8 @@
       ]
     },
     "sync": {
-      "lastModified": "2026-09-07T14:18:30.702Z",
-      "checksum": "ad5c34b3c52e0f3f11a5924fa2fb931d7cae71724a5adbc395eff1e941fb5b66"
+      "lastModified": "2026-09-17T23:07:00.420Z",
+      "checksum": "6c04d1852b15f96a03f468a95b39ff98be580a6086f897fd6cdb7ba9f7b2d98c"
     }
   },
   {
@@ -244,6 +493,110 @@
     "sync": {
       "lastModified": "2026-08-24T20:06:03.051Z",
       "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Address Links"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.419Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Types"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.418Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Files"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.419Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.417Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Connections"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.418Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Rule Sets"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.416Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Rules"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.484Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+    }
+  },
+  {
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Exclusions"
+    },
+    "fields": {
+      "AllowUserSearchAPI": false,
+      "AutoUpdateAllowUserSearchAPI": false
+    },
+    "sync": {
+      "lastModified": "2026-09-17T23:07:00.484Z",
+      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
     }
   }
 ]

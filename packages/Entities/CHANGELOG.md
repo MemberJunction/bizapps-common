@@ -1,5 +1,192 @@
 # Change Log - mj_generatedentities
 
+## 5.46.0
+
+### Minor Changes
+
+- 12a6de8: Add Activity Tagging & Sentiment feature pipeline (FP-7 / P2-1).
+
+  - Database schema and migration:
+    - `Activity.SentimentScore`: Bounded decimal column `DECIMAL(4,3)` (-1.000 to +1.000) for activity sentiment.
+    - Recreates `vwActivities` to include `SentimentScore`.
+    - Updates `spCreateActivity` and `spUpdateActivity` with `@SentimentScore` parameter.
+    - Appends `EntityField` for `SentimentScore` on `MJ_BizApps_Common: Activities`.
+  - Metadata:
+    - `Common: Activity With Contact History` query retrieving target activity and linked contact's historical baseline.
+    - `Activity Tagging and Sentiment Derivation` prompt with contact baseline analysis.
+    - `Sentiment` taxonomy root tag with child tags (`Positive`, `Neutral`, `Negative`, `EscalationRisk`, `Urgent`).
+    - `Activity Tagging and Sentiment` Feature Pipeline Record Process (`WorkType: 'Infer'`, `Cacheable: false`, `Watermark: 'Checksum'`).
+
+- 2f28572: Add Job Function & Seniority people model and feature pipeline integration (FP-6).
+
+  - Database schema and migration:
+    - `JobFunction`: Type table (`MJ_BizApps_Common: Job Functions`) with seed data in `metadata/job-functions/`.
+    - `SeniorityLevel`: Type table (`MJ_BizApps_Common: Seniority Levels`) with seed data in `metadata/seniority-levels/` carrying rank order (IC -> Manager -> Director -> VP -> C-Level).
+    - `PersonJobFunction`: 1:M bridge (`MJ_BizApps_Common: Person Job Functions`) with `Source` ('Manual' | 'Derived') and `Confidence`.
+    - `Person.SeniorityLevelID` foreign key to `SeniorityLevel`.
+    - `Relationship.JobFunctionID` and `Relationship.SeniorityLevelID` foreign keys for per-company role classification.
+    - `vwPeople`: Virtual view columns `PrimaryJobFunctionID` and `PrimaryJobFunction` derived from the lowest Sequence `PersonJobFunction` row.
+    - `metadata/record-processes/`: Dogfood RecordProcess feature pipeline configuration for Job Function and Seniority classification.
+  - Progressive disclosure UX:
+    - `PersonIdentityComponent`: Compact chips for `PrimaryJobFunction` and `SeniorityLevel` in the identity header badges, with interactive disclosure for multiple job functions, and `SeniorityLevelID` in EditMode.
+    - `RelationshipListComponent`: Displays `JobFunction` and `SeniorityLevel` badges on timeline items when set; provides progressive disclosure section in Add and Edit forms so role classification is invisible until expanded or set.
+
+## 5.45.0
+
+### Minor Changes
+
+- 868b125: Party Signals: a shared answer to "which organizations and people are our customers", plus a
+  selling-company field that defaults and confirms.
+
+  Common owns Organizations and People but cannot see the orders, contracts or sales schemas, and
+  neither party carries a customer flag or a last-activity date. So nothing that renders a party —
+  a foreign-key picker above all — has ever been able to tell a customer from any other row in a
+  directory that can run to hundreds of thousands. It offers the first twenty rows that contain the
+  typed letters, in no particular order.
+
+  **The contract.** An app declares its own customers by shipping ONE query in the new `Party Signals`
+  query category, returning `PartyKind` (`'organization'` | `'person'`), `PartyID`, `Count` and
+  `LastActivityAt`, and carrying a `[signal: noun|nouns]` marker in its own `Description` so a caller
+  can label "4 orders" without knowing what an order is. The category is the registry: Common never
+  imports an app, and an app joins the answer by shipping metadata, with no code change here.
+
+  `@mj-biz-apps/common-entities` exports the contract and the pure union — `PARTY_SIGNALS_CATEGORY`,
+  the row and roster types, `MergePartySignalRows`, `ParseSignalNouns`, `ChipText`. Party IDs are
+  matched case-insensitively, because GUIDs arrive in whichever case the provider produced and two
+  spellings of one organization would otherwise read as two customers.
+
+  **Two readers, one definition.** `PartySignalStore` (common-ng) discovers the category through
+  metadata and runs each query once per session, for Explorer. `Common.GetPartySignals`
+  (common-server) does the same union server-side for everything that is not Angular — agents, MCP,
+  reports, scripts. Both run every query as the calling user, so the roster is permission-filtered; a
+  query the caller cannot read contributes nothing and is named in warnings rather than failing the
+  call, so a missing signal weakens ranking instead of breaking the field.
+
+  **`bizapps-selling-company-field`.** The company on an order or a contract decides which legal
+  entity books the revenue, and the picker behind it lists every company row the instance has. Apps
+  have defaulted it by whichever company sorted first alphabetically, or by the first product on the
+  order — rules nobody wrote down. This field defaults to the current user's own company when they
+  have one and it is a company the instance knows, otherwise to the new Common `DefaultSellingCompanyID`
+  setting, otherwise to nothing. Anything else is held, named back to the user against the default,
+  and written only on confirm; an unanswered question reverts, because it must not decide where
+  revenue lands. It wraps `mj-form-field`, so the dropdown, keyboard behaviour and link rendering
+  stay the platform's.
+
+  **Metadata.** `AllowMultipleSubtypes` is now set on Organizations and People, because both are
+  extended as IsA children and the disjoint default mis-chains silently. `AllowRecordMerge` is not:
+  `CK_Entity_AllowRecordMerge` requires `AllowDeleteAPI = 1` and `DeleteType = 'Soft'`, and both
+  parties are hard-delete, so enabling merge is a schema change rather than a flag and belongs in its
+  own release. `Organizations.Website` and
+  `People.Title` join user search, with `BeginsWith` predicates and `AutoUpdate` pins so CodeGen
+  cannot flip them back; the other identifying fields were already flagged.
+
+  The party lookup strategy that consumes all of this is a separate release: it needs the platform
+  foreign-key lookup-strategy seam, which nothing here waits on.
+
+## 5.44.0
+
+### Minor Changes
+
+- 7056463: Say on `ActivitySyncRunDetail.CapturedContent` that rotating its encryption key makes existing rows unreadable.
+
+  The column already described its own contract — _"Ciphertext, always … Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row"_ — which reads like a promise the value stays readable. It does not survive a key rotation, and the operator who turns retention on is the person who needs to know that before the rows exist rather than after.
+
+  `RotateEncryptionKeyAction` finds what to re-encrypt by enumerating `MJ: Entity Fields` with `EncryptionKeyID = '<key>' AND Encrypt = 1`. This column is encrypted by calling the engine directly rather than by declaring the field — the same decision that keeps the crypto out of `common-activity-sync` — so rotation never sees it. The stored envelope, `$ENC$<keyId>$<algorithm>$<iv>$<ciphertext>[$<authTag>]`, records which key opened a value but not which version of it, so nothing in the row says it was written under an earlier one. Rotation reports success, skips these rows, and the next read of them fails.
+
+  Live operational data is re-encrypted as part of a rotation, which is why this has not bitten anything before. An audit archive is the one kind of column where the read comes years after the write.
+
+  Written as an `MS_Description` extended property rather than an `EntityField.Description` update, because `spUpdateExistingEntityFieldsFromSchema` mirrors the column comment over `EntityField.Description` whenever `AutoUpdateDescription = 1`, which this row took by default; a direct update would be reverted by the next `R__RefreshMetadata`. The migration also mirrors the property into `EntityField` itself, reading it back out of the catalog so the two cannot drift, since that repeatable only re-runs when its own checksum changes.
+
+  The underlying platform gap is tracked as MemberJunction/MJ#4580. Nothing in this repo works around it: recording a key version in the envelope, or giving rotation a way to see hand-encrypted columns, are both platform decisions.
+
+  The next CodeGen run will carry the new text into the generated entity docblock and the GraphQL field description; those files are not in this changeset.
+
+## 5.43.0
+
+### Minor Changes
+
+- 23b6827: Activity: remove the phantom `ParentActivity` EntityField that made every Activity create fail.
+
+  `Activity` metadata carried a virtual field `ParentActivity` at sequence 24 that `vwActivities` does
+  not emit. MJ's save-capture is POSITIONAL — it declares one slot per EntityField and reads them back
+  by position from the base view — so metadata declared 34 slots against a 33-column view and every
+  create failed with `Column name or number of supplied values does not match table definition`.
+
+  **What that looked like in practice.** Activity Sync fetched, qualified, resolved identities and
+  threading correctly, then wrote nothing: `Failed: 5, Success: false`. The watermark is held on
+  failure, so it retried the same messages on every pass and never made progress. Nothing about the
+  message named the real cause.
+
+  **WHICH DATABASES ARE IN THAT STATE, since on many this migration will print and do nothing.**
+  `V202608252150` ships `vwActivities` WITH a `ParentActivity` column and the matching EntityField, so a
+  database built from this repo's Flyway chain and never regenerated is aligned at 34/34 and the guard
+  below leaves it alone. The mismatch appears once someone runs `mj codegen` against such a host: for a
+  self-referencing FK, CodeGen rebuilds the view with the hierarchy columns and no `ParentActivity`,
+  while the EntityField row stays — 34 slots against 33. That is the state the development database was
+  in. The closing assertion runs on every host regardless, so an aligned database proves it rather than
+  being assumed to be.
+
+  This is the same defect `V202608261015` fixed for Activity Links and Activity Files, in the opposite
+  direction — that one added a virtual field the view HAD and metadata lacked (N slots against N+1
+  columns); this removes one metadata HAS and the view lacks.
+
+  **Why remove the field rather than add the column.** `ParentActivityID` is a self-referencing FK, and
+  for it CodeGen emits the hierarchy columns (`RootParentActivityID`, `ParentActivityIDDepth`/`Path`/
+  `IsLeaf`/`ChildCount`) rather than a plain related-name join. A migration that added the column would
+  be undone on the next CodeGen run. Verified: after a full `mj codegen` on a healed database, metadata
+  and view stay aligned at 33/33 and the field does not come back — which is also why this leaves
+  `IncludeRelatedEntityNameFieldInBaseView` alone rather than flipping a flag whose CodeGen behaviour
+  differs between this entity and `ActivityType` for reasons not established here.
+
+  **Guarded on the actual state, not on an ID.** The field is created by a CodeGen proc that mints a
+  fresh GUID per host, so an ID-only guard would match nothing on most databases — the trap that stalled
+  the migration chain in bizapps-orders#126. It matches on `(EntityID, Name)`, and acts only where
+  `vwActivities` genuinely lacks the column, so a database whose view does expose it is left untouched.
+  The migration ends by re-checking that no Activity field lacks a view column and throwing if one does,
+  because failing in the migration is far cheaper than failing on the next create.
+
+  All three paths exercised against a real database: the defect reproduced (`Failed: 5`, nothing
+  written), the migration applied (`Included: 5`, five Activities and seventeen links written), a second
+  and third application were clean no-ops, and with the column artificially present the migration
+  correctly declined to remove the field.
+
+  **The generated artifacts are deliberately left stale, and this is the record of that.**
+  `get ParentActivity()` stays in the generated entity class and Zod schema, and `ParentActivity?:
+string` in the GraphQL type. Where this migration removes the field those read `null` rather than
+  throwing — `BaseEntity.Get` falls through both the raw path and `GetFieldByName` — so the positional
+  save-capture fix holds either way.
+
+  They are not regenerated because the deletion does not stop at generated files.
+  `activity-identity.component.html` DISPLAYS the field: `@if (Record.ParentActivity)` gates a
+  "Thread / Parent" stat in the Activity header, and the Angular package compiles with
+  `strictTemplates: true`, so removing the getter makes that template a build error. Regenerating means
+  changing a hand-written component that shows a user something — a different change from this one.
+
+  The cost is drift: the next `mj codegen` on a healed database emits a three-file deletion, and
+  whoever sees it should know it belongs here.
+
+- ec6fab7: The business time zone, and calendar-day helpers every BizApp shares (bc-aidp-next-golive#168).
+
+  `Order Date` defaulted to the UTC calendar day, so an order entered after 7 PM Central was dated
+  tomorrow; the accounting journal-entry draft used the browser's local day; every view compared
+  against `CAST(GETUTCDATE() AS date)`, so a contract ending December 31 read as expired at 7 PM
+  Central on the 31st. Each app had its own copy of the same date arithmetic.
+
+  One instance configuration row, `BizApps.BusinessTimeZone`, holds the zone the business books in:
+  `{"iana": "America/Chicago", "sql": "Central Standard Time"}`. **Both names are required.** `Intl`
+  accepts only the IANA name and SQL Server's `AT TIME ZONE` accepts only the Windows one, so a row
+  carrying one of them would have code and views answering different days; a one-name row is treated
+  as unreadable and everything falls back to UTC. The row ships empty, which means UTC until the host
+  sets it. `BusinessTimeZoneEngine` caches it on client and
+  server and answers `Today()` in that zone, falling back to UTC when the row is unset, unreadable, or
+  names a zone the runtime does not know. `business-day.ts`
+  is the one implementation of calendar-day parsing, formatting and arithmetic: a `DATE` column is read
+  from its UTC parts and written as UTC midnight, exactly as MJ's own form field does. The migration
+  seeds the row empty (the host sets it) and defines `fnBusinessToday()` in the common schema, an
+  inline table-valued function every app's views cross join for "today".
+
+## 5.42.0
+
 ## 5.41.0
 
 ### Minor Changes
