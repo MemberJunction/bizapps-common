@@ -533,9 +533,9 @@ export class AddressEditorComponent {
         this.EditForm = {
             TypeID: item.Link.AddressTypeID,
             IsPrimary: item.Link.IsPrimary,
-            Line1: item.Address.Line1,
+            Line1: item.Address.Line1 || '',
             Line2: item.Address.Line2 || '',
-            City: item.Address.City,
+            City: item.Address.City || '',
             StateProvince: item.Address.StateProvince || '',
             PostalCode: item.Address.PostalCode || '',
             Country: item.Address.Country
