@@ -210,7 +210,7 @@ function checkPackage(dir) {
 
     if (!mine.length) {
         process.stdout.write(`  OK — compiles against published MemberJunction\n`);
-        return true;
+        return 'ok';
     }
     if (report.sourceTyped.length) {
         console.log('  INCONCLUSIVE — a dependency publishes TypeScript SOURCE as its types entry:');
@@ -219,12 +219,12 @@ function checkPackage(dir) {
         console.log('  the unpacked tarball, so the errors below are about that and not about this repo.');
         console.log('  Reported, not failed. CI installs the real dependency tree and does resolve them.');
         for (const line of mine.slice(0, 5)) console.log(`      ${line.trim()}`);
-        return true;
+        return 'inconclusive';
     }
     process.stdout.write(`  ${mine.length} error(s) against PUBLISHED MemberJunction:\n`);
     for (const line of mine.slice(0, 20)) process.stdout.write(`    ${line.trim()}\n`);
     if (mine.length > 20) process.stdout.write(`    ... and ${mine.length - 20} more\n`);
-    return false;
+    return 'failed';
 }
 
 const dirs = packagesToCheck();
@@ -234,7 +234,12 @@ if (!dirs.length) {
 }
 
 let failed = 0;
-for (const dir of dirs) if (!checkPackage(dir)) failed++;
+let inconclusive = 0;
+for (const dir of dirs) {
+    const verdict = checkPackage(dir);
+    if (verdict === 'failed') failed++;
+    else if (verdict === 'inconclusive') inconclusive++;
+}
 
 console.log('');
 if (failed) {
@@ -242,4 +247,19 @@ if (failed) {
     console.log('CI installs from npm, so this is what CI will see regardless of how the local workspace is linked.');
     process.exit(1);
 }
-console.log(`${dirs.length} package(s) compile against published MemberJunction.`);
+/**
+ * COUNT WHAT WAS CHECKED, NOT WHAT WAS VISITED.
+ *
+ * This said `${dirs.length} package(s) compile`, which counted the INCONCLUSIVE ones too — and for
+ * those this guard verified NOTHING, as the block above says in full. A summary line that reads
+ * better than the run it summarises is the exact shape of defect this script exists to catch, so it
+ * should not be the last thing the script prints about itself.
+ */
+const checked = dirs.length - inconclusive;
+console.log(`${checked} of ${dirs.length} package(s) compile against published MemberJunction.`);
+if (inconclusive) {
+    console.log(
+        `${inconclusive} INCONCLUSIVE — not checked at all, for the reason given above. This run`
+            + ` proves nothing about ${inconclusive === 1 ? 'that package' : 'those packages'}.`,
+    );
+}
