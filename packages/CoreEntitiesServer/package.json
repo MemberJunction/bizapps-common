@@ -2,7 +2,7 @@
   "name": "@mj-biz-apps/common-core-entities-server",
   "type": "module",
   "version": "5.45.0",
-  "description": "Server-side entity subclasses for BizApps Common — lifecycle hooks for People, Organizations, etc.",
+  "description": "Server-side entity subclasses for BizApps Common \u2014 lifecycle hooks for People, Organizations, etc.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
@@ -25,10 +25,10 @@
     "@mj-biz-apps/common-activity-sync": "5.45.0"
   },
   "peerDependencies": {
-    "@memberjunction/core": "^6.1.0-edge.6",
-    "@memberjunction/core-entities": "^6.1.0-edge.6",
-    "@memberjunction/generic-database-provider": "^6.1.0-edge.6",
-    "@memberjunction/global": "^6.1.0-edge.6"
+    "@memberjunction/core": "^6.2.0-edge.0",
+    "@memberjunction/core-entities": "^6.2.0-edge.0",
+    "@memberjunction/generic-database-provider": "^6.2.0-edge.0",
+    "@memberjunction/global": "^6.2.0-edge.0"
   },
   "repository": {
     "type": "git",
