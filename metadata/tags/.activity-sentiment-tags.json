@@ -1,0 +1,68 @@
+[
+  {
+    "fields": {
+      "Name": "Sentiment",
+      "Description": "Root taxonomy tag for customer activity sentiment classification.",
+      "Status": "Active",
+      "ParentID": null
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Positive",
+      "Description": "Positive sentiment tone, commendations, enthusiasm, or successful outcomes.",
+      "Status": "Active",
+      "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C61"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Neutral",
+      "Description": "Neutral sentiment tone, routine status checks, scheduling, or operational correspondence.",
+      "Status": "Active",
+      "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C62"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Negative",
+      "Description": "Negative sentiment tone, complaints, friction, or dissatisfaction.",
+      "Status": "Active",
+      "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C63"
+    }
+  },
+  {
+    "fields": {
+      "Name": "EscalationRisk",
+      "Description": "Communication signals potential customer churn, severe frustration, or escalation risk.",
+      "Status": "Active",
+      "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C64"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Urgent",
+      "Description": "Communication indicates time-critical blockers requiring immediate action.",
+      "Status": "Active",
+      "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "primaryKey": {
+      "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C65"
+    }
+  }
+]

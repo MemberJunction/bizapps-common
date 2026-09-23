@@ -1,0 +1,21 @@
+[
+  {
+    "fields": {
+      "Name": "Common: Activity With Contact History",
+      "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
+      "UserQuestion": "What is the context and prior activity history for a specific activity?",
+      "Description": "Retrieves the target activity and the linked contact's prior activities for relative sentiment and tagging analysis.",
+      "TechnicalDescription": "Joins vwActivities to vwActivityLinks for linked People records, pulling the last 10 prior activities for baseline context. Parameters: ActivityID.",
+      "SQL": "@file:SQL/activity-with-contact-history.sql",
+      "Status": "Approved",
+      "QualityRank": 9,
+      "ExecutionCostRank": 2,
+      "Reusable": true,
+      "UsesTemplate": true
+    },
+    "relatedEntities": {},
+    "primaryKey": {
+      "ID": "6C0A1000-0001-4000-A000-00000000000F"
+    }
+  }
+]

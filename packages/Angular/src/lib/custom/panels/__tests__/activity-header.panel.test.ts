@@ -155,4 +155,26 @@ describe('ActivityIdentityComponent and Panel Contributions', () => {
         comp.Record.Description = 'A '.repeat(200);
         expect(comp.IsLongContent).toBe(true);
     });
+
+    it('computes sentiment score display, tone, and iconography', () => {
+        const comp = new ActivityIdentityComponent();
+
+        comp.Record = { SentimentScore: null } as mjBizAppsCommonActivityEntity;
+        expect(comp.SentimentDisplay).toBeNull();
+
+        comp.Record = { SentimentScore: 0.85 } as mjBizAppsCommonActivityEntity;
+        expect(comp.SentimentDisplay).toBe('+0.85');
+        expect(comp.SentimentTone).toBe('success');
+        expect(comp.SentimentIcon).toBe('fa-solid fa-face-smile');
+
+        comp.Record = { SentimentScore: -0.6 } as mjBizAppsCommonActivityEntity;
+        expect(comp.SentimentDisplay).toBe('-0.60');
+        expect(comp.SentimentTone).toBe('danger');
+        expect(comp.SentimentIcon).toBe('fa-solid fa-face-frown');
+
+        comp.Record = { SentimentScore: 0.05 } as mjBizAppsCommonActivityEntity;
+        expect(comp.SentimentDisplay).toBe('+0.05');
+        expect(comp.SentimentTone).toBe('info');
+        expect(comp.SentimentIcon).toBe('fa-solid fa-face-meh');
+    });
 });
