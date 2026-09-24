@@ -470,15 +470,14 @@ export class AddressEditorComponent {
     /**
      * Formats the first line of an address display string.
      *
-     * Combines Line1 and Line2 (if present) with a comma separator.
+     * Combines whichever of Line1 and Line2 are present with a comma separator.
      *
      * @param address - The Address entity to format
-     * @returns A formatted string such as `'123 Main St, Suite 200'`
+     * @returns A formatted string such as `'123 Main St, Suite 200'`, or `''` for a
+     * location-only address with no street lines
      */
     formatAddressLine1(address: mjBizAppsCommonAddressEntity): string {
-        const parts = [address.Line1];
-        if (address.Line2) parts.push(address.Line2);
-        return parts.join(', ');
+        return [address.Line1, address.Line2].filter(Boolean).join(', ');
     }
 
     /**
