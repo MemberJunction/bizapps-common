@@ -490,14 +490,7 @@ export class AddressEditorComponent {
      * @returns A formatted string such as `'San Francisco, CA, 94105, US'`
      */
     formatAddressLine2(address: mjBizAppsCommonAddressEntity): string {
-        const parts: string[] = [];
-        if (address.City) parts.push(address.City);
-        if (address.StateProvince) parts.push(address.StateProvince);
-        if (address.PostalCode) parts.push(address.PostalCode);
-
-        let line = parts.join(', ');
-        if (address.Country) line += ', ' + address.Country;
-        return line;
+        return [address.City, address.StateProvince, address.PostalCode, address.Country].filter(Boolean).join(', ');
     }
 
     /**
