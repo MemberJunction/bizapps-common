@@ -1,5 +1,16 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.46.1
+
+### Patch Changes
+
+- a99d1b6: Keep ActivitySync's host registries — transport factory, file sink, content cipher and live-mailbox
+  attestation — in MJ's global object store instead of module-scoped variables, so every copy of the
+  package loaded in one process shares them. A host that resolved two copies could previously register
+  into one and have the engine read the other. The `Register*` / `Host*` functions and
+  `AllowLiveMailboxFetch` keep their signatures.
+  - @mj-biz-apps/common-entities@5.46.1
+
 ## 5.46.0
 
 ### Patch Changes
