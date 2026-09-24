@@ -26,7 +26,12 @@ const mjSchema = process.argv.find((_, i, arr) => arr[i - 1] === '--core-schema'
 const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || '1433';
 const user = process.env.DB_USERNAME || 'sa';
-const password = process.env.DB_PASSWORD || 'KRiUffvIjuP5GoLtxYvVkWIQ1BxHQEEMO7j4T684oPR7';
+const password = process.env.DB_PASSWORD;
+
+if (!password) {
+    console.error('::error::DB_PASSWORD is not set. Export it (the CI workflow sets it for the throwaway SQL container) — no hardcoded fallback is provided.');
+    process.exit(1);
+}
 
 function findExecutionMethod() {
     const candidates = [
