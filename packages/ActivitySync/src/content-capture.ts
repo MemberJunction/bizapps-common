@@ -36,7 +36,7 @@
  * @module @mj-biz-apps/common-activity-sync
  */
 import type { UserInfo } from '@memberjunction/core';
-
+import { HostSlot } from './host-slot.js';
 import type { NormalizedItem } from './types.js';
 
 /**
@@ -71,7 +71,7 @@ export interface ActivityContentCipher {
     Encrypt(plaintext: string, encryptionKeyID: string, contextUser: UserInfo): Promise<string>;
 }
 
-let hostCipher: ActivityContentCipher | null = null;
+const hostCipher = HostSlot<ActivityContentCipher>('__mj_BizApps_ActivitySync_ContentCipher__');
 
 /**
  * Register the cipher this host protects captured content with. Pass null to clear it.
@@ -80,12 +80,12 @@ let hostCipher: ActivityContentCipher | null = null;
  * twice in one process must not end up with two.
  */
 export function RegisterActivityContentCipher(cipher: ActivityContentCipher | null): void {
-    hostCipher = cipher;
+    hostCipher.Set(cipher);
 }
 
 /** The registered cipher, or null on a host that cannot encrypt. */
 export function HostActivityContentCipher(): ActivityContentCipher | null {
-    return hostCipher;
+    return hostCipher.Get();
 }
 
 /**
