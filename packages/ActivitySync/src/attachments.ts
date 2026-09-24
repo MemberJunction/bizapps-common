@@ -17,6 +17,8 @@
  * @module @mj-biz-apps/common-activity-sync
  */
 
+import { HostSlot } from './host-slot.js';
+
 /** The rule fields this consults. Structural, so a caller need not carry a whole RuleRow. */
 export interface AttachmentRuleFields {
     IncludeAttachments?: boolean | null;
@@ -173,7 +175,7 @@ export function AttachmentSkipReport(
  * A sink passed to the CONSTRUCTOR still wins, for the same reason it does there: tests and the demo
  * supply their own, and a process-wide registration must not reach in and replace it.
  */
-let hostFileSink: ActivityFileSink | null = null;
+const hostFileSink = HostSlot<ActivityFileSink>('__mj_BizApps_ActivitySync_FileSink__');
 
 /**
  * Register the sink this host stores attachment bytes through. Pass null to clear it.
@@ -182,12 +184,12 @@ let hostFileSink: ActivityFileSink | null = null;
  * process must not end up with two, and there is no sensible way to merge them.
  */
 export function RegisterActivityFileSink(sink: ActivityFileSink | null): void {
-    hostFileSink = sink;
+    hostFileSink.Set(sink);
 }
 
 /** The registered sink, or null when this host stores no attachment bytes. */
 export function HostActivityFileSink(): ActivityFileSink | null {
-    return hostFileSink;
+    return hostFileSink.Get();
 }
 
 export interface ActivityFileSink {
