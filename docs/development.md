@@ -88,6 +88,15 @@ npm install
 npm run build
 ```
 
+Before pushing, confirm the repo still compiles against MemberJunction **as published**, not
+against the sibling checkout your workspace is linked to:
+```bash
+pnpm build                                     # the check reads each package through its dist
+node scripts/check-against-published-mj.mjs    # one package: ... packages/Angular
+```
+It typechecks against the MJ version `pnpm-lock.yaml` pins, which is what CI installs with
+`--frozen-lockfile`. Green locally and red in CI is almost always this difference.
+
 ## Debugging (VSCode)
 Launch configurations available:
 - **MJAPI**: Node.js debugger with source maps
