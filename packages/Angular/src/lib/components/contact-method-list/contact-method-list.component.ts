@@ -239,9 +239,9 @@ export class ContactMethodListComponent {
             // Build filter for standalone mode
             let filter = '';
             if (this._personID) {
-                filter = `PersonID='${this._personID}'`;
+                filter = `PersonID='${RequireUUID(this._personID, 'PersonID')}'`;
             } else if (this._organizationID) {
-                filter = `OrganizationID='${this._organizationID}'`;
+                filter = `OrganizationID='${RequireUUID(this._organizationID, 'OrganizationID')}'`;
             } else {
                 return;
             }
