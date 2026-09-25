@@ -707,7 +707,8 @@ export class AddressEditorComponent {
      * The AddressLink is always deleted. The Address row is deleted with it only when
      * nothing else references it — another party's link, or a direct reference from
      * another entity — and then both deletes run in one transaction so neither is left
-     * behind alone. A refused or failed delete is shown in {@link ActionError}.
+     * behind alone. If the references cannot be checked, only the link is deleted.
+     * A refused or failed delete is shown in {@link ActionError}.
      *
      * @param index - The zero-based index of the address item in {@link AddressItems}
      */
@@ -744,10 +745,7 @@ export class AddressEditorComponent {
      */
     private async deleteItem(item: AddressItem): Promise<string | null> {
         const md = new Metadata();
-        const references = await md.GetRecordDependencies('MJ_BizApps_Common: Addresses', item.Address.PrimaryKey);
-        const stillUsed = otherAddressReferences(references, item.Link.ID).length > 0;
-
-        if (stillUsed) {
+        if (!await this.isAddressUnreferenced(md, item)) {
             return await item.Link.Delete() ? null : this.deleteFailure(item.Link);
         }
 
@@ -762,6 +760,24 @@ export class AddressEditorComponent {
             return this.deleteFailure(failed ?? item.Link);
         }
         return null;
+    }
+
+    /**
+     * Whether nothing but this item's link references its Address.
+     *
+     * Returns `false` when the check itself fails, so the caller keeps the Address row: an
+     * unused row left behind is harmless, a deleted row something still points at is not.
+     * The check fails on any host without a read-only database connection, because MJ's
+     * GetRecordDependencies resolver uses only that connection.
+     */
+    private async isAddressUnreferenced(md: Metadata, item: AddressItem): Promise<boolean> {
+        try {
+            const references = await md.GetRecordDependencies('MJ_BizApps_Common: Addresses', item.Address.PrimaryKey);
+            return otherAddressReferences(references, item.Link.ID).length === 0;
+        } catch (err) {
+            console.warn('AddressEditor: Could not check what references the address; keeping the Address row', err);
+            return false;
+        }
     }
 
     /** Builds the user-facing reason for a refused delete from the entity's latest result. */
