@@ -1,5 +1,7 @@
 # Change Log - mj_generatedentities
 
+## 5.46.2
+
 ## 5.46.1
 
 ## 5.46.0

@@ -1,5 +1,14 @@
 # @mj-biz-apps/common-ng
 
+## 5.46.2
+
+### Patch Changes
+
+- 1ac08cc: The address editor's row lines now join only the parts that are present, so an address with just
+  Line2, or with a country and no city, region or postal code, no longer shows a leading `, `. A location-only address with no street lines shows
+  its city/region/postal/country line as the headline instead of an empty one.
+  - @mj-biz-apps/common-entities@5.46.2
+
 ## 5.46.1
 
 ### Patch Changes
