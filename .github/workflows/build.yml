@@ -15,6 +15,8 @@ on:
       # and would otherwise never run the test that pins the contract.
       - 'migrations/**'
       - 'migrations-pg/**'
+      # So a change to this workflow runs it.
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [next]
     paths:
@@ -22,6 +24,7 @@ on:
       - 'packages/**'
       - 'migrations/**'
       - 'migrations-pg/**'
+      - '.github/workflows/build.yml'
 
 concurrency:
   group: build-${{ github.ref }}
@@ -60,7 +63,8 @@ jobs:
       - name: Build all packages
         run: pnpm run build:packages
 
-      # Narrow to this package: other packages' test state is unknown, and this job already
-      # has node_modules and the built packages the tests need.
-      - name: Test common-entities
-        run: pnpm --filter @mj-biz-apps/common-entities test
+      # Runs every package's test script, after the build: a test that imports a workspace
+      # package by name resolves through its dist/, so without the build it fails to resolve
+      # and never executes. --no-bail runs every package and still fails the job if any fails.
+      - name: Unit tests
+        run: pnpm -r --no-bail test
