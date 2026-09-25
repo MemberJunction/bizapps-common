@@ -1,0 +1,133 @@
+name: Mutation Harnesses
+
+# Runs every package's test:mutants driver: each mutant edits a source file, runs the package's
+# whole vitest suite, and restores it. That is one full suite run per mutant, far too slow for
+# build.yml, so it runs here instead. build.yml still checks on every PR that every anchor matches
+# (test:mutants:anchors); this workflow proves each mutant is actually caught. See #188.
+#
+# When it runs:
+#   - nightly on next, so a mutant that stopped being caught is found within a day, and a failure
+#     opens (or comments on) an issue instead of notifying only the last editor of this file;
+#   - on a PR that edits a harness or this workflow;
+#   - on a PR labelled `run-mutants`, the opt-in for a change to the source the mutants cover.
+#
+# No `paths:` filter on the trigger: a workflow skipped that way creates no check run at all. The
+# `select` job decides instead, so a PR that does not qualify gets skipped jobs, not a missing check.
+#
+# One job per package, each on its own runner. The drivers rewrite source in place, so nothing
+# else may run in the same working tree while they do; separate checkouts guarantee that.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *'
+  pull_request:
+    branches: [next]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+# A run started by some other label gets its own group, so it cannot cancel a real run in progress.
+concurrency:
+  group: mutants-${{ github.ref }}${{ github.event.action == 'labeled' && github.event.label.name != 'run-mutants' && format('-{0}', github.run_id) || '' }}
+  cancel-in-progress: true
+
+jobs:
+  select:
+    name: Decide whether to run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ADDED_LABEL: ${{ github.event.label.name }}
+          HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'run-mutants') }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Adding some other label must not start a run.
+          if [ "$ACTION" = "labeled" ]; then
+            [ "$ADDED_LABEL" = "run-mutants" ] && echo "run=true" >> "$GITHUB_OUTPUT" || echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$HAS_LABEL" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if gh api --paginate "repos/${{ github.repository }}/pulls/$PR/files" --jq '.[].filename' \
+              | grep -qE '^(packages/[^/]+/test-harnesses/|\.github/workflows/mutants\.yml$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  mutants:
+    name: Mutants (${{ matrix.package }})
+    needs: select
+    if: needs.select.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - '@mj-biz-apps/common-activity-sync'
+          - '@mj-biz-apps/common-server'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The package and everything it depends on: its tests import workspace packages by name,
+      # which resolve through their dist/.
+      - name: Build
+        run: pnpm exec turbo --log-order=stream build --filter="${{ matrix.package }}..."
+
+      - name: Run mutants
+        run: pnpm --filter "${{ matrix.package }}" run test:mutants
+
+  report:
+    name: Open an issue on a nightly failure
+    needs: mutants
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Nightly mutation harness run failed"
+          body="The scheduled mutation run on \`next\` failed: $RUN_URL
+
+          A mutant that is no longer caught, or an anchor that no longer matches, means the count in a PR description is reading as coverage it does not have. Run \`pnpm run test:mutants\` locally to reproduce."
+          existing=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+            --jq "map(select(.title == \"$title\")) | .[0].number // empty")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again: $RUN_URL"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

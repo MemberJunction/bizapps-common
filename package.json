@@ -25,6 +25,8 @@
     "mergemain:update-lock": "node ci/merge_main_and_update_lock.mjs",
     "test:objectmodel:pg": "node scripts/pg-objectmodel-test.mjs",
     "test:integration": "node test-harnesses/integration.mjs",
+    "test:mutants": "pnpm -r --no-bail --workspace-concurrency=1 run test:mutants",
+    "test:mutants:anchors": "pnpm -r --no-bail run test:mutants --check-anchors",
     "lint:entityfield-drift": "node .github/scripts/check-entityfield-drift.mjs",
     "lint:entityfield-drift:test": "node .github/scripts/check-entityfield-drift.mjs --self-test",
     "check:published-mj": "node scripts/check-against-published-mj.mjs"
