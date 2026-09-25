@@ -57,6 +57,12 @@ jobs:
       - name: CI guard script tests
         run: ./.github/scripts/__tests__/validate-package-lock-case.test.sh
 
+      # Seconds, and needs no install: asserts every mutation anchor still matches exactly once.
+      # A stale anchor reports SKIP and tests nothing; this fails the PR that made it stale. The
+      # mutants themselves run in mutants.yml, because 96 full suite runs do not belong here.
+      - name: Mutation anchors
+        run: pnpm run test:mutants:anchors
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
