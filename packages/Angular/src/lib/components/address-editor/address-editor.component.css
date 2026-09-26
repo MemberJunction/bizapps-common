@@ -358,6 +358,11 @@
     gap: 8px;
 }
 
+/* A refused delete. Same colours as .load-error-row, but compact because the list stays below it. */
+.action-error-row {
+    padding: 8px 12px;
+}
+
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }

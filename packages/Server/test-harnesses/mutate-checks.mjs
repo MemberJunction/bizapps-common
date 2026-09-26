@@ -15,6 +15,12 @@
  *
  *   node test-harnesses/mutate-checks.mjs
  *   node test-harnesses/mutate-checks.mjs M-LMP3
+ *   node test-harnesses/mutate-checks.mjs --check-anchors
+ *
+ * `--check-anchors` only asserts every anchor matches exactly once, without mutating or running
+ * vitest. It takes well under a second, so build.yml runs it on every PR: a stale anchor is how
+ * mutation harnesses in this repo have rotted before, and a SKIP should fail the change that caused
+ * it. The full run is in mutants.yml.
  */
 import { execSync } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
@@ -188,12 +194,29 @@ const PRODUCT = [
 ];
 
 function runVitest() {
-    return execSync('npx vitest run', { cwd: PKG, encoding: 'utf8', stdio: 'pipe' });
+    return execSync('pnpm exec vitest run', { cwd: PKG, encoding: 'utf8', stdio: 'pipe' });
 }
 
-const wanted = process.argv.slice(2);
-if (wanted.includes('--list')) {
+const wanted = process.argv.slice(2).filter((a) => a !== '--list' && a !== '--check-anchors');
+if (process.argv.includes('--list')) {
     for (const m of PRODUCT) console.log(`${m.id}  ${m.file}  expect: ${m.expect.join(', ')}`);
+    process.exit(0);
+}
+if (process.argv.includes('--check-anchors')) {
+    let stale = 0;
+    for (const m of PRODUCT) {
+        // Matched exactly as the mutation loop below does, so the two cannot disagree.
+        const count = readFileSync(join(PKG, m.file), 'utf8').split(m.from).length - 1;
+        if (count !== 1) {
+            console.error(`SKIP ${m.id}: anchor matched ${count} times in ${m.file}`);
+            stale++;
+        }
+    }
+    if (stale > 0) {
+        console.error(`\n${stale} of ${PRODUCT.length} anchor(s) do not match exactly once.`);
+        process.exit(1);
+    }
+    console.log(`${PRODUCT.length} anchor(s) match exactly once.`);
     process.exit(0);
 }
 

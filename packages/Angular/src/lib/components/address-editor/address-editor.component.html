@@ -10,6 +10,14 @@
     </span>
 </div>
 
+@if (ActionError) {
+    <div class="addr-table">
+        <div class="load-error-row action-error-row">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ ActionError }}
+        </div>
+    </div>
+}
+
 @if (LoadError) {
     <div class="addr-table">
         <div class="load-error-row">
