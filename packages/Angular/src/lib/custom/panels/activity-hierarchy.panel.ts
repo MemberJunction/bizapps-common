@@ -19,7 +19,10 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
         slot: 'after-related',
         sortKey: 40,
         relatedEntity: 'MJ_BizApps_Common: Activities',
-        relatedJoinField: 'ParentActivityID'
+        relatedJoinField: 'ParentActivityID',
+        // The tree shows the whole lineage (ancestors + siblings), not just children,
+        // so a child-row count would mislead: no badge, never hidden.
+        count: false,
     }
 })
 @Component({
