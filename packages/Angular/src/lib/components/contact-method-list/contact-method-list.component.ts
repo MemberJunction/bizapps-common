@@ -385,7 +385,7 @@ export class ContactMethodListComponent {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
         }
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     /**

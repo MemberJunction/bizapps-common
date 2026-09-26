@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EscapeFilterValue } from '../../data/directory-stats';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
 import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
@@ -439,9 +440,9 @@ export class RelationshipListComponent {
                 // Load incoming relationships to show complete 360-degree timeline
                 let incomingFilter = '';
                 if (this._personID) {
-                    incomingFilter = `ToPersonID='${this._personID}'`;
+                    incomingFilter = `ToPersonID='${EscapeFilterValue(this._personID)}'`;
                 } else if (this._organizationID) {
-                    incomingFilter = `ToOrganizationID='${this._organizationID}'`;
+                    incomingFilter = `ToOrganizationID='${EscapeFilterValue(this._organizationID)}'`;
                 }
 
                 if (incomingFilter) {
@@ -461,9 +462,9 @@ export class RelationshipListComponent {
                 // Standalone mode: query both from and to
                 let filter = '';
                 if (this._personID) {
-                    filter = `FromPersonID='${this._personID}' OR ToPersonID='${this._personID}'`;
+                    filter = `FromPersonID='${EscapeFilterValue(this._personID)}' OR ToPersonID='${EscapeFilterValue(this._personID)}'`;
                 } else if (this._organizationID) {
-                    filter = `FromOrganizationID='${this._organizationID}' OR ToOrganizationID='${this._organizationID}'`;
+                    filter = `FromOrganizationID='${EscapeFilterValue(this._organizationID)}' OR ToOrganizationID='${EscapeFilterValue(this._organizationID)}'`;
                 } else {
                     return;
                 }
