@@ -1451,11 +1451,11 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: ID
         * * SQL Data Type: uniqueidentifier
         * * Default Value: newsequentialid()`),
-    Line1: z.string().describe(`
+    Line1: z.string().nullable().describe(`
         * * Field Name: Line1
         * * Display Name: Address Line 1
         * * SQL Data Type: nvarchar(255)
-        * * Description: Street address line 1`),
+        * * Description: Street address line 1. Optional: an address may record only a location (country, region, postal code) before a street line is known.`),
     Line2: z.string().nullable().describe(`
         * * Field Name: Line2
         * * Display Name: Address Line 2
@@ -1466,11 +1466,11 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: Address Line 3
         * * SQL Data Type: nvarchar(255)
         * * Description: Street address line 3 (additional detail)`),
-    City: z.string().describe(`
+    City: z.string().nullable().describe(`
         * * Field Name: City
         * * Display Name: City
         * * SQL Data Type: nvarchar(100)
-        * * Description: City or locality name`),
+        * * Description: City or locality name. Optional: an address may record only a location (country, region, postal code) before a city is known.`),
     StateProvince: z.string().nullable().describe(`
         * * Field Name: StateProvince
         * * Display Name: State / Province
@@ -6144,12 +6144,12 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     * * Field Name: Line1
     * * Display Name: Address Line 1
     * * SQL Data Type: nvarchar(255)
-    * * Description: Street address line 1
+    * * Description: Street address line 1. Optional: an address may record only a location (country, region, postal code) before a street line is known.
     */
-    get Line1(): string {
+    get Line1(): string | null {
         return this.Get('Line1');
     }
-    set Line1(value: string) {
+    set Line1(value: string | null) {
         this.Set('Line1', value);
     }
 
@@ -6183,12 +6183,12 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     * * Field Name: City
     * * Display Name: City
     * * SQL Data Type: nvarchar(100)
-    * * Description: City or locality name
+    * * Description: City or locality name. Optional: an address may record only a location (country, region, postal code) before a city is known.
     */
-    get City(): string {
+    get City(): string | null {
         return this.Get('City');
     }
-    set City(value: string) {
+    set City(value: string | null) {
         this.Set('City', value);
     }
 
