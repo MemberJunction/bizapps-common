@@ -403,7 +403,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 10,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -552,7 +552,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 20,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
