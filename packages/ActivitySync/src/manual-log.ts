@@ -2,10 +2,17 @@
  * Parameter parsing for `Common.LogActivity` — the declarative entry point to the unified timeline.
  *
  * Everything here takes PLAIN, SERIALIZABLE values, because the action's inputs may cross a queue,
- * a durable task or an agent boundary before they arrive. That is why an Entity Action binding must
- * feed `RecordData` with ValueType `'Entity Object Data'` and never `'Entity Object'`: a
- * `BaseEntity` serializes to `{}` (its fields are getters, not enumerable own properties) —
- * silently, with no error (plans/mj-entity-action-workflow-adoption.md §3.3).
+ * a durable task or an agent boundary before they arrive. Two binding rules follow:
+ *
+ * - **Durable bindings pass only `Static` / `Entity Field` values.** Bind the record id as
+ *   `RecordID` with ValueType `'Entity Field'`, Value `'ID'`. A durable binding's params reach the
+ *   task through MJ's param redaction, and its rule 1 strips every whole-record ValueType
+ *   (`'Entity Object'`, `'Entity Object Data'`) from `Task.InputPayload` unconditionally — so
+ *   `RecordData` simply never arrives there (#197).
+ * - **`RecordData` is for `LinkFields` on inline bindings only.** Bind it with ValueType
+ *   `'Entity Object Data'`, never `'Entity Object'`: a `BaseEntity` serializes to `{}` (its fields
+ *   are getters, not enumerable own properties) — silently, with no error
+ *   (plans/mj-entity-action-workflow-adoption.md §3.3).
  *
  * Pure functions, no I/O — the `Common.LogActivity` action in `@mj-biz-apps/common-server` is a
  * thin shell over `ParseLogActivityParams` + `ActivityWriter.WriteManual`.
@@ -33,6 +40,7 @@ const SOURCES: readonly Exclude<ActivitySourceValue, 'Integration'>[] = ['Manual
  * `RecordData` and, when it holds a value, link that record with `Role`. This is what makes
  * timeline population configuration — a binding on any entity can route the activity to the
  * People / Organizations rows the record references, with no code in the consuming app.
+ * Inline bindings only: a durable binding never receives `RecordData` (see the module header).
  */
 export interface LogActivityLinkFieldSpec {
     Field: string;
@@ -165,7 +173,10 @@ function parseLinkFields(
         return [];
     }
     if (!recordData) {
-        reader.errors.push('LinkFields requires RecordData to read the fields from.');
+        reader.errors.push(
+            'LinkFields requires RecordData to read the fields from. On a durable binding RecordData is ' +
+                'always redacted out of the task payload; run the binding inline or pass explicit Links.',
+        );
         return [];
     }
     const links: ActivityLinkSpec[] = [];
