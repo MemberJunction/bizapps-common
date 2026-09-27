@@ -212,8 +212,9 @@
           "fields": {
             "EntityActionID": "@parent:ID",
             "ActionParamID": "F12EF739-720B-4FD4-8B9F-0656A756502E",
-            "ValueType": "Entity Object Data",
-            "Comments": "Data — the person's fields reach the agent as a plain object. 'Entity Object Data', NEVER 'Entity Object' (plan §3.3)."
+            "ValueType": "Script",
+            "Value": "return { ID: EntityActionContext.entityObject.ID, Status: EntityActionContext.entityObject.Status };",
+            "Comments": "Data — only the fields the Person Lifecycle Changed agent reads (data.ID, data.Status). A Script, not 'Entity Object Data': this binding is Durable, and redaction always strips whole-record values from the task payload, so the agent would get no data (#197). Add a field here when the agent starts reading it."
           },
           "primaryKey": {
             "ID": "D9FC0271-AA50-4B0C-A0D4-C29A0B4E1922"
