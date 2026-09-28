@@ -19,7 +19,7 @@
     "install:deps": "pnpm install",
     "setup": "echo 'Please run: pnpm run mj:migrate && pnpm run mj:codegen && pnpm run build'",
     "change": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && node scripts/sync-app-version.mjs",
     "commitpush": "node ci/commit_push.mjs",
     "mergemain": "node ci/merge_main.mjs",
     "mergemain:update-lock": "node ci/merge_main_and_update_lock.mjs",
@@ -29,7 +29,12 @@
     "test:mutants:anchors": "pnpm -r --no-bail run test:mutants --check-anchors",
     "lint:entityfield-drift": "node .github/scripts/check-entityfield-drift.mjs",
     "lint:entityfield-drift:test": "node .github/scripts/check-entityfield-drift.mjs --self-test",
-    "check:published-mj": "node scripts/check-against-published-mj.mjs"
+    "check:published-mj": "node scripts/check-against-published-mj.mjs",
+    "check:release-seed": "node scripts/check-release-seed-coverage.mjs",
+    "check:release-seed:test": "node --test scripts/check-release-seed-coverage.spec.mjs",
+    "check:seed-cadence": "node scripts/check-release-seed-cadence.mjs",
+    "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
+    "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs"
   },
   "repository": {
     "type": "git",
