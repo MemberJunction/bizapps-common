@@ -21,7 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { findUnconsolidatedSeedDeltas, findUnshippedMetadataDrift, readReleaseState } from './check-release-seed-cadence.mjs';
+import { findUnconsolidatedSeedDeltas, findUnshippedMetadataDrift, findStaleOrEmptySeeds, readReleaseState } from './check-release-seed-cadence.mjs';
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(SCRIPTS_DIR, 'check-release-seed-cadence.mjs');
@@ -260,6 +260,120 @@ withGitRepo(
     const r = findUnshippedMetadataDrift('/x', state('v0.10.0', [A], [A], ['metadata/actions/.mj-sync.json']));
     check('a .mj-sync.json-only change owes no seed', r.problems.length === 0, JSON.stringify(r.changed));
 }
+
+// ---------------------------------------------------------------------------------------------
+// Cases 21-27: a seed that EXISTS is not a seed that is CURRENT. The rules above only ask whether an
+// unreleased Metadata_Sync file is present, so an empty one passed, and so did one generated before a
+// later metadata PR merged. Coverage cannot back that up for records keyed by `@lookup:` rather than
+// a UUID (73 of 251 here, 35 of them in metadata/entities/.entities.json), so an edit to one of those
+// after the seed would ship in no migration with every gate green.
+// ---------------------------------------------------------------------------------------------
+
+/** A stubbed seed boundary: the seed's text, its last commit, and record paths changed since it. */
+const seeds = (facts) => (_root, file) => facts[file];
+
+// 21. A current, non-empty seed passes.
+{
+    const r = findStaleOrEmptySeeds('/x', state('v0.10.0', [A], [A, B]), seeds({ [B]: { text: "EXEC spCreateX 'a';\n", lastCommit: 'abc', changedSince: [] } }));
+    check('a non-empty seed with no record change after it passes', r.problems.length === 0, JSON.stringify(r.problems));
+}
+
+// 22. An empty seed — or one holding only comments — carries nothing, however well it is named.
+{
+    for (const text of ['', '\n  \n', '-- generated 2026-09-28\n/* nothing */\n']) {
+        const r = findStaleOrEmptySeeds('/x', state('v0.10.0', [A], [A, B]), seeds({ [B]: { text, lastCommit: 'abc', changedSince: [] } }));
+        check(`an empty seed fails (${JSON.stringify(text.slice(0, 12))})`, r.problems.length === 1 && r.problems[0].includes(B), JSON.stringify(r.problems));
+    }
+}
+
+// 23. A record changed after the seed's last commit: the seed is stale, and the check names the file.
+{
+    const r = findStaleOrEmptySeeds('/x', state('v0.10.0', [A], [A, B]), seeds({ [B]: { text: 'EXEC x;', lastCommit: 'abc1234def', changedSince: [REC, 'metadata/README.md', 'metadata/x/.mj-sync.json'] } }));
+    check('a record changed after the seed fails', r.problems.length === 1 && r.problems[0].includes(REC), JSON.stringify(r.problems));
+    check('  …and README / .mj-sync.json changes after it do not count', !r.problems[0]?.includes('metadata/README.md') && !r.problems[0]?.includes('metadata/x/.mj-sync.json'));
+}
+
+// 24. A seed not committed yet is the one the engineer just generated from the tree on disk: there is
+//     no older commit for a record change to postdate. (Released seeds are never examined.)
+{
+    const r = findStaleOrEmptySeeds('/x', state('v0.10.0', [A], [A, B]), seeds({ [B]: { text: 'EXEC x;', lastCommit: null, changedSince: [] } }));
+    check('an uncommitted seed is not stale by definition', r.problems.length === 0, JSON.stringify(r.problems));
+}
+
+/** The v1.0.0 release every real-git case below starts from: one shipped seed, one @lookup record. */
+const RECORD = 'metadata/entities/.entities.json';
+const record = (name) => JSON.stringify([{ fields: { Name: name }, primaryKey: { ID: '@lookup:Entities.Name=A' } }]);
+function released(root, git) {
+    mkdirSync(join(root, 'metadata', 'entities'), { recursive: true });
+    writeFileSync(join(root, RECORD), record('A'));
+    writeFileSync(join(root, 'migrations', A), "EXEC spCreateEntity 'A';\n");
+    git('add', '-A'); git('commit', '-qm', 'v1.0.0'); git('tag', 'v1.0.0');
+}
+const staleness = (root) => findStaleOrEmptySeeds(root);
+
+// 25. Real git, the reviewer's case: PR 1 edits a @lookup record, the release seed is generated, then
+//     PR 2 edits the same record again. Coverage has no id to check and drift sees "a seed exists".
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, RECORD), record('B')); git('add', '-A'); git('commit', '-qm', 'PR 1');
+        writeFileSync(join(root, 'migrations', B), "EXEC spUpdateEntity 'A','B';\n"); git('add', '-A'); git('commit', '-qm', 'seed');
+        writeFileSync(join(root, RECORD), record('C')); git('add', '-A'); git('commit', '-qm', 'PR 2, after the seed');
+    },
+    (root) => {
+        const r = staleness(root);
+        check('real git: a record commit newer than the seed fails', r.problems.length === 1 && r.problems[0].includes(RECORD), JSON.stringify(r.problems));
+        check('  …while the older drift rule still passes it (why this rule exists)', findUnshippedMetadataDrift(root).problems.length === 0);
+    },
+);
+
+// 26. Real git: an edit still in the working tree after the seed was committed counts too.
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, RECORD), record('B')); git('add', '-A'); git('commit', '-qm', 'PR 1');
+        writeFileSync(join(root, 'migrations', B), "EXEC spUpdateEntity 'A','B';\n"); git('add', '-A'); git('commit', '-qm', 'seed');
+        writeFileSync(join(root, RECORD), record('D'));
+    },
+    (root) => {
+        const r = staleness(root);
+        check('real git: an uncommitted record edit after the seed fails', r.problems.length === 1, JSON.stringify(r.problems));
+    },
+);
+
+// 27. Real git controls: the seed commit carries the `sync` blocks the push wrote back (README step 4
+//     commits them together), and only README moves afterwards. Neither is staleness.
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, RECORD), record('B')); git('add', '-A'); git('commit', '-qm', 'PR 1');
+        writeFileSync(join(root, 'migrations', B), "EXEC spUpdateEntity 'A','B';\n");
+        writeFileSync(join(root, RECORD), JSON.stringify([{ fields: { Name: 'B' }, primaryKey: { ID: '@lookup:Entities.Name=A' }, sync: { lastModified: 'x' } }]));
+        git('add', '-A'); git('commit', '-qm', 'seed + sync blocks');
+        writeFileSync(join(root, 'metadata', 'README.md'), 'docs\n'); git('add', '-A'); git('commit', '-qm', 'README');
+    },
+    (root) => {
+        const r = staleness(root);
+        check('real git: sync blocks in the seed commit and a later README edit pass', r.problems.length === 0, JSON.stringify(r.problems));
+    },
+);
+
+// 28. KNOWN LIMITATION, pinned so nobody reads a green as more than it is. The rule compares ORDER
+//     (was a record changed after the seed?), not CONTENT: a seed committed after an edit but
+//     generated without it still passes. What proves content is replaying the chain on a clean
+//     database (migrations/README.md step 5), which no static check can do. If this case ever goes
+//     red, the check learned to read seed content, and the header's limits section must change too.
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, RECORD), record('B')); git('add', '-A'); git('commit', '-qm', 'PR 1');
+        writeFileSync(join(root, 'migrations', B), "EXEC spCreateSomethingElse 'z';\n"); git('add', '-A'); git('commit', '-qm', 'a seed that does not carry PR 1');
+    },
+    (root) => {
+        const r = staleness(root);
+        check('known limitation: a seed newer than the edit but missing it still passes', r.problems.length === 0, JSON.stringify(r.problems));
+    },
+);
 
 // 17. The CLI is what CI reads: exit code and report text. This repository's own gates are real —
 //     bizapps-common's `metadata/` has moved since its newest tag with no new consolidated seed

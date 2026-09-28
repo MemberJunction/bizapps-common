@@ -35,13 +35,21 @@ instead of one per build, and diverge from what the real push emits.
 `primaryKey` under `metadata/` and reports the ones that appear in no migration. It needs no database
 and runs anywhere.
 
-`pnpm run check:seed-cadence` asks the content question, in two halves:
+`pnpm run check:seed-cadence` asks whether the seed is the right one, in three parts:
 
 - **At most one unreleased `Metadata_Sync`**: the release's own. Two or more means the per-PR loop
   came back.
 - **Not zero when `metadata/` moved**: if any record file differs from the last release tag and no
-  new seed exists, a seed is owed. This is the only check that can see an **edited** record. Coverage
-  compares ids, and an edit keeps its id.
+  new seed exists, a seed is owed.
+- **Not empty, and not older than `metadata/`**: the seed must hold SQL, and no record file may have
+  changed after the seed's last commit. This is what catches a seed generated before a later metadata
+  PR merged. It matters most for the records keyed by `@lookup:` instead of a UUID (73 of the 251
+  here), which coverage has no id to check.
+
+These see an **edited** record only by order: that a record moved after the last release and after
+the seed. None of them reads the seed's SQL to confirm it carries the edit, so a seed committed after
+an edit but generated without it still passes (`check-release-seed-cadence.spec.mjs` pins that
+limitation). Step 5 below, replaying the chain on a clean database, is what proves content.
 
 Both run in `release-prep.mjs` (so `pnpm run release:plan` shows them and **Prepare a release**
 refuses on red) and again in `publish.yml` before anything is published or tagged. Neither runs on
@@ -168,7 +176,7 @@ deliberately changed it". Either way it emits a statement putting the database b
 wins. bizapps-forms nearly shipped exactly that: a generated seed that would have reverted the
 permission change a migration made for MemberJunction/bizapps-forms#138, caught only in review. The rule: **`metadata/` is the authority for every record it declares, so a migration
 that writes such a record must update `metadata/` in the same change, or the next seed silently
-reverts it.** No check catches this. Coverage compares ids, cadence counts files, and this costs
+reverts it.** No check catches this. Coverage compares ids, cadence checks files and their order, and this costs
 neither anything.
 
 ## Cadence: one seed per release

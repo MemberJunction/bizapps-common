@@ -43,7 +43,9 @@
  * that retired it, so this is not ground lost. What covers edits is the release push itself:
  * `mj sync push` against a clean database diffs the database and emits `spUpdate*` for every
  * changed record by construction. This is the pre-flight for the new-record case; the push is the
- * mechanism. `check-release-seed-cadence.mjs` covers the edited-record gap this check cannot see.
+ * mechanism. `check-release-seed-cadence.mjs` narrows the edited-record gap by ORDER — it fails when a
+ * record changed after the last release with no seed, or after the seed itself — but it does not read
+ * seed content either; a clean-database replay of the chain is what proves the edit ships.
  *
  * `migrations/` only, NOT `migrations-pg/`. A record present only in the PostgreSQL twin has not
  * shipped on the chain every host runs; counting it would report coverage this app does not have.

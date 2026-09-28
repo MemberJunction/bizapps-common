@@ -27,6 +27,9 @@
  *   findUnshippedMetadataDrift   — `metadata/` moved since the last release tag, so a seed is
  *                                  OWED. Zero unreleased seeds is then a release that silently
  *                                  ships none of it.
+ *   findStaleOrEmptySeeds        — the unreleased seed must CARRY something and be CURRENT: an
+ *                                  empty file fails, and so does any metadata record changed after
+ *                                  the seed's last commit. "A seed exists" is not "the seed has it".
  *
  * WHY THE SECOND RULE EARNS ITS KEEP, when coverage already reads `metadata/`. Coverage compares
  * declared **ids** against shipped SQL, so it is structurally blind to an EDITED record whose id
@@ -35,7 +38,11 @@
  * `Signature`, `metadata/` had moved on to `Doodle` (MemberJunction/bizapps-forms#97 renamed the
  * type), the id was identical throughout, and coverage stayed green over it. The consolidated seed
  * that resolved MemberJunction/bizapps-forms#111 is what finally carried the correction to a host.
- * Drift is the only one of the three checks that sees that class of gap.
+ * Drift and staleness are the checks that see that class of gap — and only by ORDER: they ask whether
+ * a record moved after the last release and after the seed, never whether the seed's SQL actually
+ * carries the change. A seed committed after an edit but generated without it still passes (the
+ * spec pins that). Only replaying the chain on a clean database proves content
+ * (migrations/README.md step 5).
  *
  * WHY IT IS NOT THE HASH MANIFEST MemberJunction/bizapps-forms#105 KILLED. The manifest stored
  * hashes IN THE REPO, so regenerating them was the way to make the gate quiet — and doing that
@@ -50,9 +57,10 @@
  * Ported from bizapps-forms (MemberJunction/bizapps-forms#105 and MemberJunction/bizapps-forms#111).
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, realpathSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { stripSqlComments } from '../.github/scripts/strip-sql-comments.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SEED_PATTERN = /Metadata_Sync.*\.sql$/i;
@@ -218,12 +226,81 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
     return { problems, tag: state.tag, changed };
 }
 
+/**
+ * The git and file facts about ONE unreleased seed: its text, the commit that last touched it (`null`
+ * while the file is uncommitted or edited since), and every `metadata/` path whose content differs
+ * between that commit and the working tree — i.e. changed AFTER the seed. A diff against the tree
+ * rather than a log of later commits, so an uncommitted edit counts, and a record reverted to the
+ * seed's content does not. Deliberately dumb, like readReleaseState: which paths are records is the
+ * rule's business.
+ */
+export function readSeedFacts(repoRoot, file) {
+    const rel = `migrations/${file}`;
+    const text = readFileSync(join(repoRoot, rel), 'utf8');
+    const dirty = git(repoRoot, ['status', '--porcelain', '--', rel]).trim() !== '';
+    const lastCommit = dirty ? null : git(repoRoot, ['log', '-1', '--format=%H', '--', rel]).trim() || null;
+    const changedSince = lastCommit === null
+        ? []
+        : git(repoRoot, ['diff', '--name-only', lastCommit, '--', 'metadata/']).split('\n').map((f) => f.trim()).filter(Boolean);
+    return { text, lastCommit, changedSince };
+}
+
+/**
+ * Is the release's unreleased seed EMPTY, or OLDER than a metadata record change? The two rules above
+ * accept any file named `…Metadata_Sync…sql` as the seed, so an empty one passed, and so did one
+ * generated before a later metadata PR merged — and coverage cannot back that up for records keyed
+ * by `@lookup:` instead of a UUID, whose edit then ships in no migration with every gate green.
+ *
+ * An uncommitted seed is exempt from the staleness half: it is the one just generated from the tree
+ * on disk, and there is no older commit for a record change to postdate. CI checks a committed tree.
+ */
+export function findStaleOrEmptySeeds(repoRoot = REPO_ROOT, readState = readReleaseState, readSeed = readSeedFacts) {
+    let state;
+    try {
+        state = readState(repoRoot);
+    } catch (error) {
+        return { problems: [`could not read git history to find the release seed: ${error.message}`], seeds: [] };
+    }
+    if (state.tag === null) {
+        return { problems: ['no v* release tag found, so which seed is unreleased has no answer here. Fetch tags, or run it where they exist.'], seeds: [] };
+    }
+    const released = new Set(state.released);
+    const unreleased = state.current.filter((f) => SEED_PATTERN.test(f) && !released.has(f)).sort();
+    const problems = [];
+    for (const file of unreleased) {
+        let facts;
+        try {
+            facts = readSeed(repoRoot, file);
+        } catch (error) {
+            problems.push(`could not read the release seed ${file}: ${error.message}`);
+            continue;
+        }
+        if (stripSqlComments(facts.text).trim() === '') {
+            problems.push(
+                `${file} is the release's unreleased Metadata_Sync, but it holds no SQL — only whitespace or comments. ` +
+                    'An empty seed ships nothing. Regenerate it (migrations/README.md).',
+            );
+        }
+        const newer = facts.changedSince.filter((f) => f.startsWith('metadata/') && isRecordPath(f)).sort();
+        if (newer.length > 0) {
+            problems.push(
+                `${newer.length} metadata record file(s) changed after ${file} was last committed (${facts.lastCommit.slice(0, 10)}):\n` +
+                    newer.map((f) => `      ${f}`).join('\n') +
+                    '\n\n  The seed predates them, so it cannot carry them — and a record keyed by @lookup: instead of a UUID has no id\n' +
+                    '  for the coverage check to miss. Regenerate the consolidated seed from the tree as it is now (migrations/README.md).',
+            );
+        }
+    }
+    return { problems, seeds: unreleased };
+}
+
 // Compared through realpath, not as a `file://` string: that string is never equal under a path with
 // spaces (percent-encoded in the URL) or a symlink, and the gate would then silently exit 0.
 if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
     const cadence = findUnconsolidatedSeedDeltas();
     const drift = findUnshippedMetadataDrift();
-    const problems = [...cadence.problems, ...drift.problems];
+    const staleness = findStaleOrEmptySeeds();
+    const problems = [...cadence.problems, ...drift.problems, ...staleness.problems];
     if (problems.length > 0) {
         console.error('\n❌ Release seed cadence failed:\n');
         for (const p of problems) console.error(`  • ${p}\n`);
@@ -231,6 +308,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToP
     }
     console.log(
         `✅ Release seed cadence passed — ${cadence.unreleased.length} unreleased Metadata_Sync migration(s) since ${cadence.tag}, ` +
-            `and ${drift.changed.length} changed metadata record file(s): a release ships exactly one seed when metadata moved, and at most one always.`,
+            `and ${drift.changed.length} changed metadata record file(s): a release ships exactly one seed when metadata moved, and at most one always; ` +
+            'the seed holds SQL and no record changed after it.',
     );
 }
