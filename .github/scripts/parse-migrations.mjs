@@ -100,6 +100,15 @@ export function listMigrationFiles(absDir, dirArg) {
     return entries.filter((f) => f.endsWith('.sql')).sort();
 }
 
+/**
+ * gh-6: The `file=` path for a GitHub Actions ::error:: annotation on `file`, found under `dirArg`
+ * (the --dir the caller actually passed) -- never a hardcoded 'migrations/' prefix, which points at
+ * a path that doesn't exist once --dir is anything other than the default.
+ */
+export function annotationFile(dirArg, file) {
+    return join(dirArg, file);
+}
+
 function main() {
     const isSelfTest = process.argv.includes('--self-test');
     const dir = process.argv.find((_, i, arr) => arr[i - 1] === '--dir') || './migrations';
@@ -167,7 +176,7 @@ function main() {
             parsedCount++;
         } catch (err) {
             const output = err.stdout?.toString() || err.stderr?.toString() || err.message;
-            console.error(`\n::error file=migrations/${file}::Syntax error parsing ${file}:\n${output.trim()}\n`);
+            console.error(`\n::error file=${annotationFile(dir, file)}::Syntax error parsing ${file}:\n${output.trim()}\n`);
             process.exit(1);
         }
     }

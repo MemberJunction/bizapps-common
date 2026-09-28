@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES } from '../parse-migrations.mjs';
+import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES, annotationFile } from '../parse-migrations.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -50,4 +50,14 @@ test('the sqlcmd candidate list includes the Homebrew/Apple-Silicon path, aligne
         SQLCMD_CANDIDATES.includes('/opt/homebrew/bin/sqlcmd'),
         "check-entityfield-drift.mjs's findSqlcmd() candidate list already includes this path",
     );
+});
+
+// gh-6. Fails today: annotationFile hardcodes a 'migrations/' prefix regardless of the --dir the
+// caller actually passed, so a customized --dir produces a GitHub ::error:: annotation whose
+// `file=` path doesn't exist (CI always uses the default --dir, so this never fires in the shipped
+// workflows today -- but the annotation is wrong for anyone who runs a custom --dir, e.g. locally
+// against a fixture directory).
+test('the annotation file path uses the actual --dir, not a hardcoded migrations/ prefix', () => {
+    assert.equal(annotationFile('./migrations', 'V202609281200__test.sql'), 'migrations/V202609281200__test.sql');
+    assert.equal(annotationFile('/tmp/custom-fixtures', 'V202609281200__test.sql'), '/tmp/custom-fixtures/V202609281200__test.sql');
 });
