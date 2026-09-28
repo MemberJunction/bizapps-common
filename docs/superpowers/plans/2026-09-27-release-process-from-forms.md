@@ -76,7 +76,7 @@
 - [ ] **Step 4: Delete `ci/` and the three package.json scripts.** Leave `publish.yml` unchanged for now; Task 4 rewrites it. If the gate still flags `publish.yml`, confirm the hits are only there. Then run `lint:release-pushes:test` → PASS. Add one spec case: a fixture file with `git push origin main` is flagged (Review Focus 4). Skip it if the ported spec already covers this.
 - [ ] **Step 5: Add a `release-tooling` job to `build.yml`.** No install is needed:
   - Steps: `actions/checkout@v4` (`fetch-depth: 0`, `fetch-tags: true`, needed by the cadence/plan specs if they read git), `actions/setup-node@v4` node 24, `node --test scripts/*.spec.mjs`, `node scripts/check-release-pushes.mjs`.
-  - Extend both `paths:` lists with `'scripts/**'`, `'.github/workflows/**'`, `'.github/scripts/**'`, and `'.changeset/**'`.
+  - Extend both `paths:` lists with `'scripts/**'`, `'.github/workflows/**'`, `'.github/scripts/**'`, and `'.changeset/**'`. *(Superseded in review: `build.yml` no longer has an `on: paths:` filter, which would stop either job from ever being a required check. `release-tooling` runs on every event, and a `scope` job decides whether `build-only` does work; `scripts/build-triggers.spec.mjs` pins it.)*
 - [ ] **Step 6: Commit.** `chore(release): retire the push-to-main ci scripts; gate against reintroducing them`. The gate may fail on the old `publish.yml` until Task 4. If so, say that in the commit body. Do not weaken the gate.
 
 ### Task 3: `release-plan` and `release-prep` scripts

@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "prebuild": "node -e \"try { require.resolve('turbo') } catch (e) { console.error('\\n❌ Dependencies not installed. Run: pnpm install\\n'); process.exit(1); }\"",
+    "prebuild": "node -e \"try { require.resolve('turbo') } catch (e) { console.error('\\n\u274c Dependencies not installed. Run: pnpm install\\n'); process.exit(1); }\"",
     "build": "pnpm run build:stream",
     "build:stream": "turbo --log-order=stream build --filter=\"@mj-biz-apps/*\"",
     "build:generated": "turbo --log-order=stream build --filter=\"@mj-biz-apps/common-entities\" --filter=\"@mj-biz-apps/common-actions\"",
@@ -34,6 +34,7 @@
     "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
     "lint:release-pushes": "node scripts/check-release-pushes.mjs",
     "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs",
+    "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs",
     "lint:release-plan:test": "node --test scripts/release-plan.spec.mjs",
     "lint:release-prep:test": "node --test scripts/release-prep.spec.mjs",
     "release:plan": "node scripts/release-prep.mjs --plan"
