@@ -131,6 +131,47 @@ test('a `gh api` call naming an unprotected branch ref is not a violation', () =
     assert.deepEqual(findProtectedPushes('gh api -X PATCH repos/OWNER/REPO/git/refs/heads/chore/thing -f sha=$SHA\n'), []);
 });
 
+// ── A `git push` split across lines with a shell `\` continuation ──────────────────────────────────
+//
+// `findProtectedPushes` scanned line-by-line, and SHELL_PUSH requires the whole `git push … main` on
+// ONE physical line — so a `run: |` block that continues the command with a trailing backslash was
+// invisible, even though the file's own header docstring calls this exact spelling ("BOTH of
+// MemberJunction/bizapps-forms#177's pushes lived in Node scripts... that is the likeliest spelling a
+// reintroduction would take") the kind of thing this gate must not miss.
+
+test('a `git push` split across two lines with a trailing `\\` is a violation', () => {
+    const text = ['- run: |', '    git push origin \\', '      HEAD:main', ''].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].ref, 'main');
+});
+
+test('the reported line is the FIRST line of the continuation, not the last', () => {
+    const text = ['a', '    git push origin \\', '      HEAD:main', 'b'].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found[0].line, 2);
+});
+
+test('a three-line continuation still joins into one logical line', () => {
+    const text = ['git push \\', '  origin \\', '  HEAD:next', ''].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].ref, 'next');
+});
+
+test('line numbers after a continuation are unaffected — they count physical lines, not logical ones', () => {
+    const text = ['git push origin \\', '  HEAD:main', 'git push origin HEAD:next', ''].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found.length, 2);
+    assert.equal(found[0].line, 1);
+    assert.equal(found[1].line, 3);
+});
+
+test('a commented-out continuation start is still exempt, even when joined', () => {
+    const text = ['# git push origin \\', '  HEAD:main', ''].join('\n');
+    assert.deepEqual(findProtectedPushes(text), []);
+});
+
 // ── Allow-cases: what stops "deny everything" from passing as a fix ─────────────────────────────
 
 test('pushing a tag is allowed — both rulesets are target: branch', () => {

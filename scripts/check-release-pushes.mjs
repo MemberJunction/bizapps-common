@@ -186,22 +186,64 @@ function isCommentary(line) {
 }
 
 /**
+ * Backslash-continued shell lines joined into one logical line, as `{ line, text }` — `line` is the
+ * FIRST physical line of the continuation, which is where a reader looking for "where is this
+ * command" will look.
+ *
+ * A `run: |` block's shell `\` continuation is otherwise invisible to line-by-line scanning:
+ * `git push origin \` and `  HEAD:main` are two lines, and this file's own "single-line by nature"
+ * assumption for a push (see the comment above `findProtectedPushes`) covers only the refspec
+ * argument, not the shell line it is written on.
+ */
+function joinContinuedLines(text) {
+    const rawLines = text.split('\n');
+    const logical = [];
+    let buffer = null;
+    let firstLine = 0;
+    for (let i = 0; i < rawLines.length; i++) {
+        const raw = rawLines[i];
+        const continues = /\\\s*$/.test(raw);
+        // The trailing `\` (and any whitespace after it) becomes a single space, mirroring the
+        // shell's own line-join — the next line's content follows immediately after.
+        const stripped = continues ? raw.replace(/\\\s*$/, ' ') : raw;
+        if (buffer === null) {
+            firstLine = i + 1;
+            buffer = stripped;
+        } else {
+            buffer += stripped;
+        }
+        if (!continues) {
+            logical.push({ line: firstLine, text: buffer });
+            buffer = null;
+        }
+    }
+    if (buffer !== null) {
+        // A trailing `\` on the file's LAST line has nothing left to join with — the file ends
+        // mid-command. Reported as-is rather than dropped, so a malformed file is still scanned
+        // instead of silently losing its last line.
+        logical.push({ line: firstLine, text: buffer });
+    }
+    return logical;
+}
+
+/**
  * Every push to a protected branch in `text`, as `{ line, ref, snippet }`.
  *
- * Line-by-line rather than whole-file, so a violation can be reported at a line number a reader
- * can go to. Both patterns are single-line by nature — a refspec does not wrap.
+ * Line-by-line (after joining `\`-continuations) rather than whole-file, so a violation can be
+ * reported at a line number a reader can go to. The refspec argument itself does not wrap; the shell
+ * LINE it is written on can, via `\`, which is what joining exists to undo before matching.
  */
 export function findProtectedPushes(text) {
     const found = [];
-    text.split('\n').forEach((line, index) => {
-        if (isCommentary(line)) {
-            return;
+    for (const { line, text: joined } of joinContinuedLines(text)) {
+        if (isCommentary(joined)) {
+            continue;
         }
-        const match = SHELL_PUSH.exec(line) ?? METHOD_PUSH.exec(line) ?? findGhApiRefUpdate(line);
+        const match = SHELL_PUSH.exec(joined) ?? METHOD_PUSH.exec(joined) ?? findGhApiRefUpdate(joined);
         if (match) {
-            found.push({ line: index + 1, ref: match[1], snippet: line.trim() });
+            found.push({ line, ref: match[1], snippet: joined.trim() });
         }
-    });
+    }
     return found;
 }
 
