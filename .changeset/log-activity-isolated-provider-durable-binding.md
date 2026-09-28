@@ -1,5 +1,5 @@
 ---
-"@mj-biz-apps/common-server": patch
+"@mj-biz-apps/common-server": minor
 "@mj-biz-apps/common-activity-sync": patch
 ---
 
