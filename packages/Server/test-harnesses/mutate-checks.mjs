@@ -220,6 +220,16 @@ if (process.argv.includes('--check-anchors')) {
     process.exit(0);
 }
 
+// A caller asking for a specific mutant (or passing an unsupported flag) that doesn't exist is a
+// typo, not "nothing to do" -- filtering it to an empty selection used to report a vacuous, silent
+// pass (`0 mutant(s) proved their checks can fail.`, exit 0). Name what wasn't recognized and fail.
+const knownIds = new Set(PRODUCT.map((m) => m.id));
+const unknown = wanted.filter((arg) => !knownIds.has(arg));
+if (unknown.length) {
+    console.error(`Unrecognized argument(s): ${unknown.join(', ')}. Expected --list, --check-anchors, or a mutant ID from --list.`);
+    process.exit(1);
+}
+
 const selected = wanted.length ? PRODUCT.filter((m) => wanted.includes(m.id)) : PRODUCT;
 let failed = 0;
 
