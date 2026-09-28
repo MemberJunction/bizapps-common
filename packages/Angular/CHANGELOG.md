@@ -1,5 +1,13 @@
 # @mj-biz-apps/common-ng
 
+## 5.47.0
+
+### Patch Changes
+
+- Updated dependencies [0d8364d]
+- Updated dependencies [b8584a5]
+  - @mj-biz-apps/common-entities@5.47.0
+
 ## 5.46.3
 
 ### Patch Changes
