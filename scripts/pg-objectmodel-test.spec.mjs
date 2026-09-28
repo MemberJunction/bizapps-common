@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +18,24 @@ const SCRIPT = join(HERE, 'pg-objectmodel-test.mjs');
 // Strip any PGHOST/PGPORT the ambient environment happens to carry, so each test's override is
 // the only thing in effect and the script's own `?? 'localhost'` / `?? 5433` defaults apply.
 const { PGHOST: _pgHost, PGPORT: _pgPort, ...BASE_ENV } = process.env;
+
+/**
+ * `pg` is an undeclared dependency here (tooling-3, deferred): it only resolves in a workspace
+ * that happens to provide it transitively (e.g. this repo nested under a sibling MJ dev
+ * checkout). CI's `release-tooling` job runs this glob with no `pnpm install`, so a plain clone
+ * has no `pg` at all. Resolve it from the SCRIPT's own location -- the same resolution the
+ * spawned child process will do -- and skip with a named reason rather than failing on an
+ * environment gap this spec doesn't own fixing.
+ */
+function pgUnavailableReason() {
+  try {
+    createRequire(SCRIPT).resolve('pg');
+    return false;
+  } catch {
+    return 'pg is not installed here (undeclared dependency, see tooling-3)';
+  }
+}
+const skipNoPg = pgUnavailableReason();
 
 /**
  * A TCP port that nothing is listening on, so `pg` gets an immediate ECONNREFUSED. Bound on all
@@ -38,7 +57,7 @@ async function closedPort() {
 // tooling-1: pg's Pool throws an AggregateError whose own `.message` is "" when a dual-stack
 // connection is refused; the real reason lives in `.errors`. Fails without the fix because
 // `main().catch((e) => ... e.message)` prints a blank reason ("  ✗ EXCEPTION — ").
-test('pg-objectmodel-test.mjs surfaces the inner AggregateError reasons, not a blank message', async () => {
+test('pg-objectmodel-test.mjs surfaces the inner AggregateError reasons, not a blank message', { skip: skipNoPg }, async () => {
   const port = await closedPort();
   const result = spawnSync(process.execPath, [SCRIPT], {
     encoding: 'utf8',
@@ -59,7 +78,7 @@ test('pg-objectmodel-test.mjs surfaces the inner AggregateError reasons, not a b
 // never settles `pool.end()` in the `.finally()` block, so `process.exit(fail ? 1 : 0)` is never
 // reached and Node exits 0 by default once the event loop drains -- a false pass despite the
 // printed "1 failed". Fails without the fix because the process exits 0 here.
-test('pg-objectmodel-test.mjs exits non-zero when the run failed, even if pool.end() never settles', () => {
+test('pg-objectmodel-test.mjs exits non-zero when the run failed, even if pool.end() never settles', { skip: skipNoPg }, () => {
   const result = spawnSync(process.execPath, [SCRIPT], {
     encoding: 'utf8',
     env: { ...BASE_ENV, PGPASSWORD: 'x', PGPORT: 'notanumber' },
