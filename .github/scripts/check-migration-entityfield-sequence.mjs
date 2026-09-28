@@ -394,7 +394,17 @@ function main(argv) {
         if (argv.length >= 2) {
             [base, head] = argv;
         } else {
-            base = git(['merge-base', process.env.BASE_REF || 'origin/next', 'HEAD']);
+            const baseRef = process.env.BASE_REF || 'origin/next';
+            try {
+                base = git(['merge-base', baseRef, 'HEAD']);
+            } catch (err) {
+                // Sibling of check-migration-no-prune.mjs's gh-1 fix: an unresolved ref must not
+                // surface as a raw, unhandled stack trace on a documented local-form usage path.
+                console.log(`${RED}✗ could not resolve base ref '${baseRef}'${NC}`);
+                console.log(`  ${err.stderr?.toString().trim() || err.message}`);
+                console.log(`  Fetch it (e.g. \`git fetch origin next\`), or set BASE_REF to a ref that resolves.`);
+                return 1;
+            }
         }
         entries = changedMigrations(git, base, head);
     }
