@@ -75,7 +75,16 @@ function readJSON(path) {
 
 /** Workspace packages that declare at least one MemberJunction dependency. */
 function packagesToCheck() {
-    if (targets.length) return targets.map((t) => resolve(REPO, t));
+    if (targets.length) {
+        return targets.map((t) => {
+            const dir = resolve(REPO, t);
+            if (!existsSync(join(dir, 'package.json'))) {
+                console.error(`No such package: ${t} (missing ${join(dir, 'package.json')})`);
+                process.exit(1);
+            }
+            return dir;
+        });
+    }
     const root = join(REPO, 'packages');
     return readdirSync(root)
         .map((d) => join(root, d))
