@@ -100,9 +100,27 @@ export function CheckExternalFieldLength(
     }
     const length = value?.length ?? 0;
     if (length <= resolved.Limit.Length) return null;
-    return `${label} is ${length} characters; ${describeTarget(resolved.Limit.Target)} allows ${resolved.Limit.Length}. Shorten it before saving.`;
+    return `${label} is ${length} characters; ${describeTarget(resolved.Limit.Target)} allows ${resolved.Limit.Length}. Shorten it.`;
 }
 
+/** Why a check could not run when the configuring user cannot read integration metadata. */
+export const INTEGRATION_METADATA_UNREADABLE =
+    `the user this server checks limits with cannot read ${INTEGRATION_OBJECTS_ENTITY} and ${INTEGRATION_OBJECT_FIELDS_ENTITY}`;
+
+/**
+ * The cached integration field lengths, one per process.
+ *
+ * Configure it with a user who can read `MJ: Integration Objects` and `MJ: Integration Object
+ * Fields` — on a server, the system user, not the user whose save is being checked. The lengths
+ * are catalog data; the saving user's permissions should not decide whether they can be read.
+ *
+ * A user without read access loads nothing. MJ still marks the engine loaded, so the next
+ * `Config` here reloads rather than keeping the empty lists, and until a reload succeeds every
+ * check reports that it could not run instead of throwing out of a save.
+ *
+ * Installed metadata changes reach a running server only when MJ's `LocalCacheManager` is
+ * initialized; otherwise they apply after a restart or `Config(true)`.
+ */
 export class ExternalFieldLimitEngine extends BaseEngine<ExternalFieldLimitEngine> {
     private _objects: IntegrationObjectRow[] = [];
     private _fields: IntegrationObjectFieldRow[] = [];
@@ -116,11 +134,15 @@ export class ExternalFieldLimitEngine extends BaseEngine<ExternalFieldLimitEngin
             { PropertyName: '_objects', EntityName: INTEGRATION_OBJECTS_ENTITY, ResultType: 'simple' },
             { PropertyName: '_fields', EntityName: INTEGRATION_OBJECT_FIELDS_ENTITY, Filter: 'Length > 0', ResultType: 'simple' },
         ];
-        return await this.Load(params, provider as IMetadataProvider, forceRefresh ?? false, contextUser);
+        // A load that was skipped for lack of permission is retried, not kept: one limited user must
+        // not leave the check unable to run for every user in the process.
+        return await this.Load(params, provider as IMetadataProvider, (forceRefresh ?? false) || this.IsPermissionConstrained, contextUser);
     }
 
-    /** The limit for `targets`; throws when the engine is not configured or a target has no length. */
+    /** The limit for `targets`; throws when the engine is not configured, cannot read metadata, or a target has no length. */
     public GetLimit(targets: ReadonlyArray<ExternalFieldTarget>): ExternalFieldLimit {
+        this.assertLoaded();
+        if (this.IsPermissionConstrained) throw new Error(`Field lengths cannot be read: ${INTEGRATION_METADATA_UNREADABLE}`);
         const resolved = ResolveExternalFieldLimit(targets, this.objects, this.fields);
         if (resolved.Missing) throw new Error(`No field length is recorded for ${resolved.Missing.map(describeTarget).join(', ')}`);
         return resolved.Limit;
@@ -128,6 +150,8 @@ export class ExternalFieldLimitEngine extends BaseEngine<ExternalFieldLimitEngin
 
     /** The message for `value` against `targets`, or null when it fits. See {@link CheckExternalFieldLength}. */
     public Check(label: string, value: string | null | undefined, targets: ReadonlyArray<ExternalFieldTarget>): string | null {
+        this.assertLoaded();
+        if (this.IsPermissionConstrained) return `${label} cannot be checked: ${INTEGRATION_METADATA_UNREADABLE}.`;
         return CheckExternalFieldLength(label, value, targets, this.objects, this.fields);
     }
 
