@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { listMigrationFiles, prepareMigrationSql } from '../parse-migrations.mjs';
+import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES } from '../parse-migrations.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -38,4 +38,16 @@ test('a leading UTF-8 BOM is stripped before the SQL is wrapped for sqlcmd', () 
 
     assert.ok(!wrapped.includes('﻿'), 'the BOM must not appear anywhere in the text sent to sqlcmd');
     assert.match(wrapped, /^SET PARSEONLY ON;\nGO\nSELECT 1 AS \[Test\];\n\nGO\n$/);
+});
+
+// gh-5. Fails today: SQLCMD_CANDIDATES lacks '/opt/homebrew/bin/sqlcmd' (the default
+// Homebrew/Apple-Silicon sqlcmd install path), while check-entityfield-drift.mjs's own
+// findSqlcmd() candidate list already has it -- two sibling scripts with the identical stated
+// purpose (locate sqlcmd) disagree about where to look, so the same machine can report "found" from
+// one script and "not found" from the other. Fixed by adding the path here, aligning the two.
+test('the sqlcmd candidate list includes the Homebrew/Apple-Silicon path, aligned with check-entityfield-drift.mjs', () => {
+    assert.ok(
+        SQLCMD_CANDIDATES.includes('/opt/homebrew/bin/sqlcmd'),
+        "check-entityfield-drift.mjs's findSqlcmd() candidate list already includes this path",
+    );
 });

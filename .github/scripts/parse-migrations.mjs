@@ -24,14 +24,22 @@ const port = process.env.DB_PORT || '1433';
 const user = process.env.DB_USERNAME || 'sa';
 const password = process.env.DB_PASSWORD || 'KRiUffvIjuP5GoLtxYvVkWIQ1BxHQEEMO7j4T684oPR7';
 
+/**
+ * gh-5: standard sqlcmd install locations to fall back to when `sqlcmd` isn't on PATH. Kept
+ * aligned with check-entityfield-drift.mjs's identical list -- the two scripts share the same
+ * stated purpose (find sqlcmd), so a location one resolves and the other doesn't is a bug, not a
+ * platform difference.
+ */
+export const SQLCMD_CANDIDATES = [
+    'sqlcmd',
+    '/opt/mssql-tools18/bin/sqlcmd',
+    '/opt/mssql-tools/bin/sqlcmd',
+    '/usr/local/bin/sqlcmd',
+    '/opt/homebrew/bin/sqlcmd',
+];
+
 function findExecutionMethod() {
-    const candidates = [
-        'sqlcmd',
-        '/opt/mssql-tools18/bin/sqlcmd',
-        '/opt/mssql-tools/bin/sqlcmd',
-        '/usr/local/bin/sqlcmd',
-    ];
-    for (const c of candidates) {
+    for (const c of SQLCMD_CANDIDATES) {
         try {
             execSync(`${c} -?`, { stdio: 'ignore' });
             return {
