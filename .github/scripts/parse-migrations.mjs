@@ -63,6 +63,21 @@ function findExecutionMethod() {
 }
 
 /**
+ * gh-4: Prepare a migration file's raw text for sqlcmd: substitute Flyway placeholders and wrap
+ * the batch in SET PARSEONLY ON.
+ */
+export function prepareMigrationSql(sql, { defaultSchema, mjSchema }) {
+    // A leading UTF-8 BOM is an encoding artifact (Windows editors, PowerShell Out-File), not SQL
+    // content: SQL Server's parser treats it as an illegal character rather than whitespace, so it
+    // would report a syntax error on otherwise-valid SQL. Only the LEADING byte is the artifact --
+    // a BOM character elsewhere in the file is real content and must be left alone.
+    if (sql.charCodeAt(0) === 0xFEFF) sql = sql.slice(1);
+    sql = sql.replace(/\$\{flyway:defaultSchema\}/g, defaultSchema);
+    sql = sql.replace(/\$\{mjSchema\}/g, mjSchema);
+    return `SET PARSEONLY ON;\nGO\n${sql}\nGO\n`;
+}
+
+/**
  * gh-3: Migration filenames in `absDir`, sorted. Throws a descriptive Error naming the --dir
  * value (never a raw ENOENT) when the directory can't be read, so a missing/mistyped --dir (or
  * running from the wrong cwd, so the default ./migrations doesn't exist) is diagnosable.
@@ -136,14 +151,8 @@ function main() {
     let parsedCount = 0;
     for (const file of files) {
         const filePath = join(absDir, file);
-        let sql = readFileSync(filePath, 'utf8');
-
-        // Substitute Flyway placeholders
-        sql = sql.replace(/\$\{flyway:defaultSchema\}/g, defaultSchema);
-        sql = sql.replace(/\$\{mjSchema\}/g, mjSchema);
-
-        // Prepend SET PARSEONLY ON in its own batch, followed by migration content
-        const wrapped = `SET PARSEONLY ON;\nGO\n${sql}\nGO\n`;
+        const sql = readFileSync(filePath, 'utf8');
+        const wrapped = prepareMigrationSql(sql, { defaultSchema, mjSchema });
 
         try {
             runner.execute(wrapped);
