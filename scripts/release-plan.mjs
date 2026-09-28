@@ -125,7 +125,12 @@ function tagExistsLocally(version) {
 function main() {
     const packages = publishablePackages();
     const published = Object.fromEntries(packages.map((p) => [p.name, publishedVersions(p.name)]));
-    const plan = planRelease({ packages, published, tagExists: tagExistsLocally(packages[0].version) });
+    // `packages` can be empty (every package under packages/ is private, or the directory itself is
+    // empty) — planRelease already has a purpose-built guard for exactly that, but only gets a
+    // chance to run it if nothing here reads packages[0] first. `tagExists` is never actually used
+    // when packages is empty: planRelease's guard throws before this argument would be read.
+    const tagExists = packages.length === 0 ? false : tagExistsLocally(packages[0].version);
+    const plan = planRelease({ packages, published, tagExists });
 
     console.log(`Releasing v${plan.version}`);
     console.log(plan.publish ? `  to publish: ${plan.unpublished.join(', ')}` : '  all packages are already on npm');

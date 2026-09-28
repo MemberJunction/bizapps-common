@@ -4,7 +4,8 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -140,4 +141,38 @@ test('a workspace package marked private is excluded from the publishable set', 
     });
     const names = publishablePackages(root).map((p) => p.name);
     assert.deepEqual(names, ['@mj-biz-apps/public-pkg']);
+});
+
+// ── main()'s own ordering: packages[0] must never be read before planRelease's empty-list guard ───
+//
+// main() computed `tagExistsLocally(packages[0].version)` as an ARGUMENT to planRelease, so it ran
+// BEFORE planRelease got a chance to check `packages.length === 0` — a checkout with zero
+// publishable packages (every package under packages/ private, or the directory empty) died with a
+// raw `TypeError: Cannot read properties of undefined (reading 'version')` instead of the friendly
+// guard message planRelease already has for exactly this case.
+//
+// A copy of the script in its own fixture (matching sync-app-version.spec.mjs's CLI tests), so its
+// own REPO_ROOT — derived from import.meta.url, not cwd — points at a throwaway tree with an empty
+// packages/, rather than this repository's real package set. realpath'd for the same reason those
+// tests are: macOS's own /tmp -> /private/tmp symlink is exactly the class of path release-5 exists
+// for, and this test is not about that bug.
+function emptyPackagesFixture() {
+    const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'release-plan-empty-')));
+    mkdirSync(path.join(root, 'scripts'), { recursive: true });
+    mkdirSync(path.join(root, 'packages'), { recursive: true });
+    copyFileSync(path.join(REPO_ROOT, 'scripts', 'release-plan.mjs'), path.join(root, 'scripts', 'release-plan.mjs'));
+    return root;
+}
+
+test('zero publishable packages surfaces planRelease\'s own guard message, not a raw TypeError', () => {
+    const fixture = emptyPackagesFixture();
+    try {
+        const result = spawnSync(process.execPath, [path.join(fixture, 'scripts', 'release-plan.mjs')], { encoding: 'utf8' });
+        const output = `${result.stdout}${result.stderr}`;
+        assert.notEqual(result.status, 0, `expected a non-zero exit; got 0 with:\n${output}`);
+        assert.match(output, /no publishable packages/i);
+        assert.doesNotMatch(output, /Cannot read propert/i, `a raw TypeError leaked through:\n${output}`);
+    } finally {
+        rmSync(fixture, { recursive: true, force: true });
+    }
 });
