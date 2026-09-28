@@ -22,8 +22,10 @@
 # `non_fast_forward`, and `main` has no rules at all; this workflow deliberately does NOT ask whether
 # the App could bypass anything — MJ's equivalent does, because MJ took the bypass route; we did
 # not, on purpose. The App does exactly two things here, neither of them privileged: it pushes
-# `release/*` and `chore/backmerge-*`, which no ruleset covers, and it opens pull requests. Those
-# branches and those PRs then run the same pull-request workflows as anyone's.
+# `release/*`, which no ruleset covers, and it opens the release and back-merge pull requests.
+# (`publish.yml` pushes the `chore/backmerge-*` branch itself with GITHUB_TOKEN: its checkout persists
+# that credential, which outranks the App token in the remote URL.) Those PRs then run the same
+# pull-request workflows as anyone's.
 #
 # The single reason it cannot just be GITHUB_TOKEN: GitHub does not start workflow runs from events
 # authored with it, so `changes.yml` and `build.yml` would never start on such a branch or such a PR
@@ -83,7 +85,8 @@ jobs:
           # trimmed grant fails HERE with a clear error, instead of surfacing later as a push or a
           # `gh pr create` that dies looking exactly like the branch-protection problem all of this
           # is about. These are the two the release needs and no more: contents to push `release/*`
-          # and `chore/backmerge-*`, pull-requests to open the two PRs.
+          # (and, as requested at publish.yml's call site, `chore/backmerge-*` should the persisted
+          # checkout credential ever stop outranking it), pull-requests to open the two PRs.
           permission-contents: write
           permission-pull-requests: write
 
@@ -135,6 +138,6 @@ jobs:
             echo
             echo 'Green: the key is valid, the installation covers this repository, and both grants are intact.'
             echo 'The App is **not** a ruleset bypass actor and must never become one — it pushes only'
-            echo '`release/*` and `chore/backmerge-*`, which no ruleset covers, and opens pull requests that'
+            echo '`release/*`, which no ruleset covers, and opens the release and back-merge pull requests that'
             echo 'run the same pull-request workflows as anyone else'"'"'s.'
           } >> "$GITHUB_STEP_SUMMARY"

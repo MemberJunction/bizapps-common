@@ -246,7 +246,8 @@ jobs:
       #
       # It has to be a GitHub App rather than GITHUB_TOKEN for exactly one reason: GitHub does not
       # start workflow runs from GITHUB_TOKEN-authored events, so `changes.yml` and `build.yml` would
-      # never run on the branch or the PR and it would reach review with no CI at all. That is the
+      # never run on the PR and it would reach review with no CI at all. (The branch push itself is
+      # still made with GITHUB_TOKEN — see the `app-push` note below; only the PR needs the App.) That is the
       # entire justification for the credential. `verify-release-app-token.yml` proves the
       # credential is live without writing anything.
       # ----------------------------------------------------------------------------------------

@@ -191,8 +191,10 @@ The automation therefore needs an identity that is not `GITHUB_TOKEN`. This repo
 has `vars.APP_CLIENT_ID` + `secrets.APP_PRIVATE_KEY`, an App already installed org-wide and used by
 MJ core for the same reason.
 
-**The App is never a bypass.** It writes only to `release/*` and `chore/backmerge-*`, and it opens
-pull requests. Common's only ruleset targets the default branch (`next`) with `deletion` and
+**The App is never a bypass.** It pushes only `release/*`, and it opens the two pull requests. The
+back-merge branch and the tag are pushed by `publish.yml` with `GITHUB_TOKEN` (as
+`github-actions[bot]`): its checkout persists that credential, and a persisted credential outranks the
+App token in a remote URL (MemberJunction/bizapps-forms#229). Common's only ruleset targets the default branch (`next`) with `deletion` and
 `non_fast_forward`; `main` has no rules at all. Neither release branch pattern is covered. Check it
 rather than trusting this paragraph:
 
@@ -202,8 +204,10 @@ gh api repos/MemberJunction/bizapps-common/rules/branches/main          # → []
 gh api repos/MemberJunction/bizapps-common/rules/branches/release%2Fv0  # → []
 ```
 
-Nothing here asks for an exception to anything. The only remote write that still goes through
-`origin` with `GITHUB_TOKEN` is the `vX.Y.Z` tag push, and tags are outside every ruleset.
+Nothing here asks for an exception to anything. The two remote writes made with `GITHUB_TOKEN` are
+the `chore/backmerge-*` branch push, which no ruleset covers, and the `vX.Y.Z` tag push; tags are
+outside every ruleset. What the App credential buys in `publish.yml` is the back-merge PR itself: an
+App-opened PR starts its CI, where a `GITHUB_TOKEN`-opened one would not.
 
 **Common has not hit the failure this design was built for, and adopts it anyway.** In bizapps-forms,
 required status checks on `main` and `next` made every push from CI unsatisfiable by construction
