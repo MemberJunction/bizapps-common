@@ -6,6 +6,11 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, copyFileSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
     assessRelease,
     checkPostconditions,
@@ -14,6 +19,8 @@ import {
     parseChangesetLevels,
     GATE_SCRIPTS,
 } from './release-prep.mjs';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // Every gate green. Named rather than repeated, because a gate added to the script without a
 // thought here would otherwise make every case in this file silently untestable.
@@ -368,4 +375,35 @@ test('several postcondition failures are all reported at once', () => {
 // cannot silently reintroduce them without this file failing loudly.
 test('GATE_SCRIPTS names exactly check:release-seed and check:seed-cadence', () => {
     assert.deepEqual([...GATE_SCRIPTS].sort(), ['check:release-seed', 'check:seed-cadence']);
+});
+
+// ── The entry-point guard must survive a symlinked invocation path ─────────────────────────────────
+//
+// `process.argv[1] === fileURLToPath(import.meta.url)` compares the UNRESOLVED invoked path against
+// the RESOLVED module path, so invoking via a symlink makes the guard permanently false, main() never
+// runs, and the process exits 0 with zero output — not even the `--plan` mode's own
+// `ready=false`/`version=`/`branch=` GITHUB_OUTPUT lines. check-release-seed-cadence.mjs already
+// carries the realpath fix for this; this pins the same fix here.
+//
+// A minimal git repo with no `.changeset/` (so gatherFacts throws before touching npm or spawning
+// the release-readiness gates) is enough to prove main() ran: main()'s own try/catch turns that
+// throw into a printed "release-prep could not assess this checkout" message and a `ready=false`
+// GITHUB_OUTPUT write, which is what distinguishes it from the bug's total silence.
+test('main() still runs when the script is invoked through a symlink', () => {
+    const fixture = realpathSync(mkdtempSync(path.join(tmpdir(), 'release-prep-symlink-')));
+    try {
+        mkdirSync(path.join(fixture, 'scripts'), { recursive: true });
+        copyFileSync(path.join(HERE, 'release-prep.mjs'), path.join(fixture, 'scripts', 'release-prep.mjs'));
+        copyFileSync(path.join(HERE, 'release-plan.mjs'), path.join(fixture, 'scripts', 'release-plan.mjs'));
+        execFileSync('git', ['init', '-q'], { cwd: fixture });
+
+        const symlinkPath = path.join(fixture, 'invoke-via-symlink.mjs');
+        symlinkSync(path.join(fixture, 'scripts', 'release-prep.mjs'), symlinkPath);
+        const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
+        const output = `${result.stdout}${result.stderr}`;
+        assert.ok(output.length > 0, 'a silent, empty exit 0 is the bug this pins against');
+        assert.match(output, /release-prep/i);
+    } finally {
+        rmSync(fixture, { recursive: true, force: true });
+    }
 });

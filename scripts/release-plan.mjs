@@ -26,7 +26,7 @@
  * Ported from bizapps-forms (MemberJunction/bizapps-forms#177), package names adjusted for
  * bizapps-common.
  */
-import { readdirSync, readFileSync, appendFileSync } from 'node:fs';
+import { readdirSync, readFileSync, appendFileSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -150,6 +150,8 @@ function main() {
     }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Compared through realpath, not as a `file://` string: that string is never equal under a path with
+// spaces (percent-encoded in the URL) or a symlink, and the gate would then silently exit 0.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
     main();
 }

@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { PROTECTED_BRANCHES, SCANNED_DIRS, EXCLUDED_FILES, findProtectedPushes, runCheck } from './check-release-pushes.mjs';
 
@@ -285,4 +286,26 @@ test('the protected-branch list is main and next', () => {
 test('the repository has no protected-branch push in its release path', () => {
     const violations = runCheck(REPO_ROOT);
     assert.deepEqual(violations, [], violations.join('\n'));
+});
+
+// ── The entry-point guard must survive a symlinked invocation path ─────────────────────────────────
+//
+// `process.argv[1] === fileURLToPath(import.meta.url)` compares the UNRESOLVED invoked path against
+// the RESOLVED module path, so invoking via a symlink makes the guard permanently false, main() never
+// runs, and the process exits 0 with zero output — "Release-push gate passed" never prints, and
+// neither does a violation list, either way silently. check-release-seed-cadence.mjs already carries
+// the realpath fix for this; this pins the same fix here.
+test('main() still runs when the script is invoked through a symlink', () => {
+    const fixture = realpathSync(mkdtempSync(path.join(tmpdir(), 'check-release-pushes-symlink-')));
+    try {
+        mkdirSync(path.join(fixture, 'scripts'), { recursive: true });
+        copyFileSync(path.join(REPO_ROOT, 'scripts', 'check-release-pushes.mjs'), path.join(fixture, 'scripts', 'check-release-pushes.mjs'));
+        const symlinkPath = path.join(fixture, 'invoke-via-symlink.mjs');
+        symlinkSync(path.join(fixture, 'scripts', 'check-release-pushes.mjs'), symlinkPath);
+        const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
+        assert.equal(result.status, 0, `main() did not run as expected:\n${result.stdout}${result.stderr}`);
+        assert.match(result.stdout, /Release-push gate passed/, 'a silent, empty exit 0 is the bug this pins against');
+    } finally {
+        rmSync(fixture, { recursive: true, force: true });
+    }
 });

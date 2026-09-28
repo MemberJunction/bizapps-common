@@ -17,7 +17,7 @@
  *
  * Ported from bizapps-forms (MemberJunction/bizapps-forms#177).
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -112,6 +112,8 @@ function main() {
     console.log(check ? 'mj-app.json is in sync.' : 'mj-app.json synced.');
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Compared through realpath, not as a `file://` string: that string is never equal under a path with
+// spaces (percent-encoded in the URL) or a symlink, and the gate would then silently exit 0.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
     main();
 }

@@ -4,7 +4,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -172,6 +172,27 @@ test('zero publishable packages surfaces planRelease\'s own guard message, not a
         assert.notEqual(result.status, 0, `expected a non-zero exit; got 0 with:\n${output}`);
         assert.match(output, /no publishable packages/i);
         assert.doesNotMatch(output, /Cannot read propert/i, `a raw TypeError leaked through:\n${output}`);
+    } finally {
+        rmSync(fixture, { recursive: true, force: true });
+    }
+});
+
+// ── The entry-point guard must survive a symlinked invocation path ─────────────────────────────────
+//
+// `process.argv[1] === fileURLToPath(import.meta.url)` compares the UNRESOLVED invoked path against
+// the RESOLVED module path, so invoking via a symlink makes the guard permanently false, main() never
+// runs, and the process exits 0 with zero output. Reuses the zero-packages fixture: since main()
+// hits planRelease's own guard message with no network calls, this proves main() RAN via the
+// symlink without needing a live registry or a real package set.
+test('main() still runs when the script is invoked through a symlink', () => {
+    const fixture = emptyPackagesFixture();
+    try {
+        const symlinkPath = path.join(fixture, 'invoke-via-symlink.mjs');
+        symlinkSync(path.join(fixture, 'scripts', 'release-plan.mjs'), symlinkPath);
+        const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
+        const output = `${result.stdout}${result.stderr}`;
+        assert.ok(output.length > 0, 'a silent, empty exit 0 is the bug this pins against');
+        assert.match(output, /no publishable packages/i);
     } finally {
         rmSync(fixture, { recursive: true, force: true });
     }

@@ -4,7 +4,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -217,6 +217,29 @@ test('the exact valid argument sets still work: [] writes, [\'--check\'] only ch
         assert.equal(writeResult.status, 0);
         const written = JSON.parse(readFileSync(path.join(fixture, 'mj-app.json'), 'utf8'));
         assert.equal(written.version, '0.11.0');
+    } finally {
+        rmSync(fixture, { recursive: true, force: true });
+    }
+});
+
+// ── The entry-point guard must survive a symlinked invocation path ─────────────────────────────────
+//
+// `process.argv[1] === fileURLToPath(import.meta.url)` compares the UNRESOLVED invoked path against
+// the RESOLVED module path, so invoking via a symlink makes the guard permanently false, main() never
+// runs, and the process exits 0 with zero output. check-release-seed-cadence.mjs already carries the
+// realpath fix for this; this pins the same fix here.
+test('main() still runs when the script is invoked through a symlink', () => {
+    const fixture = cliFixture({
+        entitiesVersion: '0.11.0',
+        mjPin: '6.1.0-edge.5',
+        app: { version: '0.11.0', mjVersionRange: '>=6.1.0-edge.5 <7.0.0' },
+    });
+    try {
+        const symlinkPath = path.join(fixture, 'invoke-via-symlink.mjs');
+        symlinkSync(path.join(fixture, 'scripts', 'sync-app-version.mjs'), symlinkPath);
+        const result = spawnSync(process.execPath, [symlinkPath, '--check'], { encoding: 'utf8' });
+        assert.equal(result.status, 0, `main() did not run as expected:\n${result.stdout}${result.stderr}`);
+        assert.match(result.stdout, /in sync/, 'a silent, empty exit 0 is the bug this pins against');
     } finally {
         rmSync(fixture, { recursive: true, force: true });
     }
