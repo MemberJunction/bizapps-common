@@ -235,7 +235,7 @@ jobs:
       # PR built on a stale `next` —
       # it would quietly revert main's already-published bump. scripts/release-prep.mjs refuses to
       # cut a release while `main` is not an ancestor of `next` for exactly that reason, and names
-      # the `chore/backmerge-v<prev>` PR this step opens. That asymmetry is what makes forgetting it
+      # the `chore/backmerge-v<prev>-<main sha>` PR this step opens. That asymmetry is what makes forgetting it
       # expensive: skipping it costs THIS release nothing at all, and blocks the following one.
       #
       # A PR and not a push, and the distinction is the whole design. The old path here merged
@@ -321,13 +321,18 @@ jobs:
           GH_TOKEN: ${{ steps.backmerge_token.outputs.token }}
           VERSION: ${{ steps.release_check.outputs.VERSION }}
           MAIN_SHA: ${{ steps.backmerge_scope.outputs.main_sha }}
+          WORK: ${{ steps.release_check.outputs.work }}
         run: |
           set -euo pipefail
-          BRANCH="chore/backmerge-v${VERSION}"
+          BRANCH="chore/backmerge-v${VERSION}-${MAIN_SHA:0:10}"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
-          # Version-stamped rather than timestamped, so re-running a half-finished publish lands on
-          # the same branch instead of stacking a second one beside it.
+          # Stamped with the version AND main's tip. A back-merge is owed per tip of `main`, not per
+          # release: any later merge into `main` (a docs fix, a hotfix) needs one while the version is
+          # unchanged, and the release's own `chore/backmerge-v<version>` branch is still on the
+          # remote after its PR merged (`delete_branch_on_merge` is off). Keyed on the version alone,
+          # that later run found the old branch at the old SHA and refused. The SHA keeps a re-run of
+          # a half-finished publish on the same branch instead of stacking a second one beside it.
           #
           # An open PR is the deliverable, so an existing one ends this step. Re-pushing over the
           # branch behind it would discard conflict resolutions a human may have committed there,
@@ -360,24 +365,33 @@ jobs:
             git push app-push "$MAIN_SHA:refs/heads/$BRANCH"
             echo "pushed $BRANCH at $MAIN_SHA"
           elif [ "$REMOTE_SHA" != "$MAIN_SHA" ]; then
-            # Branch present, no PR open, and it is not what we would push. Every way out of this is
-            # a guess — force-push over whatever is there, or open a PR that back-merges the wrong
-            # commit — so it stops instead and says what it found. Reached only when a release
-            # repeats a version, which is itself worth knowing about.
+            # Branch present, no PR open, and it is not what we would push. The name carries main's
+            # tip, so this means someone committed onto the branch (a conflict resolution whose PR was
+            # then closed, say). Every way out of this is a guess — force-push over that work, or open
+            # a PR that back-merges the wrong commit — so it stops instead and says what it found.
             echo "::error::$BRANCH exists at $REMOTE_SHA, which is not main's tip ($MAIN_SHA), and no pull request is open for it. Refusing to force-push over it — delete the branch, or open the PR by hand."
             exit 1
           fi
 
           {
-            echo "Opened by \`publish.yml\` after publishing **v$VERSION**."
-            echo
-            echo "\`main\` at \`${MAIN_SHA:0:10}\` is not an ancestor of \`next\`. This carries the release merge"
-            echo "commit and the version bump back, and it is not bookkeeping: a release cut from \`next\` without"
-            echo "it would be built on the pre-release version, so until this merges the **next** release cannot be cut."
-            echo
-            echo "**The release itself is finished.** The packages are on npm and \`v$VERSION\` is tagged, and the"
-            echo "publish run that opened this is green. Do not re-run the publish; resolve any conflicts here and"
-            echo "merge. Until this lands, \`release-prep.yml\` will refuse to cut the next release and say why."
+            if [ "$WORK" = "true" ]; then
+              echo "Opened by \`publish.yml\` after publishing **v$VERSION**."
+              echo
+              echo "\`main\` at \`${MAIN_SHA:0:10}\` is not an ancestor of \`next\`. This carries the release merge"
+              echo "commit and the version bump back, and it is not bookkeeping: a release cut from \`next\` without"
+              echo "it would be built on the pre-release version, so until this merges the **next** release cannot be cut."
+              echo
+              echo "**The release itself is finished.** The packages are on npm and \`v$VERSION\` is tagged, and the"
+              echo "publish run that opened this is green. Do not re-run the publish; resolve any conflicts here and"
+              echo "merge. Until this lands, \`release-prep.yml\` will refuse to cut the next release and say why."
+            else
+              echo "Opened by \`publish.yml\` after a push to \`main\` that published nothing: \`v$VERSION\` was"
+              echo "already published and tagged."
+              echo
+              echo "\`main\` at \`${MAIN_SHA:0:10}\` is not an ancestor of \`next\`, so this carries \`main\`'s newer"
+              echo "commits back. Until it merges, \`release-prep.yml\` will refuse to cut the next release and say why."
+              echo "If an older \`chore/backmerge-*\` PR is still open, this one contains it."
+            fi
             echo
             echo "**Merge with a merge commit — never squash or rebase.** Either leaves \`main\`'s tip outside"
             echo "\`next\`'s history, so \`main\` is still not an ancestor of \`next\` and Prepare a release keeps"
@@ -388,7 +402,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --base next \
             --head "$BRANCH" \
-            --title "chore: back-merge main into next after v$VERSION" \
+            --title "chore: back-merge main (${MAIN_SHA:0:10}) into next after v$VERSION" \
             --body-file "$RUNNER_TEMP/backmerge-body.md")
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "::notice::back-merge PR: $PR_URL"
@@ -397,6 +411,7 @@ jobs:
         if: always() && steps.backmerge_scope.conclusion == 'success'
         env:
           VERSION: ${{ steps.release_check.outputs.VERSION }}
+          WORK: ${{ steps.release_check.outputs.work }}
           NOTHING: ${{ steps.backmerge_scope.outputs.nothing_to_merge }}
           BRANCH: ${{ steps.backmerge_pr.outputs.branch }}
           PR_URL: ${{ steps.backmerge_pr.outputs.pr_url }}
@@ -410,6 +425,13 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          # Worded from `work`: a push to `main` that released nothing (a docs fix after a release)
+          # still owes a back-merge, and must not be summarised as a publish.
+          if [ "$WORK" = "true" ]; then
+            PUBLISHED="**v$VERSION published successfully.** The packages are on npm and the tag is pushed"
+          else
+            PUBLISHED="**This run published nothing:** v$VERSION was already published and tagged, but \`main\` has commits \`next\` lacks"
+          fi
           {
             echo ""
             echo "### The back-merge is outstanding"
@@ -417,19 +439,25 @@ jobs:
             if [ -n "${PR_URL:-}" ]; then
               echo "$PR_URL"
               echo ""
-              echo "**v$VERSION published successfully.** The packages are on npm and the tag is pushed; the only"
-              echo "thing left is merging that pull request, which carries \`main\` back into \`next\`."
+              echo "$PUBLISHED; the only thing left is merging that pull request, which carries \`main\`"
+              echo "back into \`next\`."
               echo ""
               echo "Nothing here is chasing you to do it today. The cost of leaving it lands on the NEXT release"
               echo "— and that is where it is enforced: \`release-prep.yml\` refuses to cut a release while \`main\`"
               echo "is not an ancestor of \`next\`, and names this pull request when it does."
             else
-              echo "**v$VERSION published successfully, but the back-merge PR could not be opened.** The packages are"
-              echo "on npm and the tag is pushed. Read the failed step above — a rejected push means the App"
+              if [ "$WORK" = "true" ]; then
+                echo "**v$VERSION published successfully, but the back-merge PR could not be opened.** The packages are"
+                echo "on npm and the tag is pushed."
+              else
+                echo "**This run published nothing (v$VERSION was already published and tagged), but the back-merge PR"
+                echo "for \`main\`'s newer commits could not be opened.**"
+              fi
+              echo "Read the failed step above — a rejected push means the App"
               echo "credential needs attention (\`verify-release-app-token.yml\` diagnoses it read-only), anything else"
               echo "is in its error. Until \`main\` reaches \`next\`, Prepare a release will refuse to cut the next release."
               echo ""
-              echo "By hand: branch \`${BRANCH:-chore/backmerge-v$VERSION}\` from \`main\`'s tip and open a PR into"
+              echo "By hand: branch \`${BRANCH:-chore/backmerge-v$VERSION-<main sha>}\` from \`main\`'s tip and open a PR into"
               echo "\`next\` — see [\`docs/release.md\`](docs/release.md)."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
@@ -451,6 +479,8 @@ jobs:
         if: always() && steps.backmerge_scope.outputs.nothing_to_merge == 'false' && steps.backmerge_pr.outputs.pr_url == ''
         env:
           VERSION: ${{ steps.release_check.outputs.VERSION }}
+          WORK: ${{ steps.release_check.outputs.work }}
         run: |
-          echo "::error::v$VERSION is published and tagged, but the main -> next back-merge PR could not be opened. See the failed step above; verify-release-app-token.yml diagnoses a credential problem read-only. Until main reaches next, Prepare a release will refuse to cut the next release."
+          if [ "$WORK" = "true" ]; then STATE="v$VERSION is published and tagged"; else STATE="this run published nothing (v$VERSION was already published and tagged)"; fi
+          echo "::error::$STATE, but the main -> next back-merge PR could not be opened. See the failed step above; verify-release-app-token.yml diagnoses a credential problem read-only. Until main reaches next, Prepare a release will refuse to cut the next release."
           exit 1

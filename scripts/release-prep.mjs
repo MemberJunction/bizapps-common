@@ -85,7 +85,7 @@ const BUMP_RANK = Object.freeze({ patch: 1, minor: 2, major: 3 });
  * release PR whose base has moved on. The refusal here is this SCRIPT's, not GitHub's, and it exists
  * because the danger is quiet: the release PR is `next` -> `main`, and both its diff and the version
  * this script predicts come from `next`'s tip. `publish.yml` never pushes `main` into `next` directly
- * — it opens a `chore/backmerge-v<version>` -> `next` pull request once that release publishes (see
+ * — it opens a `chore/backmerge-v<version>-<main sha>` -> `next` pull request once that release publishes (see
  * docs/release.md), and a human merges it. If the PREVIOUS release's back-merge PR is still open, or
  * was never opened at all, `next` is still sitting on the version from BEFORE that release, so this
  * run would compute a stale next version and open a PR that quietly reverts main's already-published
@@ -99,10 +99,10 @@ const STALE_MAIN_BLOCKER =
     'already has, including a previous release\'s version bump — nothing in GitHub itself will stop ' +
     'that merge (the one ruleset here, on next, does not require a branch to be up to date — no ' +
     '`strict`). This is almost always the ' +
-    "PREVIOUS release's back-merge PR (`chore/backmerge-v<prev>` -> next, opened by publish.yml once " +
+    "PREVIOUS release's back-merge PR (`chore/backmerge-v<prev>-<main sha>` -> next, opened by publish.yml once " +
     "that release published) still sitting unmerged — go merge it. If it was never opened (a red " +
     "publish run only fails to open it, it never merges without you), branch " +
-    "`chore/backmerge-v<prev>` from main's tip and open that PR into next by hand. If it was " +
+    "`chore/backmerge-v<prev>-<main sha>` from main's tip and open that PR into next by hand. If it was " +
     "squash- or rebase-merged, main's tip is still outside next's history: open a fresh main -> next " +
     'PR and merge it with a merge commit. Then re-run.';
 

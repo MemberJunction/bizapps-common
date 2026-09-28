@@ -113,7 +113,7 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
 
 **Release flow: one dispatch and two merges** (runbook: [`docs/release.md`](docs/release.md)):
 1. Dispatch **Prepare a release** (`release-prep.yml`). It cuts `release/vX.Y.Z` from `next`, runs `pnpm run version`, and opens the "Release vX.Y.Z" PR into `main`.
-2. Review and merge that PR with a merge commit. The merge triggers `publish.yml`, which builds, runs the release-readiness gates, publishes to npm, tags `vX.Y.Z`, and opens the `chore/backmerge-vX.Y.Z` → `next` PR.
+2. Review and merge that PR with a merge commit. The merge triggers `publish.yml`, which builds, runs the release-readiness gates, publishes to npm, tags `vX.Y.Z`, and opens the `chore/backmerge-vX.Y.Z-<main sha>` → `next` PR (any later merge into `main` gets a back-merge PR of its own).
 3. Merge the back-merge PR. Until you do, **Prepare a release** refuses to cut the next release.
 
 `pnpm run release:plan` answers "is a release due?" read-only: version, pending changesets, gates, and every blocker.
