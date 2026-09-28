@@ -76,6 +76,22 @@ jobs:
           done
           echo "All new migration timestamps are valid"
 
+      # publish.yml refuses to publish while any changeset remains, but only after the merge. The
+      # release PR arrives with its changesets consumed by `pnpm run version`, and a hotfix into main
+      # must carry its own bump, so a PR into main that still has one is caught here, before merging.
+      # The find expression is publish.yml's, so the two agree on what counts as a changeset.
+      # scripts/main-pr-changesets.spec.mjs runs this step.
+      - name: No pending changesets on a pull request into main
+        if: github.base_ref == 'main'
+        run: |
+          PENDING=$(find .changeset -name "*.md" -not -name "README.md" 2>/dev/null | sort)
+          if [ -n "$PENDING" ]; then
+            echo "$PENDING"
+            echo "::error::This pull request into main still carries pending changesets, so the version was never bumped and publish.yml would refuse to publish after the merge. Cut the release with Prepare a release (docs/release.md), or run 'pnpm run version' on a hotfix branch."
+            exit 1
+          fi
+          echo "No pending changesets."
+
       - name: Check for changeset (PRs to next with migrations)
         if: |
           steps.migration_check.outputs.has_migrations == 'true' &&
