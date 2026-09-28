@@ -9,6 +9,18 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, '..', 'check-migration-entityfield-sequence.mjs');
 
+/**
+ * The child process's env, with BASE_REF explicitly unset. Without this, a `BASE_REF` exported in
+ * the ambient shell (e.g. by a developer's own workflow, or a sibling test/CI step) leaks into the
+ * spawned script and changes which ref it reports as unresolved, decoupling this test's assertions
+ * from the environment it happens to run in.
+ */
+function envWithoutBaseRef() {
+    const env = { ...process.env };
+    delete env.BASE_REF;
+    return env;
+}
+
 /** A standalone repo with one commit and no `origin/next` (or anything BASE_REF could default to). */
 function repoWithUnresolvableBaseRef() {
     const dir = mkdtempSync(join(tmpdir(), 'ef-sequence-'));
@@ -25,7 +37,7 @@ function repoWithUnresolvableBaseRef() {
 // message -- gh-2. Fixed by giving it the same clean, non-zero failure as gh-1.
 test('local form fails cleanly (no raw stack trace), naming the ref, when BASE_REF/origin/next does not resolve', () => {
     const dir = repoWithUnresolvableBaseRef();
-    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
 
     assert.notEqual(result.status, 0, 'an unresolved base ref must not be treated as success');
     assert.doesNotMatch(result.stderr, /at file:\/\//, 'must not leak a raw JS stack trace');

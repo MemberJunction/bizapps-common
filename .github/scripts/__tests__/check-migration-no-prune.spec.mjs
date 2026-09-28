@@ -10,6 +10,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, '..', 'check-migration-no-prune.mjs');
 
 /**
+ * The child process's env, with BASE_REF explicitly unset. Without this, a `BASE_REF` exported in
+ * the ambient shell (e.g. by a developer's own workflow, or a sibling test/CI step) leaks into the
+ * spawned script and changes which ref it reports as unresolved, decoupling this test's assertions
+ * from the environment it happens to run in.
+ */
+function envWithoutBaseRef() {
+    const env = { ...process.env };
+    delete env.BASE_REF;
+    return env;
+}
+
+/**
  * A standalone repo with no `origin/next` (or anything else `BASE_REF` could default to), one
  * commit, and a committed migration that trips the gate. This is gh-1's repro: local form, no
  * args, in a repo whose only remote lacks the ref BASE_REF defaults to.
@@ -34,7 +46,7 @@ function repoWithUnresolvableBaseRefAndAViolation() {
 // non-zero failure naming the ref -- gh-1.
 test('local form fails loudly, naming the ref, when BASE_REF/origin/next does not resolve', () => {
     const dir = repoWithUnresolvableBaseRefAndAViolation();
-    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
 
     assert.notEqual(result.status, 0, 'must not silently pass when the base ref cannot be resolved');
     assert.match(result.stderr, /origin\/next/, 'must name the unresolved ref');
