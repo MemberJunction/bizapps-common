@@ -24,11 +24,13 @@ interface MetadataRecord {
 
 /**
  * Execute Agent's param definitions, from MJ's metadata/actions/.execute-agent.json. They ship with
- * MJ, not this repo, so the two this binding uses are pinned here. Neither sets LogValue = 0.
+ * MJ, not this repo, so the two this binding uses are pinned here — LogValue included, because MJ
+ * declares `Data` LogValue = false and redaction rule 3 then strips it from a durable payload unless
+ * the binding row overrides it.
  */
-const EXECUTE_AGENT_PARAMS: Record<string, string> = {
-    '617E9E56-EF54-4D5F-8561-1D5AF245295B': 'AgentName',
-    'F12EF739-720B-4FD4-8B9F-0656A756502E': 'Data',
+const EXECUTE_AGENT_PARAMS: Record<string, { Name: string; LogValue: boolean }> = {
+    '617E9E56-EF54-4D5F-8561-1D5AF245295B': { Name: 'AgentName', LogValue: true },
+    'F12EF739-720B-4FD4-8B9F-0656A756502E': { Name: 'Data', LogValue: false },
 };
 
 const PERSON = {
@@ -87,17 +89,17 @@ async function durablePayload(binding: MetadataRecord): Promise<Record<string, u
                     ActionParamID: String(p.fields.ActionParamID),
                     ValueType: p.fields.ValueType as MJEntityActionParamEntity['ValueType'],
                     Value: (p.fields.Value as string | undefined) ?? null,
-                    LogValue: null,
+                    LogValue: (p.fields.LogValue as boolean | undefined) ?? null,
                 }) as MJEntityActionParamEntity,
         );
     const defs = Object.entries(EXECUTE_AGENT_PARAMS).map(
-        ([ID, Name]) => ({ ID, Name, LogValue: true }) as MJActionParamEntity,
+        ([ID, def]) => ({ ID, Name: def.Name, LogValue: def.LogValue }) as MJActionParamEntity,
     );
     const runtime: ActionParam[] = [];
     for (const row of rows) {
-        const name = EXECUTE_AGENT_PARAMS[row.ActionParamID.toUpperCase()];
-        if (!name) throw new Error(`Binding param ${row.ActionParamID} is not a known Execute Agent param.`);
-        runtime.push({ Name: name, Value: await resolveValue(row), Type: 'Input' });
+        const def = EXECUTE_AGENT_PARAMS[row.ActionParamID.toUpperCase()];
+        if (!def) throw new Error(`Binding param ${row.ActionParamID} is not a known Execute Agent param.`);
+        runtime.push({ Name: def.Name, Value: await resolveValue(row), Type: 'Input' });
     }
     const payload: Record<string, unknown> = {};
     for (const p of RedactParams(runtime, defs, rows)) {

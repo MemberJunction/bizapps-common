@@ -95,9 +95,10 @@ function lookupName(value: string | number | boolean | null): string {
 function logActivityParamDefinitions(): MJActionParamEntity[] {
     const action = loadMetadata('actions/.common-actions.json').find((a) => a.fields.Name === 'Common.LogActivity');
     if (!action) throw new Error('Common.LogActivity is missing from metadata/actions/.common-actions.json');
-    // RedactParams reads only ID / Name / LogValue off a definition.
+    // RedactParams reads only ID / Name / LogValue off a definition. LogValue is the shipped value, not a
+    // stand-in: redaction rule 3 strips a param whose definition says LogValue = false (Description does).
     return (action.relatedEntities?.['MJ: Action Params'] ?? []).map(
-        (p) => ({ ID: p.primaryKey?.ID, Name: p.fields.Name, LogValue: true }) as MJActionParamEntity,
+        (p) => ({ ID: p.primaryKey?.ID, Name: p.fields.Name, LogValue: p.fields.LogValue !== false }) as MJActionParamEntity,
     );
 }
 
@@ -111,7 +112,7 @@ function bindingRows(binding: MetadataRecord): MJEntityActionParamEntity[] {
                     ActionParamID: String(p.fields.ActionParamID),
                     ValueType: p.fields.ValueType as MJEntityActionParamEntity['ValueType'],
                     Value: (p.fields.Value as string | undefined) ?? null,
-                    LogValue: null,
+                    LogValue: (p.fields.LogValue as boolean | undefined) ?? null,
                 }) as MJEntityActionParamEntity,
         );
 }
@@ -163,6 +164,17 @@ describe('durable Common.LogActivity bindings survive redaction (#197)', () => {
             binding.relatedEntities?.['MJ: Entity Action Invocations']?.[0]?.fields.InvocationTypeID ?? '',
         );
         const key = `${entityName}|${invocation}`;
+        it(`${key} delivers every param it binds — none is redacted out of the task payload`, () => {
+            const rows = bindingRows(binding);
+            const runtime: ActionParam[] = rows.map((row) => ({
+                Name: defs.find((d) => d.ID?.toUpperCase() === row.ActionParamID.toUpperCase())?.Name ?? row.ActionParamID,
+                Value: resolveValue(row),
+                Type: 'Input',
+            }));
+            const redacted = RedactParams(runtime, defs, rows).filter(IsRedactedParam).map((p) => `${p.Name} (${p.Reason})`);
+            expect(redacted).toEqual([]);
+        });
+
         it(`${key} parses from its redacted payload with a Regarding link`, () => {
             const rows = bindingRows(binding);
             const parsed = ParseLogActivityParams(durablePayload(rows, defs));

@@ -10,4 +10,7 @@ Durable dispatch always strips `RecordData` from the task payload, which left th
 unable to link the activity to its record (#197). The Relationships bindings now run `Inline`,
 because they route links with `LinkFields`, which needs the whole record.
 The People·AfterUpdate `Execute Agent` binding now passes the agent only the person's `ID` and
-`Status`, as a Script. Before this, durable runs delivered no data to the agent at all.
+`Status`, as a Script marked `LogValue: true` on the binding (MJ declares `Data` unloggable, which
+also strips it from a durable payload). Before this, durable runs delivered no data to the agent at
+all. The Organizations·AfterUpdate binding's `Description` (the new status) is marked `LogValue: true`
+for the same reason; durable runs used to write that activity without it.

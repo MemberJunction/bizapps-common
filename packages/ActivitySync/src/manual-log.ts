@@ -8,7 +8,10 @@
  *   `RecordID` with ValueType `'Entity Field'`, Value `'ID'`. A durable binding's params reach the
  *   task through MJ's param redaction, and its rule 1 strips every whole-record ValueType
  *   (`'Entity Object'`, `'Entity Object Data'`) from `Task.InputPayload` unconditionally — so
- *   `RecordData` simply never arrives there (#197).
+ *   `RecordData` simply never arrives there (#197). Its rule 3 also strips any param whose
+ *   definition has `LogValue = false` (`Description`, `Details`, `Links`, `LinkFields` here); a
+ *   durable binding that needs one sets `LogValue: true` on its binding row, which only a value
+ *   that is safe to persist may do.
  * - **`RecordData` is for `LinkFields` on inline bindings only.** Bind it with ValueType
  *   `'Entity Object Data'`, never `'Entity Object'`: a `BaseEntity` serializes to `{}` (its fields
  *   are getters, not enumerable own properties) — silently, with no error

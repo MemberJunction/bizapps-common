@@ -8,7 +8,8 @@
  * It WRAPS `ActivityWriter` (§3.2 — one writer, two entry points), never writes its own rows, and
  * takes only serializable params. A `Durable` binding must pass only `Static` / `Entity Field`
  * values (e.g. `RecordID` via Entity Field `ID`): redaction always strips whole-record values from
- * the durable task payload. `RecordData` (`'Entity Object Data'`, never `'Entity Object'` — a
+ * the durable task payload, and strips a `LogValue = false` param unless the binding row sets
+ * `LogValue: true` (see manual-log.ts). `RecordData` (`'Entity Object Data'`, never `'Entity Object'` — a
  * BaseEntity serializes to `{}` silently, §3.3) is only for `LinkFields` on inline bindings.
  *
  * The write runs on an independent provider instance, never the process-global one (#195).
