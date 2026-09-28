@@ -20,9 +20,6 @@
     "setup": "echo 'Please run: pnpm run mj:migrate && pnpm run mj:codegen && pnpm run build'",
     "change": "changeset",
     "version": "changeset version && node scripts/sync-app-version.mjs",
-    "commitpush": "node ci/commit_push.mjs",
-    "mergemain": "node ci/merge_main.mjs",
-    "mergemain:update-lock": "node ci/merge_main_and_update_lock.mjs",
     "test:objectmodel:pg": "node scripts/pg-objectmodel-test.mjs",
     "test:integration": "node test-harnesses/integration.mjs",
     "test:mutants": "pnpm -r --no-bail --workspace-concurrency=1 run test:mutants",
@@ -34,7 +31,9 @@
     "check:release-seed:test": "node --test scripts/check-release-seed-coverage.spec.mjs",
     "check:seed-cadence": "node scripts/check-release-seed-cadence.mjs",
     "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
-    "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs"
+    "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
+    "lint:release-pushes": "node scripts/check-release-pushes.mjs",
+    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs"
   },
   "repository": {
     "type": "git",
@@ -49,7 +48,6 @@
     "mrmime": "2.0.1",
     "rolldown": "1.0.0-beta.58",
     "rollup": "^4.43.0",
-    "simple-git": "^3.31.1",
     "tsc-alias": "^1.8.16",
     "turbo": "^2.7.3",
     "typescript": "^5.9.3",

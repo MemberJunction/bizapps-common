@@ -17,6 +17,12 @@ on:
       - 'migrations-pg/**'
       # So a change to this workflow runs it.
       - '.github/workflows/build.yml'
+      # release-tooling job below: the release-push gate reads these directories, and the seed
+      # gates' self-tests read .changeset/ (pending-changeset count feeds release-plan.mjs).
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - '.changeset/**'
   pull_request:
     branches: [next]
     paths:
@@ -25,6 +31,10 @@ on:
       - 'migrations/**'
       - 'migrations-pg/**'
       - '.github/workflows/build.yml'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - '.changeset/**'
 
 concurrency:
   group: build-${{ github.ref }}
@@ -74,3 +84,31 @@ jobs:
       # and never executes. --no-bail runs every package and still fails the job if any fails.
       - name: Unit tests
         run: pnpm -r --no-bail test
+
+  # Plain Node, stdlib-only release gates and their self-tests: no workspace install, so this job
+  # is independent of build-only and stays fast. check-release-pushes.mjs is run directly (not just
+  # its spec) so a push reintroduced into a scanned file fails this job even if nobody remembers to
+  # update the spec fixtures. check:release-seed and check:seed-cadence are deliberately NOT run
+  # here — they fail today on pre-existing metadata debt (see check-release-seed-cadence.mjs), and
+  # this job gates every PR, not just a release.
+  release-tooling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth: 0 and fetch-tags: true because check-release-seed-cadence.spec.mjs's
+      # real-git cases resolve tags and walk commit history — and so a future release-plan
+      # self-test dropped into scripts/ (picked up by the *.spec.mjs glob below) can too.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Release-tooling self-tests
+        run: node --test scripts/*.spec.mjs
+
+      - name: Release-push gate
+        run: node scripts/check-release-pushes.mjs
