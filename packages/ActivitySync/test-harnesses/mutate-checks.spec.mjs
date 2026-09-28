@@ -295,3 +295,16 @@ test('setting MUTATE_CHECKS_TEST_COMMAND prints a loud warning naming it', async
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+// Fails until mutate-checks.mjs validates `wanted` before the --list/--check-anchors early exits:
+// today an unrecognized extra arg alongside either flag never reaches the validation added for
+// pkg-1, because those flags' own `process.exit(0)` runs first.
+test('an unrecognized arg alongside --check-anchors or --list is still rejected, not ignored', () => {
+    const anchors = spawnSync(process.execPath, [HARNESS, '--check-anchors', 'BOGUS-ID-TYPO'], { encoding: 'utf8' });
+    assert.notEqual(anchors.status, 0, `expected non-zero exit; got ${anchors.status}. stdout: ${anchors.stdout}`);
+    assert.match(anchors.stderr, /BOGUS-ID-TYPO/);
+
+    const list = spawnSync(process.execPath, [HARNESS, '--list', 'BOGUS-ID-TYPO'], { encoding: 'utf8' });
+    assert.notEqual(list.status, 0, `expected non-zero exit; got ${list.status}. stdout: ${list.stdout}`);
+    assert.match(list.stderr, /BOGUS-ID-TYPO/);
+});

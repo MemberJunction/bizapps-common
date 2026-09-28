@@ -850,6 +850,19 @@ process.on('SIGINT', shutdown('SIGINT', 130));
 process.on('SIGTERM', shutdown('SIGTERM', 143));
 
 const wanted = process.argv.slice(2).filter((a) => a !== '--list' && a !== '--check-anchors');
+
+// A caller asking for a specific mutant (or passing an unsupported flag) that doesn't exist is a
+// typo, not "nothing to do" -- filtering it to an empty selection used to report a vacuous, silent
+// pass (`0 mutant(s) proved their checks can fail.`, exit 0). Name what wasn't recognized and fail.
+// Checked before --list/--check-anchors's own early exits below: those used to run first, so a
+// bogus extra arg alongside either flag (e.g. `--check-anchors BOGUS`) passed silently.
+const knownIds = new Set(PRODUCT.map((m) => m.id));
+const unknown = wanted.filter((arg) => !knownIds.has(arg));
+if (unknown.length) {
+    console.error(`Unrecognized argument(s): ${unknown.join(', ')}. Expected --list, --check-anchors, or a mutant ID from --list.`);
+    process.exit(1);
+}
+
 if (process.argv.includes('--list')) {
     for (const m of PRODUCT) console.log(`${m.id}  ${m.file}  expect: ${m.expect.join(', ')}`);
     process.exit(0);
@@ -871,16 +884,6 @@ if (process.argv.includes('--check-anchors')) {
     }
     console.log(`${PRODUCT.length} anchor(s) match exactly once.`);
     process.exit(0);
-}
-
-// A caller asking for a specific mutant (or passing an unsupported flag) that doesn't exist is a
-// typo, not "nothing to do" -- filtering it to an empty selection used to report a vacuous, silent
-// pass (`0 mutant(s) proved their checks can fail.`, exit 0). Name what wasn't recognized and fail.
-const knownIds = new Set(PRODUCT.map((m) => m.id));
-const unknown = wanted.filter((arg) => !knownIds.has(arg));
-if (unknown.length) {
-    console.error(`Unrecognized argument(s): ${unknown.join(', ')}. Expected --list, --check-anchors, or a mutant ID from --list.`);
-    process.exit(1);
 }
 
 const selected = wanted.length ? PRODUCT.filter((m) => wanted.includes(m.id)) : PRODUCT;
