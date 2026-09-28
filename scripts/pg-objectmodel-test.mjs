@@ -132,6 +132,11 @@ function describeError(e) {
 main()
   .catch((e) => { fail++; console.log(`  ✗ EXCEPTION — ${describeError(e)}`); })
   .finally(async () => {
+    // Set this before the first `await` below: pool.end() never settles when the Pool was
+    // constructed with an invalid config (e.g. a non-numeric PGPORT), so `process.exit()` at the
+    // end of this function is never reached and Node exits via its normal event-loop drain —
+    // using whatever `process.exitCode` was last set to, which must already reflect `fail` here.
+    process.exitCode = fail ? 1 : 0;
     for (const { table, id } of created) await q(`DELETE FROM ${S}."${table}" WHERE "ID"=$1`, [id]).catch(() => {});
     console.log(`\nRESULT: ${pass} passed, ${fail} failed.  (test rows cleaned up: ${created.length})`);
     await pool.end();

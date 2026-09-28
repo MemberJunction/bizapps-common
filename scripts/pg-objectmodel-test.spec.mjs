@@ -1,8 +1,8 @@
-// Regression test for scripts/pg-objectmodel-test.mjs's failure-reporting path.
+// Regression tests for scripts/pg-objectmodel-test.mjs's failure-reporting path.
 //
-// Spawns the real script against a definitely-closed local port so `pg` fails fast (no real
-// Postgres, no network beyond an immediately-refused loopback connection). PGPASSWORD is
-// required by the script's own guard, so a dummy value is supplied; no credentials leave the
+// Both tests spawn the real script against a definitely-closed local port so `pg` fails fast
+// (no real Postgres, no network beyond an immediately-refused loopback connection). PGPASSWORD
+// is required by the script's own guard, so a dummy value is supplied; no credentials leave the
 // machine because the connection never completes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,4 +53,18 @@ test('pg-objectmodel-test.mjs surfaces the inner AggregateError reasons, not a b
     `expected a non-blank reason after "EXCEPTION —", got: ${JSON.stringify(exceptionLine)}`,
   );
   assert.match(exceptionLine, /ECONNREFUSED/, `expected the real connection failure reason, got: ${exceptionLine}`);
+});
+
+// tooling-2: a Pool constructed with an invalid config (e.g. non-numeric PGPORT -> port: NaN)
+// never settles `pool.end()` in the `.finally()` block, so `process.exit(fail ? 1 : 0)` is never
+// reached and Node exits 0 by default once the event loop drains -- a false pass despite the
+// printed "1 failed". Fails without the fix because the process exits 0 here.
+test('pg-objectmodel-test.mjs exits non-zero when the run failed, even if pool.end() never settles', () => {
+  const result = spawnSync(process.execPath, [SCRIPT], {
+    encoding: 'utf8',
+    env: { ...BASE_ENV, PGPASSWORD: 'x', PGPORT: 'notanumber' },
+  });
+
+  assert.match(result.stdout, /RESULT: 0 passed, 1 failed\./, `expected a failed run:\n${result.stdout}`);
+  assert.notEqual(result.status, 0, `expected a non-zero exit code for a failed run, got ${result.status}`);
 });
