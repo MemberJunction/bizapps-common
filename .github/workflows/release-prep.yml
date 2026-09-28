@@ -16,8 +16,8 @@
 # nothing here should ever be changed into asking for one.
 #
 # The one thing GITHUB_TOKEN cannot do is author that branch and that PR usefully: GitHub does not
-# start workflow runs from events it authors, so `changes.yml` and `build.yml` would never start and
-# the release PR would reach review with no CI at all. (In bizapps-forms, where those checks are
+# start workflow runs from events it authors, so `changes.yml` and `clean-room-gate.yml` would never
+# start and the release PR would reach review with no CI at all. (In bizapps-forms, where those checks are
 # required, such a PR could never merge — MemberJunction/bizapps-forms#177's trap.) Hence a GitHub
 # App, minted from `vars.APP_CLIENT_ID` + `secrets.APP_PRIVATE_KEY`, whose only powers are
 # `contents: write` and `pull-requests: write`. Run `verify-release-app-token.yml` if you need to know
@@ -267,8 +267,9 @@ jobs:
             echo "  fails it *after* this PR has merged, so catching it here is much cheaper."
             echo "- [ ] **The consolidated \`Metadata_Sync\` seed.** Feature PRs contribute declarative JSON under"
             echo "  \`metadata/\` and no seed migration; the build engineer generates one consolidated seed per release"
-            echo "  (\`migrations/README.md\`). publish.yml's two release-readiness checks run only here and at the"
-            echo "  release, so this PR is the first place they are asked."
+            echo "  (\`migrations/README.md\`). Both release-readiness gates (\`check:release-seed\` and"
+            echo "  \`check:seed-cadence\`) passed before this PR was cut — \`--plan\` ran them and refuses unless"
+            echo "  both are green, and publish.yml runs them again. This box is for reviewing the seed's *content*."
             echo "- [ ] **The CHANGELOGs.** They are what consumers read, and they are generated from changeset"
             echo "  summaries written weeks ago by people who were describing a diff, not a release."
             echo

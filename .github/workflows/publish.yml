@@ -226,8 +226,9 @@ jobs:
       # The back-merge: carry `main` back into `next`, as a pull request.
       #
       # The release merge commit and the version bump this release just left on `main` have to reach
-      # `next` before the NEXT release is cut. Neither ruleset here requires a branch to be up to
-      # date with its base, so GitHub itself would not stop a release PR built on a stale `next` —
+      # `next` before the NEXT release is cut. The one ruleset here (on `next`) does not require a
+      # branch to be up to date with its base (no `strict`), so GitHub itself would not stop a release
+      # PR built on a stale `next` —
       # it would quietly revert main's already-published bump. scripts/release-prep.mjs refuses to
       # cut a release while `main` is not an ancestor of `next` for exactly that reason, and names
       # the `chore/backmerge-v<prev>` PR this step opens. That asymmetry is what makes forgetting it
@@ -327,9 +328,13 @@ jobs:
             exit 0
           fi
 
-          # A second remote rather than re-pointing `origin`: `origin` keeps the job's own token for
-          # the fetches and the tag push above, and the App credential stays attached to the one
-          # write that needs it.
+          # A second remote rather than re-pointing `origin`, but note what it does NOT do: it does not
+          # make the push below run as the App. actions/checkout persisted GITHUB_TOKEN as an
+          # `http.https://github.com/.extraheader`, and that header outranks the credential in this
+          # URL, so the push runs as github-actions[bot] — it succeeds only because this job has
+          # `contents: write` and `chore/backmerge-*` is covered by no ruleset. What the App
+          # credential actually buys is the `gh pr create` below: the PR is App-opened, so its CI
+          # starts. Tracked upstream as MemberJunction/bizapps-forms#229 (open).
           git remote remove app-push 2>/dev/null || true
           git remote add app-push "https://x-access-token:$APP_TOKEN@github.com/$GITHUB_REPOSITORY"
 
@@ -362,6 +367,10 @@ jobs:
             echo "**The release itself is finished.** The packages are on npm and \`v$VERSION\` is tagged, and the"
             echo "publish run that opened this is green. Do not re-run the publish; resolve any conflicts here and"
             echo "merge. Until this lands, \`release-prep.yml\` will refuse to cut the next release and say why."
+            echo
+            echo "**Merge with a merge commit — never squash or rebase.** Either leaves \`main\`'s tip outside"
+            echo "\`next\`'s history, so \`main\` is still not an ancestor of \`next\` and Prepare a release keeps"
+            echo "refusing. If that already happened, open a fresh \`main\` -> \`next\` PR and merge it with a merge commit."
           } > "$RUNNER_TEMP/backmerge-body.md"
 
           PR_URL=$(gh pr create \
@@ -407,7 +416,7 @@ jobs:
               echo "**v$VERSION published successfully, but the back-merge PR could not be opened.** The packages are"
               echo "on npm and the tag is pushed. Read the failed step above — a rejected push means the App"
               echo "credential needs attention (\`verify-release-app-token.yml\` diagnoses it read-only), anything else"
-              echo "is in its error. Until \`main\` reaches \`next\`, the following release PR cannot merge."
+              echo "is in its error. Until \`main\` reaches \`next\`, Prepare a release will refuse to cut the next release."
               echo ""
               echo "By hand: branch \`${BRANCH:-chore/backmerge-v$VERSION}\` from \`main\`'s tip and open a PR into"
               echo "\`next\` — see [\`docs/release.md\`](docs/release.md)."
@@ -432,5 +441,5 @@ jobs:
         env:
           VERSION: ${{ steps.release_check.outputs.VERSION }}
         run: |
-          echo "::error::v$VERSION is published and tagged, but the main -> next back-merge PR could not be opened. See the failed step above; verify-release-app-token.yml diagnoses a credential problem read-only. Until main reaches next, the following release PR cannot merge."
+          echo "::error::v$VERSION is published and tagged, but the main -> next back-merge PR could not be opened. See the failed step above; verify-release-app-token.yml diagnoses a credential problem read-only. Until main reaches next, Prepare a release will refuse to cut the next release."
           exit 1

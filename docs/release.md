@@ -130,13 +130,32 @@ could not be opened. In that case no one is tracking the outstanding merge, and 
 `chore/backmerge-vX.Y.Z → next`, opened for you in step 3. It carries the release merge commit and
 the version bump back to `next`. `build.yml` and `changes.yml` run on it.
 
+Merge it with a **merge commit** — never squash or rebase. Either rewrites `main`'s commits into new
+ones, so `main`'s tip is still not an ancestor of `next` and **Prepare a release** keeps refusing
+after you believe you fixed it. If that already happened, open a fresh `main → next` PR and merge it
+with a merge commit.
+
 This is not bookkeeping. Skipping it costs **this** release nothing and quietly breaks the **next**
-one. Neither ruleset here requires a branch to be up to date with its base, so GitHub would merge a
-release PR cut from a `next` that never received the last bump, and that PR would revert the
+one. The one ruleset here (on `next`) does not require a branch to be up to date with its base (no
+`strict`), so GitHub would merge a release PR cut from a `next` that never received the last bump, and that PR would revert the
 already-published version on `main`. The guard is in step 1 instead: `release-prep.mjs` refuses to
 cut a release while `main` is not an ancestor of `next`, and names this pull request when it does.
 
 ---
+
+## Keeping `mj-app.json` in sync between releases
+
+`mj-app.json` is checked on **every** PR, not only at release: `build.yml`'s `release-tooling` job
+runs `scripts/sync-app-version.spec.mjs`, which fails if the manifest's `mjVersionRange` disagrees
+with the `@memberjunction/core` pin in `packages/Entities/package.json`. So a PR that changes that pin
+must run
+
+```bash
+node scripts/sync-app-version.mjs
+```
+
+and commit the updated `mj-app.json`. Do **not** run `pnpm run version` for this: it also consumes
+every pending changeset and bumps every package, which is release work (step 1), not PR work.
 
 ## Why it looks like this
 
@@ -208,5 +227,5 @@ stopped before `Publish to npm`, which is what every gate sitting ahead of it is
 | Some packages genuinely did not publish (the step's output says so, or they are still absent well after the run) | `changeset publish` works concurrently and expects a retry. Re-run the workflow. `release-plan.mjs` asks *publish* and *tag* separately, so the re-run finishes the job instead of reporting a green no-op. |
 | A push in the release path is refused with a 403 naming `github-actions[bot]` | The push used the ambient token, not the App, whatever its remote URL says: `actions/checkout`'s persisted `extraheader` outranks URL credentials. See MemberJunction/bizapps-forms#226 and MemberJunction/bizapps-forms#229. |
 | The back-merge branch exists at an unexpected SHA | The workflow refuses to force-push over it, because someone may have resolved conflicts there. Delete the branch or open the PR by hand. |
-| **Prepare a release** refuses because `main` is not contained in `next` | The previous release's `chore/backmerge-v<prev>` PR is unmerged, or was never opened. Merge it (or branch it from `main`'s tip and open it by hand), then re-dispatch. |
+| **Prepare a release** refuses because `main` is not contained in `next` | The previous release's `chore/backmerge-v<prev>` PR is unmerged, or was never opened. Merge it with a merge commit (or branch it from `main`'s tip and open it by hand), then re-dispatch. If it was squash- or rebase-merged, open a fresh `main → next` PR and merge it with a merge commit. |
 | `release:plan` says the seed is owed | Step 0. [`migrations/README.md`](../migrations/README.md). |

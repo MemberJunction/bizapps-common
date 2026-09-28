@@ -84,6 +84,7 @@ test('each failing gate blocks by name, and says what a failure of it means', ()
         assert.equal(assessment.ready, false, `${gate} failing must block`);
         assert.equal(assessment.blockers.length, 1);
         assert.match(assessment.blockers[0], new RegExp(gate.replace(':', ':')));
+        assert.match(assessment.blockers[0], new RegExp(`pnpm run ${gate}`), `${gate}'s blocker must name the pnpm command`);
         assert.ok(assessment.blockers[0].length > gate.length + 40, `${gate}'s blocker must explain itself`);
     }
 });
@@ -125,6 +126,15 @@ test('a main that next does not contain blocks, and explains whose fault it is',
     assert.match(assessment.blockers[0], /back-merge/);
     assert.match(assessment.blockers[0], /PREVIOUS release/);
     assert.match(assessment.blockers[0], /chore\/backmerge-v/);
+});
+
+// A squash- or rebase-merged back-merge PR leaves main's tip outside next's history, so this blocker
+// fires again after the human believes they fixed it. It has to say how to get out.
+test('the stale-main blocker says how to recover from a squash- or rebase-merged back-merge', () => {
+    const assessment = assessRelease(readyFacts({ mainIsAncestorOfNext: false }));
+    assert.match(assessment.blockers[0], /squash- or rebase-merged/);
+    assert.match(assessment.blockers[0], /fresh main -> next PR/);
+    assert.match(assessment.blockers[0], /merge commit/);
 });
 
 // ── Facts that could not be gathered block; they never pass ─────────────────────────────────────

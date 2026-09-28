@@ -97,11 +97,14 @@ const STALE_MAIN_BLOCKER =
     'main is not contained in next — main carries commit(s) next does not have. Left alone, the ' +
     "release PR (next -> main) would be built on next's stale tip and could revert whatever main " +
     'already has, including a previous release\'s version bump — nothing in GitHub itself will stop ' +
-    'that merge (neither ruleset here requires the base to be up to date). This is almost always the ' +
+    'that merge (the one ruleset here, on next, does not require a branch to be up to date — no ' +
+    '`strict`). This is almost always the ' +
     "PREVIOUS release's back-merge PR (`chore/backmerge-v<prev>` -> next, opened by publish.yml once " +
     "that release published) still sitting unmerged — go merge it. If it was never opened (a red " +
     "publish run only fails to open it, it never merges without you), branch " +
-    "`chore/backmerge-v<prev>` from main's tip and open that PR into next by hand. Then re-run.";
+    "`chore/backmerge-v<prev>` from main's tip and open that PR into next by hand. If it was " +
+    "squash- or rebase-merged, main's tip is still outside next's history: open a fresh main -> next " +
+    'PR and merge it with a merge commit. Then re-run.';
 
 /**
  * The strongest bump the changesets ask for, or `null` when none of them asks for one.
@@ -246,7 +249,7 @@ export function assessRelease(facts) {
 
     for (const gate of GATE_SCRIPTS) {
         if (gateResults[gate] !== 0) {
-            blockers.push(`\`npm run ${gate}\` failed (exit ${gateResults[gate]}): ${GATE_MEANINGS[gate]}`);
+            blockers.push(`\`pnpm run ${gate}\` failed (exit ${gateResults[gate]}): ${GATE_MEANINGS[gate]}`);
         }
     }
 
