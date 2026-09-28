@@ -223,7 +223,10 @@ function runTestCommand() {
             activeChild = null;
             reject(err);
         });
-        child.on('exit', (code) => {
+        // 'close', not 'exit': stdio can still be open when 'exit' fires (Node docs), so 'exit'
+        // can race the last 'data' events and resolve with a truncated `output`. 'close' fires
+        // once the streams are actually done.
+        child.on('close', (code) => {
             activeChild = null;
             resolve({ threw: code !== 0, output });
         });
@@ -322,10 +325,11 @@ for (const m of selected) {
     try {
         result = await runTestCommand();
     } catch (err) {
-        // A genuine bug in this script (e.g. the shell itself failed to start) rather than a
-        // felled or surviving mutant -- surfaced the same way a failing suite is, so it is still
-        // reported instead of silently stopping the loop.
-        result = { threw: true, output: `${err.message ?? err}` };
+        // The child never started at all (bad cwd, resource limits, ...) rather than a felled or
+        // surviving mutant -- surfaced the same way a failing suite is (via `output`, printed
+        // below whenever `expect` isn't found in it), with the command named since `err.message`
+        // alone usually doesn't mention what we tried to run.
+        result = { threw: true, output: `could not run "${TEST_COMMAND}": ${err.message ?? err}` };
     } finally {
         activeRestore();
         activeRestore = null;
@@ -347,6 +351,10 @@ for (const m of selected) {
     const missing = m.expect.filter((name) => !result.output.includes(name));
     if (missing.length) {
         console.error(`FAIL ${m.id}: failed but did not name ${missing.join(', ')}`);
+        // Previously discarded: `result.output` is compared against `expect` above but was never
+        // itself printed, so a broken command (or a suite failing for an unrelated reason) read
+        // as an unhelpful "did not name X" with no clue why.
+        if (result.output.trim()) console.error(result.output.trim());
         failed++;
         continue;
     }

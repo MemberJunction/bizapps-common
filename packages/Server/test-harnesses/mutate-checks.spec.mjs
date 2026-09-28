@@ -238,3 +238,33 @@ test('SIGTERM kills the whole process group (no orphaned grandchild) and removes
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+// Fails until mutate-checks.mjs prints the test command's actual captured output whenever it
+// fails to name the expected string, instead of discarding it -- today `output` (or, for a genuine
+// spawn rejection, `err.message`) is only ever compared against `m.expect` via `.includes()` and
+// is never itself printed, so a broken command reads as an unhelpful, generic
+// "failed but did not name X" with no indication anything failed to even run. A nonexistent binary
+// is the deterministic, env-var-safe way to reproduce "the real suite never ran": the shell itself
+// reports "No such file or directory" on its own stderr, which this harness already captures into
+// `output` but currently throws away.
+test('a command that cannot start is reported, not folded into a silent miss', async () => {
+    const root = makeTempPackageCopy();
+    try {
+        const target = path.join(root, 'src/custom/live-mailbox-policy.ts');
+        const original = readFileSync(target, 'utf8');
+        const badCommand = path.join(root, 'definitely-does-not-exist-binary');
+
+        const result = spawnSync(process.execPath, [path.join(root, 'test-harnesses/mutate-checks.mjs'), 'M-LMP1'], {
+            encoding: 'utf8',
+            env: { ...process.env, MUTATE_CHECKS_TEST_COMMAND: badCommand },
+        });
+
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /did not name/);
+        assert.match(result.stderr, /no such file or directory/i, 'the shell\'s own error text must be surfaced, not discarded');
+
+        assert.equal(readFileSync(target, 'utf8'), original, 'the file must still be restored');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
