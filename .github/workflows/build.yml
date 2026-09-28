@@ -14,8 +14,10 @@ on:
   # plainly: `on: paths:` never is. scripts/build-triggers.spec.mjs pins all of this.
   push:
     branches: [next]
+  # PRs into `main` as well: the release PR and a hotfix PR otherwise merged with no build and no
+  # release-tooling run, and a broken build first showed up in publish.yml, after the merge.
   pull_request:
-    branches: [next]
+    branches: [next, main]
 
 concurrency:
   group: build-${{ github.ref }}

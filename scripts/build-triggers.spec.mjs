@@ -117,3 +117,9 @@ test('documentation-only changes still skip the build (and report skipped, which
         assert.equal(pathsTouched({ changed: [doc], patterns: scopeList() }), false, `${doc} should not force a build`);
     }
 });
+
+// A release PR and a hotfix PR target `main`. Without `main` here they ran no build and no
+// release-tooling before merging, so a broken build first showed up in publish.yml, after the merge.
+test('pull requests into main run build.yml too', () => {
+    assert.match(block(2, 'pull_request'), /^ {4}branches: \[next, main\]$/m);
+});

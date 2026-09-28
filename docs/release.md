@@ -79,9 +79,8 @@ if the version is wrong the fix is a changeset, not an edit.
 
 ## 2. Review and merge the release PR
 
-`changes.yml` and `clean-room-gate.yml` run on it, because the App-authored push started them.
-(`build.yml` triggers only on PRs into `next`, so it has already run on every change this release
-carries.) **No check is required on `main`:** its ruleset list is empty, so GitHub will let you merge
+`changes.yml`, `clean-room-gate.yml` and `build.yml` run on it, because the App opened it (a
+`GITHUB_TOKEN`-opened PR would start none of them). **No check is required on `main`:** its ruleset list is empty, so GitHub will let you merge
 before these finish, or while they are red. Wait for them and read them. This is the only point where
 a human looks at the computed version and the CHANGELOGs before any of it is permanent.
 
@@ -159,12 +158,11 @@ cut a release while `main` is not an ancestor of `next`, and names this pull req
 
 ## Keeping `mj-app.json` in sync between releases
 
-`mj-app.json` is checked on every PR **into `next`**, not only at release: `build.yml`'s
+`mj-app.json` is checked on every PR, into `next` or `main`, not only at release: `build.yml`'s
 `release-tooling` job runs on every event (it has no path filter and costs seconds) and runs
-`scripts/sync-app-version.spec.mjs`, which fails if the manifest's
-`mjVersionRange` disagrees with the `@memberjunction/core` pin in `packages/Entities/package.json`.
-`build.yml` does not run on PRs into `main` (the release PR, a hotfix), so there the only check is
-`publish.yml`'s `sync-app-version.mjs --check`, after the merge and before anything is published. So a PR that changes that pin
+`scripts/sync-app-version.spec.mjs`, which fails if the manifest's `mjVersionRange` disagrees with the
+`@memberjunction/core` pin in `packages/Entities/package.json`. `publish.yml` checks it once more,
+after the merge and before anything is published. So a PR that changes that pin
 must run
 
 ```bash
