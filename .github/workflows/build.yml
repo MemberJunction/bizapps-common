@@ -17,13 +17,18 @@ on:
       - 'migrations-pg/**'
       # So a change to this workflow runs it.
       - '.github/workflows/build.yml'
-      # release-tooling job below: the release-push gate reads these directories, and the seed
-      # gates' self-tests read .changeset/ (pending-changeset count feeds release-plan.mjs).
+      # release-tooling job below: every input it CHECKS, not only where its scripts live. The
+      # release-push gate scans ci/ as a tripwire for the deleted push scripts, and the
+      # sync-app-version spec checks mj-app.json; a PR touching only either would otherwise run
+      # nothing. The seed gates' self-tests read .changeset/ (pending-changeset count feeds
+      # release-plan.mjs). scripts/release-tooling-triggers.spec.mjs keeps this list complete.
       - 'scripts/**'
       - '.github/workflows/**'
       - '.github/scripts/**'
       - 'test-harnesses/**'
       - '.changeset/**'
+      - 'ci/**'
+      - 'mj-app.json'
   pull_request:
     branches: [next]
     paths:
@@ -37,6 +42,8 @@ on:
       - '.github/scripts/**'
       - 'test-harnesses/**'
       - '.changeset/**'
+      - 'ci/**'
+      - 'mj-app.json'
 
 concurrency:
   group: build-${{ github.ref }}

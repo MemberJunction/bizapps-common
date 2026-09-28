@@ -150,9 +150,12 @@ cut a release while `main` is not an ancestor of `next`, and names this pull req
 
 ## Keeping `mj-app.json` in sync between releases
 
-`mj-app.json` is checked on **every** PR, not only at release: `build.yml`'s `release-tooling` job
-runs `scripts/sync-app-version.spec.mjs`, which fails if the manifest's `mjVersionRange` disagrees
-with the `@memberjunction/core` pin in `packages/Entities/package.json`. So a PR that changes that pin
+`mj-app.json` is checked on every PR **into `next`** that could move it out of sync, not only at
+release: `build.yml` runs on any such PR touching `mj-app.json` or `packages/**`, and its
+`release-tooling` job runs `scripts/sync-app-version.spec.mjs`, which fails if the manifest's
+`mjVersionRange` disagrees with the `@memberjunction/core` pin in `packages/Entities/package.json`.
+`build.yml` does not run on PRs into `main` (the release PR, a hotfix), so there the only check is
+`publish.yml`'s `sync-app-version.mjs --check`, after the merge and before anything is published. So a PR that changes that pin
 must run
 
 ```bash
