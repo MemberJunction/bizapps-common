@@ -1,5 +1,25 @@
 # Change Log - mj_generatedentities
 
+## 5.47.0
+
+### Minor Changes
+
+- 0d8364d: `Metadata_Sync` for 5.47: the metadata added or edited since the 5.38 seed now reaches hosts.
+
+  `V202609282100` creates the records no migration named until now (job functions, seniority levels,
+  the sentiment tags, the activity-history query, user views, prompts, record processes, the
+  `DefaultSellingCompanyID` setting, and six action rows) and carries the edits to records that
+  already ship: the search-API curation, the Address geo pin, the Image extended types, and the
+  LogActivity binding changes from #195 and #197.
+
+  It also applies the Activity Sync Run Details permissions: the 5.38 seed's update matched no row
+  on any host, and the Integration row was never seeded. The UI role loses read on that entity and Integration drops to create only, as `metadata/`
+  declares. The six sentiment tags gain the `DisplayName` MJ core requires.
+
+- b8584a5: Add `ExternalFieldLimitEngine`: reads the field lengths of external systems (Business Central, BILL and other connectors) from `MJ: Integration Object Fields`, returns the smallest limit across the fields a value feeds, and builds a rejection message naming the field and the limit. Apps use it to reject over-long values on save and before sending, instead of failing later at sync. A target with no recorded length is an error, not a pass.
+
+  Configure it with a user who can read `MJ: Integration Objects` and `MJ: Integration Object Fields`; on a server, use the system user. If a user without that access configures it, the next `Config` reloads instead of keeping the empty result, and until a reload succeeds each check says it could not run instead of throwing. Installed metadata changes reach a running server only when `LocalCacheManager` is initialized; otherwise they apply after a restart or `Config(true)`.
+
 ## 5.46.3
 
 ## 5.46.2

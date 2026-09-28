@@ -42,7 +42,8 @@ await import('../packages/IntegrationTests/dist/index.js');
 const provider = Metadata.Provider;
 const user = provider.CurrentUser;
 if (!user) {
-    throw new Error('GraphQL provider has no CurrentUser — check MJ_API_KEY and that MJAPI is running.');
+    console.error('GraphQL provider has no CurrentUser — check MJ_API_KEY and that MJAPI is running.');
+    process.exit(1);
 }
 
 const ctx = {

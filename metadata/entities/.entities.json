@@ -174,8 +174,8 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Title&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-17T23:07:00.859Z",
-            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+            "lastModified": "2026-09-28T20:39:11.450Z",
+            "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
           }
         },
         {
@@ -210,8 +210,8 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-09-17T23:07:00.418Z",
-      "checksum": "1c480d9b20aad85919da1336c65cca326233eb1c688671a950d803bcb59092e0"
+      "lastModified": "2026-09-28T20:39:11.120Z",
+      "checksum": "54cc7753bb1f2d05900818617895e435fa2a0c2c9f25c7b3b4ba9192d1a15811"
     }
   },
   {
@@ -375,8 +375,8 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Website&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-17T23:07:00.740Z",
-            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
+            "lastModified": "2026-09-28T20:39:11.605Z",
+            "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
           }
         },
         {
@@ -411,8 +411,8 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations"
     },
     "sync": {
-      "lastModified": "2026-09-17T23:07:00.419Z",
-      "checksum": "d2a719f7f7720f0859fb4d7864b184fc4be1458faaf9727615ae16d55fe98a4b"
+      "lastModified": "2026-09-28T20:39:11.139Z",
+      "checksum": "f850126e5b4950e22fa33b4d1a961eb1f42e6284d45c5be5dbc0291c234262d2"
     }
   },
   {

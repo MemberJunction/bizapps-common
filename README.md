@@ -313,6 +313,8 @@ npm run mj:codegen                    # Generate TypeScript/GraphQL/Angular code
 npm run build                         # Build all packages (Turborepo)
 ```
 
+The seed push above loads `metadata/` into your dev database only; what ships to installs is the per-release `Metadata_Sync` migration. See [`migrations/README.md`](migrations/README.md).
+
 ### Run Development Servers
 
 ```bash
