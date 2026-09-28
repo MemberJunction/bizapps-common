@@ -50,7 +50,7 @@
  * Ported from bizapps-forms (MemberJunction/bizapps-forms#105 and MemberJunction/bizapps-forms#111).
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -218,7 +218,9 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
     return { problems, tag: state.tag, changed };
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// Compared through realpath, not as a `file://` string: that string is never equal under a path with
+// spaces (percent-encoded in the URL) or a symlink, and the gate would then silently exit 0.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
     const cadence = findUnconsolidatedSeedDeltas();
     const drift = findUnshippedMetadataDrift();
     const problems = [...cadence.problems, ...drift.problems];

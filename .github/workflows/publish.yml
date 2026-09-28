@@ -12,7 +12,9 @@ on:
   # No `targetVersion` input any more. It existed to override a version this workflow computed
   # itself with `changeset version`; the bump now arrives already committed on the release pull
   # request, so the version is read from packages/Entities/package.json and there is nothing here
-  # to override. A dispatch re-runs the publish for whatever version the ref carries.
+  # to override. A dispatch re-runs the publish for whatever version the ref carries — and only from
+  # `main`: the publish and tag steps are gated on `github.ref`, so dispatching any other ref builds
+  # and checks but publishes nothing.
   workflow_dispatch:
 
 permissions:
@@ -197,8 +199,9 @@ jobs:
       - name: Build all packages
         run: pnpm run build:packages
 
+      # Only from main: a dispatch against an unmerged release/* branch would publish unreviewed code.
       - name: Publish to npm
-        if: steps.release_check.outputs.publish == 'true'
+        if: github.ref == 'refs/heads/main' && steps.release_check.outputs.publish == 'true'
         run: pnpm exec changeset publish
 
       # The one remote write this workflow still makes through `origin`. Tags are outside every
@@ -213,8 +216,9 @@ jobs:
       # between them: if every package published and only the tag push failed, `publish` is false on
       # the retry while the tag is still missing — and check-release-seed-cadence.mjs reads the
       # newest `v*` tag to decide what has shipped, so the missing tag would fail the NEXT release.
+      # Only from main, for the same reason as the publish: a tag on an unreviewed ref is a false release.
       - name: Tag the release
-        if: steps.release_check.outputs.tag == 'true'
+        if: github.ref == 'refs/heads/main' && steps.release_check.outputs.tag == 'true'
         env:
           VERSION: ${{ steps.release_check.outputs.VERSION }}
         run: |

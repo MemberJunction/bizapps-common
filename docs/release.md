@@ -122,6 +122,11 @@ Four are worth knowing by name:
 - **Release readiness**: the two seed checks. They run here and in step 1, never on a feature PR,
   because no feature PR can answer a question about a seed generated after it merges.
 
+**A manual dispatch publishes only from `main`.** `workflow_dispatch` re-runs the publish, but the
+`Publish to npm` and `Tag the release` steps are gated on `github.ref == 'refs/heads/main'`, so
+dispatching it against a `release/*` branch (or any other ref) builds and checks and publishes
+nothing. That branch has not been reviewed yet.
+
 **A green run means the automation did its job.** It is red only when the back-merge pull request
 could not be opened. In that case no one is tracking the outstanding merge, and a human is needed.
 
