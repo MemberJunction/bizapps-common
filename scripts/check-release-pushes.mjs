@@ -146,6 +146,40 @@ const METHOD_PUSH = new RegExp(
     String.raw`\.push\(\s*\[?\s*['"\`][^'"\`]+['"\`]\s*,\s*['"\`]\+?(?:\S*:)?` + PROTECTED_TARGET + String.raw`['"\`]`,
 );
 
+/**
+ * A `git/refs/heads/<protected>` (or bare `refs/heads/<protected>`) REST ref target — the resource
+ * `gh api` mutates when it updates a branch directly.
+ *
+ * Requires the `refs/heads/` segment, unlike PROTECTED_TARGET's use inside a push refspec above: a
+ * bare branch name is unambiguous there because everything up to that point can only be a push
+ * destination. Here the ref path is the ONLY signal that a `gh api` call touches a branch ref at
+ * all, so a bare `main` — e.g. `-f base=main` on an unrelated pulls call — must not match.
+ */
+const GH_API_REF_TARGET = new RegExp(String.raw`(?:git\/)?refs\/heads\/${PROTECTED_TARGET}`, 'i');
+
+/**
+ * `gh api` calls that update a protected branch's ref directly — REST's equivalent of `git push`,
+ * and invisible to SHELL_PUSH/METHOD_PUSH above because it is not a `git push` (or simple-git call)
+ * at all. Required status checks are evaluated against the SHA `git push` is introducing (this
+ * file's header); a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` mutates the same ref through
+ * the REST API, which carries no such constraint, so GH013 never triggers on it.
+ *
+ * `gh` and `api` are matched as independent word-bounded tokens rather than `gh\s+api`, because the
+ * likeliest reintroduction — `execFileSync('gh', ['api', …])`, mirroring the Node-script spelling
+ * MemberJunction/bizapps-forms#177's own pushes used — puts them in separate array elements, not
+ * adjacent shell words. Neither flag is anchored to `-X PATCH`/`-X POST`: `gh api` defaults to POST
+ * once any `-f`/`-F`/`--input` field is present, so a script relying on that default carries no `-X`
+ * at all, and a GET on the same path is over-matched too. That is the trade-off PROTECTED_TARGET's
+ * own comment already states for this file: a needless match costs a human one line to read, and
+ * under-matching is the entire bug this gate exists to prevent.
+ */
+function findGhApiRefUpdate(line) {
+    if (!/\bgh\b/i.test(line) || !/\bapi\b/i.test(line)) {
+        return null;
+    }
+    return GH_API_REF_TARGET.exec(line);
+}
+
 /** True when the line is commented out — history and prose, not an instruction. */
 function isCommentary(line) {
     return /^\s*(?:#|\/\/|\*|<!--)/.test(line);
@@ -163,7 +197,7 @@ export function findProtectedPushes(text) {
         if (isCommentary(line)) {
             return;
         }
-        const match = SHELL_PUSH.exec(line) ?? METHOD_PUSH.exec(line);
+        const match = SHELL_PUSH.exec(line) ?? METHOD_PUSH.exec(line) ?? findGhApiRefUpdate(line);
         if (match) {
             found.push({ line: index + 1, ref: match[1], snippet: line.trim() });
         }

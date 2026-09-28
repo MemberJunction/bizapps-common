@@ -103,6 +103,34 @@ test('a push spelled with a capital G still invokes git on a case-insensitive vo
     assert.equal(findProtectedPushes('Git push origin HEAD:main\n').length, 1);
 });
 
+// ── `gh api` REST ref updates: the same branch mutation, without ever calling `git push` ───────────
+//
+// Required status checks are evaluated against `git push`'s introduced SHA (this file's header) —
+// but a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` updates the SAME ref through the REST
+// API, never through `git push`, so GH013 never triggers on it. Invisible to SHELL_PUSH/METHOD_PUSH,
+// which only recognise `git push` and simple-git's `.push(...)`.
+
+test('a `gh api` PATCH to git/refs/heads/main, shelled via execFileSync, is a violation', () => {
+    // The exact shape confirmed live in the smoke hunt: a fixture script that updates the ref
+    // directly, bypassing the push gate entirely (`runCheck` returned 0 violations before this fix).
+    const line = "execFileSync('gh', ['api', '-X', 'PATCH', 'repos/OWNER/REPO/git/refs/heads/main', '-f', `sha=${sha}`]);\n";
+    assert.equal(findProtectedPushes(line).length, 1);
+});
+
+test('a `gh api` POST to refs/heads/next (no `git/` prefix) is a violation', () => {
+    assert.equal(findProtectedPushes("gh api -X POST repos/OWNER/REPO/refs/heads/next -f sha=$SHA\n").length, 1);
+});
+
+test('a `gh api` call that merely mentions an unrelated field named main is not a violation', () => {
+    // `gh` and `api` alone are not enough — the ref target itself must be present, or this becomes a
+    // keyword match on any gh api call in the release path.
+    assert.deepEqual(findProtectedPushes('gh api repos/OWNER/REPO/pulls -f base=main\n'), []);
+});
+
+test('a `gh api` call naming an unprotected branch ref is not a violation', () => {
+    assert.deepEqual(findProtectedPushes('gh api -X PATCH repos/OWNER/REPO/git/refs/heads/chore/thing -f sha=$SHA\n'), []);
+});
+
 // ── Allow-cases: what stops "deny everything" from passing as a fix ─────────────────────────────
 
 test('pushing a tag is allowed — both rulesets are target: branch', () => {
