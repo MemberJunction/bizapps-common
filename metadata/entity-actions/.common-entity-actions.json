@@ -65,7 +65,7 @@
             "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
             "ValueType": "Static",
             "Value": "MJ_BizApps_Common: People",
-            "Comments": "EntityName — with RecordData.ID it becomes the Regarding link that seeds the person's timeline."
+            "Comments": "EntityName — with RecordID it becomes the Regarding link that seeds the person's timeline."
           },
           "primaryKey": {
             "ID": "E7FBFC32-C480-4C5B-A0B3-526DB83B49DA"
@@ -80,14 +80,29 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data' (entity.GetAll()), NEVER 'Entity Object', which serializes to {} silently (plan §3.3)."
+            "Comments": "RecordData — removed (#197). A durable binding's params reach the task through MJ's redaction, which always strips whole-record ValueTypes, so the action never saw it. RecordID (Entity Field 'ID') replaces it."
           },
           "primaryKey": {
             "ID": "991FB3F3-8101-49BE-B27A-16AF3F77BF10"
           },
+          "deleteRecord": {
+            "delete": true
+          },
           "sync": {
             "lastModified": "2026-09-02T04:04:10.429Z",
             "checksum": "b1b731f9817498b8962c1b78e5117de59f99a8b6dc73742a0cd240d8c8380795"
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "522170BB-9FA4-447D-9458-9C134B0985FA",
+            "ValueType": "Entity Field",
+            "Value": "ID",
+            "Comments": "RecordID — a scalar, so it survives the redaction a durable binding's params go through (whole-record 'Entity Object Data' never does, #197). Feeds the Regarding link and the EventKey idempotency key."
+          },
+          "primaryKey": {
+            "ID": "80A66431-4438-49F3-9627-F45CC3BFB7DE"
           }
         },
         {
@@ -197,8 +212,10 @@
           "fields": {
             "EntityActionID": "@parent:ID",
             "ActionParamID": "F12EF739-720B-4FD4-8B9F-0656A756502E",
-            "ValueType": "Entity Object Data",
-            "Comments": "Data — the person's fields reach the agent as a plain object. 'Entity Object Data', NEVER 'Entity Object' (plan §3.3)."
+            "ValueType": "Script",
+            "Value": "return { ID: EntityActionContext.entityObject.ID, Status: EntityActionContext.entityObject.Status };",
+            "LogValue": true,
+            "Comments": "Data — only the fields the Person Lifecycle Changed agent reads (data.ID, data.Status). A Script, not 'Entity Object Data': this binding is Durable, and redaction always strips whole-record values from the task payload, so the agent would get no data (#197). LogValue true because MJ declares Execute Agent's Data LogValue = false, which would strip it too; an id and a status are safe to persist. Add a field here only if it is equally safe to persist."
           },
           "primaryKey": {
             "ID": "D9FC0271-AA50-4B0C-A0D4-C29A0B4E1922"
@@ -301,7 +318,8 @@
             "ActionParamID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4",
             "ValueType": "Entity Field",
             "Value": "Status",
-            "Comments": "Description ← the organization's new Status value (Active / Inactive / Dissolved)."
+            "LogValue": true,
+            "Comments": "Description ← the organization's new Status value (Active / Inactive / Dissolved). LogValue true because this binding is Durable and Common.LogActivity declares Description LogValue = false (it can carry free text); redaction would otherwise strip it from the task payload and the activity would be written without its status. A status value is safe to persist."
           },
           "primaryKey": {
             "ID": "F4F23C56-C3E7-4244-BE84-26BED2006B71"
@@ -332,14 +350,29 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3). No EventKey on purpose: a status can change repeatedly and every transition belongs on the timeline."
+            "Comments": "RecordData — removed (#197). A durable binding's params reach the task through MJ's redaction, which always strips whole-record ValueTypes, so the action never saw it. RecordID (Entity Field 'ID') replaces it."
           },
           "primaryKey": {
             "ID": "7376D962-3CC7-4F57-B3D5-17023621A405"
           },
+          "deleteRecord": {
+            "delete": true
+          },
           "sync": {
             "lastModified": "2026-09-02T04:04:10.714Z",
             "checksum": "c17b1786f0cb025dfd66bb214432668f50a4f0ce7f911bc28b751d8046c38389"
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "522170BB-9FA4-447D-9458-9C134B0985FA",
+            "ValueType": "Entity Field",
+            "Value": "ID",
+            "Comments": "RecordID — a scalar, so it survives the redaction a durable binding's params go through (whole-record 'Entity Object Data' never does, #197). Feeds the Regarding link. No EventKey on purpose: a status can change repeatedly and every transition belongs on the timeline."
+          },
+          "primaryKey": {
+            "ID": "F9DCDCCD-3ACD-4D05-971D-C9620ACA1725"
           }
         },
         {
@@ -373,7 +406,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 10,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -522,7 +555,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 20,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"

@@ -30,12 +30,22 @@ import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
 import { EscapeText, RequireUUID } from './sql.js';
 import type { ActivityDirection, ActivityIdentityKind, ActivityLinkRole, NormalizedItem } from './types.js';
 
-function isDatabaseProvider(provider: IMetadataProvider): provider is DatabaseProviderBase {
+/**
+ * True when the provider can open a transaction — i.e. it is a server-side database provider.
+ * Duck-typed rather than `instanceof`: two installed copies of `@memberjunction/core` would make a
+ * real provider fail an `instanceof DatabaseProviderBase` check.
+ */
+export function IsDatabaseProvider(provider: IMetadataProvider): provider is DatabaseProviderBase {
     return (
         'BeginEntityTransaction' in provider &&
         typeof (provider as DatabaseProviderBase).BeginEntityTransaction === 'function'
     );
 }
+
+const NOT_A_DATABASE_PROVIDER = 'This provider cannot open a transaction; ActivityWriter is server-only.';
+
+/** A single-row lookup: found / not found, or the read itself failed. */
+type LookupResult = { Success: true; ID: string | null } | { Success: false; Error: string };
 
 export type ActivitySourceValue = 'Manual' | 'System' | 'Integration';
 
@@ -187,24 +197,19 @@ export class ActivityWriter {
     ): Promise<WriteActivityResult> {
         const result = this.emptyResult();
 
-        const typeID = await this.resolveTypeByCode(input.Item.TypeCode, contextUser);
-        if (!typeID) {
-            result.Issues.push(`No ActivityType with Code '${input.Item.TypeCode}' is seeded.`);
+        if (!IsDatabaseProvider(provider)) {
+            result.Issues.push(NOT_A_DATABASE_PROVIDER);
             return result;
         }
 
-        const existing = await this.findByExternalKey(input.SourceSystem, input.Item.ExternalID, contextUser);
-        if (existing) {
-            result.Success = true;
-            result.ActivityID = existing;
-            result.AlreadyPresent = true;
-            return result;
-        }
-
-        if (!isDatabaseProvider(provider)) {
-            result.Issues.push('This provider cannot open a transaction; ActivityWriter is server-only.');
-            return result;
-        }
+        const typeID = await this.runPreWriteReads(
+            provider,
+            input.Item.TypeCode,
+            { SourceSystem: input.SourceSystem, ExternalID: input.Item.ExternalID },
+            contextUser,
+            result,
+        );
+        if (!typeID) return result;
 
         const onWritten = options?.OnWritten;
         const afterLinks = onWritten
@@ -255,26 +260,17 @@ export class ActivityWriter {
             return result;
         }
 
-        const typeID = await this.resolveTypeByCode(input.TypeCode, contextUser);
-        if (!typeID) {
-            result.Issues.push(`No ActivityType with Code '${input.TypeCode}' is seeded.`);
+        if (!IsDatabaseProvider(provider)) {
+            result.Issues.push(NOT_A_DATABASE_PROVIDER);
             return result;
         }
 
-        if (input.SourceSystem && input.ExternalID) {
-            const existing = await this.findByExternalKey(input.SourceSystem, input.ExternalID, contextUser);
-            if (existing) {
-                result.Success = true;
-                result.ActivityID = existing;
-                result.AlreadyPresent = true;
-                return result;
-            }
-        }
-
-        if (!isDatabaseProvider(provider)) {
-            result.Issues.push('This provider cannot open a transaction; ActivityWriter is server-only.');
-            return result;
-        }
+        const dedupeKey =
+            input.SourceSystem && input.ExternalID
+                ? { SourceSystem: input.SourceSystem, ExternalID: input.ExternalID }
+                : null;
+        const typeID = await this.runPreWriteReads(provider, input.TypeCode, dedupeKey, contextUser, result);
+        if (!typeID) return result;
 
         return this.writeWithLinks(
             provider,
@@ -360,8 +356,10 @@ export class ActivityWriter {
             LogError(`ActivityWriter.Write failed: ${err}`);
             try {
                 await scope.Rollback();
-            } catch {
-                /* already failed */
+            } catch (rollbackErr) {
+                // The write already failed and is reported below; a failed rollback is logged, not
+                // thrown, so it cannot mask the original error.
+                LogError(`ActivityWriter.Write rollback failed after "${err}": ${rollbackErr}`);
             }
             result.Issues.push(String(err));
             return result;
@@ -495,9 +493,56 @@ export class ActivityWriter {
         return row;
     }
 
-    private async resolveTypeByCode(code: string, contextUser: UserInfo): Promise<string | null> {
-        const rv = new RunView();
-        const res = await rv.RunView<{ ID: string }>(
+    /**
+     * The reads both entry points make before opening the write transaction: the ActivityType id,
+     * then — when a dedupe key is given — whether that SourceSystem/ExternalID was already written.
+     *
+     * Returns the type id to write with, or null when `result` is already final: an unseeded type,
+     * a failed read, or an idempotent repeat (Success + AlreadyPresent). A failed read is reported as
+     * a failure — never mistaken for "not seeded" or "not written yet", which would mislabel a
+     * database error or write a duplicate.
+     */
+    private async runPreWriteReads(
+        provider: DatabaseProviderBase,
+        typeCode: string,
+        dedupeKey: { SourceSystem: string; ExternalID: string } | null,
+        contextUser: UserInfo,
+        result: WriteActivityResult,
+    ): Promise<string | null> {
+        const type = await this.findTypeByCode(provider, typeCode, contextUser);
+        if (!type.Success) {
+            result.Issues.push(`Could not look up ActivityType '${typeCode}': ${type.Error}`);
+            return null;
+        }
+        if (!type.ID) {
+            result.Issues.push(`No ActivityType with Code '${typeCode}' is seeded.`);
+            return null;
+        }
+
+        if (!dedupeKey) return type.ID;
+        const existing = await this.findByExternalKey(provider, dedupeKey.SourceSystem, dedupeKey.ExternalID, contextUser);
+        if (!existing.Success) {
+            result.Issues.push(
+                `Could not check for an existing activity (${dedupeKey.SourceSystem} / ${dedupeKey.ExternalID}): ${existing.Error}`,
+            );
+            return null;
+        }
+        if (existing.ID) {
+            result.Success = true;
+            result.ActivityID = existing.ID;
+            result.AlreadyPresent = true;
+            return null;
+        }
+        return type.ID;
+    }
+
+    /** Reads run on the writer's own provider — the global one may be carrying someone else's transaction (#195). */
+    private async findTypeByCode(
+        provider: DatabaseProviderBase,
+        code: string,
+        contextUser: UserInfo,
+    ): Promise<LookupResult> {
+        const res = await new RunView(provider).RunView<{ ID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ActivityTypes,
                 ExtraFilter: `Code = '${EscapeText(code)}'`,
@@ -506,16 +551,18 @@ export class ActivityWriter {
             },
             contextUser,
         );
-        return res.Success ? (res.Results?.[0]?.ID ?? null) : null;
+        return res.Success
+            ? { Success: true, ID: res.Results?.[0]?.ID ?? null }
+            : { Success: false, Error: res.ErrorMessage || 'RunView failed with no message.' };
     }
 
     private async findByExternalKey(
+        provider: DatabaseProviderBase,
         sourceSystem: string,
         externalID: string,
         contextUser: UserInfo,
-    ): Promise<string | null> {
-        const rv = new RunView();
-        const res = await rv.RunView<{ ID: string }>(
+    ): Promise<LookupResult> {
+        const res = await new RunView(provider).RunView<{ ID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
                 ExtraFilter:
@@ -525,6 +572,8 @@ export class ActivityWriter {
             },
             contextUser,
         );
-        return res.Success ? (res.Results?.[0]?.ID ?? null) : null;
+        return res.Success
+            ? { Success: true, ID: res.Results?.[0]?.ID ?? null }
+            : { Success: false, Error: res.ErrorMessage || 'RunView failed with no message.' };
     }
 }
