@@ -43,6 +43,19 @@ test('local form fails cleanly (no raw stack trace), naming the ref, when BASE_R
     assert.notEqual(result.status, 0, 'an unresolved base ref must not be treated as success');
     assert.doesNotMatch(result.stderr, /at file:\/\//, 'must not leak a raw JS stack trace');
     assert.doesNotMatch(result.stderr, /node:internal/, 'must not leak a raw JS stack trace');
-    assert.match(result.stdout, /origin\/next/, 'must name the unresolved ref');
-    assert.match(result.stdout, /BASE_REF/, 'must say how to fix it (fetch the ref, or set BASE_REF)');
+    // On stderr, not stdout: an error belongs on stderr, and this must match its sibling gh-1.
+    assert.match(result.stderr, /origin\/next/, 'must name the unresolved ref');
+    assert.match(result.stderr, /BASE_REF/, 'must say how to fix it (fetch the ref, or set BASE_REF)');
+});
+
+// Fails today: the merge-base git() call has no `stdio` override, so git's own "fatal:" line is
+// inherited straight to this process's stderr AND captured into `err.stderr`, which the catch
+// block then re-prints (via console.log, to stdout) -- the same line twice, on two streams.
+test("git's own error line is captured, not inherited-and-reprinted, so it appears once", (t) => {
+    const dir = repoWithUnresolvableBaseRef();
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
+
+    const fatalLines = (result.stdout + result.stderr).match(/fatal:/g) ?? [];
+    assert.equal(fatalLines.length, 1, `git's "fatal:" line must appear exactly once, got:\n${result.stdout}${result.stderr}`);
 });

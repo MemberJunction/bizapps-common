@@ -53,3 +53,16 @@ test('local form fails loudly, naming the ref, when BASE_REF/origin/next does no
     assert.match(result.stderr, /origin\/next/, 'must name the unresolved ref');
     assert.match(result.stderr, /BASE_REF/, 'must say how to fix it (fetch the ref, or set BASE_REF)');
 });
+
+// Fails today: the merge-base git() call has no `stdio` override, so git's own "fatal:" line is
+// inherited straight to this process's stderr AND captured into `err.stderr`, which the catch
+// block then re-prints -- the same line twice. Fixed by piping git's stderr (capture only, don't
+// inherit) for this call.
+test("git's own error line is captured, not inherited-and-reprinted, so it appears once", (t) => {
+    const dir = repoWithUnresolvableBaseRefAndAViolation();
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
+
+    const fatalLines = (result.stdout + result.stderr).match(/fatal:/g) ?? [];
+    assert.equal(fatalLines.length, 1, `git's "fatal:" line must appear exactly once, got:\n${result.stderr}`);
+});

@@ -219,7 +219,9 @@ function main() {
         const baseRef = process.env.BASE_REF || 'origin/next';
         let mergeBase;
         try {
-            mergeBase = git(['merge-base', baseRef, 'HEAD'], { cwd: root }).trim();
+            // stdio: capture git's stderr instead of inheriting it -- otherwise its "fatal:" line
+            // prints live to this process's stderr AND gets re-printed below via err.stderr, twice.
+            mergeBase = git(['merge-base', baseRef, 'HEAD'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
         } catch (err) {
             // A silent fallback to 'HEAD' here would diff the working tree against itself, so any
             // already-committed violation on the branch would never be scanned. Fail loudly instead.
