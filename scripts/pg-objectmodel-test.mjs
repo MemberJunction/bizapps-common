@@ -119,9 +119,24 @@ async function main() {
   created.splice(created.findIndex(c => c.id === relPO), 1); // already deleted
 }
 
+/**
+ * pg's connection failures often arrive as an AggregateError (e.g. the dual-stack ECONNREFUSED
+ * you get when nothing is listening on localhost) whose own `.message` is always "" — the actual
+ * reason lives in `.errors`. Surface those so a blank exception line doesn't hide why it failed.
+ */
+function describeError(e) {
+  if (e?.errors?.length) return e.errors.map((inner) => inner.message ?? String(inner)).join('; ');
+  return e?.message ?? String(e);
+}
+
 main()
-  .catch((e) => { fail++; console.log(`  ✗ EXCEPTION — ${e.message}`); })
+  .catch((e) => { fail++; console.log(`  ✗ EXCEPTION — ${describeError(e)}`); })
   .finally(async () => {
+    // Set this before the first `await` below: pool.end() never settles when the Pool was
+    // constructed with an invalid config (e.g. a non-numeric PGPORT), so `process.exit()` at the
+    // end of this function is never reached and Node exits via its normal event-loop drain —
+    // using whatever `process.exitCode` was last set to, which must already reflect `fail` here.
+    process.exitCode = fail ? 1 : 0;
     for (const { table, id } of created) await q(`DELETE FROM ${S}."${table}" WHERE "ID"=$1`, [id]).catch(() => {});
     console.log(`\nRESULT: ${pass} passed, ${fail} failed.  (test rows cleaned up: ${created.length})`);
     await pool.end();

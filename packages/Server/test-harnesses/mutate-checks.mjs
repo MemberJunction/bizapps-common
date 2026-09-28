@@ -22,11 +22,11 @@
  * mutation harnesses in this repo have rotted before, and a SKIP should fail the change that caused
  * it. The full run is in mutants.yml.
  */
-import { execSync } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createSuiteRunner, requireKnownMutants } from '../../../test-harnesses/mutation-suite.mjs';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -193,11 +193,11 @@ const PRODUCT = [
     },
 ];
 
-function runVitest() {
-    return execSync('pnpm exec vitest run', { cwd: PKG, encoding: 'utf8', stdio: 'pipe' });
-}
+// Suite running, signal-safe restore and argument validation live in the shared module, which the
+// other package's harness uses too: test-harnesses/mutation-suite.mjs.
+const suite = createSuiteRunner(PKG);
+const wanted = requireKnownMutants(process.argv.slice(2), PRODUCT);
 
-const wanted = process.argv.slice(2).filter((a) => a !== '--list' && a !== '--check-anchors');
 if (process.argv.includes('--list')) {
     for (const m of PRODUCT) console.log(`${m.id}  ${m.file}  expect: ${m.expect.join(', ')}`);
     process.exit(0);
@@ -238,33 +238,34 @@ for (const m of selected) {
         continue;
     }
     writeFileSync(full, original.replace(m.from, m.to));
-    let output = '';
-    let threw = false;
-    try {
-        output = runVitest();
-    } catch (err) {
-        threw = true;
-        output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
-    }
-    copyFileSync(backup, full);
+    // Bundles both cleanups the signal handlers must also be able to run: restoring the source
+    // AND removing this mutant's mkdtemp backup dir -- previously only the restore happened on
+    // the signal path, leaking the temp dir every time a run was interrupted.
+    const result = await suite.runAgainstMutant(() => {
+        copyFileSync(backup, full);
+        rmSync(dir, { recursive: true, force: true });
+    });
+
     const restored = readFileSync(full, 'utf8');
     if (restored !== original) {
         writeFileSync(full, original);
         console.error(`FAIL ${m.id}: restore did not match the copy`);
         failed++;
-        rmSync(dir, { recursive: true, force: true });
         continue;
     }
-    rmSync(dir, { recursive: true, force: true });
 
-    if (!threw) {
+    if (!result.threw) {
         console.error(`FAIL ${m.id}: suite stayed green`);
         failed++;
         continue;
     }
-    const missing = m.expect.filter((name) => !output.includes(name));
+    const missing = m.expect.filter((name) => !result.output.includes(name));
     if (missing.length) {
         console.error(`FAIL ${m.id}: failed but did not name ${missing.join(', ')}`);
+        // Previously discarded: `result.output` is compared against `expect` above but was never
+        // itself printed, so a broken command (or a suite failing for an unrelated reason) read
+        // as an unhelpful "did not name X" with no clue why.
+        if (result.output.trim()) console.error(result.output.trim());
         failed++;
         continue;
     }
