@@ -211,7 +211,10 @@ let activeRestore = null;
  */
 function runTestCommand() {
     return new Promise((resolve, reject) => {
-        const child = spawn(TEST_COMMAND, { cwd: PKG, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+        // `detached: true` makes this child (the shell wrapping TEST_COMMAND) the leader of its
+        // own process group, so a real `pnpm exec vitest run`'s own child inherits that group
+        // instead of the harness's. killChildGroup below relies on that to reach it.
+        const child = spawn(TEST_COMMAND, { cwd: PKG, shell: true, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
         activeChild = child;
         let output = '';
         child.stdout.on('data', (chunk) => { output += chunk; });
@@ -227,12 +230,29 @@ function runTestCommand() {
     });
 }
 
+// A plain `child.kill(signal)` reaches only the direct child -- with `shell: true`, a real
+// `pnpm exec vitest run` spawns its own vitest process as a grandchild, which a single-pid kill
+// orphans instead of stopping. `detached: true` above makes `child.pid` the process group id too,
+// so the negative-pid form signals the whole group. ESRCH (already exited) is expected and quiet;
+// anything else is surfaced rather than swallowed, since we're already mid-shutdown and cannot
+// retry.
+function killChildGroup(child, signal) {
+    if (!child) return;
+    try {
+        process.kill(-child.pid, signal);
+    } catch (err) {
+        if (err.code !== 'ESRCH') {
+            console.error(`Failed to signal the test command's process group: ${err.message}`);
+        }
+    }
+}
+
 // The file's own doc comment promises a dirty tree is safe no matter how the run ends. Without
 // these, the default disposition for SIGINT/SIGTERM kills the process instantly -- no listener, no
 // finally -- leaving whatever mutant is on disk right where the mutation loop wrote it.
 function shutdown(signal, exitCode) {
     return () => {
-        if (activeChild) activeChild.kill(signal);
+        killChildGroup(activeChild, signal);
         if (activeRestore) activeRestore();
         process.exit(exitCode);
     };
@@ -291,7 +311,13 @@ for (const m of selected) {
         continue;
     }
     writeFileSync(full, original.replace(m.from, m.to));
-    activeRestore = () => copyFileSync(backup, full);
+    // Bundles both cleanups the signal handlers must also be able to run: restoring the source
+    // AND removing this mutant's mkdtemp backup dir -- previously only the restore happened on
+    // the signal path, leaking the temp dir every time a run was interrupted.
+    activeRestore = () => {
+        copyFileSync(backup, full);
+        rmSync(dir, { recursive: true, force: true });
+    };
     let result;
     try {
         result = await runTestCommand();
@@ -303,7 +329,6 @@ for (const m of selected) {
     } finally {
         activeRestore();
         activeRestore = null;
-        rmSync(dir, { recursive: true, force: true });
     }
 
     const restored = readFileSync(full, 'utf8');

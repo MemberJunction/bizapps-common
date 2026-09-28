@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -139,6 +139,102 @@ test('SIGTERM mid-run restores the mutated file before the harness exits', async
         const restored = readFileSync(target, 'utf8');
         assert.equal(restored, original, 'mutated source must be restored after SIGTERM');
     } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+// ── round 2 (reviewer findings) ─────────────────────────────────────────────────────────────────
+
+async function waitForFileToExist(filePath, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (existsSync(filePath)) return true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return false;
+}
+
+function isProcessAlive(pid) {
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function listMutTempDirs(mutantId) {
+    return new Set(readdirSync(tmpdir()).filter((name) => name.startsWith(`mut-${mutantId}-`)));
+}
+
+// A fixture "suite" that itself spawns a further child (mimicking `pnpm exec vitest run` spawning
+// its own vitest process) and writes that grandchild's pid to a marker file, so the test can check
+// whether the grandchild is still alive after the harness is signaled.
+function makeGrandchildCommand(root) {
+    const script = path.join(root, 'suite-with-grandchild.mjs');
+    const marker = path.join(root, 'grandchild.pid');
+    writeFileSync(
+        script,
+        [
+            "import { spawn } from 'node:child_process';",
+            "import { writeFileSync } from 'node:fs';",
+            "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000);'], { stdio: 'ignore' });",
+            `writeFileSync(${JSON.stringify(marker)}, String(child.pid));`,
+            'setInterval(() => {}, 1000);',
+        ].join('\n'),
+    );
+    return { command: `${process.execPath} ${JSON.stringify(script)}`, marker };
+}
+
+// Fails until mutate-checks.mjs spawns the test command detached and kills its whole process group
+// (`process.kill(-pid, signal)`) instead of `activeChild.kill(signal)`, which reaches only the
+// direct child -- with `shell: true`, the child a real `pnpm exec vitest run` starts is an orphan
+// a plain kill never touches. Also covers the sibling leak the reviewer named in the same finding:
+// the harness's own mkdtemp backup dir for the in-flight mutant, which the signal path never
+// removed.
+test('SIGTERM kills the whole process group (no orphaned grandchild) and removes the temp dir', async () => {
+    const root = makeTempPackageCopy();
+    const mutantId = 'M-LMP1';
+    const before = listMutTempDirs(mutantId);
+    let grandchildPid = null;
+    try {
+        const target = path.join(root, 'src/custom/live-mailbox-policy.ts');
+        const original = readFileSync(target, 'utf8');
+        const { command, marker } = makeGrandchildCommand(root);
+
+        const child = spawn(process.execPath, [path.join(root, 'test-harnesses/mutate-checks.mjs'), mutantId], {
+            env: { ...process.env, MUTATE_CHECKS_TEST_COMMAND: command },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        const changed = await waitForFileToChange(target, original, 5000);
+        assert.ok(changed, 'expected the harness to mutate the target file before the child was signaled');
+
+        const markerWritten = await waitForFileToExist(marker, 5000);
+        assert.ok(markerWritten, 'expected the fixture suite to record its grandchild pid');
+        grandchildPid = Number(readFileSync(marker, 'utf8'));
+
+        child.kill('SIGTERM');
+        await waitForExit(child, 5000);
+
+        assert.ok(!isProcessAlive(grandchildPid), 'the grandchild process must not survive the harness');
+        grandchildPid = null;
+
+        const leaked = [...listMutTempDirs(mutantId)].filter((name) => !before.has(name));
+        assert.deepEqual(leaked, [], `mkdtemp backup dir(s) leaked after SIGTERM: ${leaked.join(', ')}`);
+    } finally {
+        // Best-effort: a RED run leaves the grandchild alive, and this must not leak a real
+        // sleeping process into the dev machine even when the assertion above already failed.
+        if (grandchildPid !== null && isProcessAlive(grandchildPid)) {
+            try {
+                process.kill(grandchildPid, 'SIGKILL');
+            } catch {
+                // Already gone between the aliveness check and this kill -- nothing left to do.
+            }
+        }
+        for (const name of listMutTempDirs(mutantId)) {
+            if (!before.has(name)) rmSync(path.join(tmpdir(), name), { recursive: true, force: true });
+        }
         rmSync(root, { recursive: true, force: true });
     }
 });
