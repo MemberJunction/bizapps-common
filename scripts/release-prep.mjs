@@ -82,13 +82,14 @@ const BUMP_RANK = Object.freeze({ patch: 1, minor: 2, major: 3 });
  * itself refused the merge there. bizapps-common's rulesets do not: `next` carries only `deletion`
  * and `non_fast_forward`, and `main` carries no rules at all
  * (`gh api repos/MemberJunction/bizapps-common/rules/branches/<b>`) — so GitHub will happily merge a
- * release PR whose base has moved on. The danger here is quieter and worse for it: the release PR is
- * `next` -> `main`, and both its diff and the version this script predicts come from `next`'s tip.
- * If the PREVIOUS release's automated merge-back (`publish.yml` checking out `next`, merging `main`
- * into it, and pushing — CLAUDE.md's Branching Model) did not complete, `next` is still sitting on
- * the version from BEFORE that release, so this run would compute a stale next version and open a PR
- * that quietly reverts main's already-published bump instead of building on it — and GitHub would
- * let that merge through without a word.
+ * release PR whose base has moved on. The refusal here is this SCRIPT's, not GitHub's, and it exists
+ * because the danger is quiet: the release PR is `next` -> `main`, and both its diff and the version
+ * this script predicts come from `next`'s tip. `publish.yml` never pushes `main` into `next` directly
+ * — it opens a `chore/backmerge-v<version>` -> `next` pull request once that release publishes (see
+ * docs/release.md), and a human merges it. If the PREVIOUS release's back-merge PR is still open, or
+ * was never opened at all, `next` is still sitting on the version from BEFORE that release, so this
+ * run would compute a stale next version and open a PR that quietly reverts main's already-published
+ * bump instead of building on it — and GitHub would let that merge through without a word.
  *
  * Asking the question here turns that surprise into a precondition, answered before a branch exists.
  */
@@ -96,9 +97,11 @@ const STALE_MAIN_BLOCKER =
     'main is not contained in next — main carries commit(s) next does not have. Left alone, the ' +
     "release PR (next -> main) would be built on next's stale tip and could revert whatever main " +
     'already has, including a previous release\'s version bump — nothing in GitHub itself will stop ' +
-    'that merge. This is almost always the PREVIOUS release\'s automated merge-back (publish.yml\'s ' +
-    '"merge main into next" step) not having completed — e.g. its push to next failed. Merge ' +
-    'origin/main into next (or re-run the merge-back), then re-run.';
+    'that merge (neither ruleset here requires the base to be up to date). This is almost always the ' +
+    "PREVIOUS release's back-merge PR (`chore/backmerge-v<prev>` -> next, opened by publish.yml once " +
+    "that release published) still sitting unmerged — go merge it. If it was never opened (a red " +
+    "publish run only fails to open it, it never merges without you), branch " +
+    "`chore/backmerge-v<prev>` from main's tip and open that PR into next by hand. Then re-run.";
 
 /**
  * The strongest bump the changesets ask for, or `null` when none of them asks for one.

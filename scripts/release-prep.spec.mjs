@@ -115,13 +115,16 @@ test('a version already on npm for any package in the group blocks', () => {
 });
 
 // bizapps-common's release PR merges `next` -> `main`. A `main` this run cannot find ahead of `next`
-// is almost always the PREVIOUS release's automated merge-back not having completed.
+// is almost always the PREVIOUS release's back-merge PR (chore/backmerge-v<prev> -> next, opened by
+// publish.yml) still sitting unmerged — never an automated push, since publish.yml opens a pull
+// request into next rather than pushing to it directly.
 test('a main that next does not contain blocks, and explains whose fault it is', () => {
     const assessment = assessRelease(readyFacts({ mainIsAncestorOfNext: false }));
     assert.equal(assessment.ready, false);
     assert.equal(assessment.blockers.length, 1);
-    assert.match(assessment.blockers[0], /merge-back/);
+    assert.match(assessment.blockers[0], /back-merge/);
     assert.match(assessment.blockers[0], /PREVIOUS release/);
+    assert.match(assessment.blockers[0], /chore\/backmerge-v/);
 });
 
 // ── Facts that could not be gathered block; they never pass ─────────────────────────────────────
