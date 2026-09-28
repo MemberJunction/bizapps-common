@@ -13,8 +13,8 @@ on:
   # itself with `changeset version`; the bump now arrives already committed on the release pull
   # request, so the version is read from packages/Entities/package.json and there is nothing here
   # to override. A dispatch re-runs the publish for whatever version the ref carries — and only from
-  # `main`: the publish and tag steps are gated on `github.ref`, so dispatching any other ref builds
-  # and checks but publishes nothing.
+  # `main`: the publish, tag and back-merge steps are gated on `github.ref`, so dispatching any other
+  # ref builds and checks but publishes, tags and opens nothing.
   workflow_dispatch:
 
 permissions:
@@ -253,9 +253,15 @@ jobs:
 
       # Deliberately not gated on `work`/`tag`. If a previous run published, tagged, and then failed
       # to open this PR, a re-run has `tag == 'false'` — gating on it would skip the back-merge on
-      # precisely the run that exists to finish it. Ancestry is the real question and it is cheap, so
-      # it is the only condition.
+      # precisely the run that exists to finish it. Ancestry is the real question and it is cheap.
+      #
+      # Gated on `main` like Publish and Tag, and for the same reason: the back-merge PR says this
+      # run's `$VERSION` is published and tagged, which is only ever true of `main`. A dispatch from
+      # `release/v9.9.9` while a back-merge was outstanding used to push `chore/backmerge-v9.9.9` and
+      # announce a release nothing had published. Every step below keys off this one's outputs, so
+      # skipping it skips the whole block; a retry dispatched from `main` still finishes it.
       - name: Is there anything to back-merge?
+        if: github.ref == 'refs/heads/main'
         id: backmerge_scope
         run: |
           set -euo pipefail

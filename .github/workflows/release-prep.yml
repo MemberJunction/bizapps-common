@@ -280,10 +280,14 @@ jobs:
             echo "back-merge PR."
             echo
             echo "**A green publish run means it did all of that** — publishing and the back-merge PR both."
-            echo "It goes red only if the back-merge PR could not be opened, and that is worth acting on: the"
-            echo "packages are already on npm and \`v$VERSION\` is already tagged, so the red mark is the only"
-            echo "thing tracking the merge that still has to happen. Do not re-run the publish; read the failed"
-            echo "step and see \`docs/release.md\`."
+            echo "A red run means one of two different things, and the failed step says which:"
+            echo
+            echo "- **A step up to \`Tag the release\` failed** (a gate, the build, \`changeset publish\`, the tag)."
+            echo "  None, some or all of it is on npm and \`v$VERSION\` is not tagged. Fix the cause and re-run the"
+            echo "  publish: it asks *publish* and *tag* separately, so a re-run finishes a partial release."
+            echo "- **Only the back-merge PR could not be opened.** The packages are on npm and \`v$VERSION\` is"
+            echo "  tagged. A re-run publishes nothing twice and retries only the back-merge; if it fails again,"
+            echo "  open the back-merge by hand (\`docs/release.md\`)."
           } > "$RUNNER_TEMP/release-pr-body.md"
 
       # Minted LATE, immediately before use, and that is load-bearing: an installation token lives

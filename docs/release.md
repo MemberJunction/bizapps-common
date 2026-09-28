@@ -123,12 +123,21 @@ Four are worth knowing by name:
   because no feature PR can answer a question about a seed generated after it merges.
 
 **A manual dispatch publishes only from `main`.** `workflow_dispatch` re-runs the publish, but the
-`Publish to npm` and `Tag the release` steps are gated on `github.ref == 'refs/heads/main'`, so
-dispatching it against a `release/*` branch (or any other ref) builds and checks and publishes
-nothing. That branch has not been reviewed yet.
+`Publish to npm`, `Tag the release` and back-merge steps are gated on
+`github.ref == 'refs/heads/main'`, so dispatching it against a `release/*` branch (or any other ref)
+builds and checks and publishes, tags and opens nothing. That branch has not been reviewed yet.
 
-**A green run means the automation did its job.** It is red only when the back-merge pull request
-could not be opened. In that case no one is tracking the outstanding merge, and a human is needed.
+**A green run means the automation did its job.** A red run means one of two things, and the failed
+step tells you which:
+
+- **A step up to `Tag the release` failed**: a gate, the build, `changeset publish` itself, or the
+  tag push. None, some or all of it is on npm, and the tag does not exist. Fix the cause and re-run
+  the workflow; `release-plan.mjs` asks *publish* and *tag* separately, so the re-run finishes the job.
+- **Only the back-merge pull request could not be opened.** The release is published and tagged, and
+  no one is tracking the outstanding merge, so a human is needed. A re-run is safe: it publishes and
+  tags nothing twice and retries only the back-merge. If it fails again, read the failed step
+  (**Verify the release App token** diagnoses a credential problem) or open the back-merge by hand
+  (step 4).
 
 ## 4. Merge the back-merge PR
 
@@ -230,7 +239,7 @@ stopped before `Publish to npm`, which is what every gate sitting ahead of it is
 | Symptom | What it means |
 |---|---|
 | A step fails to mint the App token | Dispatch **Verify the release App token**. It is read-only and names which half is broken. |
-| Publish run is red with an open `chore/backmerge-v*` PR | Should not happen. Red means the PR could **not** be opened. Read the failed step. |
+| Publish run is red with an open `chore/backmerge-v*` PR | Not the back-merge: that step stops as soon as a PR is open. Some other step failed on this run (a gate, the build, `changeset publish`); read it. |
 | Some packages appear published and others do not, right after a green run | **Wait three minutes and look again before doing anything.** npm's packument is eventually consistent: after bizapps-forms `v0.11.0` the registry served the new version for one package and the old one for four, and converged over about three minutes. Read the `Publish to npm` step's output (`changeset publish` names every package it published) and trust that over the registry. |
 | Some packages genuinely did not publish (the step's output says so, or they are still absent well after the run) | `changeset publish` works concurrently and expects a retry. Re-run the workflow. `release-plan.mjs` asks *publish* and *tag* separately, so the re-run finishes the job instead of reporting a green no-op. |
 | A push in the release path is refused with a 403 naming `github-actions[bot]` | The push used the ambient token, not the App, whatever its remote URL says: `actions/checkout`'s persisted `extraheader` outranks URL credentials. See MemberJunction/bizapps-forms#226 and MemberJunction/bizapps-forms#229. |
