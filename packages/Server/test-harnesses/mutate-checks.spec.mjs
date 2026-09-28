@@ -1,11 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HARNESS = path.join(HERE, 'mutate-checks.mjs');
+const PKG_ROOT = path.join(HERE, '..');
 
 // ── pkg-1: an unrecognized ID or flag must fail loudly, not report a vacuous pass ──────────────
 //
@@ -47,4 +50,95 @@ test('--list and --check-anchors are unaffected by the new validation', () => {
 
     const anchors = spawnSync(process.execPath, [HARNESS, '--check-anchors'], { encoding: 'utf8' });
     assert.equal(anchors.status, 0, anchors.stderr);
+});
+
+// ── pkg-2: a SIGINT/SIGTERM mid-run must restore the mutated file before the process dies ──────
+//
+// Runs entirely against a temp COPY of the package (src/ + test-harnesses/ only -- no
+// node_modules, no dist), so it never touches this worktree's real source and never needs
+// vitest. MUTATE_CHECKS_TEST_COMMAND is the seam: it swaps the real `pnpm exec vitest run` for a
+// plain `node` sleep long enough to reliably land a signal mid-mutation.
+//
+// Fails until mutate-checks.mjs (a) runs the suite as an interruptible child process instead of
+// execSync's blocking wait, which starves the event loop so a SIGINT/SIGTERM handler can't run
+// until the child exits on its own, and (b) registers SIGINT/SIGTERM handlers that restore the
+// mutated file (and forward/kill the child) before exiting.
+
+function makeTempPackageCopy() {
+    const root = mkdtempSync(path.join(tmpdir(), 'mutate-checks-server-'));
+    cpSync(path.join(PKG_ROOT, 'src'), path.join(root, 'src'), { recursive: true });
+    cpSync(path.join(PKG_ROOT, 'test-harnesses'), path.join(root, 'test-harnesses'), { recursive: true });
+    return root;
+}
+
+function makeSleepCommand(root) {
+    const sleepScript = path.join(root, 'sleep.mjs');
+    writeFileSync(sleepScript, 'await new Promise((resolve) => setTimeout(resolve, 10000));\n');
+    return `${process.execPath} ${JSON.stringify(sleepScript)}`;
+}
+
+async function waitForFileToChange(filePath, original, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (readFileSync(filePath, 'utf8') !== original) return true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return false;
+}
+
+async function waitForExit(child, timeoutMs) {
+    return Promise.race([
+        new Promise((resolve) => child.once('exit', (code, signal) => resolve({ code, signal }))),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('harness did not exit in time')), timeoutMs)),
+    ]);
+}
+
+test('SIGINT mid-run restores the mutated file before the harness exits', async () => {
+    const root = makeTempPackageCopy();
+    try {
+        const target = path.join(root, 'src/custom/live-mailbox-policy.ts');
+        const original = readFileSync(target, 'utf8');
+
+        const child = spawn(process.execPath, [path.join(root, 'test-harnesses/mutate-checks.mjs'), 'M-LMP1'], {
+            env: { ...process.env, MUTATE_CHECKS_TEST_COMMAND: makeSleepCommand(root) },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        const changed = await waitForFileToChange(target, original, 5000);
+        assert.ok(changed, 'expected the harness to mutate the target file before the child was signaled');
+
+        child.kill('SIGINT');
+        const { code, signal } = await waitForExit(child, 5000);
+        assert.ok(code === 130 || signal === 'SIGINT', `expected exit 130 or SIGINT; got code=${code} signal=${signal}`);
+
+        const restored = readFileSync(target, 'utf8');
+        assert.equal(restored, original, 'mutated source must be restored after SIGINT');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('SIGTERM mid-run restores the mutated file before the harness exits', async () => {
+    const root = makeTempPackageCopy();
+    try {
+        const target = path.join(root, 'src/custom/live-mailbox-policy.ts');
+        const original = readFileSync(target, 'utf8');
+
+        const child = spawn(process.execPath, [path.join(root, 'test-harnesses/mutate-checks.mjs'), 'M-LMP2'], {
+            env: { ...process.env, MUTATE_CHECKS_TEST_COMMAND: makeSleepCommand(root) },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        const changed = await waitForFileToChange(target, original, 5000);
+        assert.ok(changed, 'expected the harness to mutate the target file before the child was signaled');
+
+        child.kill('SIGTERM');
+        const { code, signal } = await waitForExit(child, 5000);
+        assert.ok(code === 143 || signal === 'SIGTERM', `expected exit 143 or SIGTERM; got code=${code} signal=${signal}`);
+
+        const restored = readFileSync(target, 'utf8');
+        assert.equal(restored, original, 'mutated source must be restored after SIGTERM');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
 });

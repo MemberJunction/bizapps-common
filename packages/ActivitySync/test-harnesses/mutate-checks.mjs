@@ -16,7 +16,7 @@
  * this harness has rotted before, and a SKIP should fail the change that caused it. The full run
  * is in mutants.yml.
  */
-import { execSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -772,13 +772,52 @@ const PRODUCT = [
     },
 ];
 
-function runVitest() {
-    return execSync('pnpm exec vitest run', {
-        cwd: PKG,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
+// Overridable so this harness's own tests can swap `pnpm exec vitest run` for something fast and
+// signal-safe (e.g. a `node` sleep) without ever invoking a real vitest run.
+const TEST_COMMAND = process.env.MUTATE_CHECKS_TEST_COMMAND ?? 'pnpm exec vitest run';
+
+// Tracks the mutant currently on disk and its suite's child process, so the SIGINT/SIGTERM
+// handlers below -- which live outside the loop that owns these -- can still restore the file and
+// forward/kill the child.
+let activeChild = null;
+let activeRestore = null;
+
+/**
+ * Runs the suite as a real, killable child process instead of execSync's blocking wait. A blocking
+ * wait can't be interrupted: SIGINT/SIGTERM couldn't reach this script's JS until the child exited
+ * on its own, which is how a mutated file used to survive a Ctrl-C. Resolves (never rejects) on a
+ * failing suite -- a nonzero exit IS the expected "felled" case -- matching how the loop reads it.
+ */
+function runTestCommand() {
+    return new Promise((resolve, reject) => {
+        const child = spawn(TEST_COMMAND, { cwd: PKG, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+        activeChild = child;
+        let output = '';
+        child.stdout.on('data', (chunk) => { output += chunk; });
+        child.stderr.on('data', (chunk) => { output += chunk; });
+        child.on('error', (err) => {
+            activeChild = null;
+            reject(err);
+        });
+        child.on('exit', (code) => {
+            activeChild = null;
+            resolve({ threw: code !== 0, output });
+        });
     });
 }
+
+// The file's own doc comment promises a dirty tree is safe no matter how the run ends. Without
+// these, the default disposition for SIGINT/SIGTERM kills the process instantly -- no listener, no
+// finally -- leaving whatever mutant is on disk right where the mutation loop wrote it.
+function shutdown(signal, exitCode) {
+    return () => {
+        if (activeChild) activeChild.kill(signal);
+        if (activeRestore) activeRestore();
+        process.exit(exitCode);
+    };
+}
+process.on('SIGINT', shutdown('SIGINT', 130));
+process.on('SIGTERM', shutdown('SIGTERM', 143));
 
 const wanted = process.argv.slice(2).filter((a) => a !== '--list' && a !== '--check-anchors');
 if (process.argv.includes('--list')) {
@@ -849,15 +888,21 @@ for (const m of selected) {
     }
     const mutated = original.replace(m.from, m.to);
     writeFileSync(full, eol === '\r\n' ? mutated.split('\n').join('\r\n') : mutated);
-    let output = '';
-    let threw = false;
+    activeRestore = () => copyFileSync(backup, full);
+    let result;
     try {
-        output = runVitest();
+        result = await runTestCommand();
     } catch (err) {
-        threw = true;
-        output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
+        // A genuine bug in this script (e.g. the shell itself failed to start) rather than a
+        // felled or surviving mutant -- surfaced the same way a failing suite is, so it is still
+        // reported instead of silently stopping the loop.
+        result = { threw: true, output: `${err.message ?? err}` };
+    } finally {
+        activeRestore();
+        activeRestore = null;
+        rmSync(dir, { recursive: true, force: true });
     }
-    copyFileSync(backup, full);
+
     // `original` is normalised, so the comparison normalises too -- otherwise a CRLF working
     // tree reports a false restore failure on every mutant.
     const restored = readFileSync(full, 'utf8').split('\r\n').join('\n');
@@ -865,17 +910,15 @@ for (const m of selected) {
         writeFileSync(full, original);
         console.error(`FAIL ${m.id}: restore did not match the copy`);
         failed++;
-        rmSync(dir, { recursive: true, force: true });
         continue;
     }
-    rmSync(dir, { recursive: true, force: true });
 
-    if (!threw) {
+    if (!result.threw) {
         console.error(`FAIL ${m.id}: suite stayed green`);
         failed++;
         continue;
     }
-    const missing = m.expect.filter((name) => !output.includes(name));
+    const missing = m.expect.filter((name) => !result.output.includes(name));
     if (missing.length) {
         console.error(`FAIL ${m.id}: failed but did not name ${missing.join(', ')}`);
         failed++;
