@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- Source path: `/Users/sohamdesai/Projects/mj-dev/bizapps-forms`. Read files there. **Never write** there, because it has uncommitted user work on another branch.
-- Work on branch `chore/release-process-from-forms` in `/Users/sohamdesai/Projects/mj-dev/bizapps-common`. It tracks `origin/chore/release-process-from-forms`.
+- Source path: a local checkout of bizapps-forms (a sibling of this repository in the mj-dev workspace). Read files there. **Never write** there, because it has uncommitted user work on another branch.
+- Work on branch `chore/release-process-from-forms` in this repository. It tracks `origin/chore/release-process-from-forms`.
 - Scripts are plain Node ESM (`.mjs`), stdlib only. That matches the source and common's `scripts/check-release-seed-coverage.mjs`.
 - The version anchor is `packages/Entities/package.json` (`@mj-biz-apps/common-entities`). The MJ anchor is `@memberjunction/core` in its `peerDependencies`. Today `mj-app.json` holds `version: 5.46.3` and `mjVersionRange: ">=6.1.0-edge.6 <7.0.0"`.
 - Published packages: every `packages/*/package.json` without `"private": true`. `@mj-biz-apps/common-integration-tests` is private.

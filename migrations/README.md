@@ -148,9 +148,20 @@ npx mj sync push --dir metadata --ci
 #    their records forward, and no release tag names them, so no host has run them.
 
 # 5. Prove it on a database that has never seen your dev work: a second empty database, MJ core,
-#    then the whole chain INCLUDING the new file. It must apply cleanly; count the records it seeds.
-#    Replaying against the database you generated from proves nothing, because it already has them.
+#    then the whole chain INCLUDING the new file. Replaying against the database you generated from
+#    proves nothing, because it already has the records. These are clean-room-gate.yml's own steps:
+sqlcmd -S "$DB_HOST,$DB_PORT" -U "$DB_USERNAME" -P "$DB_PASSWORD" -C -b -Q \
+  "CREATE DATABASE [<proof db>]; ALTER AUTHORIZATION ON DATABASE::[<proof db>] TO [sa];"
+DB_DATABASE=<proof db> pnpm exec mj migrate --tag v<mjVersionRange floor>
+DB_DATABASE=<proof db> pnpm exec mj migrate --schema __mj_BizAppsCommon --dir ./migrations
+DB_DATABASE=<proof db> pnpm run lint:entityfield-drift
+#    Every command must exit 0. Then look for what the seed was generated to carry: SELECT a record
+#    it creates (by its ID, or by the @lookup: key) and a field it updates, in <proof db>. clean-room-
+#    gate.yml runs this same install on every PR, but it checks EntityField drift, not seeded content,
+#    so this look is the only place the seed's content is confirmed before it ships.
+#    Then the static gates, which read the files rather than the database:
 pnpm run check:release-seed && pnpm run check:seed-cadence
+#    Drop <proof db> when you are done.
 
 # 6. The PostgreSQL twin (docs/postgresql.md):
 pnpm run mj:migrate:convert

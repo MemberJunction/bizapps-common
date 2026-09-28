@@ -143,7 +143,7 @@ step tells you which:
 ## 4. Merge the back-merge PR
 
 `chore/backmerge-vX.Y.Z-<main sha> → next`, opened for you in step 3 (named for `main`'s tip as well as the version, so a later docs or hotfix merge into `main` gets a back-merge of its own). It carries the release merge commit and
-the version bump back to `next`. `build.yml` and `changes.yml` run on it.
+the version bump back to `next`. `build.yml`, `changes.yml` and `clean-room-gate.yml` run on it.
 
 Merge it with a **merge commit** — never squash or rebase. Either rewrites `main`'s commits into new
 ones, so `main`'s tip is still not an ancestor of `next` and **Prepare a release** keeps refusing
