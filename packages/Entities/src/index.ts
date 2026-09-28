@@ -8,6 +8,7 @@ export type {
 export * from './business-day.js';
 export * from './party-signals.js';
 export * from './business-time-zone-engine.js';
+export * from './external-field-limits.js';
 
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.
