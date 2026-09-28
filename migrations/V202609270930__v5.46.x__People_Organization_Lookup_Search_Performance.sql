@@ -5,30 +5,33 @@
 -- lookups sat on "Searching..." and hit the 30 s command timeout; worst observed 57 s and 3.7M
 -- page reads for one TOP 15 lookup. Causes, fixed together:
 --
---   1. The curated user-search configuration (6fa900c, v5.44) only ever lived in
---      metadata/entities/.entities.json. Open App upgrades apply migrations, not metadata/, so
---      installed databases kept CodeGen's defaults: MiddleName, PreferredName, Title, Email, Phone
---      (People) and Website, Phone (Organizations) searched as '%x%' Contains. One leading-wildcard
---      term in the OR forces a full scan. -> Section 2 applies .entities.json verbatim.
+--   1. The curated user-search configuration (6fa900c, v5.44) lives in
+--      metadata/entities/.entities.json and has not yet shipped in a Metadata_Sync (the last one is
+--      v5.38.x), so installed databases still carry CodeGen's defaults: MiddleName, PreferredName,
+--      Title, Email, Phone (People) and Website, Phone (Organizations) searched as '%x%' Contains.
+--      One leading-wildcard term in the OR forces a full scan. -> Metadata, so NOT in this file:
+--      it reaches installed databases through the release's generated Metadata_Sync.
 --   2. People searched PrimaryEmail (Exact). PrimaryEmail is COALESCE(ContactMethod.Value, Email)
 --      computed inside vwPeople, so no index can serve it and every lookup evaluated the whole
---      view per Person row (18.9 s with every other fix in place). -> PrimaryEmail removed from
+--      view per Person row (18.9 s with every other fix in place). -> Metadata: removed from
 --      search in .entities.json; Email (the Person column) stays as the Exact email match.
---   3. No indexes served the remaining prefix/exact terms. -> Section 1 (one index per searched
+--   3. No indexes served the curated prefix/exact terms. -> Section 1 (one index per searched
 --      column: Person DisplayName, LastName, Title, Email; Organization Name, LegalName, TaxID,
 --      Email, Website).
 --   4. vwPeople / vwOrganizations joined AddressLink on RecordID = CAST(g.ID AS NVARCHAR(MAX)).
 --      RecordID is NVARCHAR(700); an NVARCHAR(MAX) comparison cannot use
---      IX_AddressLink_EntityRecord_Primary. -> Section 3: CONVERT(NVARCHAR(700), g.ID). The views
+--      IX_AddressLink_EntityRecord_Primary. -> Section 2: CONVERT(NVARCHAR(700), g.ID). The views
 --      are otherwise byte-identical to their latest definitions (vwPeople: v5.45.x
 --      Job_Function_Seniority, vwOrganizations: v5.39.x Address_Geo_Source_And_Org_PrimaryAddress_Coords).
 --
+-- The speedup below needs BOTH this migration and the curated search configuration applied
+-- (the release Metadata_Sync); indexes alone do not help while any Contains term remains.
 -- Measured on a restored copy of the AIDP Next database (SQL Server 2022), TOP 15 lookups:
 --   People  rare term 15-19 s / 10.9M reads -> 47 ms / 862 reads; no match 3 ms; 'smith' 13 ms
 --   Orgs    rare term 837 ms               -> 71 ms / 358 reads;  no match 3 ms
 -- Index builds took 1-6 s each at that size and hold a table lock while they run (ONLINE builds
 -- are Enterprise-only, so none is requested).
--- Postgres: see the .pg.sql twin (indexes + search configuration; PG views compare text to text).
+-- Postgres: see the .pg.sql twin (indexes only; PG views compare text to text).
 -- =============================================================================================
 
 SET ANSI_NULLS ON;
@@ -59,38 +62,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Organization_Website' 
     CREATE INDEX IX_Organization_Website ON [${flyway:defaultSchema}].[Organization] ([Website]);
 GO
 
--- 2. User-search configuration, generated from metadata/entities/.entities.json (source of truth)
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 1, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: People';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'DisplayName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'FirstName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'LastName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'PrimaryEmail';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'Exact', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'Email';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'MiddleName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'PreferredName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'Title';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'Phone';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: People' AND f.[Name] = N'ID';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 1, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Organizations';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'Name';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'LegalName';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'Exact', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'TaxID';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'Exact', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'Email';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 1, f.[UserSearchPredicateAPI] = N'BeginsWith', f.[AutoUpdateIncludeInUserSearchAPI] = 0, f.[AutoUpdateUserSearchPredicate] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'Website';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'Phone';
-UPDATE f SET f.[IncludeInUserSearchAPI] = 0, f.[AutoUpdateIncludeInUserSearchAPI] = 0 FROM [${mjSchema}].[EntityField] f INNER JOIN [${mjSchema}].[Entity] e ON e.[ID] = f.[EntityID] WHERE e.[Name] = N'MJ_BizApps_Common: Organizations' AND f.[Name] = N'ID';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Addresses';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Address Links';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Types';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Files';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Links';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Sync Connections';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Sync Rule Sets';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Sync Rules';
-UPDATE [${mjSchema}].[Entity] SET [AllowUserSearchAPI] = 0, [AutoUpdateAllowUserSearchAPI] = 0 WHERE [Name] = N'MJ_BizApps_Common: Activity Sync Exclusions';
-GO
-
--- 3. Views: AddressLink join made sargable
+-- 2. Views: AddressLink join made sargable
 IF OBJECT_ID('[${flyway:defaultSchema}].[vwPeople]', 'V') IS NOT NULL
     DROP VIEW [${flyway:defaultSchema}].[vwPeople];
 GO
