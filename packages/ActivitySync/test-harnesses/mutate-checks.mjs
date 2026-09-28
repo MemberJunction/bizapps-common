@@ -16,11 +16,11 @@
  * this harness has rotted before, and a SKIP should fail the change that caused it. The full run
  * is in mutants.yml.
  */
-import { spawn } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createSuiteRunner, requireKnownMutants } from '../../../test-harnesses/mutation-suite.mjs';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -772,96 +772,10 @@ const PRODUCT = [
     },
 ];
 
-// Overridable so this harness's own tests can swap `pnpm exec vitest run` for something fast and
-// signal-safe (e.g. a `node` sleep) without ever invoking a real vitest run.
-const TEST_COMMAND = process.env.MUTATE_CHECKS_TEST_COMMAND ?? 'pnpm exec vitest run';
-if (process.env.MUTATE_CHECKS_TEST_COMMAND) {
-    // A stray value left set (or a command crafted to echo an `expect` string and exit nonzero)
-    // reports a full, silent fake pass -- mutants aren't being checked against the real suite at
-    // all. Unconditional and printed before anything else runs, so it can't be missed regardless
-    // of which mode (--list, --check-anchors, or a real run) this invocation takes.
-    console.error(`WARNING: MUTATE_CHECKS_TEST_COMMAND is set to "${TEST_COMMAND}" -- mutants are NOT being checked against the real suite.`);
-}
-
-// Tracks the mutant currently on disk and its suite's child process, so the SIGINT/SIGTERM
-// handlers below -- which live outside the loop that owns these -- can still restore the file and
-// forward/kill the child.
-let activeChild = null;
-let activeRestore = null;
-
-/**
- * Runs the suite as a real, killable child process instead of execSync's blocking wait. A blocking
- * wait can't be interrupted: SIGINT/SIGTERM couldn't reach this script's JS until the child exited
- * on its own, which is how a mutated file used to survive a Ctrl-C. Resolves (never rejects) on a
- * failing suite -- a nonzero exit IS the expected "felled" case -- matching how the loop reads it.
- */
-function runTestCommand() {
-    return new Promise((resolve, reject) => {
-        // `detached: true` makes this child (the shell wrapping TEST_COMMAND) the leader of its
-        // own process group, so a real `pnpm exec vitest run`'s own child inherits that group
-        // instead of the harness's. killChildGroup below relies on that to reach it.
-        const child = spawn(TEST_COMMAND, { cwd: PKG, shell: true, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
-        activeChild = child;
-        let output = '';
-        child.stdout.on('data', (chunk) => { output += chunk; });
-        child.stderr.on('data', (chunk) => { output += chunk; });
-        child.on('error', (err) => {
-            activeChild = null;
-            reject(err);
-        });
-        // 'close', not 'exit': stdio can still be open when 'exit' fires (Node docs), so 'exit'
-        // can race the last 'data' events and resolve with a truncated `output`. 'close' fires
-        // once the streams are actually done.
-        child.on('close', (code) => {
-            activeChild = null;
-            resolve({ threw: code !== 0, output });
-        });
-    });
-}
-
-// A plain `child.kill(signal)` reaches only the direct child -- with `shell: true`, a real
-// `pnpm exec vitest run` spawns its own vitest process as a grandchild, which a single-pid kill
-// orphans instead of stopping. `detached: true` above makes `child.pid` the process group id too,
-// so the negative-pid form signals the whole group. ESRCH (already exited) is expected and quiet;
-// anything else is surfaced rather than swallowed, since we're already mid-shutdown and cannot
-// retry.
-function killChildGroup(child, signal) {
-    if (!child) return;
-    try {
-        process.kill(-child.pid, signal);
-    } catch (err) {
-        if (err.code !== 'ESRCH') {
-            console.error(`Failed to signal the test command's process group: ${err.message}`);
-        }
-    }
-}
-
-// The file's own doc comment promises a dirty tree is safe no matter how the run ends. Without
-// these, the default disposition for SIGINT/SIGTERM kills the process instantly -- no listener, no
-// finally -- leaving whatever mutant is on disk right where the mutation loop wrote it.
-function shutdown(signal, exitCode) {
-    return () => {
-        killChildGroup(activeChild, signal);
-        if (activeRestore) activeRestore();
-        process.exit(exitCode);
-    };
-}
-process.on('SIGINT', shutdown('SIGINT', 130));
-process.on('SIGTERM', shutdown('SIGTERM', 143));
-
-const wanted = process.argv.slice(2).filter((a) => a !== '--list' && a !== '--check-anchors');
-
-// A caller asking for a specific mutant (or passing an unsupported flag) that doesn't exist is a
-// typo, not "nothing to do" -- filtering it to an empty selection used to report a vacuous, silent
-// pass (`0 mutant(s) proved their checks can fail.`, exit 0). Name what wasn't recognized and fail.
-// Checked before --list/--check-anchors's own early exits below: those used to run first, so a
-// bogus extra arg alongside either flag (e.g. `--check-anchors BOGUS`) passed silently.
-const knownIds = new Set(PRODUCT.map((m) => m.id));
-const unknown = wanted.filter((arg) => !knownIds.has(arg));
-if (unknown.length) {
-    console.error(`Unrecognized argument(s): ${unknown.join(', ')}. Expected --list, --check-anchors, or a mutant ID from --list.`);
-    process.exit(1);
-}
+// Suite running, signal-safe restore and argument validation live in the shared module, which the
+// other package's harness uses too: test-harnesses/mutation-suite.mjs.
+const suite = createSuiteRunner(PKG);
+const wanted = requireKnownMutants(process.argv.slice(2), PRODUCT);
 
 if (process.argv.includes('--list')) {
     for (const m of PRODUCT) console.log(`${m.id}  ${m.file}  expect: ${m.expect.join(', ')}`);
@@ -924,23 +838,10 @@ for (const m of selected) {
     // Bundles both cleanups the signal handlers must also be able to run: restoring the source
     // AND removing this mutant's mkdtemp backup dir -- previously only the restore happened on
     // the signal path, leaking the temp dir every time a run was interrupted.
-    activeRestore = () => {
+    const result = await suite.runAgainstMutant(() => {
         copyFileSync(backup, full);
         rmSync(dir, { recursive: true, force: true });
-    };
-    let result;
-    try {
-        result = await runTestCommand();
-    } catch (err) {
-        // The child never started at all (bad cwd, resource limits, ...) rather than a felled or
-        // surviving mutant -- surfaced the same way a failing suite is (via `output`, printed
-        // below whenever `expect` isn't found in it), with the command named since `err.message`
-        // alone usually doesn't mention what we tried to run.
-        result = { threw: true, output: `could not run "${TEST_COMMAND}": ${err.message ?? err}` };
-    } finally {
-        activeRestore();
-        activeRestore = null;
-    }
+    });
 
     // `original` is normalised, so the comparison normalises too -- otherwise a CRLF working
     // tree reports a false restore failure on every mutant.

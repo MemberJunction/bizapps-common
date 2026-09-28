@@ -54,7 +54,8 @@ test('--list and --check-anchors are unaffected by the new validation', () => {
 
 // ── pkg-2: a SIGINT/SIGTERM mid-run must restore the mutated file before the process dies ──────
 //
-// Runs entirely against a temp COPY of the package (src/ + test-harnesses/ only -- no
+// Runs entirely against a temp COPY of the package (src/ + test-harnesses/, plus the shared
+// test-harnesses/mutation-suite.mjs -- no
 // node_modules, no dist), so it never touches this worktree's real source and never needs
 // vitest. MUTATE_CHECKS_TEST_COMMAND is the seam: it swaps the real `pnpm exec vitest run` for a
 // plain `node` sleep long enough to reliably land a signal mid-mutation.
@@ -64,12 +65,19 @@ test('--list and --check-anchors are unaffected by the new validation', () => {
 // until the child exits on its own, and (b) registers SIGINT/SIGTERM handlers that restore the
 // mutated file (and forward/kill the child) before exiting.
 
+// The copy keeps the repository's shape (<tmp>/packages/Server/…, <tmp>/test-harnesses/…) because the
+// harness imports test-harnesses/mutation-suite.mjs from the repo root by relative path.
 function makeTempPackageCopy() {
-    const root = mkdtempSync(path.join(tmpdir(), 'mutate-checks-server-'));
+    const base = mkdtempSync(path.join(tmpdir(), 'mutate-checks-server-'));
+    const root = path.join(base, 'packages', 'Server');
     cpSync(path.join(PKG_ROOT, 'src'), path.join(root, 'src'), { recursive: true });
     cpSync(path.join(PKG_ROOT, 'test-harnesses'), path.join(root, 'test-harnesses'), { recursive: true });
+    cpSync(path.join(PKG_ROOT, '..', '..', 'test-harnesses', 'mutation-suite.mjs'), path.join(base, 'test-harnesses', 'mutation-suite.mjs'));
     return root;
 }
+
+/** The temp directory makeTempPackageCopy created, for cleanup. */
+const tempBase = (root) => path.join(root, '..', '..');
 
 function makeSleepCommand(root) {
     const sleepScript = path.join(root, 'sleep.mjs');
@@ -114,7 +122,7 @@ test('SIGINT mid-run restores the mutated file before the harness exits', async 
         const restored = readFileSync(target, 'utf8');
         assert.equal(restored, original, 'mutated source must be restored after SIGINT');
     } finally {
-        rmSync(root, { recursive: true, force: true });
+        rmSync(tempBase(root), { recursive: true, force: true });
     }
 });
 
@@ -139,7 +147,7 @@ test('SIGTERM mid-run restores the mutated file before the harness exits', async
         const restored = readFileSync(target, 'utf8');
         assert.equal(restored, original, 'mutated source must be restored after SIGTERM');
     } finally {
-        rmSync(root, { recursive: true, force: true });
+        rmSync(tempBase(root), { recursive: true, force: true });
     }
 });
 
@@ -235,7 +243,7 @@ test('SIGTERM kills the whole process group (no orphaned grandchild) and removes
         for (const name of listMutTempDirs(mutantId)) {
             if (!before.has(name)) rmSync(path.join(tmpdir(), name), { recursive: true, force: true });
         }
-        rmSync(root, { recursive: true, force: true });
+        rmSync(tempBase(root), { recursive: true, force: true });
     }
 });
 
@@ -267,7 +275,7 @@ test('a command that cannot start is reported, not folded into a silent miss', a
 
         assert.equal(readFileSync(target, 'utf8'), original, 'the file must still be restored');
     } finally {
-        rmSync(root, { recursive: true, force: true });
+        rmSync(tempBase(root), { recursive: true, force: true });
     }
 });
 
@@ -294,7 +302,7 @@ test('setting MUTATE_CHECKS_TEST_COMMAND prints a loud warning naming it', async
 
         assert.equal(readFileSync(target, 'utf8'), original, 'the file must still be restored');
     } finally {
-        rmSync(root, { recursive: true, force: true });
+        rmSync(tempBase(root), { recursive: true, force: true });
     }
 });
 
