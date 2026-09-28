@@ -65,15 +65,15 @@ export const EXCLUDED_FILES = Object.freeze(['scripts/check-release-pushes.spec.
 const PROTECTED_ALTERNATION = PROTECTED_BRANCHES.join('|');
 
 /**
- * A refspec target naming a protected branch, and nothing else.
+ * A refspec target naming a protected branch, and nothing else — for the simple-git and `gh api`
+ * readers below (shell and argv pushes go through `protectedRefspec`, which applies the same rule).
  *
  * The trailing boundary is load-bearing twice over: `mainline` and `next-steps` are ordinary
  * feature branches, and a name that merely begins with a protected one is not that branch.
  *
- * The quote class after `refs/heads/` is for the shell's other concatenation point: a refspec can
- * be quoted as a whole (`"refs/heads/main"`, handled by `REFSPEC_PREFIX`) or only in part
- * (`refs/heads/"main"`). Over-inclusiveness costs nothing here — a needless match is one line a
- * human reads — while under-inclusiveness is the entire bug this gate exists to prevent.
+ * The quote class after `refs/heads/` is for a refspec quoted only in part (`refs/heads/"main"`).
+ * Over-inclusiveness costs nothing here — a needless match is one line a human reads — while
+ * under-inclusiveness is the entire bug this gate exists to prevent.
  */
 const PROTECTED_TARGET = String.raw`(?:refs\/heads\/['"\`]*)?(${PROTECTED_ALTERNATION})(?![\w./-])`;
 
@@ -111,30 +111,146 @@ const GIT_GLOBAL_OPTS =
     String.raw`(?:(?:-[Cc]|--(?:git-dir|work-tree|exec-path|namespace|config-env|attr-source))[=\s]\S+\s+|-\S+\s+)*`;
 
 /**
- * `git push … <protected>` in shell, with or without a `HEAD:` / `<local>:` prefix and any flags.
- *
- * `\s+\S+\s+` between `push` and the target is the REMOTE, and requiring it is what keeps
- * `git push main` — which pushes to a remote *named* main — and a bare `git push` out. Neither
- * names a protected branch; a bare push's destination is its upstream, which no static reader can
- * know. Case-insensitive because macOS and Windows both mount case-insensitively, so `Git push`
- * really does invoke git here.
- *
- * `REFSPEC_PREFIX` is what a refspec may carry before the branch name. Quotes are the reason it
- * exists: `git push origin "HEAD:main"` used to match, but only by accident — the `(?:\S*:)?` group
- * exists to skip a `<local>:` prefix, and on its way to the colon it happened to swallow the
- * opening quote too. A BARE quoted branch has no colon, so that group matched empty and the quote
- * landed exactly where the branch name had to start. The colon form working is precisely what hid
- * the bare form failing, and quoting a refspec argument is ordinary git usage, not a signal that
- * only a careful author would write it that way. `\+` is the ordinary force-push shorthand,
- * `git push origin +main`.
+ * Where a shell `git … push` begins. What follows it is read as the push's ARGUMENT LIST by
+ * `protectedRefspec`, not matched against one fixed word order: an earlier single regex read exactly
+ * one word after the remote, so a flag placed after the remote (`git push origin --force main`) or a
+ * second refspec (`git push origin v1.0.0 main`) walked past it — git pushes to `main` in both.
+ * Case-insensitive because macOS and Windows both mount case-insensitively, so `Git push` really
+ * does invoke git here.
  */
-const REFSPEC_PREFIX = String.raw`['"\`]*\+?(?:\S*:)?`;
+const SHELL_PUSH_START = new RegExp(COMMAND_START + String.raw`git\s+` + GIT_GLOBAL_OPTS + String.raw`push\b`, 'gi');
 
-const SHELL_PUSH = new RegExp(
-    COMMAND_START + String.raw`git\s+` + GIT_GLOBAL_OPTS +
-        String.raw`push\b(?:\s+-{1,2}[\w-]+)*\s+\S+\s+` + REFSPEC_PREFIX + PROTECTED_TARGET,
-    'i',
-);
+/** Where one shell command ends and the next begins: the next word is not an argument of this push. */
+const COMMAND_END = /;|&&|\|\|?|\s#/;
+
+/**
+ * The protected branch a push's arguments (everything after `push`) write to, or `null`.
+ *
+ * `git push [<options>] [<repository> [<refspec>…]]`, with options allowed anywhere. The first
+ * positional is the REPOSITORY — which is what keeps `git push main` (a remote named main) and a bare
+ * `git push` (its upstream, which no static reader can know) out — and EVERY later positional is a
+ * refspec. A refspec may be quoted whole or in part (`"HEAD:main"`, `refs/heads/"main"`), carry a
+ * `+` (force) and a `<local>:` source, and name the branch bare or as `refs/heads/<b>`; after that the
+ * name must equal a protected branch exactly, so `mainline` and `next-steps` stay ordinary branches.
+ * `null` stands for an argument whose value is not a literal (a variable in an argv array): it holds
+ * a position, and is never itself protected.
+ */
+function protectedRefspec(args) {
+    const positionals = args.filter((arg) => arg === null || !arg.startsWith('-'));
+    for (const arg of positionals.slice(1)) {
+        if (arg === null) continue;
+        const name = arg.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '');
+        if (PROTECTED_BRANCHES.includes(name)) return name;
+    }
+    return null;
+}
+
+/** The first push to a protected branch in one logical shell line, as `{ ref }`, or `null`. */
+function findShellPush(logicalLine) {
+    // A `\n`/`\r` escape inside a string literal is a line break by the time a shell runs it, and a
+    // `\t` is whitespace: `execSync('git push origin main\n')` pushes `main`, not `main\n`.
+    const line = logicalLine.replace(/\\[nr]/g, ' ; ').replace(/\\t/g, ' ');
+    for (const start of line.matchAll(SHELL_PUSH_START)) {
+        const rest = line.slice(start.index + start[0].length).split(COMMAND_END)[0];
+        const words = rest
+            .split(/\s+/)
+            .map((word) => word.replace(/['"`]/g, '').replace(/[),]+$/, ''))
+            .filter(Boolean);
+        const ref = protectedRefspec(words);
+        if (ref) return { ref };
+    }
+    return null;
+}
+
+/**
+ * git spawned with an argv ARRAY — `execFileSync('git', ['push', 'origin', 'HEAD:main'])`, `spawnSync`,
+ * `execa`, or a helper such as `git(root, ['push', …])`, which is how release-prep.mjs and the cadence
+ * gate reach git for everything except their `runOrThrow` calls. No shell ever sees `git push` as one
+ * string, so the shell reading above cannot. The ARRAY is the signal, not the word in front of it: a
+ * reader keyed on a `'git'` literal before the array missed every helper call. Matched over the WHOLE
+ * file because a formatted array spans lines.
+ */
+const STRING_LITERAL = /^(['"`])(.*)\1$/s;
+
+/** git's global options that take their value as the NEXT argv element. */
+const GIT_OPTS_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--config-env']);
+
+/**
+ * Longest array literal the reader will follow. Past it the `[` is taken to open something else — a
+ * regex character class, prose — whose `]` never comes; the cap keeps a file full of those linear
+ * instead of rescanning to the end once per bracket. An argv array is a few hundred characters.
+ */
+const MAX_ARRAY_CHARS = 4000;
+
+/**
+ * The top-level elements of the array literal opening at `text[open]`, or `null` when no matching `]`
+ * closes it within MAX_ARRAY_CHARS. Brackets nest and quoted strings are opaque, so `remotes[0]` or a
+ * `']'` inside an element does not end the array early.
+ */
+function arrayElementsAt(text, open) {
+    const elements = [];
+    let depth = 0;
+    let quote = null;
+    let current = '';
+    for (let i = open; i < text.length && i - open <= MAX_ARRAY_CHARS; i++) {
+        const ch = text[i];
+        if (quote) {
+            current += ch;
+            if (ch === '\\') current += text[++i] ?? '';
+            else if (ch === quote) quote = null;
+            continue;
+        }
+        if (ch === "'" || ch === '"' || ch === '`') {
+            quote = ch;
+        } else if (ch === '[' && ++depth === 1) {
+            continue;
+        } else if (ch === ']' && --depth === 0) {
+            if (current.trim()) elements.push(current.trim());
+            return elements;
+        } else if (ch === ',' && depth === 1) {
+            elements.push(current.trim());
+            current = '';
+            continue;
+        }
+        current += ch;
+    }
+    return null;
+}
+
+/**
+ * The arguments after `push` in a git argv array, or `null` when the subcommand is not `push`. A
+ * leading `'git'` element (`spawn('env', ['git', 'push', …])`) is skipped like a global option.
+ */
+function pushArgsFromArgv(elements) {
+    const values = elements.map((element) => STRING_LITERAL.exec(element)?.[2] ?? null);
+    const start = values[0] === 'git' ? 1 : 0;
+    for (let i = start; i < values.length; i++) {
+        const value = values[i];
+        if (value !== null && GIT_OPTS_WITH_VALUE.has(value)) {
+            i++;
+        } else if (value === null || !value.startsWith('-')) {
+            return value === 'push' ? values.slice(i + 1) : null;
+        }
+    }
+    return null;
+}
+
+/** Every argv-array push to a protected branch in `text`, as `{ line, ref, snippet }`. */
+function findArgvPushes(text) {
+    const lines = text.split('\n');
+    const found = [];
+    for (let open = text.indexOf('['); open !== -1; open = text.indexOf('[', open + 1)) {
+        const elements = arrayElementsAt(text, open);
+        const args = elements && pushArgsFromArgv(elements);
+        const ref = args && protectedRefspec(args);
+        if (!ref) continue;
+        const line = text.slice(0, open).split('\n').length;
+        if (!isCommentary(lines[line - 1])) {
+            found.push({ line, ref, snippet: lines[line - 1].trim() });
+        }
+    }
+    return found;
+}
 
 /**
  * simple-git's spelling of the same operation: `git.push('origin', 'HEAD:main')`.
@@ -159,7 +275,7 @@ const GH_API_REF_TARGET = new RegExp(String.raw`(?:git\/)?refs\/heads\/${PROTECT
 
 /**
  * `gh api` calls that update a protected branch's ref directly — REST's equivalent of `git push`,
- * and invisible to SHELL_PUSH/METHOD_PUSH above because it is not a `git push` (or simple-git call)
+ * and invisible to the shell, argv and simple-git readers above because it is not a `git push` (or simple-git call)
  * at all. Whether a given ruleset's required-status-checks rule blocks a REST ref update the same
  * way it blocks a `git push` (this file's header) is not something this gate depends on either way:
  * a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` writes a protected branch directly, without
@@ -248,12 +364,14 @@ export function findProtectedPushes(text) {
         if (isCommentary(joined)) {
             continue;
         }
-        const match = SHELL_PUSH.exec(joined) ?? METHOD_PUSH.exec(joined) ?? findGhApiRefUpdate(joined);
-        if (match) {
-            found.push({ line, ref: match[1], snippet: joined.trim() });
+        const shell = findShellPush(joined);
+        const match = METHOD_PUSH.exec(joined) ?? findGhApiRefUpdate(joined);
+        const ref = shell?.ref ?? match?.[1];
+        if (ref) {
+            found.push({ line, ref, snippet: joined.trim() });
         }
     }
-    return found;
+    return [...found, ...findArgvPushes(text)].sort((a, b) => a.line - b.line);
 }
 
 /** Every file under `dir`, recursively. Returns [] for a directory that does not exist. */
@@ -276,14 +394,26 @@ function filesUnder(dir) {
     });
 }
 
-/** Violations across the whole release path, as printable strings. */
+/**
+ * The directory the release path itself lives in. A run that read no file here has not looked at
+ * publish.yml or release-prep.yml, so it cannot report that they are clean: `filesUnder` answers `[]`
+ * for an absent directory and for an empty one alike, and without this a checkout missing
+ * `.github/workflows` printed the same pass line as a clean one.
+ */
+const RELEASE_WORKFLOWS_DIR = '.github/workflows';
+
+/** Violations across the whole release path, as printable strings — plus a problem if it read no workflow. */
 export function runCheck(root) {
     const violations = [];
     const exempt = new Set(EXCLUDED_FILES);
+    let workflowsRead = 0;
     for (const dir of SCANNED_DIRS) {
         for (const file of filesUnder(join(root, dir))) {
             if (exempt.has(relative(root, file).split(sep).join('/'))) {
                 continue;
+            }
+            if (dir === RELEASE_WORKFLOWS_DIR) {
+                workflowsRead++;
             }
             for (const hit of findProtectedPushes(readFileSync(file, 'utf8'))) {
                 violations.push(
@@ -296,6 +426,12 @@ export function runCheck(root) {
                 );
             }
         }
+    }
+    if (workflowsRead === 0) {
+        violations.push(
+            `read no file under ${RELEASE_WORKFLOWS_DIR}/ in ${root}, so the release workflows were never checked. ` +
+                'A gate that looked at nothing is not a gate that passed — run it from a full checkout.',
+        );
     }
     return violations;
 }

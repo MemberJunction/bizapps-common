@@ -265,9 +265,11 @@ test('quoting does not make a non-protected target protected', () => {
 // pattern recognised a push planted there; the file was simply never opened, so the gate printed
 // "passed".
 
+// Every fixture carries one clean workflow, as any real checkout does: a root with none is refused as
+// having checked nothing (the last test in this file), which is not what these tests are about.
 function fixtureRoot(files) {
     const root = mkdtempSync(path.join(tmpdir(), 'release-pushes-'));
-    for (const [rel, body] of Object.entries(files)) {
+    for (const [rel, body] of Object.entries({ '.github/workflows/clean.yml': 'run: echo ok\n', ...files })) {
         const full = path.join(root, rel);
         mkdirSync(path.dirname(full), { recursive: true });
         writeFileSync(full, body);
@@ -337,6 +339,8 @@ test('main() still runs when the script is invoked through a symlink', () => {
     try {
         mkdirSync(path.join(fixture, 'scripts'), { recursive: true });
         copyFileSync(path.join(REPO_ROOT, 'scripts', 'check-release-pushes.mjs'), path.join(fixture, 'scripts', 'check-release-pushes.mjs'));
+        mkdirSync(path.join(fixture, '.github', 'workflows'), { recursive: true });
+        writeFileSync(path.join(fixture, '.github', 'workflows', 'clean.yml'), 'run: echo ok\n');
         const symlinkPath = path.join(fixture, 'invoke-via-symlink.mjs');
         symlinkSync(path.join(fixture, 'scripts', 'check-release-pushes.mjs'), symlinkPath);
         const result = spawnSync(process.execPath, [symlinkPath], { encoding: 'utf8' });
@@ -345,4 +349,95 @@ test('main() still runs when the script is invoked through a symlink', () => {
     } finally {
         rmSync(fixture, { recursive: true, force: true });
     }
+});
+
+// ── Push spellings the single-regex grammar never looked at ─────────────────────────────────────
+//
+// SHELL_PUSH read exactly one word after the remote, and only when `git` and `push` were adjacent
+// shell words. Each line below makes git push to `main` (a `--dry-run` against a bare repo shows
+// `-> main`), and each used to print "passed". The decision is now made on the push's ARGUMENT LIST,
+// whichever syntax produced it: every positional after the remote is a refspec, and flags may sit
+// anywhere.
+
+test('a child_process argv array that pushes to a protected branch is a violation', () => {
+    assert.equal(findProtectedPushes("execFileSync('git', ['push', 'origin', 'HEAD:main']);\n").length, 1);
+    assert.equal(findProtectedPushes('spawnSync("git", ["push", "origin", "main"]);\n').length, 1);
+    assert.equal(findProtectedPushes("runOrThrow(root, 'git', ['-C', root, 'push', '--force', 'origin', 'next']);\n").length, 1);
+});
+
+test('an argv array written across several lines is a violation, reported at its first line', () => {
+    const text = ["a();", "execFileSync('git', [", "    'push',", "    'origin',", "    'HEAD:main',", "]);", ''].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 2);
+    assert.equal(found[0].ref, 'main');
+});
+
+test('a flag between the remote and the refspec does not hide the refspec', () => {
+    assert.equal(findProtectedPushes('git push origin --force main\n').length, 1);
+    assert.equal(findProtectedPushes('git push origin -f HEAD:next\n').length, 1);
+});
+
+test('a protected refspec after another refspec is a violation', () => {
+    assert.equal(findProtectedPushes('git push origin v1.0.0 main\n').length, 1);
+    assert.equal(findProtectedPushes('git push origin refs/tags/v1 HEAD:refs/heads/next\n').length, 1);
+});
+
+test('the argv and multi-refspec readings keep the allow-cases', () => {
+    assert.deepEqual(findProtectedPushes("execFileSync('git', ['push', 'app-push', `${sha}:refs/heads/${branch}`]);\n"), []);
+    assert.deepEqual(findProtectedPushes("execFileSync('git', ['push', 'main']);\n"), [], 'a lone positional is the remote');
+    assert.deepEqual(findProtectedPushes("execFileSync('git', ['fetch', 'origin', 'main']);\n"), []);
+    assert.deepEqual(findProtectedPushes('git push origin v1.0.0 mainline\n'), []);
+    assert.deepEqual(findProtectedPushes('git push origin HEAD:chore/x && git checkout main\n'), [], 'the next command is not a refspec');
+    assert.deepEqual(findProtectedPushes('// execFileSync(\'git\', [\'push\', \'origin\', \'main\']) was here\n'), []);
+});
+
+// ── A pass must mean the release path was read ──────────────────────────────────────────────────
+//
+// runCheck returned only violations and main() printed a fixed pass line, so a checkout with no
+// `.github/workflows` (the directory publish.yml and release-prep.yml live in) passed exactly like a
+// clean one. A gate that read none of the workflows cannot vouch for them.
+
+test('a root with no workflow files is a problem, not a pass', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'release-pushes-'));
+    mkdirSync(path.join(root, 'scripts'));
+    writeFileSync(path.join(root, 'scripts', 'check-release-pushes.mjs'), '// the gate itself\n');
+    const problems = runCheck(root);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0], /\.github\/workflows/);
+});
+
+// ── The array is the signal, not the word in front of it ─────────────────────────────────────────
+//
+// The argv reader first required a `'git'` literal before the array, but this repo's own scripts
+// reach git through a helper — `git(root, [...])` in release-prep.mjs and the cadence gate — so a
+// push added the way those files already call git passed. It also ended the array at the first `]`,
+// so an element like `remotes[0]` cut the argument list short.
+
+test('a push through a git helper taking an argv array is a violation', () => {
+    assert.equal(findProtectedPushes("git(root, ['push', 'origin', 'HEAD:main']);\n").length, 1);
+    assert.equal(findProtectedPushes("run(['git', 'push', 'origin', 'next']);\n").length, 1);
+});
+
+test('an argv element containing a bracket does not end the array early', () => {
+    assert.equal(findProtectedPushes("execFileSync('git', ['push', remotes[0], 'HEAD:main']);\n").length, 1);
+});
+
+test('arrays that are not a push stay quiet', () => {
+    assert.deepEqual(findProtectedPushes("const branches = ['main', 'next'];\n"), []);
+    assert.deepEqual(findProtectedPushes("git(root, ['status', '--porcelain']);\n"), []);
+    assert.deepEqual(findProtectedPushes("git(root, ['merge-base', '--is-ancestor', 'main', 'next']);\n"), []);
+    assert.deepEqual(findProtectedPushes("queue(['push-notification', 'main']);\n"), []);
+});
+
+// ── A string escape ends the word it follows ───────────────────────────────────────────────────
+//
+// Inside a JS string, `\n` is a newline by the time the shell sees it, so `main\n` is the branch
+// `main` and whatever follows is the next command. Reading words by whitespace alone left `main\n`,
+// which is not `main`; the single regex this replaced caught it.
+
+test('a refspec followed by a string escape is still the protected branch', () => {
+    assert.equal(findProtectedPushes("execSync('git push origin main\\n');\n").length, 1);
+    assert.equal(findProtectedPushes("execSync('git push origin feature\\ngit push origin next');\n").length, 1);
+    assert.deepEqual(findProtectedPushes("execSync('git push origin feature\\ngit checkout main');\n"), []);
 });
