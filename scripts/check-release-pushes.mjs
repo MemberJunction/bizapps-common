@@ -22,7 +22,7 @@
  * Plain Node, stdlib only, matching `check-release-seed-coverage.mjs`: a gate that guards the
  * release must be runnable in CI without installing anything.
  */
-import { readdirSync, readFileSync, statSync, realpathSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, realpathSync, existsSync } from 'node:fs';
 import { join, relative, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -49,7 +49,15 @@ export const PROTECTED_BRANCHES = Object.freeze(['main', 'next']);
  * `ci/` stays although the directory is gone. `filesUnder` returns [] for ENOENT, so an absent path
  * is inert, and the entry is a tripwire for a directory that must fail this gate if it comes back.
  */
-export const SCANNED_DIRS = Object.freeze(['.github/workflows', '.github/scripts', 'scripts', 'ci']);
+export const SCANNED_DIRS = Object.freeze(['.github/workflows', '.github/actions', '.github/scripts', 'scripts', 'ci']);
+
+/**
+ * Single files on the release path: the root `package.json`, whose scripts (`version`,
+ * `release:plan`) are what the workflows and a human run. A push added as a script there is as live as
+ * one in a workflow. `.github/actions/` is in SCANNED_DIRS for the same reason: a composite action's
+ * `run:` steps execute inside the workflows that use it.
+ */
+export const SCANNED_FILES = Object.freeze(['package.json']);
 
 /**
  * The one file allowed to contain protected-branch push strings: this gate's own spec, where they
@@ -139,11 +147,20 @@ function protectedRefspec(args) {
     const positionals = args.filter((arg) => arg === null || !arg.startsWith('-'));
     for (const arg of positionals.slice(1)) {
         if (arg === null) continue;
+        if (RESOLVES_TO_PROTECTED.test(arg)) return arg;
         const name = arg.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '');
         if (PROTECTED_BRANCHES.includes(name)) return name;
     }
     return null;
 }
+
+/**
+ * A refspec written as an expression that, in THIS repository's events, names a protected branch:
+ * `base_ref` of a PR into next or main, the default branch (next), `ref_name` on a push to main. A
+ * plain variable (`$BRANCH`) is unknowable to a static reader and is not matched — publish.yml
+ * pushes `chore/backmerge-*` exactly that way.
+ */
+const RESOLVES_TO_PROTECTED = /\bbase_ref\b|\bref_name\b|GITHUB_BASE_REF|GITHUB_REF_NAME|default_branch/i;
 
 /** The first push to a protected branch in one logical shell line, as `{ ref }`, or `null`. */
 function findShellPush(logicalLine) {
@@ -176,23 +193,26 @@ const STRING_LITERAL = /^(['"`])(.*)\1$/s;
 const GIT_OPTS_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--config-env']);
 
 /**
- * Longest array literal the reader will follow. Past it the `[` is taken to open something else — a
- * regex character class, prose — whose `]` never comes; the cap keeps a file full of those linear
- * instead of rescanning to the end once per bracket. An argv array is a few hundred characters.
+ * Longest bracketed list the reader will follow. Past it the bracket is taken to open something else
+ * — a regex character class, prose — whose closer never comes; the cap keeps a file full of those
+ * linear instead of rescanning to the end once per bracket. An argv array or a call's arguments are a
+ * few hundred characters.
  */
-const MAX_ARRAY_CHARS = 4000;
+const MAX_LIST_CHARS = 4000;
+const CLOSER = Object.freeze({ '[': ']', '(': ')', '{': '}' });
 
 /**
- * The top-level elements of the array literal opening at `text[open]`, or `null` when no matching `]`
- * closes it within MAX_ARRAY_CHARS. Brackets nest and quoted strings are opaque, so `remotes[0]` or a
- * `']'` inside an element does not end the array early.
+ * The top-level, comma-separated elements of the bracketed list opening at `text[open]` — an array
+ * literal or a call's argument list — or `null` when nothing closes it within MAX_LIST_CHARS. All
+ * three bracket kinds nest and quoted strings are opaque, so `remotes[0]`, an options object or a
+ * `']'` inside an element does not end the list early.
  */
-function arrayElementsAt(text, open) {
+function listElementsAt(text, open) {
     const elements = [];
-    let depth = 0;
+    const stack = [];
     let quote = null;
     let current = '';
-    for (let i = open; i < text.length && i - open <= MAX_ARRAY_CHARS; i++) {
+    for (let i = open; i < text.length && i - open <= MAX_LIST_CHARS; i++) {
         const ch = text[i];
         if (quote) {
             current += ch;
@@ -202,12 +222,16 @@ function arrayElementsAt(text, open) {
         }
         if (ch === "'" || ch === '"' || ch === '`') {
             quote = ch;
-        } else if (ch === '[' && ++depth === 1) {
-            continue;
-        } else if (ch === ']' && --depth === 0) {
-            if (current.trim()) elements.push(current.trim());
-            return elements;
-        } else if (ch === ',' && depth === 1) {
+        } else if (CLOSER[ch]) {
+            stack.push(CLOSER[ch]);
+            if (stack.length === 1) continue;
+        } else if (ch === stack[stack.length - 1]) {
+            stack.pop();
+            if (stack.length === 0) {
+                if (current.trim()) elements.push(current.trim());
+                return elements;
+            }
+        } else if (ch === ',' && stack.length === 1) {
             elements.push(current.trim());
             current = '';
             continue;
@@ -217,12 +241,19 @@ function arrayElementsAt(text, open) {
     return null;
 }
 
+/** A literal element's text, or — for an expression — the expression if it names a protected branch. */
+function argValue(element) {
+    const literal = STRING_LITERAL.exec(element)?.[2];
+    if (literal !== undefined) return literal;
+    return RESOLVES_TO_PROTECTED.test(element) ? element : null;
+}
+
 /**
  * The arguments after `push` in a git argv array, or `null` when the subcommand is not `push`. A
  * leading `'git'` element (`spawn('env', ['git', 'push', …])`) is skipped like a global option.
  */
 function pushArgsFromArgv(elements) {
-    const values = elements.map((element) => STRING_LITERAL.exec(element)?.[2] ?? null);
+    const values = elements.map(argValue);
     const start = values[0] === 'git' ? 1 : 0;
     for (let i = start; i < values.length; i++) {
         const value = values[i];
@@ -235,32 +266,63 @@ function pushArgsFromArgv(elements) {
     return null;
 }
 
-/** Every argv-array push to a protected branch in `text`, as `{ line, ref, snippet }`. */
-function findArgvPushes(text) {
-    const lines = text.split('\n');
-    const found = [];
-    for (let open = text.indexOf('['); open !== -1; open = text.indexOf('[', open + 1)) {
-        const elements = arrayElementsAt(text, open);
-        const args = elements && pushArgsFromArgv(elements);
-        const ref = args && protectedRefspec(args);
-        if (!ref) continue;
-        const line = text.slice(0, open).split('\n').length;
-        if (!isCommentary(lines[line - 1])) {
-            found.push({ line, ref, snippet: lines[line - 1].trim() });
-        }
-    }
-    return found;
+/**
+ * `gh api` given as an argv array: the `api` element and a `refs/heads/<protected>` element in the
+ * same array. A formatted array spans lines, which the line-based `gh api` reader cannot join.
+ */
+function ghApiArrayTarget(elements) {
+    if (!elements.some((element) => STRING_LITERAL.exec(element)?.[2] === 'api')) return null;
+    return GH_API_REF_TARGET.exec(elements.join(' '))?.[1] ?? null;
+}
+
+/** simple-git's `.push(remote, refspec)`, or `.push([remote, refspec])`, however it is wrapped. */
+function methodPushTarget(text, open) {
+    let elements = listElementsAt(text, open);
+    if (elements?.length === 1 && elements[0].startsWith('[')) elements = listElementsAt(elements[0], 0);
+    return elements ? protectedRefspec(elements.map(argValue)) : null;
 }
 
 /**
- * simple-git's spelling of the same operation: `git.push('origin', 'HEAD:main')`.
- *
- * The optional `[` covers simple-git's array form, `git.push(['origin', 'HEAD:main'])`, which it
- * accepts identically.
+ * octokit / actions/github-script ref writes: `git.updateRef`, `git.createRef`, `git.deleteRef`, or
+ * `request('… /git/refs/…', { ref })`, with `ref` naming a protected branch. No `git` or `gh` word
+ * appears in these at all.
  */
-const METHOD_PUSH = new RegExp(
-    String.raw`\.push\(\s*\[?\s*['"\`][^'"\`]+['"\`]\s*,\s*['"\`]\+?(?:\S*:)?` + PROTECTED_TARGET + String.raw`['"\`]`,
-);
+const OCTOKIT_REF_CALL = /\b(updateRef|createRef|deleteRef|request)\s*\(/g;
+const OCTOKIT_PROTECTED_REF = new RegExp(String.raw`\bref['"]?\s*:\s*['"\`](?:refs\/)?heads\/(${PROTECTED_ALTERNATION})['"\`]`);
+function octokitRefTarget(text, open, method) {
+    const args = listElementsAt(text, open);
+    if (!args) return null;
+    const joined = args.join(', ');
+    if (method === 'request' && !/git\/refs/.test(joined)) return null;
+    return OCTOKIT_PROTECTED_REF.exec(joined)?.[1] ?? null;
+}
+
+/**
+ * Pushes written as structures rather than shell words — argv arrays, method calls, API calls —
+ * found over the WHOLE file, because formatters wrap them across lines. As `{ line, ref, snippet }`,
+ * reported at the line where the structure starts.
+ */
+function findStructuredPushes(text) {
+    const lines = text.split('\n');
+    const found = [];
+    const report = (at, ref) => {
+        const line = text.slice(0, at).split('\n').length;
+        if (ref && !isCommentary(lines[line - 1])) found.push({ line, ref, snippet: lines[line - 1].trim() });
+    };
+    for (let open = text.indexOf('['); open !== -1; open = text.indexOf('[', open + 1)) {
+        const elements = listElementsAt(text, open);
+        if (!elements) continue;
+        const args = pushArgsFromArgv(elements);
+        report(open, (args && protectedRefspec(args)) || ghApiArrayTarget(elements));
+    }
+    for (const call of text.matchAll(/\.push\s*\(/g)) {
+        report(call.index, methodPushTarget(text, call.index + call[0].length - 1));
+    }
+    for (const call of text.matchAll(OCTOKIT_REF_CALL)) {
+        report(call.index, octokitRefTarget(text, call.index + call[0].length - 1, call[1]));
+    }
+    return found;
+}
 
 /**
  * A `git/refs/heads/<protected>` (or bare `refs/heads/<protected>`) REST ref target — the resource
@@ -364,14 +426,15 @@ export function findProtectedPushes(text) {
         if (isCommentary(joined)) {
             continue;
         }
-        const shell = findShellPush(joined);
-        const match = METHOD_PUSH.exec(joined) ?? findGhApiRefUpdate(joined);
-        const ref = shell?.ref ?? match?.[1];
+        const ref = findShellPush(joined)?.ref ?? findGhApiRefUpdate(joined)?.[1];
         if (ref) {
             found.push({ line, ref, snippet: joined.trim() });
         }
     }
-    return [...found, ...findArgvPushes(text)].sort((a, b) => a.line - b.line);
+    // One report per line: a single-line `gh api` array is seen by both readers.
+    const reported = new Set(found.map((hit) => hit.line));
+    const structured = findStructuredPushes(text).filter((hit) => !reported.has(hit.line) && reported.add(hit.line));
+    return [...found, ...structured].sort((a, b) => a.line - b.line);
 }
 
 /** Every file under `dir`, recursively. Returns [] for a directory that does not exist. */
@@ -407,24 +470,26 @@ export function runCheck(root) {
     const violations = [];
     const exempt = new Set(EXCLUDED_FILES);
     let workflowsRead = 0;
-    for (const dir of SCANNED_DIRS) {
-        for (const file of filesUnder(join(root, dir))) {
-            if (exempt.has(relative(root, file).split(sep).join('/'))) {
-                continue;
-            }
-            if (dir === RELEASE_WORKFLOWS_DIR) {
-                workflowsRead++;
-            }
-            for (const hit of findProtectedPushes(readFileSync(file, 'utf8'))) {
-                violations.push(
-                    `${relative(root, file)}:${hit.line}: pushes directly to '${hit.ref}', bypassing the pull ` +
-                        `request this repository's release flow requires (CLAUDE.md's "Branching Model"). Once a ` +
-                        `branch's ruleset carries required status checks — as bizapps-forms' did — such a push ` +
-                        `is rejected permanently (GH013): the SHA it introduces has never been seen by the remote, ` +
-                        `so no check run can exist for it yet. See MemberJunction/bizapps-forms#177. Route the ` +
-                        `change through a pull request, or push a tag instead.\n      ${hit.snippet}`,
-                );
-            }
+    const scanned = [
+        ...SCANNED_DIRS.flatMap((dir) => filesUnder(join(root, dir)).map((file) => ({ dir, file }))),
+        ...SCANNED_FILES.map((name) => join(root, name)).filter((file) => existsSync(file)).map((file) => ({ dir: null, file })),
+    ];
+    for (const { dir, file } of scanned) {
+        if (exempt.has(relative(root, file).split(sep).join('/'))) {
+            continue;
+        }
+        if (dir === RELEASE_WORKFLOWS_DIR) {
+            workflowsRead++;
+        }
+        for (const hit of findProtectedPushes(readFileSync(file, 'utf8'))) {
+            violations.push(
+                `${relative(root, file)}:${hit.line}: pushes directly to '${hit.ref}', bypassing the pull ` +
+                    `request this repository's release flow requires (CLAUDE.md's "Branching Model"). Once a ` +
+                    `branch's ruleset carries required status checks — as bizapps-forms' did — such a push ` +
+                    `is rejected permanently (GH013): the SHA it introduces has never been seen by the remote, ` +
+                    `so no check run can exist for it yet. See MemberJunction/bizapps-forms#177. Route the ` +
+                    `change through a pull request, or push a tag instead.\n      ${hit.snippet}`,
+            );
         }
     }
     if (workflowsRead === 0) {
@@ -447,7 +512,7 @@ function main() {
         console.error(`${violations.length} violation(s).`);
         process.exit(1);
     }
-    console.log(`Release-push gate passed (${SCANNED_DIRS.join(', ')}).`);
+    console.log(`Release-push gate passed (${[...SCANNED_DIRS, ...SCANNED_FILES].join(', ')}).`);
 }
 
 // Compared through realpath, not as a `file://` string: that string is never equal under a path with

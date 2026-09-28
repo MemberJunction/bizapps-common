@@ -441,3 +441,52 @@ test('a refspec followed by a string escape is still the protected branch', () =
     assert.equal(findProtectedPushes("execSync('git push origin feature\\ngit push origin next');\n").length, 1);
     assert.deepEqual(findProtectedPushes("execSync('git push origin feature\\ngit checkout main');\n"), []);
 });
+
+// ── Review round 2: the blind spots the reviewer listed ─────────────────────────────────────────
+//
+// A push whose target is an expression that resolves to a protected branch in THIS repository's
+// events: base_ref of a PR into next/main, the default branch (next), ref_name on a push to main.
+// A plain variable (`$BRANCH`) stays unknowable to a static reader and is not flagged; publish.yml
+// pushes `chore/backmerge-*` exactly that way.
+test('a push whose target is base_ref, default_branch or ref_name is a violation', () => {
+    for (const line of [
+        'git push origin "HEAD:${{ github.base_ref }}"',
+        'git push origin HEAD:$GITHUB_BASE_REF',
+        'git push origin "${{ github.event.repository.default_branch }}"',
+        'git push origin "HEAD:${GITHUB_REF_NAME}"',
+        "execFileSync('git', ['push', 'origin', `HEAD:${process.env.GITHUB_BASE_REF}`]);",
+    ]) {
+        assert.equal(findProtectedPushes(`${line}\n`).length, 1, line);
+    }
+    assert.deepEqual(findProtectedPushes('git push app-push "HEAD:refs/heads/$BRANCH"\n'), []);
+});
+
+// Prettier splits long calls across lines; a line-by-line reader never saw them whole.
+test('a simple-git push split across lines is a violation', () => {
+    const text = ['await git.push(', "    'origin',", "    'HEAD:main',", ');', ''].join('\n');
+    const found = findProtectedPushes(text);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 1);
+});
+
+test('a gh api ref update written as a multi-line argv array is a violation', () => {
+    const text = ["execFileSync('gh', [", "    'api',", "    '-X', 'PATCH',", '    `repos/${repo}/git/refs/heads/next`,', "    '-f', `sha=${sha}`,", ']);', ''].join('\n');
+    assert.equal(findProtectedPushes(text).length, 1);
+});
+
+// actions/github-script and octokit update a ref with no `git` or `gh` in sight.
+test('an octokit ref update on a protected branch is a violation', () => {
+    assert.equal(findProtectedPushes("await github.rest.git.updateRef({ owner, repo, ref: 'heads/main', sha });\n").length, 1);
+    assert.equal(findProtectedPushes(['await octokit.rest.git.createRef({', '  owner,', "  ref: 'refs/heads/next',", '  sha,', '});', ''].join('\n')).length, 1);
+    assert.equal(findProtectedPushes("await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/{ref}', { owner, repo, ref: 'heads/main', sha });\n").length, 1);
+    assert.deepEqual(findProtectedPushes("await github.rest.git.updateRef({ owner, repo, ref: 'heads/chore/x', sha });\n"), []);
+    assert.deepEqual(findProtectedPushes("await github.rest.pulls.create({ owner, repo, head: 'x', base: 'main' });\n"), []);
+});
+
+test('composite actions and root package.json scripts are part of the release path', () => {
+    assert.ok(SCANNED_DIRS.includes('.github/actions'));
+    const inAction = fixtureRoot({ '.github/actions/release/action.yml': 'runs:\n  steps:\n    - run: git push origin main\n' });
+    assert.match(runCheck(inAction).join('\n'), /\.github\/actions\/release\/action\.yml:3/);
+    const inScripts = fixtureRoot({ 'package.json': '{\n  "scripts": {\n    "ship": "git push origin HEAD:main"\n  }\n}\n' });
+    assert.match(runCheck(inScripts).join('\n'), /package\.json:3/);
+});
