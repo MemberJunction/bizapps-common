@@ -53,6 +53,8 @@ on:
 # own token to `read` means a bug here cannot write to the repository as Actions.
 permissions:
   contents: read
+  # The guard below asks whether a release PR is already open; reading PRs writes nothing.
+  pull-requests: read
 
 # Never two at once. Both would compute the same version from the same tip of `next` and race to
 # create the same branch; the loser fails on a rejected push after having already run the bump.
@@ -183,6 +185,7 @@ jobs:
       - name: Refuse to cut a release that is not ready
         if: ${{ !inputs.dry_run }}
         env:
+          GH_TOKEN: ${{ github.token }}
           READY: ${{ steps.plan.outputs.ready }}
           VERSION: ${{ steps.plan.outputs.version }}
           BRANCH: ${{ steps.plan.outputs.branch }}
@@ -214,6 +217,15 @@ jobs:
           EXISTING_BRANCH=$(git ls-remote --heads origin "refs/heads/$BRANCH" | cut -f1)
           if [ -n "$EXISTING_BRANCH" ]; then
             echo "::error::$BRANCH already exists on the remote. Either its pull request is already open, or a previous run left it behind — this workflow will not overwrite it."
+            exit 1
+          fi
+          # A release PR for ANOTHER version: a stronger changeset landed between two dispatches, so
+          # this run computed a different version and branch, and would open a second release PR
+          # beside the first. Only one can merge cleanly. Same capture-by-assignment rule as above.
+          OPEN_RELEASE_PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --state open --json headRefName,url \
+            --jq '[.[] | select(.headRefName | startswith("release/")) | .url] | join(" ")')
+          if [ -n "$OPEN_RELEASE_PRS" ]; then
+            echo "::error::A release pull request is already open: $OPEN_RELEASE_PRS. Merge or close it before cutting another release."
             exit 1
           fi
 

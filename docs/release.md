@@ -61,6 +61,8 @@ anything, if:
 - the computed version is already tagged, or already on npm;
 - `main` is not contained in `next` (the previous release's back-merge PR is still open);
 - a `release/vX.Y.Z` branch already exists on the remote.
+- a release PR into `main` is already open for another version (a stronger changeset landed after the
+  last dispatch).
 
 Each refusal names what to do about it.
 
