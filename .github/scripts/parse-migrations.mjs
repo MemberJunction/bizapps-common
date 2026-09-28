@@ -16,7 +16,7 @@
 import { execFileSync, execSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync, unlinkSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join, resolve } from 'node:path';
+import { join, resolve, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const host = process.env.DB_HOST || 'localhost';
@@ -103,10 +103,12 @@ export function listMigrationFiles(absDir, dirArg) {
 /**
  * gh-6: The `file=` path for a GitHub Actions ::error:: annotation on `file`, found under `dirArg`
  * (the --dir the caller actually passed) -- never a hardcoded 'migrations/' prefix, which points at
- * a path that doesn't exist once --dir is anything other than the default.
+ * a path that doesn't exist once --dir is anything other than the default. Reported relative to
+ * process.cwd(): GitHub Actions annotations only link a repo-relative path, so an absolute --dir
+ * (round 2, item 5) must still be reported relative to where the workflow step runs, not absolute.
  */
 export function annotationFile(dirArg, file) {
-    return join(dirArg, file);
+    return relative(process.cwd(), join(dirArg, file));
 }
 
 function main() {

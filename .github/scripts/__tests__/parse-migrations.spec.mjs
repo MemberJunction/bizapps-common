@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { join, dirname } from 'node:path';
+import { join, dirname, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES, annotationFile } from '../parse-migrations.mjs';
 import { SQLCMD_CANDIDATES as DRIFT_SQLCMD_CANDIDATES } from '../check-entityfield-drift.mjs';
@@ -66,5 +66,23 @@ test("the sqlcmd candidate list is identical to check-entityfield-drift.mjs's --
 // against a fixture directory).
 test('the annotation file path uses the actual --dir, not a hardcoded migrations/ prefix', () => {
     assert.equal(annotationFile('./migrations', 'V202609281200__test.sql'), 'migrations/V202609281200__test.sql');
-    assert.equal(annotationFile('/tmp/custom-fixtures', 'V202609281200__test.sql'), '/tmp/custom-fixtures/V202609281200__test.sql');
+});
+
+// Hardened in review round 2, item 5: an ABSOLUTE --dir must still produce a path RELATIVE to
+// process.cwd(), because GitHub Actions will not turn an absolute file= path into a clickable
+// annotation link. The default (relative --dir) is unaffected and stays 'migrations/<f>'.
+test('an absolute --dir still emits a file path relative to process.cwd(), not absolute', () => {
+    // A concrete, independently-computable case: a dir directly under cwd resolves to a plain
+    // relative path, not a re-derivation of the implementation's own formula.
+    const dirUnderCwd = join(process.cwd(), 'some-custom-fixtures-dir');
+    assert.equal(
+        annotationFile(dirUnderCwd, 'V202609281200__test.sql'),
+        join('some-custom-fixtures-dir', 'V202609281200__test.sql'),
+    );
+
+    // General invariant for any absolute --dir, including one outside the repo entirely.
+    assert.ok(
+        !isAbsolute(annotationFile('/tmp/custom-fixtures', 'V202609281200__test.sql')),
+        'GitHub will not link an absolute file= path',
+    );
 });
