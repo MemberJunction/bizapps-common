@@ -75,9 +75,31 @@ export function syncAppVersion({ root = REPO_ROOT, check = false } = {}) {
     return [];
 }
 
+/**
+ * Validates the CLI's argv (already sliced past the two host args). Only `[]` (write mode) and
+ * `['--check']` are valid — anything else, including a typo like `--chekc` or `--help`, used to fall
+ * through `process.argv.includes('--check')` as `false`, which is write mode. That silently turned a
+ * misspelled or informational flag into the branch that overwrites `mj-app.json`.
+ */
+export function parseArgs(argv) {
+    if (argv.length === 0) {
+        return { check: false };
+    }
+    if (argv.length === 1 && argv[0] === '--check') {
+        return { check: true };
+    }
+    throw new Error(`sync-app-version: unrecognised argument(s) ${argv.join(' ')}. Usage: sync-app-version.mjs [--check]`);
+}
+
 /** CLI entry point. */
 function main() {
-    const check = process.argv.includes('--check');
+    let check;
+    try {
+        ({ check } = parseArgs(process.argv.slice(2)));
+    } catch (error) {
+        console.error(error.message);
+        process.exit(2);
+    }
     const mismatches = syncAppVersion({ check });
     if (mismatches.length > 0) {
         console.error('mj-app.json is out of sync with packages/Entities/package.json:\n');
