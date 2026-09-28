@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,8 +35,9 @@ function repoWithUnresolvableBaseRef() {
 // 'origin/next', 'HEAD'])` with no try/catch, so an unresolved ref throws a raw, unhandled
 // "Command failed: git ... merge-base" Error with a full JS stack trace instead of a clean
 // message -- gh-2. Fixed by giving it the same clean, non-zero failure as gh-1.
-test('local form fails cleanly (no raw stack trace), naming the ref, when BASE_REF/origin/next does not resolve', () => {
+test('local form fails cleanly (no raw stack trace), naming the ref, when BASE_REF/origin/next does not resolve', (t) => {
     const dir = repoWithUnresolvableBaseRef();
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
     const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
 
     assert.notEqual(result.status, 0, 'an unresolved base ref must not be treated as success');

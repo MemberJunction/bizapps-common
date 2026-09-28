@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,8 +44,9 @@ function repoWithUnresolvableBaseRefAndAViolation() {
 // which swallows the unresolved-ref error and silently diffs HEAD against itself, so the commit
 // above is never scanned and the script exits 0. Fixed by replacing that catch with a loud,
 // non-zero failure naming the ref -- gh-1.
-test('local form fails loudly, naming the ref, when BASE_REF/origin/next does not resolve', () => {
+test('local form fails loudly, naming the ref, when BASE_REF/origin/next does not resolve', (t) => {
     const dir = repoWithUnresolvableBaseRefAndAViolation();
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
     const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', env: envWithoutBaseRef() });
 
     assert.notEqual(result.status, 0, 'must not silently pass when the base ref cannot be resolved');
