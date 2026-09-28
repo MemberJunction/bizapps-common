@@ -160,9 +160,11 @@ const GH_API_REF_TARGET = new RegExp(String.raw`(?:git\/)?refs\/heads\/${PROTECT
 /**
  * `gh api` calls that update a protected branch's ref directly — REST's equivalent of `git push`,
  * and invisible to SHELL_PUSH/METHOD_PUSH above because it is not a `git push` (or simple-git call)
- * at all. Required status checks are evaluated against the SHA `git push` is introducing (this
- * file's header); a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` mutates the same ref through
- * the REST API, which carries no such constraint, so GH013 never triggers on it.
+ * at all. Whether a given ruleset's required-status-checks rule blocks a REST ref update the same
+ * way it blocks a `git push` (this file's header) is not something this gate depends on either way:
+ * a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` writes a protected branch directly, without
+ * a pull request, and that is the thing CLAUDE.md's "Branching Model" and this gate both exist to
+ * refuse — regardless of whether any particular ruleset also happens to catch it.
  *
  * `gh` and `api` are matched as independent word-bounded tokens rather than `gh\s+api`, because the
  * likeliest reintroduction — `execFileSync('gh', ['api', …])`, mirroring the Node-script spelling
@@ -191,9 +193,16 @@ function isCommentary(line) {
  * command" will look.
  *
  * A `run: |` block's shell `\` continuation is otherwise invisible to line-by-line scanning:
- * `git push origin \` and `  HEAD:main` are two lines, and this file's own "single-line by nature"
- * assumption for a push (see the comment above `findProtectedPushes`) covers only the refspec
- * argument, not the shell line it is written on.
+ * `git push origin \` and `  HEAD:main` are two lines, and the refspec argument itself does not
+ * wrap — only the shell LINE it is written on does, via `\` (see the comment above
+ * `findProtectedPushes`), which is what joining exists to undo before matching.
+ *
+ * A COMMENTARY line never continues, whatever its trailing character. Shell `#`, YAML `#`, and JS
+ * `//`/`* ` comments have no backslash-continuation syntax of their own — a trailing `\` there is
+ * just a literal character in the comment, not an instruction to keep reading. Joining it anyway
+ * swallows the NEXT physical line into the comment's buffer, and the joined text — still starting
+ * with the comment's own prefix — then reads as commentary too, hiding a real, unrelated push
+ * written on the line right after it.
  */
 function joinContinuedLines(text) {
     const rawLines = text.split('\n');
@@ -202,7 +211,7 @@ function joinContinuedLines(text) {
     let firstLine = 0;
     for (let i = 0; i < rawLines.length; i++) {
         const raw = rawLines[i];
-        const continues = /\\\s*$/.test(raw);
+        const continues = !isCommentary(raw) && /\\\s*$/.test(raw);
         // The trailing `\` (and any whitespace after it) becomes a single space, mirroring the
         // shell's own line-join — the next line's content follows immediately after.
         const stripped = continues ? raw.replace(/\\\s*$/, ' ') : raw;

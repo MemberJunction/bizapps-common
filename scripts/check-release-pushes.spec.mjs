@@ -173,6 +173,43 @@ test('a commented-out continuation start is still exempt, even when joined', () 
     assert.deepEqual(findProtectedPushes(text), []);
 });
 
+// ── A comment ending in `\` must never absorb the next physical line ───────────────────────────────
+//
+// joinContinuedLines ran before isCommentary, so a comment line ending in `\` swallowed the NEXT
+// physical line into its buffer, and the joined text — still starting with the comment's own prefix
+// — was then skipped as commentary too, hiding a real push on the line after it. Shell `#`, YAML `#`,
+// and JS `//`/`* ` comments have no backslash-continuation syntax of their own: a trailing `\` in one
+// is just a literal character, never an instruction to keep reading. The push in every case below is
+// a real, unrelated statement on its OWN line and must be flagged there (line 2).
+
+test('a shell comment ending in `\\` does not hide the git push on the next line', () => {
+    const found = findProtectedPushes('# note \\\ngit push origin HEAD:main\n');
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 2);
+    assert.equal(found[0].ref, 'main');
+});
+
+test('a JS `//` comment ending in `\\` does not hide the execSync push on the next line', () => {
+    const found = findProtectedPushes("// path C:\\\nexecSync('git push origin HEAD:main');\n");
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 2);
+    assert.equal(found[0].ref, 'main');
+});
+
+test('a YAML comment ending in `\\` does not hide the run: step on the next line', () => {
+    const found = findProtectedPushes('# see docs \\\n- run: git push origin HEAD:next');
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 2);
+    assert.equal(found[0].ref, 'next');
+});
+
+test('a JS block-comment line ending in `\\` does not hide the simple-git push on the next line', () => {
+    const found = findProtectedPushes(" * foo \\\nawait git.push('origin', 'HEAD:main');\n");
+    assert.equal(found.length, 1);
+    assert.equal(found[0].line, 2);
+    assert.equal(found[0].ref, 'main');
+});
+
 // ── Allow-cases: what stops "deny everything" from passing as a fix ─────────────────────────────
 
 test('pushing a tag is allowed — both rulesets are target: branch', () => {
