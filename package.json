@@ -33,7 +33,10 @@
     "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
     "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
     "lint:release-pushes": "node scripts/check-release-pushes.mjs",
-    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs"
+    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs",
+    "lint:release-plan:test": "node --test scripts/release-plan.spec.mjs",
+    "lint:release-prep:test": "node --test scripts/release-prep.spec.mjs",
+    "release:plan": "node scripts/release-prep.mjs --plan"
   },
   "repository": {
     "type": "git",
