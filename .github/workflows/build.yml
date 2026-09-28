@@ -10,6 +10,14 @@ on:
     paths:
       - 'pnpm-lock.yaml'
       - 'packages/**'
+      # pnpm-workspace.yaml + package.json affect resolution (overrides,
+      # onlyBuiltDependencies, deps).
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      # Every package tsconfig extends a root tsconfig, and turbo.json defines the
+      # build graph and its hashing: both change build output.
+      - 'tsconfig.*.json'
+      - 'turbo.json'
       # migrations/** and migrations-pg/** are here because business-time-zone-migration.test.ts
       # reads those files: a PR that renames fnBusinessToday or drops its GRANT touches no package
       # and would otherwise never run the test that pins the contract.
@@ -22,6 +30,10 @@ on:
     paths:
       - 'pnpm-lock.yaml'
       - 'packages/**'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.*.json'
+      - 'turbo.json'
       - 'migrations/**'
       - 'migrations-pg/**'
       - '.github/workflows/build.yml'
