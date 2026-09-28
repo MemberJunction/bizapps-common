@@ -220,8 +220,13 @@ function main() {
         let mergeBase;
         try {
             mergeBase = git(['merge-base', baseRef, 'HEAD'], { cwd: root }).trim();
-        } catch {
-            mergeBase = 'HEAD';
+        } catch (err) {
+            // A silent fallback to 'HEAD' here would diff the working tree against itself, so any
+            // already-committed violation on the branch would never be scanned. Fail loudly instead.
+            console.error(`${RED}✗ could not resolve base ref '${baseRef}'${NC}`);
+            console.error(`  ${err.stderr?.toString().trim() || err.message}`);
+            console.error(`  Fetch it (e.g. \`git fetch origin next\`), or set BASE_REF to a ref that resolves.`);
+            process.exit(1);
         }
         const diffFiles = git(['diff', '--name-only', '--diff-filter=ACMR', mergeBase], { cwd: root })
             .split('\n')
