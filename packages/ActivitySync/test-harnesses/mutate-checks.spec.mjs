@@ -245,8 +245,8 @@ test('SIGTERM kills the whole process group (no orphaned grandchild) and removes
 // is never itself printed, so a broken command reads as an unhelpful, generic
 // "failed but did not name X" with no indication anything failed to even run. A nonexistent binary
 // is the deterministic, env-var-safe way to reproduce "the real suite never ran": the shell itself
-// reports "No such file or directory" on its own stderr, which this harness already captures into
-// `output` but currently throws away.
+// reports the missing command on its own stderr ("No such file or directory" / "not found"), which this harness already captures into
+// `output` — and used to throw away.
 test('a command that cannot start is reported, not folded into a silent miss', async () => {
     const root = makeTempPackageCopy();
     try {
@@ -261,7 +261,9 @@ test('a command that cannot start is reported, not folded into a silent miss', a
 
         assert.notEqual(result.status, 0);
         assert.match(result.stderr, /did not name/);
-        assert.match(result.stderr, /no such file or directory/i, 'the shell\'s own error text must be surfaced, not discarded');
+        // The wording is the shell's, and differs by platform: macOS /bin/sh says "No such file or
+        // directory", Debian/Ubuntu dash (CI) says "not found". Either proves it was surfaced.
+        assert.match(result.stderr, /definitely-does-not-exist-binary: (?:not found|no such file or directory)/i, 'the shell\'s own error text must be surfaced, not discarded');
 
         assert.equal(readFileSync(target, 'utf8'), original, 'the file must still be restored');
     } finally {
