@@ -103,10 +103,8 @@
         },
         {
           "fields": {
-            "IncludeInUserSearchAPI": true,
-            "UserSearchPredicateAPI": "Exact",
-            "AutoUpdateIncludeInUserSearchAPI": false,
-            "AutoUpdateUserSearchPredicate": false
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=PrimaryEmail&EntityID=@parent:ID"
