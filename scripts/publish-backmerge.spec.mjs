@@ -19,28 +19,15 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { readWorkflow, stepBody as stepBodyOf } from './workflow-step.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const WORKFLOW = readFileSync(join(REPO_ROOT, '.github', 'workflows', 'publish.yml'), 'utf8');
+const WORKFLOW = readWorkflow('publish.yml');
 const REPO = 'MemberJunction/bizapps-common';
 const TOKEN = 'ghs_TEST';
 
-/** The `run: |` body of the step named `name`, dedented. Throws if the workflow no longer has it. */
-function stepBody(name) {
-    const lines = WORKFLOW.split('\n');
-    const start = lines.findIndex((line) => line.trim() === `- name: ${name}`);
-    assert.ok(start >= 0, `publish.yml has no step named "${name}"`);
-    const stepIndent = lines[start].indexOf('-');
-    const runAt = lines.findIndex((line, i) => i > start && /^\s+run: \|\s*$/.test(line));
-    assert.ok(runAt > start, `step "${name}" has no run: | block`);
-    const body = [];
-    for (const line of lines.slice(runAt + 1)) {
-        if (line.trim() !== '' && line.search(/\S/) <= stepIndent + 2) break;
-        body.push(line);
-    }
-    const indent = Math.min(...body.filter((l) => l.trim()).map((l) => l.search(/\S/)));
-    return body.map((l) => l.slice(indent)).join('\n');
-}
+/** The `run: |` body of the step named `name` in publish.yml. */
+const stepBody = (name) => stepBodyOf(WORKFLOW, name);
 
 /**
  * A released v5.47.0 whose back-merge PR has merged (its branch left behind at the release merge),
