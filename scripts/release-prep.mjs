@@ -604,17 +604,21 @@ function runOrThrow(root, command, args) {
  * before calling this and pushes afterwards, which is what keeps every remote identity — and every
  * credential — outside this file.
  *
+ * `run` executes each command; it is a parameter only so the spec can record the sequence instead
+ * of running pnpm and git.
+ *
  * The postconditions run BEFORE the commit deliberately: a failure then leaves the bump in the
  * working tree, uncommitted, where it can be read and fixed, rather than inside a commit someone
  * has to unpick.
  */
-function applyRelease(root, assessment) {
+export function applyRelease(root, assessment, run = runOrThrow) {
     const expectedNames = publishablePackages(root).map((p) => p.name);
 
-    runOrThrow(root, 'pnpm', ['run', 'version']);
+    run(root, 'pnpm', ['run', 'version']);
     // The bumped internal pins have to reach the lockfile in the same commit; linkWorkspacePackages
-    // resolves them locally, so this is a lockfile write and not an install.
-    runOrThrow(root, 'pnpm', ['install', '--lockfile-only']);
+    // resolves them locally, so this is a lockfile write and not an install. Without it the release
+    // branch fails `pnpm install --frozen-lockfile`. release-prep-apply.spec.mjs pins the order.
+    run(root, 'pnpm', ['install', '--lockfile-only']);
 
     const appSync = spawnSync('node', [join(root, 'scripts', 'sync-app-version.mjs'), '--check'], {
         cwd: root,
@@ -639,8 +643,8 @@ function applyRelease(root, assessment) {
         );
     }
 
-    runOrThrow(root, 'git', ['add', '-A']);
-    runOrThrow(root, 'git', ['commit', '-m', `Release v${assessment.version}`]);
+    run(root, 'git', ['add', '-A']);
+    run(root, 'git', ['commit', '-m', `Release v${assessment.version}`]);
     console.log(`\nCommitted Release v${assessment.version}. Nothing has been pushed — that is the workflow's job.`);
 }
 
