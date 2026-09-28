@@ -20,7 +20,7 @@
 - Schema: `__mj_BizAppsCommon` (source: `__mj_BizAppsForms`). Repo: `MemberJunction/bizapps-common`.
 - Common has **no** `lint:migrations` or `lint:distribution` script. The release gates are only `check:release-seed` and `check:seed-cadence`. Do not invent the other two.
 - Common has no forms widget. Drop every `validate-widget-bundle` / `forms-ng` step.
-- In source prose, replace "seven required checks" with a statement true for common. Common's `main` ruleset has only `deletion` + `non_fast_forward`, and `next` has none (verified with `gh api repos/MemberJunction/bizapps-common/rules/branches/<b>`). Keep the GITHUB_TOKEN rationale: runs triggered by GITHUB_TOKEN events never start `changes.yml` or `build.yml`, so PRs would get no CI.
+- In source prose, replace "seven required checks" with a statement true for common. Common's only ruleset is on `next` (`deletion` + `non_fast_forward`), and `main` has none (verified with `gh api repos/MemberJunction/bizapps-common/rules/branches/<b>`; this line originally had the two branches the wrong way round). Keep the GITHUB_TOKEN rationale: runs triggered by GITHUB_TOKEN events never start `changes.yml` or `build.yml`, so PRs would get no CI.
 - Issue and PR numbers in the source (`#105`, `#177`, `#225`, …) are **bizapps-forms** history. When you keep one, write it as `MemberJunction/bizapps-forms#NNN`. Never leave a bare `#NNN` that would link to an unrelated common PR.
 - After every task, `grep -rniE 'forms|BizAppsForms' <files touched>` returns only deliberate provenance mentions ("ported from bizapps-forms").
 - No `git push` to `main`/`next` anywhere. The `lint:release-pushes` gate (Task 2) enforces this.
