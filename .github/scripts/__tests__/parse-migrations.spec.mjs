@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES, annotationFile } from '../parse-migrations.mjs';
+import { SQLCMD_CANDIDATES as DRIFT_SQLCMD_CANDIDATES } from '../check-entityfield-drift.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -40,15 +41,21 @@ test('a leading UTF-8 BOM is stripped before the SQL is wrapped for sqlcmd', () 
     assert.match(wrapped, /^SET PARSEONLY ON;\nGO\nSELECT 1 AS \[Test\];\n\nGO\n$/);
 });
 
-// gh-5. Fails today: SQLCMD_CANDIDATES lacks '/opt/homebrew/bin/sqlcmd' (the default
-// Homebrew/Apple-Silicon sqlcmd install path), while check-entityfield-drift.mjs's own
-// findSqlcmd() candidate list already has it -- two sibling scripts with the identical stated
-// purpose (locate sqlcmd) disagree about where to look, so the same machine can report "found" from
-// one script and "not found" from the other. Fixed by adding the path here, aligning the two.
-test('the sqlcmd candidate list includes the Homebrew/Apple-Silicon path, aligned with check-entityfield-drift.mjs', () => {
-    assert.ok(
-        SQLCMD_CANDIDATES.includes('/opt/homebrew/bin/sqlcmd'),
-        "check-entityfield-drift.mjs's findSqlcmd() candidate list already includes this path",
+// gh-5, hardened in review round 2. A hardcoded `SQLCMD_CANDIDATES.includes('/opt/homebrew/bin/
+// sqlcmd')` check only proves this file has that one entry -- it can't catch the two lists
+// drifting apart again in the future (e.g. a THIRD candidate added to one file and not the
+// other). This compares the two exported arrays directly, so any future divergence -- in either
+// direction -- fails here rather than silently reappearing.
+//
+// Fails today (before check-entityfield-drift.mjs exports its own list) with an import error;
+// once both files export their candidate lists, this documents the two as intentionally identical
+// rather than merely "the drift file's entries are a subset."
+test("the sqlcmd candidate list is identical to check-entityfield-drift.mjs's -- not just a superset check", () => {
+    assert.deepEqual(
+        SQLCMD_CANDIDATES,
+        DRIFT_SQLCMD_CANDIDATES,
+        'parse-migrations.mjs and check-entityfield-drift.mjs have the identical stated purpose ' +
+        '(locate sqlcmd) and must agree on every candidate location, not just share one entry',
     );
 });
 

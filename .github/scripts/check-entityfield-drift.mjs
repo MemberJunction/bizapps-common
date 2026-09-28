@@ -54,6 +54,8 @@
  */
 
 import { execFileSync, execSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const RED = '\x1b[0;31m', GREEN = '\x1b[0;32m', YELLOW = '\x1b[0;33m', DIM = '\x1b[2m', NC = '\x1b[0m';
 
@@ -147,14 +149,21 @@ SELECT e.BaseTable, ef.Name, CAST(ef.Sequence AS varchar(12))
 
 // ─── sqlcmd ───────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Standard sqlcmd install locations to fall back to when 'sqlcmd' isn't on PATH. Exported so
+ * parse-migrations.mjs's own candidate list (gh-5) can be compared against this one directly in a
+ * test, instead of duplicating it as a second hardcoded literal that could silently drift again.
+ */
+export const SQLCMD_CANDIDATES = [
+    'sqlcmd',
+    '/opt/mssql-tools18/bin/sqlcmd',
+    '/opt/mssql-tools/bin/sqlcmd',
+    '/usr/local/bin/sqlcmd',
+    '/opt/homebrew/bin/sqlcmd',
+];
+
 function findSqlcmd() {
-    for (const candidate of [
-        'sqlcmd',
-        '/opt/mssql-tools18/bin/sqlcmd',
-        '/opt/mssql-tools/bin/sqlcmd',
-        '/usr/local/bin/sqlcmd',
-        '/opt/homebrew/bin/sqlcmd',
-    ]) {
+    for (const candidate of SQLCMD_CANDIDATES) {
         try {
             execSync(`${candidate} -?`, { stdio: 'ignore' });
             return candidate;
@@ -165,11 +174,10 @@ function findSqlcmd() {
     return null;
 }
 
-const SQLCMD = findSqlcmd();
-if (!SQLCMD) {
-    console.error('::error::sqlcmd was not found in PATH or the standard locations.');
-    process.exit(2);
-}
+// Assigned by main(), only when this file runs as the CLI (see isEntryPoint() below) -- never at
+// import time, so importing this module (e.g. to read SQLCMD_CANDIDATES from a test) cannot run
+// findSqlcmd() or exit the process as a side effect.
+let SQLCMD;
 
 /** Run `sql` against `database` and return raw stdout. Throws with the server's message. */
 function exec(sql, database) {
@@ -396,20 +404,43 @@ function selfTest() {
 
 // ─── Entry point ──────────────────────────────────────────────────────────────────────────────
 
-try {
-    if (process.argv.includes('--self-test')) {
-        process.exit(selfTest());
-    }
-
-    const database = argValue('--database') || process.env.DB_DATABASE;
-    if (!database) {
-        console.error('::error::No database to check. Pass --database <name> or set DB_DATABASE.');
+function main() {
+    SQLCMD = findSqlcmd();
+    if (!SQLCMD) {
+        console.error('::error::sqlcmd was not found in PATH or the standard locations.');
         process.exit(2);
     }
 
-    console.log(`Checking ${APP_SCHEMA} EntityField drift on ${database} ${DIM}(via ${SQLCMD})${NC}`);
-    process.exit(report(runChecks(database), database));
-} catch (err) {
-    console.error(`::error::The check could not run: ${err.message}`);
-    process.exit(2);
+    try {
+        if (process.argv.includes('--self-test')) {
+            process.exit(selfTest());
+        }
+
+        const database = argValue('--database') || process.env.DB_DATABASE;
+        if (!database) {
+            console.error('::error::No database to check. Pass --database <name> or set DB_DATABASE.');
+            process.exit(2);
+        }
+
+        console.log(`Checking ${APP_SCHEMA} EntityField drift on ${database} ${DIM}(via ${SQLCMD})${NC}`);
+        process.exit(report(runChecks(database), database));
+    } catch (err) {
+        console.error(`::error::The check could not run: ${err.message}`);
+        process.exit(2);
+    }
+}
+
+/** True when this module is the process entry point, so importing it (e.g. from a test, to read
+ *  SQLCMD_CANDIDATES) never runs the CLI -- no sqlcmd detection, no database check, no exit. */
+function isEntryPoint() {
+    if (!process.argv[1]) return false;
+    try {
+        return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+    } catch {
+        return false;
+    }
+}
+
+if (isEntryPoint()) {
+    main();
 }
