@@ -775,6 +775,13 @@ const PRODUCT = [
 // Overridable so this harness's own tests can swap `pnpm exec vitest run` for something fast and
 // signal-safe (e.g. a `node` sleep) without ever invoking a real vitest run.
 const TEST_COMMAND = process.env.MUTATE_CHECKS_TEST_COMMAND ?? 'pnpm exec vitest run';
+if (process.env.MUTATE_CHECKS_TEST_COMMAND) {
+    // A stray value left set (or a command crafted to echo an `expect` string and exit nonzero)
+    // reports a full, silent fake pass -- mutants aren't being checked against the real suite at
+    // all. Unconditional and printed before anything else runs, so it can't be missed regardless
+    // of which mode (--list, --check-anchors, or a real run) this invocation takes.
+    console.error(`WARNING: MUTATE_CHECKS_TEST_COMMAND is set to "${TEST_COMMAND}" -- mutants are NOT being checked against the real suite.`);
+}
 
 // Tracks the mutant currently on disk and its suite's child process, so the SIGINT/SIGTERM
 // handlers below -- which live outside the loop that owns these -- can still restore the file and

@@ -268,3 +268,30 @@ test('a command that cannot start is reported, not folded into a silent miss', a
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+// Fails until mutate-checks.mjs prints an unmissable warning naming MUTATE_CHECKS_TEST_COMMAND
+// whenever it is set -- otherwise a stray value left in the environment (or a deliberately crafted
+// one, e.g. `echo "<expect text>"; exit 1`) reports a full, silent, fake pass.
+test('setting MUTATE_CHECKS_TEST_COMMAND prints a loud warning naming it', async () => {
+    const root = makeTempPackageCopy();
+    try {
+        const target = path.join(root, 'src/custom/live-mailbox-policy.ts');
+        const original = readFileSync(target, 'utf8');
+        const fakeCommand = `echo "stays refused on an empty environment, without complaining"; exit 1`;
+
+        const result = spawnSync(process.execPath, [path.join(root, 'test-harnesses/mutate-checks.mjs'), 'M-LMP1'], {
+            encoding: 'utf8',
+            env: { ...process.env, MUTATE_CHECKS_TEST_COMMAND: fakeCommand },
+        });
+
+        assert.match(result.stderr, /MUTATE_CHECKS_TEST_COMMAND/);
+        assert.ok(
+            result.stderr.includes(fakeCommand),
+            `expected the warning to name the overriding command; stderr was:\n${result.stderr}`,
+        );
+
+        assert.equal(readFileSync(target, 'utf8'), original, 'the file must still be restored');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
