@@ -103,10 +103,8 @@
         },
         {
           "fields": {
-            "IncludeInUserSearchAPI": true,
-            "UserSearchPredicateAPI": "Exact",
-            "AutoUpdateIncludeInUserSearchAPI": false,
-            "AutoUpdateUserSearchPredicate": false
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=PrimaryEmail&EntityID=@parent:ID"
@@ -360,13 +358,14 @@
         {
           "_comments": [
             "A domain is often the only thing that tells two same-named organizations apart, so the party",
-            "picker shows it on the second line and search has to be able to reach it. BeginsWith, not",
-            "Contains: an acronym typed into the picker should find the domain that starts with it,",
-            "not every domain with those letters somewhere inside it.",
-            "Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+            "picker shows it on the second line. It is NOT searched, for now. Website is stored as entered:",
+            "on AIDP 77% of values carry a scheme (https://...), so BeginsWith 'acme' misses most of them,",
+            "and user search ORs every searched field, so one leg without an index turns each lookup into",
+            "a scan of Organization. Reaching the domain needs a normalized domain column to search",
+            "instead. Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
           ],
           "fields": {
-            "IncludeInUserSearchAPI": true,
+            "IncludeInUserSearchAPI": false,
             "UserSearchPredicateAPI": "BeginsWith",
             "AutoUpdateIncludeInUserSearchAPI": false,
             "AutoUpdateUserSearchPredicate": false
