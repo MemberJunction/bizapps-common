@@ -17,7 +17,9 @@
 --      search in .entities.json; Email (the Person column) stays as the Exact email match.
 --   3. No indexes served the curated prefix/exact terms. -> Section 1 (one index per searched
 --      column: Person DisplayName, LastName, Title, Email; Organization Name, LegalName, TaxID,
---      Email, Website).
+--      Email). Website is taken out of user search in .entities.json instead of indexed: 77% of
+--      AIDP values carry a scheme, so BeginsWith missed them, and an unindexed leg in the OR
+--      would scan Organization.
 --   4. vwPeople / vwOrganizations joined AddressLink on RecordID = CAST(g.ID AS NVARCHAR(MAX)).
 --      RecordID is NVARCHAR(700); an NVARCHAR(MAX) comparison cannot use
 --      IX_AddressLink_EntityRecord_Primary. -> Section 2: CONVERT(NVARCHAR(700), g.ID). The views
@@ -26,9 +28,12 @@
 --
 -- The speedup below needs BOTH this migration and the curated search configuration applied
 -- (the release Metadata_Sync); indexes alone do not help while any Contains term remains.
--- Measured on a restored copy of the AIDP Next database (SQL Server 2022), TOP 15 lookups:
---   People  rare term 15-19 s / 10.9M reads -> 47 ms / 862 reads; no match 3 ms; 'smith' 13 ms
---   Orgs    rare term 837 ms               -> 71 ms / 358 reads;  no match 3 ms
+-- Measured on a restored copy of the AIDP Next database (SQL Server 2022), TOP 15 lookups, with
+-- this migration applied inside a rolled-back transaction:
+--   People  rare term 15-19 s / 10.9M reads -> 2-5 ms
+--   Orgs    rare term 837 ms               -> 2-4 ms
+-- (An earlier step-by-step bench, timed through SELECT INTO a temp table and before the view
+-- change, read 47 ms / 862 reads and 71 ms / 358 reads; the figures above are the final state.)
 -- Index builds took 1-6 s each at that size and hold a table lock while they run (ONLINE builds
 -- are Enterprise-only, so none is requested).
 -- Postgres: see the .pg.sql twin (indexes only; PG views compare text to text).
@@ -55,11 +60,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Organization_TaxID' AN
     CREATE INDEX IX_Organization_TaxID ON [${flyway:defaultSchema}].[Organization] ([TaxID]);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Organization_Email' AND object_id = OBJECT_ID('[${flyway:defaultSchema}].[Organization]'))
     CREATE INDEX IX_Organization_Email ON [${flyway:defaultSchema}].[Organization] ([Email]);
--- Website is NVARCHAR(1000) (2000 bytes) but real values are short (max 135 chars on AIDP). Index keys
--- are capped at 1700 bytes, so a Website over 850 characters would be rejected on save; accepted,
--- because the party picker must reach the domain (see the Website comment in .entities.json).
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Organization_Website' AND object_id = OBJECT_ID('[${flyway:defaultSchema}].[Organization]'))
-    CREATE INDEX IX_Organization_Website ON [${flyway:defaultSchema}].[Organization] ([Website]);
 GO
 
 -- 2. Views: AddressLink join made sargable
@@ -232,7 +232,7 @@ LEFT OUTER JOIN
   ON
     al.[RecordID] = CONVERT(NVARCHAR(700), g.[ID])
     AND al.[EntityID] = (
-        SELECT [ID] FROM [__mj].[Entity]
+        SELECT [ID] FROM [${mjSchema}].[Entity]
         WHERE [Name] = 'MJ_BizApps_Common: Organizations'
     )
     AND al.[IsPrimary] = 1
