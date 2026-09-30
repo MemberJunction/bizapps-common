@@ -16,8 +16,7 @@ export class mjBizAppsCommonSeniorityLevelFormComponent extends BaseFormComponen
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'seniorityDetails', sectionName: 'Seniority Details', isExpanded: true },
-            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'mJBizAppsCommonPeople', sectionName: 'People', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationships', sectionName: 'Relationships', isExpanded: false }
         ]);

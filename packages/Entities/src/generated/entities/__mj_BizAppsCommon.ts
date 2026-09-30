@@ -141,11 +141,6 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Details
         * * SQL Data Type: nvarchar(MAX)
         * * Description: JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`),
-    SentimentScore: z.number().nullable().describe(`
-        * * Field Name: SentimentScore
-        * * Display Name: Sentiment Score
-        * * SQL Data Type: decimal(4, 3)
-        * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -156,6 +151,11 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    SentimentScore: z.number().nullable().describe(`
+        * * Field Name: SentimentScore
+        * * Display Name: Sentiment Score
+        * * SQL Data Type: decimal(4, 3)
+        * * Description: Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`),
     ActivityType: z.string().describe(`
         * * Field Name: ActivityType
         * * Display Name: Activity Type Name
@@ -1085,7 +1085,7 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Field Name: CapturedContent
         * * Display Name: Captured Content
         * * SQL Data Type: nvarchar(MAX)
-        * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.`),
+        * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto. ROTATING THAT KEY MAKES EXISTING ROWS UNREADABLE: rotation re-encrypts only fields declared with Encrypt = 1, this column is encrypted by calling the engine directly, and the stored value records which key opened it but not which version — so a rotation skips these rows silently and the next read of them fails. Retain content here only for as long as the key behind it will not be rotated, or rotate with a plan for this column. Tracked upstream as MemberJunction/MJ#4580.`),
     EncryptionKeyID: z.string().nullable().describe(`
         * * Field Name: EncryptionKeyID
         * * Display Name: Encryption Key ID
@@ -1507,6 +1507,14 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: __mj_Latitude
+        * * SQL Data Type: decimal(9, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: __mj_Longitude
+        * * SQL Data Type: decimal(9, 6)`),
 });
 
 export type mjBizAppsCommonAddressEntityType = z.infer<typeof mjBizAppsCommonAddressSchema>;
@@ -1639,16 +1647,19 @@ export const mjBizAppsCommonJobFunctionSchema = z.object({
     Name: z.string().describe(`
         * * Field Name: Name
         * * Display Name: Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Unique display name of the job function.`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
         * * Display Name: Description
-        * * SQL Data Type: nvarchar(MAX)`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Detailed description of the job function and the roles it encompasses.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Display sort sequence order.`),
     Status: z.union([z.literal('Active'), z.literal('Disabled')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -1657,7 +1668,8 @@ export const mjBizAppsCommonJobFunctionSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Active
-    *   * Disabled`),
+    *   * Disabled
+        * * Description: Lifecycle status (Active, Inactive) of the job function.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -1743,12 +1755,12 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Description: Full legal name if different from display name`),
     OrganizationTypeID: z.string().nullable().describe(`
         * * Field Name: OrganizationTypeID
-        * * Display Name: Organization Type
+        * * Display Name: Organization Type ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)`),
     ParentID: z.string().nullable().describe(`
         * * Field Name: ParentID
-        * * Display Name: Parent Organization
+        * * Display Name: Parent ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
     Website: z.string().nullable().describe(`
@@ -1809,55 +1821,63 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Default Value: getutcdate()`),
     OrganizationType: z.string().nullable().describe(`
         * * Field Name: OrganizationType
-        * * Display Name: Organization Type Name
+        * * Display Name: Organization Type
         * * SQL Data Type: nvarchar(100)`),
     Parent: z.string().nullable().describe(`
         * * Field Name: Parent
-        * * Display Name: Parent Name
+        * * Display Name: Parent
         * * SQL Data Type: nvarchar(255)`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: Mj Latitude
+        * * SQL Data Type: decimal(10, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: Mj Longitude
+        * * SQL Data Type: decimal(10, 6)`),
     RootParentID: z.string().nullable().describe(`
         * * Field Name: RootParentID
-        * * Display Name: Root Parent
+        * * Display Name: Root Parent ID
         * * SQL Data Type: uniqueidentifier`),
     ParentIDDepth: z.number().nullable().describe(`
         * * Field Name: ParentIDDepth
-        * * Display Name: Hierarchy Depth
+        * * Display Name: Parent ID Depth
         * * SQL Data Type: int`),
     ParentIDPath: z.string().nullable().describe(`
         * * Field Name: ParentIDPath
-        * * Display Name: Hierarchy Path
+        * * Display Name: Parent ID Path
         * * SQL Data Type: nvarchar(MAX)`),
     ParentIDIsLeaf: z.boolean().nullable().describe(`
         * * Field Name: ParentIDIsLeaf
-        * * Display Name: Is Leaf Node
+        * * Display Name: Parent ID Is Leaf
         * * SQL Data Type: bit`),
     ParentIDChildCount: z.number().nullable().describe(`
         * * Field Name: ParentIDChildCount
-        * * Display Name: Child Count
+        * * Display Name: Parent ID Child Count
         * * SQL Data Type: int`),
     PrimaryAddressLine1: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine1
-        * * Display Name: Address Line 1
+        * * Display Name: Primary Address Line 1
         * * SQL Data Type: nvarchar(255)`),
     PrimaryAddressLine2: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine2
-        * * Display Name: Address Line 2
+        * * Display Name: Primary Address Line 2
         * * SQL Data Type: nvarchar(255)`),
     PrimaryAddressCity: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressCity
-        * * Display Name: City
+        * * Display Name: Primary Address City
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressState: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressState
-        * * Display Name: State/Province
+        * * Display Name: Primary Address State
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressPostalCode: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressPostalCode
-        * * Display Name: Postal Code
+        * * Display Name: Primary Address Postal Code
         * * SQL Data Type: nvarchar(20)`),
     PrimaryAddressCountry: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressCountry
-        * * Display Name: Country
+        * * Display Name: Primary Address Country
         * * SQL Data Type: nvarchar(100)`),
     PrimaryAddressLatitude: z.number().nullable().describe(`
         * * Field Name: PrimaryAddressLatitude
@@ -1869,7 +1889,7 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: decimal(9, 6)`),
     PrimaryAddressType: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressType
-        * * Display Name: Address Type
+        * * Display Name: Primary Address Type
         * * SQL Data Type: nvarchar(100)`),
     PrimaryEmail: z.string().nullable().describe(`
         * * Field Name: PrimaryEmail
@@ -1881,11 +1901,11 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * SQL Data Type: nvarchar(500)`),
     ActivePersonCount: z.number().nullable().describe(`
         * * Field Name: ActivePersonCount
-        * * Display Name: Active Staff Count
+        * * Display Name: Active Person Count
         * * SQL Data Type: int`),
     ChildOrgCount: z.number().nullable().describe(`
         * * Field Name: ChildOrgCount
-        * * Display Name: Total Child Organizations
+        * * Display Name: Child Org Count
         * * SQL Data Type: int`),
 });
 
@@ -2006,6 +2026,14 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Field Name: LinkedUser
         * * Display Name: Linked User
         * * SQL Data Type: nvarchar(100)`),
+    __mj_Latitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Latitude
+        * * Display Name: Latitude
+        * * SQL Data Type: decimal(10, 6)`),
+    __mj_Longitude: z.number().nullable().describe(`
+        * * Field Name: __mj_Longitude
+        * * Display Name: Longitude
+        * * SQL Data Type: decimal(10, 6)`),
     SeniorityLevel: z.string().nullable().describe(`
         * * Field Name: SeniorityLevel
         * * Display Name: Seniority Level
@@ -2089,19 +2117,20 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
         * * Default Value: newsequentialid()`),
     PersonID: z.string().describe(`
         * * Field Name: PersonID
-        * * Display Name: Person
+        * * Display Name: Person ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
     JobFunctionID: z.string().describe(`
         * * Field Name: JobFunctionID
-        * * Display Name: Job Function
+        * * Display Name: Job Function ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Job Functions (vwJobFunctions.ID)`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Rank order sequence for a person with multiple job functions (Sequence 1 = primary).`),
     Source: z.union([z.literal('Derived'), z.literal('Manual')]).describe(`
         * * Field Name: Source
         * * Display Name: Source
@@ -2110,11 +2139,13 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Derived
-    *   * Manual`),
+    *   * Manual
+        * * Description: Provenance of this function assignment (Manual by user, or Derived by automated pipeline).`),
     Confidence: z.number().nullable().describe(`
         * * Field Name: Confidence
         * * Display Name: Confidence
-        * * SQL Data Type: decimal(5, 4)`),
+        * * SQL Data Type: decimal(5, 4)
+        * * Description: Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2127,11 +2158,11 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
         * * Default Value: getutcdate()`),
     Person: z.string().describe(`
         * * Field Name: Person
-        * * Display Name: Person Name
+        * * Display Name: Person
         * * SQL Data Type: nvarchar(201)`),
     JobFunction: z.string().describe(`
         * * Field Name: JobFunction
-        * * Display Name: Job Function Name
+        * * Display Name: Job Function
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -2311,11 +2342,11 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * SQL Data Type: nvarchar(255)`),
     JobFunction: z.string().nullable().describe(`
         * * Field Name: JobFunction
-        * * Display Name: Job Function Name
+        * * Display Name: Job Function
         * * SQL Data Type: nvarchar(100)`),
     SeniorityLevel: z.string().nullable().describe(`
         * * Field Name: SeniorityLevel
-        * * Display Name: Seniority Level Name
+        * * Display Name: Seniority Level
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -2333,16 +2364,19 @@ export const mjBizAppsCommonSeniorityLevelSchema = z.object({
     Name: z.string().describe(`
         * * Field Name: Name
         * * Display Name: Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Unique display name of the seniority level.`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
         * * Display Name: Description
-        * * SQL Data Type: nvarchar(MAX)`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Detailed description of the seniority level and role expectations.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Rank order sequence from entry-level/IC to executive/C-level.`),
     Status: z.union([z.literal('Active'), z.literal('Disabled')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -2351,7 +2385,8 @@ export const mjBizAppsCommonSeniorityLevelSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Active
-    *   * Disabled`),
+    *   * Disabled
+        * * Description: Lifecycle status (Active, Inactive) of the seniority level.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2430,64 +2465,6 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The activity's end date and time must be on or after its start date and time.
-    * * Table-Level: Both External ID and Source System must be provided together, or both must be left empty. This ensures that external records are fully identified with both their identifier and their system of origin.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateEndedAtOnOrAfterStartedAt(result);
-        this.ValidateExternalIdAndSourceSystemCoexistence(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The activity's end date and time must be on or after its start date and time.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateEndedAtOnOrAfterStartedAt(result: ValidationResult) {
-    	if (this.EndedAt != null && this.StartedAt != null) {
-    		const endedTime = new Date(this.EndedAt).getTime();
-    		const startedTime = new Date(this.StartedAt).getTime();
-    		if (endedTime < startedTime) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"EndedAt",
-    				"The end date and time must be on or after the start date and time.",
-    				this.EndedAt,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
-    }
-
-    /**
-    * Both External ID and Source System must be provided together, or both must be left empty. This ensures that external records are fully identified with both their identifier and their system of origin.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateExternalIdAndSourceSystemCoexistence(result: ValidationResult) {
-    	const hasExternalID = this.ExternalID != null;
-    	const hasSourceSystem = this.SourceSystem != null;
-    
-    	if (hasExternalID !== hasSourceSystem) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"ExternalID",
-    			"Both External ID and Source System must be provided together, or both must be left blank.",
-    			this.ExternalID,
-    			ValidationErrorType.Failure
-    		));
-    	}
     }
 
     /**
@@ -2784,19 +2761,6 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
-    * * Field Name: SentimentScore
-    * * Display Name: Sentiment Score
-    * * SQL Data Type: decimal(4, 3)
-    * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.
-    */
-    get SentimentScore(): number | null {
-        return this.Get('SentimentScore');
-    }
-    set SentimentScore(value: number | null) {
-        this.Set('SentimentScore', value);
-    }
-
-    /**
     * * Field Name: __mj_CreatedAt
     * * Display Name: Created At
     * * SQL Data Type: datetimeoffset
@@ -2814,6 +2778,19 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     */
     get __mj_UpdatedAt(): Date {
         return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: SentimentScore
+    * * Display Name: Sentiment Score
+    * * SQL Data Type: decimal(4, 3)
+    * * Description: Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.
+    */
+    get SentimentScore(): number | null {
+        return this.Get('SentimentScore');
+    }
+    set SentimentScore(value: number | null) {
+        this.Set('SentimentScore', value);
     }
 
     /**
@@ -3095,46 +3072,6 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
-    }
-
-    /**
-    * Validate() method override for MJ_BizApps_Common: Activity Links entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The record must be associated with either an internal entity (by providing both Entity ID and Record ID, while leaving Identity Kind and Identity Value empty) or an external identity (by providing both Identity Kind and Identity Value, while leaving Entity ID and Record ID empty). It cannot have a mix of both or have both sets of fields empty.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateEntityOrIdentityAssociation(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The record must be associated with either an internal entity (by providing both Entity ID and Record ID, while leaving Identity Kind and Identity Value empty) or an external identity (by providing both Identity Kind and Identity Value, while leaving Entity ID and Record ID empty). It cannot have a mix of both or have both sets of fields empty.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateEntityOrIdentityAssociation(result: ValidationResult) {
-    	const hasEntityRef = this.EntityID !== null && this.RecordID !== null;
-    	const hasNoEntityRef = this.EntityID === null && this.RecordID === null;
-    	const hasIdentityRef = this.IdentityKind !== null && this.IdentityValue !== null;
-    	const hasNoIdentityRef = this.IdentityKind === null && this.IdentityValue === null;
-    
-    	const isValidEntityOnly = hasEntityRef && hasNoIdentityRef;
-    	const isValidIdentityOnly = hasNoEntityRef && hasIdentityRef;
-    
-    	if (!isValidEntityOnly && !isValidIdentityOnly) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"EntityID",
-    			"You must provide either both Entity ID and Record ID (with Identity Kind and Identity Value left empty) or both Identity Kind and Identity Value (with Entity ID and Record ID left empty).",
-    			this.EntityID,
-    			ValidationErrorType.Failure
-    		));
-    	}
     }
 
     /**
@@ -4695,40 +4632,6 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Activity Sync Rules entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The end date (DateTo) must be greater than or equal to the start date (DateFrom) when both dates are provided.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateDateToAfterOrEqualDateFrom(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The end date (DateTo) must be greater than or equal to the start date (DateFrom) when both dates are provided.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateDateToAfterOrEqualDateFrom(result: ValidationResult) {
-    	if (this.DateFrom != null && this.DateTo != null) {
-    		if (this.DateTo < this.DateFrom) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"DateTo",
-    				"The end date (DateTo) cannot be earlier than the start date (DateFrom).",
-    				this.DateTo,
-    				ValidationErrorType.Failure
-    			));
-    		}
-    	}
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -5198,7 +5101,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     * * Field Name: CapturedContent
     * * Display Name: Captured Content
     * * SQL Data Type: nvarchar(MAX)
-    * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.
+    * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto. ROTATING THAT KEY MAKES EXISTING ROWS UNREADABLE: rotation re-encrypts only fields declared with Encrypt = 1, this column is encrypted by calling the engine directly, and the stored value records which key opened it but not which version — so a rotation skips these rows silently and the next read of them fails. Retain content here only for as long as the key behind it will not be rotated, or rotate with a plan for this column. Tracked upstream as MemberJunction/MJ#4580.
     */
     get CapturedContent(): string | null {
         return this.Get('CapturedContent');
@@ -6277,6 +6180,24 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     get __mj_UpdatedAt(): Date {
         return this.Get('__mj_UpdatedAt');
     }
+
+    /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: __mj_Latitude
+    * * SQL Data Type: decimal(9, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: __mj_Longitude
+    * * SQL Data Type: decimal(9, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
+    }
 }
 
 
@@ -6673,6 +6594,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: Name
     * * Display Name: Name
     * * SQL Data Type: nvarchar(100)
+    * * Description: Unique display name of the job function.
     */
     get Name(): string {
         return this.Get('Name');
@@ -6685,6 +6607,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: Description
     * * Display Name: Description
     * * SQL Data Type: nvarchar(MAX)
+    * * Description: Detailed description of the job function and the roles it encompasses.
     */
     get Description(): string | null {
         return this.Get('Description');
@@ -6698,6 +6621,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Display sort sequence order.
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -6715,6 +6639,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Possible Values 
     *   * Active
     *   * Disabled
+    * * Description: Lifecycle status (Active, Inactive) of the job function.
     */
     get Status(): 'Active' | 'Disabled' {
         return this.Get('Status');
@@ -6999,7 +6924,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationTypeID
-    * * Display Name: Organization Type
+    * * Display Name: Organization Type ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organization Types (vwOrganizationTypes.ID)
     */
@@ -7012,7 +6937,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentID
-    * * Display Name: Parent Organization
+    * * Display Name: Parent ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
     */
@@ -7155,7 +7080,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: OrganizationType
-    * * Display Name: Organization Type Name
+    * * Display Name: Organization Type
     * * SQL Data Type: nvarchar(100)
     */
     get OrganizationType(): string | null {
@@ -7164,7 +7089,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: Parent
-    * * Display Name: Parent Name
+    * * Display Name: Parent
     * * SQL Data Type: nvarchar(255)
     */
     get Parent(): string | null {
@@ -7172,8 +7097,26 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     }
 
     /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: Mj Latitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: Mj Longitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
+    }
+
+    /**
     * * Field Name: RootParentID
-    * * Display Name: Root Parent
+    * * Display Name: Root Parent ID
     * * SQL Data Type: uniqueidentifier
     */
     get RootParentID(): string | null {
@@ -7182,7 +7125,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDDepth
-    * * Display Name: Hierarchy Depth
+    * * Display Name: Parent ID Depth
     * * SQL Data Type: int
     */
     get ParentIDDepth(): number | null {
@@ -7191,7 +7134,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDPath
-    * * Display Name: Hierarchy Path
+    * * Display Name: Parent ID Path
     * * SQL Data Type: nvarchar(MAX)
     */
     get ParentIDPath(): string | null {
@@ -7200,7 +7143,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDIsLeaf
-    * * Display Name: Is Leaf Node
+    * * Display Name: Parent ID Is Leaf
     * * SQL Data Type: bit
     */
     get ParentIDIsLeaf(): boolean | null {
@@ -7209,7 +7152,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ParentIDChildCount
-    * * Display Name: Child Count
+    * * Display Name: Parent ID Child Count
     * * SQL Data Type: int
     */
     get ParentIDChildCount(): number | null {
@@ -7218,7 +7161,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressLine1
-    * * Display Name: Address Line 1
+    * * Display Name: Primary Address Line 1
     * * SQL Data Type: nvarchar(255)
     */
     get PrimaryAddressLine1(): string | null {
@@ -7227,7 +7170,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressLine2
-    * * Display Name: Address Line 2
+    * * Display Name: Primary Address Line 2
     * * SQL Data Type: nvarchar(255)
     */
     get PrimaryAddressLine2(): string | null {
@@ -7236,7 +7179,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressCity
-    * * Display Name: City
+    * * Display Name: Primary Address City
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressCity(): string | null {
@@ -7245,7 +7188,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressState
-    * * Display Name: State/Province
+    * * Display Name: Primary Address State
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressState(): string | null {
@@ -7254,7 +7197,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressPostalCode
-    * * Display Name: Postal Code
+    * * Display Name: Primary Address Postal Code
     * * SQL Data Type: nvarchar(20)
     */
     get PrimaryAddressPostalCode(): string | null {
@@ -7263,7 +7206,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressCountry
-    * * Display Name: Country
+    * * Display Name: Primary Address Country
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressCountry(): string | null {
@@ -7290,7 +7233,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: PrimaryAddressType
-    * * Display Name: Address Type
+    * * Display Name: Primary Address Type
     * * SQL Data Type: nvarchar(100)
     */
     get PrimaryAddressType(): string | null {
@@ -7317,7 +7260,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ActivePersonCount
-    * * Display Name: Active Staff Count
+    * * Display Name: Active Person Count
     * * SQL Data Type: int
     */
     get ActivePersonCount(): number | null {
@@ -7326,7 +7269,7 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: ChildOrgCount
-    * * Display Name: Total Child Organizations
+    * * Display Name: Child Org Count
     * * SQL Data Type: int
     */
     get ChildOrgCount(): number | null {
@@ -7668,6 +7611,24 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     }
 
     /**
+    * * Field Name: __mj_Latitude
+    * * Display Name: Latitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Latitude(): number | null {
+        return this.Get('__mj_Latitude');
+    }
+
+    /**
+    * * Field Name: __mj_Longitude
+    * * Display Name: Longitude
+    * * SQL Data Type: decimal(10, 6)
+    */
+    get __mj_Longitude(): number | null {
+        return this.Get('__mj_Longitude');
+    }
+
+    /**
     * * Field Name: SeniorityLevel
     * * Display Name: Seniority Level
     * * SQL Data Type: nvarchar(100)
@@ -7853,38 +7814,6 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     }
 
     /**
-    * Validate() method override for MJ_BizApps_Common: Person Job Functions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Confidence: The confidence score, if provided, must be a decimal value between 0.0 and 1.0 (inclusive) representing a percentage from 0% to 100%.
-    * @public
-    * @method
-    * @override
-    */
-    public override Validate(): ValidationResult {
-        const result = super.Validate();
-        this.ValidateConfidenceRange(result);
-        result.Success = result.Success && (result.Errors.length === 0);
-
-        return result;
-    }
-
-    /**
-    * The confidence score, if provided, must be a decimal value between 0.0 and 1.0 (inclusive) representing a percentage from 0% to 100%.
-    * @param result - the ValidationResult object to add any errors or warnings to
-    * @public
-    * @method
-    */
-    public ValidateConfidenceRange(result: ValidationResult) {
-    	if (this.Confidence != null && (this.Confidence < 0.0 || this.Confidence > 1.0)) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"Confidence",
-    			"Confidence must be a value between 0.0 and 1.0.",
-    			this.Confidence,
-    			ValidationErrorType.Failure
-    		));
-    	}
-    }
-
-    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -7899,7 +7828,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * * Field Name: PersonID
-    * * Display Name: Person
+    * * Display Name: Person ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
     */
@@ -7912,7 +7841,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * * Field Name: JobFunctionID
-    * * Display Name: Job Function
+    * * Display Name: Job Function ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Job Functions (vwJobFunctions.ID)
     */
@@ -7928,6 +7857,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Rank order sequence for a person with multiple job functions (Sequence 1 = primary).
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -7945,6 +7875,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Possible Values 
     *   * Derived
     *   * Manual
+    * * Description: Provenance of this function assignment (Manual by user, or Derived by automated pipeline).
     */
     get Source(): 'Derived' | 'Manual' {
         return this.Get('Source');
@@ -7957,6 +7888,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Field Name: Confidence
     * * Display Name: Confidence
     * * SQL Data Type: decimal(5, 4)
+    * * Description: Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.
     */
     get Confidence(): number | null {
         return this.Get('Confidence');
@@ -7987,7 +7919,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * * Field Name: Person
-    * * Display Name: Person Name
+    * * Display Name: Person
     * * SQL Data Type: nvarchar(201)
     */
     get Person(): string {
@@ -7996,7 +7928,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * * Field Name: JobFunction
-    * * Display Name: Job Function Name
+    * * Display Name: Job Function
     * * SQL Data Type: nvarchar(100)
     */
     get JobFunction(): string {
@@ -8500,7 +8432,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: JobFunction
-    * * Display Name: Job Function Name
+    * * Display Name: Job Function
     * * SQL Data Type: nvarchar(100)
     */
     get JobFunction(): string | null {
@@ -8509,7 +8441,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * * Field Name: SeniorityLevel
-    * * Display Name: Seniority Level Name
+    * * Display Name: Seniority Level
     * * SQL Data Type: nvarchar(100)
     */
     get SeniorityLevel(): string | null {
@@ -8565,6 +8497,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Field Name: Name
     * * Display Name: Name
     * * SQL Data Type: nvarchar(100)
+    * * Description: Unique display name of the seniority level.
     */
     get Name(): string {
         return this.Get('Name');
@@ -8577,6 +8510,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Field Name: Description
     * * Display Name: Description
     * * SQL Data Type: nvarchar(MAX)
+    * * Description: Detailed description of the seniority level and role expectations.
     */
     get Description(): string | null {
         return this.Get('Description');
@@ -8590,6 +8524,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Rank order sequence from entry-level/IC to executive/C-level.
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -8607,6 +8542,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Possible Values 
     *   * Active
     *   * Disabled
+    * * Description: Lifecycle status (Active, Inactive) of the seniority level.
     */
     get Status(): 'Active' | 'Disabled' {
         return this.Get('Status');
