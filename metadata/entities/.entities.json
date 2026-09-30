@@ -20,7 +20,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -234,7 +235,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -427,7 +429,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       }
