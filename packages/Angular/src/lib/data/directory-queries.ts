@@ -1,5 +1,6 @@
 import { LogError, RunQuery, RunView } from '@memberjunction/core';
 import { COMMON_ENTITIES } from './entity-names';
+import { EscapeLikeValue } from './directory-stats';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
@@ -242,12 +243,21 @@ export async function LoadDirectorySnapshot(): Promise<{
     };
 }
 
-export async function SearchPeople(filter: string | undefined): Promise<DirectoryPersonRow[]> {
+/**
+ * Search people by free text. Takes a raw search TERM (never a SQL fragment) and
+ * builds the escaped LIKE filter internally, so callers cannot concatenate
+ * unescaped user input into `ExtraFilter`.
+ */
+export async function SearchPeople(searchTerm: string | undefined): Promise<DirectoryPersonRow[]> {
+    const term = searchTerm?.trim();
+    const like = term ? EscapeLikeValue(term) : undefined;
     const rv = new RunView();
     const result = await rv.RunView<DirectoryPersonRow>({
         EntityName: COMMON_ENTITIES.Person,
         Fields: [...PERSON_FIELDS],
-        ExtraFilter: filter,
+        ExtraFilter: like
+            ? `(DisplayName LIKE '%${like}%' OR Email LIKE '%${like}%' OR PrimaryEmail LIKE '%${like}%')`
+            : undefined,
         OrderBy: 'LastName, FirstName',
         MaxRows: 200,
         ResultType: 'simple',
@@ -255,12 +265,17 @@ export async function SearchPeople(filter: string | undefined): Promise<Director
     return result.Success ? result.Results : [];
 }
 
-export async function SearchOrganizations(filter: string | undefined): Promise<DirectoryOrganizationRow[]> {
+/** Search organizations by free text — same term-not-filter contract as `SearchPeople`. */
+export async function SearchOrganizations(searchTerm: string | undefined): Promise<DirectoryOrganizationRow[]> {
+    const term = searchTerm?.trim();
+    const like = term ? EscapeLikeValue(term) : undefined;
     const rv = new RunView();
     const result = await rv.RunView<DirectoryOrganizationRow>({
         EntityName: COMMON_ENTITIES.Organization,
         Fields: [...ORGANIZATION_FIELDS],
-        ExtraFilter: filter,
+        ExtraFilter: like
+            ? `(Name LIKE '%${like}%' OR LegalName LIKE '%${like}%' OR Email LIKE '%${like}%')`
+            : undefined,
         OrderBy: 'Name',
         MaxRows: 200,
         ResultType: 'simple',
