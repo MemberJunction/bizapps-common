@@ -2,7 +2,7 @@
   {
     "fields": {
       "Name": "Job Function and Seniority Derivation",
-      "Description": "Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.",
+      "Description": "Derives a person's job functions and seniority level from their current job title.",
       "TypeID": "@lookup:MJ: AI Prompt Types.Name=Chat",
       "TemplateText": "@file:templates/job-function-seniority.template.md",
       "Status": "Active",
