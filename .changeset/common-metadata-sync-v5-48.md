@@ -2,4 +2,4 @@
 '@mj-biz-apps/common-entities': minor
 ---
 
-The 5.48 Metadata_Sync. It turns on field-level security for People (#186) and ships a permission row for each People field and role, so People stays readable the moment the flag is set. It also takes People `PrimaryEmail` and Organization `Website` out of user search (#199), which lets the new lookup indexes answer in milliseconds.
+The 5.48 Metadata_Sync takes People `PrimaryEmail` and Organization `Website` out of user search (#199), so the new lookup indexes can answer Bill To Person and Bill To Organization lookups in milliseconds. Two matches go away: a person's primary contact-method email that differs from `Person.Email`, and Organization website search. Field-level security for People (#186) is declared in metadata but not shipped yet. It needs an MJ 6.1.4 floor and host-side permission rows, so People access on hosts is unchanged.
