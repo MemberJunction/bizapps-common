@@ -15,6 +15,7 @@
       "BaseViewGenerated": false,
       "AllowUserSearchAPI": true,
       "AutoUpdateAllowUserSearchAPI": false,
+      "EnableFieldLevelSecurity": true,
       "Configuration": {
         "UI": {
           "Form": {
