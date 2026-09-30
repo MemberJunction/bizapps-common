@@ -30,16 +30,16 @@
     "class-validator": "^0.14.3"
   },
   "peerDependencies": {
-    "@memberjunction/actions": "^6.1.0-edge.6",
-    "@memberjunction/actions-base": "^6.1.0-edge.6",
-    "@memberjunction/communication-types": "^6.1.0-edge.6",
-    "@memberjunction/core": "^6.1.0-edge.6",
-    "@memberjunction/core-entities": "^6.1.0-edge.6",
-    "@memberjunction/credentials": "^6.1.0-edge.6",
-    "@memberjunction/encryption": "^6.1.0-edge.6",
-    "@memberjunction/global": "^6.1.0-edge.6",
-    "@memberjunction/server": "^6.1.0-edge.6",
-    "@memberjunction/sqlserver-dataprovider": "^6.1.0-edge.6"
+    "@memberjunction/actions": "~6.1.4",
+    "@memberjunction/actions-base": "~6.1.4",
+    "@memberjunction/communication-types": "~6.1.4",
+    "@memberjunction/core": "~6.1.4",
+    "@memberjunction/core-entities": "~6.1.4",
+    "@memberjunction/credentials": "~6.1.4",
+    "@memberjunction/encryption": "~6.1.4",
+    "@memberjunction/global": "~6.1.4",
+    "@memberjunction/server": "~6.1.4",
+    "@memberjunction/sqlserver-dataprovider": "~6.1.4"
   },
   "repository": {
     "type": "git",
