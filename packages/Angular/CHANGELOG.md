@@ -1,5 +1,14 @@
 # @mj-biz-apps/common-ng
 
+## 5.48.0
+
+### Patch Changes
+
+- Updated dependencies [680a2de]
+- Updated dependencies [4222b02]
+- Updated dependencies [e67224c]
+  - @mj-biz-apps/common-entities@5.48.0
+
 ## 5.47.0
 
 ### Patch Changes
