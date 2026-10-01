@@ -25,10 +25,10 @@
     "@mj-biz-apps/common-activity-sync": "5.47.0"
   },
   "peerDependencies": {
-    "@memberjunction/core": "^6.1.0-edge.6",
-    "@memberjunction/core-entities": "^6.1.0-edge.6",
-    "@memberjunction/generic-database-provider": "^6.1.0-edge.6",
-    "@memberjunction/global": "^6.1.0-edge.6"
+    "@memberjunction/core": "~6.1.4",
+    "@memberjunction/core-entities": "~6.1.4",
+    "@memberjunction/generic-database-provider": "~6.1.4",
+    "@memberjunction/global": "~6.1.4"
   },
   "repository": {
     "type": "git",

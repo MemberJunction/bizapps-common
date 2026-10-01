@@ -16,8 +16,7 @@ export class mjBizAppsCommonJobFunctionFormComponent extends BaseFormComponent {
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'jobFunctionDetails', sectionName: 'Job Function Details', isExpanded: true },
-            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'mJBizAppsCommonPersonJobFunctions', sectionName: 'Person Job Functions', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationships', sectionName: 'Relationships', isExpanded: false }
         ]);
