@@ -15,6 +15,7 @@
       "BaseViewGenerated": false,
       "AllowUserSearchAPI": true,
       "AutoUpdateAllowUserSearchAPI": false,
+      "EnableFieldLevelSecurity": true,
       "Configuration": {
         "UI": {
           "Form": {
@@ -103,17 +104,15 @@
         },
         {
           "fields": {
-            "IncludeInUserSearchAPI": true,
-            "UserSearchPredicateAPI": "Exact",
-            "AutoUpdateIncludeInUserSearchAPI": false,
-            "AutoUpdateUserSearchPredicate": false
+            "IncludeInUserSearchAPI": false,
+            "AutoUpdateIncludeInUserSearchAPI": false
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Fields.Name=PrimaryEmail&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-17T23:07:00.700Z",
-            "checksum": "111cb3d7435cdf5bda9406a1599a35e781d000d8bb629ddad324328b6017e113"
+            "lastModified": "2026-09-30T19:13:12.146Z",
+            "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
           }
         },
         {
@@ -210,8 +209,8 @@
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People"
     },
     "sync": {
-      "lastModified": "2026-09-28T20:39:11.120Z",
-      "checksum": "54cc7753bb1f2d05900818617895e435fa2a0c2c9f25c7b3b4ba9192d1a15811"
+      "lastModified": "2026-09-30T19:13:11.870Z",
+      "checksum": "261efdef930f5e9ed41c9d59004eaba998f0739836db3f0697f3f7400ce491ce"
     }
   },
   {
@@ -360,13 +359,14 @@
         {
           "_comments": [
             "A domain is often the only thing that tells two same-named organizations apart, so the party",
-            "picker shows it on the second line and search has to be able to reach it. BeginsWith, not",
-            "Contains: an acronym typed into the picker should find the domain that starts with it,",
-            "not every domain with those letters somewhere inside it.",
-            "Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+            "picker shows it on the second line. It is NOT searched, for now. Website is stored as entered:",
+            "on AIDP 77% of values carry a scheme (https://...), so BeginsWith 'acme' misses most of them,",
+            "and user search ORs every searched field, so one leg without an index turns each lookup into",
+            "a scan of Organization. Reaching the domain needs a normalized domain column to search",
+            "instead. Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
           ],
           "fields": {
-            "IncludeInUserSearchAPI": true,
+            "IncludeInUserSearchAPI": false,
             "UserSearchPredicateAPI": "BeginsWith",
             "AutoUpdateIncludeInUserSearchAPI": false,
             "AutoUpdateUserSearchPredicate": false
@@ -375,8 +375,8 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Website&EntityID=@parent:ID"
           },
           "sync": {
-            "lastModified": "2026-09-28T20:39:11.605Z",
-            "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
+            "lastModified": "2026-09-30T19:13:12.335Z",
+            "checksum": "69bef234c91851279586c2e6ce0ce0a49e0579f18c924c53fd5b02ec97fcdb0f"
           }
         },
         {
