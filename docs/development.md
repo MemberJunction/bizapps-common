@@ -65,6 +65,20 @@ one thing that needs a zone: read it from `BusinessTimeZoneEngine.Instance.Today
 `CROSS JOIN [__mj_BizAppsCommon].[fnBusinessToday]() AS bt` and `bt.Today`. The zone is the
 `BizApps.BusinessTimeZone` instance configuration row; the host instance sets the value (for example to Central).
 
+To put a timestamp in its business day — bucketing `__mj_CreatedAt` by day, "orders placed on" —
+call `[__mj_BizAppsCommon].[fnBusinessDayOf](x)` (PostgreSQL: `__mj_bizappscommon."fnBusinessDayOf"(x)`).
+It takes a `DATETIMEOFFSET` (`timestamptz`), returns the `DATE` it falls on in the business zone, and
+returns NULL for NULL. Its zone is read from `fnBusinessToday()`, so the two always agree:
+`fnBusinessDayOf(__mj_CreatedAt) = bt.Today` is "created today". Use it instead of writing
+`AT TIME ZONE bt.SqlZone` in a query: MJ's SQL parser cannot parse `AT TIME ZONE`, and a function call
+parses. Three cautions:
+- A `DATETIME`/`DATETIME2` argument is read as UTC, which is how MJ stores them.
+- Never pass a `DATE` column. It becomes UTC midnight and comes back as the previous day west of UTC;
+  a `DATE` already is a business day.
+- It is a scalar function SQL Server cannot inline (`AT TIME ZONE` is on the inlining exclusion list),
+  so it runs per row. In a large scan, narrow on the raw timestamp first, as
+  `metadata/queries/SQL/directory-dashboard-summary.sql` does.
+
 ## Metadata Sync
 ```bash
 npx mj-sync push --dir ./metadata
