@@ -5,7 +5,11 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FromCalendarDay, ToCalendarDay } from '@mj-biz-apps/common-entities';
-import { RelationshipDateInputValue, RelationshipEndDateFor } from '../relationship-dates';
+import {
+    FormatRelationshipDateRange,
+    RelationshipDateInputValue,
+    RelationshipEndDateFor,
+} from '../relationship-dates';
 
 const CENTRAL = 'America/Chicago';
 let savedTZ: string | undefined;
@@ -57,5 +61,23 @@ describe('RelationshipEndDateFor', () => {
 
     it('follows the zone it is given', () => {
         expect(ToCalendarDay(RelationshipEndDateFor('UTC', evening))).toBe('2026-10-01');
+    });
+});
+
+describe('FormatRelationshipDateRange', () => {
+    it('shows a Jan 1 start as January, not the prior December', () => {
+        expect(FormatRelationshipDateRange(FromCalendarDay('2026-01-01'), null, 'Active')).toBe('Jan 2026 - Present');
+    });
+
+    it('shows both ends by their stored month', () => {
+        expect(FormatRelationshipDateRange(FromCalendarDay('2024-07-01'), FromCalendarDay('2026-01-01'), 'Ended')).toBe('Jul 2024 - Jan 2026');
+    });
+
+    it('leaves an open end blank unless the relationship is active', () => {
+        expect(FormatRelationshipDateRange(FromCalendarDay('2024-07-01'), null, 'Ended')).toBe('Jul 2024 -');
+    });
+
+    it('is empty with no dates', () => {
+        expect(FormatRelationshipDateRange(null, null, 'Active')).toBe('');
     });
 });

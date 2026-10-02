@@ -13,7 +13,7 @@ import {
     mjBizAppsCommonSeniorityLevelEntity,
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
-import { RelationshipDateInputValue, RelationshipEndDateFor } from './relationship-dates';
+import { FormatRelationshipDateRange, RelationshipDateInputValue, RelationshipEndDateFor } from './relationship-dates';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -563,7 +563,7 @@ export class RelationshipListComponent {
             TargetName: targetName,
             TargetEntityName: targetEntityName,
             TargetID: targetID,
-            DateDisplay: this.formatDateRange(rel.StartDate, rel.EndDate, rel.Status)
+            DateDisplay: FormatRelationshipDateRange(rel.StartDate, rel.EndDate, rel.Status)
         };
     }
 
@@ -634,23 +634,6 @@ export class RelationshipListComponent {
             OpenInNewTab: event.ctrlKey || event.metaKey
         };
         this.Navigate.emit(navEvent);
-    }
-
-    /** Formats a date range into a compact display string. */
-    private formatDateRange(start: Date | null, end: Date | null, status: string): string {
-        if (!start && !end) return '';
-
-        const formatDate = (d: Date): string => {
-            const date = new Date(d);
-            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        };
-
-        const startStr = start ? formatDate(start) : '';
-        const endStr = end ? formatDate(end) : (status === 'Active' ? 'Present' : '');
-
-        if (startStr && endStr) return `${startStr} - ${endStr}`;
-        if (startStr) return `${startStr} -`;
-        return '';
     }
 
     // --- Add Form ---

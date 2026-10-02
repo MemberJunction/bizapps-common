@@ -20,3 +20,20 @@ export function RelationshipDateInputValue(value: Date | null): string {
 export function RelationshipEndDateFor(zone: string, now: Date = new Date()): Date {
     return FromCalendarDay(TodayIn(zone, now));
 }
+
+/** Month and year of a stored day, by its UTC parts: a Jan 1 start is January everywhere. */
+function formatMonthYear(value: Date): string {
+    return new Date(value).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** A compact `Jan 2026 - Present` range for the list; an open end reads `Present` while active. */
+export function FormatRelationshipDateRange(start: Date | null, end: Date | null, status: string): string {
+    if (!start && !end) return '';
+
+    const startStr = start ? formatMonthYear(start) : '';
+    const endStr = end ? formatMonthYear(end) : (status === 'Active' ? 'Present' : '');
+
+    if (startStr && endStr) return `${startStr} - ${endStr}`;
+    if (startStr) return `${startStr} -`;
+    return '';
+}
