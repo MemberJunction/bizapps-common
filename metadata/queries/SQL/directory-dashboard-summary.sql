@@ -5,8 +5,12 @@
 -- over the Common base views — no row cap, no client aggregation.
 --
 -- Email = COALESCE(PrimaryEmail, Email), matching PersonEmail() in directory-stats.ts.
--- People-per-day buckets are UTC calendar days (CreatedAt is UTC). The old client used
--- the browser's local day; UTC is the only clock the server can apply consistently.
+-- People-per-day buckets are BUSINESS days (bc-aidp-next-golive#168): __mj_CreatedAt is a
+-- UTC instant, and fnBusinessDayOf turns it into the day it was in the business time zone,
+-- the same zone fnBusinessToday() reads for "today". A UTC day put Thursday evening's
+-- signups in Friday's bar for anyone in the Americas. The function is called only for rows
+-- from the last eight days (the first WHEN), so its per-row cost stays off the full scan.
+-- No inline AT TIME ZONE: MJ's SQL parser cannot read it.
 -- Org type mix is JSON so a variable number of types does not explode the column list.
 --
 -- Single SELECT (no DECLARE / temp tables) so RunQuery can wrap it.
@@ -44,13 +48,20 @@ FROM
                  THEN 1 ELSE 0 END), 0) AS PeopleMissingEmail,
         ISNULL(SUM(CASE WHEN Status = N'Active' AND CurrentOrganizationID IS NULL
                  THEN 1 ELSE 0 END), 0) AS PeopleMissingOrganization,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = CAST(SYSUTCDATETIME() AS date) THEN 1 ELSE 0 END), 0) AS PeopleAddedD0,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -1, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD1,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -2, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD2,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -3, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD3,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -4, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD4,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -5, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD5,
-        ISNULL(SUM(CASE WHEN CAST(__mj_CreatedAt AS date) = DATEADD(DAY, -6, CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END), 0) AS PeopleAddedD6,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = bt.Today THEN 1 ELSE 0 END), 0) AS PeopleAddedD0,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -1, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD1,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -2, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD2,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -3, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD3,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -4, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD4,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -5, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD5,
+        ISNULL(SUM(CASE WHEN __mj_CreatedAt < DATEADD(DAY, -8, SYSDATETIMEOFFSET()) THEN 0
+                        WHEN [__mj_BizAppsCommon].[fnBusinessDayOf](__mj_CreatedAt) = DATEADD(DAY, -6, bt.Today) THEN 1 ELSE 0 END), 0) AS PeopleAddedD6,
         (
             SELECT TOP (1) p2.ID
             FROM [__mj_BizAppsCommon].[vwPeople] p2
@@ -73,6 +84,7 @@ FROM
             ORDER BY p2.__mj_CreatedAt DESC
         ) AS AttentionEmailOrg
     FROM [__mj_BizAppsCommon].[vwPeople]
+    CROSS JOIN [__mj_BizAppsCommon].[fnBusinessToday]() AS bt
 ) p
 CROSS JOIN
 (
