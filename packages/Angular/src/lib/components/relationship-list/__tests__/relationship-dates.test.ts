@@ -4,12 +4,8 @@
  * west of UTC, where reading local parts lands on the previous day (golive #168).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { FromCalendarDay, ToCalendarDay } from '@mj-biz-apps/common-entities';
-import {
-    FormatRelationshipDateRange,
-    RelationshipDateInputValue,
-    RelationshipEndDateFor,
-} from '../relationship-dates';
+import { FromCalendarDay } from '@mj-biz-apps/common-entities';
+import { FormatRelationshipDateRange, RelationshipDateInputValue } from '../relationship-dates';
 
 const CENTRAL = 'America/Chicago';
 let savedTZ: string | undefined;
@@ -44,23 +40,6 @@ describe('RelationshipDateInputValue', () => {
 
     it('is empty for no date', () => {
         expect(RelationshipDateInputValue(null)).toBe('');
-    });
-});
-
-describe('RelationshipEndDateFor', () => {
-    // 8:30 PM Central on Sept 30 is already Oct 1 in UTC.
-    const evening = new Date('2026-10-01T01:30:00.000Z');
-
-    it('is the business day, not the UTC day, in the evening', () => {
-        expect(ToCalendarDay(RelationshipEndDateFor(CENTRAL, evening))).toBe('2026-09-30');
-    });
-
-    it('is UTC midnight, the shape a date column round-trips as', () => {
-        expect(RelationshipEndDateFor(CENTRAL, evening).toISOString()).toBe('2026-09-30T00:00:00.000Z');
-    });
-
-    it('follows the zone it is given', () => {
-        expect(ToCalendarDay(RelationshipEndDateFor('UTC', evening))).toBe('2026-10-01');
     });
 });
 

@@ -13,7 +13,7 @@ import {
     mjBizAppsCommonSeniorityLevelEntity,
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
-import { FormatRelationshipDateRange, RelationshipDateInputValue, RelationshipEndDateFor } from './relationship-dates';
+import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -912,7 +912,7 @@ export class RelationshipListComponent {
 
         try {
             rel.Status = 'Ended';
-            rel.EndDate = RelationshipEndDateFor(BusinessTimeZoneEngine.Instance.Resolve());
+            rel.EndDate = BusinessTimeZoneEngine.Instance.TodayAsDate();
 
             if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
                 this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
