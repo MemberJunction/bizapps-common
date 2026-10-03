@@ -46,6 +46,10 @@ export class SyncActivitiesAction extends BaseAction {
     }
 
     private async sync(params: RunActionParams): Promise<ActionResultSimple> {
+        if (!params.ContextUser) {
+            return { Success: false, ResultCode: 'VALIDATION_ERROR', Message: 'ContextUser is required.' };
+        }
+
         const raw = readParam(params, P_LIMIT);
         const parsed = raw === null || raw === undefined || raw === '' ? DEFAULT_LIMIT : Number(raw);
         const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_LIMIT;
