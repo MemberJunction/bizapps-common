@@ -68,7 +68,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      # Re-resolve with: git ls-remote https://github.com/actions/checkout refs/tags/v4
+      # (pinned: this job later mints an App token from APP_PRIVATE_KEY — same rule as
+      # pnpm/action-setup below).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # Pinned to `next`, not to the dispatch ref. A release is by definition the current tip of
           # the integration branch; letting whoever pressed the button choose the ref would let a
@@ -98,8 +101,8 @@ jobs:
           #
           # Safe because nothing in this job reaches the remote except that one App-token push --
           # checkout still authenticates its OWN fetch, it simply leaves no credential behind, and
-          # this repository is public. Do NOT copy this to publish.yml: that workflow pushes the
-          # release tag through `origin` and needs the persisted credential.
+          # this repository is public. publish.yml now does the same: it supplies GITHUB_TOKEN
+          # explicitly to its tag push and back-merge fetches instead of persisting it.
           persist-credentials: false
 
       # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
@@ -111,7 +114,8 @@ jobs:
       # Re-resolve with: git ls-remote https://github.com/pnpm/action-setup refs/tags/v4^{}
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
-      - uses: actions/setup-node@v4
+      # Re-resolve with: git ls-remote https://github.com/actions/setup-node refs/tags/v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: 'pnpm'
@@ -309,7 +313,9 @@ jobs:
       - name: Mint the App token for the push and the pull request
         if: ${{ !inputs.dry_run }}
         id: token
-        uses: actions/create-github-app-token@v2
+        # The step handed APP_PRIVATE_KEY — pinned for the same reason as pnpm/action-setup above.
+        # Re-resolve with: git ls-remote https://github.com/actions/create-github-app-token refs/tags/v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
