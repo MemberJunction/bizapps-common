@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202609231303__v5.46.x__Address_Line1_City_Nullable.sql
+-- Migration: V202610031602__v5.49.x__Address_Line1_City_Nullable.sql
 -- Description: Make Address.Line1 and Address.City nullable so an address row
 --              may record a location (country, region, postal code) before a
 --              street line and city are known. Additive: existing rows keep
