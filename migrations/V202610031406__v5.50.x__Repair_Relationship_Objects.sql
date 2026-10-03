@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202610021200__v5.49.x__Repair_Relationship_Objects.sql
+-- Migration: V202610031406__v5.50.x__Repair_Relationship_Objects.sql
 -- Description: Re-create vwRelationships, spCreateRelationship and
 --              spUpdateRelationship at their current definitions (#219).
 --
