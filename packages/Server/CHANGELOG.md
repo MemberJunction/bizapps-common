@@ -1,5 +1,25 @@
 # @mj-biz-apps/common-server
 
+## 5.49.0
+
+### Minor Changes
+
+- ac184f2: `Address.Line1` and `Address.City` are now nullable, so an address row may record a location
+  (country, region, postal code) before a street line and city are known.
+
+  The migration alters both columns to `NULL` (types and lengths unchanged) and updates their column
+  descriptions. CodeGen regenerates `spCreateAddress` / `spUpdateAddress` with `@Line1_Clear` /
+  `@City_Clear` parameters, and the generated entity and GraphQL types for `Line1` and `City` become
+  `string | null`.
+
+### Patch Changes
+
+- Updated dependencies [ac184f2]
+  - @mj-biz-apps/common-entities@5.49.0
+  - @mj-biz-apps/common-activity-sync@5.49.0
+  - @mj-biz-apps/common-core-entities-server@5.49.0
+  - @mj-biz-apps/common-actions@5.49.0
+
 ## 5.48.0
 
 ### Patch Changes
