@@ -110,11 +110,13 @@ Declares the app to MJ's dynamic package loader:
         "createIfNotExists": true
     },
     "packages": {
-        "server": [{ "name": "@mj-biz-apps/common-server", "role": "bootstrap" }],
+        "server": [
+            { "name": "@mj-biz-apps/common-server", "role": "bootstrap" },
+            { "name": "@mj-biz-apps/common-actions", "role": "actions" }
+        ],
         "client": [{ "name": "@mj-biz-apps/common-ng", "role": "bootstrap" }],
         "shared": [
-            { "name": "@mj-biz-apps/common-entities", "role": "library" },
-            { "name": "@mj-biz-apps/common-actions", "role": "library" }
+            { "name": "@mj-biz-apps/common-entities", "role": "library" }
         ]
     }
 }
