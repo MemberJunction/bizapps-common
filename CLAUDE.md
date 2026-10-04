@@ -111,18 +111,18 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
 3. `changes.yml` + `build.yml` run validation on the PR
 4. Merge to `next`
 
-**Release flow: one dispatch and two merges** (runbook: [`docs/release.md`](docs/release.md)):
+**Release flow: one dispatch and one merge** (runbook: [`docs/release.md`](docs/release.md)):
 1. Dispatch **Prepare a release** (`release-prep.yml`). It cuts `release/vX.Y.Z` from `next`, runs `pnpm run version`, and opens the "Release vX.Y.Z" PR into `main`.
 2. Review and merge that PR with a merge commit. The merge triggers `publish.yml`, which builds, runs the release-readiness gates, publishes to npm, tags `vX.Y.Z`, and opens the `chore/backmerge-vX.Y.Z-<main sha>` → `next` PR (any later merge into `main` gets a back-merge PR of its own).
-3. Merge the back-merge PR. Until you do, **Prepare a release** refuses to cut the next release.
+3. `publish.yml` merges the back-merge PR once its checks pass. It leaves it open (and says why in the run summary) on conflicts, a red or slow check, or commits added to the branch; then merge it yourself. Until it lands, **Prepare a release** refuses to cut the next release.
 
 `pnpm run release:plan` answers "is a release due?" read-only: version, pending changesets, gates, and every blocker.
 
 **Rules:**
-- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR. The release workflows push only `release/*`, `chore/backmerge-*` and the `vX.Y.Z` tag. The GitHub App pushes `release/*` and opens both PRs (a `GITHUB_TOKEN`-authored PR starts no CI); the back-merge branch and the tag are pushed with `GITHUB_TOKEN`, because `publish.yml`'s checkout persists that credential and it outranks the App token in the remote URL. `pnpm run lint:release-pushes` fails any workflow or script that pushes to either branch.
+- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR. The release workflows push only `release/*`, `chore/backmerge-*` and the `vX.Y.Z` tag. The GitHub App pushes `release/*`, opens both PRs (a `GITHUB_TOKEN`-authored PR starts no CI) and merges the back-merge PR; the back-merge branch and the tag are pushed with `GITHUB_TOKEN`, because `publish.yml`'s checkout persists that credential and it outranks the App token in the remote URL. `pnpm run lint:release-pushes` fails any workflow or script that pushes to either branch.
 - **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `check:release-seed` and `check:seed-cadence` gate the release, not feature PRs.
 - **`mj-app.json` is checked on every PR, into `next` or `main`** (`build.yml`'s `release-tooling` job, which runs on every event, runs the `sync-app-version` spec). A PR that changes the `@memberjunction/core` pin in `packages/Entities` must run `node scripts/sync-app-version.mjs` and commit `mj-app.json` — **not** `pnpm run version`, which would consume the pending changesets.
-- **Merge the back-merge PR with a merge commit**, never squash or rebase: either leaves `main`'s tip outside `next`'s history and **Prepare a release** keeps refusing. If it happened, open a fresh `main → next` PR and merge it with a merge commit.
+- **A back-merge PR left open is merged with a merge commit**, never squash or rebase: either leaves `main`'s tip outside `next`'s history and **Prepare a release** keeps refusing. If it happened, open a fresh `main → next` PR and merge it with a merge commit.
 - **Hotfixes that genuinely must bypass `next`** still go through a PR to `main`, and that PR must carry its own bump (`pnpm run version`), because `publish.yml` refuses to publish while changesets remain. Afterwards `main` holds a commit `next` lacks: merge the `chore/backmerge-v*` PR that `publish.yml` opens (or open one from `main`'s tip by hand) before the next release, which is blocked until you do.
 
 ---
