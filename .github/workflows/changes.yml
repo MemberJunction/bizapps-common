@@ -109,6 +109,13 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # "Resolve current base branch tip" fetched the base with --depth=1, which records a shallow
+          # boundary at its tip and cuts off everything beneath it — later full fetches do not undo
+          # that. Ancestry across that boundary is wrong (commits next has read as missing), so the
+          # clone is un-shallowed before any answer is trusted.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --quiet --unshallow origin
+          fi
           git fetch --no-tags origin main
           MAIN_SHA=$(git rev-parse FETCH_HEAD)
           set +e
@@ -119,7 +126,7 @@ jobs:
             0) echo "This branch contains main's tip (${MAIN_SHA:0:10})." ;;
             1)
               echo "main has commits this branch lacks:"
-              git log --oneline "$HEAD_SHA..$MAIN_SHA" | head -20
+              git log --oneline -n 20 "$HEAD_SHA..$MAIN_SHA"
               echo "::error::This branch does not contain main's tip (${MAIN_SHA:0:10}), so merging it would revert those commits on main — a released version bump among them. If this is a release, cut it with Prepare a release (docs/release.md) after merging the outstanding chore/backmerge-* PR into next. If it is a hotfix, branch it from main."
               exit 1
               ;;
@@ -139,6 +146,13 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # "Resolve current base branch tip" fetched the base with --depth=1, which records a shallow
+          # boundary at its tip and cuts off everything beneath it — later full fetches do not undo
+          # that. Ancestry across that boundary is wrong (commits next has read as missing), so the
+          # clone is un-shallowed before any answer is trusted.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --quiet --unshallow origin
+          fi
           git fetch --no-tags origin main
           MAIN_SHA=$(git rev-parse FETCH_HEAD)
           git fetch --no-tags origin next
@@ -159,7 +173,7 @@ jobs:
             echo "This pull request carries main (${MAIN_SHA:0:10}) into next."
           else
             echo "main has commits next lacks:"
-            git log --oneline "$NEXT_SHA..$MAIN_SHA" | head -20
+            git log --oneline -n 20 "$NEXT_SHA..$MAIN_SHA"
             echo "::error::A back-merge is outstanding: main (${MAIN_SHA:0:10}) is not in next. Merge the open chore/backmerge-* pull request into next first (publish.yml merges it automatically once its checks pass; if it was left open, the publish run's summary says why), then re-run this check."
             exit 1
           fi

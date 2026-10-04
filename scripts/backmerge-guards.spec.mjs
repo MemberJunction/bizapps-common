@@ -46,7 +46,7 @@ function releasedWithoutBackMerge() {
     const featureSha = commit('feature-y', 'y\n', 'another feature');
     git(seed, 'push', '-q', origin, 'main', 'next');
     const work = join(root, 'work');
-    git(root, 'clone', '-q', origin, work);
+    git(root, 'clone', '-q', `file://${origin}`, work);
     // The PR heads live only in the clone, as they would after actions/checkout of the PR.
     git(work, 'fetch', '-q', seed, 'feature/y');
     return { root, origin, work, git, backmergeSha, staleNextSha, featureSha };
@@ -110,6 +110,40 @@ test('once the back-merge has landed, a PR into next passes', withFixture((fx) =
     const r = runStep(fx, INTO_NEXT, fx.featureSha);
     assert.equal(r.status, 0, r.out);
     assert.match(r.out, /already in next/);
+}));
+
+/** What changes.yml's "Resolve current base branch tip" step does before the guards run. */
+const shallowBaseFetch = (fx) => fx.git(fx.work, 'fetch', '-q', '--no-tags', '--depth=1', 'origin', 'next');
+
+test('the depth-1 base fetch earlier in the job does not make a landed back-merge read as missing', withFixture((fx) => {
+    // A shallow boundary at next's tip hides its parents, main's tip among them, so without
+    // un-shallowing, every PR into next stayed red after the back-merge merged.
+    backMerge(fx);
+    shallowBaseFetch(fx);
+    assert.equal(fx.git(fx.work, 'rev-parse', '--is-shallow-repository'), 'true', 'fixture must reproduce the shallow clone');
+    const r = runStep(fx, INTO_NEXT, fx.featureSha);
+    assert.equal(r.status, 0, r.out);
+    assert.match(r.out, /already in next/);
+    const intoMain = runStep(fx, INTO_MAIN, fx.git(fx.work, 'rev-parse', 'origin/next'));
+    assert.equal(intoMain.status, 0, intoMain.out);
+}));
+
+test('no guard pipes git into head, which under pipefail exits 141 before the error prints', () => {
+    // The behavioural case below cannot reproduce the SIGPIPE locally: a short log fits in the pipe
+    // buffer, so git exits before head closes it. On GitHub the list was long enough. Pinned here.
+    for (const name of [INTO_MAIN, INTO_NEXT]) assert.doesNotMatch(stepBody(CHANGES, name), /\|\s*head\b/, name);
+});
+
+test('more than twenty missing commits still fail with the error', withFixture((fx) => {
+    const tmp = join(fx.root, 'many');
+    fx.git(fx.root, 'clone', '-q', '-b', 'main', fx.origin, tmp);
+    for (let i = 0; i < 25; i++) { writeFileSync(join(tmp, `hotfix-${i}`), `${i}\n`); fx.git(tmp, 'add', '-A'); fx.git(tmp, 'commit', '-qm', `hotfix ${i}`); }
+    fx.git(tmp, 'push', '-q', 'origin', 'main');
+    for (const [name, head, message] of [[INTO_NEXT, fx.featureSha, /back-merge is outstanding/], [INTO_MAIN, fx.staleNextSha, /would revert/]]) {
+        const r = runStep(fx, name, head);
+        assert.equal(r.status, 1, `${name}: ${r.out}`);
+        assert.match(r.out, message);
+    }
 }));
 
 test('the guards test the PR head, never the merge preview commit', () => {
