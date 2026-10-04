@@ -30,6 +30,10 @@
         "name": "@mj-biz-apps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
+      },
+      {
+        "name": "@mj-biz-apps/common-actions",
+        "role": "actions"
       }
     ],
     "client": [
@@ -42,10 +46,6 @@
     "shared": [
       {
         "name": "@mj-biz-apps/common-entities",
-        "role": "library"
-      },
-      {
-        "name": "@mj-biz-apps/common-actions",
         "role": "library"
       }
     ]
