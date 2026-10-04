@@ -92,6 +92,78 @@ jobs:
           fi
           echo "No pending changesets."
 
+      # A PR into main must contain main's tip, or merging it reverts whatever main has that the
+      # branch lacks — including a release's published version bump. GitHub will not stop that
+      # merge (main has no ruleset), and the PR's diff shows it only as a quiet version downgrade.
+      # This is how a `next -> main` PR opened while v5.50.0's back-merge was outstanding would have
+      # set main back from 5.50.0 to 5.49.0. A release branch cut by Prepare a release, and a hotfix
+      # branched from main, both contain main and pass.
+      #
+      # HEAD_SHA is the PR's head, not github.sha: on a pull_request event github.sha is the merge
+      # preview commit, which contains the base by construction and would always pass. Both
+      # branches are fetched in full here; the base fetch above is depth 1, and ancestry needs history.
+      # scripts/backmerge-guards.spec.mjs runs this step and the next one.
+      - name: A pull request into main must contain main
+        if: github.base_ref == 'main'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse FETCH_HEAD)
+          set +e
+          git merge-base --is-ancestor "$MAIN_SHA" "$HEAD_SHA"
+          RC=$?
+          set -e
+          case "$RC" in
+            0) echo "This branch contains main's tip (${MAIN_SHA:0:10})." ;;
+            1)
+              echo "main has commits this branch lacks:"
+              git log --oneline "$HEAD_SHA..$MAIN_SHA" | head -20
+              echo "::error::This branch does not contain main's tip (${MAIN_SHA:0:10}), so merging it would revert those commits on main — a released version bump among them. If this is a release, cut it with Prepare a release (docs/release.md) after merging the outstanding chore/backmerge-* PR into next. If it is a hotfix, branch it from main."
+              exit 1
+              ;;
+            *) echo "::error::git merge-base --is-ancestor exited $RC — cannot tell whether this branch contains main."; exit 1 ;;
+          esac
+
+      # A PR into next while a back-merge is outstanding: not harmful to merge in itself, but it is
+      # the moment someone is working against a `next` that is behind main, and the step that would
+      # otherwise notice (release-prep.mjs) runs only when a release is cut. Failing here names the
+      # problem while it is still a five-minute fix. publish.yml merges the back-merge automatically
+      # once its checks pass, so this is red only briefly after a release, or when that merge was
+      # left open for a human (conflicts, a red check) — the publish run's summary says which.
+      # The back-merge PR itself contains main and passes.
+      - name: No back-merge outstanding on a pull request into next
+        if: github.base_ref == 'next'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse FETCH_HEAD)
+          git fetch --no-tags origin next
+          NEXT_SHA=$(git rev-parse FETCH_HEAD)
+          ancestor() {
+            set +e
+            git merge-base --is-ancestor "$1" "$2"
+            local rc=$?
+            set -e
+            case "$rc" in
+              0|1) return "$rc" ;;
+              *) echo "::error::git merge-base --is-ancestor exited $rc — cannot tell whether a back-merge is outstanding."; exit 1 ;;
+            esac
+          }
+          if ancestor "$MAIN_SHA" "$NEXT_SHA"; then
+            echo "main (${MAIN_SHA:0:10}) is already in next — no back-merge outstanding."
+          elif ancestor "$MAIN_SHA" "$HEAD_SHA"; then
+            echo "This pull request carries main (${MAIN_SHA:0:10}) into next."
+          else
+            echo "main has commits next lacks:"
+            git log --oneline "$NEXT_SHA..$MAIN_SHA" | head -20
+            echo "::error::A back-merge is outstanding: main (${MAIN_SHA:0:10}) is not in next. Merge the open chore/backmerge-* pull request into next first (publish.yml merges it automatically once its checks pass; if it was left open, the publish run's summary says why), then re-run this check."
+            exit 1
+          fi
+
       - name: Check for changeset (PRs to next with migrations)
         if: |
           steps.migration_check.outputs.has_migrations == 'true' &&
