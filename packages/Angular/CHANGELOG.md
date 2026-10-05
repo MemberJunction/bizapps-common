@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-ng
 
+## 5.50.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.50.2
+
 ## 5.50.1
 
 ### Patch Changes
