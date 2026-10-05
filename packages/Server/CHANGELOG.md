@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-server
 
+## 5.50.2
+
+### Patch Changes
+
+- 1a89ba0: `Common.SyncActivities` now runs on an independent provider instance, released when the run ends,
+  instead of the process-global `Metadata.Provider`. The writer's per-item transaction, and any
+  registered `BaseActivitySyncExtension` running inside it, no longer capture queries from unrelated
+  callers such as the scheduler's lock and release bookkeeping.
+  - @mj-biz-apps/common-actions@5.50.2
+  - @mj-biz-apps/common-activity-sync@5.50.2
+  - @mj-biz-apps/common-core-entities-server@5.50.2
+  - @mj-biz-apps/common-entities@5.50.2
+
 ## 5.50.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.50.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.50.2
+- @mj-biz-apps/common-entities@5.50.2
+
 ## 5.50.1
 
 ### Patch Changes
