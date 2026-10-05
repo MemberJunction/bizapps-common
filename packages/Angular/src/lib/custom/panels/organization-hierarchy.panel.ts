@@ -16,6 +16,9 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         sortKey: 85,
         relatedEntity: 'MJ_BizApps_Common: Organizations',
         relatedJoinField: 'ParentID',
+        // The tree shows the whole lineage (ancestors + siblings), not just children,
+        // so a child-row count would mislead: no badge, never hidden.
+        count: false,
     },
 })
 @Component({

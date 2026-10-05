@@ -74,6 +74,7 @@ const VIEW_SWITCHER_STYLES = `
         slot: 'after-fields',
         sortKey: 70,
         contributionKey: 'relationships',
+        whenEmpty: 'more',
         relatedEntity: 'MJ_BizApps_Common: Relationships',
     },
 })
