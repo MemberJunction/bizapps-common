@@ -242,6 +242,12 @@ export async function LoadDirectorySnapshot(): Promise<{
     };
 }
 
+/**
+ * @param filter A trusted, pre-escaped SQL fragment passed verbatim as `ExtraFilter` — NEVER raw
+ * user text. Build it with {@link EscapeFilterValue}/{@link EscapeLikeValue} from
+ * `./directory-stats` (e.g. `` `FirstName LIKE '%${EscapeLikeValue(term)}%'` ``); quote characters
+ * in unescaped input break the query, and the server evaluates whatever arrives here.
+ */
 export async function SearchPeople(filter: string | undefined): Promise<DirectoryPersonRow[]> {
     const rv = new RunView();
     const result = await rv.RunView<DirectoryPersonRow>({
@@ -255,6 +261,10 @@ export async function SearchPeople(filter: string | undefined): Promise<Director
     return result.Success ? result.Results : [];
 }
 
+/**
+ * @param filter A trusted, pre-escaped SQL fragment passed verbatim as `ExtraFilter` — NEVER raw
+ * user text. See {@link SearchPeople} for the escaping contract.
+ */
 export async function SearchOrganizations(filter: string | undefined): Promise<DirectoryOrganizationRow[]> {
     const rv = new RunView();
     const result = await rv.RunView<DirectoryOrganizationRow>({

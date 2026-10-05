@@ -57,8 +57,8 @@
                                     <div class="rel-timeline-sentence">
                                         <span class="rel-timeline-label">{{ item.DirectionLabel }}</span>
                                         @if (item.TargetEntityName && item.TargetID) {
-                                            <a class="rel-timeline-target" href="javascript:void(0)"
-                                               (click)="onNavigateToTarget(item, $event)">{{ item.TargetName }}</a>
+                                            <button type="button" class="rel-timeline-target"
+                                                    (click)="onNavigateToTarget(item, $event)">{{ item.TargetName }}</button>
                                         } @else {
                                             <span class="rel-timeline-target">{{ item.TargetName }}</span>
                                         }

@@ -26,8 +26,13 @@ jobs:
 
       - name: Resolve current base branch tip
         id: base
+        # base.ref is constrained to next/main by this workflow's trigger, but it goes through an
+        # env var anyway — inline `${{ }}` inside `run:` is the injectable pattern, and every other
+        # workflow here already routes event data through env (build.yml, mutants.yml).
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.ref }}
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
           echo "sha=$(git rev-parse FETCH_HEAD)" >> $GITHUB_OUTPUT
 
       - name: Check for migration file changes

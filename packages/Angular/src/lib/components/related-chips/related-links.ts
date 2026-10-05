@@ -15,6 +15,7 @@
  * @module @mj-biz-apps/common-ng
  */
 import { CompositeKey } from '@memberjunction/core';
+import { EscapeFilterValue } from '../../data/directory-stats';
 import type { RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 
 /**
@@ -95,9 +96,9 @@ export interface ResolvedRelatedChip {
     AriaLabel: string;
 }
 
-/** Single-quote escaping for a value going into an `ExtraFilter`. */
+/** Single-quote escaping for a value going into an `ExtraFilter` — the one shared escaper. */
 function quote(value: string): string {
-    return value.replace(/'/g, "''");
+    return EscapeFilterValue(value);
 }
 
 /** `true` for a value that actually names a record — not null, not undefined, not blank. */
