@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
+import { SafeUUID } from '../../data/sql-guards';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
@@ -80,10 +81,10 @@ export class ActivityHierarchyPanel extends BaseFormPanel<mjBizAppsCommonActivit
     }
 
     public get treeConfig(): HierarchyTreeConfig {
-        const recId = this.Record?.ID || null;
+        const recId = SafeUUID(this.Record?.ID);
         if (!this._treeConfig || this._cachedRecordId !== recId) {
             this._cachedRecordId = recId;
-            const rootId = this.Record?.RootParentActivityID || recId;
+            const rootId = SafeUUID(this.Record?.RootParentActivityID) || recId;
             const extraFilter = rootId
                 ? `(ID = '${rootId}' OR RootParentActivityID = '${rootId}' OR ParentActivityID = '${rootId}' OR ParentActivityID = '${recId}')`
                 : undefined;

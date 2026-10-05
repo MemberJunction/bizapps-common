@@ -7,7 +7,7 @@ import type { IntegrationCheckContext } from '@memberjunction/testing-integratio
 import { Assert } from '@memberjunction/testing-integration/registry';
 
 export function Quote(value: string): string {
-    return value.replace(/'/g, "''");
+    return value.replace(/\0/g, '').replace(/'/g, "''");
 }
 
 export function SameID(left: string | null | undefined, right: string | null | undefined): boolean {
