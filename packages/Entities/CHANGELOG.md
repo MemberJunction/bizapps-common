@@ -1,5 +1,35 @@
 # Change Log - mj_generatedentities
 
+## 5.51.0
+
+### Minor Changes
+
+- c588769: New SQL function `[__mj_BizAppsCommon].[fnBusinessDayOf](@At DATETIMEOFFSET) RETURNS DATE`, with a
+  PostgreSQL twin `__mj_bizappscommon."fnBusinessDayOf"(at timestamptz) RETURNS date`
+  (migration `V202610062305__v5.51.x__Business_Day_Of`; MemberJunction/bc-aidp-next-golive#168). It
+  returns the calendar day an instant falls on in the business time zone, reading the zone from
+  `fnBusinessToday()` so the two always agree, and NULL for NULL. Queries use it instead of
+  `AT TIME ZONE bt.SqlZone`, which MJ's SQL parser cannot parse. A `DATETIME`/`DATETIME2` argument is
+  read as UTC; do not pass a `DATE` column (west of UTC it comes back a day early).
+- 679bfe0: The 5.51 Metadata_Sync ships what metadata/ added or changed since 5.48: the form layout (field categories, form sections and display names on 59 fields), the FieldCategoryInfo / FieldCategoryIcons entity settings, the three generated validators (ValidateEffectiveToAfterEffectiveFrom, ValidateCapturedContentAndEncryptionKeyCoexistence, ValidateExternalIdAndSourceSystemCoexistence) and the directory dashboard query's business-day people counts. Field-level security for People stays held back, as in 5.48. The seed is idempotent and safe on a host that already ran `mj sync push`.
+- f3588b3: People and Organizations no longer carry the virtual `__mj_Latitude` / `__mj_Longitude` fields
+  (migration `V202610062130__v5.51.x__Drop_Person_Organization_Virtual_Geo_Fields`; #215). MJ CodeGen
+  joins `vwRecordGeoCodes` only for geo-source entities, so once a host ran CodeGen these four
+  EntityField rows named columns `vwPeople` / `vwOrganizations` no longer produce: reads selected missing
+  columns and every later CodeGen run failed on `UQ_EntityField_EntityID_Sequence`. The migration
+  recreates `vwPeopleGenerated` / `vwOrganizationsGenerated` in CodeGen's shape, refreshes the two
+  wrappers, and deletes the four rows. Coordinates for both come from the primary Address
+  (`PrimaryAddressLatitude` / `PrimaryAddressLongitude`).
+
+### Patch Changes
+
+- d325500: Build, test and generate against MemberJunction's 6.1 LTS line, the version AIDP Next runs
+  (MemberJunction/bc-aidp-next-golive#298). Every `@memberjunction/*` range moves from
+  `^6.1.0-edge.6` to `~6.1.5`, `mj-app.json` declares `>=6.1.5 <7.0.0`, and the generated code is
+  regenerated on 6.1.5 from a database built from migrations. Nullable `__mj_` columns such as Address
+  `__mj_Latitude` / `__mj_Longitude` are now declared nullable in the GraphQL types
+  (MemberJunction/MJ#4603), so a record with no geocode loads.
+
 ## 5.50.2
 
 ## 5.50.1
