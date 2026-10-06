@@ -101,14 +101,14 @@ export class mjBizAppsCommonActivity_ {
     @Field({nullable: true, description: `JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`}) 
     Details?: string;
         
-    @Field(() => Float, {nullable: true, description: `Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`}) 
-    SentimentScore?: number;
-        
     @Field() 
     _mj__CreatedAt: Date;
         
     @Field() 
     _mj__UpdatedAt: Date;
+        
+    @Field(() => Float, {nullable: true, description: `Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`}) 
+    SentimentScore?: number;
         
     @Field({nullable: true}) 
     @MaxLength(100)
@@ -2563,7 +2563,7 @@ export class mjBizAppsCommonActivitySyncRunDetail_ {
     @MaxLength(36)
     ActivityID?: string;
         
-    @Field({nullable: true, description: `Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.`}) 
+    @Field({nullable: true, description: `Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto. ROTATING THAT KEY MAKES EXISTING ROWS UNREADABLE: rotation re-encrypts only fields declared with Encrypt = 1, this column is encrypted by calling the engine directly, and the stored value records which key opened it but not which version — so a rotation skips these rows silently and the next read of them fails. Retain content here only for as long as the key behind it will not be rotated, or rotate with a plan for this column. Tracked upstream as MemberJunction/MJ#4580.`}) 
     CapturedContent?: string;
         
     @Field({nullable: true}) 
@@ -4319,17 +4319,17 @@ export class mjBizAppsCommonJobFunction_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Unique display name of the job function.`}) 
     @MaxLength(100)
     Name?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Detailed description of the job function and the roles it encompasses.`}) 
     Description?: string;
         
-    @Field(() => Int, {nullable: true}) 
+    @Field(() => Int, {nullable: true, description: `Display sort sequence order.`}) 
     Sequence?: number;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Lifecycle status (Active, Inactive) of the job function.`}) 
     @MaxLength(20)
     Status?: string;
         
@@ -4747,12 +4747,6 @@ export class mjBizAppsCommonOrganization_ {
     @Field(() => Int, {nullable: true}) 
     ParentIDChildCount?: number;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(255)
     PrimaryAddressLine1?: string;
@@ -5076,12 +5070,6 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(100)
     LinkedUser?: string;
         
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
-        
     @Field({nullable: true}) 
     @MaxLength(100)
     SeniorityLevel?: string;
@@ -5380,14 +5368,14 @@ export class mjBizAppsCommonPersonJobFunction_ {
     @MaxLength(36)
     JobFunctionID?: string;
         
-    @Field(() => Int, {nullable: true}) 
+    @Field(() => Int, {nullable: true, description: `Rank order sequence for a person with multiple job functions (Sequence 1 = primary).`}) 
     Sequence?: number;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Provenance of this function assignment (Manual by user, or Derived by automated pipeline).`}) 
     @MaxLength(20)
     Source?: string;
         
-    @Field(() => Float, {nullable: true}) 
+    @Field(() => Float, {nullable: true, description: `Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.`}) 
     Confidence?: number;
         
     @Field() 
@@ -6042,17 +6030,17 @@ export class mjBizAppsCommonSeniorityLevel_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Unique display name of the seniority level.`}) 
     @MaxLength(100)
     Name?: string;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Detailed description of the seniority level and role expectations.`}) 
     Description?: string;
         
-    @Field(() => Int, {nullable: true}) 
+    @Field(() => Int, {nullable: true, description: `Rank order sequence from entry-level/IC to executive/C-level.`}) 
     Sequence?: number;
         
-    @Field({nullable: true}) 
+    @Field({nullable: true, description: `Lifecycle status (Active, Inactive) of the seniority level.`}) 
     @MaxLength(20)
     Status?: string;
         

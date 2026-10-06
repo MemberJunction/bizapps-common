@@ -5,7 +5,7 @@
       "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
       "UserQuestion": "How many people, organizations, relationships, and directory gaps are there right now — without a row cap?",
       "Description": "Directory dashboard KPI tiles as a single row of scalars. Replaces in-browser counts over a RunView MaxRows=1000 snapshot, which under-counted once the party file grew past a thousand people.",
-      "TechnicalDescription": "Grain: one row. COUNT(*) / SUM(CASE) over vwPeople, vwOrganizations, vwRelationships. Email gap matches PersonEmail() (COALESCE PrimaryEmail, Email). People-per-day is UTC calendar days on __mj_CreatedAt. Org type mix is FOR JSON PATH. No template parameters — pushing twice must not collide on QueryParameter.",
+      "TechnicalDescription": "Grain: one row. COUNT(*) / SUM(CASE) over vwPeople, vwOrganizations, vwRelationships. Email gap matches PersonEmail() (COALESCE PrimaryEmail, Email). People-per-day is business days on __mj_CreatedAt (fnBusinessDayOf against fnBusinessToday().Today, the BizApps business time zone). Org type mix is FOR JSON PATH. No template parameters — pushing twice must not collide on QueryParameter.",
       "SQL": "@file:SQL/directory-dashboard-summary.sql",
       "Status": "Approved",
       "QualityRank": 9,
@@ -17,8 +17,8 @@
       "ID": "6C0A1000-0001-4000-A000-00000000000E"
     },
     "sync": {
-      "lastModified": "2026-09-06T23:06:36.143Z",
-      "checksum": "df13075aa2107d6706580359c545932d675ad5da4ba5be3d7ed67e3754c223a2"
+      "lastModified": "2026-10-06T23:21:11.759Z",
+      "checksum": "65f18502571b572ae8feeecf4ffcd14450d2244ca3a0cacf34b63dbe49f2757b"
     }
   }
 ]

@@ -19,7 +19,6 @@ export class mjBizAppsCommonPersonFormComponent extends BaseFormComponent {
             { sectionKey: 'personalIdentity', sectionName: 'Personal Identity', isExpanded: true },
             { sectionKey: 'professionalAndProfile', sectionName: 'Professional and Profile', isExpanded: true },
             { sectionKey: 'accountAndStatus', sectionName: 'Account and Status', isExpanded: true },
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'locationDetails', sectionName: 'Location Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
