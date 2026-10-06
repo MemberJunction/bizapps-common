@@ -16,8 +16,9 @@
  *
  * Host truth comes from the migrations: every EntityField row this repo's chain inserts for a geo
  * virtual column, mapped to its entity through the `'<id>', -- Entity: <name>` comments CodeGen
- * emits. A migration that REMOVES a geo EntityField will make this test demand a field the host no
- * longer has; update the derivation when that happens rather than deleting the field.
+ * emits. A later migration that removes one with
+ * `DELETE FROM [...].[EntityField] WHERE EntityID = '<id>' AND Name IN ('__mj_Latitude', ...)` takes it
+ * back out, in chain order, so the test stops demanding a field the host no longer has (#215).
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -73,17 +74,31 @@ function entityNamesByID(migrations: string[]): Map<string, string> {
     return names;
 }
 
-/** Geo EntityField rows the chain inserts: the `IF NOT EXISTS` guard both CodeGen and the heals use. */
+const INSERTED_GEO_FIELD = new RegExp(
+    String.raw`IF\s+NOT\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+\[[^\]]+\]\.\[?EntityField\]?\s+WHERE\s+ID\s*=\s*'[^']+'\s+OR\s+\(\s*EntityID\s*=\s*'([0-9A-Fa-f-]{36})'\s+AND\s+Name\s*=\s*'(${GEO_FIELD})'\s*\)`,
+    'g',
+);
+const DELETED_GEO_FIELDS = new RegExp(
+    String.raw`DELETE\s+FROM\s+\[[^\]]+\]\.\[?EntityField\]?\s+WHERE\s+EntityID\s*=\s*'([0-9A-Fa-f-]{36})'\s+AND\s+Name\s+IN\s*\(([^)]*)\)`,
+    'g',
+);
+
+function geoFieldKey(entityID: string, fieldName: string): string {
+    return `${entityID.toUpperCase()}|${graphQLName(fieldName)}`;
+}
+
+/**
+ * Geo EntityField rows the chain leaves in place: inserted with the `IF NOT EXISTS` guard both CodeGen
+ * and the heals use, minus those a later migration deletes. Each migration is applied in chain order.
+ */
 function geoEntityFields(migrations: string[]): GeoEntityField[] {
-    const pattern = new RegExp(
-        String.raw`IF\s+NOT\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+\[[^\]]+\]\.\[?EntityField\]?\s+WHERE\s+ID\s*=\s*'[^']+'\s+OR\s+\(\s*EntityID\s*=\s*'([0-9A-Fa-f-]{36})'\s+AND\s+Name\s*=\s*'(${GEO_FIELD})'\s*\)`,
-        'g',
-    );
     const found = new Map<string, GeoEntityField>();
     for (const sql of migrations) {
-        for (const m of sql.matchAll(pattern)) {
-            const field: GeoEntityField = { EntityID: m[1].toUpperCase(), FieldName: graphQLName(m[2]) };
-            found.set(`${field.EntityID}|${field.FieldName}`, field);
+        for (const m of sql.matchAll(INSERTED_GEO_FIELD)) {
+            found.set(geoFieldKey(m[1], m[2]), { EntityID: m[1].toUpperCase(), FieldName: graphQLName(m[2]) });
+        }
+        for (const m of sql.matchAll(DELETED_GEO_FIELDS)) {
+            for (const name of m[2].matchAll(/'([^']+)'/g)) found.delete(geoFieldKey(m[1], name[1]));
         }
     }
     return [...found.values()];
@@ -141,6 +156,10 @@ const entityNames = entityNamesByID(migrations);
 const geoFields = geoEntityFields(migrations);
 const outputTypes = parseOutputTypes(readFileSync(SERVER_SCHEMA, 'utf8'));
 
+function entityIDFor(entity: string): string | undefined {
+    return [...entityNames].find(([, name]) => name === `MJ_BizApps_Common: ${entity}`)?.[0];
+}
+
 function outputTypeFor(entityName: string): OutputType | undefined {
     return outputTypes.find((t) => t.EntityName === entityName);
 }
@@ -149,13 +168,21 @@ describe('MJ geo virtual fields on the GraphQL output types', () => {
     it('parses what it guards (never passes on nothing)', () => {
         expect(outputTypes.length).toBeGreaterThan(20);
         expect(outputTypeFor('MJ_BizApps_Common: Activities')?.Fields.length).toBeGreaterThan(10);
-        expect(geoFields.length).toBeGreaterThanOrEqual(8);
-        const addressID = [...entityNames].find(([, name]) => name === 'MJ_BizApps_Common: Addresses')?.[0];
+        expect(geoFields.length).toBeGreaterThanOrEqual(4);
+        const addressID = entityIDFor('Addresses');
         expect(addressID).toBeDefined();
         expect(geoFields.filter((f) => f.EntityID === addressID).map((f) => f.FieldName).sort()).toEqual([
             '_mj__Latitude',
             '_mj__Longitude',
         ]);
+    });
+
+    it('People and Organizations carry no geo virtual fields once V202610062130 deletes them (#215)', () => {
+        for (const entity of ['People', 'Organizations']) {
+            const id = entityIDFor(entity);
+            expect(id, `no migration names ${entity}`).toBeDefined();
+            expect(geoFields.filter((f) => f.EntityID === id)).toEqual([]);
+        }
     });
 
     it('mjBizAppsCommonAddress_ declares nullable _mj__Latitude and _mj__Longitude (bc-aidp-next-golive#295)', () => {
