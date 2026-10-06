@@ -1,0 +1,641 @@
+[
+  {
+    "_comments": [
+      "Field display names and form sections for the generated forms (bc-aidp-next-golive#298).",
+      "",
+      "CodeGen's AI pass names fields and groups them into form sections only for entities and fields it",
+      "creates. On a database built from migrations these entities already exist, so CodeGen fell back to",
+      "column-derived names ('Organization Type ID') and one 'Details' section. These rows pin the names",
+      "and sections next shipped, so the generated forms are reproducible from this repo.",
+      "",
+      "AutoUpdateDisplayName / AutoUpdateCategory go to false so a later CodeGen run keeps them.",
+      "GeneratedFormSection 'Category' puts the field in its Category's section instead of 'Details'.",
+      "Section icons come from each entity's FieldCategoryInfo setting (metadata/entity-settings/).",
+      "",
+      "Primary keys and lookup-name fields (Person, JobFunction, ...) are never drawn, but a field left in",
+      "'Details' still produces an empty Details section, so they take their siblings' category.",
+      "",
+      "Address __mj_Latitude / __mj_Longitude are the geo aliases of Latitude / Longitude, which the",
+      "'Geographic Location' section already shows, so they stay off the generated form.",
+      "",
+      "Dev loop after editing: mj migrate -> mj sync push --dir metadata -> mj codegen."
+    ],
+    "fields": {
+      "Category": "Activity Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activities&Name=SentimentScore"
+    }
+  },
+  {
+    "fields": {
+      "IncludeInGeneratedForm": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Addresses&Name=__mj_Latitude"
+    }
+  },
+  {
+    "fields": {
+      "IncludeInGeneratedForm": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Addresses&Name=__mj_Longitude"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Job Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Description"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=ID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Job Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Name"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Job Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Sequence"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Job Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Status"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=__mj_CreatedAt"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=__mj_UpdatedAt"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Active Staff Count",
+      "AutoUpdateDisplayName": false,
+      "Category": "Organization Metrics",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ActivePersonCount"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Total Child Organizations",
+      "AutoUpdateDisplayName": false,
+      "Category": "Hierarchy and Structure",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ChildOrgCount"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Organization Type Name",
+      "AutoUpdateDisplayName": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=OrganizationType"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Organization Type",
+      "AutoUpdateDisplayName": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=OrganizationTypeID"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Parent Name",
+      "AutoUpdateDisplayName": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=Parent"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Parent Organization",
+      "AutoUpdateDisplayName": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentID"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Child Count",
+      "AutoUpdateDisplayName": false,
+      "Category": "Hierarchy and Structure",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDChildCount"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Hierarchy Depth",
+      "AutoUpdateDisplayName": false,
+      "Category": "Hierarchy and Structure",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDDepth"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Is Leaf Node",
+      "AutoUpdateDisplayName": false,
+      "Category": "Hierarchy and Structure",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDIsLeaf"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Hierarchy Path",
+      "AutoUpdateDisplayName": false,
+      "Category": "Hierarchy and Structure",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDPath"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "City",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressCity"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Country",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressCountry"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLatitude"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Address Line 1",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLine1"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Address Line 2",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLine2"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLongitude"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Postal Code",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressPostalCode"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "State/Province",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressState"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Address Type",
+      "AutoUpdateDisplayName": false,
+      "Category": "Location and Address",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressType"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Contact Information",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryEmail"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Contact Information",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryPhone"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Root Parent",
+      "AutoUpdateDisplayName": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=RootParentID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Professional and Profile",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=PrimaryJobFunction"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Professional and Profile",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=PrimaryJobFunctionID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Professional and Profile",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=SeniorityLevel"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Professional and Profile",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=SeniorityLevelID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Confidence"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=ID"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Job Function Name",
+      "AutoUpdateDisplayName": false,
+      "Category": "Assignments",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=JobFunction"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Job Function",
+      "AutoUpdateDisplayName": false,
+      "Category": "Assignments",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=JobFunctionID"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Person Name",
+      "AutoUpdateDisplayName": false,
+      "Category": "Assignments",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Person"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Person",
+      "AutoUpdateDisplayName": false,
+      "Category": "Assignments",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=PersonID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Sequence"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Function Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Source"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=__mj_CreatedAt"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=__mj_UpdatedAt"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Relationship Participants",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=FromPerson"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Job Function Name",
+      "AutoUpdateDisplayName": false,
+      "Category": "Relationship Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=JobFunction"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Relationship Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=JobFunctionID"
+    }
+  },
+  {
+    "fields": {
+      "DisplayName": "Seniority Level Name",
+      "AutoUpdateDisplayName": false,
+      "Category": "Relationship Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=SeniorityLevel"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Relationship Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=SeniorityLevelID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Relationship Participants",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=ToPerson"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Seniority Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Description"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=ID"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Seniority Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Name"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Seniority Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Sequence"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Seniority Details",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Status"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=__mj_CreatedAt"
+    }
+  },
+  {
+    "fields": {
+      "Category": "System Metadata",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=__mj_UpdatedAt"
+    }
+  }
+]
