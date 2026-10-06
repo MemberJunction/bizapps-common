@@ -10,8 +10,10 @@ import {
     mjBizAppsCommonPersonEntity,
     mjBizAppsCommonOrganizationEntity,
     mjBizAppsCommonJobFunctionEntity,
-    mjBizAppsCommonSeniorityLevelEntity
+    mjBizAppsCommonSeniorityLevelEntity,
+    BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
+import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -561,7 +563,7 @@ export class RelationshipListComponent {
             TargetName: targetName,
             TargetEntityName: targetEntityName,
             TargetID: targetID,
-            DateDisplay: this.formatDateRange(rel.StartDate, rel.EndDate, rel.Status)
+            DateDisplay: FormatRelationshipDateRange(rel.StartDate, rel.EndDate, rel.Status)
         };
     }
 
@@ -632,23 +634,6 @@ export class RelationshipListComponent {
             OpenInNewTab: event.ctrlKey || event.metaKey
         };
         this.Navigate.emit(navEvent);
-    }
-
-    /** Formats a date range into a compact display string. */
-    private formatDateRange(start: Date | null, end: Date | null, status: string): string {
-        if (!start && !end) return '';
-
-        const formatDate = (d: Date): string => {
-            const date = new Date(d);
-            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        };
-
-        const startStr = start ? formatDate(start) : '';
-        const endStr = end ? formatDate(end) : (status === 'Active' ? 'Present' : '');
-
-        if (startStr && endStr) return `${startStr} - ${endStr}`;
-        if (startStr) return `${startStr} -`;
-        return '';
     }
 
     // --- Add Form ---
@@ -824,8 +809,8 @@ export class RelationshipListComponent {
         this.EditForm = {
             TypeID: rel.RelationshipTypeID,
             Title: rel.Title || '',
-            StartDate: rel.StartDate ? this.formatDateForInput(rel.StartDate) : '',
-            EndDate: rel.EndDate ? this.formatDateForInput(rel.EndDate) : '',
+            StartDate: RelationshipDateInputValue(rel.StartDate),
+            EndDate: RelationshipDateInputValue(rel.EndDate),
             Status: rel.Status as 'Active' | 'Inactive' | 'Ended',
             JobFunctionID: rel.JobFunctionID || '',
             SeniorityLevelID: rel.SeniorityLevelID || '',
@@ -917,7 +902,7 @@ export class RelationshipListComponent {
 
     /**
      * Ends an active relationship by setting its status to `'Ended'` and
-     * its end date to today. After saving, the relationship list is reloaded.
+     * its end date to today in the business time zone. After saving, the relationship list is reloaded.
      *
      * @param rel - The active relationship entity to end
      */
@@ -927,7 +912,7 @@ export class RelationshipListComponent {
 
         try {
             rel.Status = 'Ended';
-            rel.EndDate = new Date();
+            rel.EndDate = BusinessTimeZoneEngine.Instance.TodayAsDate();
 
             if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
                 this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
@@ -974,14 +959,5 @@ export class RelationshipListComponent {
             this.Saving = false;
             this.cdr.detectChanges();
         }
-    }
-
-    /** Converts a Date to an ISO date string (`YYYY-MM-DD`) for HTML date inputs. */
-    private formatDateForInput(date: Date): string {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
     }
 }
