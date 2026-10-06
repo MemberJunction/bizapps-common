@@ -27,6 +27,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Activities&Name=SentimentScore"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.664Z",
+      "checksum": "a18713cf095a87473d1d160e87ec17da0df11a9ee0e76100bb9eac7b4488826d"
     }
   },
   {
@@ -35,6 +39,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Addresses&Name=__mj_Latitude"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.690Z",
+      "checksum": "5283c8e4b3a87060e900ad1ff782a3aafd78870958321ed4f943f9a91a8e2f3e"
     }
   },
   {
@@ -43,6 +51,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Addresses&Name=__mj_Longitude"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.718Z",
+      "checksum": "5283c8e4b3a87060e900ad1ff782a3aafd78870958321ed4f943f9a91a8e2f3e"
     }
   },
   {
@@ -53,6 +65,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Description"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.745Z",
+      "checksum": "6341d75079e48a17faf22c115f5d2bf5a9af034504f62bf6646a155818fa9988"
     }
   },
   {
@@ -63,6 +79,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=ID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.772Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -73,6 +93,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Name"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.794Z",
+      "checksum": "6341d75079e48a17faf22c115f5d2bf5a9af034504f62bf6646a155818fa9988"
     }
   },
   {
@@ -83,6 +107,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Sequence"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.821Z",
+      "checksum": "6341d75079e48a17faf22c115f5d2bf5a9af034504f62bf6646a155818fa9988"
     }
   },
   {
@@ -93,6 +121,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=Status"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.844Z",
+      "checksum": "6341d75079e48a17faf22c115f5d2bf5a9af034504f62bf6646a155818fa9988"
     }
   },
   {
@@ -103,6 +135,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=__mj_CreatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.868Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -113,6 +149,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Job Functions&Name=__mj_UpdatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.890Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -125,6 +165,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ActivePersonCount"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.917Z",
+      "checksum": "87be92e1794c514d6c9cd744a3d652ddcaca2651a3a6f4f9d15bc0ea2439e57e"
     }
   },
   {
@@ -137,6 +181,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ChildOrgCount"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.952Z",
+      "checksum": "f273cdb453edb42f130b00cf18dacec3bc45417137f78ce70fc9a8a72ba965b0"
     }
   },
   {
@@ -146,6 +194,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=OrganizationType"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:09.981Z",
+      "checksum": "bddf1372bb73649054cf12740ad79991b221d7defae37dd51be7c94d62cb2113"
     }
   },
   {
@@ -155,6 +207,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=OrganizationTypeID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.012Z",
+      "checksum": "8d0f3d92aaeb31559403cd866e2a1bcdeaddf71ad722e3f78a6b7e5b10b665ea"
     }
   },
   {
@@ -164,6 +220,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=Parent"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.041Z",
+      "checksum": "6b3bfd4c2ec14cb0632b6766e3d98d29eb09d45500fa70f9eecc334bb0fe416f"
     }
   },
   {
@@ -173,6 +233,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.081Z",
+      "checksum": "84b2668f92f1cf96481cb36eb913ae927d58bd3959199968cfcbc075f7d6d9de"
     }
   },
   {
@@ -185,6 +249,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDChildCount"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.107Z",
+      "checksum": "081cd26d7f2142dacc67db15a7fcf26f3b51f58eed7d417cfd50aac671635360"
     }
   },
   {
@@ -197,6 +265,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDDepth"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.135Z",
+      "checksum": "f1530c4468d2a1d43e117380d0a289d69419e4aa528b244bd1f01bb2ee2486c1"
     }
   },
   {
@@ -209,6 +281,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDIsLeaf"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.167Z",
+      "checksum": "ddb7c5218c1fd0a04b2224311da19cb47724decebb09c10069c71986f3561112"
     }
   },
   {
@@ -221,6 +297,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=ParentIDPath"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.198Z",
+      "checksum": "9ce807529cc797c8eb11939883a74d33b26a9c94a77f2f18f878529019e3c18c"
     }
   },
   {
@@ -233,6 +313,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressCity"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.225Z",
+      "checksum": "a6189ae095ac4540641e9d966cb32d686dded9833128f63b715e79d8b2413ff5"
     }
   },
   {
@@ -245,6 +329,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressCountry"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.249Z",
+      "checksum": "3bc35dc0bbcc40624bb27124f759a797b534056a0679fbbe80b91cf234f49fb7"
     }
   },
   {
@@ -255,6 +343,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLatitude"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.274Z",
+      "checksum": "61776d3eebdcbd5fa9b4fcbd2d7193bbb7589c8acc1b6079be5baefaa8dfbbc2"
     }
   },
   {
@@ -267,6 +359,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLine1"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.298Z",
+      "checksum": "e501a7bb0574ea6392c78f02d31c9c6e28397d2789714cedde946c4237c5fef7"
     }
   },
   {
@@ -279,6 +375,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLine2"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.327Z",
+      "checksum": "cb5de8df13daaae7fb6e0e0625c710ea1737811961ad5767616bfb3ea789b709"
     }
   },
   {
@@ -289,6 +389,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressLongitude"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.356Z",
+      "checksum": "61776d3eebdcbd5fa9b4fcbd2d7193bbb7589c8acc1b6079be5baefaa8dfbbc2"
     }
   },
   {
@@ -301,6 +405,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressPostalCode"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.384Z",
+      "checksum": "25b6c024e1f285aa24f15d4be03f71a6f49f89704bd7de77a945ff1c0433d064"
     }
   },
   {
@@ -313,6 +421,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressState"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.410Z",
+      "checksum": "44bccebc6d7326b3f898142d85476f7ea532030e141f477864699abc403d2914"
     }
   },
   {
@@ -325,6 +437,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryAddressType"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.436Z",
+      "checksum": "17ee5b3ab4176f48fa8beab4013ac34b6b986fbfc1965fdc6b0e41659598e55c"
     }
   },
   {
@@ -335,6 +451,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryEmail"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.462Z",
+      "checksum": "077c08625c17d6af4c7f07b88d01747e45df3b90025c8c48b22cb96b6153ae9f"
     }
   },
   {
@@ -345,6 +465,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=PrimaryPhone"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.491Z",
+      "checksum": "077c08625c17d6af4c7f07b88d01747e45df3b90025c8c48b22cb96b6153ae9f"
     }
   },
   {
@@ -354,6 +478,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=RootParentID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.519Z",
+      "checksum": "57ab43137a6ef584375b1532aeff14d0abe9941b63ed86a0747169d4241f902e"
     }
   },
   {
@@ -364,6 +492,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=PrimaryJobFunction"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.549Z",
+      "checksum": "89f80d6efa9b08c5aff471ddf67c89e1a52423ecb2510bae5d17fa657fe82ece"
     }
   },
   {
@@ -374,6 +506,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=PrimaryJobFunctionID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.578Z",
+      "checksum": "89f80d6efa9b08c5aff471ddf67c89e1a52423ecb2510bae5d17fa657fe82ece"
     }
   },
   {
@@ -384,6 +520,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=SeniorityLevel"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.608Z",
+      "checksum": "89f80d6efa9b08c5aff471ddf67c89e1a52423ecb2510bae5d17fa657fe82ece"
     }
   },
   {
@@ -394,6 +534,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=SeniorityLevelID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.638Z",
+      "checksum": "89f80d6efa9b08c5aff471ddf67c89e1a52423ecb2510bae5d17fa657fe82ece"
     }
   },
   {
@@ -404,6 +548,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Confidence"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.668Z",
+      "checksum": "b48f7b20156afa6d1bd63815b5e9f6744062822037ac6a473a42096c81168ec0"
     }
   },
   {
@@ -414,6 +562,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=ID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.692Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -426,6 +578,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=JobFunction"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.718Z",
+      "checksum": "a8c72ebdfb6aa7f8747334170cbe73537e599c96889a6991225aba7dda1784d8"
     }
   },
   {
@@ -438,6 +594,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=JobFunctionID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.748Z",
+      "checksum": "04ca3ddd5ccb94e7ed2c82fbeb83b4fb8185ebb058094b160085d5cc814527f8"
     }
   },
   {
@@ -450,6 +610,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Person"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.775Z",
+      "checksum": "d2e62f2240263ccf2e8aab6c36c93bd76bc1434d50aa59cac7adc3ed4e7ebce7"
     }
   },
   {
@@ -462,6 +626,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=PersonID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.807Z",
+      "checksum": "66f89d0daa1b40bbbd84d7b6454732812387f908790294cd4f1ea5dfcc5e49d5"
     }
   },
   {
@@ -472,6 +640,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Sequence"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.836Z",
+      "checksum": "b48f7b20156afa6d1bd63815b5e9f6744062822037ac6a473a42096c81168ec0"
     }
   },
   {
@@ -482,6 +654,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=Source"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.864Z",
+      "checksum": "b48f7b20156afa6d1bd63815b5e9f6744062822037ac6a473a42096c81168ec0"
     }
   },
   {
@@ -492,6 +668,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=__mj_CreatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.890Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -502,6 +682,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Person Job Functions&Name=__mj_UpdatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.916Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -512,6 +696,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=FromPerson"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.939Z",
+      "checksum": "6dc177b9244f76f229fe46236aeac699a593368ddc3ba349bf3daa19eb7fabd0"
     }
   },
   {
@@ -524,6 +712,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=JobFunction"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.969Z",
+      "checksum": "bc1794cb06dde81e206785aaab6b61aca19bd26f5ff9136ab96aba0c33d14310"
     }
   },
   {
@@ -534,6 +726,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=JobFunctionID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:10.996Z",
+      "checksum": "a40457e1f3324f803033c5de2c1b6364e2863ff9a50141c83f43f87a47abd7c8"
     }
   },
   {
@@ -546,6 +742,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=SeniorityLevel"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.026Z",
+      "checksum": "326f86d50e5ceaf4d0c916bda488d0a09ffbe1c98a0f4216df1b4c2ec3946d16"
     }
   },
   {
@@ -556,6 +756,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=SeniorityLevelID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.075Z",
+      "checksum": "a40457e1f3324f803033c5de2c1b6364e2863ff9a50141c83f43f87a47abd7c8"
     }
   },
   {
@@ -566,6 +770,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Relationships&Name=ToPerson"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.103Z",
+      "checksum": "6dc177b9244f76f229fe46236aeac699a593368ddc3ba349bf3daa19eb7fabd0"
     }
   },
   {
@@ -576,6 +784,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Description"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.136Z",
+      "checksum": "cecfaebe4ba935a68f3dc8514d87ec442845a5a6113b9b808b2bb1a70697c495"
     }
   },
   {
@@ -586,6 +798,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=ID"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.167Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -596,6 +812,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Name"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.210Z",
+      "checksum": "cecfaebe4ba935a68f3dc8514d87ec442845a5a6113b9b808b2bb1a70697c495"
     }
   },
   {
@@ -606,6 +826,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Sequence"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.246Z",
+      "checksum": "cecfaebe4ba935a68f3dc8514d87ec442845a5a6113b9b808b2bb1a70697c495"
     }
   },
   {
@@ -616,6 +840,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=Status"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.278Z",
+      "checksum": "cecfaebe4ba935a68f3dc8514d87ec442845a5a6113b9b808b2bb1a70697c495"
     }
   },
   {
@@ -626,6 +854,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=__mj_CreatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.309Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   },
   {
@@ -636,6 +868,10 @@
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Seniority Levels&Name=__mj_UpdatedAt"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.339Z",
+      "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
   }
 ]
