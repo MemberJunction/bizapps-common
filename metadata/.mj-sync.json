@@ -17,6 +17,8 @@
     "scheduled-jobs",
     "entities",
     "entity-fields",
+    "entity-settings",
+    "generated-codes",
     "entity-relationships",
     "application-roles",
     "action-filters",
