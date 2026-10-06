@@ -1,5 +1,5 @@
 ---
-"@mj-biz-apps/common-entities": patch
+"@mj-biz-apps/common-entities": minor
 ---
 
 People and Organizations no longer carry the virtual `__mj_Latitude` / `__mj_Longitude` fields
