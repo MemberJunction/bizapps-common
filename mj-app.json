@@ -4,7 +4,7 @@
   "name": "mj-bizapps-common",
   "displayName": "BizApps Common",
   "description": "Common business entities (Person, Organization, Address, ContactMethod, Relationship) shared across MemberJunction business applications",
-  "version": "5.47.0",
+  "version": "5.50.2",
   "license": "BUSL-1.1",
   "icon": "fa-solid fa-building-columns",
   "publisher": {
@@ -30,6 +30,10 @@
         "name": "@mj-biz-apps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
+      },
+      {
+        "name": "@mj-biz-apps/common-actions",
+        "role": "actions"
       }
     ],
     "client": [
@@ -42,10 +46,6 @@
     "shared": [
       {
         "name": "@mj-biz-apps/common-entities",
-        "role": "library"
-      },
-      {
-        "name": "@mj-biz-apps/common-actions",
         "role": "library"
       }
     ]

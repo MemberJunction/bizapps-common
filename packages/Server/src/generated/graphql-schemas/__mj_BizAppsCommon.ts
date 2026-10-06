@@ -3705,7 +3705,7 @@ export class mjBizAppsCommonAddress_ {
     @MaxLength(36)
     ID: string;
         
-    @Field({nullable: true, description: `Street address line 1`}) 
+    @Field({nullable: true, description: `Street address line 1. Optional: an address may record only a location (country, region, postal code) before a street line is known.`}) 
     @MaxLength(255)
     Line1?: string;
         
@@ -3717,7 +3717,7 @@ export class mjBizAppsCommonAddress_ {
     @MaxLength(255)
     Line3?: string;
         
-    @Field({nullable: true, description: `City or locality name`}) 
+    @Field({nullable: true, description: `City or locality name. Optional: an address may record only a location (country, region, postal code) before a city is known.`}) 
     @MaxLength(100)
     City?: string;
         
@@ -3765,7 +3765,7 @@ export class CreatemjBizAppsCommonAddressInput {
     ID?: string;
 
     @Field({ nullable: true })
-    Line1?: string;
+    Line1: string | null;
 
     @Field({ nullable: true })
     Line2: string | null;
@@ -3774,7 +3774,7 @@ export class CreatemjBizAppsCommonAddressInput {
     Line3: string | null;
 
     @Field({ nullable: true })
-    City?: string;
+    City: string | null;
 
     @Field({ nullable: true })
     StateProvince: string | null;
@@ -3805,7 +3805,7 @@ export class UpdatemjBizAppsCommonAddressInput {
     ID: string;
 
     @Field({ nullable: true })
-    Line1?: string;
+    Line1?: string | null;
 
     @Field({ nullable: true })
     Line2?: string | null;
@@ -3814,7 +3814,7 @@ export class UpdatemjBizAppsCommonAddressInput {
     Line3?: string | null;
 
     @Field({ nullable: true })
-    City?: string;
+    City?: string | null;
 
     @Field({ nullable: true })
     StateProvince?: string | null;

@@ -1,5 +1,78 @@
 # @mj-biz-apps/common-server
 
+## 5.50.2
+
+### Patch Changes
+
+- 1a89ba0: `Common.SyncActivities` now runs on an independent provider instance, released when the run ends,
+  instead of the process-global `Metadata.Provider`. The writer's per-item transaction, and any
+  registered `BaseActivitySyncExtension` running inside it, no longer capture queries from unrelated
+  callers such as the scheduler's lock and release bookkeeping.
+  - @mj-biz-apps/common-actions@5.50.2
+  - @mj-biz-apps/common-activity-sync@5.50.2
+  - @mj-biz-apps/common-core-entities-server@5.50.2
+  - @mj-biz-apps/common-entities@5.50.2
+
+## 5.50.1
+
+### Patch Changes
+
+- Updated dependencies [5f58fef]
+  - @mj-biz-apps/common-actions@5.50.1
+  - @mj-biz-apps/common-activity-sync@5.50.1
+  - @mj-biz-apps/common-core-entities-server@5.50.1
+  - @mj-biz-apps/common-entities@5.50.1
+
+## 5.50.0
+
+### Patch Changes
+
+- Updated dependencies [dde861a]
+  - @mj-biz-apps/common-entities@5.50.0
+  - @mj-biz-apps/common-activity-sync@5.50.0
+  - @mj-biz-apps/common-core-entities-server@5.50.0
+  - @mj-biz-apps/common-actions@5.50.0
+
+## 5.49.0
+
+### Minor Changes
+
+- ac184f2: `Address.Line1` and `Address.City` are now nullable, so an address row may record a location
+  (country, region, postal code) before a street line and city are known.
+
+  The migration alters both columns to `NULL` (types and lengths unchanged) and updates their column
+  descriptions. CodeGen regenerates `spCreateAddress` / `spUpdateAddress` with `@Line1_Clear` /
+  `@City_Clear` parameters, and the generated entity and GraphQL types for `Line1` and `City` become
+  `string | null`.
+
+### Patch Changes
+
+- Updated dependencies [ac184f2]
+  - @mj-biz-apps/common-entities@5.49.0
+  - @mj-biz-apps/common-activity-sync@5.49.0
+  - @mj-biz-apps/common-core-entities-server@5.49.0
+  - @mj-biz-apps/common-actions@5.49.0
+
+## 5.48.0
+
+### Patch Changes
+
+- 680a2de: Addresses open again. Every Address single-record load failed with `Cannot query field
+"_mj__Latitude" on type "mjBizAppsCommonAddress_"` (MemberJunction/bc-aidp-next-golive#295).
+  `vwAddresses` exposes the native coordinates as MJ's geo virtual fields `__mj_Latitude` and
+  `__mj_Longitude`, and migration V202609101800 registers both as EntityFields. The client asks for
+  every EntityField, but the Address GraphQL type was not regenerated after that migration, so it
+  lacked both. It now declares them as nullable floats, as Activities, Organizations and People
+  already do. The Address entity class also gains the matching read-only `__mj_Latitude` and
+  `__mj_Longitude` getters.
+- Updated dependencies [680a2de]
+- Updated dependencies [4222b02]
+- Updated dependencies [e67224c]
+  - @mj-biz-apps/common-entities@5.48.0
+  - @mj-biz-apps/common-activity-sync@5.48.0
+  - @mj-biz-apps/common-core-entities-server@5.48.0
+  - @mj-biz-apps/common-actions@5.48.0
+
 ## 5.47.0
 
 ### Minor Changes

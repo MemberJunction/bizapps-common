@@ -1,5 +1,51 @@
 # Change Log - mj_generatedentities
 
+## 5.50.2
+
+## 5.50.1
+
+## 5.50.0
+
+### Minor Changes
+
+- dde861a: Repair `vwRelationships`, `spCreateRelationship` and `spUpdateRelationship` on hosts where bizapps-forms (up to 0.14.x) replaced them with stale copies (#219).
+
+  On those hosts every `MJ_BizApps_Common: Relationships` save failed with `@JobFunctionID is not a parameter for procedure spCreateRelationship`, and `vwRelationships` had no `JobFunction` or `SeniorityLevel` column. A new migration re-creates the three objects at their current definitions. On an undamaged host it replaces each with an identical copy.
+
+  The migration runs once. A host that later installs bizapps-forms 0.14.x or earlier is damaged again; install Forms 0.15.0 or later.
+
+## 5.49.0
+
+### Minor Changes
+
+- ac184f2: `Address.Line1` and `Address.City` are now nullable, so an address row may record a location
+  (country, region, postal code) before a street line and city are known.
+
+  The migration alters both columns to `NULL` (types and lengths unchanged) and updates their column
+  descriptions. CodeGen regenerates `spCreateAddress` / `spUpdateAddress` with `@Line1_Clear` /
+  `@City_Clear` parameters, and the generated entity and GraphQL types for `Line1` and `City` become
+  `string | null`.
+
+## 5.48.0
+
+### Minor Changes
+
+- 4222b02: The 5.48 Metadata_Sync takes People `PrimaryEmail` and Organization `Website` out of user search (#199), so the new lookup indexes can answer Bill To Person and Bill To Organization lookups in milliseconds. Two matches go away: a person's primary contact-method email that differs from `Person.Email`, and Organization website search. Field-level security for People (#186) is declared in metadata but not shipped yet. It needs an MJ 6.1.4 floor and host-side permission rows, so People access on hosts is unchanged.
+- e67224c: People and Organization pickers can now answer in milliseconds on large databases instead of timing out. Every column the curated user search uses now has an index, and the People and Organizations views join addresses in a way SQL Server can index. On a restored 1.2M-person AIDP database, a lookup for a rare name went from 15-19 seconds to 2-5 ms (People) and 2-4 ms (Organizations). On PostgreSQL, the prefix-searched columns are indexed with pattern operator classes, so `LIKE 'x%'` can use them under the default collation.
+
+  Two matches go away. People search no longer looks at the computed PrimaryEmail, so a person is no longer found by a primary contact-method email that differs from `Person.Email`. `Email` itself still matches exactly. Organization search no longer includes Website: most stored values carry a scheme (`https://...`), which `BeginsWith` never matched, and an unindexed field in the search would force a scan. Both search settings are metadata, and they ship in this release's Metadata_Sync (`V202609301930__v5.48.x__Metadata_Sync.sql`), so installing 5.48.0 applies the indexes and the search settings together.
+
+### Patch Changes
+
+- 680a2de: Addresses open again. Every Address single-record load failed with `Cannot query field
+"_mj__Latitude" on type "mjBizAppsCommonAddress_"` (MemberJunction/bc-aidp-next-golive#295).
+  `vwAddresses` exposes the native coordinates as MJ's geo virtual fields `__mj_Latitude` and
+  `__mj_Longitude`, and migration V202609101800 registers both as EntityFields. The client asks for
+  every EntityField, but the Address GraphQL type was not regenerated after that migration, so it
+  lacked both. It now declares them as nullable floats, as Activities, Organizations and People
+  already do. The Address entity class also gains the matching read-only `__mj_Latitude` and
+  `__mj_Longitude` getters.
+
 ## 5.47.0
 
 ### Minor Changes

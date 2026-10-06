@@ -1,7 +1,8 @@
 # Cutting a release
 
-One dispatch and two merges. Both pull requests are opened for you, and nothing is ever pushed to
-`main` or `next`: not by you, and not by a workflow. That constraint is the shape of the design, not a
+One dispatch and one merge. Both pull requests are opened for you, the back-merge is merged for you
+once its checks pass, and nothing is ever pushed to `main` or `next`: not by you, and not by a
+workflow. That constraint is the shape of the design, not a
 limitation worked around (see [Why it looks like this](#why-it-looks-like-this)).
 
 | Step | Who | What |
@@ -9,8 +10,8 @@ limitation worked around (see [Why it looks like this](#why-it-looks-like-this))
 | 0. Prep the seed | you, once per release | the consolidated `Metadata_Sync`. It needs a database, so no workflow can do it |
 | 1. Dispatch **Prepare a release** | you, one click | `release-prep.yml` cuts `release/vX.Y.Z` from `next`, bumps, and opens the PR into `main` |
 | 2. Review and merge that PR | you | the only place the version and the CHANGELOGs get human eyes |
-| 3. **Build and Publish** | `publish.yml`, on the merge | builds, publishes to npm, tags `vX.Y.Z`, opens the back-merge PR |
-| 4. Merge the back-merge PR | you | `chore/backmerge-vX.Y.Z-<main sha>` carries `main` back into `next` |
+| 3. **Build and Publish** | `publish.yml`, on the merge | builds, publishes to npm, tags `vX.Y.Z`, opens the back-merge PR and merges it once its checks pass |
+| 4. The back-merge | `publish.yml`, or you if it could not | `chore/backmerge-vX.Y.Z-<main sha>` carries `main` back into `next`; you merge it only when the run says it was left open |
 
 ---
 
@@ -140,10 +141,24 @@ step tells you which:
   (**Verify the release App token** diagnoses a credential problem) or open the back-merge by hand
   (step 4).
 
-## 4. Merge the back-merge PR
+## 4. The back-merge
 
 `chore/backmerge-vX.Y.Z-<main sha> → next`, opened for you in step 3 (named for `main`'s tip as well as the version, so a later docs or hotfix merge into `main` gets a back-merge of its own). It carries the release merge commit and
 the version bump back to `next`. `build.yml`, `changes.yml` and `clean-room-gate.yml` run on it.
+
+**`publish.yml` merges it for you** once those checks pass (about five minutes), with a merge commit
+pinned to `main`'s tip, as the App, so `next`'s own push workflows run. There is nothing in it for a
+human to judge: its head *is* `main`, already reviewed and published. The run's summary says
+**Back-merged** when it did.
+
+It leaves the PR open, says why in the summary and as a warning, and keeps the run green when the
+merge is not clean:
+
+- a check on the PR failed, or the checks did not all pass within 20 minutes;
+- the PR conflicts with `next`;
+- someone added commits to the branch (a conflict resolution) — those are never merged unreviewed.
+
+The run goes red only if the merge call itself errors. In every case above, merge it yourself.
 
 Merge it with a **merge commit** — never squash or rebase. Either rewrites `main`'s commits into new
 ones, so `main`'s tip is still not an ancestor of `next` and **Prepare a release** keeps refusing
@@ -216,10 +231,16 @@ being *introduced*, and a push introduces a SHA the remote has never seen. Commo
 checks today, so its old push path still worked. Adopting the design now means adding a required
 check later breaks nothing, and the release PR gets CI, which a push never did.
 
-**Why there is still a human merge, twice.** MJ built a one-click release button, never dispatched
+**Why there is still a human merge.** MJ built a one-click release button, never dispatched
 it, and deleted it, because every release carries prep that must be *reviewed*. A metadata-sync
 migration is permanent, append-only history. What is automated is the mechanical part: computing the
-version, writing the commit, opening the pull requests. What stays human is the judgement.
+version, writing the commit, opening the pull requests, and merging the back-merge. What stays human
+is the judgement, which is the release PR.
+
+The back-merge used to be a second human merge, and it was the one that got forgotten: v5.50.0's sat
+unmerged for a day, and a release PR was then opened from the stale `next` that would have reverted
+`main`'s published 5.50.0 bump to 5.49.0. It carries no judgement — its head is `main`, already
+reviewed — so it is merged automatically, and a human is pulled in only when it is not clean.
 
 **What the first run in bizapps-forms found.** Two defects surfaced on that first execution, both in
 the release machinery rather than the product, and both invisible to PR checks because neither fires
@@ -248,5 +269,7 @@ stopped before `Publish to npm`, which is what every gate sitting ahead of it is
 | Some packages genuinely did not publish (the step's output says so, or they are still absent well after the run) | `changeset publish` works concurrently and expects a retry. Re-run the workflow. `release-plan.mjs` asks *publish* and *tag* separately, so the re-run finishes the job instead of reporting a green no-op. |
 | A push in the release path is refused with a 403 naming `github-actions[bot]` | The push used the ambient token, not the App, whatever its remote URL says: `actions/checkout`'s persisted `extraheader` outranks URL credentials. See MemberJunction/bizapps-forms#226 and MemberJunction/bizapps-forms#229. |
 | The back-merge branch exists at an unexpected SHA | The workflow refuses to force-push over it, because someone may have resolved conflicts there. Delete the branch or open the PR by hand. |
+| A PR into `main` fails **A pull request into main must contain main** | Its branch lacks commits `main` has, so merging it would revert them, a released version bump among them. This is a PR from a stale `next`, or one opened by hand instead of by **Prepare a release**. Close it; merge the outstanding back-merge into `next`; cut the release with **Prepare a release**. |
+| A PR into `next` fails **No back-merge outstanding on a pull request into next** | `main` has commits `next` lacks: the last back-merge has not landed. Usually it is still waiting on its checks (`publish.yml` merges it within minutes); otherwise the publish run's summary says why it was left open. Merge it, then re-run the check. |
 | **Prepare a release** refuses because `main` is not contained in `next` | The previous release's `chore/backmerge-v<prev>-<main sha>` PR is unmerged, or was never opened. Merge it with a merge commit (or branch it from `main`'s tip and open it by hand), then re-dispatch. If it was squash- or rebase-merged, open a fresh `main → next` PR and merge it with a merge commit. |
 | `release:plan` says the seed is owed | Step 0. [`migrations/README.md`](../migrations/README.md). |
