@@ -1,4 +1,4 @@
--- Hand-written PG twin of V202610011930__v5.49.x__Business_Day_Of.sql.
+-- Hand-written PG twin of V202610062305__v5.51.x__Business_Day_Of.sql.
 -- The calendar day an instant falls on in the business time zone. Zone resolution is
 -- fnBusinessToday()'s, read from it rather than copied, so the two cannot disagree; its
 -- "SqlZone" column holds the IANA name on PostgreSQL, which AT TIME ZONE accepts.

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202610011930__v5.49.x__Business_Day_Of.sql
+-- Migration: V202610062305__v5.51.x__Business_Day_Of.sql
 -- Description: fnBusinessDayOf(@At) — the calendar day an instant falls on in the
 --              business time zone (bc-aidp-next-golive#168).
 --
