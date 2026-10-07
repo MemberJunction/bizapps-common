@@ -20,7 +20,7 @@
     "install:deps": "pnpm install",
     "setup": "echo 'Please run: pnpm run mj:migrate && pnpm run mj:codegen && pnpm run build'",
     "change": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && node scripts/sync-app-version.mjs",
     "version:prepare": "changeset version && node ci/sync-mj-app-version.mjs && pnpm install --lockfile-only",
     "test:objectmodel:pg": "node scripts/pg-objectmodel-test.mjs",
     "test:integration": "node test-harnesses/integration.mjs",
@@ -33,7 +33,10 @@
     "check:release-seed:test": "node --test scripts/check-release-seed-coverage.spec.mjs",
     "check:seed-cadence": "node scripts/check-release-seed-cadence.mjs",
     "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
-    "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs"
+    "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs",
+    "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
+    "lint:release-pushes": "node scripts/check-release-pushes.mjs",
+    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs"
   },
   "repository": {
     "type": "git",

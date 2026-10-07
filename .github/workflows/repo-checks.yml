@@ -42,6 +42,10 @@ jobs:
       - name: Harness self-tests
         run: node --test 'packages/*/test-harnesses/*.spec.mjs' 'test-harnesses/*.spec.mjs'
 
+      # No workflow or script may push straight to `main` or `next`; releases go through PRs.
+      - name: Release-push gate
+        run: node scripts/check-release-pushes.mjs
+
   release-seed:
     name: 'repo: release seed'
     if: github.event.pull_request.draft == false && github.base_ref == 'main'

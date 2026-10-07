@@ -51,9 +51,9 @@ the seed. None of them reads the seed's SQL to confirm it carries the edit, so a
 an edit but generated without it still passes (`check-release-seed-cadence.spec.mjs` pins that
 limitation). Step 5 below, replaying the chain on a clean database, is what proves content.
 
-Both are manual checks now (`pnpm run check:release-seed`, `pnpm run check:seed-cadence`): the
-release pipeline (`version.yml` → Version Packages PR → `publish.yml`) gates the release PR with
-`release-readiness.yml`'s `rr: metadata shipped` instead. Neither runs on feature PRs, because no
+Both run on the Version Packages PR (`repo: release seed` in `.github/workflows/repo-checks.yml`), so a
+missing or per-PR seed fails the release before the merge; run them locally with
+`pnpm run check:release-seed` and `pnpm run check:seed-cadence`. Neither runs on feature PRs, because no
 feature PR can answer a question about a seed generated after it merges.
 
 **Add a NEW seed migration; never edit a shipped one.** Migrations are append-only history. A seed in

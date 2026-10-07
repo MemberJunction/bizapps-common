@@ -18,14 +18,10 @@
 #
 # WHAT THE APP IS FOR, AND WHAT IT IS EMPHATICALLY NOT FOR
 # --------------------------------------------------------
-# Not a bypass. This repository's only ruleset targets `next` (the default branch) with `deletion` +
-# `non_fast_forward`, and `main` has no rules at all; this workflow deliberately does NOT ask whether
-# the App could bypass anything — MJ's equivalent does, because MJ took the bypass route; we did
-# not, on purpose. The App does exactly two things here, neither of them privileged: it pushes
-# `release/*`, which no ruleset covers, and it opens the release and back-merge pull requests.
-# (`publish.yml` pushes the `chore/backmerge-*` branch itself with GITHUB_TOKEN: its checkout persists
-# that credential, which outranks the App token in the remote URL.) Those PRs then run the same
-# pull-request workflows as anyone's.
+# Under the shared open-app release pipeline the App does two things: `version.yml` uses it to open
+# the Version Packages PR (`changeset-release/main` -> `main`), and `publish.yml` uses it to open and
+# merge the `release-back-merge/vX.Y.Z` PR into `next`. On `next` it is a "pull requests only" bypass
+# actor, so that back-merge can merge before its checks finish; it pushes to no protected branch.
 #
 # The single reason it cannot just be GITHUB_TOKEN: GitHub does not start workflow runs from events
 # authored with it, so `changes.yml` and `build.yml` would never start on such a branch or such a PR
@@ -39,7 +35,7 @@
 # includes this repo — which is the question. Green means: the private key is valid, the App is the
 # one we think it is, its two grants are intact, and a token minted for this repo can read this repo.
 #
-# Run it before trusting release-prep.yml or publish.yml's back-merge. A red run here means the
+# Run it before trusting version.yml or publish.yml's back-merge. A red run here means the
 # release path is broken, and finding that out now costs a minute; finding it out during a publish
 # costs a release stranded between npm and the branch that has to carry it back.
 #
@@ -73,7 +69,7 @@ jobs:
         with:
           # `app-id` accepts a client ID as well as a numeric app id, which is what the org variable
           # holds. Read from `vars` rather than hardcoded, so this tests the SAME pair of values
-          # release-prep.yml and publish.yml use — a probe against different inputs proves nothing.
+          # version.yml and publish.yml use — a probe against different inputs proves nothing.
           app-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           # No `owner:`. Default scoping mints a token for THIS repository only, which is what makes
@@ -84,9 +80,9 @@ jobs:
           # GitHub refuses to mint a token carrying permissions the installation does not hold, so a
           # trimmed grant fails HERE with a clear error, instead of surfacing later as a push or a
           # `gh pr create` that dies looking exactly like the branch-protection problem all of this
-          # is about. These are the two the release needs and no more: contents to push `release/*`
-          # (and, as requested at publish.yml's call site, `chore/backmerge-*` should the persisted
-          # checkout credential ever stop outranking it), pull-requests to open the two PRs.
+          # is about. These are the two the release needs and no more: contents to push the
+          # `changeset-release/main` and `release-back-merge/*` branches, pull-requests to open the
+          # Version Packages PR and to open and merge the back-merge PR.
           permission-contents: write
           permission-pull-requests: write
 
@@ -137,7 +133,7 @@ jobs:
             echo "| grants requested | \`contents: write\`, \`pull-requests: write\` |"
             echo
             echo 'Green: the key is valid, the installation covers this repository, and both grants are intact.'
-            echo 'The App is **not** a ruleset bypass actor and must never become one — it pushes only'
-            echo '`release/*`, which no ruleset covers, and opens the release and back-merge pull requests that'
-            echo 'run the same pull-request workflows as anyone else'"'"'s.'
+            echo 'The App opens the Version Packages PR and opens and merges the back-merge PR. On `next` it is'
+            echo 'a "pull requests only" bypass actor, so the back-merge can merge before its checks finish; it'
+            echo 'pushes to no protected branch.'
           } >> "$GITHUB_STEP_SUMMARY"
