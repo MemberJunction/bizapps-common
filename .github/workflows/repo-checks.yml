@@ -1,0 +1,70 @@
+name: Repo checks
+
+# Checks specific to bizapps-common. They live here, not in the shared workflows, because
+# changes.yml, build.yml, release-readiness.yml and the rest are copied byte-for-byte from the
+# reference repo (bizapps-issues) and must stay identical across the open apps. Before the
+# release-pipeline port these ran inside common's own build.yml and publish.yml.
+on:
+  pull_request:
+    branches: [next, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: 'repo: guards'
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth/tags: check-release-seed-cadence.spec.mjs's real-git cases resolve tags.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+
+      # The mutation harnesses break code at anchored spots to prove the tests catch it. This
+      # confirms every anchor still matches the source, so a refactor cannot silently turn a
+      # mutant into a no-op. The full mutation run stays in mutants.yml.
+      - name: Mutation anchors
+        run: pnpm run test:mutants:anchors
+
+      # Stdlib-only specs for common's own scripts and harnesses. (.github/scripts/__tests__ is
+      # covered by the shared build.yml.)
+      - name: Script self-tests
+        run: node --test scripts/*.spec.mjs
+      - name: Harness self-tests
+        run: node --test 'packages/*/test-harnesses/*.spec.mjs' 'test-harnesses/*.spec.mjs'
+
+  release-seed:
+    name: 'repo: release seed'
+    if: github.event.pull_request.draft == false && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+
+      # Formerly in publish.yml, after the merge. On the release PR they fail before it.
+      # Each self-test runs first: a gate nobody has watched fail is indistinguishable from one
+      # that always passes (MemberJunction/bizapps-forms#105).
+      - name: Every metadata record is in the shipped seed
+        run: |
+          node --test scripts/check-release-seed-coverage.spec.mjs
+          pnpm run check:release-seed
+      - name: One consolidated seed per release, not per-PR deltas
+        run: |
+          node --test scripts/check-release-seed-cadence.spec.mjs
+          pnpm run check:seed-cadence
