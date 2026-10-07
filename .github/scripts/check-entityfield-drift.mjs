@@ -17,7 +17,7 @@
  * cannot see this: they scan migration TEXT, and this defect is the ABSENCE of text. It is only
  * visible against a built database. See #157, and #127 for the instance that motivated it.
  *
- * ── THE FOUR ASSERTIONS ─────────────────────────────────────────────────────────
+ * ── THE FIVE ASSERTIONS ─────────────────────────────────────────────────────────
  *   MISSING   A base-view column with no EntityField row — what a neighbour's CodeGen would
  *             INSERT. This is the primary detector and the one that reproduces #127.
  *   PHANTOM   An EntityField row with no base-view column — what CodeGen would DELETE.
@@ -27,6 +27,12 @@
  *             the absent ones leave holes. An independent witness to the same defect.
  *   BAND      No Sequence >= 100000, the MAX+100000+ordinal placeholder CodeGen emits on the
  *             generating database only.
+ *   NARROW    No spCreate<Table> / spUpdate<Table> parameter narrower than the column it writes.
+ *             SQL Server silently truncates a value bound to a narrower parameter, so a stale
+ *             CodeGen emit (generated against a database where the column was still narrow)
+ *             loses data on every save without an error. V202609211200 did exactly that to
+ *             Person.PhotoURL (NVARCHAR(MAX) column, NVARCHAR(1000) parameter), undoing
+ *             V202609051800; nothing caught it until inline avatars rendered broken.
  *
  * ── WHAT THE BUILD MUST BE ──────────────────────────────────────────────────────
  * Core `mj migrate -t <tag>`, then `mj migrate --schema __mj_BizAppsCommon --dir ./migrations`.
@@ -138,6 +144,29 @@ HAVING MIN(ef.Sequence) <> 1
  ORDER BY e.BaseTable;`;
 }
 
+/**
+ * Parameters of `spCreate<Table>` / `spUpdate<Table>` narrower than the column of the same name on
+ * `<Table>`. String and binary types only; `max_length = -1` is MAX. A procedure whose suffix names
+ * no table in the schema is out of scope (nothing to compare against).
+ */
+function narrowSQL(app) {
+    return `SET NOCOUNT ON;
+SELECT t.name, pr.name, SUBSTRING(p.name, 2, 128),
+       CASE WHEN p.max_length = -1 THEN 'MAX' ELSE CAST(p.max_length AS varchar(12)) END,
+       CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS varchar(12)) END
+  FROM sys.procedures pr
+  JOIN sys.schemas s ON s.schema_id = pr.schema_id
+  JOIN sys.parameters p ON p.object_id = pr.object_id
+  JOIN sys.tables t ON t.schema_id = pr.schema_id AND t.name = SUBSTRING(pr.name, 9, 128)
+  JOIN sys.columns c ON c.object_id = t.object_id AND c.name = SUBSTRING(p.name, 2, 128)
+ WHERE s.name = ${literal(app)}
+   AND (pr.name LIKE 'spCreate%' OR pr.name LIKE 'spUpdate%')
+   AND TYPE_NAME(c.user_type_id) IN ('nvarchar', 'varchar', 'nchar', 'char', 'varbinary', 'binary')
+   AND ((c.max_length = -1 AND p.max_length <> -1)
+     OR (c.max_length <> -1 AND p.max_length <> -1 AND p.max_length < c.max_length))
+ ORDER BY t.name, pr.name, p.name;`;
+}
+
 function bandSQL(core, app) {
     return `SET NOCOUNT ON;
 SELECT e.BaseTable, ef.Name, CAST(ef.Sequence AS varchar(12))
@@ -216,7 +245,7 @@ function rows(sql, database) {
 // ─── The check ────────────────────────────────────────────────────────────────────────────────
 
 /**
- * All four assertions against one database. Returns a flat list of findings; empty means clean.
+ * All five assertions against one database. Returns a flat list of findings; empty means clean.
  * Findings carry `kind` so the self-test can assert on the exact set, not just the count.
  */
 function runChecks(database, core = CORE_SCHEMA, app = APP_SCHEMA) {
@@ -249,13 +278,22 @@ function runChecks(database, core = CORE_SCHEMA, app = APP_SCHEMA) {
         });
     }
 
+    for (const [table, proc, param, paramBytes, columnBytes] of rows(narrowSQL(app), database)) {
+        findings.push({
+            kind: 'NARROW', table, detail: `${proc}.${param}`,
+            message: `${app}.${proc}: parameter @${param} is ${paramBytes} bytes but column `
+                + `${table}.${param} is ${columnBytes}, so every save silently truncates it `
+                + `(re-emit the procedure from a database where the column has its current width)`,
+        });
+    }
+
     return findings;
 }
 
 function report(findings, database) {
     if (findings.length === 0) {
         console.log(`${GREEN}✓${NC} ${database}: no EntityField drift in ${APP_SCHEMA} `
-            + `${DIM}(missing, phantom, sequence, band all clean)${NC}`);
+            + `${DIM}(missing, phantom, sequence, band, narrow all clean)${NC}`);
         return 0;
     }
 
@@ -280,7 +318,7 @@ ${YELLOW}What this means${NC}
 // throwaway database carrying one instance of each defect, runs the SHIPPING queries against it,
 // asserts the exact finding set, then repairs each defect and asserts silence.
 
-/** Four entities, one defect each, so a detector that stops firing cannot hide behind another. */
+/** One case per defect, so a detector that stops firing cannot hide behind another. */
 const FIXTURE_DIRTY = `
 CREATE SCHEMA [__mj];
 GO
@@ -319,6 +357,16 @@ CREATE TABLE [${APP_SCHEMA}].[Doohickey] (ID int, Name nvarchar(50));
 GO
 CREATE VIEW [${APP_SCHEMA}].[vwDoohickeys] AS SELECT ID, Name FROM [${APP_SCHEMA}].[Doohickey];
 GO
+-- NARROW: CodeGen procedures emitted against a narrower column than the table now has. Not an
+-- entity, so the four metadata detectors stay silent on it. One MAX column, one fixed width.
+CREATE TABLE [${APP_SCHEMA}].[Thingamajig] (ID int, Photo nvarchar(max), Code nvarchar(20));
+GO
+CREATE PROCEDURE [${APP_SCHEMA}].[spCreateThingamajig] @ID int, @Photo nvarchar(1000), @Code nvarchar(20)
+AS INSERT INTO [${APP_SCHEMA}].[Thingamajig] (ID, Photo, Code) VALUES (@ID, @Photo, @Code);
+GO
+CREATE PROCEDURE [${APP_SCHEMA}].[spUpdateThingamajig] @ID int, @Photo nvarchar(max), @Code nvarchar(10)
+AS UPDATE [${APP_SCHEMA}].[Thingamajig] SET Photo = @Photo, Code = @Code WHERE ID = @ID;
+GO
 INSERT INTO [__mj].[Entity] (ID, SchemaName, BaseTable, BaseView) VALUES
  ('11111111-1111-1111-1111-111111111111', N'${APP_SCHEMA}', N'Widget',    N'vwWidgets'),
  ('22222222-2222-2222-2222-222222222222', N'${APP_SCHEMA}', N'Gadget',    N'vwGadgets'),
@@ -346,6 +394,12 @@ DELETE FROM [__mj].[EntityField] WHERE Name = N'GoneAway';
 UPDATE [__mj].[EntityField] SET Sequence = 3 WHERE ID = 'ccccccc1-0000-0000-0000-000000000003';
 UPDATE [__mj].[EntityField] SET Sequence = 2 WHERE ID = 'ddddddd1-0000-0000-0000-000000000002';
 GO
+ALTER PROCEDURE [${APP_SCHEMA}].[spCreateThingamajig] @ID int, @Photo nvarchar(max), @Code nvarchar(20)
+AS INSERT INTO [${APP_SCHEMA}].[Thingamajig] (ID, Photo, Code) VALUES (@ID, @Photo, @Code);
+GO
+ALTER PROCEDURE [${APP_SCHEMA}].[spUpdateThingamajig] @ID int, @Photo nvarchar(max), @Code nvarchar(20)
+AS UPDATE [${APP_SCHEMA}].[Thingamajig] SET Photo = @Photo, Code = @Code WHERE ID = @ID;
+GO
 `;
 
 /** Every finding the dirty fixture must produce, as `KIND table detail`. */
@@ -355,6 +409,8 @@ const EXPECTED_DIRTY = [
     'SEQUENCE Doohickey 2/1/100001/2',
     'SEQUENCE Sprocket 3/1/4/3',
     'BAND Doohickey Name',
+    'NARROW Thingamajig spCreateThingamajig.Photo',
+    'NARROW Thingamajig spUpdateThingamajig.Code',
 ].sort();
 
 function dropSelfTestDb() {
@@ -382,7 +438,7 @@ function selfTest() {
             console.error(`  actual:   ${JSON.stringify(dirty, null, 2)}`);
             return 1;
         }
-        console.log(`${GREEN}✓${NC} all four detectors fired on the seeded defects `
+        console.log(`${GREEN}✓${NC} all five detectors fired on the seeded defects `
             + `${DIM}(${dirty.length} findings)${NC}`);
 
         execScript(FIXTURE_REPAIR, SELF_TEST_DB);
@@ -393,7 +449,7 @@ function selfTest() {
             for (const finding of repaired) console.error(`  ${finding.kind}: ${finding.message}`);
             return 1;
         }
-        console.log(`${GREEN}✓${NC} all four detectors went quiet once the fixture was repaired`);
+        console.log(`${GREEN}✓${NC} all five detectors went quiet once the fixture was repaired`);
     } finally {
         dropSelfTestDb();
     }
