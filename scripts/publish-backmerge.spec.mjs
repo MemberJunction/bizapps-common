@@ -174,8 +174,164 @@ test('the steps receive WORK from release_check, so their wording can depend on 
     }
 });
 
+// ---------------------------------------------------------------------------------------------
+// Merging the back-merge PR. The step is pure `gh` (no git), so these cases need no origin: a stub
+// answers `gh pr view` from fixture JSON, applying the step's own `--jq` expression through `jq` so
+// the classification logic under test is the real one, and records any `gh pr merge`.
+// ---------------------------------------------------------------------------------------------
+
+const MERGE_STEP = 'Merge the back-merge pull request once its checks pass';
+const PR_URL = 'https://github.com/o/r/pull/77';
+const MAIN_SHA = 'a'.repeat(40);
+const RUN_ID = '4242';
+
+/** A check-run as statusCheckRollup reports it; `run` picks the workflow run it belongs to. */
+const check = (name, status, conclusion, run = '1') => ({
+    __typename: 'CheckRun', name, status, conclusion, detailsUrl: `https://github.com/o/r/actions/runs/${run}/job/9`,
+});
+const GREEN = [check('build-only', 'COMPLETED', 'SUCCESS'), check('Mutants', 'COMPLETED', 'SKIPPED')];
+
+function mergeFixture() {
+    const root = mkdtempSync(join(tmpdir(), 'publish-backmerge-merge-'));
+    const bin = join(root, 'bin');
+    mkdirSync(bin);
+    const ghLog = join(root, 'gh.log');
+    writeFileSync(join(bin, 'gh'), [
+        '#!/usr/bin/env bash',
+        `printf '%s\\n' "$*" >> "${ghLog}"`,
+        'if [ "$1 $2" = "pr merge" ]; then exit "${GH_STUB_MERGE_RC:-0}"; fi',
+        'if [ "$1 $2" = "pr view" ]; then',
+        '  field=""; expr="."',
+        '  while [ $# -gt 0 ]; do case "$1" in --json) field="$2"; shift ;; --jq) expr="$2"; shift ;; esac; shift; done',
+        '  case "$field" in',
+        '    headRefOid) json="{\\"headRefOid\\":\\"$GH_STUB_HEAD\\"}" ;;',
+        '    statusCheckRollup) json="$GH_STUB_ROLLUP" ;;',
+        '    mergeable) json="{\\"mergeable\\":\\"$GH_STUB_MERGEABLE\\"}" ;;',
+        '  esac',
+        '  printf "%s" "$json" | jq -r "$expr"',
+        'fi',
+    ].join('\n'));
+    chmodSync(join(bin, 'gh'), 0o755);
+    return { root, work: root, bin, gitconfig: join(root, 'gitconfig'), ghLog };
+}
+
+/** Runs the merge step; `checks` is the rollup, the rest override the stub's answers. */
+function runMerge(fx, { checks = GREEN, head = MAIN_SHA, mergeable = 'MERGEABLE', mergeRc = 0, waitSeconds = 30 } = {}) {
+    writeFileSync(fx.gitconfig, '');
+    writeFileSync(fx.ghLog, '');
+    return runStep(fx, MERGE_STEP, {
+        GH_TOKEN: TOKEN, PR_URL, MAIN_SHA, GITHUB_RUN_ID: RUN_ID,
+        WAIT_SECONDS: String(waitSeconds), POLL_SECONDS: '0',
+        GH_STUB_HEAD: head, GH_STUB_ROLLUP: JSON.stringify({ statusCheckRollup: checks }),
+        GH_STUB_MERGEABLE: mergeable, GH_STUB_MERGE_RC: String(mergeRc),
+    });
+}
+const mergeCalls = (fx) => readFileSync(fx.ghLog, 'utf8').split('\n').filter((l) => l.startsWith('pr merge'));
+
+test('a green, mergeable back-merge PR is merged with a merge commit pinned to main\'s tip', () => {
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx);
+        assert.equal(r.status, 0, r.stdout);
+        assert.equal(r.output.merged, 'true');
+        assert.deepEqual(mergeCalls(fx), [`pr merge ${PR_URL} --merge --match-head-commit ${MAIN_SHA}`]);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('this publish run\'s own in-progress job is not waited on', () => {
+    // The PR's head is main's tip, the commit this run executes on, so the run's own job is on the
+    // PR as an in-progress check. Waiting on it would deadlock until the timeout.
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx, { checks: [...GREEN, check('build-and-publish', 'IN_PROGRESS', null, RUN_ID)], waitSeconds: 1 });
+        assert.equal(r.output.merged, 'true', r.stdout);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('a failing check leaves the PR open without failing the run', () => {
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx, { checks: [...GREEN, check('changes_and_migrations', 'COMPLETED', 'FAILURE')] });
+        assert.equal(r.status, 0, r.stdout);
+        assert.equal(r.output.merged, 'false');
+        assert.match(r.output.reason, /a check failed/);
+        assert.deepEqual(mergeCalls(fx), []);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('a conflicting PR is left open', () => {
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx, { mergeable: 'CONFLICTING' });
+        assert.equal(r.status, 0, r.stdout);
+        assert.match(r.output.reason, /conflicts with next/);
+        assert.deepEqual(mergeCalls(fx), []);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('commits added to the back-merge branch are never merged unreviewed', () => {
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx, { head: 'b'.repeat(40) });
+        assert.equal(r.status, 0, r.stdout);
+        assert.match(r.output.reason, /no longer main's tip/);
+        assert.deepEqual(mergeCalls(fx), []);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('checks that never report, or never finish, time out and leave the PR open', () => {
+    const fx = mergeFixture();
+    try {
+        for (const checks of [[], [check('build-only', 'QUEUED', null)]]) {
+            const r = runMerge(fx, { checks, waitSeconds: 0 });
+            assert.equal(r.status, 0, r.stdout);
+            assert.match(r.output.reason, /did not all pass within/);
+            assert.deepEqual(mergeCalls(fx), []);
+        }
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('a merge call that errors fails the step, so the run goes red', () => {
+    const fx = mergeFixture();
+    try {
+        const r = runMerge(fx, { mergeRc: 1 });
+        assert.notEqual(r.status, 0, r.stdout);
+        assert.notEqual(r.output.merged, 'true');
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
+test('the summary reports an automatic merge, and the reason when there was none', () => {
+    const fx = mergeFixture();
+    try {
+        const base = { VERSION: '5.47.0', WORK: 'true', NOTHING: 'false', BRANCH: 'chore/backmerge-v5.47.0-aaaaaaaaaa', PR_URL };
+        const merged = runStep(fx, 'Summarise the back-merge', { ...base, MERGED: 'true' });
+        assert.match(merged.summary, /### Back-merged/);
+        assert.doesNotMatch(merged.summary, /outstanding/);
+        const open = runStep(fx, 'Summarise the back-merge', { ...base, MERGED: 'false', REASON: 'it conflicts with next' });
+        assert.match(open.summary, /### The back-merge is outstanding/);
+        assert.match(open.summary, /not merged automatically because it conflicts with next/);
+    } finally {
+        rmSync(fx.root, { recursive: true, force: true });
+    }
+});
+
 test('the reader found real step bodies', () => {
     assert.ok(existsSync(join(REPO_ROOT, '.github', 'workflows', 'publish.yml')));
     assert.match(stepBody('Open the back-merge pull request'), /gh pr create/);
+    assert.match(stepBody(MERGE_STEP), /gh pr merge/);
     assert.match(stepBody('Summarise the back-merge'), /GITHUB_STEP_SUMMARY/);
 });

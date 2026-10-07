@@ -1,0 +1,134 @@
+[
+  {
+    "_comments": [
+      "Form section icons and descriptions, keyed by EntityField.Category (bc-aidp-next-golive#298).",
+      "CodeGen reads FieldCategoryInfo for each section's icon; a category with no entry gets a",
+      "keyword default (a name containing 'Details' gets fa-align-left), which is why these are pinned.",
+      "",
+      "The value is a JSON object, not a string containing JSON. It is replaced wholesale, so each",
+      "row carries every category the entity's setting already had.",
+      "",
+      "Organizations: the two rows the migrations seeded (same IDs), plus 'Organization Metrics', the",
+      "category metadata/entity-fields/.form-layout.json gives ActivePersonCount. FieldCategoryIcons is",
+      "the legacy twin of FieldCategoryInfo and is kept in step.",
+      "",
+      "Dev loop after editing: mj migrate -> mj sync push --dir metadata -> mj codegen."
+    ],
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations",
+      "Name": "FieldCategoryInfo",
+      "Value": {
+        "Address Information": {
+          "icon": "fa fa-map-marker-alt",
+          "description": "Primary location and office address details"
+        },
+        "Organizational Metrics": {
+          "icon": "fa fa-chart-line",
+          "description": "Summary statistics and counts related to the organization"
+        },
+        "Organization Metrics": {
+          "icon": "fa fa-chart-line",
+          "description": "Counts of the people currently associated with the organization"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "4C3A1DB8-34E8-487C-9F87-C37187658D61"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.371Z",
+      "checksum": "42e96dccb1596254139f059fb986c13919deaa050bda8134a21d0a069f57b527"
+    }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Organizations",
+      "Name": "FieldCategoryIcons",
+      "Value": {
+        "Address Information": "fa fa-map-marker-alt",
+        "Organizational Metrics": "fa fa-chart-line",
+        "Organization Metrics": "fa fa-chart-line"
+      }
+    },
+    "primaryKey": {
+      "ID": "67187477-2498-46DB-BF43-C9363EA694CF"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.384Z",
+      "checksum": "a26db46815bee52dad3f1e543274e82d81dda3c2cbbe3e0978e39858608ca051"
+    }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Job Functions",
+      "Name": "FieldCategoryInfo",
+      "Value": {
+        "Job Function Details": {
+          "icon": "fa fa-briefcase",
+          "description": "Name, description, display order and status of the job function"
+        },
+        "System Metadata": {
+          "icon": "fa fa-cog",
+          "description": "System-managed audit fields"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "42AA4BD1-7239-496E-A3D3-C1C98C769D83"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.409Z",
+      "checksum": "2897b36a9540d07cc3989127a04715ea16a4efea24f68c2683745e61deea5cdd"
+    }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Seniority Levels",
+      "Name": "FieldCategoryInfo",
+      "Value": {
+        "Seniority Details": {
+          "icon": "fa fa-briefcase",
+          "description": "Name, description, display order and status of the seniority level"
+        },
+        "System Metadata": {
+          "icon": "fa fa-cog",
+          "description": "System-managed audit fields"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "54A4C752-74C6-4805-AAA1-A417A2422BDD"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.423Z",
+      "checksum": "afd501f1ede0e3fe57d4074ec265488ac38bac412360bb4898d8d58f1ae00f95"
+    }
+  },
+  {
+    "fields": {
+      "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Person Job Functions",
+      "Name": "FieldCategoryInfo",
+      "Value": {
+        "Assignments": {
+          "icon": "fa fa-link",
+          "description": "The person and the job function assigned to them"
+        },
+        "Function Details": {
+          "icon": "fa fa-info-circle",
+          "description": "Order, source and confidence of the assignment"
+        },
+        "System Metadata": {
+          "icon": "fa fa-cog",
+          "description": "System-managed audit fields"
+        }
+      }
+    },
+    "primaryKey": {
+      "ID": "A4951336-0FCC-4348-81C0-056773665C8E"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.437Z",
+      "checksum": "aefe11d66f67d77ad908b58d2f1a1a38dc9f3806e7ad332eaf75aab1a6782e6e"
+    }
+  }
+]

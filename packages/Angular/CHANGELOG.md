@@ -1,5 +1,57 @@
 # @mj-biz-apps/common-ng
 
+## 5.51.0
+
+### Patch Changes
+
+- ee3e5be: The directory dashboard's "people added" bars count and name business days
+  (MemberJunction/bc-aidp-next-golive#168). The summary query bucketed `__mj_CreatedAt` by UTC day and
+  the labels named UTC weekdays, so on a Thursday evening in Chicago the current bar read "Fri" and
+  held that evening's signups. The query (`Common: Directory Dashboard Summary`, under `metadata/`)
+  now buckets with `fnBusinessDayOf` against `fnBusinessToday()`, and the labels come from
+  `BusinessTimeZoneEngine.Today()`. The query change reaches hosts through this release's
+  `Metadata_Sync`. The unused local-day helpers `CountByDay` and `LocalDayKey` are removed (not part of
+  the package's public API).
+- 745aa45: Relationship dates no longer move a day on their own (MemberJunction/bc-aidp-next-golive#168).
+  StartDate and EndDate are `date` columns that arrive as UTC midnight. The relationship list's Edit
+  form read them with local getters, so west of UTC it showed the previous day and saving the form,
+  even untouched, stored that earlier day: every save moved both dates back one. It now reads the
+  stored day. Ending a relationship stored `new Date()`, whose UTC day is already tomorrow on an
+  American evening; it now stores today in the business time zone (`BusinessTimeZoneEngine`).
+  The list's `Jan 2026 - Present` range also read local parts, so a Jan 1 start showed as Dec 2025;
+  it now formats in UTC.
+- Updated dependencies [c588769]
+- Updated dependencies [679bfe0]
+- Updated dependencies [f3588b3]
+- Updated dependencies [d325500]
+  - @mj-biz-apps/common-entities@5.51.0
+
+## 5.50.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.50.2
+
+## 5.50.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.50.1
+
+## 5.50.0
+
+### Patch Changes
+
+- Updated dependencies [dde861a]
+  - @mj-biz-apps/common-entities@5.50.0
+
+## 5.49.0
+
+### Patch Changes
+
+- Updated dependencies [ac184f2]
+  - @mj-biz-apps/common-entities@5.49.0
+
 ## 5.48.0
 
 ### Patch Changes

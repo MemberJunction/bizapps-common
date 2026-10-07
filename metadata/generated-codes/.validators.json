@@ -1,0 +1,92 @@
+[
+  {
+    "_comments": [
+      "Check-constraint validators pinned in source (bc-aidp-next-golive#298). CodeGen writes each",
+      "CHECK constraint's validator into __mj.GeneratedCode and reuses the stored code whenever Source",
+      "equals the constraint's current definition, character for character. Without a stored row it",
+      "asks the AI again, and the result can differ between runs.",
+      "",
+      "These rows correct what the AI wrote; the generated entity classes are produced from them:",
+      "- ActivitySyncExclusion CK_ActivitySyncExclusion_Window: the AI version cast both dates `as any`.",
+      "  EffectiveFrom / EffectiveTo are already typed Date | null.",
+      "- ActivitySyncRunDetail CK_ActivitySyncRunDetail_ContentKey: the AI version treated '' as no",
+      "  content, but the constraint treats '' as content, so CapturedContent = '' with no key passed",
+      "  validation and then failed at the database. Both sides are now IS NULL / IS NOT NULL.",
+      "  CodeGen itself never stores this one: it stores only the first table-level validator per",
+      "  entity, and ActivitySyncRunDetail has two.",
+      "",
+      "- Activity CK_Activity_External: one regeneration treated '' as missing, the same mismatch as",
+      "  ContentKey. This is the version next shipped, with next's name. Activity also has two",
+      "  table-level constraints, so CodeGen never stores this one either.",
+      "",
+      "Source must stay byte-identical to sys.check_constraints.definition, or CodeGen regenerates.",
+      "GeneratedByModelID is required; it names the model that wrote the original.",
+      "Push metadata BEFORE the first CodeGen run on a fresh database (mj migrate -> mj sync push",
+      "--dir metadata -> mj codegen); otherwise CodeGen stores its own copy first."
+    ],
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateEffectiveToAfterEffectiveFrom",
+      "Description": "The effective end date must be on or after the effective start date when both dates are provided.",
+      "Source": "([EffectiveFrom] IS NULL OR [EffectiveTo] IS NULL OR [EffectiveTo]>=[EffectiveFrom])",
+      "Code": "public ValidateEffectiveToAfterEffectiveFrom(result: ValidationResult) {\n\tif (this.EffectiveFrom != null && this.EffectiveTo != null && this.EffectiveTo.getTime() < this.EffectiveFrom.getTime()) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"EffectiveTo\",\n\t\t\t\"The Effective To date must be greater than or equal to the Effective From date.\",\n\t\t\tthis.EffectiveTo,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "556381BF-9ACE-4A69-85BB-22EAE1856C88"
+    },
+    "primaryKey": {
+      "ID": "7BCACA80-B2C0-4ADF-9566-E99B6742C3B3"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.509Z",
+      "checksum": "3ad041a7b3c5511d4592ec7c49589ad2135ff1bed344cf3fb512f42b9690f2b0"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateCapturedContentAndEncryptionKeyCoexistence",
+      "Description": "Captured content and its encryption key must either both be provided or both be empty. This ensures that captured content is always paired with an encryption key, and keys are not stored without content.",
+      "Source": "([CapturedContent] IS NULL AND [EncryptionKeyID] IS NULL OR [CapturedContent] IS NOT NULL AND [EncryptionKeyID] IS NOT NULL)",
+      "Code": "public ValidateCapturedContentAndEncryptionKeyCoexistence(result: ValidationResult) {\n\tconst hasContent = this.CapturedContent != null;\n\tconst hasKey = this.EncryptionKeyID != null;\n\tif (hasContent !== hasKey) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"CapturedContent\",\n\t\t\t\"Captured Content and Encryption Key must either both be provided or both be empty.\",\n\t\t\tthis.CapturedContent,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "AC16B066-9460-44F5-B027-3FD397E61F34"
+    },
+    "primaryKey": {
+      "ID": "5E0C2C1A-6B1E-4C1D-9C55-2B7F1A3E4D60"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.526Z",
+      "checksum": "4906542f67a75524b3d9ba8f90f89f39481a94579438c14b10aa27456ba10cc3"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateExternalIdAndSourceSystemCoexistence",
+      "Description": "Both External ID and Source System must be provided together, or both must be left empty. This ensures that external records are fully identified with both their identifier and their system of origin.",
+      "Source": "([ExternalID] IS NULL AND [SourceSystem] IS NULL OR [ExternalID] IS NOT NULL AND [SourceSystem] IS NOT NULL)",
+      "Code": "public ValidateExternalIdAndSourceSystemCoexistence(result: ValidationResult) {\n\tconst hasExternalID = this.ExternalID != null;\n\tconst hasSourceSystem = this.SourceSystem != null;\n\n\tif (hasExternalID !== hasSourceSystem) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"ExternalID\",\n\t\t\t\"Both External ID and Source System must be provided together, or both must be left blank.\",\n\t\t\tthis.ExternalID,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "72E55425-8822-4E70-A075-116219CA5A5D"
+    },
+    "primaryKey": {
+      "ID": "3A9F6D2E-8C41-4B7A-A0E5-6D1C2B9F4E17"
+    },
+    "sync": {
+      "lastModified": "2026-10-06T23:21:11.546Z",
+      "checksum": "f53767501fcb8f47508fb3fd6debd15160382a12ce6fe4de15096f4cb19d92a6"
+    }
+  }
+]

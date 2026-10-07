@@ -141,11 +141,6 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Details
         * * SQL Data Type: nvarchar(MAX)
         * * Description: JSON extras that are not query predicates: MessageID, InReplyTo, MeetingURL, Mailbox, Folder, CalendarEventID. See ActivityDetails.`),
-    SentimentScore: z.number().nullable().describe(`
-        * * Field Name: SentimentScore
-        * * Display Name: Sentiment Score
-        * * SQL Data Type: decimal(4, 3)
-        * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -156,6 +151,11 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    SentimentScore: z.number().nullable().describe(`
+        * * Field Name: SentimentScore
+        * * Display Name: Sentiment Score
+        * * SQL Data Type: decimal(4, 3)
+        * * Description: Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`),
     ActivityType: z.string().describe(`
         * * Field Name: ActivityType
         * * Display Name: Activity Type Name
@@ -1085,7 +1085,7 @@ export const mjBizAppsCommonActivitySyncRunDetailSchema = z.object({
         * * Field Name: CapturedContent
         * * Display Name: Captured Content
         * * SQL Data Type: nvarchar(MAX)
-        * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.`),
+        * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto. ROTATING THAT KEY MAKES EXISTING ROWS UNREADABLE: rotation re-encrypts only fields declared with Encrypt = 1, this column is encrypted by calling the engine directly, and the stored value records which key opened it but not which version — so a rotation skips these rows silently and the next read of them fails. Retain content here only for as long as the key behind it will not be rotated, or rotate with a plan for this column. Tracked upstream as MemberJunction/MJ#4580.`),
     EncryptionKeyID: z.string().nullable().describe(`
         * * Field Name: EncryptionKeyID
         * * Display Name: Encryption Key ID
@@ -1376,7 +1376,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
-    Address: z.string().describe(`
+    Address: z.string().nullable().describe(`
         * * Field Name: Address
         * * Display Name: Address
         * * SQL Data Type: nvarchar(255)`),
@@ -1451,11 +1451,11 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: ID
         * * SQL Data Type: uniqueidentifier
         * * Default Value: newsequentialid()`),
-    Line1: z.string().describe(`
+    Line1: z.string().nullable().describe(`
         * * Field Name: Line1
         * * Display Name: Address Line 1
         * * SQL Data Type: nvarchar(255)
-        * * Description: Street address line 1`),
+        * * Description: Street address line 1. Optional: an address may record only a location (country, region, postal code) before a street line is known.`),
     Line2: z.string().nullable().describe(`
         * * Field Name: Line2
         * * Display Name: Address Line 2
@@ -1466,11 +1466,11 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: Address Line 3
         * * SQL Data Type: nvarchar(255)
         * * Description: Street address line 3 (additional detail)`),
-    City: z.string().describe(`
+    City: z.string().nullable().describe(`
         * * Field Name: City
         * * Display Name: City
         * * SQL Data Type: nvarchar(100)
-        * * Description: City or locality name`),
+        * * Description: City or locality name. Optional: an address may record only a location (country, region, postal code) before a city is known.`),
     StateProvince: z.string().nullable().describe(`
         * * Field Name: StateProvince
         * * Display Name: State / Province
@@ -1647,16 +1647,19 @@ export const mjBizAppsCommonJobFunctionSchema = z.object({
     Name: z.string().describe(`
         * * Field Name: Name
         * * Display Name: Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Unique display name of the job function.`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
         * * Display Name: Description
-        * * SQL Data Type: nvarchar(MAX)`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Detailed description of the job function and the roles it encompasses.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Display sort sequence order.`),
     Status: z.union([z.literal('Active'), z.literal('Disabled')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -1665,7 +1668,8 @@ export const mjBizAppsCommonJobFunctionSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Active
-    *   * Disabled`),
+    *   * Disabled
+        * * Description: Lifecycle status (Active, Inactive) of the job function.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2109,7 +2113,8 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Rank order sequence for a person with multiple job functions (Sequence 1 = primary).`),
     Source: z.union([z.literal('Derived'), z.literal('Manual')]).describe(`
         * * Field Name: Source
         * * Display Name: Source
@@ -2118,11 +2123,13 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Derived
-    *   * Manual`),
+    *   * Manual
+        * * Description: Provenance of this function assignment (Manual by user, or Derived by automated pipeline).`),
     Confidence: z.number().nullable().describe(`
         * * Field Name: Confidence
         * * Display Name: Confidence
-        * * SQL Data Type: decimal(5, 4)`),
+        * * SQL Data Type: decimal(5, 4)
+        * * Description: Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2341,16 +2348,19 @@ export const mjBizAppsCommonSeniorityLevelSchema = z.object({
     Name: z.string().describe(`
         * * Field Name: Name
         * * Display Name: Name
-        * * SQL Data Type: nvarchar(100)`),
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Unique display name of the seniority level.`),
     Description: z.string().nullable().describe(`
         * * Field Name: Description
         * * Display Name: Description
-        * * SQL Data Type: nvarchar(MAX)`),
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Detailed description of the seniority level and role expectations.`),
     Sequence: z.number().describe(`
         * * Field Name: Sequence
         * * Display Name: Sequence
         * * SQL Data Type: int
-        * * Default Value: 0`),
+        * * Default Value: 0
+        * * Description: Rank order sequence from entry-level/IC to executive/C-level.`),
     Status: z.union([z.literal('Active'), z.literal('Disabled')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -2359,7 +2369,8 @@ export const mjBizAppsCommonSeniorityLevelSchema = z.object({
     * * Value List Type: List
     * * Possible Values 
     *   * Active
-    *   * Disabled`),
+    *   * Disabled
+        * * Description: Lifecycle status (Active, Inactive) of the seniority level.`),
     __mj_CreatedAt: z.date().describe(`
         * * Field Name: __mj_CreatedAt
         * * Display Name: Created At
@@ -2442,7 +2453,8 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The activity's end date and time must be on or after its start date and time.
+    * * SentimentScore: The sentiment score must be a value between -1.000 and 1.000, or left empty.
+    * * Table-Level: The end date and time of an activity must be on or after its start date and time. This ensures that the duration of the activity is chronologically valid.
     * * Table-Level: Both External ID and Source System must be provided together, or both must be left empty. This ensures that external records are fully identified with both their identifier and their system of origin.
     * @public
     * @method
@@ -2450,7 +2462,8 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     */
     public override Validate(): ValidationResult {
         const result = super.Validate();
-        this.ValidateEndedAtOnOrAfterStartedAt(result);
+        this.ValidateSentimentScoreRange(result);
+        this.ValidateEndedAtAfterStartedAt(result);
         this.ValidateExternalIdAndSourceSystemCoexistence(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
@@ -2458,16 +2471,33 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
-    * The activity's end date and time must be on or after its start date and time.
+    * The sentiment score must be a value between -1.000 and 1.000, or left empty.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateEndedAtOnOrAfterStartedAt(result: ValidationResult) {
+    	public ValidateSentimentScoreRange(result: ValidationResult) {
+    		if (this.SentimentScore != null && (this.SentimentScore < -1.0 || this.SentimentScore > 1.0)) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"SentimentScore",
+    				"Sentiment score must be between -1.000 and 1.000.",
+    				this.SentimentScore,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
+
+    /**
+    * The end date and time of an activity must be on or after its start date and time. This ensures that the duration of the activity is chronologically valid.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEndedAtAfterStartedAt(result: ValidationResult) {
     	if (this.EndedAt != null && this.StartedAt != null) {
-    		const endedTime = new Date(this.EndedAt).getTime();
-    		const startedTime = new Date(this.StartedAt).getTime();
-    		if (endedTime < startedTime) {
+    		const endedDate = new Date(this.EndedAt);
+    		const startedDate = new Date(this.StartedAt);
+    		if (endedDate < startedDate) {
     			result.Errors.push(new ValidationErrorInfo(
     				"EndedAt",
     				"The end date and time must be on or after the start date and time.",
@@ -2792,19 +2822,6 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
-    * * Field Name: SentimentScore
-    * * Display Name: Sentiment Score
-    * * SQL Data Type: decimal(4, 3)
-    * * Description: Derived sentiment score for this activity, bounded between -1.000 and +1.000.
-    */
-    get SentimentScore(): number | null {
-        return this.Get('SentimentScore');
-    }
-    set SentimentScore(value: number | null) {
-        this.Set('SentimentScore', value);
-    }
-
-    /**
     * * Field Name: __mj_CreatedAt
     * * Display Name: Created At
     * * SQL Data Type: datetimeoffset
@@ -2822,6 +2839,19 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     */
     get __mj_UpdatedAt(): Date {
         return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: SentimentScore
+    * * Display Name: Sentiment Score
+    * * SQL Data Type: decimal(4, 3)
+    * * Description: Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.
+    */
+    get SentimentScore(): number | null {
+        return this.Get('SentimentScore');
+    }
+    set SentimentScore(value: number | null) {
+        this.Set('SentimentScore', value);
     }
 
     /**
@@ -3107,42 +3137,42 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Links entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The record must be associated with either an internal entity (by providing both Entity ID and Record ID, while leaving Identity Kind and Identity Value empty) or an external identity (by providing both Identity Kind and Identity Value, while leaving Entity ID and Record ID empty). It cannot have a mix of both or have both sets of fields empty.
+    * * Table-Level: The record must be associated with either an Entity and Record ID pair, or an Identity Kind and Identity Value pair. It cannot have both sets of fields populated, nor can it have a partial mix of these fields.
     * @public
     * @method
     * @override
     */
     public override Validate(): ValidationResult {
         const result = super.Validate();
-        this.ValidateEntityOrIdentityAssociation(result);
+        this.ValidateEntityOrIdentityExclusivity(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * The record must be associated with either an internal entity (by providing both Entity ID and Record ID, while leaving Identity Kind and Identity Value empty) or an external identity (by providing both Identity Kind and Identity Value, while leaving Entity ID and Record ID empty). It cannot have a mix of both or have both sets of fields empty.
+    * The record must be associated with either an Entity and Record ID pair, or an Identity Kind and Identity Value pair. It cannot have both sets of fields populated, nor can it have a partial mix of these fields.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateEntityOrIdentityAssociation(result: ValidationResult) {
-    	const hasEntityRef = this.EntityID !== null && this.RecordID !== null;
-    	const hasNoEntityRef = this.EntityID === null && this.RecordID === null;
-    	const hasIdentityRef = this.IdentityKind !== null && this.IdentityValue !== null;
-    	const hasNoIdentityRef = this.IdentityKind === null && this.IdentityValue === null;
+    public ValidateEntityOrIdentityExclusivity(result: ValidationResult) {
+        const hasEntity = this.EntityID != null;
+        const hasRecord = this.RecordID != null;
+        const hasIdentityKind = this.IdentityKind != null;
+        const hasIdentityValue = this.IdentityValue != null;
     
-    	const isValidEntityOnly = hasEntityRef && hasNoIdentityRef;
-    	const isValidIdentityOnly = hasNoEntityRef && hasIdentityRef;
+        const isValidEntityPair = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
+        const isValidIdentityPair = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
     
-    	if (!isValidEntityOnly && !isValidIdentityOnly) {
-    		result.Errors.push(new ValidationErrorInfo(
-    			"EntityID",
-    			"You must provide either both Entity ID and Record ID (with Identity Kind and Identity Value left empty) or both Identity Kind and Identity Value (with Entity ID and Record ID left empty).",
-    			this.EntityID,
-    			ValidationErrorType.Failure
-    		));
-    	}
+        if (!isValidEntityPair && !isValidIdentityPair) {
+            result.Errors.push(new ValidationErrorInfo(
+                "EntityID",
+                "You must provide either both EntityID and RecordID (leaving IdentityKind and IdentityValue empty), or both IdentityKind and IdentityValue (leaving EntityID and RecordID empty). Mixed or incomplete pairs are not allowed.",
+                this.EntityID,
+                ValidationErrorType.Failure
+            ));
+        }
     }
 
     /**
@@ -3487,6 +3517,59 @@ export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBi
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Connections entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * MaxAttachmentBytes: The maximum attachment size limit must be a positive value greater than zero, if it is specified.
+    * * Table-Level: If both start and end dates are specified, the end date must be greater than or equal to the start date to ensure logical chronological order.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateMaxAttachmentBytesGreaterThanZero(result);
+        this.ValidateEndAtAfterStartAt(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The maximum attachment size limit must be a positive value greater than zero, if it is specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
+        if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
+            result.Errors.push(new ValidationErrorInfo(
+                "MaxAttachmentBytes",
+                "The maximum attachment size limit must be greater than zero.",
+                this.MaxAttachmentBytes,
+                ValidationErrorType.Failure
+            ));
+        }
+    }
+
+    /**
+    * If both start and end dates are specified, the end date must be greater than or equal to the start date to ensure logical chronological order.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEndAtAfterStartAt(result: ValidationResult) {
+    	if (this.StartAt != null && this.EndAt != null) {
+    		if (this.EndAt < this.StartAt) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"EndAt",
+    				"The end date must be greater than or equal to the start date.",
+    				this.EndAt,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
     }
 
     /**
@@ -3836,6 +3919,38 @@ export class mjBizAppsCommonActivitySyncExclusionEntity extends BaseEntity<mjBiz
     }
 
     /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Exclusions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: The effective end date must be on or after the effective start date when both dates are provided.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateEffectiveToAfterEffectiveFrom(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The effective end date must be on or after the effective start date when both dates are provided.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEffectiveToAfterEffectiveFrom(result: ValidationResult) {
+    	if (this.EffectiveFrom != null && this.EffectiveTo != null && this.EffectiveTo.getTime() < this.EffectiveFrom.getTime()) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EffectiveTo",
+    			"The Effective To date must be greater than or equal to the Effective From date.",
+    			this.EffectiveTo,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -4026,6 +4141,40 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Extensions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * TimeoutMS: The timeout value must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes) to ensure a valid and reasonable execution limit.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateTimeoutMSRange(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The timeout value must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes) to ensure a valid and reasonable execution limit.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateTimeoutMSRange(result: ValidationResult) {
+    	if (this.TimeoutMS !== undefined && this.TimeoutMS !== null) {
+    		if (this.TimeoutMS <= 0 || this.TimeoutMS > 300000) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"TimeoutMS",
+    				"Timeout must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes).",
+    				this.TimeoutMS,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
     }
 
     /**
@@ -4254,6 +4403,57 @@ export class mjBizAppsCommonActivitySyncProviderTypeEntity extends BaseEntity<mj
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Provider Types entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * DefaultMaxAttachmentBytes: The default maximum attachment size must be greater than zero if it is specified.
+    * * Table-Level: A default encryption key must be specified unless the default skipped content policy is set to 'None'.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateDefaultMaxAttachmentBytesGreaterThanZero(result);
+        this.ValidateDefaultEncryptionKeyForSkippedContentPolicy(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * The default maximum attachment size must be greater than zero if it is specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateDefaultMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
+        if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {
+            result.Errors.push(new ValidationErrorInfo(
+                "DefaultMaxAttachmentBytes",
+                "The default maximum attachment size must be greater than 0 bytes.",
+                this.DefaultMaxAttachmentBytes,
+                ValidationErrorType.Failure
+            ));
+        }
+    }
+
+    /**
+    * A default encryption key must be specified unless the default skipped content policy is set to 'None'.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateDefaultEncryptionKeyForSkippedContentPolicy(result: ValidationResult) {
+    	if (this.DefaultSkippedContentPolicy !== "None" && this.DefaultEncryptionKeyID == null) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"DefaultEncryptionKeyID",
+    			"A default encryption key must be specified when the default skipped content policy is not set to 'None'.",
+    			this.DefaultEncryptionKeyID,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
@@ -4704,13 +4904,17 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Rules entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The end date (DateTo) must be greater than or equal to the start date (DateFrom) when both dates are provided.
+    * * MaxAttachmentBytes: If a maximum attachment size limit is specified, it must be a positive number greater than zero.
+    * * Table-Level: Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified. You cannot provide both, and you cannot leave both empty.
+    * * Table-Level: The end date must be on or after the start date when both dates are provided.
     * @public
     * @method
     * @override
     */
     public override Validate(): ValidationResult {
         const result = super.Validate();
+        this.ValidateMaxAttachmentBytesGreaterThanZero(result);
+        this.ValidateActivitySyncConnectionOrRuleSetRequired(result);
         this.ValidateDateToAfterOrEqualDateFrom(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
@@ -4718,7 +4922,44 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     }
 
     /**
-    * The end date (DateTo) must be greater than or equal to the start date (DateFrom) when both dates are provided.
+    * If a maximum attachment size limit is specified, it must be a positive number greater than zero.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
+    	if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"MaxAttachmentBytes",
+    			"The maximum attachment size must be greater than 0 bytes.",
+    			this.MaxAttachmentBytes,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified. You cannot provide both, and you cannot leave both empty.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateActivitySyncConnectionOrRuleSetRequired(result: ValidationResult) {
+    	const hasRuleSet = this.ActivitySyncRuleSetID != null;
+    	const hasConnection = this.ActivitySyncConnectionID != null;
+    
+    	if ((hasRuleSet && hasConnection) || (!hasRuleSet && !hasConnection)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"ActivitySyncConnectionID",
+    			"Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified.",
+    			this.ActivitySyncConnectionID,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * The end date must be on or after the start date when both dates are provided.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
@@ -4728,7 +4969,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     		if (this.DateTo < this.DateFrom) {
     			result.Errors.push(new ValidationErrorInfo(
     				"DateTo",
-    				"The end date (DateTo) cannot be earlier than the start date (DateFrom).",
+    				"The end date (DateTo) must be on or after the start date (DateFrom).",
     				this.DateTo,
     				ValidationErrorType.Failure
     			));
@@ -5032,6 +5273,78 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     }
 
     /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Run Details entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Confidence: Confidence score must be a value between 0 and 1 (inclusive) when specified.
+    * * Table-Level: An activity can only be associated with this record if the decision is set to 'Included'.
+    * * Table-Level: Captured content and its encryption key must either both be provided or both be empty. This ensures that captured content is always paired with an encryption key, and keys are not stored without content.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateConfidenceRange(result);
+        this.ValidateActivityIDRequiresIncludedDecision(result);
+        this.ValidateCapturedContentAndEncryptionKeyCoexistence(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * Confidence score must be a value between 0 and 1 (inclusive) when specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateConfidenceRange(result: ValidationResult) {
+    	if (this.Confidence != null && (this.Confidence < 0 || this.Confidence > 1)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			'Confidence',
+    			'Confidence score must be between 0 and 1.',
+    			this.Confidence,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * An activity can only be associated with this record if the decision is set to 'Included'.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateActivityIDRequiresIncludedDecision(result: ValidationResult) {
+    	if (this.ActivityID != null && this.Decision !== 'Included') {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"ActivityID",
+    			"An activity can only be associated when the decision is 'Included'.",
+    			this.ActivityID,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * Captured content and its encryption key must either both be provided or both be empty. This ensures that captured content is always paired with an encryption key, and keys are not stored without content.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateCapturedContentAndEncryptionKeyCoexistence(result: ValidationResult) {
+    	const hasContent = this.CapturedContent != null;
+    	const hasKey = this.EncryptionKeyID != null;
+    	if (hasContent !== hasKey) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"CapturedContent",
+    			"Captured Content and Encryption Key must either both be provided or both be empty.",
+    			this.CapturedContent,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
     * * Field Name: ID
     * * Display Name: ID
     * * SQL Data Type: uniqueidentifier
@@ -5206,7 +5519,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     * * Field Name: CapturedContent
     * * Display Name: Captured Content
     * * SQL Data Type: nvarchar(MAX)
-    * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto.
+    * * Description: Ciphertext, always — never plaintext, whatever the policy. Present only when the effective SkippedContentPolicy allows retention, and always paired with the EncryptionKeyID that opens it (CK_ActivitySyncRunDetail_ContentKey). Encrypted through MJ's EncryptionEngine against an MJ: Encryption Keys row; this app never implements its own crypto. ROTATING THAT KEY MAKES EXISTING ROWS UNREADABLE: rotation re-encrypts only fields declared with Encrypt = 1, this column is encrypted by calling the engine directly, and the stored value records which key opened it but not which version — so a rotation skips these rows silently and the next read of them fails. Retain content here only for as long as the key behind it will not be rotated, or rotate with a plan for this column. Tracked upstream as MemberJunction/MJ#4580.
     */
     get CapturedContent(): string | null {
         return this.Get('CapturedContent');
@@ -5314,6 +5627,38 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
         const compositeKey: CompositeKey = new CompositeKey();
         compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
         return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Activity Sync Runs entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: If the sync is marked as a dry run, a 'Watermark After' date cannot be specified because no progress is actually saved.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateWatermarkAfterForDryRun(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * If the sync is marked as a dry run, a 'Watermark After' date cannot be specified because no progress is actually saved.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateWatermarkAfterForDryRun(result: ValidationResult) {
+    	if (this.IsDryRun && this.WatermarkAfter != null) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"WatermarkAfter",
+    			"Watermark After date cannot be set when IsDryRun is enabled.",
+    			this.WatermarkAfter,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
@@ -5949,7 +6294,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
     * * Display Name: Address
     * * SQL Data Type: nvarchar(255)
     */
-    get Address(): string {
+    get Address(): string | null {
         return this.Get('Address');
     }
 
@@ -6152,12 +6497,12 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     * * Field Name: Line1
     * * Display Name: Address Line 1
     * * SQL Data Type: nvarchar(255)
-    * * Description: Street address line 1
+    * * Description: Street address line 1. Optional: an address may record only a location (country, region, postal code) before a street line is known.
     */
-    get Line1(): string {
+    get Line1(): string | null {
         return this.Get('Line1');
     }
-    set Line1(value: string) {
+    set Line1(value: string | null) {
         this.Set('Line1', value);
     }
 
@@ -6191,12 +6536,12 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     * * Field Name: City
     * * Display Name: City
     * * SQL Data Type: nvarchar(100)
-    * * Description: City or locality name
+    * * Description: City or locality name. Optional: an address may record only a location (country, region, postal code) before a city is known.
     */
-    get City(): string {
+    get City(): string | null {
         return this.Get('City');
     }
-    set City(value: string) {
+    set City(value: string | null) {
         this.Set('City', value);
     }
 
@@ -6699,6 +7044,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: Name
     * * Display Name: Name
     * * SQL Data Type: nvarchar(100)
+    * * Description: Unique display name of the job function.
     */
     get Name(): string {
         return this.Get('Name');
@@ -6711,6 +7057,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Field Name: Description
     * * Display Name: Description
     * * SQL Data Type: nvarchar(MAX)
+    * * Description: Detailed description of the job function and the roles it encompasses.
     */
     get Description(): string | null {
         return this.Get('Description');
@@ -6724,6 +7071,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Display sort sequence order.
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -6741,6 +7089,7 @@ export class mjBizAppsCommonJobFunctionEntity extends BaseEntity<mjBizAppsCommon
     * * Possible Values 
     *   * Active
     *   * Disabled
+    * * Description: Lifecycle status (Active, Inactive) of the job function.
     */
     get Status(): 'Active' | 'Disabled' {
         return this.Get('Status');
@@ -7880,7 +8229,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * Validate() method override for MJ_BizApps_Common: Person Job Functions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Confidence: The confidence score, if provided, must be a decimal value between 0.0 and 1.0 (inclusive) representing a percentage from 0% to 100%.
+    * * Confidence: Confidence score must be a value between 0.0 and 1.0 (inclusive) if it is provided, representing a valid probability range.
     * @public
     * @method
     * @override
@@ -7894,7 +8243,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     }
 
     /**
-    * The confidence score, if provided, must be a decimal value between 0.0 and 1.0 (inclusive) representing a percentage from 0% to 100%.
+    * Confidence score must be a value between 0.0 and 1.0 (inclusive) if it is provided, representing a valid probability range.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
@@ -7903,7 +8252,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     	if (this.Confidence != null && (this.Confidence < 0.0 || this.Confidence > 1.0)) {
     		result.Errors.push(new ValidationErrorInfo(
     			"Confidence",
-    			"Confidence must be a value between 0.0 and 1.0.",
+    			"Confidence score must be between 0.0 and 1.0.",
     			this.Confidence,
     			ValidationErrorType.Failure
     		));
@@ -7954,6 +8303,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Rank order sequence for a person with multiple job functions (Sequence 1 = primary).
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -7971,6 +8321,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Possible Values 
     *   * Derived
     *   * Manual
+    * * Description: Provenance of this function assignment (Manual by user, or Derived by automated pipeline).
     */
     get Source(): 'Derived' | 'Manual' {
         return this.Get('Source');
@@ -7983,6 +8334,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     * * Field Name: Confidence
     * * Display Name: Confidence
     * * SQL Data Type: decimal(5, 4)
+    * * Description: Confidence score between 0.0 and 1.0 when derived by an AI feature pipeline.
     */
     get Confidence(): number | null {
         return this.Get('Confidence');
@@ -8591,6 +8943,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Field Name: Name
     * * Display Name: Name
     * * SQL Data Type: nvarchar(100)
+    * * Description: Unique display name of the seniority level.
     */
     get Name(): string {
         return this.Get('Name');
@@ -8603,6 +8956,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Field Name: Description
     * * Display Name: Description
     * * SQL Data Type: nvarchar(MAX)
+    * * Description: Detailed description of the seniority level and role expectations.
     */
     get Description(): string | null {
         return this.Get('Description');
@@ -8616,6 +8970,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Display Name: Sequence
     * * SQL Data Type: int
     * * Default Value: 0
+    * * Description: Rank order sequence from entry-level/IC to executive/C-level.
     */
     get Sequence(): number {
         return this.Get('Sequence');
@@ -8633,6 +8988,7 @@ export class mjBizAppsCommonSeniorityLevelEntity extends BaseEntity<mjBizAppsCom
     * * Possible Values 
     *   * Active
     *   * Disabled
+    * * Description: Lifecycle status (Active, Inactive) of the seniority level.
     */
     get Status(): 'Active' | 'Disabled' {
         return this.Get('Status');

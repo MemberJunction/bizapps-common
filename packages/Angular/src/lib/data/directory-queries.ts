@@ -1,4 +1,5 @@
 import { LogError, RunQuery, RunView } from '@memberjunction/core';
+import { AddDays, BusinessTimeZoneEngine, FromCalendarDay, type CalendarDay } from '@mj-biz-apps/common-entities';
 import { COMMON_ENTITIES } from './entity-names';
 import type {
     DirectoryAttentionItem,
@@ -39,10 +40,13 @@ function str(v: unknown): string | null {
     return s.length ? s : null;
 }
 
-function weekdayUtc(daysAgo: number): string {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - daysAgo);
-    return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+/**
+ * Short weekday of the business day `daysAgo` before `today`: the day the query's PeopleAddedD<n>
+ * counts (fnBusinessDayOf against fnBusinessToday). A CalendarDay is UTC midnight, so it is formatted
+ * in UTC; the zone was already applied when `today` was resolved.
+ */
+function businessWeekday(today: CalendarDay, daysAgo: number): string {
+    return FromCalendarDay(AddDays(today, -daysAgo)).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
 }
 
 export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboardSummary | null> {
@@ -135,6 +139,7 @@ export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboar
         });
     }
 
+    const today = BusinessTimeZoneEngine.Instance.Today();
     return {
         ActivePeopleCount: num(row['ActivePeople']),
         TotalPeopleCount: num(row['TotalPeople']),
@@ -146,7 +151,7 @@ export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboar
         OrganizationsMissingType: num(row['OrganizationsMissingType']),
         OrganizationsMissingWebsite: num(row['OrganizationsMissingWebsite']),
         PeoplePerDay: [6, 5, 4, 3, 2, 1, 0].map((ago) => ({
-            Label: weekdayUtc(ago),
+            Label: businessWeekday(today, ago),
             Value: num(row[`PeopleAddedD${ago}`]),
             Current: ago === 0,
         })),

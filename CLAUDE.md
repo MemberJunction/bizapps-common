@@ -111,18 +111,19 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
 3. `changes.yml` + `build.yml` run validation on the PR
 4. Merge to `next`
 
-**Release flow: one dispatch and two merges** (runbook: [`docs/release.md`](docs/release.md)):
+**Release flow: one dispatch and one merge** (runbook: [`docs/release.md`](docs/release.md)):
 1. Dispatch **Prepare a release** (`release-prep.yml`). It cuts `release/vX.Y.Z` from `next`, runs `pnpm run version`, and opens the "Release vX.Y.Z" PR into `main`.
 2. Review and merge that PR with a merge commit. The merge triggers `publish.yml`, which builds, runs the release-readiness gates, publishes to npm, tags `vX.Y.Z`, and opens the `chore/backmerge-vX.Y.Z-<main sha>` → `next` PR (any later merge into `main` gets a back-merge PR of its own).
-3. Merge the back-merge PR. Until you do, **Prepare a release** refuses to cut the next release.
+3. `publish.yml` merges the back-merge PR once its checks pass. It leaves it open (and says why in the run summary) on conflicts, a red or slow check, or commits added to the branch; then merge it yourself. Until it lands, **Prepare a release** refuses to cut the next release.
 
 `pnpm run release:plan` answers "is a release due?" read-only: version, pending changesets, gates, and every blocker.
 
 **Rules:**
-- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR. The release workflows push only `release/*`, `chore/backmerge-*` and the `vX.Y.Z` tag. The GitHub App pushes `release/*` and opens both PRs (a `GITHUB_TOKEN`-authored PR starts no CI); the back-merge branch and the tag are pushed with `GITHUB_TOKEN`, because `publish.yml`'s checkout persists that credential and it outranks the App token in the remote URL. `pnpm run lint:release-pushes` fails any workflow or script that pushes to either branch.
+- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR. The release workflows push only `release/*`, `chore/backmerge-*` and the `vX.Y.Z` tag. The GitHub App pushes `release/*`, opens both PRs (a `GITHUB_TOKEN`-authored PR starts no CI) and merges the back-merge PR; the back-merge branch and the tag are pushed with `GITHUB_TOKEN`, because `publish.yml`'s checkout persists that credential and it outranks the App token in the remote URL. `pnpm run lint:release-pushes` fails any workflow or script that pushes to either branch.
 - **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `check:release-seed` and `check:seed-cadence` gate the release, not feature PRs. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md). This repo's recipe: [`migrations/README.md`](migrations/README.md), "Regenerating the metadata seed".
 - **`mj-app.json` is checked on every PR, into `next` or `main`** (`build.yml`'s `release-tooling` job, which runs on every event, runs the `sync-app-version` spec). A PR that changes the `@memberjunction/core` pin in `packages/Entities` must run `node scripts/sync-app-version.mjs` and commit `mj-app.json` — **not** `pnpm run version`, which would consume the pending changesets.
-- **Merge the back-merge PR with a merge commit**, never squash or rebase: either leaves `main`'s tip outside `next`'s history and **Prepare a release** keeps refusing. If it happened, open a fresh `main → next` PR and merge it with a merge commit.
+- **`changes.yml` guards both directions.** A PR into `main` fails unless its branch contains `main`'s tip (merging it would otherwise revert `main`, a published version bump included). A PR into `next` fails while a back-merge is outstanding, until the `chore/backmerge-*` PR lands. Neither is a required check, so read them before merging.
+- **A back-merge PR left open is merged with a merge commit**, never squash or rebase: either leaves `main`'s tip outside `next`'s history and **Prepare a release** keeps refusing. If it happened, open a fresh `main → next` PR and merge it with a merge commit.
 - **Hotfixes that genuinely must bypass `next`** still go through a PR to `main`, and that PR must carry its own bump (`pnpm run version`), because `publish.yml` refuses to publish while changesets remain. Afterwards `main` holds a commit `next` lacks: merge the `chore/backmerge-v*` PR that `publish.yml` opens (or open one from `main`'s tip by hand) before the next release, which is blocked until you do.
 
 ---
@@ -148,6 +149,26 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
   - Define dependencies in the individual package's package.json
   - Run `npm install` at the repository root (NOT within the package directory)
   - Never run `npm install` inside individual package directories
+
+## MemberJunction versions — the LTS line AIDP Next runs
+
+AIDP Next runs MemberJunction's 6.1 LTS line, pinned exactly in `aidp-next/package.json`. This repo builds, tests and runs CodeGen against that same version, so what passes here is what runs there (bc-aidp-next-golive#298).
+
+- **Declared ranges.** Every `@memberjunction/*` range in `dependencies`, `devDependencies` and `peerDependencies` is `~6.1.N`, where 6.1.N is the version AIDP Next runs: the 6.1 line, capped below 6.2. Never an edge or prerelease range (`6.1.0-edge.x` sorts *before* 6.1.0 and has none of the LTS fixes), and never `^`, which admits 6.2. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
+- **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` are pinned **exactly** to AIDP Next's version (for example `"6.1.5"`), not to a range. A range override can still leave two copies of `core`, and two copies split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here; how the apps declare each other is bc-aidp-next-golive#265.
+- **One copy of each.** After any install, `pnpm why @memberjunction/core` must show a single version. A sibling app package that exact-pins an old MJ build brings a second copy in (for example `@mj-biz-apps/common-ng@5.37.0` pinned edge.3 packages); fix it by raising that package's floor, not with more overrides.
+- **Bumping to a new 6.1.N**, when AIDP Next moves: update every `~6.1.N` floor and both overrides; `pnpm install`; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json` (CI's `sync-app-version` spec checks it on every PR); rebuild the database from migrations on MJ core `v6.1.N` and regenerate (below); run the full test suite; add a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
+- **Never patch MemberJunction.** No `pnpm patch`, `patchedDependencies`, patch-package or `sed` against `@memberjunction/*` `dist/`. That is AIDP Next's hard rule (`.github/workflows/MJ_PATCH_REGISTER.md` in aidp-next). Fix MJ on its `next` branch and bring the fix to the line with the `backport lts/6.1` label, or with a hand-port PR against `lts/6.1` when the fix can't be isolated; then wait for the patch release.
+
+### CodeGen output must be reproducible from this repo
+
+Generated files are committed, and AIDP Next ships them as they are: it excludes every `__mj_BizApps*` schema from its own CodeGen and installs the published packages. So the committed output has to be what this repo's toolchain produces from its migrations.
+
+- Run CodeGen only with this repo's pinned MJ version, against a database built from migrations (MJ core `v6.1.N`, then the apps this one depends on, then this repo), after `mj sync push` of `metadata/`.
+- Set an AI key in your gitignored `.env`: `AI_VENDOR_API_KEY__GeminiLLM` (every CodeGen prompt ranks Gemini first), or `AI_VENDOR_API_KEY__OpenRouterLLM`. Without one, CodeGen silently drops AI-written output: check-constraint `Validate*()` methods, display names, descriptions and form layouts.
+- Never hand-edit generated files, and never paste in generated output from another toolchain or another database. That is how OrderLine lost `OrderHeader`'s `@Field` (bc-aidp-next-golive#295).
+- Review what AI wrote. Validators, names and descriptions are not deterministic between runs.
+- If CodeGen has to create metadata in the database that the generated code depends on (fields, value lists, relationships, validator code), ship it in a migration in the same PR. Otherwise every host installed from migrations drifts from the code.
 
 ## Development Workflow
 - **CRITICAL**: After making code changes, always compile the affected package by running `npm run build` in that package's directory to check for TypeScript errors
