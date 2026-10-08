@@ -120,7 +120,7 @@ There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
 
 **Rules:**
 - **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/main`, `release-back-merge/*` and the `vX.Y.Z` tag.
-- **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR.
+- **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md).
 - **`mj-app.json` is checked on every PR** (`repo: guards` runs `scripts/sync-app-version.spec.mjs`): a PR that changes the `@memberjunction/core` pin must run `node scripts/sync-app-version.mjs` and commit `mj-app.json`. At release, `version:prepare` also syncs its `version` and range.
 - **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable.
 - **Hotfixes** still go through a PR — into `next`, with a changeset — and ship through the Version Packages PR like any other change.
