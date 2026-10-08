@@ -65,7 +65,7 @@ jobs:
     steps:
       - name: Mint an installation token
         id: token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           # `app-id` accepts a client ID as well as a numeric app id, which is what the org variable
           # holds. Read from `vars` rather than hardcoded, so this tests the SAME pair of values
