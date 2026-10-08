@@ -9,5 +9,5 @@
 
 MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
 `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
-tree. Each peer keeps an exact `6.1.5` devDependencies anchor for local builds. Adds
+tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
 `check-dependency-model` to CI.
