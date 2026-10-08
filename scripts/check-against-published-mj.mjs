@@ -18,7 +18,9 @@
  * releases apart, and 6.1.3 exports names edge.6 does not, `WellKnownUserSource` among them. An
  * earlier version of this script asked npm for (4). That meant it would pass a file using an API CI
  * cannot see: the exact failure it exists to prevent, reintroduced one level down. It reads the
- * lockfile now, and asks npm only for a name the lockfile does not carry.
+ * lockfile now, and asks npm only for a name the lockfile does not carry. A run that had to fall
+ * back to npm for any name reports INCONCLUSIVE rather than OK: newest-in-range is not what CI
+ * installs, so a pass built on it would assert more than the run established.
  *
  * This script answers the only question that matters before pushing: does the source compile against
  * what is on npm today?
@@ -35,8 +37,9 @@
  * Read-only with respect to the repo: published tarballs are cached under node_modules/.cache, the
  * generated tsconfig lives there too, and nothing in node_modules is relinked or mutated.
  */
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -194,6 +197,20 @@ function readLockfile() {
     return { byImporter, everywhere, present: true };
 }
 
+const STORE = linkStoreIntoCache();
+if (!STORE.ok) {
+    // Two different failures, because they send the reader to two different places.
+    if (STORE.store) {
+        console.log(`WARNING: found a pnpm store at ${STORE.store}`);
+        console.log('but could not link it into the cache:');
+        console.log(`  ${STORE.why}`);
+    } else {
+        console.log('WARNING: no pnpm store found in this repo or any parent.');
+    }
+    console.log('Third-party types inside the published declarations will not resolve, and');
+    console.log('skipLibCheck will hide that. The report below names what went unreachable.');
+}
+
 const LOCK = readLockfile();
 if (!LOCK.present || !LOCK.everywhere.size) {
     console.log(
@@ -323,6 +340,157 @@ function collectPublished(entryDeps, report, importerKey) {
     return paths;
 }
 
+/**
+ * THIRD-PARTY IMPORTS INSIDE THE CACHED .d.ts FILES, which `skipLibCheck` hides.
+ *
+ * A published MJ declaration says `import { Observable } from 'rxjs'`. The tarball is unpacked under
+ * `node_modules/.cache/published-mj/...`, and Node resolves a bare specifier by walking ANCESTOR
+ * directories looking for `node_modules` -- which from there reaches this repo's own `node_modules`
+ * and nothing else. Under pnpm's isolated layout that directory holds only DIRECT dependencies, so
+ * anything MJ pulls in transitively is invisible from the cache.
+ *
+ * `skipLibCheck: true` is what keeps those from becoming errors, and it is still the right setting:
+ * the published packages' own type errors are not this repo's problem. The cost is that it silences
+ * these too, so a signature typed through `Observable<T>` quietly degrades to `any` and the run
+ * reports OK. MJ-to-MJ imports are unaffected -- those have explicit `paths` overrides -- so missing
+ * exports and changed MJ signatures are still caught. This is about the edges typed in someone
+ * else's vocabulary.
+ *
+ * Two outcomes, because the modules fall into two groups. `@angular/core` IS installed here and just
+ * has no path override; `rxjs` is not installed at all, so no mapping can conjure it. The first is
+ * fixed, the second is reported rather than left to be discovered.
+ */
+/**
+ * Give the unpacked tarballs a `node_modules` to resolve THIRD-PARTY imports through.
+ *
+ * A published MJ declaration says `import { Observable } from 'rxjs'`. Node resolves that by walking
+ * ancestor directories for `node_modules`, and from inside the cache the only one it reaches holds
+ * this repo's DIRECT dependencies -- so every transitive one is invisible and `skipLibCheck` silences
+ * the lookup. An MJ signature typed through `Observable<T>` then degrades to `any` while the run
+ * reports OK.
+ *
+ * pnpm already keeps a directory with every package in the tree: `.pnpm/node_modules`. Linking the
+ * cache root at it puts one `node_modules` on the walk that has them all.
+ *
+ * IT IS NOT ALWAYS IN THIS REPO. bizapps-common installs against a workspace root one level up, so
+ * `<repo>/node_modules/.pnpm` does not exist at all here and `<workspace>/node_modules/.pnpm` is the
+ * real store. Searching upward is what makes this work in both layouts; looking only in the repo is
+ * what made it look impossible.
+ */
+function linkStoreIntoCache() {
+    let dir = REPO;
+    for (let i = 0; i < 6; i++) {
+        const candidate = join(dir, 'node_modules', '.pnpm', 'node_modules');
+        if (existsSync(candidate)) {
+            const link = join(CACHE, 'node_modules');
+            try {
+                // `existsSync` follows the link, so this is true only when it resolves.
+                if (existsSync(link)) return { store: candidate, ok: true };
+                mkdirSync(CACHE, { recursive: true });
+                /**
+                 * A LINK LEFT BY A STORE THAT HAS SINCE MOVED still occupies this path while
+                 * resolving to nothing, and `symlinkSync` would fail EEXIST on it. Measured before
+                 * fixing: the run then reported "no pnpm store found to link into the cache" while
+                 * a perfectly good store sat one directory up, left the broken link in place, and
+                 * degraded every third-party type to `any` on every subsequent run. Wrong about the
+                 * reason and unable to recover, which is the pair this script exists to avoid.
+                 */
+                rmSync(link, { force: true });
+                symlinkSync(candidate, link, 'junction');
+                return { store: candidate, ok: true };
+            } catch (err) {
+                return { store: candidate, ok: false, why: err?.message ?? String(err) };
+            }
+        }
+        const up = dirname(dir);
+        if (up === dir) break;
+        dir = up;
+    }
+    return { store: null, ok: false };
+}
+
+const BARE_IMPORT =
+    /^\s*(?:import|export)\b[^;'"]*?from\s*['"]([^'"]+)['"]|^\s*import\s*\(?\s*['"]([^'"]+)['"]/gm;
+
+/** `@scope/name/sub` -> `@scope/name`; `name/sub` -> `name`. Node builtins are dropped. */
+function packageOf(specifier) {
+    // Relative and absolute specifiers resolve inside the tarball; only bare ones are at issue.
+    if (specifier.startsWith('.') || specifier.startsWith('/')) return null;
+    if (specifier.startsWith('node:')) return null;
+    const parts = specifier.split('/');
+    const name = specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+    return name || null;
+}
+
+/**
+ * Scan the declaration files of every cached package this run uses, and split what they import into
+ * what this repo can serve and what it cannot.
+ *
+ * Reads files rather than running a second `tsc` without `skipLibCheck`: the answer is the same and
+ * it costs milliseconds instead of a second full typecheck.
+ */
+function thirdPartyImports(paths, dir) {
+    const wanted = new Set();
+    for (const [name, [target]] of Object.entries(paths)) {
+        if (name.endsWith('/*')) continue;
+        for (const file of declarationFiles(target)) {
+            let text;
+            try {
+                text = readFileSync(file, 'utf8');
+            } catch {
+                continue;
+            }
+            for (const m of text.matchAll(BARE_IMPORT)) {
+                const pkg = packageOf(m[1] ?? m[2]);
+                if (pkg && !pkg.startsWith(SCOPE)) wanted.add(pkg);
+            }
+        }
+    }
+
+    /**
+     * Resolved FROM THE CACHE, because that is where the declarations sit and the only place the
+     * answer means anything. Resolving from the package under test asks a different question and
+     * gets a different answer: it says `rxjs` is unavailable when the store has it and the link
+     * above just made it reachable.
+     */
+    const probe = createRequire(join(CACHE, 'probe.js'));
+    const reachable = [];
+    const missing = [];
+    for (const name of [...wanted].sort()) {
+        let ok = false;
+        try {
+            probe.resolve(`${name}/package.json`);
+            ok = true;
+        } catch {
+            try {
+                probe.resolve(name);
+                ok = true;
+            } catch {
+                ok = false;
+            }
+        }
+        (ok ? reachable : missing).push(name);
+    }
+    return { reachable, missing };
+}
+
+/** Every `.d.ts` under a cached package, depth-limited because tarballs are shallow. */
+function declarationFiles(root, depth = 0, acc = []) {
+    if (depth > 6) return acc;
+    let entries;
+    try {
+        entries = readdirSync(root, { withFileTypes: true });
+    } catch {
+        return acc;
+    }
+    for (const e of entries) {
+        const full = join(root, e.name);
+        if (e.isDirectory()) declarationFiles(full, depth + 1, acc);
+        else if (e.name.endsWith('.d.ts')) acc.push(full);
+    }
+    return acc;
+}
+
 function checkPackage(dir) {
     const name = relative(REPO, dir).replace(/\\/g, '/');
     const pkg = readJSON(join(dir, 'package.json'));
@@ -363,6 +531,11 @@ function checkPackage(dir) {
          */
         return 'cannot-check';
     }
+
+    // What the cached declarations import from outside MemberJunction, and whether the store link
+    // above actually reaches it. No `paths` entries: the link is what resolves these, and a path
+    // override per name would only re-answer the question in a second, less reliable way.
+    const thirdParty = thirdPartyImports(paths, dir);
 
     const out = join(CACHE, '_tsconfig', name.replace(/[\\/]/g, '__'));
     mkdirSync(out, { recursive: true });
@@ -448,9 +621,46 @@ function checkPackage(dir) {
         console.log('  Whatever they declare is being read from the local build, so this run does not');
         console.log('  cover anything that goes through them.');
         verdict = 'inconclusive';
+    } else if (report.fromNpm.length) {
+        /**
+         * NEWEST-IN-RANGE IS NOT WHAT CI INSTALLS EITHER.
+         *
+         * The whole point of reading pnpm-lock.yaml is that `npm view <name>@<range> version` answers
+         * a question nobody acts on. When the lockfile does not carry a name, this falls back to that
+         * answer -- which is the right thing to do, because checking against something beats checking
+         * against nothing. It is NOT a basis for reporting a pass.
+         *
+         * The banner at the top already says a run without a lockfile is unproven. It said so and then
+         * printed OK and exited 0, which is the same shape as the two defects the review caught: the
+         * paragraph disclaims what the verdict then asserts. The disclaimer is not the verdict.
+         */
+        console.log('  INCONCLUSIVE - it compiles, but these versions came from `npm view`, not the lockfile:');
+        for (const guess of report.fromNpm) console.log(`      ${guess}`);
+        console.log('  That is the newest release the range admits, which is not what CI installs. This');
+        console.log('  run says nothing about the version that will actually be there.');
+        verdict = 'inconclusive';
     } else {
         process.stdout.write(`  OK - compiles against published MemberJunction\n`);
         verdict = 'ok';
+    }
+
+    /**
+     * Said whatever the verdict, because it qualifies a pass as much as a failure: these are the
+     * places where the check ran but could not see what it was checking against.
+     */
+    const reach = thirdParty.reachable.length;
+    if (reach || thirdParty.missing.length) {
+        const parts = [`${reach} resolved`];
+        if (thirdParty.missing.length) parts.push(`${thirdParty.missing.length} UNREACHABLE`);
+        console.log(`  third-party types in the published declarations: ${parts.join(', ')}`);
+    }
+    if (thirdParty.missing.length) {
+        console.log('  Unreachable from the cache, so every MJ signature typed through one of these');
+        console.log('  degrades to `any` for this run (skipLibCheck hides the lookup):');
+        console.log(`      ${thirdParty.missing.slice(0, 12).join(', ')}`);
+        if (thirdParty.missing.length > 12) {
+            console.log(`      ... and ${thirdParty.missing.length - 12} more`);
+        }
     }
     return verdict;
 }
