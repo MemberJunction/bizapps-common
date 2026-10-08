@@ -203,3 +203,74 @@ itself (`check:seed-cadence`), both run at the release rather than on every PR. 
 bizapps-caliber all used to document their release seed step with no automated detection at all, and
 common's 5.37.0 is what that costs. Here the release step is checked automatically, before the
 release PR is even opened and again before anything is published or tagged.
+
+## People columns ship their field permissions
+
+People has field-level security on (`V202610081600__v5.52.x__People_Field_Level_Security.sql`,
+#216). On such an entity, a field with no `MJ: Entity Field Permissions` row is denied to every
+user, the system user included. MJ writes those rows only when an Entity or EntityPermission is
+saved through its entity layer, or in CodeGen. Hosts upgrade by migration and run neither.
+
+**Every migration that adds a People column must append this block after its CodeGen output**, so
+the new field's EntityField row exists when it runs. It applies MJ's snapshot rule
+(`fieldPermissionDelta.ts` in MJCoreEntitiesServer) to the host's own People permissions and skips
+any `(field, role)` row that already exists, so the fields that already have rows are untouched.
+Copy it unchanged:
+
+```sql
+DECLARE @FLSEntityID UNIQUEIDENTIFIER = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'; -- MJ_BizApps_Common: People
+
+-- ---- People field permissions: MJ snapshot rule on this host's permissions ----
+;WITH RoleVerbs AS (
+    SELECT ep.RoleID,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanRead   = 1 THEN 1 ELSE 0 END) AS AllowRead,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanUpdate = 1 THEN 1 ELSE 0 END) AS AllowUpdate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanCreate = 1 THEN 1 ELSE 0 END) AS AllowCreate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanRead   = 1 THEN 1 ELSE 0 END) AS DenyRead,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanUpdate = 1 THEN 1 ELSE 0 END) AS DenyUpdate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanCreate = 1 THEN 1 ELSE 0 END) AS DenyCreate
+    FROM [${mjSchema}].[EntityPermission] ep
+    WHERE ep.EntityID = @FLSEntityID
+    GROUP BY ep.RoleID
+),
+RoleAccess AS (
+    SELECT RoleID,
+           CASE WHEN AllowUpdate = 1 AND DenyUpdate = 0 THEN 1 ELSE 0 END AS CanUpdate,
+           CASE WHEN AllowCreate = 1 AND DenyCreate = 0 THEN 1 ELSE 0 END AS CanCreate
+    FROM RoleVerbs
+    WHERE AllowRead = 1 AND DenyRead = 0
+)
+INSERT INTO [${mjSchema}].[EntityFieldPermission] (EntityFieldID, RoleID, ReadAccess, UpdateAccess, CreateAccess)
+SELECT ef.ID,
+       ra.RoleID,
+       N'Allow',
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.CanUpdate = 1 THEN N'Allow' ELSE N'No Access' END,
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.CanCreate = 1 THEN N'Allow' ELSE N'No Access' END
+FROM [${mjSchema}].[EntityField] ef
+CROSS JOIN RoleAccess ra
+WHERE ef.EntityID = @FLSEntityID
+  AND ef.IsPrimaryKey = 0
+  AND ef.IsSoftPrimaryKey = 0
+  AND LEFT(ef.Name, 5) <> N'__mj_'
+  AND NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityFieldPermission] x
+      WHERE x.EntityFieldID = ef.ID AND x.RoleID = ra.RoleID
+  );
+-- ---- end block ----
+```
+
+What it writes, per role that can read People after Allow minus Deny: `ReadAccess = 'Allow'` on
+every field that is not a primary key, soft primary key or `__mj_` column; `UpdateAccess` and
+`CreateAccess = 'Allow'` only when the field has `AllowUpdateAPI = 1` and the role has that verb,
+otherwise `'No Access'`. That is exactly what MJ's reconcile writes, so access does not change until
+an administrator tightens a field.
+
+Without the block the new column is invisible to every user on hosts, and dev databases hide the
+gap: `mj sync push` and CodeGen reconcile there, so the column works locally.
+
+**Recovery on a host:** saving any People Entity Permission through the UI makes MJ reconcile
+People for all roles, writing whatever rows are missing.
+
+**Release seeds:** `metadata/` and every host already have the flag on, so the release push sees no
+change on People and captures no build-database rows. If a seed ever shows `EntityFieldPermission`
+creates for People, the generation database is wrong; do not ship them.
