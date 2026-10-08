@@ -5,18 +5,20 @@ permissions:
 
 on:
   workflow_dispatch:
-  # No `paths:` filter, on either trigger. A workflow skipped by `on: paths:` creates NO check run, so
-  # neither job here could ever be a required check on `next`: a pull request the filter skipped would
-  # wait on "Expected — Waiting for status" forever. (Merged PRs that touched only tsconfig.angular.json
-  # or README.md show no build-only run at all.) The path list moved down into the `scope` job, whose
-  # answer only decides whether `build-only` does work; a job skipped by an `if:` reports `skipped`,
-  # which a required check treats as passing. Ported from bizapps-forms' build.yml, which says it
-  # plainly: `on: paths:` never is. scripts/build-triggers.spec.mjs pins all of this.
   push:
     branches: [next]
-  # PRs into `main` as well: the release PR and a hotfix PR otherwise merged with no build and no
-  # release-tooling run, and a broken build first showed up in publish.yml, after the merge.
+    paths:
+      - 'pnpm-lock.yaml'
+      - 'packages/**'
   pull_request:
+    # `ready_for_review` is NOT in the default type set (opened/synchronize/reopened),
+    # and the job below skips while the PR is a draft — without it, marking a PR ready
+    # would not re-trigger anything and the check would never report.
+    types: [opened, synchronize, reopened, ready_for_review]
+    # `main` included, and NO `paths` filter on the PR side. This context is required on
+    # `main`, and a workflow filtered out at the `on:` level creates no check run at all —
+    # a required context would then sit Pending forever. The release PR is also the one
+    # merge that most needs a build: it is what publishes to npm.
     branches: [next, main]
 
 concurrency:
@@ -24,78 +26,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Answers one question — did this change touch anything build-only reads? — and nothing else. It
-  # always runs and always reports, so it costs a required check nothing. Every entry in the list is
-  # pinned, with the reason build-only reads it, in scripts/build-triggers.spec.mjs:
-  #   - the root build inputs no `packages/**` glob reaches (lockfile, workspace, .npmrc, turbo.json,
-  #     package.json, the two tsconfigs every package extends);
-  #   - packages/;
-  #   - migrations/ and migrations-pg/: business-time-zone-migration.test.ts reads both;
-  #   - metadata/: three package tests read metadata/*.json (the old path filter missed this, so a
-  #     metadata-only PR skipped them);
-  #   - .github/scripts/ and this workflow, which build-only runs.
-  scope:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      relevant: ${{ steps.decide.outputs.relevant }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # The decision is a diff against the base, which shallow history does not contain.
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      # The decider runs before it is trusted. A wrong `false` skips build-only and reports SUCCESS,
-      # so an unwatched decider is indistinguishable from one that always says "nothing to do".
-      - name: Check the path decider still fires
-        run: node --test scripts/check-paths-touched.spec.mjs
-
-      - name: Does this change touch anything build-only reads?
-        id: decide
-        env:
-          # A pull_request diffs against its base; a push against what was there before it. A
-          # workflow_dispatch has neither, which check-paths-touched.mjs treats as fail-open.
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: |
-          RELEVANT=$(node scripts/check-paths-touched.mjs "$BASE_SHA" "$HEAD_SHA" \
-            pnpm-lock.yaml \
-            pnpm-workspace.yaml \
-            .npmrc \
-            turbo.json \
-            package.json \
-            tsconfig.angular.json \
-            tsconfig.server.json \
-            packages/ \
-            migrations/ \
-            migrations-pg/ \
-            metadata/ \
-            .github/scripts/ \
-            .github/workflows/build.yml)
-          echo "relevant=$RELEVANT" >> "$GITHUB_OUTPUT"
-          echo "build-only relevant: $RELEVANT"
-
-  build-only:
-    needs: scope
-    # `needs.scope.result != 'success'` is not padding: a job `if:` is ANDed with success() over its
-    # needs, so without it a FAILING scope job (the self-test catching a broken decider) would skip
-    # this job, report `skipped`, and pass a required check over a build that never ran. If the
-    # decider could not decide, build. `!cancelled()` rather than `always()`, so a superseded push
-    # (cancel-in-progress below) does not start a build nothing stops.
-    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.relevant == 'true') }}
+  build:
+    # One condition, one exclusion, and the `push` arm has to come first: on a push
+    # `github.event.pull_request` is null, so a bare draft comparison would skip the job on
+    # every push to `next`.
+    #
+    #   * drafts — they DO fire opened/synchronize, so without this a draft burns a full run
+    #     on every push; the `ready_for_review` trigger above brings the check back.
+    #
+    # The Version Packages PR used to be excluded here too, on the reasoning that it only
+    # refreshed a lockfile nobody needed verified yet. It is now based on `main` and IS the
+    # release PR, so this is precisely the build that must not be skipped: the first place
+    # the refreshed lockfile meets --frozen-lockfile.
+    #
+    # A job skipped by `if:` still reports a conclusion, which satisfies a required check —
+    # unlike a workflow filtered out at the `on:` level, which creates no check run at all.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: 'pnpm'
@@ -112,11 +67,10 @@ jobs:
       - name: CI guard script tests
         run: ./.github/scripts/__tests__/validate-package-lock-case.test.sh
 
-      # Seconds, and needs no install: asserts every mutation anchor still matches exactly once.
-      # A stale anchor reports SKIP and tests nothing; this fails the PR that made it stale. The
-      # mutants themselves run in mutants.yml, because 96 full suite runs do not belong here.
-      - name: Mutation anchors
-        run: pnpm run test:mutants:anchors
+      # Specs for the migration guards (and any repo-specific *.spec.mjs placed next to them).
+      # Plain node:test, no dependencies, so it runs before the install.
+      - name: CI guard specs
+        run: node --test .github/scripts/__tests__/*.spec.mjs
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -124,44 +78,11 @@ jobs:
       - name: Build all packages
         run: pnpm run build:packages
 
-      # Runs every package's test script, after the build: a test that imports a workspace
-      # package by name resolves through its dist/, so without the build it fails to resolve
-      # and never executes. --no-bail runs every package and still fails the job if any fails.
-      - name: Unit tests
-        run: pnpm -r --no-bail test
-
-  # Plain Node, stdlib-only release gates and their self-tests: no workspace install, so this job
-  # is independent of build-only and stays fast. No `needs:` and no `if:`: it runs on every event,
-  # because what it checks is spread across the tree (every workflow and script for the push gate,
-  # mj-app.json for the sync spec, .changeset/ for the release specs) and it costs seconds. check-release-pushes.mjs is run directly (not just
-  # its spec) so a push reintroduced into a scanned file fails this job even if nobody remembers to
-  # update the spec fixtures. check:release-seed and check:seed-cadence are deliberately NOT run
-  # here — they fail today on pre-existing metadata debt (see check-release-seed-cadence.mjs), and
-  # this job gates every PR, not just a release.
-  release-tooling:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # fetch-depth: 0 and fetch-tags: true because check-release-seed-cadence.spec.mjs's
-      # real-git cases resolve tags and walk commit history — and so a future release-plan
-      # self-test dropped into scripts/ (picked up by the *.spec.mjs glob below) can too.
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Release-tooling self-tests
-        run: node --test scripts/*.spec.mjs
-
-      # The CI-guard and harness specs are stdlib-only too, so they run here with no install.
-      # Without this step nothing runs them: build-only's `pnpm -r test` only reaches package
-      # test scripts, and none of these are one.
-      - name: Script and harness self-tests
-        run: node --test '.github/scripts/__tests__/*.spec.mjs' 'packages/*/test-harnesses/*.spec.mjs' 'test-harnesses/*.spec.mjs'
-
-      - name: Release-push gate
-        run: node scripts/check-release-pushes.mjs
+      # Runs even when the build failed (but not when the run was cancelled), so one run reports
+      # both the build error and any test failures. A failed step still fails the job, so the
+      # required `build` check blocks exactly as before. The repo's own `test` script: per-package
+      # turbo or a root `vitest run`, whichever really runs the suite. Packages that still echo a
+      # stub pass, so green means "nothing that has tests is failing", not "tested".
+      - name: Run tests
+        if: ${{ !cancelled() }}
+        run: pnpm run test

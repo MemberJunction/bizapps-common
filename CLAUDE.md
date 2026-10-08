@@ -103,7 +103,7 @@ git checkout -b my-feature-branch
 BAC uses a two-tier branching model (matching BCSaaS and MJ):
 
 - **`next`** — integration branch. All feature work merges here.
-- **`main`** — release branch. Only updated by the release PR from `release/vX.Y.Z` (cut from `next`). A merge to `main` triggers the publish workflow.
+- **`main`** — release branch. Only updated by the **Version Packages** PR (`changeset-release/main` → `main`) that `version.yml` maintains. A merge to `main` triggers the publish workflow.
 
 **Feature work flow:**
 1. Cut feature branch from `next` (not from `main`): `git checkout next && git pull && git checkout -b <feature-name>`
@@ -111,20 +111,19 @@ BAC uses a two-tier branching model (matching BCSaaS and MJ):
 3. `changes.yml` + `build.yml` run validation on the PR
 4. Merge to `next`
 
-**Release flow: one dispatch and one merge** (runbook: [`docs/release.md`](docs/release.md)):
-1. Dispatch **Prepare a release** (`release-prep.yml`). It cuts `release/vX.Y.Z` from `next`, runs `pnpm run version`, and opens the "Release vX.Y.Z" PR into `main`.
-2. Review and merge that PR with a merge commit. The merge triggers `publish.yml`, which builds, runs the release-readiness gates, publishes to npm, tags `vX.Y.Z`, and opens the `chore/backmerge-vX.Y.Z-<main sha>` → `next` PR (any later merge into `main` gets a back-merge PR of its own).
-3. `publish.yml` merges the back-merge PR once its checks pass. It leaves it open (and says why in the run summary) on conflicts, a red or slow check, or commits added to the branch; then merge it yourself. Until it lands, **Prepare a release** refuses to cut the next release.
+**Release flow: merge the Version Packages PR.**
+1. Every push to `next` runs `version.yml` (changesets/action, GitHub App token). While changesets are pending it opens or updates ONE **Version Packages** PR (`changeset-release/main` → `main`), built by `pnpm run version:prepare` (`changeset version`, then `ci/sync-mj-app-version.mjs` syncs `mj-app.json`, then the lockfile).
+2. That PR is the release. PRs into `main` run `release-readiness.yml` (the `rr:` checks: changesets, minor bump, metadata shipped, pg counterparts, release base current, migration immutability, packages on npm) and `build.yml`. Merge it.
+3. The push to `main` runs `publish.yml`: it publishes over npm OIDC, tags `vX.Y.Z` only if something shipped, then the App opens and merges a `release-back-merge/vX.Y.Z` → `next` PR.
 
-`pnpm run release:plan` answers "is a release due?" read-only: version, pending changesets, gates, and every blocker.
+There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
 
 **Rules:**
-- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR. The release workflows push only `release/*`, `chore/backmerge-*` and the `vX.Y.Z` tag. The GitHub App pushes `release/*`, opens both PRs (a `GITHUB_TOKEN`-authored PR starts no CI) and merges the back-merge PR; the back-merge branch and the tag are pushed with `GITHUB_TOKEN`, because `publish.yml`'s checkout persists that credential and it outranks the App token in the remote URL. `pnpm run lint:release-pushes` fails any workflow or script that pushes to either branch.
-- **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `check:release-seed` and `check:seed-cadence` gate the release, not feature PRs. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md). This repo's recipe: [`migrations/README.md`](migrations/README.md), "Regenerating the metadata seed".
-- **`mj-app.json` is checked on every PR, into `next` or `main`** (`build.yml`'s `release-tooling` job, which runs on every event, runs the `sync-app-version` spec). A PR that changes the `@memberjunction/core` pin in `packages/Entities` must run `node scripts/sync-app-version.mjs` and commit `mj-app.json` — **not** `pnpm run version`, which would consume the pending changesets.
-- **`changes.yml` guards both directions.** A PR into `main` fails unless its branch contains `main`'s tip (merging it would otherwise revert `main`, a published version bump included). A PR into `next` fails while a back-merge is outstanding, until the `chore/backmerge-*` PR lands. Neither is a required check, so read them before merging.
-- **A back-merge PR left open is merged with a merge commit**, never squash or rebase: either leaves `main`'s tip outside `next`'s history and **Prepare a release** keeps refusing. If it happened, open a fresh `main → next` PR and merge it with a merge commit.
-- **Hotfixes that genuinely must bypass `next`** still go through a PR to `main`, and that PR must carry its own bump (`pnpm run version`), because `publish.yml` refuses to publish while changesets remain. Afterwards `main` holds a commit `next` lacks: merge the `chore/backmerge-v*` PR that `publish.yml` opens (or open one from `main`'s tip by hand) before the next release, which is blocked until you do.
+- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/main`, `release-back-merge/*` and the `vX.Y.Z` tag.
+- **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md).
+- **`mj-app.json` is checked on every PR** (`repo: guards` runs `scripts/sync-app-version.spec.mjs`): a PR that changes the `@memberjunction/core` pin must run `node scripts/sync-app-version.mjs` and commit `mj-app.json`. At release, `version:prepare` also syncs its `version` and range.
+- **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable.
+- **Hotfixes** still go through a PR — into `next`, with a changeset — and ship through the Version Packages PR like any other change.
 
 ---
 

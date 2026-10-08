@@ -51,10 +51,10 @@ the seed. None of them reads the seed's SQL to confirm it carries the edit, so a
 an edit but generated without it still passes (`check-release-seed-cadence.spec.mjs` pins that
 limitation). Step 5 below, replaying the chain on a clean database, is what proves content.
 
-Both run in `release-prep.mjs` (so `pnpm run release:plan` shows them and **Prepare a release**
-refuses on red) and again in `publish.yml` before anything is published or tagged. Neither runs on
-feature PRs, because no feature PR can answer a question about a seed generated after it merges.
-The release runbook is [`docs/release.md`](../docs/release.md).
+Both run on the Version Packages PR (`repo: release seed` in `.github/workflows/repo-checks.yml`), so a
+missing or per-PR seed fails the release before the merge; run them locally with
+`pnpm run check:release-seed` and `pnpm run check:seed-cadence`. Neither runs on feature PRs, because no
+feature PR can answer a question about a seed generated after it merges.
 
 **Add a NEW seed migration; never edit a shipped one.** Migrations are append-only history. A seed in
 a release tag has been applied on hosts, and rewriting it changes what a database that already ran it
@@ -81,7 +81,7 @@ As of `v5.46.3` (2026-09-28), that loop shows every seed here is shipped history
 | `V202609020500__v5.38.x__Metadata_Sync.sql` | **yes**, `v5.38.0` through `v5.46.3` | append-only history. The last seed generated. |
 
 There is no unreleased seed, and `metadata/` has moved since `v5.46.3`, so both gates are red today
-and the next release owes one. `pnpm run release:plan` lists the uncovered ids and the edited files.
+and the next release owes one. `pnpm run check:release-seed` and `pnpm run check:seed-cadence` list the uncovered ids and the edited files.
 
 **The `__v<ver>__` in a filename is descriptive, never a claim about which release ships the file.**
 Flyway orders on the `V<timestamp>` prefix, and nothing reads the label. The file ships in whatever
@@ -99,7 +99,7 @@ release version from a migration filename.
 the shipped chain and ship what comes out as one new delta file. The push logs only what changed:
 `spCreate*` for records added since the last release, and `spUpdate*` for records edited.
 
-Start by asking what the seed owes: `pnpm run release:plan`, or the two checks directly. An empty
+Start by asking what the seed owes: run the two checks directly. An empty
 coverage list does not mean there is nothing to generate. A record whose id already ships but whose
 *body* changed (a `@file:` template, a reworded description) passes coverage silently. That is what
 `check:seed-cadence` catches.
@@ -169,7 +169,7 @@ node scripts/pg-finalize.mjs
 ```
 
 Ship it as an ordinary PR into `next` with a `minor` changeset (`changes.yml` requires one for any
-migration). Then dispatch **Prepare a release** ([`docs/release.md`](../docs/release.md)).
+migration). It then ships in the next **Version Packages** PR that `version.yml` opens into `main`.
 
 **"From an empty database", "from the shipped chain" and "at the last released metadata level" are
 three requirements, not one.** Provenance is what makes the delta replayable; the released metadata
