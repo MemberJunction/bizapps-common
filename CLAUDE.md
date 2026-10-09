@@ -168,7 +168,8 @@ Generated files are committed, and AIDP Next ships them as they are: it excludes
 - Set an AI key in your gitignored `.env`: `AI_VENDOR_API_KEY__GeminiLLM` (every CodeGen prompt ranks Gemini first), or `AI_VENDOR_API_KEY__OpenRouterLLM`. Without one, CodeGen silently drops AI-written output: check-constraint `Validate*()` methods, display names, descriptions and form layouts.
 - Never hand-edit generated files, and never paste in generated output from another toolchain or another database. That is how OrderLine lost `OrderHeader`'s `@Field` (bc-aidp-next-golive#295).
 - Review what AI wrote. Validators, names and descriptions are not deterministic between runs.
-- If CodeGen has to create metadata in the database that the generated code depends on (fields, value lists, relationships, validator code), ship it in a migration in the same PR. Otherwise every host installed from migrations drifts from the code.
+- Every CHECK-constraint validator is pinned as a `GeneratedCode` row in `metadata/generated-codes/.validators.json` (or in an older migration), so CodeGen reuses it instead of asking the AI. A PR that adds or changes a CHECK constraint adds or updates that row, reviewed against the constraint: `Source` byte-identical to `sys.check_constraints.definition`, `LinkedRecordPrimaryKey` the field's ID (field-level) or the entity's ID (table-level). A CodeGen run that logs a `CodeGen: Check Constraint Parser` call means a row is missing. The release seed carries the rows to hosts.
+- If CodeGen has to create metadata in the database that the generated code depends on (fields, value lists, relationships; validators are pinned in `metadata/` as above), ship it in a migration in the same PR. Otherwise every host installed from migrations drifts from the code.
 
 ## Development Workflow
 - **CRITICAL**: After making code changes, always compile the affected package by running `npm run build` in that package's directory to check for TypeScript errors
