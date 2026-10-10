@@ -8,6 +8,7 @@ import { Metadata, RunView } from '@memberjunction/core';
 import type { EntityInfo } from '@memberjunction/core';
 import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { COMMON_ENTITIES } from './entity-names';
+import { EscapeFilterValue } from './directory-stats';
 
 export const DIRECTORY_VIEW_NAMES = {
     People: 'Common: People directory',
@@ -79,7 +80,7 @@ async function loadViewByName(name: string): Promise<MJUserViewEntityExtended | 
     const rv = new RunView();
     const found = await rv.RunView<{ ID: string }>({
         EntityName: 'MJ: User Views',
-        ExtraFilter: `Name = '${name.replace(/'/g, "''")}'`,
+        ExtraFilter: `Name = '${EscapeFilterValue(name)}'`,
         Fields: ['ID'],
         MaxRows: 1,
         ResultType: 'simple',
