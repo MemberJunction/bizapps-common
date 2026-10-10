@@ -2,8 +2,10 @@
 
 > **Status:** Plan, ready for implementation. No code in this PR.
 > **Drafted:** 2026-10-08. The decisions in §2 were agreed with the requester on that date.
-> **Repos touched:** `MemberJunction/MJ` (Phases 1 and 5) and `MemberJunction/bizapps-common`
-> (Phases 2, 3, 4 and 6).
+> **Revised:** 2026-10-10. People Data Labs now ships in the first release alongside Apollo (D13),
+> instead of in later phases.
+> **Repos touched:** `MemberJunction/MJ` (Phases 0 and 1) and `MemberJunction/bizapps-common`
+> (Phases 2, 3 and 4).
 > **Read first:** §1, §2 and §3. The phases are written to be picked up one at a time.
 
 ---
@@ -14,12 +16,12 @@
 1. [Why, goals and non-goals](#1-why-goals-and-non-goals)
 2. [Decisions](#2-decisions)
 3. [Architecture](#3-architecture)
-4. [Phase 0: Apollo live spike](#4-phase-0-apollo-live-spike)
-5. [Phase 1 (MJ): Apollo client, action bug fixes, Apollo integration row, scheduler fix](#5-phase-1-mj-apollo-client-action-bug-fixes-apollo-integration-row-scheduler-fix)
+4. [Phase 0: Apollo and PDL live spike](#4-phase-0-apollo-and-pdl-live-spike)
+5. [Phase 1 (MJ): vendor clients, Apollo action bug fixes, integration rows, scheduler fix](#5-phase-1-mj-vendor-clients-apollo-action-bug-fixes-integration-rows-scheduler-fix)
 6. [Phase 2 (common): schema migration](#6-phase-2-common-schema-migration)
 7. [Phase 3 (common): enrichment engine, action and fixture provider](#7-phase-3-common-enrichment-engine-action-and-fixture-provider)
-8. [Phase 4 (common): Apollo provider and the scheduled job](#8-phase-4-common-apollo-provider-and-the-scheduled-job)
-9. [Phases 5 and 6: People Data Labs](#9-phases-5-and-6-people-data-labs)
+8. [Phase 4 (common): Apollo and PDL providers and the scheduled jobs](#8-phase-4-common-apollo-and-pdl-providers-and-the-scheduled-jobs)
+9. [People Data Labs reference](#9-people-data-labs-reference)
 10. [Testing strategy](#10-testing-strategy)
 11. [Privacy, security and cost](#11-privacy-security-and-cost)
 12. [Release and rollout](#12-release-and-rollout)
@@ -50,12 +52,16 @@ The work:
    employment rows it wrote from the ones a person entered.
 2. **Common gets an enrichment engine.** It picks People who already exist, asks a provider about
    them in batches, and writes the answers into common's own tables. A thin `Common.EnrichPeople`
-   action wraps it, and a scheduled job that ships **Disabled** runs the action.
-3. **Each vendor is a provider subclass of `BaseEnrichmentProvider`.** Apollo comes first, People
-   Data Labs (PDL) second. Each provider wraps a **table-agnostic client class in MJ**. It does not
-   wrap MJ's Actions: MJ's rule is that code never calls code through an Action.
-4. **MJ's Apollo package gets that client class**, plus fixes for 12 bugs in its two enrichment
-   actions, an `Apollo` row in `MJ: Integrations`, and a scheduler fix.
+   action wraps it. Two scheduled jobs run the action, one per provider, and both ship **Disabled**.
+3. **Each vendor is a provider subclass of `BaseEnrichmentProvider`. Apollo and People Data Labs
+   (PDL) both ship in the first release.** Each provider wraps a **table-agnostic client class in
+   MJ**. It does not wrap MJ's Actions: MJ's rule is that code never calls code through an Action.
+   PDL is the stronger source for education (it stores schools, degrees and majors as structured
+   fields); Apollo is the stronger source for current employment.
+4. **MJ gets the two client classes:** an `ApolloPeopleClient` in the existing Apollo package and a
+   `PDLPersonClient` in a new `@memberjunction/actions-peopledatalabs` package. MJ also gets fixes
+   for 12 bugs in the Apollo enrichment actions, `Apollo` and `People Data Labs` rows in
+   `MJ: Integrations`, and a scheduler fix.
 
 Common never creates People. Downstream apps create the People they care about, and this job enriches
 the rows that are already there. Building a cohort of strangers from a vendor search (for example
@@ -122,9 +128,10 @@ Each decision records the option we turned down, so nobody has to re-argue it.
 | D7 | **Providers wrap a table-agnostic MJ client class, not an MJ Action.** | *Wrap the existing Apollo Actions.* `MJ/packages/Actions/CLAUDE.md` says "Code-to-code calls should NEVER go through Actions". The existing Apollo actions also have the wrong shape: they write into columns you name, while common needs something that fetches and returns data and writes nothing. |
 | D8 | **Providers never write. The engine owns every write.** | *Each provider writes its own rows.* Write rules such as "never overwrite manual data" and "end only rows we own" must be identical for every vendor, so they live once, in the engine. |
 | D9 | **The engine never creates People. It only enriches rows that already exist.** | *Upsert People from vendor matches.* That is the prospecting feature in D2. |
-| D10 | **The scheduled job ships `Status: Disabled`.** An admin turns it on in MJ's Scheduling app. | *Ship it Active and guard inside the action.* An Active job does nothing on a host without credentials, but a host that has an Apollo key for another purpose would start spending credits on install. Precedent for shipping Disabled: `bizapps-caliber/metadata/scheduled-jobs/caliber-sweeps.json`. |
+| D10 | **Both scheduled jobs ship `Status: Disabled`.** An admin turns each on in MJ's Scheduling app. | *Ship them Active and guard inside the action.* An Active job does nothing on a host without credentials, but a host that has an Apollo or PDL key for another purpose would start spending credits on install. Precedent for shipping Disabled: `bizapps-caliber/metadata/scheduled-jobs/caliber-sweeps.json`. |
 | D11 | **PDL's client lives in MJ, in a new `packages/Actions/PeopleDataLabs` package next to Apollo's.** | *The separate Integrations repo.* That repo holds Integration-framework sync connectors. This is a client plus thin Actions, the same shape as the Apollo package. Revisit if MJ moves all vendor action packages out of core. |
 | D12 | **First-time enrichment of a person writes its history rows with `SkipEntityActions: true`. Later changes save normally.** | *Always fire entity actions.* That floods timelines with years of past jobs. *Never fire them.* That hides real signals such as "this person changed jobs", which downstream apps may bind to. |
+| D13 | **Apollo and PDL both ship in the first release, each with its own Disabled scheduled job.** The jobs run at staggered times so they never overlap. An admin enables whichever vendor they have a contract and credential for, or both. | *Ship Apollo first and PDL later* (this plan's first draft). Education is the reason for the feature, and PDL is the vendor that indexes it as structured data. If Phase 0 finds Apollo no longer returns education, an Apollo-only first release would ship without the feature's main purpose. Building both at once also proves the provider seam with two real implementations rather than one. *One job whose `ProviderCode` the admin edits.* Two jobs are clearer in the Scheduling app, keep separate run histories, and let a host run both. |
 
 ---
 
@@ -135,7 +142,7 @@ Each decision records the option we turned down, so nobody has to re-argue it.
 ```mermaid
 flowchart TB
     subgraph Host["MJ host"]
-        Job["MJ: Scheduled Jobs<br/>'Common — Person Enrichment (nightly)'<br/>Status: Disabled"]
+        Job["MJ: Scheduled Jobs<br/>Person Enrichment: Apollo (07:00 UTC)<br/>Person Enrichment: PDL (08:30 UTC)<br/>both ship Disabled"]
         Driver["ActionScheduledJobDriver (MJ)"]
     end
 
@@ -192,14 +199,19 @@ cursor to resume from.
 
 ---
 
-## 4. Phase 0: Apollo live spike
+## 4. Phase 0: Apollo and PDL live spike
 
-**Do this before Phase 1. It takes about an hour and needs a real Apollo API key.** The sandbox the
-plan was written in could not reach Apollo, so these points are unverified, and they decide part of
-Phase 1.
+**Do this before Phase 1. It takes about two hours and needs a real Apollo API key and a real PDL API
+key.** The sandbox the plan was written in could not reach either vendor's API or full docs, so these
+points are unverified, and they decide part of Phase 1.
 
-Call `people/bulk_match` for 5 to 10 known people, including at least one person known to have an HKS
-degree. Save one redacted response as a test fixture:
+Use the same 5 to 10 known people for both vendors, including at least one person known to have an
+HKS degree. That gives a direct comparison of what each vendor returns for the same person, which is
+worth recording for the team.
+
+### 4.1 Apollo
+
+Call `people/bulk_match` for the test people. Save one redacted response as a test fixture:
 `MJ/packages/Actions/ApolloEnrichment/src/__tests__/fixtures/bulk-match.redacted.json`. Strip emails,
 phone numbers and photo URLs, and replace names with placeholders.
 
@@ -208,21 +220,46 @@ Answer each question in the Phase 1 PR description:
 | # | Question | Why it matters |
 |---|---|---|
 | S1 | Which base path serves `people/bulk_match` with **header** auth (`X-Api-Key`): `https://api.apollo.io/v1` (today's `ApolloAPIEndpoint`) or `https://api.apollo.io/api/v1` (`ApolloRESTEndpoint`)? | The client must use one. Today's actions send `api_key` in the body or query string. |
-| S2 | Does the response still include education, and in what shape: entries in `employment_history` that carry a `degree` (what the current code assumes), a separate field, or not at all? Is there a major or field-of-study key? | **If Apollo returns no education, the Apollo provider supplies employment and LinkedIn only, and education comes from PDL (Phase 6).** Record the outcome in this plan. |
+| S2 | Does the response still include education, and in what shape: entries in `employment_history` that carry a `degree` (what the current code assumes), a separate field, or not at all? Is there a major or field-of-study key? | **If Apollo returns no education, the Apollo provider supplies employment and LinkedIn only, and education comes from PDL (§8.3).** Record the outcome in this plan. |
 | S3 | Is `matches[]` positionally aligned with `details[]`, with `null` for misses? | The client maps results back to people by position. A misalignment would attach one person's data to another (§5.2). |
 | S4 | What does `credits_consumed` report per call, and is a miss free? | Cost reporting and the defaults in §11. |
 | S5 | What does a 429 look like (status, headers, body) for per-minute and per-hour limits? Is there a `Retry-After` or `x-rate-limit-*` header? | Typed rate-limit errors (§5.2). |
 | S6 | Does `mixed_people/search` (used by the Accounts action) still work, and does it still return emails? | Decides fix A-13 (Appendix A). |
 
+### 4.2 People Data Labs
+
+Call `POST https://api.peopledatalabs.com/v5/person/bulk` for the same people, once with
+`min_likelihood` 6 and once with 8. Save one redacted response as
+`MJ/packages/Actions/PeopleDataLabs/src/__tests__/fixtures/person-bulk.redacted.json`, with the same
+redaction rules. §9 lists what the plan already confirmed about this API and what it did not.
+
+Answer each question in the Phase 1 PR description:
+
+| # | Question | Why it matters |
+|---|---|---|
+| P1 | Does each `requests[i].params` accept `min_likelihood`? Does the response echo `requests[i].metadata` back on the matching result? | The client uses `metadata` to carry the Person ID and checks it against position (§5.7). `min_likelihood` is our false-positive control. |
+| P2 | What exactly is in `data.education[]` for the HKS graduate: the field names for the school's name and ID, degrees, majors, and start and end dates, and the date formats? | The education mapping (§9.3). Confirm against PDL's current Person Schema page too. |
+| P3 | Same for `data.experience[]`: company name, website or domain, title, dates, and the current-job flag. | The employment mapping (§9.3). |
+| P4 | Is the person `id` in `data` stable across calls, and can it be sent back as a param (`pdl_id`, or whatever the docs name it) to re-enrich exactly? | `PersonExternalIdentity.ExternalID` and the cheapest re-match. |
+| P5 | Is a `required` or `data_include` parameter available on our plan? `required: "education"` would return (and bill) only matches that have education; `data_include` would cut the response to the fields we keep. | Cost and data minimization (§11). Optional provider `Configuration` keys if they work. |
+| P6 | What do an out-of-credits response and a rate-limit response look like (status, headers, body)? Which response headers report credits used and limits remaining? | Typed errors (§5.7) and `CreditsConsumed` reporting. |
+| P7 | Does our PDL plan include the education fields, or are they in a premium field bundle? | If education isn't in our bundle, PDL can't deliver the feature's main purpose until the contract changes. Raise it before building. |
+
 ---
 
-## 5. Phase 1 (MJ): Apollo client, action bug fixes, Apollo integration row, scheduler fix
+## 5. Phase 1 (MJ): vendor clients, Apollo action bug fixes, integration rows, scheduler fix
 
 **Repo:** `MemberJunction/MJ`. **Branch** from `origin/next`, tracking a same-named remote, for
-example `fix/apollo-enrichment-client`.
+example `fix/apollo-enrichment-client` and `feat/pdl-person-client`.
 
-**Recommended PRs:** 1a (Apollo client and fixes), 1b (scheduler fix) and 1c (`ProcessBatch`
-backport, §5.6). They touch different packages and can be reviewed separately.
+**Recommended PRs:**
+- **1a:** Apollo client and action fixes (§5.1 to §5.4).
+- **1b:** scheduler fix (§5.5).
+- **1c:** `ProcessBatch` backport (§5.6).
+- **1d:** the new PDL package (§5.7).
+
+They touch different packages and can be reviewed separately. 1a and 1d can be built in parallel by
+different people. Common needs **all four** in the same 6.1.x release before Phase 4.
 
 **Every Phase 1 PR needs the `backport lts/6.1` label.** Common pins MJ `~6.1.5`
 (`mj-app.json` `mjVersionRange >=6.1.5 <7.0.0`). Nothing reaches common until it ships in a 6.1.x
@@ -389,6 +426,7 @@ points at this row (§6.2).
 - **Check first** that nothing iterates `MJ: Integrations` assuming `ClassName` is non-null, such as
   integration discovery or the sync driver. Grep for consumers of `Integration.ClassName`. If
   something does, set the class name to a sentinel that the integration engine skips, and note it.
+  The same check covers the `People Data Labs` row, which goes in the same folder (§5.7).
 - Changeset: **minor**, because this is a metadata change (`MJ/.claude/rules/changesets.md`).
 
 ### 5.5 Scheduler fix (PR 1b): activating a Disabled job doesn't fire until restart
@@ -425,16 +463,185 @@ takes 10 people per call, and PDL's takes up to 100.
 - **Fallback if the backport is refused:** the engine runs its own loop (§7.4, "fallback loop"). The
   engine is written against a small internal seam, so the switch is local to one file.
 
+### 5.7 New PDL package (PR 1d): `packages/Actions/PeopleDataLabs` → `@memberjunction/actions-peopledatalabs`
+
+Same shape as the Apollo package: a table-agnostic client, a credentials resolver, one thin Action
+for agents and workflows, tests and a README. §9 holds the PDL API facts this section relies on, and
+which of them Phase 0 still has to confirm.
+
+**Scaffold.**
+- Copy `packages/Actions/ApolloEnrichment/package.json`, `tsconfig.json`, `vitest.config.ts` and
+  `typedoc.json`, then rename. Dependencies: `@memberjunction/actions`, `actions-base`, `core`,
+  `core-entities`, `credentials`, `global` and `network-utils`, pinned the way the Apollo package pins
+  them on the target branch.
+- **Register it in the server bootstrap**, or its Action class gets tree-shaken out. Add it to
+  `packages/ServerBootstrap/package.json` and `packages/ServerBootstrapLite/package.json` (both list
+  the Apollo package today), then regenerate the pre-built manifest with
+  `npm run mj:manifest:server-bootstrap`. Check that `mj-class-registrations.ts` now lists the new
+  action class.
+
+**Files:**
+
+```
+packages/Actions/PeopleDataLabs/src/
+  index.ts
+  config.ts                     PDLAPIEndpoint = 'https://api.peopledatalabs.com/v5', PDL_API_KEY env fallback
+  credentials.ts                ResolvePDLAPIKey(): same two paths and rules as Apollo's resolver
+  PDLPersonClient.ts            the client (below)
+  pdl.types.ts                  vendor payload types (vendor casing, with the case-violation marker)
+  PDLEnrichPeopleAction.ts      thin Action, returns data, writes nothing
+  __tests__/
+    fixtures/person-bulk.redacted.json    from Phase 0
+    pdl-person-client.test.ts
+    pdl-enrich-people-action.test.ts
+```
+
+**Client surface:**
+
+```typescript
+export interface PDLPersonInput {
+    Key: string;                  // correlation key; common passes the Person ID
+    PDLID?: string;               // exact re-match, when known (param name per P4)
+    Email?: string;
+    LinkedInURL?: string;         // sent as PDL's `profile` param
+    FirstName?: string;
+    LastName?: string;
+    Company?: string;             // employer name or domain
+}
+
+export interface PDLEducationEntry {
+    SchoolName: string;
+    SchoolID: string | null;
+    Degrees: string[];
+    Majors: string[];
+    StartDate: string | null;     // normalized 'YYYY-MM-DD'
+    EndDate: string | null;
+}
+
+export interface PDLExperienceEntry {
+    CompanyName: string;
+    CompanyDomain: string | null; // host of company.website, normalized
+    Title: string | null;
+    StartDate: string | null;
+    EndDate: string | null;
+    IsCurrent: boolean;           // from the field P3 identifies
+}
+
+export interface PDLPersonMatch {
+    Key: string;
+    Matched: boolean;
+    PDLID: string | null;
+    Likelihood: number | null;    // 1..10
+    LinkedInURL: string | null;
+    Education: PDLEducationEntry[];
+    Experience: PDLExperienceEntry[];
+    ErrorMessage: string | null;  // set when this one item failed (non-200, non-404)
+    Raw?: Record<string, unknown>;// only with IncludeRaw; never persist
+}
+
+export interface PDLBulkOptions {
+    MinLikelihood?: number;       // default 6, PDL's recommended default
+    Required?: string;            // e.g. 'education', only if P5 confirms it
+    DataInclude?: string[];       // only if P5 confirms it
+    IncludeRaw?: boolean;
+}
+
+export interface PDLBulkResult {
+    Matches: PDLPersonMatch[];    // same length and order as the input
+    CreditsConsumed: number;      // count of per-item 200s; PDL bills per match
+}
+
+export class PDLPersonClient {
+    public static readonly MaxBatchSize = 100;
+    public constructor(apiKey: string, options?: { FetchImpl?: typeof fetch; BaseURL?: string });
+    public static async ForCompany(companyID: string | null, contextUser: UserInfo):
+        Promise<{ Client: PDLPersonClient; KeySource: 'credential' | 'environment' }>;
+    public BulkEnrich(inputs: PDLPersonInput[], options?: PDLBulkOptions): Promise<PDLBulkResult>;
+}
+
+export class PDLRateLimitError extends Error { RetryAfterSeconds: number | null; }
+export class PDLCreditsExhaustedError extends Error {}
+export class PDLAuthError extends Error { Status: number; }
+export class PDLRequestError extends Error { Status: number; Body: string; }
+```
+
+**Client rules:**
+- **Input size.** Reject more than 100 inputs, or an input with no identifying field, before any
+  HTTP call.
+- **Auth.** `X-Api-Key` header only. Never put the key in the query string, even though PDL accepts it
+  there; query strings end up in logs.
+- **Request.** `POST {PDLAPIEndpoint}/person/bulk` with
+  `{ "requests": [ { "params": {…, "min_likelihood": n}, "metadata": { "key": "<Key>" } } ] }`.
+- **Correlation.** PDL returns results in request order. The client **also** checks each result's
+  echoed `metadata.key` against the input at that position. On any mismatch, or a length mismatch,
+  **throw** `PDLRequestError`. Never attach a result to the wrong person.
+- **Per-item status.** 200 = matched. 404 = not matched, which is not an error and not billed. Any
+  other per-item status sets `ErrorMessage` on that item only; the rest of the batch still counts.
+- **Top-level status.** Map the out-of-credits response to `PDLCreditsExhaustedError`, the
+  rate-limit response to `PDLRateLimitError`, and 401/403 to `PDLAuthError`. The exact codes come from
+  P6. No sleeping inside the client.
+- **Minimization.** Map only the fields above. The normalized result never contains emails, phone
+  numbers, addresses or anything else PDL returns. `Raw` exists for debugging and is off by default.
+- **Dates.** PDL dates can be `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Normalize to the first day of the
+  year or month, and to `null` when they won't parse.
+
+**Credentials.** `credentials.ts` copies Apollo's resolver (`ApolloEnrichment/src/lists/credentials.ts`)
+with Integration name `People Data Labs` and environment variable `PDL_API_KEY`. The same rules
+apply: `MJ: Credentials` only, never `CompanyIntegration.APIKey`, and a present-but-broken credential
+fails rather than falling back to the environment.
+
+**Integration row.** Add `metadata/integrations/.pdl-integration.json`, next to the Apollo row from
+§5.4:
+- `Name: "People Data Labs"`
+- `Description`
+- `NavigationBaseURL: "https://dashboard.peopledatalabs.com"`
+- `ClassName: null`
+- `BatchMaxRequestCount: 100`
+- `BatchRequestWaitTime: 0`
+- `CredentialTypeID: "@lookup:MJ: Credential Types.Name=API Key"`
+- `Icon`
+- a `primaryKey` from `uuidgen`, and no `sync` block
+
+**Action.** `People Data Labs - Enrich People`, in a new `metadata/actions/.peopledatalabs-actions.json`.
+Use category `Data Enrichment`, the same as the Apollo actions.
+
+| Param | Type | Notes |
+|---|---|---|
+| People | Input, required | JSON array of `{ Email, LinkedInURL, FirstName, LastName, Company }`, at most 100. Accepts an array or a JSON string, like the Apollo list actions' params. |
+| MinLikelihood | Input | Default 6. |
+| CompanyID | Input | Per-company credential, as for Apollo. |
+| Matches | Output | The normalized `PDLPersonMatch[]`. |
+| MatchedCount, CreditsConsumed, KeySource | Output | |
+
+Result codes: `SUCCESS`, `NO_MATCHES` (success), `RATE_LIMITED`, `CREDITS_EXHAUSTED`,
+`CREDENTIALS_NOT_FOUND`, `VALIDATION_ERROR`, `ERROR`. The action writes nothing to the database.
+
+**Tests.** Use a fake `FetchImpl` and the Phase 0 fixture. Never call PDL from a test. Cover:
+- the header is sent and no key appears in the URL;
+- more than 100 inputs is rejected;
+- a correlation mismatch throws;
+- per-item 404 gives `Matched: false`, and per-item 500 gives `ErrorMessage` without failing the batch;
+- likelihood passes through and `CreditsConsumed` counts the 200s;
+- no email or phone appears in the normalized output;
+- dates are normalized;
+- each typed error.
+
+**This adds a new package to the 6.1 line.** Confirm with the MJ maintainers that an additive package
+is acceptable as a backport (Q6). If it isn't, see R13 for the fallback.
+
+Changeset: **minor** (the Integration row and the action are metadata). Label `backport lts/6.1`.
+
 **Phase 1 is done when:**
 - Every item in Appendix A is fixed and tested.
-- The client exists and is unit-tested against the Phase 0 fixture.
-- The Integration row JSON has merged.
+- Both clients exist and are unit-tested against their Phase 0 fixtures.
+- The `Apollo` and `People Data Labs` Integration row JSON has merged.
+- The PDL package is registered in both server bootstrap manifests.
 - The scheduler fix has merged.
 - The backport has merged, or been refused.
 - A 6.1.x release containing all of the above is published.
 
-`cd packages/Actions/ApolloEnrichment && pnpm test` and the Scheduling package tests must be green.
-Report pass, fail and skip counts in each PR.
+`pnpm test` must be green in `packages/Actions/ApolloEnrichment`, `packages/Actions/PeopleDataLabs`
+and the Scheduling packages. Report pass, fail and skip counts in each PR.
 
 ---
 
@@ -783,7 +990,7 @@ packages/Enrichment/src/
   load.ts                          LoadCommonEnrichment(): tree-shaking anchor
   types.ts                         request/result/options/result-counts types (§7.2)
   BaseEnrichmentProvider.ts        abstract base (§7.3)
-  errors.ts                        EnrichmentRateLimitError, EnrichmentConfigurationError
+  errors.ts                        EnrichmentRateLimitError, EnrichmentQuotaExhaustedError, EnrichmentConfigurationError
   PersonEnrichmentEngine.ts        orchestration only (§7.4)
   selection.ts                     BuildEligibilityFilter() (pure, §7.5)
   batch-context.ts                 LoadBatchContext(): one RunViews per batch (§7.6)
@@ -918,7 +1125,7 @@ export interface PersonEnrichmentRunOptions {
     MetadataProvider: IMetadataProvider;
 }
 
-export type EnrichmentStoppedReason = 'Completed' | 'MaxPeople' | 'TimeBudget' | 'RateLimited' | 'ErrorThreshold';
+export type EnrichmentStoppedReason = 'Completed' | 'MaxPeople' | 'TimeBudget' | 'RateLimited' | 'QuotaExhausted' | 'ErrorThreshold';
 
 export interface PersonEnrichmentRunResult {
     ProcessRunID: string | null;
@@ -958,11 +1165,16 @@ export interface PersonEnrichmentRunResult {
 
 Keep both behind one internal seam so switching later is a one-file change.
 
-**Rate limits.** When `EnrichPeople` throws `EnrichmentRateLimitError`:
+**Rate limits and exhausted credits.** When `EnrichPeople` throws `EnrichmentRateLimitError` or
+`EnrichmentQuotaExhaustedError`:
 - Report every record in that batch as **Skipped**, not Failed, so they stay eligible and the circuit
   breaker isn't tripped by a vendor quota.
 - Set a flag that `onAfterBatch` turns into `continue: false`.
-- Report `StoppedReason: 'RateLimited'`.
+- Report `StoppedReason: 'RateLimited'` or `'QuotaExhausted'`.
+
+The two differ in what happens next. A rate limit clears by itself, so the next run continues
+normally. Exhausted credits do not clear until someone buys more, so the action reports it as a
+failure (§7.9) to make the job run show up as failed in the Scheduling app.
 
 ### 7.5 Eligibility filter (`selection.ts`, pure)
 
@@ -1055,7 +1267,7 @@ eligible and the next run redoes them. Every writer is idempotent, so that is sa
 | none | Insert with `Source='Enrichment'`, `SourceSystem=<code>`, `LastVerifiedAt=now`, `InstitutionName` exactly as returned, and `OrganizationID` from §7.8 (may be NULL). |
 | `Source='Manual'` | **Skip.** Never edit a row a person entered. |
 | `Source='Enrichment'`, same `SourceSystem` | Update `FieldOfStudy`, `StartDate`, `EndDate` and `OrganizationID` (only when it is NULL), and set `LastVerifiedAt=now`. |
-| `Source='Enrichment'` from another system, or `Source='Import'` | Leave the row alone. Insert this provider's row only if the key differs. Otherwise just count it as corroborated. |
+| `Source='Enrichment'` from another system, or `Source='Import'` | Leave the row alone and don't insert a duplicate. Count it as corroborated. When Apollo and PDL both run, this is what stops the same degree appearing twice. |
 
 **Never delete education rows.** If a vendor stops returning a school, the row stays with an old
 `LastVerifiedAt`. Document this in the action description.
@@ -1071,10 +1283,13 @@ eligible and the next run redoes them. Every writer is idempotent, so that is sa
 |---|---|
 | none | Insert: `Title`, `StartDate`, `EndDate`, `Status = IsCurrent ? 'Active' : 'Ended'`, `Source='Enrichment'`, `SourceSystem=<code>`. |
 | `Source='Manual'` (or Import) | **Skip.** |
+| `Source='Enrichment'`, another system | **Skip.** The other vendor owns that row; don't duplicate it or edit it. |
 | `Source='Enrichment'`, same system | Update dates, title and status. If the row is Active and the vendor now says not current, set `Status='Ended'` and `EndDate` to the vendor's end date or today. |
 
 **Ending.** For every `Source='Enrichment'`, same-system, **Active** Employee row whose Organization is
-not in the vendor's current employment, set it to Ended. Never end a Manual row.
+not in the vendor's current employment, set it to Ended. Never end a Manual row or another vendor's
+row. If Apollo and PDL disagree about a person's current employer, each keeps its own Active row, and
+`vwPeople` shows the one with the later `StartDate`. R11 covers how to avoid that.
 
 **Entity actions (D12).**
 - If the person had **no** identity row before this run (first-time enrichment), save every
@@ -1168,6 +1383,7 @@ existing `Common.LogActivity` entry: `Name: "Common.EnrichPeople"`,
 |---|---|---|
 | SUCCESS | true | The run finished with `StoppedReason` Completed or MaxPeople. |
 | PARTIAL | true | Stopped by TimeBudget or RateLimited. The rest continue next run. |
+| QUOTA_EXHAUSTED | false | The vendor account is out of credits. Nothing more happens until someone tops it up. |
 | ERROR_THRESHOLD | false | The circuit breaker tripped. |
 | PROVIDER_NOT_FOUND | false | No provider row for the code, or no registered `DriverClass`. |
 | PROVIDER_INACTIVE | false | The row exists but `IsActive = 0`. |
@@ -1192,9 +1408,13 @@ demo hosts run the whole engine without a vendor.
 
 ---
 
-## 8. Phase 4 (common): Apollo provider and the scheduled job
+## 8. Phase 4 (common): Apollo and PDL providers and the scheduled jobs
 
-**Prerequisite:** the MJ 6.1.x release containing Phase 1 is published.
+**Prerequisite:** the MJ 6.1.x release containing all of Phase 1 is published, including both
+clients.
+
+Both providers ship in this phase (D13). If two developers share the work, one can take §8.2 and the
+other §8.3. They touch different files.
 
 ### 8.1 Raise the MJ floor
 
@@ -1207,8 +1427,8 @@ Follow this repo's CLAUDE.md, "Bumping to a new 6.1.N", exactly:
 6. Run the full test suite.
 7. Commit the lockfile.
 
-Add `@memberjunction/actions-apollo` as a **peer** of `@mj-biz-apps/common-enrichment`, with the exact
-devDependency anchor.
+Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs` as **peers** of
+`@mj-biz-apps/common-enrichment`, each with its exact devDependency anchor.
 
 ### 8.2 `ApolloEnrichmentProvider`
 
@@ -1230,38 +1450,87 @@ devDependency anchor.
   6. Return `CreditsConsumed` so the engine can report it.
 - **Unit tests** use the Phase 0 fixture through a fake `FetchImpl`. Never hit Apollo from a test.
 
-### 8.3 Seed rows (`metadata/`, JSON only)
+### 8.3 `PDLEnrichmentProvider`
+
+**File:** `packages/Enrichment/src/providers/PDLEnrichmentProvider.ts`, registered with
+`@RegisterClass(BaseEnrichmentProvider, 'PDL')`.
+
+- **Members:** `Code = 'PDL'`, `IsLive = true`, and a hard batch ceiling of
+  `PDLPersonClient.MaxBatchSize` (100).
+- **`SupportedFacets`:** `['Education', 'Employment', 'LinkedIn']`. Drop `'Education'` only if Phase 0
+  P7 found our PDL plan doesn't include education fields, and raise that with the requester first: it
+  removes the feature's main purpose.
+- **`Initialize`:**
+  1. `PDLPersonClient.ForCompany(context.CompanyID, context.ContextUser)`. If no key resolves, throw
+     `EnrichmentConfigurationError`.
+  2. Parse `ProviderRow.Configuration` into a typed `PDLProviderConfiguration`:
+     `{ MinLikelihood?: number; Required?: string; DataInclude?: string[] }`. Validate it: likelihood
+     must be an integer from 1 to 10, default 6. Throw `EnrichmentConfigurationError` on bad JSON
+     rather than silently using defaults.
+- **`EnrichPeople`:**
+  1. Map each request to `PDLPersonInput`:
+     - `Key` = PersonID
+     - `PDLID` = `ExternalID` when present
+     - `Email` = the first email
+     - `LinkedInURL`, `FirstName`, `LastName`
+     - `Company` = the domain if known, otherwise the organization name
+  2. Call `BulkEnrich(inputs, { MinLikelihood, Required, DataInclude })`. Pass `Required` and
+     `DataInclude` only if P5 confirmed them.
+  3. Map each `PDLPersonMatch` to a `PersonEnrichmentResult` using the table in §9.3.
+  4. Translate errors:
+     - `PDLRateLimitError` → `EnrichmentRateLimitError`
+     - `PDLCreditsExhaustedError` → `EnrichmentQuotaExhaustedError`
+     - `PDLAuthError` → `EnrichmentConfigurationError`
+  5. Return `CreditsConsumed`.
+- **`MatchedBy`.** PDL doesn't say which identifier produced a match. Report the strongest identifier
+  that was sent, in the §7.6 priority order, and say so in a code comment.
+- **Unit tests** use the PDL Phase 0 fixture through a fake `FetchImpl`. Cover:
+  - degrees and majors joined into one row per school;
+  - `school.id` kept as `InstitutionExternalID`;
+  - likelihood 8 becomes confidence 0.8;
+  - a per-item error becomes `Status: 'Error'` without failing the batch;
+  - bad `Configuration` JSON throws.
+
+### 8.4 Seed rows (`metadata/`, JSON only)
 
 **`metadata/enrichment-providers/`.** Add a `.mj-sync.json` (entity
-`MJ_BizApps_Common: Enrichment Providers`) and `.enrichment-providers.json` with one row:
-- `Code: "Apollo"`
-- `Name: "Apollo.io"`
-- `DriverClass: "Apollo"`
-- `IntegrationID: "@lookup:MJ: Integrations.Name=Apollo"`
-- `MaxBatchSize: 10`
-- `RequestsPerMinute`: set from S5, or leave null
-- `IsActive: true`
-- a `primaryKey` from `uuidgen`
+`MJ_BizApps_Common: Enrichment Providers`) and `.enrichment-providers.json` with two rows:
+
+| Field | Apollo | PDL |
+|---|---|---|
+| `Code` | `Apollo` | `PDL` |
+| `Name` | `Apollo.io` | `People Data Labs` |
+| `DriverClass` | `Apollo` | `PDL` |
+| `IntegrationID` | `@lookup:MJ: Integrations.Name=Apollo` | `@lookup:MJ: Integrations.Name=People Data Labs` |
+| `MaxBatchSize` | 10 | 100 |
+| `RequestsPerMinute` | from S5, or null | from P6, or null |
+| `Configuration` | null | `{"MinLikelihood": 6}` |
+| `Sequence` | 10 | 20 |
+| `IsActive` | true | true |
+| `primaryKey` | from `uuidgen` | from `uuidgen` |
 
 Add `enrichment-providers` to `metadata/.mj-sync.json` `directoryOrder` after
 `activity-sync-provider-types` and before `actions`.
 
-**The scheduled job.** Add a record to `metadata/scheduled-jobs/.common-scheduled-jobs.json`. Its
-`_comments` block should explain D10 the way the existing hourly job's comments explain its choices.
+**Two scheduled jobs.** Add both to `metadata/scheduled-jobs/.common-scheduled-jobs.json`. Each one's
+`_comments` block should explain its choices the way the existing hourly job's comments do. Here is
+the Apollo job; the PDL job is identical except where the table below says otherwise.
 
 ```json
 {
   "_comments": [
-    "NIGHTLY PERSON ENRICHMENT. Ships DISABLED (plan D10): enabling it starts spending vendor credits.",
+    "NIGHTLY PERSON ENRICHMENT — APOLLO. Ships DISABLED (plan D10): enabling it starts spending vendor credits.",
     "Turn on in the Scheduling app after an Apollo credential exists. Set the CompanyID param if the",
     "key lives on a Company Integration rather than APOLLO_API_KEY.",
+    "Runs at 07:00 UTC; the PDL job runs at 08:30 UTC. With MaxRuntimeMinutes 60 the two can never",
+    "overlap, so they never write the same person at the same time (plan R11).",
     "MissedRunPolicy Skip: a missed night needs no catch-up; the next run picks up everyone still eligible.",
     "MaxRuntimeMinutes 60 > the action's TimeBudgetMinutes 45, so the engine stops itself before the lease expires.",
     "The Action driver heartbeats once before the action starts, not during it."
   ],
   "fields": {
-    "Name": "Common — Person Enrichment (nightly)",
-    "Description": "Enriches existing People with education, employment and LinkedIn data from an enrichment provider. Never creates People. Disabled until an admin turns it on.",
+    "Name": "Common — Person Enrichment: Apollo (nightly)",
+    "Description": "Enriches existing People with education, employment and LinkedIn data from Apollo.io. Never creates People. Disabled until an admin turns it on.",
     "JobTypeID": "@lookup:MJ: Scheduled Job Types.DriverClass=ActionScheduledJobDriver",
     "CronExpression": "0 0 7 * * *",
     "Timezone": "UTC",
@@ -1286,57 +1555,92 @@ Add `enrichment-providers` to `metadata/.mj-sync.json` `directoryOrder` after
 }
 ```
 
-- `0 0 7 * * *` is six fields with seconds first: 07:00 UTC, which is early morning in US time zones.
+| Field | Apollo job | PDL job |
+|---|---|---|
+| `Name` | `Common — Person Enrichment: Apollo (nightly)` | `Common — Person Enrichment: People Data Labs (nightly)` |
+| `Description` | "…from Apollo.io…" | "…from People Data Labs…" |
+| `CronExpression` | `0 0 7 * * *` (07:00 UTC) | `0 30 8 * * *` (08:30 UTC) |
+| `ProviderCode` param | `Apollo` | `PDL` |
+| `MaxPeople` param | 500 | 500 |
+| `_comments` | as above | name `PDL_API_KEY` and the `People Data Labs` Company Integration instead |
+| `primaryKey` | its own `uuidgen` | its own `uuidgen` |
+
+- Cron expressions are six fields with seconds first. Both times are early morning in US time zones.
 - Owner and Notify users stay NULL, as in the existing job, so no deployment's staff are seeded into
   another's database.
 - **Qualify the param lookups with `&Action=`.** The existing hourly job looks up
   `Name=Limit` unqualified; don't copy that. It only works while no other action has a `Limit` param.
+- **Neither job sets `Facets`, so each writes everything its provider supports.** If a host enables
+  both, the release notes recommend setting the Apollo job's `Facets` to `Employment,LinkedIn` and
+  the PDL job's to `Education,LinkedIn`. That way each vendor supplies what it is strongest at, and
+  the two never disagree about a person's current employer (R11).
 
 **Phase 4 is done when:**
-- The provider's unit tests are green.
-- A manual run against a real key in a dev host enriches 10 people correctly (§10.3).
-- The job appears Disabled in the Scheduling app, runs when switched to Active **without a server
-  restart** (this depends on the §5.5 fix), and stops at `MaxPeople`.
+- Both providers' unit tests are green.
+- A manual run of each provider against a real key in a dev host enriches the same 10 people
+  correctly (§10.3).
+- Both jobs appear Disabled in the Scheduling app. Each runs when switched to Active **without a
+  server restart** (this depends on the §5.5 fix) and stops at `MaxPeople`.
 - A **minor** changeset is included.
 
 ---
 
-## 9. Phases 5 and 6: People Data Labs
+## 9. People Data Labs reference
 
-### 9.1 Phase 5 (MJ): `packages/Actions/PeopleDataLabs` → `@memberjunction/actions-peopledatalabs`
+What this plan established about PDL's API, what Phase 0 still has to confirm, and how PDL's data
+maps onto common's tables. PDL's own docs (`docs.peopledatalabs.com`) could not be fetched from the
+sandbox the plan was written in, so everything here came from search results quoting those docs.
+Check it against the live docs while implementing.
 
-Mirror the Apollo package layout: client, thin actions, credentials resolver, tests and README.
-**Verify every endpoint and field name below against PDL's current docs while implementing.** This
-plan could only partly reach them.
+### 9.1 Confirmed
 
-- **`PDLPersonClient`:**
-  - `MaxBatchSize = 100`.
-  - `BulkEnrich(inputs)` calls `POST https://api.peopledatalabs.com/v5/person/bulk` with an
-    `X-Api-Key` header. Each request carries `params` (`email`, `profile` for the LinkedIn URL,
-    `name` plus `company`, and `pdl_id` when known) and `min_likelihood` from the provider
-    `Configuration`, default 6.
-  - Normalize PDL's `education[]` (`school.name`, `school.id`, `degrees[]`, `majors[]`,
-    `start_date`, `end_date`) and `experience[]` (`company.name`, `company.website`, `title.name`,
-    `start_date`, `end_date`, `is_primary`).
-  - Map `likelihood` (1–10) to a confidence from 0 to 1.
-  - Typed rate-limit and auth errors, the same as Apollo.
-- **Data shape.** PDL `degrees` and `majors` are arrays. Write one `EnrichedEducation` per school
-  entry, with `Degree` = the degrees joined by "; " and `FieldOfStudy` = the majors joined the same
-  way. Keep `school.id` in `InstitutionExternalID` for the alias work.
-- **Credentials.** A resolver like Apollo's, for Integration `People Data Labs`, plus an
-  `MJ: Integrations` seed row for it (JSON only).
-- **Action.** A thin `People Data Labs - Enrich Person` action for agents and workflows. It returns
-  data and writes nothing.
-- Changeset: minor (metadata). Label `backport lts/6.1`.
+| Fact | Source |
+|---|---|
+| Bulk enrichment is `POST https://api.peopledatalabs.com/v5/person/bulk`, with 1 to 100 records per request. | PDL, "Bulk Person Enrichment API" |
+| The body is `{ "requests": [ { "params": { … } } ] }`. Per-record params are the same as the single Person Enrichment API's. | PDL, "Bulk Person Enrichment API" |
+| The response is a JSON array **in the same order as `requests`**. Each element has `data`, `status`, `likelihood` and `metadata`. | PDL, "Bulk Person Enrichment API" |
+| Each element has its own status: 200 for a match, 404 for no match. | PDL, "Bulk Person Enrichment API"; "Reference – Person Enrichment API" |
+| Credits are charged per 200 response in a bulk request, as if each had been a single call. **Misses are free.** | PDL, "Bulk Person Enrichment API" |
+| `min_likelihood` is a Person Enrichment param; PDL recommends 6. | PDL, "Examples – Person Enrichment API"; the Salesforce integration settings page |
+| Auth is the `X-Api-Key` header. | PDL, "Usage Limits" |
+| Rate limits are per API key and per endpoint, in fixed one-minute windows. The default for Person Enrichment is 100/min on free plans and 1,000/min on paid plans. Response headers report credits spent and limits remaining. | PDL, "Usage Limits"; "Reference – Person Retrieve API" |
+| `education.end_date` can be a full date, a year-month or a year. `education.degrees` holds canonical values that PDL may change between releases. | PDL, "[Deprecated] Person Manual" |
+| School IDs are stable in the short to medium term, not permanently. | PDL, "[Deprecated] Person Manual" |
+| Not every field is in every plan. Field bundles decide which fields a customer receives. | PDL, "Person Data Overview" |
 
-### 9.2 Phase 6 (common): `PDLEnrichmentProvider`
+### 9.2 Still to confirm in Phase 0
 
-- `@RegisterClass(BaseEnrichmentProvider, 'PDL')`, with a hard batch ceiling of 100.
-- Seed an `EnrichmentProvider` row: `Code: "PDL"`, `MaxBatchSize: 100`,
-  `Configuration: {"MinLikelihood": 6}`.
-- Add a second scheduled job only if a host needs both vendors. Otherwise an admin can change the
-  existing job's `ProviderCode` param.
-- Raise the MJ floor again (§8.1).
+- That `min_likelihood` is accepted inside each bulk `params` object, and that `metadata` is echoed
+  back (P1).
+- The exact field names under `education[]` and `experience[]` (P2, P3). §9.3 uses the names the
+  first draft of this plan assumed.
+- The parameter for re-enriching by PDL ID (P4).
+- Whether `required` and `data_include` are available (P5).
+- The out-of-credits and rate-limit responses (P6).
+- Whether our plan's field bundle includes education (P7).
+
+### 9.3 Mapping PDL to common
+
+| PDL (assumed names, confirm in P2 and P3) | Client field | Common |
+|---|---|---|
+| `data.id` | `PDLID` | `PersonExternalIdentity.ExternalID` (`SourceSystem='PDL'`) |
+| `likelihood` (1–10) | `Likelihood` | `PersonExternalIdentity.MatchConfidence` = likelihood ÷ 10 |
+| `data.linkedin_url` | `LinkedInURL` | `ContactMethod` of type LinkedIn, only when none exists |
+| `data.education[].school.name` | `SchoolName` | `PersonEducation.InstitutionName` |
+| `data.education[].school.id` | `SchoolID` | `EnrichedEducation.InstitutionExternalID`. Not stored in v1; kept for the alias work (§13.2). |
+| `data.education[].degrees[]` | `Degrees` | `PersonEducation.Degree` = values joined with "; ", or NULL |
+| `data.education[].majors[]` | `Majors` | `PersonEducation.FieldOfStudy` = values joined with "; ", or NULL |
+| `data.education[].start_date` / `end_date` | `StartDate` / `EndDate` | `PersonEducation.StartDate` / `EndDate`, normalized |
+| `data.experience[].company.name` | `CompanyName` | Organization resolution by name (§7.8) |
+| `data.experience[].company.website` | `CompanyDomain` | Organization resolution by domain (§7.8) |
+| `data.experience[].title.name` | `Title` | `Relationship.Title` |
+| `data.experience[].start_date` / `end_date` | `StartDate` / `EndDate` | `Relationship.StartDate` / `EndDate` |
+| `data.experience[].is_primary` (or the field P3 finds) | `IsCurrent` | `Relationship.Status` = Active or Ended |
+| everything else in `data` (emails, phones, addresses, social handles other than LinkedIn, skills) | not mapped | **never stored** (§11) |
+
+One PDL education entry becomes one `PersonEducation` row, even when it lists several degrees. The
+dedupe key (§7.7) includes the joined degree string, so a later run that returns the same entry
+updates the same row.
 
 ---
 
@@ -1348,13 +1652,15 @@ plan could only partly reach them.
 |---|---|
 | MJ Apollo client | header auth and no key in body or query; input validation; positional correlation and the throw on length mismatch; education split; date normalization; per-minute retry once then a typed error; hourly limit throws immediately; 403 rewritten; `ForCompany` key-source reporting. Use the Phase 0 fixture. |
 | MJ Apollo actions | one test per Appendix A item that fails before the fix and passes after. |
+| MJ PDL client and action | the list at the end of §5.7. Use the PDL Phase 0 fixture. |
 | MJ Scheduling | a job activated while polling gets `NextRunAt` and becomes due. |
 | common `normalize.ts` | institution and degree keys; domain from website. |
 | common `selection.ts` | exact filter strings for a fixed clock; escaping; optional filter. |
 | common `request-builder.ts` | identity priority; email de-duplication; skipping when nothing identifies the person. |
 | common writers (`Plan*`) | every row of every table in §7.7, including Manual-row protection, Ambiguous, NotFound keeping a known ID, and ending only Enrichment rows. |
 | common `organization-resolver.ts` | domain match, name match, multiple matches leave it unresolved, and the create-policy matrix. |
-| common engine | with a fake provider and a fake data layer: stops at MaxPeople, TimeBudget and RateLimited; rate-limited records are skipped, not failed; Preview makes no provider calls; a non-live provider is refused without `AllowNonLiveProvider`. |
+| common engine | with a fake provider and a fake data layer: stops at MaxPeople, TimeBudget, RateLimited and QuotaExhausted; rate-limited and quota-stopped records are skipped, not failed; Preview makes no provider calls; a non-live provider is refused without `AllowNonLiveProvider`. |
+| common providers | the lists in §8.2 (Apollo) and §8.3 (PDL). |
 | common action | param parsing and defaults; mapping every result code. |
 
 ### 10.2 Integration checks (live database, rolled back)
@@ -1372,19 +1678,26 @@ engine with `AllowNonLiveProvider: true` against the test world's people. Assert
 5. A later run where the fixture says the person changed employer ends the old Enrichment row and
    creates the new one, and **does** log a timeline Activity.
 6. Deleting a Person removes their education and identity rows (the cascade).
+7. Two fixture providers with different codes, run one after the other on the same person, both
+   returning the same school and degree: there is **one** education row (the second run counts it as
+   corroborated), there are two identity rows, and neither run edits the other's Employee row.
 
 Run them with this repo's integration-test command, against a database you are sure no other session
 is using.
 
 ### 10.3 Manual verification before Phase 4 merges
 
-On a dev host with a real Apollo key and about 10 test People (at least one known HKS graduate):
+On a dev host with a real Apollo key, a real PDL key, and the same 10 or so test People used in
+Phase 0 (at least one known HKS graduate):
 
-1. Run the action in `Mode=Preview`, then `Mode=Run` with `MaxPeople=10`.
-2. Check the rows in Explorer and the reported `CreditsConsumed`.
-3. Switch the job from Disabled to Active **without restarting** and confirm it fires at the next cron
-   tick.
-4. Query "who has a Kennedy School degree":
+1. For each provider, run the action in `Mode=Preview`, then `Mode=Run` with `MaxPeople=10`.
+2. Check the rows in Explorer and each run's `CreditsConsumed`.
+3. Compare what the two vendors returned for the same people: how many matched, how many had
+   education, and whether they agreed on the current employer. Put the comparison in the Phase 4 PR.
+   It is the evidence for the `Facets` recommendation in §8.4.
+4. Switch each job from Disabled to Active **without restarting** and confirm it fires at its next
+   cron tick.
+5. Query "who has a Kennedy School degree":
 
    ```sql
    SELECT p.DisplayName, e.InstitutionName, e.Degree, e.EndDate
@@ -1398,15 +1711,18 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 ## 11. Privacy, security and cost
 
 - **Data minimization.** v1 stores schools, degrees, employment, a LinkedIn URL and the vendor ID.
-  Common's provider asks Apollo **not** to reveal personal emails or phone numbers, and stores
-  neither. Raw vendor payloads are never persisted.
-- **Legal review before a host enables the job.** Once enriched data is stored, the host is the data
+  - Common's Apollo provider asks Apollo **not** to reveal personal emails or phone numbers.
+  - PDL returns whatever is in our plan's field bundle, which can include emails, phone numbers and
+    addresses. The PDL client never maps those fields, so they never reach common. Use
+    `data_include` to stop PDL sending them at all, if P5 confirms it is available.
+  - Raw vendor payloads are never persisted.
+- **Legal review before a host enables either job.** Once enriched data is stored, the host is the data
   controller. For EU or UK data subjects that means a lawful basis and, because the data was not
   collected from the person, a notice obligation (GDPR Art. 14). A vendor's own compliance statement
-  does not cover our processing. Note this in the release notes and in the job's description.
+  does not cover our processing. Note this in the release notes and in each job's description.
 - **Deletion.** Deleting a Person cascades to their education and identity rows. Employment
   relationships already follow Relationship's existing rules.
-- **Do-not-enrich.** v1 handles opt-outs with the job's `PersonFilter`. A first-class do-not-enrich
+- **Do-not-enrich.** v1 handles opt-outs with each job's `PersonFilter`. A first-class do-not-enrich
   flag is open question Q3.
 - **`PersonFilter` is SQL.**
   - Validate it with MJ's `SQLExpressionValidator` (`@memberjunction/global`, on lts/6.1). Reject it
@@ -1418,9 +1734,17 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
   on read (`MJ/packages/Actions/ApolloEnrichment/src/lists/credentials.ts:14-19`).
 - **Cost controls:**
   - `MaxPeople` per run, default 500. With a nightly job, that is the daily cap.
-  - `RetryNotFoundDays` stops repeated paid misses (Phase 0 S4 says whether misses are billed).
+  - `RetryNotFoundDays` stops repeated paid misses (Phase 0 S4 says whether Apollo bills misses).
+    **PDL does not bill misses**, only 200 responses (§9.1).
+  - PDL's `min_likelihood` (default 6) trades match rate against false matches. Raising it means
+    fewer matches paid for, and fewer wrong people enriched.
+  - PDL's `required` parameter, if P5 confirms it, can limit billed matches to people who actually
+    have education data. Set it through the PDL provider's `Configuration` if the host only wants
+    education.
   - `Mode=Preview` shows how many people a run would send before any money is spent.
   - `CreditsConsumed` is reported on every run.
+  - A vendor account that runs out of credits stops the run with `QUOTA_EXHAUSTED`, which shows as a
+    failed job run.
 
 ---
 
@@ -1429,19 +1753,19 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 | Step | Repo | Changeset | Notes |
 |---|---|---|---|
 | Phase 0 spike | MJ | none | Findings go in the Phase 1 PR description. |
-| 1a client and fixes and Integration row | MJ | minor (metadata) | Into `next`, labelled `backport lts/6.1`. |
+| 1a Apollo client, fixes and Integration row | MJ | minor (metadata) | Into `next`, labelled `backport lts/6.1`. |
 | 1b scheduler fix | MJ | minor if it adds a sproc migration, otherwise patch | Same labels. |
 | 1c `ProcessBatch` backport | MJ `lts/6.1` | patch | Or record that it was refused and use the fallback loop. |
-| MJ 6.1.x release | MJ | — | Common can't consume Phase 1 until this ships. |
+| 1d PDL package and Integration row | MJ | minor (metadata) | Into `next`, labelled `backport lts/6.1`. Can be built in parallel with 1a. |
+| MJ 6.1.x release | MJ | — | Must contain 1a, 1b and 1d. Common can't consume Phase 1 until this ships. |
 | Phase 2 schema | common | **minor** (`changes.yml` enforces it for migrations) | Can start in parallel with Phase 1. |
 | Phase 3 engine and action | common | minor (action metadata) | Can start once Phase 2 merges; doesn't need the MJ release. |
-| Phase 4 Apollo provider and job | common | minor | After the MJ release. Raise the floor (§8.1). |
-| Phases 5 and 6, PDL | MJ then common | minor | Independent of Apollo. |
+| Phase 4 Apollo and PDL providers, both jobs | common | minor | After the MJ release. Raise the floor (§8.1). |
 
 - **Metadata ships at release, not per PR.** Feature PRs here carry `metadata/` JSON only: no `sync`
   blocks and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release
   from a clean database (`migrations/README.md`). **Until a release carries that seed, the action,
-  provider rows and scheduled job exist on no host.** Phase 4 is not done until a release has shipped
+  provider rows and scheduled jobs exist on no host.** Phase 4 is not done until a release has shipped
   it.
 - **PostgreSQL.** Feature PRs ship T-SQL only. The release engineer converts at release time
   (`docs/postgresql.md`; `MJ/CLAUDE.md`, "PostgreSQL is toolchain territory"). Keep the T-SQL
@@ -1449,15 +1773,19 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 - **bizapps-forms floor.** See §14 R1. The release notes must say that hosts running bizapps-forms
   0.14.x or older need forms upgraded **before** upgrading common.
 
-**Enabling on a host (put this in the release notes):**
+**Enabling on a host (put this in the release notes).** Do this for each vendor you have a contract
+with:
 1. Get a legal sign-off on enriching personal data (§11).
-2. Create an `MJ: Credentials` record whose `Values` is `{"apiKey":"…"}`, using a master or scoped key
-   as Apollo requires for `bulk_match`.
-3. Link it through a Company Integration for Integration `Apollo`, or set `APOLLO_API_KEY`.
-4. In the Scheduling app, open "Common — Person Enrichment (nightly)", set `CompanyID` if you used a
-   Company Integration, and optionally lower `MaxPeople`.
-5. Run the action once in `Mode=Preview` to see how many people are eligible.
-6. Switch the job to Active.
+2. Create an `MJ: Credentials` record whose `Values` is `{"apiKey":"…"}`. For Apollo, use a key of the
+   kind Apollo requires for `bulk_match`.
+3. Link it through a Company Integration for Integration `Apollo` or `People Data Labs`, or set
+   `APOLLO_API_KEY` / `PDL_API_KEY`.
+4. In the Scheduling app, open "Common — Person Enrichment: Apollo (nightly)" or "…: People Data Labs
+   (nightly)". Set `CompanyID` if you used a Company Integration, and optionally lower `MaxPeople`.
+5. **If you enable both jobs**, set the Apollo job's `Facets` param to `Employment,LinkedIn` and the
+   PDL job's to `Education,LinkedIn`, so the two never disagree about a person's current employer.
+6. Run the action once in `Mode=Preview` to see how many people are eligible.
+7. Switch the job to Active.
 
 ---
 
@@ -1488,7 +1816,7 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 |---|---|---|
 | R1 | **Altering Relationship.** bizapps-forms releases up to 0.14.x shipped stale copies of `spCreateRelationship` / `spUpdateRelationship` / `vwRelationships` in their baseline and overwrote common's on install (`V202610031700__v5.50.x__Repair_Relationship_Objects.sql:6-15`). A host that installs those old forms versions after this migration would get procs without `@Source`, and every Relationship save would fail. | Current forms (0.15.1) no longer ships those objects. Say "upgrade forms before common" in the release notes. Ship a detection query in the release notes, in the style of the repair migration: `SELECT 1 FROM sys.parameters WHERE object_id = OBJECT_ID('__mj_BizAppsCommon.spCreateRelationship') AND name = '@Source'`. If damage shows up in the field, ship a repair migration like V202610031700. |
 | R2 | **Existing callers of `spCreateRelationship`.** more-cheese's seed calls it about 2,800 times with named params. | The new params must be optional (§6.4 step 4). Replay more-cheese's chain on a scratch database if in doubt. |
-| R3 | **Apollo no longer returns education.** | Phase 0 S2 decides. The Apollo provider then supplies employment and LinkedIn, and education comes from PDL. |
+| R3 | **Apollo no longer returns education.** | Phase 0 S2 decides. The Apollo provider then supplies employment and LinkedIn, and education comes from PDL, which ships in the same release (D13). |
 | R4 | **Mis-assigned results.** | The client throws on a length mismatch (§5.2). Providers return results keyed by PersonID, and the engine refuses results for IDs it didn't send. |
 | R5 | **Cost overrun.** | Ships Disabled, a `MaxPeople` cap, NotFound cooldown, Preview mode, credits reporting (§11). |
 | R6 | **Timeline flood from backfilled jobs.** | `SkipEntityActions` on first-time enrichment (D12), and integration check 1 covers it. |
@@ -1496,6 +1824,10 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 | R8 | **`EscapeSQLString` missing from the pinned 6.1 `@memberjunction/global`.** | A package-local helper (§5.3, §7.5); bizapps-orders has the precedent. |
 | R9 | **Duplicate People surface as `Ambiguous` en masse on dirty data.** | Ambiguous is never retried automatically and is countable. Add a review UI as a follow-up (§13.4). |
 | R10 | **Stale repo docs mislead the implementer.** `docs/entity-model.md` and the README list columns and counts that don't exist. | Trust the DDL and the generated entity classes, not the prose. Update `docs/entity-model.md` for the new tables in Phase 2. |
+| R11 | **Both jobs enabled: the vendors disagree, or run over the same person at once.** Two vendors can name different current employers, and two concurrent runs could each insert the same employment row. | The jobs are staggered (07:00 and 08:30 UTC, each capped at 60 minutes), so they never overlap. The write rules keep each vendor's rows separate and never let one edit or end the other's (§7.7). The release notes recommend splitting `Facets` between the two jobs (§8.4), and integration check 7 covers the overlap. |
+| R12 | **PDL matches the wrong person.** A low likelihood threshold enriches someone with a stranger's history. | `min_likelihood` defaults to 6, PDL's recommendation, and is configurable per host. Likelihood is stored as `MatchConfidence`, so low-confidence matches can be found and reviewed. Never lower the default without a reason recorded in the provider row's `Description`. |
+| R13 | **MJ won't take a new package on `lts/6.1`.** Common pins 6.1, so the PDL client would not reach it. | Fallback: common's `PDLEnrichmentProvider` calls `POST /v5/person/bulk` itself through a small private client inside `common-enrichment`, with the same normalized output shape as §5.7. It switches to the MJ client when common moves to 6.2, which is a one-file change. The MJ package still lands on `next` for everyone else. |
+| R14 | **Our PDL plan doesn't include education fields** (P7). | Find out in Phase 0, before building. Education is the reason for the feature, so a missing bundle is a contract question for the requester, not something to engineer around. |
 
 ---
 
@@ -1507,7 +1839,8 @@ On a dev host with a real Apollo key and about 10 test People (at least one know
 | Q2 | Is the first customer Harvard Kennedy School itself? If so, its own alumni records are the authoritative source, imported as `Source='Import'`, and vendors only fill gaps. That changes which follow-up comes first (§13.1 versus an import). | Build as planned. The schema serves both cases. |
 | Q3 | Do we need a first-class do-not-enrich flag on Person, rather than `PersonFilter`? | `PersonFilter` in v1. Revisit after legal review. |
 | Q4 | Is the `CreateOrganizations` default right (`CurrentEmployerOnly`)? | Yes. |
-| Q5 | Should a host be able to run two providers in one night, in priority order by `EnrichmentProvider.Sequence`? | No. One provider per job in v1. |
+| Q5 | When a host enables both jobs, should the shipped jobs split `Facets` by default (Apollo for employment, PDL for education) instead of recommending it in the release notes? | No. Each job writes everything its provider supports, so a host that has only one vendor gets the full feature. Revisit with the Phase 4 comparison (§10.3). |
+| Q6 | Will the MJ maintainers accept the new PDL package on `lts/6.1`? | Use R13's fallback. |
 
 ---
 
@@ -1556,13 +1889,20 @@ All paths are relative to the repository named in each row.
 | `SkipEntityActions` and `RunInEntityTransaction` on 6.1 | `MJ` `lts/6.1`: `packages/MJCore/src/generic/interfaces.ts:311`, `packages/MJCore/src/generic/entityTransactionScope.ts:130` |
 | Apollo credential resolution | `MJ/packages/Actions/ApolloEnrichment/src/lists/credentials.ts` |
 | Actions are boundaries, not internal APIs | `MJ/packages/Actions/CLAUDE.md` |
+| PDL bulk endpoint, request and response shape, per-item status, billing per match | <https://docs.peopledatalabs.com/docs/bulk-enrichment-api> |
+| PDL single-record params and `min_likelihood` | <https://docs.peopledatalabs.com/docs/reference-person-enrichment-api>, <https://docs.peopledatalabs.com/docs/examples-person-enrichment-api> |
+| PDL auth header and rate limits | <https://docs.peopledatalabs.com/docs/usage-limits>, <https://docs.peopledatalabs.com/docs/reference-person-retrieve-api> |
+| PDL education field behaviour and school IDs | <https://docs.peopledatalabs.com/docs/person-manual> (marked deprecated; confirm against the current Person Schema) |
+| PDL field bundles | <https://docs.peopledatalabs.com/docs/person-data-overview> |
 
 ---
 
 ## Appendix C: Notes on the People Data Labs brief
 
 An internal brief proposed sourcing an 80,000-person HKS alumni cohort from PDL. It shaped D2 and
-§13.1. What to keep and what to correct:
+§13.1. It is also part of why PDL ships as an enrichment provider in the first release (D13). Note
+the difference: this plan uses PDL to enrich people we already have, while the brief was about
+buying a cohort of new ones. What to keep and what to correct:
 
 - **Keep: PDL is the better source for a school-filtered cohort.** PDL indexes education as structured
   fields. Apollo's public people search has no school filter that we could find, and keyword search
