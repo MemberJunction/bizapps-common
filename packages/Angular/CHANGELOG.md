@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-ng
 
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+- 688faea: The Person form's Addresses and Relationships sections now renders as its own left-nav tab again. Since MJ #4311 a contribution at `after-fields` is filed into the Details tab; it now mounts at `after-related`, which MJ treats as a tab of its own.
+- Updated dependencies [73019c2]
+- Updated dependencies [88eb6ae]
+  - @mj-biz-apps/common-entities@5.52.0
+
 ## 5.51.0
 
 ### Patch Changes
