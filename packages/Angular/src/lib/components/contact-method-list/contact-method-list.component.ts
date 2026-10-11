@@ -378,6 +378,11 @@ export class ContactMethodListComponent {
      * Automatically prepends `'https://'` when the value does not already
      * include a protocol prefix.
      *
+     * Opened with `noopener,noreferrer`: contact-method values are shared data
+     * that any user with write access to the record can set, and without
+     * `noopener` the opened page receives `window.opener` and can navigate this
+     * Explorer tab (reverse tabnabbing).
+     *
      * @param value - The URL string to open
      */
     onOpenLink(value: string): void {
@@ -385,7 +390,7 @@ export class ContactMethodListComponent {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
         }
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     /**

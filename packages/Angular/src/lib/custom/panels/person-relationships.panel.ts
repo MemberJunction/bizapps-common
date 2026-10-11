@@ -71,7 +71,7 @@ const VIEW_SWITCHER_STYLES = `
     key: 'form-panel:People:relationships',
     metadata: {
         entity: 'MJ_BizApps_Common: People',
-        slot: 'after-fields',
+        slot: 'after-related', // its own rail tab — after-fields would fold it into Details (MJ #4311 slot default)
         sortKey: 70,
         contributionKey: 'relationships',
         relatedEntity: 'MJ_BizApps_Common: Relationships',
