@@ -13,7 +13,7 @@ import '@mj-biz-apps/common-actions';
 // Server-side entity subclasses — must come after common-entities so
 // @RegisterClass auto-increment gives these higher priority
 import '@mj-biz-apps/common-core-entities-server';
-import { LoadActivitySyncEngine } from '@mj-biz-apps/common-core-entities-server';
+import { LoadActivitySyncEngine } from '@mj-biz-apps/common-activity-sync';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
 import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';

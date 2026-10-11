@@ -34,7 +34,8 @@ const H = vi.hoisted(() => ({
 
 vi.mock('@mj-biz-apps/common-entities', () => ({}));
 vi.mock('@mj-biz-apps/common-actions', () => ({}));
-vi.mock('@mj-biz-apps/common-core-entities-server', () => ({ LoadActivitySyncEngine: H.loadEngine }));
+vi.mock('@mj-biz-apps/common-core-entities-server', () => ({}));
+vi.mock('@mj-biz-apps/common-activity-sync', () => ({ LoadActivitySyncEngine: H.loadEngine }));
 vi.mock('../custom/sync-activities.action.js', () => ({
     SyncActivitiesAction: class {},
     LoadSyncActivitiesAction: H.loadSync,
