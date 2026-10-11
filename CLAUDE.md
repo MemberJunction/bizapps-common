@@ -344,14 +344,7 @@ This repo uses MemberJunction's CodeGen system to generate entity and action sub
 
 ## Debugging
 
-### VSCode Launch Configurations
-- **MJAPI**: Node.js debugger with source maps for local packages
-- **MJExplorer**: Chrome debugger (port 4301) with source maps
-- **MJExplorer (attach)**: Attach to existing Chrome on port 9222
-- **Full Stack**: Compound configuration running both MJAPI + MJExplorer
-
-### Source Map Scoping
-Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/Entities/**`, `packages/Actions/**`, `packages/Server/**`, `packages/Angular/**`). Third-party packages and node_modules are excluded to avoid noise.
+This repo has no MJAPI or MJExplorer of its own, so it has no launch configurations. Debug from the MJ checkout this repo is linked into as a workspace member: its MJAPI and MJExplorer load these packages from source. `.vscode/tasks.json` keeps one task, `build-all`.
 
 ---
 

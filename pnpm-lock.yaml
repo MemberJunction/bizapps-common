@@ -193,9 +193,6 @@ importers:
 
   packages/CoreEntitiesServer:
     dependencies:
-      '@mj-biz-apps/common-activity-sync':
-        specifier: 5.52.0
-        version: link:../ActivitySync
       '@mj-biz-apps/common-entities':
         specifier: 5.52.0
         version: link:../Entities

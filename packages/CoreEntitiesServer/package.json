@@ -25,8 +25,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.52.0",
-    "@mj-biz-apps/common-activity-sync": "5.52.0"
+    "@mj-biz-apps/common-entities": "5.52.0"
   },
   "peerDependencies": {
     "@memberjunction/core": "^6.1.5",

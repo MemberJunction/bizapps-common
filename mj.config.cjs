@@ -111,18 +111,6 @@ module.exports = {
     checkModules: ['@mj-biz-apps/common-integration-tests'],
   },
 
-  // EntityField INSERTs from `mj codegen` (run from this cwd, not MJ).
-  SQLOutput: {
-    enabled: true,
-    folderPath: './migrations/codegen',
-    appendToFile: true,
-    convertCoreSchemaToFlywayMigrationFile: true,
-    schemaPlaceholders: [
-      { schema: '__mj', placeholder: '${mjSchema}' },
-    ],
-    omitRecurringScriptsFromLog: true,
-  },
-
   newEntityDefaults: {
     NameRulesBySchema: [
       { SchemaName: '${mj_core_schema}', EntityNamePrefix: 'MJ: ' },
@@ -175,6 +163,9 @@ module.exports = {
   // SQL Output (for migrations)
   // ---------------------------------------------------------------------------
   // Default v3.x: enabled: true, folderPath: './migrations/v3/'
+  // EntityField INSERTs from `mj codegen` land here when it runs from this repo's
+  // root, not from MJ. Keep this the only SQLOutput key: a second one silently
+  // replaces this one.
   SQLOutput: {
     enabled: true,
     folderPath: './migrations/codegen/',
