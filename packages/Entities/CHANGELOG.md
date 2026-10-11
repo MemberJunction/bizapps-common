@@ -1,5 +1,18 @@
 # Change Log - mj_generatedentities
 
+## 5.52.0
+
+### Minor Changes
+
+- 88eb6ae: Restores `spCreatePerson` / `spUpdatePerson` `@PhotoURL` to `NVARCHAR(MAX)`. The v5.45 job-function migration re-emitted both procs at the old 1000-character width, so SQL Server silently truncated every Person photo URL longer than that — inline data-URI avatars were stored cut off at exactly 1000 characters and never rendered. Truncated values must be re-saved by their source.
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+
 ## 5.51.0
 
 ### Minor Changes
