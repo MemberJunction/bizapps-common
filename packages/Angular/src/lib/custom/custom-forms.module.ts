@@ -28,6 +28,7 @@ import { ActivityTypeHierarchyPanel } from './panels/activity-type-hierarchy.pan
 import { ActivityHierarchyPanel } from './panels/activity-hierarchy.panel';
 import { ActivityLinksPanel } from './panels/activity-links.panel';
 import { ActivityFilesPanel } from './panels/activity-files.panel';
+import { OrganizationStaffPanel } from './panels/organization-staff.panel';
 import { ActivityContentPanel } from './panels/activity-content.panel';
 
 const PANELS = [
@@ -66,6 +67,7 @@ const PANELS = [
         ActivityLinksPanel,
         ActivityFilesPanel,
         ActivityContentPanel,
+        OrganizationStaffPanel,
     ],
     exports: [
         ...PANELS,
@@ -78,6 +80,7 @@ const PANELS = [
         ActivityLinksPanel,
         ActivityFilesPanel,
         ActivityContentPanel,
+        OrganizationStaffPanel,
     ],
 })
 export class CustomFormsModule {}
