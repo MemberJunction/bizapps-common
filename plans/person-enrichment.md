@@ -9,6 +9,10 @@
 > (Phases 5 and 6, D2 and D15–D18). Vendor costs now live in the database (D16). The plan also records
 > why the engine runs on MJ's record-set processor rather than on saved Record Processes (D14,
 > Appendix D).
+> **Revised:** 2026-10-12. The plan now targets MemberJunction **`next`**, built through the `mj dev
+> workspace`. The `lts/6.1` backport framing is gone: Phase 1 PRs are ordinary PRs into MJ `next`,
+> common's MJ pins are a floor that is raised to a published edge release when the code needs one
+> (§5, §8.1), and `ProcessBatch` is used directly (§5.6, §7.4). Phase 2 has merged (#268).
 > **Repos touched:** `MemberJunction/MJ` (Phases 0 and 1) and `MemberJunction/bizapps-common`
 > (Phases 2 to 6).
 > **Read first:** §1, §2 and §3. The phases are written to be picked up one at a time. Phases 5 and 6
@@ -39,7 +43,7 @@
 - [Appendix A: Apollo action bug inventory](#appendix-a-apollo-action-bug-inventory)
 - [Appendix B: Where the facts in this plan come from](#appendix-b-where-the-facts-in-this-plan-come-from)
 - [Appendix C: Notes on the People Data Labs brief](#appendix-c-notes-on-the-people-data-labs-brief)
-- [Appendix D: Record Set Processing on 6.1, what works and what to report](#appendix-d-record-set-processing-on-61-what-works-and-what-to-report)
+- [Appendix D: Record Set Processing on `next`, what works and what to report](#appendix-d-record-set-processing-on-next-what-works-and-what-to-report)
 
 ---
 
@@ -166,7 +170,7 @@ Each decision records the option we turned down, so nobody has to re-argue it.
 | D11 | **PDL's client lives in MJ, in a new `packages/Actions/PeopleDataLabs` package next to Apollo's.** | *The separate Integrations repo.* That repo holds Integration-framework sync connectors. This is a client plus thin Actions, the same shape as the Apollo package. Revisit if MJ moves all vendor action packages out of core. |
 | D12 | **First-time enrichment of a person writes its history rows with `SkipEntityActions: true`. Later changes save normally.** | *Always fire entity actions.* That floods timelines with years of past jobs. *Never fire them.* That hides real signals such as "this person changed jobs", which downstream apps may bind to. |
 | D13 | **Apollo and PDL both ship in the first release, each with its own Disabled scheduled job.** The jobs run at staggered times so they never overlap. An admin enables whichever vendor they have a contract and credential for, or both. | *Ship Apollo first and PDL later* (this plan's first draft). Education is the reason for the feature, and PDL is the vendor that indexes it as structured data. If Phase 0 finds Apollo no longer returns education, an Apollo-only first release would ship without the feature's main purpose. Building both at once also proves the provider seam with two real implementations rather than one. *One job whose `ProviderCode` the admin edits.* Two jobs are clearer in the Scheduling app, keep separate run histories, and let a host run both. |
-| D14 | **The enrichment engine and the importer run on MJ's record-set processor directly (`RecordSetProcessor.Instance.Process`), not as saved `MJ: Record Processes` rows.** The processor gives them keyset paging, batches, Process Run audit rows, an error-rate circuit breaker, a rate limit and an after-batch stop hook. | *Configure each as a saved Record Process and schedule it there.* On 6.1: (a) the work type is a fixed CHECK list, so a "batched vendor call" type needs a core migration; (b) the Action work type calls once per record, while the vendors take 10 to 100 people per call; (c) cancel and resume don't work, and the UpdatedAt watermark compares the wrong column (Appendix D); (d) Record Process schedules hit the same next-run bug as §5.5. Revisit when MJ ships a batched work type and the Appendix D fixes. |
+| D14 | **The enrichment engine and the importer run on MJ's record-set processor directly (`RecordSetProcessor.Instance.Process`), not as saved `MJ: Record Processes` rows.** The processor gives them keyset paging, batches, Process Run audit rows, an error-rate circuit breaker, a rate limit and an after-batch stop hook. | *Configure each as a saved Record Process and schedule it there.* On `next` today: (a) the work type is a fixed CHECK list, so a "batched vendor call" type needs a core migration; (b) the Action work type calls once per record, while the vendors take 10 to 100 people per call; (c) cancel and resume don't work, and the UpdatedAt watermark compares the wrong column (Appendix D); (d) Record Process schedules hit the same next-run bug as §5.5. Revisit when MJ ships a batched work type and the Appendix D fixes. |
 | D15 | **The AI Prompt turns English into provider-neutral criteria. Each provider's code translates those criteria into its own vendor query.** The LLM never writes a vendor query and never invents an ID: school names are resolved through PDL's free school lookup. | *Let the LLM write each vendor's query directly* (PDL's query language, Apollo's params). That query can't be shown to the user as criteria they can check, can't be validated against a schema, may be broader than the user meant (and so cost more), and needs a prompt per vendor. Neutral criteria are validated, shown as editable chips, shared by every provider, and each provider says exactly which criteria it can't apply. |
 | D16 | **Vendor costs live in the database.** `EnrichmentProviderRate` holds credits per operation; `EnrichmentProvider.CreditPrice` and `CreditCurrency` hold the host's own price per credit. **An empty price means unpriced, never free**, following MJ's AI cost rule (`MJ/guides/AI_USAGE_AND_COST_ANALYTICS_GUIDE.md` §1: NULL is unpriced, 0 is free). | *Hard-code costs in each provider class.* Prices change and differ per contract; changing a number should not need a release. *Effective-dated price rows, like `MJ: AI Model Costs`.* Estimates only need today's numbers; MJ's Record Changes keep the history of every edit, and each import and run stamps the price it used. *An FK to a Currency table.* Common has none and must not depend on bizapps-accounting; store an ISO 4217 code, as `MJ: AI Model Costs.Currency` does. |
 | D17 | **The server enforces the confirm step.** An import runs only against a fresh estimate saved as a `PersonImport` row, for the same provider and criteria, and never past the people and credit caps the user confirmed. | *Rely on the UI's confirm dialog.* Remote Operations can be called by any client and by other apps' server code, so a check that lives only in the UI can be skipped by a bug or a different caller, straight into spending. |
@@ -346,16 +350,20 @@ example `fix/apollo-enrichment-client` and `feat/pdl-person-client`.
 - **1a:** Apollo client and action fixes (§5.1 to §5.4), plus the Apollo search filters the importer
   needs (§5.8).
 - **1b:** scheduler fix (§5.5).
-- **1c:** `ProcessBatch` backport (§5.6).
+- **1c:** dropped. `ProcessBatch` is already on `next` (§5.6).
 - **1d:** the new PDL package (§5.7), including person search and school lookup for the importer.
 
 They touch different packages and can be reviewed separately. 1a and 1d can be built in parallel by
-different people. Common needs **all four** in the same 6.1.x release before Phase 4.
+different people. Common needs **all three** in one published MJ edge release before Phase 4.
 
-**Every Phase 1 PR needs the `backport lts/6.1` label.** Common pins MJ `~6.1.5`
-(`mj-app.json` `mjVersionRange >=6.1.5 <7.0.0`). Nothing reaches common until it ships in a 6.1.x
-release. If a fix cannot be isolated, hand-port it with a PR against `lts/6.1`. Never patch
-MemberJunction from a consuming repo.
+**Every Phase 1 PR is an ordinary PR into MJ `next`.** No `backport lts/6.1` label, no hand-port
+against `lts/6.1`, and never patch MemberJunction from a consuming repo. Common develops against
+MJ `next` through the `mj dev workspace`: the parent folder links every `@memberjunction/*` package
+to the sibling MJ checkout from source, so a merged Phase 1 change is live in common after a package
+build. Common's pins (`^6.2.0-edge.3` since Phase 3; `mj-app.json` `mjVersionRange >=6.2.0-edge.3 <7.0.0`)
+are a **floor**, not a target. When common's code needs Phase 1, the floor is raised to the first **published** MJ build
+that carries it, an edge release such as `6.2.0-edge.N` (§8.1; CLAUDE.md, "MemberJunction version
+policy").
 
 ### 5.1 Refactor first, as its own commit
 
@@ -486,10 +494,7 @@ Also in this PR:
 - Delete `UpsertContactEmploymentAndEducationHistoryByOrganizationID` (`contacts.ts:623`). Nothing
   calls it, and it holds an unescaped filter (A-11).
 - Replace every hand-written `EscapeSingleQuotes` used to build a filter with `EscapeSQLString` from
-  `@memberjunction/global`. **Check it is exported by the 6.1.x version you backport to.**
-  bizapps-orders found it unexported on a published 6.1 build and uses a local copy
-  (`bizapps-orders` CLAUDE.md, "SQL Safety"). If it isn't exported there, add a package-local helper
-  for the backport.
+  `@memberjunction/global`. It is exported on `next` (`MJGlobal/src/util.ts:1804`).
 - Build key filters from entity metadata (`CompositeKey`, `EntityInfo.FirstPrimaryKey` with a
   `// first-pk-ok:` note where single-column is by design). Never interpolate a raw ID. That fixes
   A-1 and A-2 and follows MJ's primary-key rule (`MJ/.claude/rules/data-access.md`).
@@ -524,7 +529,7 @@ points at this row (§6.2).
 
 **Bug.** `ScheduledJobEngine.isJobDue` returns false when `NextRunAt` is null (`MJ/packages/Scheduling/engine/src/ScheduledJobEngine.ts:872-874`). `NextRunAt` is only seeded in `initializeNextRunTimes`, and that runs only inside `StartPolling` (`:1738-1761`). Polling is normally already running, because core ships Active jobs. So a job an admin switches from Disabled to Active at runtime never fires until the server restarts. Our job ships Disabled (D10), so this bug would make "turn it on" silently do nothing.
 
-**Fix.** In `onBaseJobsChanged` (`:505` on both `next` and `lts/6.1`), after `UpdatePollingInterval()`:
+**Fix.** In `onBaseJobsChanged` (`:505` on `next`), after `UpdatePollingInterval()`:
 - For each Active job whose `NextRunAt` is null, compute `NextRunAt` the same way
   `initializeNextRunTimes` does, honouring `RunImmediatelyIfNeverRun`.
 - Persist it with a **targeted update, not a full `Save()`**. The comment in `initializeNextRunTimes`
@@ -536,23 +541,14 @@ points at this row (§6.2).
 **Test.** Add a case next to `SchedulingEngine.test.ts:594`: "job activated while polling gets a
 NextRunAt and becomes due".
 
-### 5.6 `ProcessBatch` backport (PR 1c)
+### 5.6 `ProcessBatch` (PR 1c, dropped)
 
-Common's engine wants MJ's record-set processor (`@memberjunction/record-set-processor`), which gives
-it Process Run audit rows, the error-rate circuit breaker, `maxRecords`, `rateLimit` and
-`onAfterBatch`. **All of that exists on `lts/6.1`.**
-
-What does not exist there is the batch hook,
-`IRecordProcessor.ProcessBatch?(records, context)`. It is on `next`
-(`RecordSetProcessor/base/src/interfaces.ts:93`, used at `engine/src/RecordSetProcessor.ts:245-249`)
-but not on `lts/6.1`, where `IRecordProcessor` has only `ProcessRecord`. Apollo's bulk endpoint
-takes 10 people per call, and PDL's takes up to 100.
-
-- **Preferred:** backport the change that added `ProcessBatch` to `lts/6.1`. Find it in a full clone
-  with `git log -S'ProcessBatch?(' origin/next -- packages/RecordSetProcessor`. It is additive: an
-  optional interface method plus one engine branch.
-- **Fallback if the backport is refused:** the engine runs its own loop (§7.4, "fallback loop"). The
-  engine is written against a small internal seam, so the switch is local to one file.
+Dropped. Common's engine wants MJ's record-set processor (`@memberjunction/record-set-processor`) for
+Process Run audit rows, the error-rate circuit breaker, `maxRecords`, `rateLimit`, `onAfterBatch`
+and the batch hook `IRecordProcessor.ProcessBatch?(records, context)`, and all of it is on `next`
+(`RecordSetProcessor/base/src/interfaces.ts:93`, used at `engine/src/RecordSetProcessor.ts:244-304`).
+Apollo's bulk endpoint takes 10 people per call and PDL's takes up to 100, so the engine implements
+`ProcessBatch` directly (§7.4). There is no backport and no fallback loop.
 
 ### 5.7 New PDL package (PR 1d): `packages/Actions/PeopleDataLabs` → `@memberjunction/actions-peopledatalabs`
 
@@ -776,10 +772,7 @@ Result codes: `SUCCESS`, `NO_MATCHES` (success), `RATE_LIMITED`, `CREDITS_EXHAUS
 Save a redacted Person Search response and a School Cleaner response from Phase 0 as fixtures next to
 the bulk one.
 
-**This adds a new package to the 6.1 line.** Confirm with the MJ maintainers that an additive package
-is acceptable as a backport (Q6). If it isn't, see R13 for the fallback.
-
-Changeset: **minor** (the Integration row and the action are metadata). Label `backport lts/6.1`.
+Changeset: **minor** (the Integration row and the action are metadata). An ordinary PR into `next`.
 
 ### 5.8 Apollo search filters for the importer (in PR 1a)
 
@@ -809,8 +802,8 @@ The estimate includes the second step (§9.7).
 - The `Apollo` and `People Data Labs` Integration row JSON has merged.
 - The PDL package is registered in both server bootstrap manifests.
 - The scheduler fix has merged.
-- The backport has merged, or been refused.
-- A 6.1.x release containing all of the above is published.
+- An MJ edge release from `next` containing 1a, 1b and 1d is published, and common has raised its
+  floor to it (§8.1).
 
 `pnpm test` must be green in `packages/Actions/ApolloEnrichment`, `packages/Actions/PeopleDataLabs`
 and the Scheduling packages. Report pass, fail and skip counts in each PR.
@@ -818,6 +811,8 @@ and the Scheduling packages. Report pass, fail and skip counts in each PR.
 ---
 
 ## 6. Phase 2 (common): schema migration
+
+**Merged** to bizapps-common `next` as PR #268 on 2026-10-12.
 
 **Repo:** `bizapps-common`. **Branch** from `origin/next`, for example `feat/person-enrichment-schema`.
 **One migration:** `migrations/V<YYYYMMDDHHMM>__v5.52.x__Person_Enrichment.sql`.
@@ -1193,8 +1188,10 @@ tsconfig, `files: ["/dist"]` and `publishConfig.access: public`.
 **Dependencies:**
 - `@mj-biz-apps/common-entities`, at the exact workspace version.
 - Peers: `@memberjunction/core`, `@memberjunction/global`, `@memberjunction/credentials`, and
-  `@memberjunction/record-set-processor` plus `-base`, all at `~6.1.N`. Add exact devDependency
-  anchors per this repo's pinning rules.
+  `@memberjunction/record-set-processor` plus `-base`, all as caret ranges at common's current
+  floor (`^6.2.0-edge.3`: Phase 3 raised it from `^6.1.5`, because `ProcessBatch` first shipped in the
+  published `6.2.0-edge.0` build), never `~` or exact. Each peer also gets a
+  `devDependencies` entry with the same caret floor (CLAUDE.md, "MemberJunction version policy").
 
 **Wiring:**
 - The root `package.json` workspaces glob (`packages/*`) already covers the new folder. Confirm
@@ -1371,13 +1368,13 @@ export interface PersonEnrichmentRunResult {
 
 **Why the record-set processor, and not a saved Record Process (D14).** The engine needs batches of
 10 to 100 people per vendor call, a stop hook for rate limits and the time budget, and run rows it
-can report from. The processor's API provides all of these on 6.1 (plus `ProcessBatch` once §5.6
-lands). Saved Record Processes do not fit on 6.1: their work types are a fixed list, the Action work
+can report from. The processor's API provides all of these on `next`, including `ProcessBatch`
+(§5.6). Saved Record Processes do not fit today: their work types are a fixed list, the Action work
 type is one call per record, and cancel, resume and watermarks don't work (Appendix D). Don't
 "upgrade" the engine to a saved Record Process without first checking that Appendix D's items are
-fixed on the pinned line.
+fixed on `next`.
 
-**Primary loop.** This needs `ProcessBatch` on 6.1 (§5.6). Call
+**The loop.** Call
 `RecordSetProcessor.Instance.Process({...})` with:
 - `source: new KeysetSource(peopleEntityName, eligibilityFilter)`. Keyset pages by primary key, so
   the eligible set shrinking as people are processed does not skip anyone.
@@ -1391,17 +1388,6 @@ fixed on the pinned line.
 - `triggeredBy: 'Manual'`. The Action driver does not pass a scheduled-run ID; record that in the run
   `Configuration` snapshot.
 - `contextUser`, `provider: MetadataProvider`.
-
-**Fallback loop**, if the backport is refused. Same behaviour, written in `PersonEnrichmentEngine`:
-1. Page IDs with `RunView` (`ResultType: 'simple'`, `Fields` = primary key, `ExtraFilter` = eligibility
-   filter plus `ID > lastID`, `OrderBy` ID, `MaxRows` = batch size). Use `AfterKey` if it is available
-   on the pinned 6.1.
-2. Process each batch with the same `EnrichmentBatchProcessor.ProcessBatch`.
-3. Record the run with `GenericProcessRunTracker` from `@memberjunction/record-set-processor`, which
-   exists on 6.1.
-4. Enforce `RequestsPerMinute` with a simple per-run limiter.
-
-Keep both behind one internal seam so switching later is a one-file change.
 
 **Rate limits and exhausted credits.** When `EnrichPeople` throws `EnrichmentRateLimitError` or
 `EnrichmentQuotaExhaustedError`:
@@ -1421,8 +1407,9 @@ Builds the `ExtraFilter` on `MJ_BizApps_Common: People` (`vwPeople`).
 **Rules:**
 - Resolve schema and view names from `EntityByName(...).SchemaName` and `.BaseView`. Never write
   `__mj_BizAppsCommon` literally.
-- Escape every interpolated value with `EscapeSQLString`. The same 6.1 export caveat as §5.3
-  applies: use a package-local helper if the pinned version doesn't export it.
+- Escape every interpolated value with `EscapeSQLString` from `@memberjunction/global`. It is
+  exported on `next` (§5.3). If the published build at common's floor does not export it, raise the
+  floor (§8.1) rather than copy it.
 
 ```
 Status = 'Active'
@@ -1479,7 +1466,7 @@ A person with none of these is skipped (and should not have passed the eligibili
 
 ### 7.7 Write rules (`writers/*`)
 
-**Per person**, wrap the writes in `RunInEntityTransaction(contextProvider, work)`. It is on lts/6.1:
+**Per person**, wrap the writes in `RunInEntityTransaction(contextProvider, work)`. It is on `next`:
 `MJCore/src/generic/entityTransactionScope.ts:130`, and it degrades to plain execution on providers
 that cannot transact. **Write the identity row last.** If anything fails partway, the person stays
 eligible and the next run redoes them. Every writer is idempotent, so that is safe.
@@ -1531,8 +1518,8 @@ row. If Apollo and PDL disagree about a person's current employer, each keeps it
 
 **Entity actions (D12).**
 - If the person had **no** identity row before this run (first-time enrichment), save every
-  relationship with `{ SkipEntityActions: true }`. `EntitySaveOptions.SkipEntityActions` is on lts/6.1
-  (`MJCore/src/generic/interfaces.ts:311`). This is a backfill: no timeline Activity and no
+  relationship with `{ SkipEntityActions: true }`. `EntitySaveOptions.SkipEntityActions` is on `next`
+  (`MJCore/src/generic/interfaces.ts:347`). This is a backfill: no timeline Activity and no
   downstream triggers.
 - Otherwise, save normally. A job change found on a later run is a real event, so common's
   `Common.LogActivity` binding logs it and downstream apps' bindings fire.
@@ -1693,22 +1680,25 @@ export function EstimateCost(input: CostEstimateInput): CostEstimate;
 
 ## 8. Phase 4 (common): Apollo and PDL providers and the scheduled jobs
 
-**Prerequisite:** the MJ 6.1.x release containing all of Phase 1 is published, including both
-clients.
+**Prerequisite:** the MJ edge release from `next` containing all of Phase 1 is published, including
+both clients, and common's floor is raised to it (§8.1).
 
 Both providers ship in this phase (D13). If two developers share the work, one can take §8.2 and the
 other §8.3. They touch different files.
 
 ### 8.1 Raise the MJ floor
 
-Follow this repo's CLAUDE.md, "Bumping to a new 6.1.N", exactly:
-1. Update every `~6.1.N` floor and both `pnpm.overrides` pins.
-2. Run `pnpm install`.
+Follow this repo's CLAUDE.md, "Raising the floor", exactly. Raise it to the first **published** MJ
+build that carries Phase 1, an edge release such as `6.2.0-edge.N` (the dependency-model check
+accepts a prerelease caret such as `^6.2.0-edge.3`):
+1. Raise every `^` floor in peers, devDependencies and both `pnpm.overrides`.
+2. Run `pnpm install` at the workspace parent.
 3. Confirm `pnpm why @memberjunction/core` shows one copy.
 4. Run `node scripts/sync-app-version.mjs` and commit `mj-app.json`.
 5. Rebuild a database from migrations and regenerate.
 6. Run the full test suite.
-7. Commit the lockfile.
+7. The user adds a `patch` changeset.
+8. Commit the lockfile.
 
 Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs` as **peers** of
 `@mj-biz-apps/common-enrichment`, each with its exact devDependency anchor.
@@ -1894,9 +1884,9 @@ the Apollo job; the PDL job is identical except where the table below says other
 ## 9. Phase 5 (common): people importer, server side
 
 **Branch:** `feat/people-importer`, from `origin/next` after Phase 4 merges. **Starts after the
-enrichment release (Phases 0 to 4) has shipped** and does not hold it up. Needs the MJ 6.1.x release
-that carries PDL search and the Apollo search filters (§5.7, §5.8); if those came in a later 6.1.N
-than Phase 4 used, raise the floor first (§8.1).
+enrichment release (Phases 0 to 4) has shipped** and does not hold it up. Needs a published MJ edge
+release that carries PDL search and the Apollo search filters (§5.7, §5.8); if those came in a later
+release than the floor Phase 4 set, raise the floor first (§8.1).
 
 What this phase adds:
 - One migration with two audit tables, `PersonImport` and `PersonImportItem` (§9.2).
@@ -2052,8 +2042,8 @@ GO
 - **`ON DELETE CASCADE` from Person to `PersonImportItem`**, as for the Phase 2 tables: deleting a
   person removes every trace of them, including the import audit row and the vendor ID on it. The
   import's totals stay on `PersonImport`.
-- **`ProcessRunID` is a plain column.** Add an FK to the core Process Run table if its name on the
-  pinned 6.1 is confirmed (expected `[${mjSchema}].[ProcessRun]`); otherwise leave it loose and say so
+- **`ProcessRunID` is a plain column.** Add an FK to the core Process Run table if its name on
+  `next` is confirmed (expected `[${mjSchema}].[ProcessRun]`); otherwise leave it loose and say so
   in its description.
 - **`CriteriaJSON` is what the user confirmed,** after their edits, not the prompt's first answer.
   `Description` is the English they typed. Together they explain any import later.
@@ -2227,7 +2217,7 @@ common's existing prompts (`.job-function-seniority-prompt.json`), with these di
 | `Name` | `Common: Interpret People Cohort` | |
 | `TemplateText` | `@file:templates/interpret-people-cohort.template.md` | MetadataSync creates the template row. |
 | `ResponseFormat` | `JSON` | |
-| `OutputType` | `object` | **Required for validation.** MJ validates output only when `OutputType` is `object` and `OutputExample` is set (`AIPromptRunner.ts`, lts ~5363). Common's two existing prompts set neither, so their output is never validated. |
+| `OutputType` | `object` | **Required for validation.** MJ validates output only when `OutputType` is `object` and `OutputExample` is set (`AIPromptRunner.ts:3362` on `next`). Common's two existing prompts set neither, so their output is never validated. |
 | `OutputExample` | `@file:output/interpret-people-cohort.example.json` | Uses MJ's validator suffixes (`MJ/packages/MJGlobal/src/JSONValidator.ts:8-33`), for example `Explanation:!empty`. |
 | `ValidationBehavior` | `Strict` | Invalid output is retried, then fails. |
 | `MaxRetries` / `RetryStrategy` | 3 / `Exponential` | |
@@ -2264,7 +2254,8 @@ common's existing prompts (`.job-function-seniority-prompt.json`), with these di
    Smart Filter passes user text (`MJ/packages/MJCoreEntitiesServer/src/custom/MJUserViewEntityServer.server.ts:85-160`),
    and it keeps the user's words out of the instructions.
 4. `new AIPromptRunner().ExecutePrompt<InterpretCohortOutput>(params)`. On `success: false`, return
-   `PROMPT_FAILED` with the runner's message. Don't rely on `attemptJSONRepair`; it is not on 6.1.
+   `PROMPT_FAILED` with the runner's message. Don't rely on `attemptJSONRepair`; `ValidationBehavior:
+   Strict` already retries invalid output.
 5. `ValidateCriteria` (§9.3). Never skip it.
 6. **Resolve school names.** If an active PDL provider has a key, call `CleanSchool` for each school
    name, which is free if P10 confirms. Add the result as an `ExternalIDs` entry with
@@ -2324,8 +2315,8 @@ before any vendor call:
   3. fills in thin candidates (Apollo, below), skipping the ones the match step already skipped;
   4. returns one `RecordRef` per candidate, with the candidate and its match result in `Record`.
 
-  Doing all the reads and vendor calls in the source means the processor only writes. That works on 6.1 without
-  `ProcessBatch`, and it keeps every `RunView` out of per-record code. `RecordRef.EntityID` is the
+  Doing all the reads and vendor calls in the source means the processor only writes, and it keeps
+  every `RunView` out of per-record code. `RecordRef.EntityID` is the
   People entity, and `RecordID` is the vendor's external ID, because the person may not exist yet.
   Process Run Details will show vendor IDs in that column; `PersonImportItem` holds the real mapping.
 - **Processor:** a `FunctionRecordProcessor` (on both branches) that handles one candidate in its own
@@ -2381,11 +2372,11 @@ when unpriced). Write one `PersonImportItem` per candidate as it is handled, not
 stopped import still shows exactly who came in.
 
 **No resume in v1.** A stopped or cancelled import can't continue from the vendor's cursor (PDL's
-scroll tokens expire, and the processor's own resume doesn't work on 6.1, Appendix D). Running the
+scroll tokens expire, and the processor's own resume doesn't work on `next` today, Appendix D RSP-2). Running the
 same criteria again links everyone already imported instead of duplicating them, but **records the
 vendor already returned are paid for again**. The UI says so. Resume is a follow-up (§15).
 
-**Long requests.** `Common.ImportPeopleCohort` is a long-running Remote Operation, and on 6.1 its
+**Long requests.** `Common.ImportPeopleCohort` is a long-running Remote Operation, and on `next` today its
 request stays open for the whole import, because MJ's detached mode doesn't run in the background
 yet. The import cap (1,000) and the time budget (10 minutes) keep it short. A PDL import of 1,000
 people is 10 pages. If the browser goes away, the server finishes or stops the import on its own, and
@@ -2416,7 +2407,7 @@ reports how many were skipped this way.
    to `output` in `mj.config.cjs`, following bizapps-sales (`bizapps-sales/mj.config.cjs:69-84`).
    The `Common.` key prefix makes CodeGen scope the operations to `__mj_BizAppsCommon`
    (`MJ/packages/CodeGenLib/src/Misc/remote_operations_codegen.ts:35-87`, the `'__mj_bizapps' +
-   namespace` rule, also on lts/6.1), which passes common's `includeSchemas`.
+   namespace` rule, on `next`), which passes common's `includeSchemas`.
 2. **Export.** Add `export * from './generated/remote_operations';` to
    `packages/Entities/src/index.ts`. The generated classes live in Entities on purpose, so the browser
    can import them without the server engine.
@@ -2755,7 +2746,7 @@ On a dev host with a real PDL key, a test credit price on the PDL provider row, 
 - **Do-not-enrich.** v1 handles opt-outs with each job's `PersonFilter`. A first-class do-not-enrich
   flag is open question Q3.
 - **`PersonFilter` is SQL.**
-  - Validate it with MJ's `SQLExpressionValidator` (`@memberjunction/global`, on lts/6.1). Reject it
+  - Validate it with MJ's `SQLExpressionValidator` (`@memberjunction/global`, exported on `next`). Reject it
     on failure with `VALIDATION_ERROR`.
   - Restrict the action to admins through its permissions. Document that it is admin-only.
   - Never interpolate anything else without `EscapeSQLString` (or the local helper; see §5.3).
@@ -2813,11 +2804,11 @@ On a dev host with a real PDL key, a test credit price on the PDL provider row, 
 | Step | Repo | Changeset | Notes |
 |---|---|---|---|
 | Phase 0 spike | MJ | none | Findings go in the Phase 1 PR description. |
-| 1a Apollo client, fixes, search filters and Integration row | MJ | minor (metadata) | Into `next`, labelled `backport lts/6.1`. |
-| 1b scheduler fix | MJ | minor if it adds a sproc migration, otherwise patch | Same labels. |
-| 1c `ProcessBatch` backport | MJ `lts/6.1` | patch | Or record that it was refused and use the fallback loop. |
-| 1d PDL package (enrich, search, school lookup) and Integration row | MJ | minor (metadata) | Into `next`, labelled `backport lts/6.1`. Can be built in parallel with 1a. |
-| MJ 6.1.x release | MJ | — | Must contain 1a, 1b and 1d. Common can't consume Phase 1 until this ships. |
+| 1a Apollo client, fixes, search filters and Integration row | MJ | minor (metadata) | An ordinary PR into `next`. |
+| 1b scheduler fix | MJ | minor if it adds a sproc migration, otherwise patch | Into `next`. |
+| 1c `ProcessBatch` | — | — | Dropped: `ProcessBatch` is on `next` and used directly (§5.6). |
+| 1d PDL package (enrich, search, school lookup) and Integration row | MJ | minor (metadata) | An ordinary PR into `next`. Can be built in parallel with 1a. |
+| MJ edge release from `next` | MJ | — | Must contain 1a, 1b and 1d. Common raises its floor to it (§8.1) and can't consume Phase 1 until it ships. |
 | Phase 2 schema | common | **minor** (`changes.yml` enforces it for migrations) | Can start in parallel with Phase 1. |
 | Phase 3 engine and action | common | minor (action metadata) | Can start once Phase 2 merges; doesn't need the MJ release. |
 | Phase 4 Apollo and PDL providers, rate rows, both jobs | common | minor | After the MJ release. Raise the floor (§8.1). |
@@ -2904,20 +2895,20 @@ with:
 | R4 | **Mis-assigned results.** | The client throws on a length mismatch (§5.2). Providers return results keyed by PersonID, and the engine refuses results for IDs it didn't send. |
 | R5 | **Cost overrun.** | Ships Disabled, a `MaxPeople` cap, NotFound cooldown, Preview mode, credits reporting (§13). |
 | R6 | **Timeline flood from backfilled jobs.** | `SkipEntityActions` on first-time enrichment (D12), and integration check 1 covers it. |
-| R7 | **`ProcessBatch` backport refused.** | The fallback loop (§7.4) behind one seam. |
-| R8 | **`EscapeSQLString` missing from the pinned 6.1 `@memberjunction/global`.** | A package-local helper (§5.3, §7.5); bizapps-orders has the precedent. |
+| R7 | Resolved: `ProcessBatch` is on `next` and the engine uses it directly (§5.6, §7.4). | — |
+| R8 | **`EscapeSQLString` missing from the published `@memberjunction/global` at common's floor.** It is exported on `next` (§5.3). | Raise the floor to the first published build that exports it (§8.1), not a local copy. |
 | R9 | **Duplicate People surface as `Ambiguous` en masse on dirty data.** | Ambiguous is never retried automatically and is countable. Add a review UI as a follow-up (§15.4). |
 | R10 | **Stale repo docs mislead the implementer.** `docs/entity-model.md` and the README list columns and counts that don't exist. | Trust the DDL and the generated entity classes, not the prose. Update `docs/entity-model.md` for the new tables in Phase 2. |
 | R11 | **Both jobs enabled: the vendors disagree, or run over the same person at once.** Two vendors can name different current employers, and two concurrent runs could each insert the same employment row. | The jobs are staggered (07:00 and 08:30 UTC, each capped at 60 minutes), so they never overlap. The write rules keep each vendor's rows separate and never let one edit or end the other's (§7.7). The release notes recommend splitting `Facets` between the two jobs (§8.4), and integration check 7 covers the overlap. |
 | R12 | **PDL matches the wrong person.** A low likelihood threshold enriches someone with a stranger's history. | `min_likelihood` defaults to 6, PDL's recommendation, and is configurable per host. Likelihood is stored as `MatchConfidence`, so low-confidence matches can be found and reviewed. Never lower the default without a reason recorded in the provider row's `Description`. |
-| R13 | **MJ won't take a new package on `lts/6.1`.** Common pins 6.1, so the PDL client would not reach it. | Fallback: common's `PDLEnrichmentProvider` calls `POST /v5/person/bulk` itself through a small private client inside `common-enrichment`, with the same normalized output shape as §5.7. It switches to the MJ client when common moves to 6.2, which is a one-file change. The MJ package still lands on `next` for everyone else. |
+| R13 | Resolved: MJ `next` takes new packages, and PR 1d is an ordinary PR into `next` (§5.7). Common reaches it by raising its floor to the edge release that carries it (§8.1). | — |
 | R14 | **Our PDL plan doesn't include education fields** (P7). | Find out in Phase 0, before building. Education is the reason for the feature, so a missing bundle is a contract question for the requester, not something to engineer around. |
 | R15 | **The prompt misreads the description.** "Harvard" for "Harvard Kennedy School", Boston the city for the metro area, "recent" for the wrong years. | The criteria are shown as chips, with the prompt's assumptions and ambiguities, before anything is spent. Temperature 0, strict output validation, `ValidateCriteria`, and the 25-case evaluation (§9.5). |
 | R16 | **Refining the description over and over spends credits on counts.** PDL bills a count that finds anyone. | Interpreting is free of vendor credits. Counting happens only on a button press, and a count is reused for 60 minutes per user and criteria (§9.6). |
 | R17 | **PDL's education filters match across entries**, for example an HKS certificate plus an MPP from elsewhere. | The engine re-checks each returned record against the criteria and skips the ones that don't match (§9.7). Those records are already paid for, so the estimate says "about" when education facets combine. P12 checks whether PDL can match within one entry. |
 | R18 | **Apollo can't filter on schools, and its search results are thin.** | Apollo is offered only when it can apply every criterion (§9.4). Its imports include a paid `BulkMatch` per person, which the estimate shows. |
 | R19 | **Imports create duplicate People.** | Match on the vendor ID and LinkedIn URL first. Never link on a name, but skip a same-name, same-employer person for review rather than create them. The unique index on (`SourceSystem`, `ExternalID`) stops two People claiming one vendor person (§9.6). |
-| R20 | **A long import holds a request open.** MJ's detached Remote Operations don't run in the background on 6.1. | The 1,000-person cap and the 10-minute time budget. The server finishes or stops on its own if the browser leaves, and `Common.GetPeopleImportStatus` lets the UI pick it up again (§9.6). Background imports are a follow-up (§15). |
+| R20 | **A long import holds a request open.** MJ's detached Remote Operations don't run in the background on `next` today (`REMOTE_OPERATIONS_GUIDE.md:178`). | The 1,000-person cap and the 10-minute time budget. The server finishes or stops on its own if the browser leaves, and `Common.GetPeopleImportStatus` lets the UI pick it up again (§9.6). Background imports are a follow-up (§15). |
 | R21 | **The credit price is out of date**, so estimates are wrong. | Each estimate stamps the price it used and says which price that was. Rate rows carry `Notes` saying where each number came from and when. An empty price shows "unpriced", never $0 (D16). |
 | R22 | **PDL school IDs change over time** (§11.1). | They are looked up fresh for each interpretation and left out of `CriteriaHash`. Nothing later depends on a stored school ID. |
 | R23 | **The Remote Operation type files drift from `PeopleCohortCriteria`.** Type files can't import, so they hold a copy. | A compile-only test assigns each type to the other in both directions (§9.8). |
@@ -2929,12 +2920,12 @@ with:
 
 | # | Question | Default if nobody answers |
 |---|---|---|
-| Q1 | Will the MJ maintainers accept backporting `ProcessBatch` to `lts/6.1`? | Use the fallback loop (§7.4). |
+| Q1 | Resolved: no backport. `ProcessBatch` is on `next` and used directly (§5.6). | — |
 | Q2 | Is the first customer Harvard Kennedy School itself? If so, its own alumni records are the authoritative source, loaded as `Source='Import'` (a one-off load like §15.7), and vendors only fill gaps. That changes what comes first: that load, or the vendor importer (Phases 5 and 6). | Build as planned. The schema serves both cases. |
 | Q3 | Do we need a first-class do-not-enrich flag on Person, rather than `PersonFilter`? | `PersonFilter` in v1. Revisit after legal review. |
 | Q4 | Is the `CreateOrganizations` default right (`CurrentEmployerOnly`)? | Yes. |
 | Q5 | When a host enables both jobs, should the shipped jobs split `Facets` by default (Apollo for employment, PDL for education) instead of recommending it in the release notes? | No. Each job writes everything its provider supports, so a host that has only one vendor gets the full feature. Revisit with the Phase 4 comparison (§12.3). |
-| Q6 | Will the MJ maintainers accept the new PDL package on `lts/6.1`? | Use R13's fallback. |
+| Q6 | Resolved: the PDL package is an ordinary PR into MJ `next` (§5.7). | — |
 | Q7 | Who may import? | Nobody by default. An admin grants create on People and on Person Imports (and update on Person Imports and Person Import Items) to the roles that should, after legal sign-off. Everyone else sees an explanation on the import page instead of the form. |
 | Q8 | What is the most people one import may bring in? | 1,000, with a 10-minute time budget. Make it a provider `Configuration` key (`MaxImportPeople`) so a host can lower it. |
 | Q9 | How long does an estimate stay usable? | 60 minutes. |
@@ -2947,7 +2938,7 @@ with:
 ## Appendix A: Apollo action bug inventory
 
 All paths are under `MJ/packages/Actions/ApolloEnrichment/src/`. Line numbers are from `next` as of
-2026-10-08. `lts/6.1` differs by only 10 lines in these two files, so the bugs exist on both.
+2026-10-08. The fixes go to `next` (§5).
 
 | # | Where | Bug | Fix | Test |
 |---|---|---|---|---|
@@ -2986,8 +2977,8 @@ All paths are relative to the repository named in each row.
 | ATS Applicant education columns | `bizapps-ats/migrations/V202608081816__v0.1.x__ATS_Core_Schema.sql:226-248` |
 | Sales' consent-placement reasoning | `bizapps-sales/migrations/V202608042101__v0.1.x__Tables_and_Objects.sql:445-449` |
 | Scheduled job entities, the Action driver and the NextRunAt bug | `MJ/packages/Scheduling/engine/src/ScheduledJobEngine.ts:505-520, 848-878, 1738-1761`; `MJ/packages/Scheduling/engine/src/drivers/ActionScheduledJobDriver.ts` |
-| Record-set processor options (on 6.1) and `ProcessBatch` (next only) | `MJ/packages/RecordSetProcessor/base/src/interfaces.ts` on each branch |
-| `SkipEntityActions` and `RunInEntityTransaction` on 6.1 | `MJ` `lts/6.1`: `packages/MJCore/src/generic/interfaces.ts:311`, `packages/MJCore/src/generic/entityTransactionScope.ts:130` |
+| Record-set processor options and `ProcessBatch` | `MJ/packages/RecordSetProcessor/base/src/interfaces.ts` on `next` |
+| `SkipEntityActions` and `RunInEntityTransaction` on `next` | `MJ` `next`: `packages/MJCore/src/generic/interfaces.ts:347`, `packages/MJCore/src/generic/entityTransactionScope.ts:130` |
 | Apollo credential resolution | `MJ/packages/Actions/ApolloEnrichment/src/lists/credentials.ts` |
 | Actions are boundaries, not internal APIs | `MJ/packages/Actions/CLAUDE.md` |
 | PDL bulk endpoint, request and response shape, per-item status, billing per match | <https://docs.peopledatalabs.com/docs/bulk-enrichment-api> |
@@ -2996,7 +2987,7 @@ All paths are relative to the repository named in each row.
 | PDL education field behaviour and school IDs | <https://docs.peopledatalabs.com/docs/person-manual> (marked deprecated; confirm against the current Person Schema) |
 | PDL field bundles | <https://docs.peopledatalabs.com/docs/person-data-overview> |
 | PDL Person Search, Autocomplete, School Cleaner, search billing and rate limits | Search-result snippets of PDL's docs (§11.4); unverified until Phase 0 |
-| Remote Operations: the model, authoring modes, calling, authorization and progress | `MJ/guides/REMOTE_OPERATIONS_GUIDE.md` (identical on `lts/6.1`) |
+| Remote Operations: the model, authoring modes, calling, authorization and progress | `MJ/guides/REMOTE_OPERATIONS_GUIDE.md` on `next` |
 | Remote Operation base class, `InternalExecute`, `Authorize` | `MJ/packages/MJCore/src/generic/baseRemotableOperation.ts:49-153` |
 | The resolver's authorization order (scope, system user, `Active`, `Authorize`) | `MJ/packages/MJServer/src/resolvers/ExecuteRemoteOperationResolver.ts:70-142` |
 | In-process calls skip the scope and `Active` checks | `MJ/packages/MJCore/src/generic/remoteOperationDispatch.ts:26-62` |
@@ -3045,13 +3036,15 @@ What to keep from the brief and what to correct:
 
 ---
 
-## Appendix D: Record Set Processing on 6.1, what works and what to report
+## Appendix D: Record Set Processing on `next`, what works and what to report
 
-Studied 2026-10-10 on MJ `next` (engine 6.2.0-edge.3) and `lts/6.1` (6.1.5). Paths are under
-`MJ/packages/RecordSetProcessor/` unless they say otherwise. Line numbers are from `next`.
-**[both]**, **[next]** and **[lts]** say where each fact holds. This is the evidence behind D14.
+Studied 2026-10-10 on MJ `next` (engine 6.2.0-edge.3), with `lts/6.1` (6.1.5) read alongside it
+before the plan moved to `next`. Paths are under `MJ/packages/RecordSetProcessor/` unless they say
+otherwise. Line numbers are from `next`. The plan relies on `next` only; the **[both]**, **[next]**
+and **[lts]** markers are kept as a record of which facts also held on the 6.1.5 build. This is the
+evidence behind D14.
 
-### D.1 What the engine and importer rely on, all on 6.1
+### D.1 What the engine and importer rely on, all on `next`
 
 | Piece | Where | Notes |
 |---|---|---|
@@ -3060,9 +3053,9 @@ Studied 2026-10-10 on MJ `next` (engine 6.2.0-edge.3) and `lts/6.1` (6.1.5). Pat
 | `ArraySource`, `FunctionRecordProcessor` | `base/src/sources/arraySource.ts:17-37`; `engine/src/processors/FunctionRecordProcessor.ts:16-25` [both] | bizapps-sonar uses this pair, with `GenericProcessRunTracker`, in `packages/Engine/src/orchestration/ScorePersister.ts:102-137`. |
 | Options: `batchSize`, `maxRecords`, `rateLimit`, `errorThresholdPercent`, `onAfterBatch`, `triggeredBy`, `resume` | `base/src/interfaces.ts:159-209` [both] | The rate limiter is taken **once per batch**, so `requestsPerMinute` limits vendor calls when one batch is one call. Only `Failed` counts toward the circuit breaker; `Skipped` doesn't. A `continue: false` from `onAfterBatch` ends the run as `Paused`. |
 | `GenericProcessRunTracker` | `engine/src/trackers/GenericProcessRunTracker.ts` [both] | Writes Process Runs and one Process Run Detail per record. `Checkpoint` turns `CancellationRequested` into `Paused`. |
-| `ProcessBatch` | `base/src/interfaces.ts:93`; `engine/src/RecordSetProcessor.ts:244-304` | **[next] only**, hence the backport in §5.6. On lts the engine calls `ProcessRecord` per record. |
+| `ProcessBatch` | `base/src/interfaces.ts:93`; `engine/src/RecordSetProcessor.ts:244-304` | **[next] only**, used directly (§5.6, §7.4). On lts the engine called `ProcessRecord` per record. |
 
-### D.2 Why saved Record Processes don't fit this plan on 6.1
+### D.2 Why saved Record Processes don't fit this plan on `next`
 
 1. **No new work types without a core migration.** `WorkType` is a CHECK list
    (`CK_RecordProcess_WorkType`, created in `migrations/v5/V202606201145__v5.42.x__Record_Set_Processing.sql:86`).
@@ -3098,10 +3091,11 @@ blocks this plan, because the plan uses only D.1.
 ### D.4 Found in common while studying this (not part of this plan)
 
 Raise these with common's maintainers separately:
-- **The job function pipeline may not fully work on 6.1.** `metadata/record-processes/.job-function-seniority-pipeline.json`
+- **The job function pipeline needs features that only MJ `next` has.** `metadata/record-processes/.job-function-seniority-pipeline.json`
   writes Person Job Functions through `childRecords` in its `OutputMapping`, and the spec-driven
-  `fieldLookups`. Both exist only on MJ `next`. On a 6.1 host it likely writes `SeniorityLevelID`
-  and no job functions. Confirm on a 6.1 host.
+  `fieldLookups`. Both exist only on MJ `next`, so a host on a published build without them likely
+  writes `SeniorityLevelID` and no job functions. Confirm which published build carries them, and
+  raise common's floor to it if the floor is below it (§8.1).
 - **The activity tagging pipeline names its root tag with the wrong key.**
   `metadata/record-processes/.activity-tagging-sentiment-pipeline.json` uses `rootTagID`; MJ's
   write-back reads `rootTagId` (`MJ/packages/RecordSetProcessor/engine/src/writeBack.ts:52`), so the
