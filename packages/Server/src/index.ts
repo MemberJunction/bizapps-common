@@ -14,6 +14,8 @@ import '@mj-biz-apps/common-actions';
 // @RegisterClass auto-increment gives these higher priority
 import '@mj-biz-apps/common-core-entities-server';
 import { LoadActivitySyncEngine } from '@mj-biz-apps/common-activity-sync';
+import { LoadCommonEnrichment } from '@mj-biz-apps/common-enrichment';
+import { LoadEnrichPeopleAction } from './custom/enrich-people.action.js';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
 import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
@@ -47,6 +49,8 @@ export function LoadBizAppsCommonServer(): void {
     // Static imports above ensure all classes are registered.
     // This function exists as the startupExport entry point for DynamicPackageLoader.
     LoadActivitySyncEngine();
+    LoadCommonEnrichment();
+    LoadEnrichPeopleAction();
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
     // The one server-side answer to "which organizations and people are our customers", unioned
@@ -69,6 +73,8 @@ export function LoadBizAppsCommonServer(): void {
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
+export { EnrichPeopleAction, LoadEnrichPeopleAction, ResultCodeFor } from './custom/enrich-people.action.js';
+export { ParseEnrichPeopleParams } from './custom/enrich-people.params.js';
 export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
