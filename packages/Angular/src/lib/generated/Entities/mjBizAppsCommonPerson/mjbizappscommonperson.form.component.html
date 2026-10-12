@@ -425,6 +425,56 @@
         }
     </mj-collapsible-panel>
 
+    <!-- Person External Identities Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsCommonPersonExternalIdentities"
+        SectionName="Person External Identities"
+        Icon="fa fa-id-card"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonPersonExternalIdentities')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Person External Identities','PersonID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Person External Identities','PersonID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonPersonExternalIdentities')"
+                [ShowToolbar]="true"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonPersonExternalIdentities', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
+    <!-- Person Education Section -->
+    <mj-collapsible-panel
+        SectionKey="mJBizAppsCommonPersonEducations"
+        SectionName="Person Education"
+        Icon="fa fa-graduation-cap"
+        Variant="related-entity"
+        [Form]="this"
+        [FormContext]="formContext"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonPersonEducations')"
+        [DefaultExpanded]="false">
+        @if (record.IsSaved) {
+        <div>
+            <mj-explorer-entity-data-grid
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Person Educations','PersonID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Person Educations','PersonID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonPersonEducations')"
+                [ShowToolbar]="true"
+                (Navigate)="OnFormNavigate($event)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonPersonEducations', $event.totalRowCount)"
+                >
+            </mj-explorer-entity-data-grid>
+        </div>
+        }
+    </mj-collapsible-panel>
+
     <!-- Activity Sync Exclusions Section -->
     <mj-collapsible-panel
         SectionKey="mJBizAppsCommonActivitySyncExclusions"
