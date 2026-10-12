@@ -1,5 +1,14 @@
 # @mj-biz-apps/common-actions
 
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+
 ## 5.51.0
 
 ## 5.50.2

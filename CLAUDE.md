@@ -153,10 +153,10 @@ There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
 
 AIDP Next runs MemberJunction's 6.1 LTS line, pinned exactly in `aidp-next/package.json`. This repo builds, tests and runs CodeGen against that same version, so what passes here is what runs there (bc-aidp-next-golive#298).
 
-- **Declared ranges.** Every `@memberjunction/*` range in `dependencies`, `devDependencies` and `peerDependencies` is `~6.1.N`, where 6.1.N is the version AIDP Next runs: the 6.1 line, capped below 6.2. Never an edge or prerelease range (`6.1.0-edge.x` sorts *before* 6.1.0 and has none of the LTS fixes), and never `^`, which admits 6.2. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
-- **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` are pinned **exactly** to AIDP Next's version (for example `"6.1.5"`), not to a range. A range override can still leave two copies of `core`, and two copies split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here; how the apps declare each other is bc-aidp-next-golive#265.
+- **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range, `^6.1.N`, and never appears in `dependencies`: the host installs one copy, and a `~6.1.N` or exact peer makes every 6.2 host install a second 6.1 tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor, `^6.1.N`, where 6.1.N is the version AIDP Next runs; the lockfile resolves it to that LTS release, so builds, tests and CodeGen run against what AIDP Next runs. Never an edge or prerelease range (`6.1.0-edge.x` sorts *before* 6.1.0 and has none of the LTS fixes). `.github/scripts/check-dependency-model.mjs` enforces this in CI. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
+- **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, `^6.1.N` (for example `"^6.1.5"`), so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here; how the apps declare each other is bc-aidp-next-golive#265.
 - **One copy of each.** After any install, `pnpm why @memberjunction/core` must show a single version. A sibling app package that exact-pins an old MJ build brings a second copy in (for example `@mj-biz-apps/common-ng@5.37.0` pinned edge.3 packages); fix it by raising that package's floor, not with more overrides.
-- **Bumping to a new 6.1.N**, when AIDP Next moves: update every `~6.1.N` floor and both overrides; `pnpm install`; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json` (CI's `sync-app-version` spec checks it on every PR); rebuild the database from migrations on MJ core `v6.1.N` and regenerate (below); run the full test suite; add a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
+- **Bumping to a new 6.1.N**, when AIDP Next moves: raise every `^6.1.N` floor, in peers, devDependencies and both overrides; `pnpm install`; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json` (CI's `sync-app-version` spec checks it on every PR); rebuild the database from migrations on MJ core `v6.1.N` and regenerate (below); run the full test suite; add a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
 - **Never patch MemberJunction.** No `pnpm patch`, `patchedDependencies`, patch-package or `sed` against `@memberjunction/*` `dist/`. That is AIDP Next's hard rule (`.github/workflows/MJ_PATCH_REGISTER.md` in aidp-next). Fix MJ on its `next` branch and bring the fix to the line with the `backport lts/6.1` label, or with a hand-port PR against `lts/6.1` when the fix can't be isolated; then wait for the patch release.
 
 ### CodeGen output must be reproducible from this repo
@@ -343,14 +343,7 @@ This repo uses MemberJunction's CodeGen system to generate entity and action sub
 
 ## Debugging
 
-### VSCode Launch Configurations
-- **MJAPI**: Node.js debugger with source maps for local packages
-- **MJExplorer**: Chrome debugger (port 4301) with source maps
-- **MJExplorer (attach)**: Attach to existing Chrome on port 9222
-- **Full Stack**: Compound configuration running both MJAPI + MJExplorer
-
-### Source Map Scoping
-Source maps are scoped to local packages only (`apps/MJAPI/**`, `packages/Entities/**`, `packages/Actions/**`, `packages/Server/**`, `packages/Angular/**`). Third-party packages and node_modules are excluded to avoid noise.
+This repo has no MJAPI or MJExplorer of its own, so it has no launch configurations. Debug from the MJ checkout this repo is linked into as a workspace member: its MJAPI and MJExplorer load these packages from source. `.vscode/tasks.json` keeps one task, `build-all`.
 
 ---
 
@@ -392,3 +385,19 @@ This repository provides foundational business entities that can be consumed by 
 ## Angular pinning model
 
 **Angular pinning model** (family-wide, 2026-08-07, with MemberJunction/MJ#3580): `@angular/*` peers in `packages/*` are **caret ranges at the platform pin** (`^21.1.3`) — compatibility claims, never exact. Each package that consumes Angular **anchors** the concrete version with exact `21.1.3` entries in its own `devDependencies`; the anchor is what actually installs. In the shared pnpm dev workspace `auto-install-peers=true` turns unanchored peer ranges into install instructions, which is how two copies of `@angular/core` ended up installed family-wide. Rev anchors with the era platform pin, never with MJ pins.
+
+## Filing issues (pilot of the BizApps issue system)
+- **Never work around a bug in this repo or in MJ silently.** File it with the `/report-issue` skill
+  (`.claude/skills/report-issue/`), which picks the repo where the fix lives, captures the
+  environment, searches for duplicates, and writes the same headings as the web form
+  (`.github/ISSUE_TEMPLATE/bug.yml`). If the bug already exists, it posts an occurrence comment on
+  the original instead of a new issue.
+- Filing from the web: **New issue → Bug report**. Every bug lands as `needs-triage`; a second
+  person reproduces it before it is `confirmed`. Confidence is a field, not a gate — say what you
+  actually did.
+- Not filed during the pilot: nits (cosmetic, no user impact) go in a local `BUGS.md`, not GitHub.
+  An agent files only with a minimal repro or after seeing the same failure twice, at most five
+  per session, and never closes, relabels, transfers or assigns anything.
+- MJ-core bugs go to `MemberJunction/MJ` (always pass `--repo`); mjdev-tool bugs to
+  `MemberJunction/MJDev`. Say which repo you chose and why under "Duplicate search".
+
