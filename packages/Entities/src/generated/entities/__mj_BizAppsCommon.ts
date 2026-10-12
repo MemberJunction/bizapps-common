@@ -1636,6 +1636,160 @@ export const mjBizAppsCommonContactTypeSchema = z.object({
 export type mjBizAppsCommonContactTypeEntityType = z.infer<typeof mjBizAppsCommonContactTypeSchema>;
 
 /**
+ * zod schema definition for the entity MJ_BizApps_Common: Enrichment Provider Rates
+ */
+export const mjBizAppsCommonEnrichmentProviderRateSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    EnrichmentProviderID: z.string().describe(`
+        * * Field Name: EnrichmentProviderID
+        * * Display Name: Enrichment Provider ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Enrichment Providers (vwEnrichmentProviders.ID)`),
+    Operation: z.union([z.literal('Count'), z.literal('Enrich'), z.literal('SchoolLookup'), z.literal('Search')]).describe(`
+        * * Field Name: Operation
+        * * Display Name: Operation
+        * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Count
+    *   * Enrich
+    *   * SchoolLookup
+    *   * Search
+        * * Description: Enrich (bulk match of existing people), Count (counting a cohort), Search (one page of an import) or SchoolLookup (resolving a school name).`),
+    Unit: z.union([z.literal('MatchedPerson'), z.literal('NonEmptyRequest'), z.literal('Request'), z.literal('ReturnedRecord')]).describe(`
+        * * Field Name: Unit
+        * * Display Name: Unit
+        * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * MatchedPerson
+    *   * NonEmptyRequest
+    *   * Request
+    *   * ReturnedRecord
+        * * Description: What the vendor bills per: MatchedPerson, ReturnedRecord, NonEmptyRequest (a request that returned anything) or Request.`),
+    CreditsPerUnit: z.number().describe(`
+        * * Field Name: CreditsPerUnit
+        * * Display Name: Credits Per Unit
+        * * SQL Data Type: decimal(18, 4)
+        * * Description: Credits used per unit. 0 means free.`),
+    Notes: z.string().nullable().describe(`
+        * * Field Name: Notes
+        * * Display Name: Notes
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Where the number came from and when it was checked, e.g. "Phase 0 spike, 2026-10".`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    EnrichmentProvider: z.string().describe(`
+        * * Field Name: EnrichmentProvider
+        * * Display Name: Enrichment Provider
+        * * SQL Data Type: nvarchar(100)`),
+});
+
+export type mjBizAppsCommonEnrichmentProviderRateEntityType = z.infer<typeof mjBizAppsCommonEnrichmentProviderRateSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Enrichment Providers
+ */
+export const mjBizAppsCommonEnrichmentProviderSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    Code: z.string().describe(`
+        * * Field Name: Code
+        * * Display Name: Code
+        * * SQL Data Type: nvarchar(60)
+        * * Description: Stable short code, e.g. Apollo or PDL. Also written as SourceSystem on every row this provider produces. Never rename.`),
+    Name: z.string().describe(`
+        * * Field Name: Name
+        * * Display Name: Name
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Display name.`),
+    Description: z.string().nullable().describe(`
+        * * Field Name: Description
+        * * Display Name: Description
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: What the provider supplies and any caveats.`),
+    DriverClass: z.string().describe(`
+        * * Field Name: DriverClass
+        * * Display Name: Driver Class
+        * * SQL Data Type: nvarchar(200)
+        * * Description: ClassFactory key of the BaseEnrichmentProvider subclass that implements this provider.`),
+    IntegrationID: z.string().nullable().describe(`
+        * * Field Name: IntegrationID
+        * * Display Name: Integration ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Integrations (vwIntegrations.ID)`),
+    MaxBatchSize: z.number().describe(`
+        * * Field Name: MaxBatchSize
+        * * Display Name: Max Batch Size
+        * * SQL Data Type: int
+        * * Default Value: 10
+        * * Description: Most people the vendor accepts in one request (Apollo 10, PDL 100). The engine batches to this size.`),
+    RequestsPerMinute: z.number().nullable().describe(`
+        * * Field Name: RequestsPerMinute
+        * * Display Name: Requests Per Minute
+        * * SQL Data Type: int
+        * * Description: Optional client-side request ceiling. NULL means rely on the vendor's 429 responses.`),
+    Configuration: z.string().nullable().describe(`
+        * * Field Name: Configuration
+        * * Display Name: Configuration
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Provider-specific JSON options, e.g. a PDL minimum likelihood. Engine-wide policy lives on the action params, not here.`),
+    CreditPrice: z.number().nullable().describe(`
+        * * Field Name: CreditPrice
+        * * Display Name: Credit Price
+        * * SQL Data Type: decimal(18, 6)
+        * * Description: This host's price for one vendor credit, from its own contract. NULL means unpriced: estimates then show credits only, never a zero cost.`),
+    CreditCurrency: z.string().nullable().describe(`
+        * * Field Name: CreditCurrency
+        * * Display Name: Credit Currency
+        * * SQL Data Type: nchar(3)
+        * * Description: ISO 4217 code for CreditPrice, e.g. USD. Required when CreditPrice is set.`),
+    Sequence: z.number().describe(`
+        * * Field Name: Sequence
+        * * Display Name: Sequence
+        * * SQL Data Type: int
+        * * Default Value: 0
+        * * Description: Display and preference order when several providers are active.`),
+    IsActive: z.boolean().describe(`
+        * * Field Name: IsActive
+        * * Display Name: Is Active
+        * * SQL Data Type: bit
+        * * Default Value: 1
+        * * Description: Inactive providers are refused by the engine.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Integration: z.string().nullable().describe(`
+        * * Field Name: Integration
+        * * Display Name: Integration
+        * * SQL Data Type: nvarchar(100)`),
+});
+
+export type mjBizAppsCommonEnrichmentProviderEntityType = z.infer<typeof mjBizAppsCommonEnrichmentProviderSchema>;
+
+/**
  * zod schema definition for the entity MJ_BizApps_Common: Job Functions
  */
 export const mjBizAppsCommonJobFunctionSchema = z.object({
@@ -2091,6 +2245,178 @@ export const mjBizAppsCommonPersonSchema = z.object({
 export type mjBizAppsCommonPersonEntityType = z.infer<typeof mjBizAppsCommonPersonSchema>;
 
 /**
+ * zod schema definition for the entity MJ_BizApps_Common: Person Educations
+ */
+export const mjBizAppsCommonPersonEducationSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    PersonID: z.string().describe(`
+        * * Field Name: PersonID
+        * * Display Name: Person
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
+    OrganizationID: z.string().nullable().describe(`
+        * * Field Name: OrganizationID
+        * * Display Name: Organization ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
+    InstitutionName: z.string().describe(`
+        * * Field Name: InstitutionName
+        * * Display Name: Institution Name
+        * * SQL Data Type: nvarchar(255)
+        * * Description: The school name exactly as the source gave it. Kept even when OrganizationID is set, so unmatched names are never lost.`),
+    Degree: z.string().nullable().describe(`
+        * * Field Name: Degree
+        * * Display Name: Degree
+        * * SQL Data Type: nvarchar(200)
+        * * Description: Degree as the source gave it, e.g. "Master of Public Administration" or "MPP".`),
+    FieldOfStudy: z.string().nullable().describe(`
+        * * Field Name: FieldOfStudy
+        * * Display Name: Field of Study
+        * * SQL Data Type: nvarchar(200)
+        * * Description: Major or field of study, when known.`),
+    StartDate: z.date().nullable().describe(`
+        * * Field Name: StartDate
+        * * Display Name: Start Date
+        * * SQL Data Type: date
+        * * Description: Date study began, when known.`),
+    EndDate: z.date().nullable().describe(`
+        * * Field Name: EndDate
+        * * Display Name: End Date
+        * * SQL Data Type: date
+        * * Description: Graduation or end date, when known.`),
+    Source: z.union([z.literal('Enrichment'), z.literal('Import'), z.literal('Manual')]).describe(`
+        * * Field Name: Source
+        * * Display Name: Source
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Enrichment
+    *   * Import
+    *   * Manual
+        * * Description: Manual (entered by a person), Import (bulk load) or Enrichment (written by an enrichment provider). Enrichment never edits Manual rows.`),
+    SourceSystem: z.string().nullable().describe(`
+        * * Field Name: SourceSystem
+        * * Display Name: Source System
+        * * SQL Data Type: nvarchar(80)
+        * * Description: Which system supplied a non-manual row. Equals EnrichmentProvider.Code for enrichment rows.`),
+    LastVerifiedAt: z.date().nullable().describe(`
+        * * Field Name: LastVerifiedAt
+        * * Display Name: Last Verified At
+        * * SQL Data Type: datetimeoffset
+        * * Description: When the source last confirmed this row.`),
+    Notes: z.string().nullable().describe(`
+        * * Field Name: Notes
+        * * Display Name: Notes
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: Free text.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Person: z.string().describe(`
+        * * Field Name: Person
+        * * Display Name: Person Name
+        * * SQL Data Type: nvarchar(201)`),
+    Organization: z.string().nullable().describe(`
+        * * Field Name: Organization
+        * * Display Name: Organization Name
+        * * SQL Data Type: nvarchar(255)`),
+});
+
+export type mjBizAppsCommonPersonEducationEntityType = z.infer<typeof mjBizAppsCommonPersonEducationSchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Person External Identities
+ */
+export const mjBizAppsCommonPersonExternalIdentitySchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    PersonID: z.string().describe(`
+        * * Field Name: PersonID
+        * * Display Name: Person
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)`),
+    SourceSystem: z.string().describe(`
+        * * Field Name: SourceSystem
+        * * Display Name: Source System
+        * * SQL Data Type: nvarchar(80)
+        * * Description: The external system, e.g. Apollo or PDL.`),
+    ExternalID: z.string().nullable().describe(`
+        * * Field Name: ExternalID
+        * * Display Name: External ID
+        * * SQL Data Type: nvarchar(400)
+        * * Description: The person's ID in that system. Unique per system. Required when MatchStatus is Matched.`),
+    MatchStatus: z.union([z.literal('Ambiguous'), z.literal('Matched'), z.literal('NotFound')]).describe(`
+        * * Field Name: MatchStatus
+        * * Display Name: Match Status
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Matched
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Ambiguous
+    *   * Matched
+    *   * NotFound
+        * * Description: Matched; NotFound (the system had no match, retried after a cooling-off period); Ambiguous (the system's ID already belongs to another Person, so a human must resolve the possible duplicate).`),
+    MatchedBy: z.union([z.literal('Email'), z.literal('ExternalID'), z.literal('LinkedIn'), z.literal('Manual'), z.literal('NameAndDomain')]).nullable().describe(`
+        * * Field Name: MatchedBy
+        * * Display Name: Matched By
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Email
+    *   * ExternalID
+    *   * LinkedIn
+    *   * Manual
+    *   * NameAndDomain
+        * * Description: Which identifier produced the match: ExternalID, Email, LinkedIn, NameAndDomain or Manual.`),
+    MatchConfidence: z.number().nullable().describe(`
+        * * Field Name: MatchConfidence
+        * * Display Name: Match Confidence
+        * * SQL Data Type: decimal(5, 4)
+        * * Description: Vendor match confidence from 0 to 1, when the vendor reports one.`),
+    LastCheckedAt: z.date().describe(`
+        * * Field Name: LastCheckedAt
+        * * Display Name: Last Checked At
+        * * SQL Data Type: datetimeoffset
+        * * Description: When this person was last sent to this system. Drives re-enrichment eligibility.`),
+    LastMatchedAt: z.date().nullable().describe(`
+        * * Field Name: LastMatchedAt
+        * * Display Name: Last Matched At
+        * * SQL Data Type: datetimeoffset
+        * * Description: When the system last returned a match.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Person: z.string().describe(`
+        * * Field Name: Person
+        * * Display Name: Person
+        * * SQL Data Type: nvarchar(201)`),
+});
+
+export type mjBizAppsCommonPersonExternalIdentityEntityType = z.infer<typeof mjBizAppsCommonPersonExternalIdentitySchema>;
+
+/**
  * zod schema definition for the entity MJ_BizApps_Common: Person Job Functions
  */
 export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
@@ -2304,6 +2630,22 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Seniority Levels (vwSeniorityLevels.ID)
         * * Description: Company-specific seniority level for this relationship/employment link.`),
+    Source: z.union([z.literal('Enrichment'), z.literal('Import'), z.literal('Manual')]).describe(`
+        * * Field Name: Source
+        * * Display Name: Source
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Enrichment
+    *   * Import
+    *   * Manual
+        * * Description: Manual, Import or Enrichment. Enrichment only updates or ends relationships it created.`),
+    SourceSystem: z.string().nullable().describe(`
+        * * Field Name: SourceSystem
+        * * Display Name: Source System
+        * * SQL Data Type: nvarchar(80)
+        * * Description: Which system supplied a non-manual relationship.`),
     RelationshipType: z.string().describe(`
         * * Field Name: RelationshipType
         * * Display Name: Relationship Type
@@ -2453,8 +2795,8 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * SentimentScore: The sentiment score must be a value between -1.000 and 1.000, or left empty.
-    * * Table-Level: The end date and time of an activity must be on or after its start date and time. This ensures that the duration of the activity is chronologically valid.
+    * * SentimentScore: Sentiment score must be between -1.0 and 1.0, or left blank.
+    * * Table-Level: The activity end date and time must occur on or after the start date and time to maintain valid activity timelines.
     * * Table-Level: Both External ID and Source System must be provided together, or both must be left empty. This ensures that external records are fully identified with both their identifier and their system of origin.
     * @public
     * @method
@@ -2463,7 +2805,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     public override Validate(): ValidationResult {
         const result = super.Validate();
         this.ValidateSentimentScoreRange(result);
-        this.ValidateEndedAtAfterStartedAt(result);
+        this.ValidateEndedAtOnOrAfterStartedAt(result);
         this.ValidateExternalIdAndSourceSystemCoexistence(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
@@ -2471,40 +2813,36 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     }
 
     /**
-    * The sentiment score must be a value between -1.000 and 1.000, or left empty.
+    * Sentiment score must be between -1.0 and 1.0, or left blank.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    	public ValidateSentimentScoreRange(result: ValidationResult) {
-    		if (this.SentimentScore != null && (this.SentimentScore < -1.0 || this.SentimentScore > 1.0)) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"SentimentScore",
-    				"Sentiment score must be between -1.000 and 1.000.",
-    				this.SentimentScore,
-    				ValidationErrorType.Failure
-    			));
-    		}
+    public ValidateSentimentScoreRange(result: ValidationResult): void {
+    	if (this.SentimentScore != null && (this.SentimentScore < -1 || this.SentimentScore > 1)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"SentimentScore",
+    			"Sentiment score must be between -1.0 and 1.0.",
+    			this.SentimentScore,
+    			ValidationErrorType.Failure
+    		));
     	}
+    }
 
     /**
-    * The end date and time of an activity must be on or after its start date and time. This ensures that the duration of the activity is chronologically valid.
+    * The activity end date and time must occur on or after the start date and time to maintain valid activity timelines.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateEndedAtAfterStartedAt(result: ValidationResult) {
-    	if (this.EndedAt != null && this.StartedAt != null) {
-    		const endedDate = new Date(this.EndedAt);
-    		const startedDate = new Date(this.StartedAt);
-    		if (endedDate < startedDate) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"EndedAt",
-    				"The end date and time must be on or after the start date and time.",
-    				this.EndedAt,
-    				ValidationErrorType.Failure
-    			));
-    		}
+    public ValidateEndedAtOnOrAfterStartedAt(result: ValidationResult) {
+    	if (this.EndedAt != null && this.StartedAt != null && new Date(this.EndedAt) < new Date(this.StartedAt)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EndedAt",
+    			"The end date and time must be on or after the start date and time.",
+    			this.EndedAt,
+    			ValidationErrorType.Failure
+    		));
     	}
     }
 
@@ -3137,42 +3475,42 @@ export class mjBizAppsCommonActivityLinkEntity extends BaseEntity<mjBizAppsCommo
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Links entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: The record must be associated with either an Entity and Record ID pair, or an Identity Kind and Identity Value pair. It cannot have both sets of fields populated, nor can it have a partial mix of these fields.
+    * * Table-Level: Records must be linked either to an entity record (specifying both Entity ID and Record ID) or to an identity (specifying both Identity Kind and Identity Value), but never both or a partial combination.
     * @public
     * @method
     * @override
     */
     public override Validate(): ValidationResult {
         const result = super.Validate();
-        this.ValidateEntityOrIdentityExclusivity(result);
+        this.ValidateEntityRecordOrIdentityTarget(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * The record must be associated with either an Entity and Record ID pair, or an Identity Kind and Identity Value pair. It cannot have both sets of fields populated, nor can it have a partial mix of these fields.
+    * Records must be linked either to an entity record (specifying both Entity ID and Record ID) or to an identity (specifying both Identity Kind and Identity Value), but never both or a partial combination.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateEntityOrIdentityExclusivity(result: ValidationResult) {
-        const hasEntity = this.EntityID != null;
-        const hasRecord = this.RecordID != null;
-        const hasIdentityKind = this.IdentityKind != null;
-        const hasIdentityValue = this.IdentityValue != null;
+    public ValidateEntityRecordOrIdentityTarget(result: ValidationResult) {
+    	const hasEntity = this.EntityID != null;
+    	const hasRecord = this.RecordID != null;
+    	const hasIdentityKind = this.IdentityKind != null;
+    	const hasIdentityValue = this.IdentityValue != null;
     
-        const isValidEntityPair = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
-        const isValidIdentityPair = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
+    	const isEntityRecordTarget = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;
+    	const isIdentityTarget = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;
     
-        if (!isValidEntityPair && !isValidIdentityPair) {
-            result.Errors.push(new ValidationErrorInfo(
-                "EntityID",
-                "You must provide either both EntityID and RecordID (leaving IdentityKind and IdentityValue empty), or both IdentityKind and IdentityValue (leaving EntityID and RecordID empty). Mixed or incomplete pairs are not allowed.",
-                this.EntityID,
-                ValidationErrorType.Failure
-            ));
-        }
+    	if (!isEntityRecordTarget && !isIdentityTarget) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EntityID",
+    			"You must specify either both EntityID and RecordID, or both IdentityKind and IdentityValue, but not a partial combination or both pairs.",
+    			this.EntityID,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
@@ -3521,8 +3859,8 @@ export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBi
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Connections entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * MaxAttachmentBytes: The maximum attachment size limit must be a positive value greater than zero, if it is specified.
-    * * Table-Level: If both start and end dates are specified, the end date must be greater than or equal to the start date to ensure logical chronological order.
+    * * MaxAttachmentBytes: Maximum attachment size must be greater than zero bytes if specified.
+    * * Table-Level: End date and time must be on or after the start date and time when both are provided.
     * @public
     * @method
     * @override
@@ -3530,45 +3868,43 @@ export class mjBizAppsCommonActivitySyncConnectionEntity extends BaseEntity<mjBi
     public override Validate(): ValidationResult {
         const result = super.Validate();
         this.ValidateMaxAttachmentBytesGreaterThanZero(result);
-        this.ValidateEndAtAfterStartAt(result);
+        this.ValidateEndAtGreaterThanOrEqualToStartAt(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * The maximum attachment size limit must be a positive value greater than zero, if it is specified.
+    * Maximum attachment size must be greater than zero bytes if specified.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
     public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-        if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
-            result.Errors.push(new ValidationErrorInfo(
-                "MaxAttachmentBytes",
-                "The maximum attachment size limit must be greater than zero.",
-                this.MaxAttachmentBytes,
-                ValidationErrorType.Failure
-            ));
-        }
+    	if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"MaxAttachmentBytes",
+    			"Maximum attachment bytes must be greater than 0.",
+    			this.MaxAttachmentBytes,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
-    * If both start and end dates are specified, the end date must be greater than or equal to the start date to ensure logical chronological order.
+    * End date and time must be on or after the start date and time when both are provided.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateEndAtAfterStartAt(result: ValidationResult) {
-    	if (this.StartAt != null && this.EndAt != null) {
-    		if (this.EndAt < this.StartAt) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"EndAt",
-    				"The end date must be greater than or equal to the start date.",
-    				this.EndAt,
-    				ValidationErrorType.Failure
-    			));
-    		}
+    public ValidateEndAtGreaterThanOrEqualToStartAt(result: ValidationResult) {
+    	if (this.StartAt != null && this.EndAt != null && this.EndAt < this.StartAt) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EndAt",
+    			"End date and time must be on or after the start date and time.",
+    			this.EndAt,
+    			ValidationErrorType.Failure
+    		));
     	}
     }
 
@@ -4145,7 +4481,7 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Extensions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * TimeoutMS: The timeout value must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes) to ensure a valid and reasonable execution limit.
+    * * TimeoutMS: Timeout must be greater than 0 and cannot exceed 300,000 milliseconds (5 minutes).
     * @public
     * @method
     * @override
@@ -4159,21 +4495,19 @@ export class mjBizAppsCommonActivitySyncExtensionEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * The timeout value must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes) to ensure a valid and reasonable execution limit.
+    * Timeout must be greater than 0 and cannot exceed 300,000 milliseconds (5 minutes).
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
     public ValidateTimeoutMSRange(result: ValidationResult) {
-    	if (this.TimeoutMS !== undefined && this.TimeoutMS !== null) {
-    		if (this.TimeoutMS <= 0 || this.TimeoutMS > 300000) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"TimeoutMS",
-    				"Timeout must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes).",
-    				this.TimeoutMS,
-    				ValidationErrorType.Failure
-    			));
-    		}
+    	if (this.TimeoutMS != null && (this.TimeoutMS <= 0 || this.TimeoutMS > 300000)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"TimeoutMS",
+    			"Timeout must be greater than 0 and cannot exceed 300,000 milliseconds.",
+    			this.TimeoutMS,
+    			ValidationErrorType.Failure
+    		));
     	}
     }
 
@@ -4407,8 +4741,8 @@ export class mjBizAppsCommonActivitySyncProviderTypeEntity extends BaseEntity<mj
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Provider Types entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * DefaultMaxAttachmentBytes: The default maximum attachment size must be greater than zero if it is specified.
-    * * Table-Level: A default encryption key must be specified unless the default skipped content policy is set to 'None'.
+    * * DefaultMaxAttachmentBytes: Default maximum attachment bytes must be greater than zero if a limit is specified.
+    * * Table-Level: A default encryption key must be specified whenever the default skipped content policy is set to anything other than None.
     * @public
     * @method
     * @override
@@ -4416,40 +4750,40 @@ export class mjBizAppsCommonActivitySyncProviderTypeEntity extends BaseEntity<mj
     public override Validate(): ValidationResult {
         const result = super.Validate();
         this.ValidateDefaultMaxAttachmentBytesGreaterThanZero(result);
-        this.ValidateDefaultEncryptionKeyForSkippedContentPolicy(result);
+        this.ValidateDefaultEncryptionKeyIDForSkippedContentPolicy(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * The default maximum attachment size must be greater than zero if it is specified.
+    * Default maximum attachment bytes must be greater than zero if a limit is specified.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
     public ValidateDefaultMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {
-        if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {
-            result.Errors.push(new ValidationErrorInfo(
-                "DefaultMaxAttachmentBytes",
-                "The default maximum attachment size must be greater than 0 bytes.",
-                this.DefaultMaxAttachmentBytes,
-                ValidationErrorType.Failure
-            ));
-        }
+    	if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"DefaultMaxAttachmentBytes",
+    			"Default maximum attachment size must be greater than 0 bytes.",
+    			this.DefaultMaxAttachmentBytes,
+    			ValidationErrorType.Failure
+    		));
+    	}
     }
 
     /**
-    * A default encryption key must be specified unless the default skipped content policy is set to 'None'.
+    * A default encryption key must be specified whenever the default skipped content policy is set to anything other than None.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateDefaultEncryptionKeyForSkippedContentPolicy(result: ValidationResult) {
+    public ValidateDefaultEncryptionKeyIDForSkippedContentPolicy(result: ValidationResult) {
     	if (this.DefaultSkippedContentPolicy !== "None" && this.DefaultEncryptionKeyID == null) {
     		result.Errors.push(new ValidationErrorInfo(
     			"DefaultEncryptionKeyID",
-    			"A default encryption key must be specified when the default skipped content policy is not set to 'None'.",
+    			"A default encryption key is required when the default skipped content policy is set to anything other than None.",
     			this.DefaultEncryptionKeyID,
     			ValidationErrorType.Failure
     		));
@@ -4904,9 +5238,9 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Rules entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * MaxAttachmentBytes: If a maximum attachment size limit is specified, it must be a positive number greater than zero.
-    * * Table-Level: Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified. You cannot provide both, and you cannot leave both empty.
-    * * Table-Level: The end date must be on or after the start date when both dates are provided.
+    * * MaxAttachmentBytes: Maximum attachment size in bytes must be greater than zero if a limit is specified.
+    * * Table-Level: Each rule must be associated with either an Activity Sync Rule Set or an Activity Sync Connection, but cannot have both or neither specified.
+    * * Table-Level: The end date must be on or after the start date when both dates are specified.
     * @public
     * @method
     * @override
@@ -4914,15 +5248,15 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     public override Validate(): ValidationResult {
         const result = super.Validate();
         this.ValidateMaxAttachmentBytesGreaterThanZero(result);
-        this.ValidateActivitySyncConnectionOrRuleSetRequired(result);
-        this.ValidateDateToAfterOrEqualDateFrom(result);
+        this.ValidateActivitySyncRuleSetIDOrActivitySyncConnectionID(result);
+        this.ValidateDateToGreaterThanOrEqualToDateFrom(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * If a maximum attachment size limit is specified, it must be a positive number greater than zero.
+    * Maximum attachment size in bytes must be greater than zero if a limit is specified.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
@@ -4931,7 +5265,7 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     	if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {
     		result.Errors.push(new ValidationErrorInfo(
     			"MaxAttachmentBytes",
-    			"The maximum attachment size must be greater than 0 bytes.",
+    			"Maximum attachment bytes must be greater than 0.",
     			this.MaxAttachmentBytes,
     			ValidationErrorType.Failure
     		));
@@ -4939,41 +5273,39 @@ export class mjBizAppsCommonActivitySyncRuleEntity extends BaseEntity<mjBizAppsC
     }
 
     /**
-    * Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified. You cannot provide both, and you cannot leave both empty.
+    * Each rule must be associated with either an Activity Sync Rule Set or an Activity Sync Connection, but cannot have both or neither specified.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateActivitySyncConnectionOrRuleSetRequired(result: ValidationResult) {
+    public ValidateActivitySyncRuleSetIDOrActivitySyncConnectionID(result: ValidationResult) {
     	const hasRuleSet = this.ActivitySyncRuleSetID != null;
     	const hasConnection = this.ActivitySyncConnectionID != null;
     
     	if ((hasRuleSet && hasConnection) || (!hasRuleSet && !hasConnection)) {
     		result.Errors.push(new ValidationErrorInfo(
-    			"ActivitySyncConnectionID",
-    			"Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified.",
-    			this.ActivitySyncConnectionID,
+    			"ActivitySyncRuleSetID",
+    			"Exactly one of Activity Sync Rule Set or Activity Sync Connection must be specified.",
+    			this.ActivitySyncRuleSetID,
     			ValidationErrorType.Failure
     		));
     	}
     }
 
     /**
-    * The end date must be on or after the start date when both dates are provided.
+    * The end date must be on or after the start date when both dates are specified.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateDateToAfterOrEqualDateFrom(result: ValidationResult) {
-    	if (this.DateFrom != null && this.DateTo != null) {
-    		if (this.DateTo < this.DateFrom) {
-    			result.Errors.push(new ValidationErrorInfo(
-    				"DateTo",
-    				"The end date (DateTo) must be on or after the start date (DateFrom).",
-    				this.DateTo,
-    				ValidationErrorType.Failure
-    			));
-    		}
+    public ValidateDateToGreaterThanOrEqualToDateFrom(result: ValidationResult) {
+    	if (this.DateFrom != null && this.DateTo != null && new Date(this.DateTo).getTime() < new Date(this.DateFrom).getTime()) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"DateTo",
+    			"Date To must be on or after Date From.",
+    			this.DateTo,
+    			ValidationErrorType.Failure
+    		));
     	}
     }
 
@@ -5274,8 +5606,8 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Run Details entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Confidence: Confidence score must be a value between 0 and 1 (inclusive) when specified.
-    * * Table-Level: An activity can only be associated with this record if the decision is set to 'Included'.
+    * * Confidence: Confidence score, if provided, must be a value between 0 and 1 inclusive.
+    * * Table-Level: An activity can only be associated when the decision is set to 'Included'.
     * * Table-Level: Captured content and its encryption key must either both be provided or both be empty. This ensures that captured content is always paired with an encryption key, and keys are not stored without content.
     * @public
     * @method
@@ -5292,7 +5624,7 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * Confidence score must be a value between 0 and 1 (inclusive) when specified.
+    * Confidence score, if provided, must be a value between 0 and 1 inclusive.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
@@ -5300,8 +5632,8 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     public ValidateConfidenceRange(result: ValidationResult) {
     	if (this.Confidence != null && (this.Confidence < 0 || this.Confidence > 1)) {
     		result.Errors.push(new ValidationErrorInfo(
-    			'Confidence',
-    			'Confidence score must be between 0 and 1.',
+    			"Confidence",
+    			"Confidence score must be between 0 and 1.",
     			this.Confidence,
     			ValidationErrorType.Failure
     		));
@@ -5309,16 +5641,16 @@ export class mjBizAppsCommonActivitySyncRunDetailEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * An activity can only be associated with this record if the decision is set to 'Included'.
+    * An activity can only be associated when the decision is set to 'Included'.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
     public ValidateActivityIDRequiresIncludedDecision(result: ValidationResult) {
-    	if (this.ActivityID != null && this.Decision !== 'Included') {
+    	if (this.ActivityID != null && this.Decision !== "Included") {
     		result.Errors.push(new ValidationErrorInfo(
     			"ActivityID",
-    			"An activity can only be associated when the decision is 'Included'.",
+    			"An activity can only be associated when the decision is set to 'Included'.",
     			this.ActivityID,
     			ValidationErrorType.Failure
     		));
@@ -5631,30 +5963,30 @@ export class mjBizAppsCommonActivitySyncRunEntity extends BaseEntity<mjBizAppsCo
 
     /**
     * Validate() method override for MJ_BizApps_Common: Activity Sync Runs entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Table-Level: If the sync is marked as a dry run, a 'Watermark After' date cannot be specified because no progress is actually saved.
+    * * Table-Level: Dry run executions cannot advance the watermark, so WatermarkAfter must be empty when running in dry run mode.
     * @public
     * @method
     * @override
     */
     public override Validate(): ValidationResult {
         const result = super.Validate();
-        this.ValidateWatermarkAfterForDryRun(result);
+        this.ValidateWatermarkAfterWhenIsDryRun(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
         return result;
     }
 
     /**
-    * If the sync is marked as a dry run, a 'Watermark After' date cannot be specified because no progress is actually saved.
+    * Dry run executions cannot advance the watermark, so WatermarkAfter must be empty when running in dry run mode.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
     */
-    public ValidateWatermarkAfterForDryRun(result: ValidationResult) {
+    public ValidateWatermarkAfterWhenIsDryRun(result: ValidationResult) {
     	if (this.IsDryRun && this.WatermarkAfter != null) {
     		result.Errors.push(new ValidationErrorInfo(
     			"WatermarkAfter",
-    			"Watermark After date cannot be set when IsDryRun is enabled.",
+    			"WatermarkAfter must be empty when IsDryRun is enabled.",
     			this.WatermarkAfter,
     			ValidationErrorType.Failure
     		));
@@ -6998,6 +7330,502 @@ export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommon
 
 
 /**
+ * MJ_BizApps_Common: Enrichment Provider Rates - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: EnrichmentProviderRate
+ * * Base View: vwEnrichmentProviderRates
+ * * @description How many vendor credits each operation uses, per provider. Used to estimate cost before a run or import.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Enrichment Provider Rates')
+export class mjBizAppsCommonEnrichmentProviderRateEntity extends BaseEntity<mjBizAppsCommonEnrichmentProviderRateEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Enrichment Provider Rates record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Enrichment Provider Rates record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonEnrichmentProviderRateEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Enrichment Provider Rates entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * CreditsPerUnit: Credits per unit must be zero or greater to prevent negative billing rates.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateCreditsPerUnitGreaterThanOrEqualToZero(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * Credits per unit must be zero or greater to prevent negative billing rates.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateCreditsPerUnitGreaterThanOrEqualToZero(result: ValidationResult) {
+    	if (this.CreditsPerUnit != null && this.CreditsPerUnit < 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"CreditsPerUnit",
+    			"Credits per unit must be greater than or equal to zero.",
+    			this.CreditsPerUnit,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: EnrichmentProviderID
+    * * Display Name: Enrichment Provider ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Enrichment Providers (vwEnrichmentProviders.ID)
+    */
+    get EnrichmentProviderID(): string {
+        return this.Get('EnrichmentProviderID');
+    }
+    set EnrichmentProviderID(value: string) {
+        this.Set('EnrichmentProviderID', value);
+    }
+
+    /**
+    * * Field Name: Operation
+    * * Display Name: Operation
+    * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Count
+    *   * Enrich
+    *   * SchoolLookup
+    *   * Search
+    * * Description: Enrich (bulk match of existing people), Count (counting a cohort), Search (one page of an import) or SchoolLookup (resolving a school name).
+    */
+    get Operation(): 'Count' | 'Enrich' | 'SchoolLookup' | 'Search' {
+        return this.Get('Operation');
+    }
+    set Operation(value: 'Count' | 'Enrich' | 'SchoolLookup' | 'Search') {
+        this.Set('Operation', value);
+    }
+
+    /**
+    * * Field Name: Unit
+    * * Display Name: Unit
+    * * SQL Data Type: nvarchar(30)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * MatchedPerson
+    *   * NonEmptyRequest
+    *   * Request
+    *   * ReturnedRecord
+    * * Description: What the vendor bills per: MatchedPerson, ReturnedRecord, NonEmptyRequest (a request that returned anything) or Request.
+    */
+    get Unit(): 'MatchedPerson' | 'NonEmptyRequest' | 'Request' | 'ReturnedRecord' {
+        return this.Get('Unit');
+    }
+    set Unit(value: 'MatchedPerson' | 'NonEmptyRequest' | 'Request' | 'ReturnedRecord') {
+        this.Set('Unit', value);
+    }
+
+    /**
+    * * Field Name: CreditsPerUnit
+    * * Display Name: Credits Per Unit
+    * * SQL Data Type: decimal(18, 4)
+    * * Description: Credits used per unit. 0 means free.
+    */
+    get CreditsPerUnit(): number {
+        return this.Get('CreditsPerUnit');
+    }
+    set CreditsPerUnit(value: number) {
+        this.Set('CreditsPerUnit', value);
+    }
+
+    /**
+    * * Field Name: Notes
+    * * Display Name: Notes
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Where the number came from and when it was checked, e.g. "Phase 0 spike, 2026-10".
+    */
+    get Notes(): string | null {
+        return this.Get('Notes');
+    }
+    set Notes(value: string | null) {
+        this.Set('Notes', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: EnrichmentProvider
+    * * Display Name: Enrichment Provider
+    * * SQL Data Type: nvarchar(100)
+    */
+    get EnrichmentProvider(): string {
+        return this.Get('EnrichmentProvider');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Enrichment Providers - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: EnrichmentProvider
+ * * Base View: vwEnrichmentProviders
+ * * @description Registry of person-enrichment vendor plugins. Each row names a class registered under BaseEnrichmentProvider.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Enrichment Providers')
+export class mjBizAppsCommonEnrichmentProviderEntity extends BaseEntity<mjBizAppsCommonEnrichmentProviderEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Enrichment Providers record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Enrichment Providers record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonEnrichmentProviderEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Enrichment Providers entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * MaxBatchSize: Maximum batch size must be greater than zero to ensure at least one record can be processed per batch.
+    * * RequestsPerMinute: Requests per minute, if specified, must be greater than zero.
+    * * Table-Level: If a credit price is specified, it must be zero or greater and a credit currency must also be provided.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateMaxBatchSizeGreaterThanZero(result);
+        this.ValidateRequestsPerMinuteGreaterThanZero(result);
+        this.ValidateCreditPriceAndCurrency(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * Maximum batch size must be greater than zero to ensure at least one record can be processed per batch.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateMaxBatchSizeGreaterThanZero(result: ValidationResult) {
+    	if (this.MaxBatchSize != null && this.MaxBatchSize <= 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"MaxBatchSize",
+    			"Maximum batch size must be greater than 0.",
+    			this.MaxBatchSize,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * Requests per minute, if specified, must be greater than zero.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateRequestsPerMinuteGreaterThanZero(result: ValidationResult) {
+    	if (this.RequestsPerMinute != null && this.RequestsPerMinute <= 0) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"RequestsPerMinute",
+    			"Requests per minute must be greater than 0.",
+    			this.RequestsPerMinute,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * If a credit price is specified, it must be zero or greater and a credit currency must also be provided.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateCreditPriceAndCurrency(result: ValidationResult): void {
+    	if (this.CreditPrice != null) {
+    		if (this.CreditPrice < 0) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"CreditPrice",
+    				"Credit price must be zero or greater.",
+    				this.CreditPrice,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    		if (this.CreditCurrency == null || this.CreditCurrency.trim().length === 0) {
+    			result.Errors.push(new ValidationErrorInfo(
+    				"CreditCurrency",
+    				"Credit currency is required when a credit price is specified.",
+    				this.CreditCurrency,
+    				ValidationErrorType.Failure
+    			));
+    		}
+    	}
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: Code
+    * * Display Name: Code
+    * * SQL Data Type: nvarchar(60)
+    * * Description: Stable short code, e.g. Apollo or PDL. Also written as SourceSystem on every row this provider produces. Never rename.
+    */
+    get Code(): string {
+        return this.Get('Code');
+    }
+    set Code(value: string) {
+        this.Set('Code', value);
+    }
+
+    /**
+    * * Field Name: Name
+    * * Display Name: Name
+    * * SQL Data Type: nvarchar(100)
+    * * Description: Display name.
+    */
+    get Name(): string {
+        return this.Get('Name');
+    }
+    set Name(value: string) {
+        this.Set('Name', value);
+    }
+
+    /**
+    * * Field Name: Description
+    * * Display Name: Description
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: What the provider supplies and any caveats.
+    */
+    get Description(): string | null {
+        return this.Get('Description');
+    }
+    set Description(value: string | null) {
+        this.Set('Description', value);
+    }
+
+    /**
+    * * Field Name: DriverClass
+    * * Display Name: Driver Class
+    * * SQL Data Type: nvarchar(200)
+    * * Description: ClassFactory key of the BaseEnrichmentProvider subclass that implements this provider.
+    */
+    get DriverClass(): string {
+        return this.Get('DriverClass');
+    }
+    set DriverClass(value: string) {
+        this.Set('DriverClass', value);
+    }
+
+    /**
+    * * Field Name: IntegrationID
+    * * Display Name: Integration ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Integrations (vwIntegrations.ID)
+    */
+    get IntegrationID(): string | null {
+        return this.Get('IntegrationID');
+    }
+    set IntegrationID(value: string | null) {
+        this.Set('IntegrationID', value);
+    }
+
+    /**
+    * * Field Name: MaxBatchSize
+    * * Display Name: Max Batch Size
+    * * SQL Data Type: int
+    * * Default Value: 10
+    * * Description: Most people the vendor accepts in one request (Apollo 10, PDL 100). The engine batches to this size.
+    */
+    get MaxBatchSize(): number {
+        return this.Get('MaxBatchSize');
+    }
+    set MaxBatchSize(value: number) {
+        this.Set('MaxBatchSize', value);
+    }
+
+    /**
+    * * Field Name: RequestsPerMinute
+    * * Display Name: Requests Per Minute
+    * * SQL Data Type: int
+    * * Description: Optional client-side request ceiling. NULL means rely on the vendor's 429 responses.
+    */
+    get RequestsPerMinute(): number | null {
+        return this.Get('RequestsPerMinute');
+    }
+    set RequestsPerMinute(value: number | null) {
+        this.Set('RequestsPerMinute', value);
+    }
+
+    /**
+    * * Field Name: Configuration
+    * * Display Name: Configuration
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Provider-specific JSON options, e.g. a PDL minimum likelihood. Engine-wide policy lives on the action params, not here.
+    */
+    get Configuration(): string | null {
+        return this.Get('Configuration');
+    }
+    set Configuration(value: string | null) {
+        this.Set('Configuration', value);
+    }
+
+    /**
+    * * Field Name: CreditPrice
+    * * Display Name: Credit Price
+    * * SQL Data Type: decimal(18, 6)
+    * * Description: This host's price for one vendor credit, from its own contract. NULL means unpriced: estimates then show credits only, never a zero cost.
+    */
+    get CreditPrice(): number | null {
+        return this.Get('CreditPrice');
+    }
+    set CreditPrice(value: number | null) {
+        this.Set('CreditPrice', value);
+    }
+
+    /**
+    * * Field Name: CreditCurrency
+    * * Display Name: Credit Currency
+    * * SQL Data Type: nchar(3)
+    * * Description: ISO 4217 code for CreditPrice, e.g. USD. Required when CreditPrice is set.
+    */
+    get CreditCurrency(): string | null {
+        return this.Get('CreditCurrency');
+    }
+    set CreditCurrency(value: string | null) {
+        this.Set('CreditCurrency', value);
+    }
+
+    /**
+    * * Field Name: Sequence
+    * * Display Name: Sequence
+    * * SQL Data Type: int
+    * * Default Value: 0
+    * * Description: Display and preference order when several providers are active.
+    */
+    get Sequence(): number {
+        return this.Get('Sequence');
+    }
+    set Sequence(value: number) {
+        this.Set('Sequence', value);
+    }
+
+    /**
+    * * Field Name: IsActive
+    * * Display Name: Is Active
+    * * SQL Data Type: bit
+    * * Default Value: 1
+    * * Description: Inactive providers are refused by the engine.
+    */
+    get IsActive(): boolean {
+        return this.Get('IsActive');
+    }
+    set IsActive(value: boolean) {
+        this.Set('IsActive', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Integration
+    * * Display Name: Integration
+    * * SQL Data Type: nvarchar(100)
+    */
+    get Integration(): string | null {
+        return this.Get('Integration');
+    }
+}
+
+
+/**
  * MJ_BizApps_Common: Job Functions - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: JobFunction
@@ -8198,6 +9026,531 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
 
 
 /**
+ * MJ_BizApps_Common: Person Educations - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: PersonEducation
+ * * Base View: vwPersonEducations
+ * * @description Schools and degrees a person has attended or earned. Any number per person, from any source.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Person Educations')
+export class mjBizAppsCommonPersonEducationEntity extends BaseEntity<mjBizAppsCommonPersonEducationEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Person Educations record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Person Educations record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonPersonEducationEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Person Educations entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * Table-Level: End date must be on or after the start date when both dates are specified.
+    * * Table-Level: Records that are not created manually must specify a source system to track where the data originated.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateEndDateOnOrAfterStartDate(result);
+        this.ValidateSourceSystemForNonManualSource(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * End date must be on or after the start date when both dates are specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateEndDateOnOrAfterStartDate(result: ValidationResult) {
+    	if (this.StartDate != null && this.EndDate != null && this.EndDate < this.StartDate) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"EndDate",
+    			"End date must be on or after start date.",
+    			this.EndDate,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * Records that are not created manually must specify a source system to track where the data originated.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateSourceSystemForNonManualSource(result: ValidationResult): void {
+    	if (this.Source !== "Manual" && (this.SourceSystem == null || this.SourceSystem.trim() === "")) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"SourceSystem",
+    			"Source system must be provided when the source is not 'Manual'.",
+    			this.SourceSystem,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: PersonID
+    * * Display Name: Person
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
+    */
+    get PersonID(): string {
+        return this.Get('PersonID');
+    }
+    set PersonID(value: string) {
+        this.Set('PersonID', value);
+    }
+
+    /**
+    * * Field Name: OrganizationID
+    * * Display Name: Organization ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
+    */
+    get OrganizationID(): string | null {
+        return this.Get('OrganizationID');
+    }
+    set OrganizationID(value: string | null) {
+        this.Set('OrganizationID', value);
+    }
+
+    /**
+    * * Field Name: InstitutionName
+    * * Display Name: Institution Name
+    * * SQL Data Type: nvarchar(255)
+    * * Description: The school name exactly as the source gave it. Kept even when OrganizationID is set, so unmatched names are never lost.
+    */
+    get InstitutionName(): string {
+        return this.Get('InstitutionName');
+    }
+    set InstitutionName(value: string) {
+        this.Set('InstitutionName', value);
+    }
+
+    /**
+    * * Field Name: Degree
+    * * Display Name: Degree
+    * * SQL Data Type: nvarchar(200)
+    * * Description: Degree as the source gave it, e.g. "Master of Public Administration" or "MPP".
+    */
+    get Degree(): string | null {
+        return this.Get('Degree');
+    }
+    set Degree(value: string | null) {
+        this.Set('Degree', value);
+    }
+
+    /**
+    * * Field Name: FieldOfStudy
+    * * Display Name: Field of Study
+    * * SQL Data Type: nvarchar(200)
+    * * Description: Major or field of study, when known.
+    */
+    get FieldOfStudy(): string | null {
+        return this.Get('FieldOfStudy');
+    }
+    set FieldOfStudy(value: string | null) {
+        this.Set('FieldOfStudy', value);
+    }
+
+    /**
+    * * Field Name: StartDate
+    * * Display Name: Start Date
+    * * SQL Data Type: date
+    * * Description: Date study began, when known.
+    */
+    get StartDate(): Date | null {
+        return this.Get('StartDate');
+    }
+    set StartDate(value: Date | null) {
+        this.Set('StartDate', value);
+    }
+
+    /**
+    * * Field Name: EndDate
+    * * Display Name: End Date
+    * * SQL Data Type: date
+    * * Description: Graduation or end date, when known.
+    */
+    get EndDate(): Date | null {
+        return this.Get('EndDate');
+    }
+    set EndDate(value: Date | null) {
+        this.Set('EndDate', value);
+    }
+
+    /**
+    * * Field Name: Source
+    * * Display Name: Source
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Enrichment
+    *   * Import
+    *   * Manual
+    * * Description: Manual (entered by a person), Import (bulk load) or Enrichment (written by an enrichment provider). Enrichment never edits Manual rows.
+    */
+    get Source(): 'Enrichment' | 'Import' | 'Manual' {
+        return this.Get('Source');
+    }
+    set Source(value: 'Enrichment' | 'Import' | 'Manual') {
+        this.Set('Source', value);
+    }
+
+    /**
+    * * Field Name: SourceSystem
+    * * Display Name: Source System
+    * * SQL Data Type: nvarchar(80)
+    * * Description: Which system supplied a non-manual row. Equals EnrichmentProvider.Code for enrichment rows.
+    */
+    get SourceSystem(): string | null {
+        return this.Get('SourceSystem');
+    }
+    set SourceSystem(value: string | null) {
+        this.Set('SourceSystem', value);
+    }
+
+    /**
+    * * Field Name: LastVerifiedAt
+    * * Display Name: Last Verified At
+    * * SQL Data Type: datetimeoffset
+    * * Description: When the source last confirmed this row.
+    */
+    get LastVerifiedAt(): Date | null {
+        return this.Get('LastVerifiedAt');
+    }
+    set LastVerifiedAt(value: Date | null) {
+        this.Set('LastVerifiedAt', value);
+    }
+
+    /**
+    * * Field Name: Notes
+    * * Display Name: Notes
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: Free text.
+    */
+    get Notes(): string | null {
+        return this.Get('Notes');
+    }
+    set Notes(value: string | null) {
+        this.Set('Notes', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Person
+    * * Display Name: Person Name
+    * * SQL Data Type: nvarchar(201)
+    */
+    get Person(): string {
+        return this.Get('Person');
+    }
+
+    /**
+    * * Field Name: Organization
+    * * Display Name: Organization Name
+    * * SQL Data Type: nvarchar(255)
+    */
+    get Organization(): string | null {
+        return this.Get('Organization');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Person External Identities - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: PersonExternalIdentity
+ * * Base View: vwPersonExternalIdentities
+ * * @description A person's identifier in an external system and the outcome of the last match attempt. One row per person per system.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Person External Identities')
+export class mjBizAppsCommonPersonExternalIdentityEntity extends BaseEntity<mjBizAppsCommonPersonExternalIdentityEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Person External Identities record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Person External Identities record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonPersonExternalIdentityEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * Validate() method override for MJ_BizApps_Common: Person External Identities entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
+    * * MatchConfidence: Match confidence must be between 0.0 and 1.0 when specified.
+    * * Table-Level: Records with a match status of 'Matched' must have an external ID specified.
+    * @public
+    * @method
+    * @override
+    */
+    public override Validate(): ValidationResult {
+        const result = super.Validate();
+        this.ValidateMatchConfidenceRange(result);
+        this.ValidateExternalIDForMatchedStatus(result);
+        result.Success = result.Success && (result.Errors.length === 0);
+
+        return result;
+    }
+
+    /**
+    * Match confidence must be between 0.0 and 1.0 when specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateMatchConfidenceRange(result: ValidationResult) {
+    	if (this.MatchConfidence != null && (this.MatchConfidence < 0.0 || this.MatchConfidence > 1.0)) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"MatchConfidence",
+    			"Match confidence must be between 0.0 and 1.0.",
+    			this.MatchConfidence,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * Records with a match status of 'Matched' must have an external ID specified.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateExternalIDForMatchedStatus(result: ValidationResult) {
+    	if (this.MatchStatus === "Matched" && this.ExternalID == null) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"ExternalID",
+    			"An External ID is required when the match status is 'Matched'.",
+    			this.ExternalID,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: PersonID
+    * * Display Name: Person
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
+    */
+    get PersonID(): string {
+        return this.Get('PersonID');
+    }
+    set PersonID(value: string) {
+        this.Set('PersonID', value);
+    }
+
+    /**
+    * * Field Name: SourceSystem
+    * * Display Name: Source System
+    * * SQL Data Type: nvarchar(80)
+    * * Description: The external system, e.g. Apollo or PDL.
+    */
+    get SourceSystem(): string {
+        return this.Get('SourceSystem');
+    }
+    set SourceSystem(value: string) {
+        this.Set('SourceSystem', value);
+    }
+
+    /**
+    * * Field Name: ExternalID
+    * * Display Name: External ID
+    * * SQL Data Type: nvarchar(400)
+    * * Description: The person's ID in that system. Unique per system. Required when MatchStatus is Matched.
+    */
+    get ExternalID(): string | null {
+        return this.Get('ExternalID');
+    }
+    set ExternalID(value: string | null) {
+        this.Set('ExternalID', value);
+    }
+
+    /**
+    * * Field Name: MatchStatus
+    * * Display Name: Match Status
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Matched
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Ambiguous
+    *   * Matched
+    *   * NotFound
+    * * Description: Matched; NotFound (the system had no match, retried after a cooling-off period); Ambiguous (the system's ID already belongs to another Person, so a human must resolve the possible duplicate).
+    */
+    get MatchStatus(): 'Ambiguous' | 'Matched' | 'NotFound' {
+        return this.Get('MatchStatus');
+    }
+    set MatchStatus(value: 'Ambiguous' | 'Matched' | 'NotFound') {
+        this.Set('MatchStatus', value);
+    }
+
+    /**
+    * * Field Name: MatchedBy
+    * * Display Name: Matched By
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Email
+    *   * ExternalID
+    *   * LinkedIn
+    *   * Manual
+    *   * NameAndDomain
+    * * Description: Which identifier produced the match: ExternalID, Email, LinkedIn, NameAndDomain or Manual.
+    */
+    get MatchedBy(): 'Email' | 'ExternalID' | 'LinkedIn' | 'Manual' | 'NameAndDomain' | null {
+        return this.Get('MatchedBy');
+    }
+    set MatchedBy(value: 'Email' | 'ExternalID' | 'LinkedIn' | 'Manual' | 'NameAndDomain' | null) {
+        this.Set('MatchedBy', value);
+    }
+
+    /**
+    * * Field Name: MatchConfidence
+    * * Display Name: Match Confidence
+    * * SQL Data Type: decimal(5, 4)
+    * * Description: Vendor match confidence from 0 to 1, when the vendor reports one.
+    */
+    get MatchConfidence(): number | null {
+        return this.Get('MatchConfidence');
+    }
+    set MatchConfidence(value: number | null) {
+        this.Set('MatchConfidence', value);
+    }
+
+    /**
+    * * Field Name: LastCheckedAt
+    * * Display Name: Last Checked At
+    * * SQL Data Type: datetimeoffset
+    * * Description: When this person was last sent to this system. Drives re-enrichment eligibility.
+    */
+    get LastCheckedAt(): Date {
+        return this.Get('LastCheckedAt');
+    }
+    set LastCheckedAt(value: Date) {
+        this.Set('LastCheckedAt', value);
+    }
+
+    /**
+    * * Field Name: LastMatchedAt
+    * * Display Name: Last Matched At
+    * * SQL Data Type: datetimeoffset
+    * * Description: When the system last returned a match.
+    */
+    get LastMatchedAt(): Date | null {
+        return this.Get('LastMatchedAt');
+    }
+    set LastMatchedAt(value: Date | null) {
+        this.Set('LastMatchedAt', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Person
+    * * Display Name: Person
+    * * SQL Data Type: nvarchar(201)
+    */
+    get Person(): string {
+        return this.Get('Person');
+    }
+}
+
+
+/**
  * MJ_BizApps_Common: Person Job Functions - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: PersonJobFunction
@@ -8229,7 +9582,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
 
     /**
     * Validate() method override for MJ_BizApps_Common: Person Job Functions entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
-    * * Confidence: Confidence score must be a value between 0.0 and 1.0 (inclusive) if it is provided, representing a valid probability range.
+    * * Confidence: Confidence score must be between 0.0 and 1.0, or left blank.
     * @public
     * @method
     * @override
@@ -8243,7 +9596,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     }
 
     /**
-    * Confidence score must be a value between 0.0 and 1.0 (inclusive) if it is provided, representing a valid probability range.
+    * Confidence score must be between 0.0 and 1.0, or left blank.
     * @param result - the ValidationResult object to add any errors or warnings to
     * @public
     * @method
@@ -8252,7 +9605,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     	if (this.Confidence != null && (this.Confidence < 0.0 || this.Confidence > 1.0)) {
     		result.Errors.push(new ValidationErrorInfo(
     			"Confidence",
-    			"Confidence score must be between 0.0 and 1.0.",
+    			"Confidence must be between 0.0 and 1.0.",
     			this.Confidence,
     			ValidationErrorType.Failure
     		));
@@ -8579,6 +9932,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * Validate() method override for MJ_BizApps_Common: Relationships entity. This is an auto-generated method that invokes the generated validators for this entity for the following fields:
     * * Table-Level: A relationship must be linked to exactly one source: either a person or an organization. This ensures that the origin of the relationship is clearly defined and prevents data where both or neither are specified.
+    * * Table-Level: A source system is required to track where the data originated unless the record is manually created.
     * * Table-Level: A relationship must be linked to exactly one target: either a person or an organization. This ensures that the destination of the relationship is clearly defined and prevents ambiguous or missing links.
     * @public
     * @method
@@ -8587,6 +9941,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     public override Validate(): ValidationResult {
         const result = super.Validate();
         this.ValidateFromPersonOrFromOrganizationExclusivity(result);
+        this.ValidateSourceSystemWhenSourceNotManual(result);
         this.ValidateToPersonOrToOrganizationExclusivity(result);
         result.Success = result.Success && (result.Errors.length === 0);
 
@@ -8608,6 +9963,23 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     			"FromPersonID",
     			"You must specify either a Person or an Organization as the source, but not both and not neither.",
     			this.FromPersonID,
+    			ValidationErrorType.Failure
+    		));
+    	}
+    }
+
+    /**
+    * A source system is required to track where the data originated unless the record is manually created.
+    * @param result - the ValidationResult object to add any errors or warnings to
+    * @public
+    * @method
+    */
+    public ValidateSourceSystemWhenSourceNotManual(result: ValidationResult) {
+    	if (this.Source !== "Manual" && (this.SourceSystem == null || this.SourceSystem.trim() === "")) {
+    		result.Errors.push(new ValidationErrorInfo(
+    			"SourceSystem",
+    			"A source system must be specified when the source is not Manual.",
+    			this.SourceSystem,
     			ValidationErrorType.Failure
     		));
     	}
@@ -8829,6 +10201,38 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     }
     set SeniorityLevelID(value: string | null) {
         this.Set('SeniorityLevelID', value);
+    }
+
+    /**
+    * * Field Name: Source
+    * * Display Name: Source
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: Manual
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Enrichment
+    *   * Import
+    *   * Manual
+    * * Description: Manual, Import or Enrichment. Enrichment only updates or ends relationships it created.
+    */
+    get Source(): 'Enrichment' | 'Import' | 'Manual' {
+        return this.Get('Source');
+    }
+    set Source(value: 'Enrichment' | 'Import' | 'Manual') {
+        this.Set('Source', value);
+    }
+
+    /**
+    * * Field Name: SourceSystem
+    * * Display Name: Source System
+    * * SQL Data Type: nvarchar(80)
+    * * Description: Which system supplied a non-manual relationship.
+    */
+    get SourceSystem(): string | null {
+        return this.Get('SourceSystem');
+    }
+    set SourceSystem(value: string | null) {
+        this.Set('SourceSystem', value);
     }
 
     /**
