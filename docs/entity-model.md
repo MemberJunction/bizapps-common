@@ -8,7 +8,7 @@ This document describes the data model for the BizApps Common shared library. Al
 
 ### Person
 
-People records with demographics and optional linkage to the MJ system user table.
+People records with demographics. A Person is a record of a human being, with no implication of platform access: job applicants, CRM contacts and members are all People, and most never sign in.
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -22,10 +22,28 @@ People records with demographics and optional linkage to the MJ system user tabl
 | Gender | nvarchar | Optional |
 | Title | nvarchar | Denormalized professional info (e.g., "VP Engineering") |
 | Company | nvarchar | Denormalized professional info (e.g., "Acme Corp") |
-| LinkedUserID | uniqueidentifier | Optional FK to MJ core Users table |
+| LinkedUserID | uniqueidentifier | **Deprecated (v5.33).** Not read or written by bizapps-common; see [Person and MJ User](#person-and-mj-user) |
 | Bio | nvarchar(max) | Free-form biography |
 | Notes | nvarchar(max) | Internal notes |
 | IsActive | bit | Soft-delete flag |
+
+#### Person and MJ User
+
+bizapps-common does **not** bind People to MJ Users. Until v5.33, saving a Person with an e-mail address
+created an active MJ User with the `UI` role and stored it in `LinkedUserID`, so every job applicant or
+CRM contact recorded as a Person was given a login
+([#36](https://github.com/MemberJunction/bizapps-common/issues/36),
+[#39](https://github.com/MemberJunction/bizapps-common/pull/39)). Since v5.33:
+
+- Saving a Person never creates, links, syncs or deactivates an MJ User.
+- `LinkedUserID` is marked `Status = 'Deprecated'`. The column, its FK and `UQ_Person_LinkedUserID` remain
+  physically for backward compatibility and are scheduled for removal in the next major release.
+- The People entity is an **overlapping IS-A parent** (`AllowMultipleSubtypes = 1`). The binding between a
+  Person and the MJ User who signs in belongs to the **platform layer** that decides who gets access, as an
+  IS-A subtype of People that carries the user reference (for example BCSaaS `BC: People`).
+
+An app that needs "the Person for the signed-in user" must not read `LinkedUserID`. It should resolve the
+Person through the platform layer's binding, or through its own extension point that a host can supply.
 
 ### Organization
 
@@ -241,7 +259,6 @@ Polymorphic address linker enabling any MJ entity to have addresses without sche
 | AddressTypeID ----+->+ |            | DateOfBirth    |
 | IsPrimary         |  | |            | Gender         |
 +-------------------+  | |            | Title, Company |
-                       | |            | LinkedUserID   |
               +--------+-+            | Bio, Notes     |
               |        |              | IsActive       |
    +----------+--+  +--+----------+  +----------------+

@@ -70,7 +70,6 @@ Form Components (NgModule-declared, @RegisterClass)
 | `PersonSummaryCardsComponent` | `<bizapps-person-summary-cards>` | Four metric cards showing email, phone, address count, and relationship count (lazy-loaded) |
 | `PersonIdentitySectionComponent` | `<bizapps-person-identity-section>` | Section card with identity fields: name, preferred name, prefix/suffix/gender, date of birth |
 | `PersonProfessionalSectionComponent` | `<bizapps-person-professional-section>` | Section card with professional fields: title, job title, organization link, email, phone, bio |
-| `PersonAccountSectionComponent` | `<bizapps-person-account-section>` | Section card with account fields: linked user and status |
 
 ### Atomic Widgets — Organization
 
