@@ -3,6 +3,7 @@ import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 
 import { CommonSettings } from '../../data/common-settings';
+import { EscapeFilterValue } from '../../data/directory-stats';
 import { SellingCompanyConfirm } from './selling-company-confirm';
 
 const COMPANIES_ENTITY = 'MJ: Companies';
@@ -186,7 +187,7 @@ export class SellingCompanyFieldComponent implements OnInit {
         }
         const result = await RunView.FromMetadataProvider(Metadata.Provider).RunView<{ CompanyID: string }>({
             EntityName: EMPLOYEES_ENTITY,
-            ExtraFilter: `ID = '${String(employeeID).replace(/'/g, "''")}'`,
+            ExtraFilter: `ID = '${EscapeFilterValue(String(employeeID))}'`,
             Fields: ['CompanyID'],
             ResultType: 'simple',
             MaxRows: 1,
