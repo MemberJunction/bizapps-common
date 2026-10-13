@@ -286,6 +286,11 @@ Phases 5 and 6 build this. §9 has the detail.
 
 ## 4. Phase 0: Apollo and PDL live spike
 
+**Done 2026-10-12** with a free PDL key and with both a free and the company's paid Apollo key, on six
+public figures (two documented HKS alumni). The two Apollo keys returned identical data and differed
+only in rate limits, so the Apollo answers are not plan artefacts. The answers are folded into the
+sections below; the raw and redacted responses are the Phase 1 fixtures.
+
 **Do this before Phase 1. It takes about three hours and needs a real Apollo API key and a real PDL
 API key.** The sandbox the plan was written in could not reach either vendor's API or full docs, so
 these points are unverified, and they decide part of Phase 1. Questions S7, S8 and P8 to P12 are for
@@ -464,13 +469,19 @@ export class ApolloRequestError extends Error { Status: number; Body: string; }
 - **Input size.** Reject more than 10 inputs with an `Error` before any HTTP call. Reject inputs that
   have no identifying field (none of `ApolloPersonID`, `Email`, `LinkedInURL`, or a first name, last
   name and organization).
-- **Auth.** Use the `X-Api-Key` header only. Never put the key in the body or query string. Use the
-  base path S1 settled.
+- **Auth.** Use the `X-Api-Key` header only. Never put the key in the body or query string. Use
+  `https://api.apollo.io/api/v1`: S1 found both base paths serve `bulk_match` with header auth, and
+  `api/v1` is the one `api_search` is documented under.
 - **Correlation.** If `matches.length !== inputs.length`, **throw** `ApolloRequestError`. Never guess an
   alignment: a shifted index writes one person's degrees onto another person.
-- **Education split.** Follow what S2 found. If education arrives inside `employment_history`, an entry
-  with a non-empty `degree` (or whatever marker S2 finds) goes to `Education` and **not** to
-  `Employment`. That fixes A-7.
+- **Education split.** `employment_history[]` carries `degree`, `major`, `kind` and `grade_level` keys.
+  An entry with a non-empty `degree` (or `kind` naming education) goes to `Education` and **not** to
+  `Employment`; an entry naming a school with none of those set is a job (a trustee seat, say) and
+  stays in `Employment`. That fixes A-7. **S2: Apollo returned no education on either key.** Every one
+  of those keys was null on all five matches, free and paid alike, including a person whose three
+  degrees are public, and the only school-named entry was a trustee seat. Keep the split rule for
+  safety, but the Apollo provider drops the Education facet (§8.2), and the contacts action's
+  `EducationHistoryFieldMappings` writes nothing from Apollo, which its README must say.
 - **Dates.** Normalize to `YYYY-MM-DD`. Apollo sometimes sends `YYYY-MM` or `YYYY`; map those to the
   first day of the month or year, and to `null` when they won't parse.
 - **Rate limits.**
@@ -588,7 +599,7 @@ packages/Actions/PeopleDataLabs/src/
 ```typescript
 export interface PDLPersonInput {
     Key: string;                  // correlation key; common passes the Person ID
-    PDLID?: string;               // exact re-match, when known (param name per P4)
+    PDLID?: string;               // exact re-match, when known; sent as `pdl_id` (P4)
     Email?: string;
     LinkedInURL?: string;         // sent as PDL's `profile` param
     FirstName?: string;
@@ -611,7 +622,7 @@ export interface PDLExperienceEntry {
     Title: string | null;
     StartDate: string | null;
     EndDate: string | null;
-    IsCurrent: boolean;           // from the field P3 identifies
+    IsCurrent: boolean;           // from `is_primary` (P3); current jobs have end_date null
 }
 
 export interface PDLPersonMatch {
@@ -628,8 +639,8 @@ export interface PDLPersonMatch {
 
 export interface PDLBulkOptions {
     MinLikelihood?: number;       // default 6, PDL's recommended default
-    Required?: string;            // e.g. 'education', only if P5 confirms it
-    DataInclude?: string[];       // only if P5 confirms it
+    Required?: string;            // e.g. 'education'. P5: accepted but not applied on the free plan; keep for plans that honour it
+    DataInclude?: string[];       // same: not applied on the free plan, so never rely on it for minimization
     IncludeRaw?: boolean;
 }
 
@@ -707,8 +718,11 @@ export class PDLRequestError extends Error { Status: number; Body: string; }
 - **Per-item status.** 200 = matched. 404 = not matched, which is not an error and not billed. Any
   other per-item status sets `ErrorMessage` on that item only; the rest of the batch still counts.
 - **Top-level status.** Map the out-of-credits response to `PDLCreditsExhaustedError`, the
-  rate-limit response to `PDLRateLimitError`, and 401/403 to `PDLAuthError`. The exact codes come from
-  P6. No sleeping inside the client.
+  rate-limit response to `PDLRateLimitError`, and 401/403 to `PDLAuthError`. P6: a 401 body is
+  `{"status":401,"error":{"type":["authentication_error"],"message":"…"}}`; credits and limits arrive as
+  headers (`x-call-credits-spent`, `x-call-credits-type`, `x-ratelimit-limit`/`-remaining`/`-reset` as
+  JSON per window, `x-totallimit-remaining`). 402 and 429 were not provoked; map them by status and
+  read `x-ratelimit-reset`. No sleeping inside the client.
 - **Minimization.** Map only the fields above. The normalized result never contains emails, phone
   numbers, addresses or anything else PDL returns. `Raw` exists for debugging and is off by default.
 - **Dates.** PDL dates can be `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Normalize to the first day of the
@@ -716,13 +730,15 @@ export class PDLRequestError extends Error { Status: number; Body: string; }
 - **Search.** `POST {PDLAPIEndpoint}/person/search` with the query as Elasticsearch JSON. Reject a
   `Size` outside 1 to 100 before any HTTP call. A "no records" response (404, per P8) is
   `Total: 0`, not an error. Search results go through the same mapping and the same minimization as
-  `BulkEnrich`. Use the SQL form only if P12 shows Elasticsearch isn't available on our plan; then
-  every value goes through one escaping helper with its own tests.
+  `BulkEnrich`. P12: both the Elasticsearch and the SQL form are accepted and agree; use Elasticsearch,
+  never the SQL form.
 - **Count.** `CountPeople` sends `size: 1`, reads the total, and drops the record without mapping
   it. It reports what it was billed, so the caller can show it.
-- **School lookup.** `SuggestSchools` and `CleanSchool` are GETs with the same header auth. If P10
-  shows either one spends credits, report that in its result and record it in the rate rows (§8.4);
-  never call a paid endpoint from a code path the UI treats as free.
+- **School lookup.** `SuggestSchools` and `CleanSchool` are GETs with the same header auth. P10: both
+  are free of credits and only rate-limited (autocomplete 60/min and 1,000/day; cleaner 100/min and
+  10,000/month). The cleaner is not trustworthy alone: it maps "John F. Kennedy School of Government"
+  to `john f. kennedy school`. Clean first, then autocomplete on the cleaned name, and let the user
+  pick; autocomplete returns `meta.id`, `website` and a per-suggestion `count`.
 
 **Credentials.** `credentials.ts` copies Apollo's resolver (`ApolloEnrichment/src/lists/credentials.ts`)
 with Integration name `People Data Labs` and environment variable `PDL_API_KEY`. The same rules
@@ -777,7 +793,13 @@ Changeset: **minor** (the Integration row and the action are metadata). An ordin
 ### 5.8 Apollo search filters for the importer (in PR 1a)
 
 The importer counts and searches Apollo through the existing `ApolloRESTClient.searchPeople`
-(`lists/ApolloRESTClient.ts:445-462`), which returns `pagination.total_entries` as `totalEntries`.
+(`lists/ApolloRESTClient.ts:445-462`), which returns `pagination.total_entries` as `totalEntries` and
+throws when the `pagination` envelope is missing. **That envelope is gone:** on both the free and the
+paid key, S7 returned only `{ total_entries, people }` (no `pagination`, no `partial_results_*`, no
+`credits_consumed`), and the people were obfuscated (`last_name_obfuscated`, `has_email` flags, no
+city or LinkedIn URL). So `searchPeople` is broken against the current API (A-15). Read
+`total_entries` at the top level, treat it as exact until a large query shows a cap, and map the
+obfuscated person shape.
 Its filter, `ApolloPeopleSearchFilter` (`generic/apollo-lists.types.ts:194-200`), maps only
 organization domains, organization IDs, titles and seniorities.
 
@@ -791,8 +813,10 @@ organization domains, organization IDs, titles and seniorities.
   accepted.
 
 Apollo's search results are thin: name, title, LinkedIn URL and organization, and no email, phone,
-education or location (`generic/apollo-lists.types.ts:112-124`). So an Apollo import is two steps
-for each person: a free search (if S7 confirms it's free), then a paid `BulkMatch` for the details.
+education or location (`generic/apollo-lists.types.ts:112-124`); today even the last name and the
+LinkedIn URL are withheld (`last_name_obfuscated`), on paid plans too. So an Apollo import is two steps for each person: a search (S7 saw no
+credits charged and no credit headers), then a paid `BulkMatch` for the details. S8: `person_titles`,
+`person_locations` ("Boston, Massachusetts, United States") and `q_keywords` are accepted as sent.
 The estimate includes the second step (§9.7).
 
 **Phase 1 is done when:**
@@ -1710,8 +1734,9 @@ Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs
 
 - **Members:** `Code = 'Apollo'`, `IsLive = true`, and a hard batch ceiling of
   `ApolloPeopleClient.MaxBatchSize` (10).
-- **`SupportedFacets`:** `['Education', 'Employment', 'LinkedIn']`. **Drop `'Education'` if Phase 0
-  found Apollo returns none.**
+- **`SupportedFacets`:** `['Employment', 'LinkedIn']`. S2 found no education on either key (§5.2);
+  education comes from PDL (D13). If the client's split rule ever yields a degree entry, it is passed
+  through, but the facet is not advertised.
 - **`Initialize`:** `ApolloPeopleClient.ForCompany(context.CompanyID, context.ContextUser)`. If no key
   resolves, throw `EnrichmentConfigurationError`, which the action maps to `CREDENTIALS_NOT_FOUND`.
 - **`EnrichPeople`:**
@@ -1730,9 +1755,8 @@ Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs
 
 - **Members:** `Code = 'PDL'`, `IsLive = true`, and a hard batch ceiling of
   `PDLPersonClient.MaxBatchSize` (100).
-- **`SupportedFacets`:** `['Education', 'Employment', 'LinkedIn']`. Drop `'Education'` only if Phase 0
-  P7 found our PDL plan doesn't include education fields, and raise that with the requester first: it
-  removes the feature's main purpose.
+- **`SupportedFacets`:** `['Education', 'Employment', 'LinkedIn']`. P7 confirmed education is in the
+  data even on the free plan.
 - **`Initialize`:**
   1. `PDLPersonClient.ForCompany(context.CompanyID, context.ContextUser)`. If no key resolves, throw
      `EnrichmentConfigurationError`.
@@ -1748,7 +1772,8 @@ Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs
      - `LinkedInURL`, `FirstName`, `LastName`
      - `Company` = the domain if known, otherwise the organization name
   2. Call `BulkEnrich(inputs, { MinLikelihood, Required, DataInclude })`. Pass `Required` and
-     `DataInclude` only if P5 confirmed them.
+     `DataInclude` only when the row's `Configuration` sets them; P5 found neither applied on the free
+     plan, so the client's own field mapping is the minimization, not these parameters.
   3. Map each `PDLPersonMatch` to a `PersonEnrichmentResult` using the table in §11.3.
   4. Translate errors:
      - `PDLRateLimitError` → `EnrichmentRateLimitError`
@@ -1776,7 +1801,7 @@ Add `@memberjunction/actions-apollo` and `@memberjunction/actions-peopledatalabs
 | `DriverClass` | `Apollo` | `PDL` |
 | `IntegrationID` | `@lookup:MJ: Integrations.Name=Apollo` | `@lookup:MJ: Integrations.Name=People Data Labs` |
 | `MaxBatchSize` | 10 | 100 |
-| `RequestsPerMinute` | from S5, or null | from P6, or null |
+| `RequestsPerMinute` | 20 (S5: the free plan's limit, 20/min, 100/hour, 600/day; the paid plan reported 1,000/min. A conservative seed that still sends 200 people a minute; an admin on a paid plan can raise it) | null (P6: 100/min on the free plan, reported as headers; rely on 429) |
 | `Configuration` | null | `{"MinLikelihood": 6}` |
 | `Sequence` | 10 | 20 |
 | `IsActive` | true | true |
@@ -1793,13 +1818,13 @@ wrong row makes it wrong. Put the source and date in `Notes`.
 
 | Provider | Operation | Unit | CreditsPerUnit | Confirmed by |
 |---|---|---|---|---|
-| Apollo | Enrich | MatchedPerson | 1 if S4 confirms; Apollo bills by what a match reveals, and common reveals no emails or phones | S4 |
-| Apollo | Count | Request | 0 if S7 confirms `api_search` is free | S7 |
-| Apollo | Search | Request | same as Count | S7 |
-| PDL | Enrich | MatchedPerson | 1 (misses are free, §11.1) | §11.1, P6 |
-| PDL | Count | NonEmptyRequest | 1 | P8 |
-| PDL | Search | ReturnedRecord | 1 | P9 |
-| PDL | SchoolLookup | Request | 0 if P10 confirms | P10 |
+| Apollo | Enrich | MatchedPerson | 1 (S4: `credits_consumed` 5 for 5 matches of 6; a miss is free) | S4, 2026-10-12 |
+| Apollo | Count | Request | 0 (S7: no credits charged and no credit headers on `api_search`, on both keys) | S7, 2026-10-12 |
+| Apollo | Search | Request | same as Count | S7, 2026-10-12 |
+| PDL | Enrich | MatchedPerson | 1 (P6: `x-call-credits-spent` equals the number of 200s; misses free) | P6, 2026-10-12 |
+| PDL | Count | NonEmptyRequest | 1 (P8: `size: 1` spent 1 search credit when something matched) | P8, 2026-10-12 |
+| PDL | Search | ReturnedRecord | 1 (P9) | P9, 2026-10-12 |
+| PDL | SchoolLookup | Request | 0 (P10: no credit headers; rate-limited only) | P10, 2026-10-12 |
 
 **`CreditPrice` ships empty on both providers.** Every host's contract is different. Put PDL's list
 price (reported as about $0.20 to $0.28 per credit in 2026, depending on plan; unverified) in the PDL
@@ -2183,7 +2208,7 @@ The user can remove the school criterion to make Apollo available.
 
 | Facet | PDL (P12 confirms the field names) | Apollo (after §5.8) | Fixture |
 |---|---|---|---|
-| Schools | yes: `education.school.id` when resolved, else a match on `education.school.name` | **no** | yes |
+| Schools | yes: `education.school.id` when resolved, else a match on `education.school.name`. **Also the parent-university case:** Phase 0 found an HKS MPA filed under `harvard university` (id `5Ic6…`) with major `public administration`, not under `harvard kennedy school` (`wFf8bch…`). A school-of-government criterion must accept the university's id plus a public-policy or public-administration major, or it misses real alumni. | **no** | yes |
 | Degrees | yes: `education.degrees`, mapping common abbreviations to PDL's canonical values | **no** | yes |
 | FieldsOfStudy | yes: `education.majors` | **no** | yes |
 | GraduationYears | yes: a range on `education.end_date` | **no** | yes |
@@ -2573,20 +2598,23 @@ Check it against the live docs while implementing.
 | School IDs are stable in the short to medium term, not permanently. | PDL, "[Deprecated] Person Manual" |
 | Not every field is in every plan. Field bundles decide which fields a customer receives. | PDL, "Person Data Overview" |
 
-### 11.2 Still to confirm in Phase 0
+### 11.2 Confirmed in Phase 0 (2026-10-12, free plan)
 
-- That `min_likelihood` is accepted inside each bulk `params` object, and that `metadata` is echoed
-  back (P1).
-- The exact field names under `education[]` and `experience[]` (P2, P3). §11.3 uses the names the
-  first draft of this plan assumed.
-- The parameter for re-enriching by PDL ID (P4).
-- Whether `required` and `data_include` are available (P5).
-- The out-of-credits and rate-limit responses (P6).
-- Whether our plan's field bundle includes education (P7).
+- P1: `min_likelihood` is honoured **only inside `requests[i].params`**; at the request level it is
+  silently ignored and likelihood 3 to 4 matches come back. `metadata` is echoed on every result,
+  misses included (`status` 404 with `metadata` present). Result shape: `{status, likelihood, data, metadata}`.
+- P2, P3: the names in §11.3 are the real ones. Dates are `YYYY`, `YYYY-MM` or null; degrees and
+  majors are lower-case canonical values (`masters`, `bachelor of arts`, `public administration`).
+- P4: `data.id` is stable; `GET /v5/person/enrich?pdl_id=<id>` returns the same record for 1 credit.
+- P5: `required` and `data_include` are accepted but not applied on the free plan.
+- P6: credits and limits are response headers (§5.7); 402 and 429 were not provoked.
+- P7: education is in the data on the free plan.
+- The surprise: PDL filed a Kennedy School master's under `school.name = "harvard university"`,
+  major `public administration` (§9.4, §12.3).
 
 ### 11.3 Mapping PDL to common
 
-| PDL (assumed names, confirm in P2 and P3) | Client field | Common |
+| PDL (names confirmed in Phase 0) | Client field | Common |
 |---|---|---|
 | `data.id` | `PDLID` | `PersonExternalIdentity.ExternalID` (`SourceSystem='PDL'`) |
 | `likelihood` (1–10) | `Likelihood` | `PersonExternalIdentity.MatchConfidence` = likelihood ÷ 10 |
@@ -2597,10 +2625,10 @@ Check it against the live docs while implementing.
 | `data.education[].majors[]` | `Majors` | `PersonEducation.FieldOfStudy` = values joined with "; ", or NULL |
 | `data.education[].start_date` / `end_date` | `StartDate` / `EndDate` | `PersonEducation.StartDate` / `EndDate`, normalized |
 | `data.experience[].company.name` | `CompanyName` | Organization resolution by name (§7.8) |
-| `data.experience[].company.website` | `CompanyDomain` | Organization resolution by domain (§7.8) |
+| `data.experience[].company.website` (already a bare domain, e.g. `un.org`) | `CompanyDomain` | Organization resolution by domain (§7.8) |
 | `data.experience[].title.name` | `Title` | `Relationship.Title` |
 | `data.experience[].start_date` / `end_date` | `StartDate` / `EndDate` | `Relationship.StartDate` / `EndDate` |
-| `data.experience[].is_primary` (or the field P3 finds) | `IsCurrent` | `Relationship.Status` = Active or Ended |
+| `data.experience[].is_primary` | `IsCurrent` | `Relationship.Status` = Active or Ended |
 | everything else in `data` (emails, phones, addresses, social handles other than LinkedIn, skills) | not mapped | **never stored** (§13) |
 
 One PDL education entry becomes one `PersonEducation` row, even when it lists several degrees. The
@@ -2618,7 +2646,7 @@ These came from search-result snippets of PDL's docs, not the docs themselves, s
 | Search is billed **one credit per record returned**. A query that returns no records costs nothing, so a `size: 1` search costs 1 credit when anything matches and nothing otherwise. | P8, P9 |
 | Search results use the same person schema as enrichment, so `education[]` and `experience[]` come back in the search result. | P9 |
 | Autocomplete (`GET /v5/autocomplete` with `field=school`) and the School Cleaner (`GET /v5/school/clean`) are free, and Autocomplete returns a count for each suggestion. | P10 |
-| Search has a lower rate limit than enrichment on some plans (reported as 20 requests per minute on Pro). | P11 |
+| Search has a lower rate limit than enrichment (P11: 10 per minute on the free plan, reported as 20 on Pro). `scroll_token` is returned. | P11 |
 | List price in 2026 was reported as about $0.20 to $0.28 per credit, depending on plan and volume. | Use your contract price (§8.4). |
 | School IDs are stable only in the short to medium term (§11.1). Resolve them fresh for each import; never store one as a permanent key. | — |
 
@@ -2630,7 +2658,7 @@ These came from search-result snippets of PDL's docs, not the docs themselves, s
 
 | Package | Must cover |
 |---|---|
-| MJ Apollo client | header auth and no key in body or query; input validation; positional correlation and the throw on length mismatch; education split; date normalization; per-minute retry once then a typed error; hourly limit throws immediately; 403 rewritten; `ForCompany` key-source reporting. Use the Phase 0 fixture. |
+| MJ Apollo client | header auth and no key in body or query; input validation; positional correlation and the throw on length mismatch; education split (a degree entry goes to Education, a school-named job stays in Employment); date normalization; per-minute retry once then a typed error; hourly limit throws immediately; 403 rewritten; `ForCompany` key-source reporting. Use the Phase 0 fixture. |
 | MJ Apollo actions | one test per Appendix A item that fails before the fix and passes after. |
 | MJ PDL client and action | the list at the end of §5.7. Use the PDL Phase 0 fixture. |
 | MJ Scheduling | a job activated while polling gets `NextRunAt` and becomes due. |
@@ -2709,8 +2737,11 @@ Phase 0 (at least one known HKS graduate):
    SELECT p.DisplayName, e.InstitutionName, e.Degree, e.EndDate
    FROM __mj_BizAppsCommon.vwPersonEducations e
    JOIN __mj_BizAppsCommon.vwPeople p ON p.ID = e.PersonID
-   WHERE e.InstitutionName LIKE '%Kennedy School%';
+   WHERE e.InstitutionName LIKE '%Kennedy School%'
+      OR (e.InstitutionName LIKE '%Harvard University%' AND e.FieldOfStudy LIKE '%public%');
    ```
+
+   The second branch is the parent-university case Phase 0 found (§9.4).
 
 ### 12.4 Manual verification before Phases 5 and 6 merge
 
@@ -2734,8 +2765,9 @@ On a dev host with a real PDL key, a test credit price on the PDL provider row, 
 - **Data minimization.** v1 stores schools, degrees, employment, a LinkedIn URL and the vendor ID.
   - Common's Apollo provider asks Apollo **not** to reveal personal emails or phone numbers.
   - PDL returns whatever is in our plan's field bundle, which can include emails, phone numbers and
-    addresses. The PDL client never maps those fields, so they never reach common. Use
-    `data_include` to stop PDL sending them at all, if P5 confirms it is available.
+    addresses. The PDL client never maps those fields, so they never reach common. `data_include`
+    did nothing on the free plan (P5), so the client's mapping is the minimization; set
+    `data_include` through the provider's `Configuration` only on a plan that honours it.
   - Raw vendor payloads are never persisted.
 - **Legal review before a host enables either job.** Once enriched data is stored, the host is the data
   controller. For EU or UK data subjects that means a lawful basis and, because the data was not
@@ -2755,13 +2787,14 @@ On a dev host with a real PDL key, a test credit price on the PDL provider row, 
   on read (`MJ/packages/Actions/ApolloEnrichment/src/lists/credentials.ts:14-19`).
 - **Cost controls:**
   - `MaxPeople` per run, default 500. With a nightly job, that is the daily cap.
-  - `RetryNotFoundDays` stops repeated paid misses (Phase 0 S4 says whether Apollo bills misses).
+  - `RetryNotFoundDays` stops repeated misses from costing calls and rate budget. **Neither vendor
+    bills a miss** (S4, P6).
     **PDL does not bill misses**, only 200 responses (§11.1).
   - PDL's `min_likelihood` (default 6) trades match rate against false matches. Raising it means
     fewer matches paid for, and fewer wrong people enriched.
-  - PDL's `required` parameter, if P5 confirms it, can limit billed matches to people who actually
-    have education data. Set it through the PDL provider's `Configuration` if the host only wants
-    education.
+  - PDL's `required` parameter would limit billed matches to people who have education data, but
+    it did nothing on the free plan (P5). Offer it through the PDL provider's `Configuration` and
+    never assume it saved anything.
   - `Mode=Preview` shows how many people a run would send before any money is spent.
   - `CreditsConsumed` is reported on every run.
   - A vendor account that runs out of credits stops the run with `QUOTA_EXHAUSTED`, which shows as a
@@ -2954,7 +2987,8 @@ All paths are under `MJ/packages/Actions/ApolloEnrichment/src/`. Line numbers ar
 | A-10 | `contacts.ts:891-935`; `accounts.ts:1062-~1100` | On Apollo's hourly limit, `WrapApolloCall` **sleeps for an hour** inside the action, holding a scheduled job's lock past `MaxRuntimeMinutes`. | Typed `ApolloRateLimitError`; no long sleeps (§5.2). The action returns `RATE_LIMIT_EXCEEDED`. | An hourly 429 returns immediately with that result code. |
 | A-11 | `contacts.ts:623` and throughout | `UpsertContactEmploymentAndEducationHistoryByOrganizationID` is never called and holds an unescaped filter (`'${p.email}'`). Filters everywhere use hand-written escaping. | Delete the dead method. Use `EscapeSQLString` (or the local helper) everywhere filter text is built. | Lint and grep: no `EscapeSingleQuotes` or raw interpolation left in a filter. |
 | A-12 | `README.md` | It documents the history mappings as `EducationHistoryEntityName`, `EducationHistoryContactIDFieldName` and so on, but the code reads `EntityName`, `ContactIDFieldName` and so on (as `metadata/actions/.actions.json:4010, 4064` correctly say). Anyone following the README gets no history rows. | Fix the README to match the code. | Docs only. |
-| A-13 | `accounts.ts:705-735` | **Conditional on Phase 0 S6.** People discovery calls `mixed_people/search` and needs emails from it. If that endpoint is gone, or no longer returns emails, discovery yields nothing. | If S6 says it's gone, discover IDs through `mixed_people/api_search` (in `ApolloRESTClient.searchPeople`), then `BulkMatch` by Apollo ID to get emails. Note that this spends credits. | A fixture-based test of the new path. |
+| A-13 | `accounts.ts:705-735`; `contacts.ts:637, 653` | **Confirmed by S6.** People discovery calls `mixed_people/search` and needs emails from it. Apollo now answers 422: "This endpoint is deprecated for API callers. Please use the new mixed_people/api_search endpoint", and `api_search` returns no emails. Discovery yields nothing today. | Discover IDs through `mixed_people/api_search` (in `ApolloRESTClient.searchPeople`), then `BulkMatch` by Apollo ID to get emails. This spends credits; say so in the action description. | A fixture-based test of the new path. |
+| A-15 | `lists/ApolloRESTClient.ts:455-462`, `mapPagination` | `searchPeople` throws "expected an object with people + pagination" because `mixed_people/api_search` now returns `{ total_entries, people }` with no `pagination` envelope (S7, both keys), and its `ApolloPerson` mapping expects `last_name` and `linkedin_url` where the API now sends `last_name_obfuscated` and `has_*` flags. Every search-based action fails today. | Read `total_entries` at the top level; map the obfuscated shape (`id`, `first_name`, `last_name_obfuscated`, `title`, `organization.name`, `has_email`); treat a person as needing `BulkMatch` for anything else. | A fixture from Phase 0 (`apollo-api_search.json`) parses, with `TotalEntries` 8. |
 | A-14 | `lists/ApolloSearchActions.ts:193-254` | `Apollo - Search People` outputs `Count` as the number of people on the returned page, not the total. The total is only in `Pagination.totalEntries` and the message. | Add a `TotalEntries` output and describe `Count` as the page size. Keep `Count` for compatibility. | A fixture with 1 page of 10 and a total of 1,240 reports both. |
 
 ---
