@@ -25,8 +25,7 @@ export class mjBizAppsCommonOrganizationFormComponent extends BaseFormComponent 
             { sectionKey: 'mJBizAppsCommonOrganizations', sectionName: 'MJ_BizApps_Common: Organizations', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsToOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonRelationshipsFromOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonPersonEducations', sectionName: 'Person Education', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonRelationshipsFromOrganizationID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false }
         ]);
     }
 }
