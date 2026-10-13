@@ -24,8 +24,6 @@ export class mjBizAppsCommonPersonFormComponent extends BaseFormComponent {
             { sectionKey: 'mJBizAppsCommonContactMethods', sectionName: 'MJ_BizApps_Common: Contact Methods', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsToPersonID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonRelationshipsFromPersonID', sectionName: 'MJ_BizApps_Common: Relationships', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonPersonExternalIdentities', sectionName: 'Person External Identities', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonPersonEducations', sectionName: 'Person Education', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivitySyncExclusions', sectionName: 'Activity Sync Exclusions', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonPersonJobFunctions', sectionName: 'Person Job Functions', isExpanded: false }
         ]);

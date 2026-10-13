@@ -17,6 +17,7 @@ export class mjBizAppsCommonAddressLinkFormComponent extends BaseFormComponent {
         this.initSections([
             { sectionKey: 'linkageDetails', sectionName: 'Linkage Details', isExpanded: true },
             { sectionKey: 'addressPreferences', sectionName: 'Address Preferences', isExpanded: true },
+            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
