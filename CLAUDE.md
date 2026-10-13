@@ -18,6 +18,7 @@ bizapps-common/
     Entities/           @mj-biz-apps/common-entities (CodeGen-generated entity subclasses + hand-written helpers)
     Actions/            @mj-biz-apps/common-actions (CodeGen-generated action subclasses)
     ActivitySync/       @mj-biz-apps/common-activity-sync (provider plugin contracts, engine)
+    Enrichment/         @mj-biz-apps/common-enrichment (person enrichment: provider contracts, engine, writers, fixture provider)
     CoreEntitiesServer/ @mj-biz-apps/common-core-entities-server (server-side entity subclasses)
     Server/             @mj-biz-apps/common-server (bootstrap, resolvers, custom actions)
     Angular/            @mj-biz-apps/common-ng (Angular bootstrap, forms, pages, widgets)
