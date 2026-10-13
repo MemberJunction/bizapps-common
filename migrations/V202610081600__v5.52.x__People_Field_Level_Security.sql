@@ -42,9 +42,10 @@
 -- Entity Permission through the UI makes MJ reconcile People for all roles.
 -- =============================================================================
 
-DECLARE @FLSEntityID UNIQUEIDENTIFIER = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'; -- MJ_BizApps_Common: People
-
 -- ---- People field permissions: MJ snapshot rule on this host's permissions ----
+-- 7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F is MJ_BizApps_Common: People. The ID is a literal,
+-- not a variable, and RoleAccess's columns are not named after boolean columns, so
+-- mj migrate convert turns this block into PostgreSQL without hand edits.
 ;WITH RoleVerbs AS (
     SELECT ep.RoleID,
            MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanRead   = 1 THEN 1 ELSE 0 END) AS AllowRead,
@@ -54,13 +55,13 @@ DECLARE @FLSEntityID UNIQUEIDENTIFIER = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'; 
            MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanUpdate = 1 THEN 1 ELSE 0 END) AS DenyUpdate,
            MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanCreate = 1 THEN 1 ELSE 0 END) AS DenyCreate
     FROM [${mjSchema}].[EntityPermission] ep
-    WHERE ep.EntityID = @FLSEntityID
+    WHERE ep.EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
     GROUP BY ep.RoleID
 ),
 RoleAccess AS (
     SELECT RoleID,
-           CASE WHEN AllowUpdate = 1 AND DenyUpdate = 0 THEN 1 ELSE 0 END AS CanUpdate,
-           CASE WHEN AllowCreate = 1 AND DenyCreate = 0 THEN 1 ELSE 0 END AS CanCreate
+           CASE WHEN AllowUpdate = 1 AND DenyUpdate = 0 THEN 1 ELSE 0 END AS RoleCanUpdate,
+           CASE WHEN AllowCreate = 1 AND DenyCreate = 0 THEN 1 ELSE 0 END AS RoleCanCreate
     FROM RoleVerbs
     WHERE AllowRead = 1 AND DenyRead = 0
 )
@@ -68,11 +69,11 @@ INSERT INTO [${mjSchema}].[EntityFieldPermission] (EntityFieldID, RoleID, ReadAc
 SELECT ef.ID,
        ra.RoleID,
        N'Allow',
-       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.CanUpdate = 1 THEN N'Allow' ELSE N'No Access' END,
-       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.CanCreate = 1 THEN N'Allow' ELSE N'No Access' END
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.RoleCanUpdate = 1 THEN N'Allow' ELSE N'No Access' END,
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.RoleCanCreate = 1 THEN N'Allow' ELSE N'No Access' END
 FROM [${mjSchema}].[EntityField] ef
 CROSS JOIN RoleAccess ra
-WHERE ef.EntityID = @FLSEntityID
+WHERE ef.EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
   AND ef.IsPrimaryKey = 0
   AND ef.IsSoftPrimaryKey = 0
   AND LEFT(ef.Name, 5) <> N'__mj_'
@@ -84,4 +85,4 @@ WHERE ef.EntityID = @FLSEntityID
 
 UPDATE [${mjSchema}].[Entity]
 SET EnableFieldLevelSecurity = 1
-WHERE ID = @FLSEntityID;
+WHERE ID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
