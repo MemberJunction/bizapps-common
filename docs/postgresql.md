@@ -42,6 +42,12 @@ The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.40.2). 
 - **`mj migrate`** swaps the migrations folder `migrations` → `migrations-pg` automatically when
   `DB_PLATFORM=postgresql`, and dispatches to the PostgreSQL Skyway provider. The `.pg.sql` /
   `.pg-only.sql` suffix is cosmetic — dialect selection is purely by folder.
+- The swap applies only to `migrationsLocation` from `mj.config.cjs`, never to an explicit `--dir`.
+  So `npm run mj:migrate` passes no `--dir`, and `mj.config.cjs` sets
+  `migrationsLocation: 'filesystem:./migrations'`. Running `mj migrate --dir ./migrations` by hand
+  runs the T‑SQL set on either platform; on PostgreSQL pass `--dir ./migrations-pg` instead.
+- `mj.config.cjs` must not set `mjRepoVersion`: with it set and no `--dir`, `mj migrate` fetches MJ
+  core's migrations from GitHub instead of reading this repo's.
 - The **runtime** (MJAPI) selects `@memberjunction/postgresql-dataprovider` from the same
   `DB_PLATFORM` env var. That provider ships transitively with `@memberjunction/server`, so no extra
   runtime dependency is required.
