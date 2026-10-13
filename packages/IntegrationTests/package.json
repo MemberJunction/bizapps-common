@@ -20,12 +20,9 @@
   },
   "dependencies": {
     "@mj-biz-apps/common-entities": "5.52.0",
-    "@mj-biz-apps/common-enrichment": "5.52.0",
-    "@memberjunction/core": "^6.2.0-edge.3",
-    "@memberjunction/global": "^6.2.0-edge.3",
-    "@memberjunction/testing-integration": "^6.2.0-edge.3",
-    "@memberjunction/actions-base": "^6.2.0-edge.3",
-    "@memberjunction/graphql-dataprovider": "^6.2.0-edge.3"
+    "@memberjunction/core": "^6.1.5",
+    "@memberjunction/global": "^6.1.5",
+    "@memberjunction/testing-integration": "^6.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

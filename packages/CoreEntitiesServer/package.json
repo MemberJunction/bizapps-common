@@ -18,20 +18,20 @@
   "author": "MemberJunction.com",
   "license": "BUSL-1.1",
   "devDependencies": {
-    "@memberjunction/core": "^6.2.0-edge.3",
-    "@memberjunction/core-entities": "^6.2.0-edge.3",
-    "@memberjunction/generic-database-provider": "^6.2.0-edge.3",
-    "@memberjunction/global": "^6.2.0-edge.3",
+    "@memberjunction/core": "^6.1.5",
+    "@memberjunction/core-entities": "^6.1.5",
+    "@memberjunction/generic-database-provider": "^6.1.5",
+    "@memberjunction/global": "^6.1.5",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@mj-biz-apps/common-entities": "5.52.0"
   },
   "peerDependencies": {
-    "@memberjunction/core": "^6.2.0-edge.3",
-    "@memberjunction/core-entities": "^6.2.0-edge.3",
-    "@memberjunction/generic-database-provider": "^6.2.0-edge.3",
-    "@memberjunction/global": "^6.2.0-edge.3"
+    "@memberjunction/core": "^6.1.5",
+    "@memberjunction/core-entities": "^6.1.5",
+    "@memberjunction/generic-database-provider": "^6.1.5",
+    "@memberjunction/global": "^6.1.5"
   },
   "repository": {
     "type": "git",
