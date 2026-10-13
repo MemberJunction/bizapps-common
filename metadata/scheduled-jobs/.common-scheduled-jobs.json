@@ -56,5 +56,103 @@
       "lastModified": "2026-09-02T04:04:09.696Z",
       "checksum": "8dff74a95c7149a5fc2e6d1c2afc9a02589b13121af051d30688106c11a72ddf"
     }
+  },
+  {
+    "_comments": [
+      "NIGHTLY PERSON ENRICHMENT — APOLLO. Ships DISABLED (plan D10): enabling it starts spending vendor credits.",
+      "Turn on in the Scheduling app after an Apollo credential exists. Set the CompanyID param if the key lives on a Company Integration rather than APOLLO_API_KEY.",
+      "Runs at 07:00 UTC (Apollo) / 08:30 UTC (People Data Labs); with MaxRuntimeMinutes 60 the two can never",
+      "overlap, so they never write the same person at the same time (plan R11).",
+      "MissedRunPolicy Skip: a missed night needs no catch-up; the next run picks up everyone still eligible.",
+      "MaxRuntimeMinutes 60 > the action's TimeBudgetMinutes 45, so the engine stops itself before the lease expires.",
+      "The Action driver heartbeats once before the action starts, not during it.",
+      "Neither job sets Facets, so each writes everything its provider supports; a host that enables both should",
+      "set the Apollo job's Facets to Employment,LinkedIn and the PDL job's to Education,LinkedIn (release notes).",
+      "Param lookups are qualified with &Action= so another action's same-named param can never be picked.",
+      "OwnerUserID and NotifyUserID stay NULL. Configuration is a native JSON object. No sync block."
+    ],
+    "fields": {
+      "Name": "Common — Person Enrichment: Apollo (nightly)",
+      "Description": "Enriches existing People with employment and LinkedIn data from Apollo.io. Never creates People. Disabled until an admin turns it on.",
+      "JobTypeID": "@lookup:MJ: Scheduled Job Types.DriverClass=ActionScheduledJobDriver",
+      "CronExpression": "0 0 7 * * *",
+      "Timezone": "UTC",
+      "Status": "Disabled",
+      "ConcurrencyMode": "Skip",
+      "MissedRunPolicy": "Skip",
+      "RunImmediatelyIfNeverRun": false,
+      "MaxRuntimeMinutes": 60,
+      "NotifyOnSuccess": false,
+      "NotifyOnFailure": false,
+      "NotifyViaEmail": false,
+      "NotifyViaInApp": false,
+      "Configuration": {
+        "ActionID": "@lookup:MJ: Actions.DriverClass=Common.EnrichPeople",
+        "Params": [
+          {
+            "ActionParamID": "@lookup:MJ: Action Params.Name=ProviderCode&Action=Common.EnrichPeople",
+            "ValueType": "Static",
+            "Value": "Apollo"
+          },
+          {
+            "ActionParamID": "@lookup:MJ: Action Params.Name=MaxPeople&Action=Common.EnrichPeople",
+            "ValueType": "Static",
+            "Value": "500"
+          }
+        ]
+      }
+    },
+    "primaryKey": {
+      "ID": "E666149E-9CE5-4572-8815-7D45ACAD2E47"
+    }
+  },
+  {
+    "_comments": [
+      "NIGHTLY PERSON ENRICHMENT — PEOPLE DATA LABS. Ships DISABLED (plan D10): enabling it starts spending vendor credits.",
+      "Turn on in the Scheduling app after a People Data Labs credential exists. Set the CompanyID param if the key lives on a Company Integration rather than PDL_API_KEY.",
+      "Runs at 07:00 UTC (Apollo) / 08:30 UTC (People Data Labs); with MaxRuntimeMinutes 60 the two can never",
+      "overlap, so they never write the same person at the same time (plan R11).",
+      "MissedRunPolicy Skip: a missed night needs no catch-up; the next run picks up everyone still eligible.",
+      "MaxRuntimeMinutes 60 > the action's TimeBudgetMinutes 45, so the engine stops itself before the lease expires.",
+      "The Action driver heartbeats once before the action starts, not during it.",
+      "Neither job sets Facets, so each writes everything its provider supports; a host that enables both should",
+      "set the Apollo job's Facets to Employment,LinkedIn and the PDL job's to Education,LinkedIn (release notes).",
+      "Param lookups are qualified with &Action= so another action's same-named param can never be picked.",
+      "OwnerUserID and NotifyUserID stay NULL. Configuration is a native JSON object. No sync block."
+    ],
+    "fields": {
+      "Name": "Common — Person Enrichment: People Data Labs (nightly)",
+      "Description": "Enriches existing People with education, employment and LinkedIn data from People Data Labs. Never creates People. Disabled until an admin turns it on.",
+      "JobTypeID": "@lookup:MJ: Scheduled Job Types.DriverClass=ActionScheduledJobDriver",
+      "CronExpression": "0 30 8 * * *",
+      "Timezone": "UTC",
+      "Status": "Disabled",
+      "ConcurrencyMode": "Skip",
+      "MissedRunPolicy": "Skip",
+      "RunImmediatelyIfNeverRun": false,
+      "MaxRuntimeMinutes": 60,
+      "NotifyOnSuccess": false,
+      "NotifyOnFailure": false,
+      "NotifyViaEmail": false,
+      "NotifyViaInApp": false,
+      "Configuration": {
+        "ActionID": "@lookup:MJ: Actions.DriverClass=Common.EnrichPeople",
+        "Params": [
+          {
+            "ActionParamID": "@lookup:MJ: Action Params.Name=ProviderCode&Action=Common.EnrichPeople",
+            "ValueType": "Static",
+            "Value": "PDL"
+          },
+          {
+            "ActionParamID": "@lookup:MJ: Action Params.Name=MaxPeople&Action=Common.EnrichPeople",
+            "ValueType": "Static",
+            "Value": "500"
+          }
+        ]
+      }
+    },
+    "primaryKey": {
+      "ID": "6C6E3D42-0640-4F61-9D0E-C272B2F47365"
+    }
   }
 ]

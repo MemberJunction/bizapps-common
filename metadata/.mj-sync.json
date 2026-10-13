@@ -12,6 +12,7 @@
     "organization-types",
     "relationship-types",
     "activity-sync-provider-types",
+    "enrichment-providers",
     "action-categories",
     "actions",
     "scheduled-jobs",
