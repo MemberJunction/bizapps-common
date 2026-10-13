@@ -1,5 +1,6 @@
 /**
- * person-enrichment — PE1–PE7: the enrichment engine end to end with the fixture provider.
+ * person-enrichment — PE0–PE9: the enrichment engine end to end with the fixture provider, and a
+ * Preview against the two live providers' seeded rows (PE9, no vendor call).
  *
  * The engine runs in this process over the GraphQL provider, exactly as the harness does for every
  * other check, so every RunView and Save goes through MJAPI. Nothing here is rolled back: Setup
@@ -352,6 +353,23 @@ const checks: NamedCheck[] = [
             AssertEqual(jobs.length, 1, 'the action wrote the employment row');
             const activities = await FindRows<{ ID: string }>(ctx, COMMON_ENTITIES.ActivityLink, `${LinksTo(jobs[0].ID)} AND __mj_CreatedAt >= '${startedAt.toISOString()}'`, ['ID']);
             AssertEqual(activities.length, 0, 'in-process saves honour SkipEntityActions: a first-time backfill logs no Activity');
+        },
+    },
+    {
+        Id: 'person-enrichment.PE9',
+        Name: 'PE9 — Preview with the live Apollo and PDL providers initialises each client, counts the fixture people and prices one credit per person from the seeded rate rows',
+        RequiresMutation: false,
+        Fn: async (ctx) => {
+            for (const code of ['Apollo', 'PDL']) {
+                const rows = await FindRows<{ ID: string; CreditPrice: number | null }>(ctx, COMMON_ENTITIES.EnrichmentProvider, `Code = '${code}'`, ['ID', 'CreditPrice']);
+                AssertEqual(rows.length, 1, `${code}: one seeded provider row`);
+                const preview = await new PersonEnrichmentEngine().Run(engineOptions(ctx, code, { Mode: 'Preview', MaxPeople: 3 }));
+                Assert((preview.Eligible ?? 0) >= 1, `${code}: the fixture people are eligible for a vendor that has never seen them (got ${preview.Eligible})`);
+                AssertEqual(preview.EstimatedCredits, Math.min(preview.Eligible as number, 3), `${code}: one credit per matched person, an upper bound of min(eligible, MaxPeople)`);
+                AssertEqual(preview.EstimatedCost, rows[0].CreditPrice == null ? null : (preview.EstimatedCredits as number) * rows[0].CreditPrice, `${code}: unpriced until an admin sets CreditPrice`);
+                AssertEqual(preview.Processed, 0, `${code}: preview calls no vendor`);
+                AssertEqual(preview.StoppedReason, 'Completed', `${code}: preview completes`);
+            }
         },
     },
 ];

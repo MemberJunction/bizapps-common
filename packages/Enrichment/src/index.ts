@@ -16,4 +16,7 @@ export * from './writers/education-writer.js';
 export * from './writers/employment-writer.js';
 export * from './writers/linkedin-writer.js';
 export * from './providers/FixtureEnrichmentProvider.js';
+export * from './providers/provider-results.js';
+export * from './providers/ApolloEnrichmentProvider.js';
+export * from './providers/PDLEnrichmentProvider.js';
 export * from './load.js';

@@ -1,0 +1,135 @@
+[
+  {
+    "_comments": [
+      "APOLLO.IO as an Enrichment Provider (plan §8.4). DriverClass 'Apollo' is the @RegisterClass key of",
+      "ApolloEnrichmentProvider in @mj-biz-apps/common-enrichment. IntegrationID points at the 'Apollo'",
+      "MJ: Integrations row (seeded by MemberJunction) so a company credential can carry the key; with none,",
+      "APOLLO_API_KEY. MaxBatchSize 10 is Apollo's people/bulk_match ceiling. RequestsPerMinute 20 is the",
+      "free plan's limit (Phase 0 S5: 20/min, 100/hour, 600/day; the paid plan reported 1,000/min): a",
+      "conservative seed that still sends 200 people a minute; an admin on a paid plan can raise it.",
+      "CreditPrice ships empty: every host's contract differs, so estimates say 'unpriced' until an admin",
+      "enters one. Rate rows below carry only numbers Phase 0 confirmed (S4, S7, 2026-10-12).",
+      "No sync block: the release push writes that back. primaryKeys from uuidgen."
+    ],
+    "fields": {
+      "Code": "Apollo",
+      "Name": "Apollo.io",
+      "Description": "Employment history and LinkedIn URLs from Apollo.io people/bulk_match. One credit per matched person; a miss is free. Apollo returns no education (Phase 0, 2026-10-12), so that facet comes from People Data Labs.",
+      "DriverClass": "Apollo",
+      "IntegrationID": "@lookup:MJ: Integrations.Name=Apollo",
+      "MaxBatchSize": 10,
+      "RequestsPerMinute": 20,
+      "Configuration": null,
+      "CreditPrice": null,
+      "CreditCurrency": null,
+      "Sequence": 10,
+      "IsActive": true
+    },
+    "relatedEntities": {
+      "MJ_BizApps_Common: Enrichment Provider Rates": [
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Enrich",
+            "Unit": "MatchedPerson",
+            "CreditsPerUnit": 1,
+            "Notes": "Phase 0 S4, 2026-10-12: credits_consumed 5 for 5 matches of 6 on people/bulk_match; a miss is free."
+          },
+          "primaryKey": { "ID": "1C6D8945-E9E4-4D5F-9257-ED08B1BE688A" }
+        },
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Count",
+            "Unit": "Request",
+            "CreditsPerUnit": 0,
+            "Notes": "Phase 0 S7, 2026-10-12: no credits charged and no credit headers on mixed_people/api_search, on a free and a paid key."
+          },
+          "primaryKey": { "ID": "BB6F804F-1ECC-4C4F-AE85-9B6B7E1EB837" }
+        },
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Search",
+            "Unit": "Request",
+            "CreditsPerUnit": 0,
+            "Notes": "Phase 0 S7, 2026-10-12: same as Count; api_search results are obfuscated, so details need a paid Enrich by id."
+          },
+          "primaryKey": { "ID": "BC1519F8-966B-4872-8202-41405DA6B3B2" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "9112F842-A26F-48E1-9B4F-A718A127318C" }
+  },
+  {
+    "_comments": [
+      "PEOPLE DATA LABS as an Enrichment Provider (plan §8.4). DriverClass 'PDL' is the @RegisterClass key of",
+      "PDLEnrichmentProvider. IntegrationID points at the 'People Data Labs' MJ: Integrations row (seeded by",
+      "MemberJunction); with no company credential, PDL_API_KEY. MaxBatchSize 100 is person/bulk's ceiling.",
+      "RequestsPerMinute null: PDL reports its limits in headers (Phase 0 P6: 100/min on the free plan) and",
+      "the client turns a 429 into a clean stop. Configuration MinLikelihood 6 is PDL's documented default.",
+      "CreditPrice ships empty; PDL's 2026 list price was reported at about $0.20 to $0.28 per credit depending",
+      "on plan (unverified) — enter the contract price here, never a guess. Rate rows carry only numbers Phase 0",
+      "confirmed (P6, P8, P9, P10, 2026-10-12). No sync block. primaryKeys from uuidgen."
+    ],
+    "fields": {
+      "Code": "PDL",
+      "Name": "People Data Labs",
+      "Description": "Education, employment history and LinkedIn URLs from People Data Labs person/bulk. One credit per matched person; a miss is free. Education is in the data on every plan (Phase 0, 2026-10-12). List price reported at about $0.20 to $0.28 per credit in 2026 depending on plan; enter the contract price in CreditPrice.",
+      "DriverClass": "PDL",
+      "IntegrationID": "@lookup:MJ: Integrations.Name=People Data Labs",
+      "MaxBatchSize": 100,
+      "RequestsPerMinute": null,
+      "Configuration": { "MinLikelihood": 6 },
+      "CreditPrice": null,
+      "CreditCurrency": null,
+      "Sequence": 20,
+      "IsActive": true
+    },
+    "relatedEntities": {
+      "MJ_BizApps_Common: Enrichment Provider Rates": [
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Enrich",
+            "Unit": "MatchedPerson",
+            "CreditsPerUnit": 1,
+            "Notes": "Phase 0 P6, 2026-10-12: x-call-credits-spent equals the number of 200s in person/bulk; misses free."
+          },
+          "primaryKey": { "ID": "BB187DBB-63CE-4031-BA4C-161B611E07F0" }
+        },
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Count",
+            "Unit": "NonEmptyRequest",
+            "CreditsPerUnit": 1,
+            "Notes": "Phase 0 P8, 2026-10-12: a size-1 person/search spent 1 search credit when something matched, nothing otherwise."
+          },
+          "primaryKey": { "ID": "FAA23973-4E78-4A6E-AECC-FCF11D208FFA" }
+        },
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "Search",
+            "Unit": "ReturnedRecord",
+            "CreditsPerUnit": 1,
+            "Notes": "Phase 0 P9, 2026-10-12: one search credit per record returned by person/search."
+          },
+          "primaryKey": { "ID": "BD562CC1-204F-4747-8F6F-B5C9CB58AA10" }
+        },
+        {
+          "fields": {
+            "EnrichmentProviderID": "@parent:ID",
+            "Operation": "SchoolLookup",
+            "Unit": "Request",
+            "CreditsPerUnit": 0,
+            "Notes": "Phase 0 P10, 2026-10-12: autocomplete and school/clean return no credit headers; rate-limited only."
+          },
+          "primaryKey": { "ID": "C6E2080C-FA93-4D67-9D9E-25F3C2B9601B" }
+        }
+      ]
+    },
+    "primaryKey": { "ID": "AE5802B0-8EA2-47BF-B3D4-4E3B87BB6A1F" }
+  }
+]
