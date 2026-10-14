@@ -1,5 +1,14 @@
 # @mj-biz-apps/common-ng
 
+## 5.53.0
+
+### Patch Changes
+
+- 8293a83: Adds a Staff section to the Organization form: the organization's active Employee relationships as headline figures and a staff table. Adds `OrganizationStaffContributor`, a ClassFactory plug-in point other apps register against to add their own figures and per-person columns to that section; the highest-priority registration wins per key, and one failing contributor never hides the others.
+- Updated dependencies [1045bc7]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+
 ## 5.52.0
 
 ### Patch Changes
