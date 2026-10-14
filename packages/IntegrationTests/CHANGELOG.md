@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-integration-tests
 
+## 5.53.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.53.1
+
 ## 5.53.0
 
 ### Patch Changes
