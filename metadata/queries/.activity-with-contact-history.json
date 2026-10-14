@@ -13,7 +13,23 @@
       "Reusable": true,
       "UsesTemplate": true
     },
-    "relatedEntities": {},
+    "relatedEntities": {
+      "MJ: Query Parameters": [
+        {
+          "fields": {
+            "QueryID": "@parent:ID",
+            "Name": "ActivityID",
+            "Type": "string",
+            "IsRequired": true,
+            "SampleValue": "00000000-0000-0000-0000-000000000000",
+            "DetectionMethod": "Manual"
+          },
+          "primaryKey": {
+            "ID": "5F28A9BF-CAE8-438F-851A-0D85FCE9CBF8"
+          }
+        }
+      ]
+    },
     "primaryKey": {
       "ID": "6C0A1000-0001-4000-A000-00000000000F"
     },
