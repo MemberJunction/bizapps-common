@@ -54,8 +54,12 @@ IF NOT EXISTS (
         ON [${flyway:defaultSchema}].[Address] ([DisplayName]);
 GO
 
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field.',
-    @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}', @level1type = N'TABLE', @level1name = N'Address', @level2type = N'COLUMN', @level2name = N'DisplayName';
+IF NOT EXISTS (
+    SELECT 1 FROM sys.fn_listextendedproperty(N'MS_Description',
+        N'SCHEMA', N'${flyway:defaultSchema}', N'TABLE', N'Address', N'COLUMN', N'DisplayName')
+)
+    EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field.',
+        @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}', @level1type = N'TABLE', @level1name = N'Address', @level2type = N'COLUMN', @level2name = N'DisplayName';
 GO
 
 
