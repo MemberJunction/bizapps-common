@@ -11,7 +11,83 @@
       "ScopeFilter": "CurrentJobTitle IS NOT NULL AND (SeniorityLevelID IS NULL OR NOT EXISTS (SELECT 1 FROM [__mj_BizAppsCommon].[vwPersonJobFunctions] pjf WHERE pjf.PersonID = [__mj_BizAppsCommon].[vwPeople].[ID]))",
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: People",
       "OutputMapping": "{\"fields\":{\"SeniorityLevelID\":\"$.SeniorityLevel\"},\"fieldLookups\":{\"SeniorityLevelID\":{\"matchField\":\"Name\",\"onLookupMiss\":\"fail\"}},\"childRecords\":[{\"entity\":\"MJ_BizApps_Common: Person Job Functions\",\"parentField\":\"PersonID\",\"fanOutRef\":\"$.Functions\",\"map\":{\"JobFunctionID\":\"$.JobFunctionID\",\"Confidence\":\"$.Confidence\",\"Sequence\":\"$.Sequence\",\"Source\":\"static:Derived\"},\"reconcile\":{\"keyFields\":[\"JobFunctionID\"],\"sourceField\":\"Source\",\"derivedSourceValue\":\"Derived\",\"deleteStale\":true}}]}",
-      "Configuration": "{\"Name\":\"Job Function and Seniority Derivation\",\"Description\":\"Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.\",\"PromptID\":\"7C46041F-0412-4C2E-9B9E-3ED61D32210C\",\"Context\":{\"Fields\":[\"CurrentJobTitle\"]},\"Outputs\":[{\"Ref\":\"$.Functions\",\"Name\":\"JobFunctions\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"child\",\"EntityName\":\"MJ_BizApps_Common: Person Job Functions\",\"ParentField\":\"PersonID\",\"Map\":{\"JobFunctionID\":\"$.JobFunctionID\",\"Confidence\":\"$.Confidence\",\"Sequence\":\"$.Sequence\"},\"FanOutRef\":\"Functions\"}},{\"Ref\":\"$.SeniorityLevel\",\"Name\":\"SeniorityLevel\",\"FeatureKind\":\"categorical\",\"Target\":{\"Mode\":\"field\",\"EntityFieldName\":\"SeniorityLevelID\",\"LookupMatchField\":\"Name\",\"OnLookupMiss\":\"fail\"}}],\"Caching\":{\"Cacheable\":true,\"KeyFields\":[\"CurrentJobTitle\"],\"TTLSeconds\":2592000,\"Scope\":\"pipeline\"},\"CaptureReasoning\":true}"
+      "Configuration": {
+        "Name": "Job Function and Seniority Derivation",
+        "Description": "Derives job functions (plural child rows) and seniority level (FK field) from a person's current job title using LLM inference with deduplicating feature value caching.",
+        "PromptID": "@lookup:MJ: AI Prompts.Name=Job Function and Seniority Derivation",
+        "Context": {
+          "Fields": [
+            "CurrentJobTitle"
+          ]
+        },
+        "Outputs": [
+          {
+            "Ref": "$.Functions",
+            "Name": "JobFunctions",
+            "FeatureKind": "categorical",
+            "ConfidenceRef": "$.Functions[0].Confidence",
+            "Constraint": {
+              "Type": "lookup",
+              "Entity": "MJ_BizApps_Common: Job Functions",
+              "MatchField": "ID",
+              "DisplayFields": [
+                "Name",
+                "Description"
+              ],
+              "Filter": "Status='Active'",
+              "ItemRef": "$.JobFunctionID",
+              "OnViolation": "fail"
+            },
+            "Target": {
+              "Mode": "child",
+              "EntityName": "MJ_BizApps_Common: Person Job Functions",
+              "ParentField": "PersonID",
+              "Map": {
+                "JobFunctionID": "$.JobFunctionID",
+                "Confidence": "$.Confidence",
+                "Sequence": "$.Sequence"
+              },
+              "FanOutRef": "Functions"
+            }
+          },
+          {
+            "Ref": "$.SeniorityLevel",
+            "Name": "SeniorityLevel",
+            "FeatureKind": "categorical",
+            "ConfidenceRef": "$.SeniorityConfidence",
+            "Constraint": {
+              "Type": "lookup",
+              "Entity": "MJ_BizApps_Common: Seniority Levels",
+              "MatchField": "Name",
+              "DisplayFields": [
+                "Description"
+              ],
+              "Filter": "Status='Active'",
+              "OnViolation": "fail"
+            },
+            "Target": {
+              "Mode": "field",
+              "EntityFieldName": "SeniorityLevelID",
+              "LookupMatchField": "Name",
+              "OnLookupMiss": "fail"
+            }
+          }
+        ],
+        "Caching": {
+          "Cacheable": true,
+          "KeyFields": [
+            "CurrentJobTitle"
+          ],
+          "TTLSeconds": 2592000,
+          "Scope": "pipeline"
+        },
+        "CaptureReasoning": true,
+        "Activation": {
+          "GoldenSetTestID": "681DA1BF-7397-416E-99D1-89788FFCCB82",
+          "Metric": "accuracy",
+          "Threshold": 0.9
+        }
+      }
     },
     "primaryKey": {
       "ID": "7E030001-A101-4B01-8C01-000000000001"

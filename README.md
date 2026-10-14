@@ -262,6 +262,12 @@ Deployed via migrations. Fully customizable per deployment.
 
 ---
 
+## Activity Sync
+
+On a database-only install (`mj migrate` + `mj sync push` without the `@mj-biz-apps/common-server` package in MJAPI), MJ pauses `Common — Activity Sync (hourly)` on its first run with a message naming the missing class. Once the server package is installed, MJ sets the job back to Active on the next server start. A running server also re-checks paused jobs periodically (MJAPI `scheduledJobs.pausedJobResumeInterval`, hourly by default), so a restart is not required.
+
+---
+
 ## Building an App That Depends on BizApps Common
 
 If you're building your own MJ Open App that references these entities (e.g., a Committees app that links members to Person records), declare the dependency in your `mj-app.json`:

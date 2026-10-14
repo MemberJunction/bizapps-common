@@ -1,0 +1,885 @@
+{
+  "Cases": [
+    {
+      "ID": "g01",
+      "Input": {
+        "CurrentJobTitle": "Interim CEO"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g02",
+      "Input": {
+        "CurrentJobTitle": "Owner/Operator"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g03",
+      "Input": {
+        "CurrentJobTitle": "Creamery Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g04",
+      "Input": {
+        "CurrentJobTitle": "Cheese Monger II"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g05",
+      "Input": {
+        "CurrentJobTitle": "Curriculum Lead"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Team Lead"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g06",
+      "Input": {
+        "CurrentJobTitle": "Junior Cheesemonger"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g07",
+      "Input": {
+        "CurrentJobTitle": "Product Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g08",
+      "Input": {
+        "CurrentJobTitle": "Cheesemaker & Co-owner"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g09",
+      "Input": {
+        "CurrentJobTitle": "Cheese Program Director"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g10",
+      "Input": {
+        "CurrentJobTitle": "Jefe de Producción"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g11",
+      "Input": {
+        "CurrentJobTitle": "Co-owner"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g12",
+      "Input": {
+        "CurrentJobTitle": "Owner"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g13",
+      "Input": {
+        "CurrentJobTitle": "Affinage Apprentice"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g14",
+      "Input": {
+        "CurrentJobTitle": "Founder"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g15",
+      "Input": {
+        "CurrentJobTitle": "VP Procurement"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g16",
+      "Input": {
+        "CurrentJobTitle": "Affineur"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g17",
+      "Input": {
+        "CurrentJobTitle": "Affineur & Owner"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g18",
+      "Input": {
+        "CurrentJobTitle": "Technical Sales Representative"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g19",
+      "Input": {
+        "CurrentJobTitle": "Head Cheesemaker"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g20",
+      "Input": {
+        "CurrentJobTitle": "Associate Brand Mgr"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g21",
+      "Input": {
+        "CurrentJobTitle": "Store Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g22",
+      "Input": {
+        "CurrentJobTitle": "Dir. Quality Assurance"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g23",
+      "Input": {
+        "CurrentJobTitle": "Board Chair"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Board Member"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g24",
+      "Input": {
+        "CurrentJobTitle": "Principal"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g25",
+      "Input": {
+        "CurrentJobTitle": "Head of People"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g26",
+      "Input": {
+        "CurrentJobTitle": "Cheesemonger"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g27",
+      "Input": {
+        "CurrentJobTitle": "Senior Lecturer"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g28",
+      "Input": {
+        "CurrentJobTitle": "Instructor"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g29",
+      "Input": {
+        "CurrentJobTitle": "Specialty Cheese Buyer"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g30",
+      "Input": {
+        "CurrentJobTitle": "Program Director"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g31",
+      "Input": {
+        "CurrentJobTitle": "Food Safety Consultant"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Legal",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g32",
+      "Input": {
+        "CurrentJobTitle": "Head Cheesemonger"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g33",
+      "Input": {
+        "CurrentJobTitle": "Sales Director"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g34",
+      "Input": {
+        "CurrentJobTitle": "Operations Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g35",
+      "Input": {
+        "CurrentJobTitle": "Account Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Customer Success"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g36",
+      "Input": {
+        "CurrentJobTitle": "VP Ops"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g37",
+      "Input": {
+        "CurrentJobTitle": "Herd Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g38",
+      "Input": {
+        "CurrentJobTitle": "Regional Sales Director"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g39",
+      "Input": {
+        "CurrentJobTitle": "Chief Cheese Officer"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive",
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g40",
+      "Input": {
+        "CurrentJobTitle": "Sr. Mgr, Supply Chain"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g41",
+      "Input": {
+        "CurrentJobTitle": "Assistant Cheesemaker"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g42",
+      "Input": {
+        "CurrentJobTitle": "Production Lead"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g43",
+      "Input": {
+        "CurrentJobTitle": "Quality Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g44",
+      "Input": {
+        "CurrentJobTitle": "Cheesemaker"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g45",
+      "Input": {
+        "CurrentJobTitle": "Cheese Buyer"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g46",
+      "Input": {
+        "CurrentJobTitle": "Counter Lead"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g47",
+      "Input": {
+        "CurrentJobTitle": "Fromager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g48",
+      "Input": {
+        "CurrentJobTitle": "Responsable Qualité"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g49",
+      "Input": {
+        "CurrentJobTitle": "Principal Engineer"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Engineering"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g50",
+      "Input": {
+        "CurrentJobTitle": "Volunteer Coordinator"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Human Resources",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g51",
+      "Input": {
+        "CurrentJobTitle": "GM"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    },
+    {
+      "ID": "g52",
+      "Input": {
+        "CurrentJobTitle": "Asst. to the Regional Manager"
+      },
+      "Expected": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "LabelSource": "model-consensus"
+    }
+  ],
+  "LabelQuality": {
+    "Procedure": "labeler-agreement-with-adjudication",
+    "Labelers": [
+      {
+        "ID": "A",
+        "Vendor": "independent blind labeler (model not recorded)",
+        "Model": "not recorded",
+        "PromptSha256": null
+      },
+      {
+        "ID": "B",
+        "Vendor": "OpenAI",
+        "Model": "GPT-6 Astra",
+        "PromptSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c"
+      },
+      {
+        "ID": "C",
+        "Vendor": "Google",
+        "Model": "Gemini 3.8 Flash",
+        "PromptSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c"
+      }
+    ],
+    "Policy": {
+      "MinAgreementLower": 0.7,
+      "MaxExcluded": 5
+    },
+    "PerOutput": {
+      "JobFunctions": {
+        "AB": {
+          "Agree": 52,
+          "N": 52,
+          "Lower": 0.9312077638761376,
+          "Upper": 1
+        },
+        "AC": {
+          "Agree": 52,
+          "N": 52,
+          "Lower": 0.9312077638761376,
+          "Upper": 1
+        }
+      },
+      "SeniorityLevel": {
+        "AB": {
+          "Agree": 52,
+          "N": 52,
+          "Lower": 0.9312077638761376,
+          "Upper": 1
+        },
+        "AC": {
+          "Agree": 52,
+          "N": 52,
+          "Lower": 0.9312077638761376,
+          "Upper": 1
+        }
+      }
+    },
+    "Consensus": 52,
+    "Adjudicated": 0,
+    "Excluded": [],
+    "CasesSha256": "e13f6fd20f01d9e860bbb888be6de4c3207840ec86ab2da5de158eb68da48bbe",
+    "Passed": true,
+    "Problems": []
+  }
+}

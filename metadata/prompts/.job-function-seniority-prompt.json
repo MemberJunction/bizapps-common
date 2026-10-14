@@ -10,6 +10,8 @@
       "SelectionStrategy": "Specific",
       "PowerPreference": "Lowest",
       "ParallelizationMode": "None",
+      "Temperature": 0,
+      "Seed": 42,
       "MaxRetries": 3,
       "RetryDelayMS": 3000,
       "RetryStrategy": "Exponential",

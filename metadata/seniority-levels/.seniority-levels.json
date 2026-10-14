@@ -2,7 +2,7 @@
   {
     "fields": {
       "Name": "Individual Contributor",
-      "Description": "Entry to senior individual contributor / professional.",
+      "Description": "Entry to senior individual contributor: professional, engineer, specialist, consultant, associate, coordinator, practitioner.",
       "Sequence": 10,
       "Status": "Active"
     },
@@ -17,7 +17,7 @@
   {
     "fields": {
       "Name": "Team Lead",
-      "Description": "Technical or functional lead guiding project teams.",
+      "Description": "Technical lead, team lead, project lead, scrum master, head of a craft team.",
       "Sequence": 20,
       "Status": "Active"
     },
@@ -47,7 +47,7 @@
   {
     "fields": {
       "Name": "Director",
-      "Description": "Department or practice leader overseeing multiple managers and initiatives.",
+      "Description": "Department or practice leader, senior director, head of a department, overseeing multiple managers and initiatives.",
       "Sequence": 40,
       "Status": "Active"
     },
@@ -62,7 +62,7 @@
   {
     "fields": {
       "Name": "Vice President",
-      "Description": "Vice president responsible for a function, division, or geography.",
+      "Description": "Vice president, assistant VP, associate VP, responsible for a function, division or geography.",
       "Sequence": 50,
       "Status": "Active"
     },
@@ -77,7 +77,7 @@
   {
     "fields": {
       "Name": "Senior Vice President",
-      "Description": "Senior vice president or executive vice president.",
+      "Description": "Senior vice president or executive vice president (SVP / EVP).",
       "Sequence": 60,
       "Status": "Active"
     },
@@ -92,7 +92,7 @@
   {
     "fields": {
       "Name": "C-Level",
-      "Description": "Chief Executive, Chief Technology, Chief Financial, or other C-suite officer.",
+      "Description": "Chief executive, technology, financial, operating or marketing officer; founder, owner, co-owner, partner, president.",
       "Sequence": 70,
       "Status": "Active"
     },
