@@ -1,0 +1,82 @@
+name: Repo checks
+
+# Checks specific to bizapps-common. They live here, not in the shared workflows, because
+# changes.yml, build.yml, release-readiness.yml and the rest are copied byte-for-byte from the
+# reference repo (bizapps-issues) and must stay identical across the open apps. Before the
+# release-pipeline port these ran inside common's own build.yml and publish.yml.
+on:
+  pull_request:
+    branches: [next, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: 'repo: guards'
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth/tags: check-release-seed-cadence.spec.mjs's real-git cases resolve tags.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # A host installs one copy of MemberJunction and of each Open App: @memberjunction/* and other
+      # apps' @mj-biz-apps/* packages are caret peers, never `dependencies`, or the host gets a second
+      # copy and a split class-factory registry. Self-test first, so a pass means the check can fail.
+      - name: Dependency model (MJ and sibling apps are caret peers)
+        run: |
+          node ./.github/scripts/check-dependency-model.mjs --self-test
+          node ./.github/scripts/check-dependency-model.mjs
+
+      # The mutation harnesses break code at anchored spots to prove the tests catch it. This
+      # confirms every anchor still matches the source, so a refactor cannot silently turn a
+      # mutant into a no-op. The full mutation run stays in mutants.yml.
+      - name: Mutation anchors
+        run: pnpm run test:mutants:anchors
+
+      # Stdlib-only specs for common's own scripts and harnesses. (.github/scripts/__tests__ is
+      # covered by the shared build.yml.)
+      - name: Script self-tests
+        run: node --test scripts/*.spec.mjs
+      - name: Harness self-tests
+        run: node --test 'packages/*/test-harnesses/*.spec.mjs' 'test-harnesses/*.spec.mjs'
+
+      # No workflow or script may push straight to `main` or `next`; releases go through PRs.
+      - name: Release-push gate
+        run: node scripts/check-release-pushes.mjs
+
+  release-seed:
+    name: 'repo: release seed'
+    if: github.event.pull_request.draft == false && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # Formerly in publish.yml, after the merge. On the release PR they fail before it.
+      # Each self-test runs first: a gate nobody has watched fail is indistinguishable from one
+      # that always passes (MemberJunction/bizapps-forms#105).
+      - name: Every metadata record is in the shipped seed
+        run: |
+          node --test scripts/check-release-seed-coverage.spec.mjs
+          pnpm run check:release-seed
+      - name: One consolidated seed per release, not per-PR deltas
+        run: |
+          node --test scripts/check-release-seed-cadence.spec.mjs
+          pnpm run check:seed-cadence

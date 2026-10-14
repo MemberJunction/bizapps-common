@@ -19,6 +19,11 @@
       "  ContentKey. This is the version next shipped, with next's name. Activity also has two",
       "  table-level constraints, so CodeGen never stores this one either.",
       "",
+      "Every other validator that no migration stores is pinned below too, copied from the generated",
+      "entity classes next ships, so a regeneration from migrations reuses all of them and asks the AI",
+      "nothing (bizapps-common#238). A PR that adds or changes a CHECK constraint adds or updates its",
+      "row here in the same PR, reviewed against the constraint.",
+      "",
       "Source must stay byte-identical to sys.check_constraints.definition, or CodeGen regenerates.",
       "GeneratedByModelID is required; it names the model that wrote the original.",
       "Push metadata BEFORE the first CodeGen run on a fresh database (mj migrate -> mj sync push",
@@ -87,6 +92,276 @@
     "sync": {
       "lastModified": "2026-10-06T23:21:11.546Z",
       "checksum": "f53767501fcb8f47508fb3fd6debd15160382a12ce6fe4de15096f4cb19d92a6"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateSentimentScoreRange",
+      "Description": "The sentiment score must be a value between -1.000 and 1.000, or left empty.",
+      "Source": "([SentimentScore] IS NULL OR [SentimentScore]>=(-1.000) AND [SentimentScore]<=(1.000))",
+      "Code": "\tpublic ValidateSentimentScoreRange(result: ValidationResult) {\n\t\tif (this.SentimentScore != null && (this.SentimentScore < -1.0 || this.SentimentScore > 1.0)) {\n\t\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\t\"SentimentScore\",\n\t\t\t\t\"Sentiment score must be between -1.000 and 1.000.\",\n\t\t\t\tthis.SentimentScore,\n\t\t\t\tValidationErrorType.Failure\n\t\t\t));\n\t\t}\n\t}",
+      "LinkedRecordPrimaryKey": "F482A17C-2B9A-4D76-96A8-A3F12462E08D"
+    },
+    "primaryKey": {
+      "ID": "6E0792C1-E9B7-4304-972A-7B31EF773718"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateEndedAtAfterStartedAt",
+      "Description": "The end date and time of an activity must be on or after its start date and time. This ensures that the duration of the activity is chronologically valid.",
+      "Source": "([EndedAt] IS NULL OR [EndedAt]>=[StartedAt])",
+      "Code": "public ValidateEndedAtAfterStartedAt(result: ValidationResult) {\n\tif (this.EndedAt != null && this.StartedAt != null) {\n\t\tconst endedDate = new Date(this.EndedAt);\n\t\tconst startedDate = new Date(this.StartedAt);\n\t\tif (endedDate < startedDate) {\n\t\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\t\"EndedAt\",\n\t\t\t\t\"The end date and time must be on or after the start date and time.\",\n\t\t\t\tthis.EndedAt,\n\t\t\t\tValidationErrorType.Failure\n\t\t\t));\n\t\t}\n\t}\n}",
+      "LinkedRecordPrimaryKey": "72E55425-8822-4E70-A075-116219CA5A5D"
+    },
+    "primaryKey": {
+      "ID": "00255C89-655B-4D5A-B908-12E8F4233DD4"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateEntityOrIdentityExclusivity",
+      "Description": "The record must be associated with either an Entity and Record ID pair, or an Identity Kind and Identity Value pair. It cannot have both sets of fields populated, nor can it have a partial mix of these fields.",
+      "Source": "([EntityID] IS NOT NULL AND [RecordID] IS NOT NULL AND [IdentityKind] IS NULL AND [IdentityValue] IS NULL OR [EntityID] IS NULL AND [RecordID] IS NULL AND [IdentityKind] IS NOT NULL AND [IdentityValue] IS NOT NULL)",
+      "Code": "public ValidateEntityOrIdentityExclusivity(result: ValidationResult) {\n    const hasEntity = this.EntityID != null;\n    const hasRecord = this.RecordID != null;\n    const hasIdentityKind = this.IdentityKind != null;\n    const hasIdentityValue = this.IdentityValue != null;\n\n    const isValidEntityPair = hasEntity && hasRecord && !hasIdentityKind && !hasIdentityValue;\n    const isValidIdentityPair = !hasEntity && !hasRecord && hasIdentityKind && hasIdentityValue;\n\n    if (!isValidEntityPair && !isValidIdentityPair) {\n        result.Errors.push(new ValidationErrorInfo(\n            \"EntityID\",\n            \"You must provide either both EntityID and RecordID (leaving IdentityKind and IdentityValue empty), or both IdentityKind and IdentityValue (leaving EntityID and RecordID empty). Mixed or incomplete pairs are not allowed.\",\n            this.EntityID,\n            ValidationErrorType.Failure\n        ));\n    }\n}",
+      "LinkedRecordPrimaryKey": "9C48DF77-E4A1-4ADB-AABF-916F5798B894"
+    },
+    "primaryKey": {
+      "ID": "E638DAA2-09B8-4AEA-854D-3A48CAADC721"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateMaxAttachmentBytesGreaterThanZero",
+      "Description": "The maximum attachment size limit must be a positive value greater than zero, if it is specified.",
+      "Source": "([MaxAttachmentBytes] IS NULL OR [MaxAttachmentBytes]>(0))",
+      "Code": "public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {\n    if (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {\n        result.Errors.push(new ValidationErrorInfo(\n            \"MaxAttachmentBytes\",\n            \"The maximum attachment size limit must be greater than zero.\",\n            this.MaxAttachmentBytes,\n            ValidationErrorType.Failure\n        ));\n    }\n}",
+      "LinkedRecordPrimaryKey": "A8E6FDD3-F038-42CB-A9DA-D92C5105EC34"
+    },
+    "primaryKey": {
+      "ID": "4EA7A5A0-372F-49A8-8555-AB7123C10878"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateEndAtAfterStartAt",
+      "Description": "If both start and end dates are specified, the end date must be greater than or equal to the start date to ensure logical chronological order.",
+      "Source": "([StartAt] IS NULL OR [EndAt] IS NULL OR [EndAt]>=[StartAt])",
+      "Code": "public ValidateEndAtAfterStartAt(result: ValidationResult) {\n\tif (this.StartAt != null && this.EndAt != null) {\n\t\tif (this.EndAt < this.StartAt) {\n\t\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\t\"EndAt\",\n\t\t\t\t\"The end date must be greater than or equal to the start date.\",\n\t\t\t\tthis.EndAt,\n\t\t\t\tValidationErrorType.Failure\n\t\t\t));\n\t\t}\n\t}\n}",
+      "LinkedRecordPrimaryKey": "C22591BB-B33A-439C-9567-5494A7B71D8A"
+    },
+    "primaryKey": {
+      "ID": "2B906304-C1B5-40A2-A98B-41AB951D537D"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateTimeoutMSRange",
+      "Description": "The timeout value must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes) to ensure a valid and reasonable execution limit.",
+      "Source": "([TimeoutMS]>(0) AND [TimeoutMS]<=(300000))",
+      "Code": "public ValidateTimeoutMSRange(result: ValidationResult) {\n\tif (this.TimeoutMS !== undefined && this.TimeoutMS !== null) {\n\t\tif (this.TimeoutMS <= 0 || this.TimeoutMS > 300000) {\n\t\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\t\"TimeoutMS\",\n\t\t\t\t\"Timeout must be greater than 0 and less than or equal to 300,000 milliseconds (5 minutes).\",\n\t\t\t\tthis.TimeoutMS,\n\t\t\t\tValidationErrorType.Failure\n\t\t\t));\n\t\t}\n\t}\n}",
+      "LinkedRecordPrimaryKey": "A12A8C4C-DBD9-40FB-97B4-3872AA966FC3"
+    },
+    "primaryKey": {
+      "ID": "2FF94B9E-893A-4263-A3A2-26D7212B8348"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateDefaultMaxAttachmentBytesGreaterThanZero",
+      "Description": "The default maximum attachment size must be greater than zero if it is specified.",
+      "Source": "([DefaultMaxAttachmentBytes] IS NULL OR [DefaultMaxAttachmentBytes]>(0))",
+      "Code": "public ValidateDefaultMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {\n    if (this.DefaultMaxAttachmentBytes != null && this.DefaultMaxAttachmentBytes <= 0) {\n        result.Errors.push(new ValidationErrorInfo(\n            \"DefaultMaxAttachmentBytes\",\n            \"The default maximum attachment size must be greater than 0 bytes.\",\n            this.DefaultMaxAttachmentBytes,\n            ValidationErrorType.Failure\n        ));\n    }\n}",
+      "LinkedRecordPrimaryKey": "827D6B7C-BA37-446C-A9C1-912320C1AFF3"
+    },
+    "primaryKey": {
+      "ID": "1507137B-80D8-4EFB-B7F4-6C07EA14964B"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateDefaultEncryptionKeyForSkippedContentPolicy",
+      "Description": "A default encryption key must be specified unless the default skipped content policy is set to 'None'.",
+      "Source": "([DefaultSkippedContentPolicy]=N'None' OR [DefaultEncryptionKeyID] IS NOT NULL)",
+      "Code": "public ValidateDefaultEncryptionKeyForSkippedContentPolicy(result: ValidationResult) {\n\tif (this.DefaultSkippedContentPolicy !== \"None\" && this.DefaultEncryptionKeyID == null) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"DefaultEncryptionKeyID\",\n\t\t\t\"A default encryption key must be specified when the default skipped content policy is not set to 'None'.\",\n\t\t\tthis.DefaultEncryptionKeyID,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "AD8B1485-8BE1-4E5C-8EFB-3B4FEA363F75"
+    },
+    "primaryKey": {
+      "ID": "AD9C20D9-6E3C-4671-A29F-4997AAC29FDE"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateMaxAttachmentBytesGreaterThanZero",
+      "Description": "If a maximum attachment size limit is specified, it must be a positive number greater than zero.",
+      "Source": "([MaxAttachmentBytes] IS NULL OR [MaxAttachmentBytes]>(0))",
+      "Code": "public ValidateMaxAttachmentBytesGreaterThanZero(result: ValidationResult) {\n\tif (this.MaxAttachmentBytes != null && this.MaxAttachmentBytes <= 0) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"MaxAttachmentBytes\",\n\t\t\t\"The maximum attachment size must be greater than 0 bytes.\",\n\t\t\tthis.MaxAttachmentBytes,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "DCA96B15-B3EE-4F41-BBD1-146C71922BA8"
+    },
+    "primaryKey": {
+      "ID": "B7BAF581-6014-45AD-9150-5BE7A13FFEBD"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateActivitySyncConnectionOrRuleSetRequired",
+      "Description": "Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified. You cannot provide both, and you cannot leave both empty.",
+      "Source": "([ActivitySyncRuleSetID] IS NULL AND [ActivitySyncConnectionID] IS NOT NULL OR [ActivitySyncRuleSetID] IS NOT NULL AND [ActivitySyncConnectionID] IS NULL)",
+      "Code": "public ValidateActivitySyncConnectionOrRuleSetRequired(result: ValidationResult) {\n\tconst hasRuleSet = this.ActivitySyncRuleSetID != null;\n\tconst hasConnection = this.ActivitySyncConnectionID != null;\n\n\tif ((hasRuleSet && hasConnection) || (!hasRuleSet && !hasConnection)) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"ActivitySyncConnectionID\",\n\t\t\t\"Exactly one of Activity Sync Connection or Activity Sync Rule Set must be specified.\",\n\t\t\tthis.ActivitySyncConnectionID,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "21B78371-132C-4507-AED8-D44E366468F2"
+    },
+    "primaryKey": {
+      "ID": "3AF96CBB-96BA-4B6F-B84F-DD1B5E7C4479"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateDateToAfterOrEqualDateFrom",
+      "Description": "The end date must be on or after the start date when both dates are provided.",
+      "Source": "([DateFrom] IS NULL OR [DateTo] IS NULL OR [DateTo]>=[DateFrom])",
+      "Code": "public ValidateDateToAfterOrEqualDateFrom(result: ValidationResult) {\n\tif (this.DateFrom != null && this.DateTo != null) {\n\t\tif (this.DateTo < this.DateFrom) {\n\t\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\t\"DateTo\",\n\t\t\t\t\"The end date (DateTo) must be on or after the start date (DateFrom).\",\n\t\t\t\tthis.DateTo,\n\t\t\t\tValidationErrorType.Failure\n\t\t\t));\n\t\t}\n\t}\n}",
+      "LinkedRecordPrimaryKey": "21B78371-132C-4507-AED8-D44E366468F2"
+    },
+    "primaryKey": {
+      "ID": "2D2C1C88-8BFD-4871-B51C-956777843D01"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateConfidenceRange",
+      "Description": "Confidence score must be a value between 0 and 1 (inclusive) when specified.",
+      "Source": "([Confidence] IS NULL OR [Confidence]>=(0) AND [Confidence]<=(1))",
+      "Code": "public ValidateConfidenceRange(result: ValidationResult) {\n\tif (this.Confidence != null && (this.Confidence < 0 || this.Confidence > 1)) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t'Confidence',\n\t\t\t'Confidence score must be between 0 and 1.',\n\t\t\tthis.Confidence,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "74F9BDC0-2B51-4F54-80DD-62677C682D67"
+    },
+    "primaryKey": {
+      "ID": "C8FB9783-8E0A-44BB-9FA0-9E04DBAF9351"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateActivityIDRequiresIncludedDecision",
+      "Description": "An activity can only be associated with this record if the decision is set to 'Included'.",
+      "Source": "([ActivityID] IS NULL OR [Decision]=N'Included')",
+      "Code": "public ValidateActivityIDRequiresIncludedDecision(result: ValidationResult) {\n\tif (this.ActivityID != null && this.Decision !== 'Included') {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"ActivityID\",\n\t\t\t\"An activity can only be associated when the decision is 'Included'.\",\n\t\t\tthis.ActivityID,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "AC16B066-9460-44F5-B027-3FD397E61F34"
+    },
+    "primaryKey": {
+      "ID": "F72A148E-725B-495A-A3D5-D4C52E061851"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entities",
+      "Name": "ValidateWatermarkAfterForDryRun",
+      "Description": "If the sync is marked as a dry run, a 'Watermark After' date cannot be specified because no progress is actually saved.",
+      "Source": "([IsDryRun]=(0) OR [WatermarkAfter] IS NULL)",
+      "Code": "public ValidateWatermarkAfterForDryRun(result: ValidationResult) {\n\tif (this.IsDryRun && this.WatermarkAfter != null) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"WatermarkAfter\",\n\t\t\t\"Watermark After date cannot be set when IsDryRun is enabled.\",\n\t\t\tthis.WatermarkAfter,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "ECF19741-CBA6-4DB7-95A3-85FA37BEC2F1"
+    },
+    "primaryKey": {
+      "ID": "EB5C59EA-E2BC-48C2-8D27-7DCF934F3DC5"
+    }
+  },
+  {
+    "fields": {
+      "CategoryID": "@lookup:MJ: Generated Code Categories.Name=CodeGen: Validators",
+      "GeneratedByModelID": "@lookup:MJ: AI Models.Name=Gemini 3.5 Flash",
+      "GeneratedAt": "2026-10-06T21:29:03.990Z",
+      "Language": "TypeScript",
+      "Status": "Approved",
+      "LinkedEntityID": "@lookup:MJ: Entities.Name=MJ: Entity Fields",
+      "Name": "ValidateConfidenceRange",
+      "Description": "Confidence score must be a value between 0.0 and 1.0 (inclusive) if it is provided, representing a valid probability range.",
+      "Source": "([Confidence] IS NULL OR [Confidence]>=(0.0) AND [Confidence]<=(1.0))",
+      "Code": "public ValidateConfidenceRange(result: ValidationResult) {\n\tif (this.Confidence != null && (this.Confidence < 0.0 || this.Confidence > 1.0)) {\n\t\tresult.Errors.push(new ValidationErrorInfo(\n\t\t\t\"Confidence\",\n\t\t\t\"Confidence score must be between 0.0 and 1.0.\",\n\t\t\tthis.Confidence,\n\t\t\tValidationErrorType.Failure\n\t\t));\n\t}\n}",
+      "LinkedRecordPrimaryKey": "FF39C3B5-E0B6-47C3-8AED-E8DC16717356"
+    },
+    "primaryKey": {
+      "ID": "3BDC4A50-18DF-42D8-A85E-C1103F5C70D4"
     }
   }
 ]

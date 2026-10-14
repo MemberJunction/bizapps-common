@@ -56,6 +56,21 @@ export { ActivityHeaderPanel } from './lib/custom/panels/activity-header.panel';
 export { ActivityLinksPanel } from './lib/custom/panels/activity-links.panel';
 export { ActivityFilesPanel } from './lib/custom/panels/activity-files.panel';
 export { ActivityContentPanel } from './lib/custom/panels/activity-content.panel';
+export { OrganizationStaffPanel } from './lib/custom/panels/organization-staff.panel';
+export {
+    OrganizationStaffContributor,
+    DiscoverOrganizationStaffContributors,
+    RunStaffContributors,
+    LoadOrganizationStaff,
+    CommonStaffFigures,
+    type OrganizationStaffMember,
+    type OrganizationStaffRequest,
+    type StaffFigure,
+    type StaffColumn,
+    type StaffCell,
+    type StaffContribution,
+    type StaffContributorResult,
+} from './lib/data/organization-staff';
 
 // Directory dashboard + People / Organizations lists / Graph / Activities (Explorer Custom nav)
 import './lib/sections/common-sections.component';
