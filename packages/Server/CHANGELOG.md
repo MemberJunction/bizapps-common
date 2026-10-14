@@ -1,5 +1,21 @@
 # @mj-biz-apps/common-server
 
+## 5.53.0
+
+### Patch Changes
+
+- 7955abc: `@mj-biz-apps/common-core-entities-server` no longer re-exports `LoadActivitySyncEngine` and no
+  longer depends on `@mj-biz-apps/common-activity-sync`. Import `LoadActivitySyncEngine` from
+  `@mj-biz-apps/common-activity-sync`, as `@mj-biz-apps/common-server` now does. Startup behaviour is
+  unchanged.
+- Updated dependencies [1045bc7]
+- Updated dependencies [7955abc]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+  - @mj-biz-apps/common-core-entities-server@5.53.0
+  - @mj-biz-apps/common-activity-sync@5.53.0
+  - @mj-biz-apps/common-actions@5.53.0
+
 ## 5.52.0
 
 ### Patch Changes
