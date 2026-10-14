@@ -28,7 +28,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.53.0"
+    "@mj-biz-apps/common-entities": "^5.53.0"
   },
   "peerDependencies": {
     "@memberjunction/communication-types": "^6.1.5",
