@@ -19,7 +19,7 @@
     "url": "https://github.com/MemberJunction/bizapps-common"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.53.0",
+    "@mj-biz-apps/common-entities": "^5.53.0",
     "@memberjunction/core": "^6.1.5",
     "@memberjunction/global": "^6.1.5",
     "@memberjunction/testing-integration": "^6.1.5"
