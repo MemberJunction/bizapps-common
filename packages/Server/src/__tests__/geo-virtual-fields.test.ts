@@ -168,7 +168,7 @@ describe('MJ geo virtual fields on the GraphQL output types', () => {
     it('parses what it guards (never passes on nothing)', () => {
         expect(outputTypes.length).toBeGreaterThan(20);
         expect(outputTypeFor('MJ_BizApps_Common: Activities')?.Fields.length).toBeGreaterThan(10);
-        // Address is the only geo source left (Activities stopped being one in V202610132305).
+        // Address is the only geo source left (Activities stopped being one in V202610141452).
         expect(geoFields.length).toBeGreaterThanOrEqual(2);
         const addressID = entityIDFor('Addresses');
         expect(addressID).toBeDefined();
@@ -186,7 +186,7 @@ describe('MJ geo virtual fields on the GraphQL output types', () => {
         }
     });
 
-    it('Activities carry no geo virtual fields once V202610132305 deletes them (Location is not geocoded)', () => {
+    it('Activities carry no geo virtual fields once V202610141452 deletes them (Location is not geocoded)', () => {
         const id = entityIDFor('Activities');
         expect(id, 'no migration names Activities').toBeDefined();
         expect(geoFields.filter((f) => f.EntityID === id)).toEqual([]);

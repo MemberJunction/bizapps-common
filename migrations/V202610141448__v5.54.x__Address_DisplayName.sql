@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202610131635__v5.53.x__Address_DisplayName.sql
+-- Migration: V202610141448__v5.54.x__Address_DisplayName.sql
 -- Description: Add a PERSISTED computed column Address.DisplayName — a one-line,
 --              US-ordered label ("123 Main St, Springfield, IL 62701, United States")
 --              — and make it the Addresses name field (metadata/entities/.entities.json).
