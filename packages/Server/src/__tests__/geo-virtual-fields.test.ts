@@ -168,7 +168,8 @@ describe('MJ geo virtual fields on the GraphQL output types', () => {
     it('parses what it guards (never passes on nothing)', () => {
         expect(outputTypes.length).toBeGreaterThan(20);
         expect(outputTypeFor('MJ_BizApps_Common: Activities')?.Fields.length).toBeGreaterThan(10);
-        expect(geoFields.length).toBeGreaterThanOrEqual(4);
+        // Address is the only geo source left (Activities stopped being one in V202610132305).
+        expect(geoFields.length).toBeGreaterThanOrEqual(2);
         const addressID = entityIDFor('Addresses');
         expect(addressID).toBeDefined();
         expect(geoFields.filter((f) => f.EntityID === addressID).map((f) => f.FieldName).sort()).toEqual([
@@ -183,6 +184,14 @@ describe('MJ geo virtual fields on the GraphQL output types', () => {
             expect(id, `no migration names ${entity}`).toBeDefined();
             expect(geoFields.filter((f) => f.EntityID === id)).toEqual([]);
         }
+    });
+
+    it('Activities carry no geo virtual fields once V202610132305 deletes them (Location is not geocoded)', () => {
+        const id = entityIDFor('Activities');
+        expect(id, 'no migration names Activities').toBeDefined();
+        expect(geoFields.filter((f) => f.EntityID === id)).toEqual([]);
+        const activity = outputTypeFor('MJ_BizApps_Common: Activities');
+        expect(activity?.Fields.map((f) => f.Name)).not.toContain('_mj__Latitude');
     });
 
     it('mjBizAppsCommonAddress_ declares nullable _mj__Latitude and _mj__Longitude (bc-aidp-next-golive#295)', () => {

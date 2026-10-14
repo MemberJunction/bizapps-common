@@ -467,6 +467,78 @@
             "lastModified": "2026-09-07T14:18:30.914Z",
             "checksum": "e9b84a9980343249386f924a17c12b9e64844aefa5b090f118bc27e35faeb440"
           }
+        },
+        {
+          "_comments": [
+            "DisplayName is the computed one-line label (Line1, City, State PostalCode, Country). It is the sole Addresses name field.",
+            "Pin AutoUpdateIsNameField=0 so CodeGen cannot flip this back to Line1.",
+            "Pin ExtendedType to none: CodeGen's AI typing tags it GeoAddress, but the geocoder reads the tagged parts",
+            "below. Tagging this label too would collide with Line1's GeoAddress and repeat city and country."
+          ],
+          "fields": {
+            "IsNameField": true,
+            "AutoUpdateIsNameField": false,
+            "ExtendedType": null,
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
+          }
+        },
+        {
+          "_comments": [
+            "Line1 is nullable since v5.49, so it cannot identify an address. Pin it off as a name field.",
+            "Geo tags on the parts (Line1/City/StateProvince/PostalCode/Country) are what GeoCodeSyncService reads when",
+            "an Address has no Latitude/Longitude: it builds the provider request from them, and falls back to a",
+            "state/country centroid. Only Line1 is GeoAddress: the service keeps one value per tag, so Line2/Line3",
+            "would overwrite it. Address became the geo write source in #131, but the parts predate MJ's Geo* types",
+            "(CodeGen only tags new fields), so they were never tagged until now."
+          ],
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false,
+            "ExtendedType": "GeoAddress",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Line1&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "ExtendedType": "GeoCity",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=City&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "ExtendedType": "GeoStateProvince",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=StateProvince&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "ExtendedType": "GeoPostalCode",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=PostalCode&EntityID=@parent:ID"
+          }
+        },
+        {
+          "fields": {
+            "ExtendedType": "GeoCountry",
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Country&EntityID=@parent:ID"
+          }
         }
       ]
     },
@@ -490,18 +562,117 @@
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities"
     },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "Location is free text (\"Virtual (Teams)\", \"Conference room B\"), not an address. CodeGen's AI typing tagged it",
+            "GeoAddress, which made it Activity's only writable geo field, so every Activity save ran the geocoder and",
+            "logged a failed RecordGeoCode row when the text was not a place. The structured location is AddressID,",
+            "whose Address carries its own coordinates. Pin the tag off."
+          ],
+          "fields": {
+            "ExtendedType": null,
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Location&EntityID=@parent:ID"
+          }
+        }
+      ]
+    },
     "sync": {
       "lastModified": "2026-08-24T20:06:03.051Z",
       "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
     }
   },
   {
+    "_comments": [
+      "Layered base view (V202610131636/V202610131637): CodeGen generates vwRelationshipsGenerated,",
+      "and the hand-written vwRelationships wrapper adds DisplayName."
+    ],
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships"
+    },
+    "fields": {
+      "GeneratedBaseViewName": "vwRelationshipsGenerated",
+      "BaseViewGenerated": false
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "DisplayName is the wrapper view's \"<From> → <To> (<Type>)\" label. It is the sole Relationships name field.",
+            "Pin AutoUpdateIsNameField=0 so CodeGen cannot flip this back to Title."
+          ],
+          "fields": {
+            "IsNameField": true,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=DisplayName&EntityID=@parent:ID"
+          }
+        },
+        {
+          "_comments": [
+            "Title is an optional job title, so it cannot identify a relationship. Pin it off as a name field."
+          ],
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Title&EntityID=@parent:ID"
+          }
+        }
+      ]
+    }
+  },
+  {
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Address Links"
     },
+    "_comments": [
+      "AddressLink is not a geo source: Address is (see Addresses above). Once AddressLink.Address shows the full",
+      "Address.DisplayName, CodeGen's AI typing tags it GeoAddress and flips SupportsGeoCoding on, which adds a",
+      "vwRecordGeoCodes join and geocodes the same address a second time per link. Pin both off."
+    ],
     "fields": {
       "AllowUserSearchAPI": false,
-      "AutoUpdateAllowUserSearchAPI": false
+      "AutoUpdateAllowUserSearchAPI": false,
+      "SupportsGeoCoding": false,
+      "AutoUpdateSupportsGeoCoding": false
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "_comments": [
+            "Address is the FK display column: the linked address's one-line DisplayName. It is the sole Address Links name field.",
+            "Pin AutoUpdateIsNameField=0 so CodeGen cannot flip this back to AddressType, and ExtendedType to none (see above)."
+          ],
+          "fields": {
+            "IsNameField": true,
+            "AutoUpdateIsNameField": false,
+            "ExtendedType": null,
+            "AutoUpdateExtendedType": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Address&EntityID=@parent:ID"
+          }
+        },
+        {
+          "_comments": [
+            "AddressType (Billing, Home) does not identify a link. Pin it off as a name field."
+          ],
+          "fields": {
+            "IsNameField": false,
+            "AutoUpdateIsNameField": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=AddressType&EntityID=@parent:ID"
+          }
+        }
+      ]
     },
     "sync": {
       "lastModified": "2026-09-17T23:07:00.419Z",
