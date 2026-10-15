@@ -108,49 +108,5 @@
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships"
     }
-  },
-  {
-    "_comments": [
-      "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
-    ],
-    "fields": {
-      "DisplayName": "Enrichment Providers"
-    },
-    "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Enrichment Providers"
-    }
-  },
-  {
-    "_comments": [
-      "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
-    ],
-    "fields": {
-      "DisplayName": "Enrichment Provider Rates"
-    },
-    "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Enrichment Provider Rates"
-    }
-  },
-  {
-    "_comments": [
-      "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
-    ],
-    "fields": {
-      "DisplayName": "Person Education"
-    },
-    "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Person Educations"
-    }
-  },
-  {
-    "_comments": [
-      "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
-    ],
-    "fields": {
-      "DisplayName": "Person External Identities"
-    },
-    "primaryKey": {
-      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Person External Identities"
-    }
   }
 ]
