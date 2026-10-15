@@ -2,7 +2,7 @@
 -- Layered base view for Relationships — PART 2 of 2 (the wrapper)
 -- =============================================================================
 --
--- Pairs with V202610141449, which flips Relationships to a layered base view and carries
+-- Pairs with V202610151047, which flips Relationships to a layered base view and carries
 -- the CodeGen output that CREATES vwRelationshipsGenerated. Run that first; timestamp
 -- ordering guarantees it.
 --
