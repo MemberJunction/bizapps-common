@@ -1,5 +1,14 @@
 # Change Log - mj_generatedentities
 
+## 5.53.1
+
+## 5.53.0
+
+### Minor Changes
+
+- 1045bc7: The 5.53 Metadata_Sync ships the 15 CHECK-constraint validators pinned in metadata/generated-codes since 5.52, so a host that upgrades by migration gets the same validator rows as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in 5.48 and 5.51.
+- c842ff1: Pins the remaining 15 CHECK-constraint validators as `GeneratedCode` rows in `metadata/generated-codes/`, copied unchanged from the generated entity classes, so regenerating from migrations reuses every validator instead of asking the AI again. No generated code changes. The next release seed carries the rows to hosts.
+
 ## 5.52.0
 
 ### Minor Changes
