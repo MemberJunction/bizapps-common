@@ -2,7 +2,7 @@
   "fields": {
     "TypeID": "@lookup:MJ: Test Types.Name=Feature Pipeline Golden Set",
     "Name": "Job Function and Seniority — Golden Set",
-    "Description": "Golden set for the Job Function and Seniority Derivation Feature Pipeline: 52 job titles (the 34 distinct MoreCheese titles and 18 hard titles) with accepted alternates, labelled under a written guide by three model labelers and adjudicated automatically; the stored label-quality record must pass before the set can gate a version. Each output must reach the pipeline's declared accuracy threshold before a version of the pipeline can write values.",
+    "Description": "Golden set for the Job Function and Seniority Derivation Feature Pipeline: 58 cases. 52 job titles (the 34 distinct MoreCheese titles and 18 hard titles) with accepted alternates, labelled under a written guide by three model labelers and adjudicated automatically; the stored label-quality record must pass before the set can gate a version. 6 required cases fixed by the guide's abstain rule (prompt-injection attempts, gibberish, a blank title, and a real title carrying an instruction to ignore): any one answered wrong refuses the version whatever the accuracy. Each output must reach the pipeline's declared accuracy threshold before a version of the pipeline can write values.",
     "Status": "Active",
     "InputDefinition": "@file:golden/job-title-golden-set.json",
     "Configuration": {
@@ -13,7 +13,7 @@
       }
     },
     "Tags": "[\"feature-pipeline\",\"golden-set\",\"job-title\"]",
-    "EstimatedCostUSD": 0.03
+    "EstimatedCostUSD": 0.04
   },
   "primaryKey": { "ID": "681DA1BF-7397-416E-99D1-89788FFCCB82" }
 }

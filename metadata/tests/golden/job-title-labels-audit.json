@@ -1,5 +1,5 @@
 {
-  "InstructionsNote": "InstructionsSha256 is of the instructions exactly as sent on 2026-10-14. Afterwards the guide's first heading lost an internal task reference and its last note lost a parenthetical; the labels, guide rules and taxonomy did not change.",
+  "InstructionsNote": "InstructionsSha256 is of the instructions exactly as sent on 2026-10-14. Afterwards the guide's first heading lost an internal task reference and its last note lost a parenthetical; the labels, guide rules and taxonomy did not change. The guide's abstain-rule section was added later still; it governs only the 6 required specification cases of the golden set, which no labeler labelled and this file does not cover.",
   "InstructionsSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c",
   "Labelers": [
     {
