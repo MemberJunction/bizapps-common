@@ -7,8 +7,10 @@
 -- ordering guarantees it.
 --
 -- This wrapper owns only what CodeGen cannot produce: DisplayName, the entity's name
--- field. Everything else — base columns and every FK display column, including any added
--- later — comes from g.*, so the wrapper exposes a SUPERSET of the generated view.
+-- field. Everything else — base columns and every FK display column — comes from g.*, so
+-- the wrapper exposes a SUPERSET of the generated view. A SELECT g.* view fixes its column
+-- list when it is created; columns added to vwRelationshipsGenerated later reach this view
+-- through the guarded sp_refreshview CodeGen emits after each regeneration.
 --
 -- DisplayName = "<From> → <To> (<Type>)", e.g. "Jane Smith → Acme (Employee)".
 --   * From/To: the person's DisplayName or the organization's Name (CK_Relationship_
@@ -44,7 +46,4 @@ SELECT
 
 FROM
     [${flyway:defaultSchema}].[vwRelationshipsGenerated] AS g;
-GO
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwRelationships] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
 GO

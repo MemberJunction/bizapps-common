@@ -22,6 +22,10 @@
 --      on UQ_EntityField_EntityID_Sequence. Same fix and shape as V202610062130 (#215, #237);
 --      packages/Server geo-virtual-fields.test.ts reads these DELETEs in chain order.
 --   3) The CodeGen section regenerates vwActivities without the join, with its procedures.
+--   4) Address's geo tags match metadata/: DisplayName untagged, the five parts tagged, all
+--      pinned. V202610151046's CodeGen section tags DisplayName GeoAddress; that has to be
+--      undone after it runs, so it is here rather than there. Pinning DisplayName alone would
+--      leave Address with no geo field until the release seed, so the parts are set too.
 --
 -- Activity.Address (the view's label for AddressID) keeps its GeoAddress tag: it is virtual,
 -- so it never triggers the geocoder; it only tells map features which column holds a place.
@@ -33,6 +37,20 @@ UPDATE [${mjSchema}].[EntityField]
        [AutoUpdateExtendedType] = 0
  WHERE [EntityID] = '72E55425-8822-4E70-A075-116219CA5A5D'  -- Entity: MJ_BizApps_Common: Activities
    AND [Name] = 'Location';
+GO
+
+-- 4) Address: the parts are the geo source, the one-line label is not.
+UPDATE [${mjSchema}].[EntityField]
+   SET [ExtendedType] = CASE [Name]
+                            WHEN 'Line1'         THEN 'GeoAddress'
+                            WHEN 'City'          THEN 'GeoCity'
+                            WHEN 'StateProvince' THEN 'GeoStateProvince'
+                            WHEN 'PostalCode'    THEN 'GeoPostalCode'
+                            WHEN 'Country'       THEN 'GeoCountry'
+                        END,
+       [AutoUpdateExtendedType] = 0
+ WHERE [EntityID] = '61B5C6FB-7317-46D1-8E05-F669B7BC6F3E'  -- Entity: MJ_BizApps_Common: Addresses
+   AND [Name] IN ('DisplayName', 'Line1', 'City', 'StateProvince', 'PostalCode', 'Country');
 GO
 
 -- 2) The two virtual geo fields, and the rows that reference them.
