@@ -27,7 +27,6 @@ const ALL_BUNDLES = [
     'contacts-addresses',
     'relationships',
     'activities',
-    'person-enrichment',
 ];
 
 const args = process.argv.slice(2);
