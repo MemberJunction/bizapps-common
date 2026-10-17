@@ -21,7 +21,6 @@ export class mjBizAppsCommonActivityFormComponent extends BaseFormComponent {
             { sectionKey: 'securityAndAccess', sectionName: 'Security and Access', isExpanded: true },
             { sectionKey: 'relationships', sectionName: 'Relationships', isExpanded: true },
             { sectionKey: 'location', sectionName: 'Location', isExpanded: true },
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivities', sectionName: 'Activities', isExpanded: false },
             { sectionKey: 'mJBizAppsCommonActivityFiles', sectionName: 'Activity Files', isExpanded: false },

@@ -33,13 +33,9 @@ import { mjBizAppsCommonAddressLinkFormComponent } from "./Entities/mjBizAppsCom
 import { mjBizAppsCommonAddressTypeFormComponent } from "./Entities/mjBizAppsCommonAddressType/mjbizappscommonaddresstype.form.component";
 import { mjBizAppsCommonContactMethodFormComponent } from "./Entities/mjBizAppsCommonContactMethod/mjbizappscommoncontactmethod.form.component";
 import { mjBizAppsCommonContactTypeFormComponent } from "./Entities/mjBizAppsCommonContactType/mjbizappscommoncontacttype.form.component";
-import { mjBizAppsCommonEnrichmentProviderFormComponent } from "./Entities/mjBizAppsCommonEnrichmentProvider/mjbizappscommonenrichmentprovider.form.component";
-import { mjBizAppsCommonEnrichmentProviderRateFormComponent } from "./Entities/mjBizAppsCommonEnrichmentProviderRate/mjbizappscommonenrichmentproviderrate.form.component";
 import { mjBizAppsCommonJobFunctionFormComponent } from "./Entities/mjBizAppsCommonJobFunction/mjbizappscommonjobfunction.form.component";
 import { mjBizAppsCommonOrganizationFormComponent } from "./Entities/mjBizAppsCommonOrganization/mjbizappscommonorganization.form.component";
 import { mjBizAppsCommonOrganizationTypeFormComponent } from "./Entities/mjBizAppsCommonOrganizationType/mjbizappscommonorganizationtype.form.component";
-import { mjBizAppsCommonPersonEducationFormComponent } from "./Entities/mjBizAppsCommonPersonEducation/mjbizappscommonpersoneducation.form.component";
-import { mjBizAppsCommonPersonExternalIdentityFormComponent } from "./Entities/mjBizAppsCommonPersonExternalIdentity/mjbizappscommonpersonexternalidentity.form.component";
 import { mjBizAppsCommonPersonFormComponent } from "./Entities/mjBizAppsCommonPerson/mjbizappscommonperson.form.component";
 import { mjBizAppsCommonPersonJobFunctionFormComponent } from "./Entities/mjBizAppsCommonPersonJobFunction/mjbizappscommonpersonjobfunction.form.component";
 import { mjBizAppsCommonRelationshipFormComponent } from "./Entities/mjBizAppsCommonRelationship/mjbizappscommonrelationship.form.component";
@@ -142,24 +138,6 @@ export class GeneratedForms_SubModule_6 { }
 
 @NgModule({
 declarations: [
-    mjBizAppsCommonEnrichmentProviderFormComponent
-],
-imports: [
-    CommonModule,
-    FormsModule,
-    BaseFormsModule,
-    EntityViewerModule,
-    LinkDirectivesModule
-],
-exports: [
-]
-})
-export class GeneratedForms_SubModule_7 { }
-    
-
-
-@NgModule({
-declarations: [
     mjBizAppsCommonActivityFormComponent,
     mjBizAppsCommonPersonFormComponent
 ],
@@ -174,24 +152,6 @@ exports: [
 ]
 })
 export class GeneratedForms_SubModule_8 { }
-    
-
-
-@NgModule({
-declarations: [
-    mjBizAppsCommonEnrichmentProviderRateFormComponent
-],
-imports: [
-    CommonModule,
-    FormsModule,
-    BaseFormsModule,
-    EntityViewerModule,
-    LinkDirectivesModule
-],
-exports: [
-]
-})
-export class GeneratedForms_SubModule_9 { }
     
 
 
@@ -233,26 +193,7 @@ export class GeneratedForms_SubModule_13 { }
 
 @NgModule({
 declarations: [
-    mjBizAppsCommonPersonExternalIdentityFormComponent
-],
-imports: [
-    CommonModule,
-    FormsModule,
-    BaseFormsModule,
-    EntityViewerModule,
-    LinkDirectivesModule
-],
-exports: [
-]
-})
-export class GeneratedForms_SubModule_15 { }
-    
-
-
-@NgModule({
-declarations: [
-    mjBizAppsCommonContactMethodFormComponent,
-    mjBizAppsCommonPersonEducationFormComponent
+    mjBizAppsCommonContactMethodFormComponent
 ],
 imports: [
     CommonModule,
@@ -443,12 +384,9 @@ imports: [
     GeneratedForms_SubModule_3,
     GeneratedForms_SubModule_4,
     GeneratedForms_SubModule_6,
-    GeneratedForms_SubModule_7,
     GeneratedForms_SubModule_8,
-    GeneratedForms_SubModule_9,
     GeneratedForms_SubModule_10,
     GeneratedForms_SubModule_13,
-    GeneratedForms_SubModule_15,
     GeneratedForms_SubModule_16,
     GeneratedForms_SubModule_18,
     GeneratedForms_SubModule_19,
