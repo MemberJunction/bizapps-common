@@ -5,16 +5,13 @@
     ],
     "fields": {
       "Name": "MJ_BizApps_Common: Activity Sync Run Details",
+      "TrackRecordChanges": false,
       "Configuration": {
         "SaveReturnMode": "datestamps_only"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details"
-    },
-    "sync": {
-      "lastModified": "2026-10-17T20:27:05.145Z",
-      "checksum": "99bd1813bdea7a07ab00376dc15089c248c51e54d95ff5eb850da829c7493861"
     }
   },
   {
@@ -23,16 +20,13 @@
     ],
     "fields": {
       "Name": "MJ_BizApps_Common: Activity Sync Runs",
+      "TrackRecordChanges": false,
       "Configuration": {
         "SaveReturnMode": "datestamps_only"
       }
     },
     "primaryKey": {
       "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Runs"
-    },
-    "sync": {
-      "lastModified": "2026-10-17T20:27:05.187Z",
-      "checksum": "de7a2da632cd458054bd55b1f985a765149635e97ac88405100160c2bed651ed"
     }
   }
 ]
