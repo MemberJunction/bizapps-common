@@ -5042,7 +5042,7 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true, description: "Biographical text or notes about this person"}) 
     Bio?: string;
         
-    @Field({nullable: true, description: "DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release."}) 
+    @Field({nullable: true, description: "Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users."}) 
     @MaxLength(36)
     LinkedUserID?: string;
         

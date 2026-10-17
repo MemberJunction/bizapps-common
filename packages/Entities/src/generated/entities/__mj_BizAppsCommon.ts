@@ -1979,7 +1979,7 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Linked User ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-        * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.`),
+        * * Description: Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.`),
     Status: z.union([z.literal('Active'), z.literal('Deceased'), z.literal('Inactive')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -7953,10 +7953,9 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     /**
     * * Field Name: LinkedUserID
     * * Display Name: Linked User ID
-    * * 
-    * * @deprecated This field is deprecated and will be removed in a future version. Using it will result in console warnings.SQL Data Type: uniqueidentifier
+    * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-    * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.
+    * * Description: Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.
     */
     get LinkedUserID(): string | null {
         return this.Get('LinkedUserID');
