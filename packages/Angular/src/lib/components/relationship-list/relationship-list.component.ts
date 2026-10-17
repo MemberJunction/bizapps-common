@@ -13,6 +13,7 @@ import {
     mjBizAppsCommonSeniorityLevelEntity,
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
 
 /**
@@ -441,9 +442,9 @@ export class RelationshipListComponent {
                 // Load incoming relationships to show complete 360-degree timeline
                 let incomingFilter = '';
                 if (this._personID) {
-                    incomingFilter = `ToPersonID='${this._personID}'`;
+                    incomingFilter = `ToPersonID='${EscapeFilterValue(this._personID)}'`;
                 } else if (this._organizationID) {
-                    incomingFilter = `ToOrganizationID='${this._organizationID}'`;
+                    incomingFilter = `ToOrganizationID='${EscapeFilterValue(this._organizationID)}'`;
                 }
 
                 if (incomingFilter) {
@@ -463,9 +464,11 @@ export class RelationshipListComponent {
                 // Standalone mode: query both from and to
                 let filter = '';
                 if (this._personID) {
-                    filter = `FromPersonID='${this._personID}' OR ToPersonID='${this._personID}'`;
+                    const personID = EscapeFilterValue(this._personID);
+                    filter = `FromPersonID='${personID}' OR ToPersonID='${personID}'`;
                 } else if (this._organizationID) {
-                    filter = `FromOrganizationID='${this._organizationID}' OR ToOrganizationID='${this._organizationID}'`;
+                    const organizationID = EscapeFilterValue(this._organizationID);
+                    filter = `FromOrganizationID='${organizationID}' OR ToOrganizationID='${organizationID}'`;
                 } else {
                     return;
                 }
