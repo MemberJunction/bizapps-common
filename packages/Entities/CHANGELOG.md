@@ -1,5 +1,11 @@
 # Change Log - mj_generatedentities
 
+## 5.55.0
+
+### Minor Changes
+
+- aa193b3: Add missing `IDX_AUTO_MJ_FKEY_*` foreign key indexes on `ActivityFile`, `ActivityLink`, `Person`, `PersonJobFunction`, and `Relationship`, and add CI schema consistency checks verifying FK index coverage.
+
 ## 5.54.0
 
 ### Minor Changes
