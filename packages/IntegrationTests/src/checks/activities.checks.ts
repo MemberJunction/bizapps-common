@@ -265,12 +265,19 @@ const checks: NamedCheck[] = [
             const { performance } = await import('node:perf_hooks');
             const { fileURLToPath } = await import('node:url');
 
+            const getSaveReturnMode = (info: { Configuration?: string | null } & Record<string, unknown>): string => {
+                if (typeof info.SaveReturnMode === 'string') return info.SaveReturnMode;
+                if (typeof info.Configuration === 'string' && info.Configuration.trim()) {
+                    return (JSON.parse(info.Configuration) as { SaveReturnMode?: string }).SaveReturnMode ?? 'full';
+                }
+                return 'full';
+            };
             const syncRunInfo = ctx.Provider.EntityByName(COMMON_ENTITIES.ActivitySyncRun);
             const syncRunDetailInfo = ctx.Provider.EntityByName(COMMON_ENTITIES.ActivitySyncRunDetail);
             Assert(!!syncRunInfo, 'Activity Sync Runs entity metadata');
             Assert(!!syncRunDetailInfo, 'Activity Sync Run Details entity metadata');
-            AssertEqual(syncRunInfo!.SaveReturnMode, 'datestamps_only', 'Activity Sync Runs SaveReturnMode');
-            AssertEqual(syncRunDetailInfo!.SaveReturnMode, 'datestamps_only', 'Activity Sync Run Details SaveReturnMode');
+            AssertEqual(getSaveReturnMode(syncRunInfo! as unknown as { Configuration?: string | null } & Record<string, unknown>), 'datestamps_only', 'Activity Sync Runs SaveReturnMode');
+            AssertEqual(getSaveReturnMode(syncRunDetailInfo! as unknown as { Configuration?: string | null } & Record<string, unknown>), 'datestamps_only', 'Activity Sync Run Details SaveReturnMode');
 
             const connection = await ctx.Provider.GetEntityObject<mjBizAppsCommonActivitySyncConnectionEntity>(
                 COMMON_ENTITIES.ActivitySyncConnection,
