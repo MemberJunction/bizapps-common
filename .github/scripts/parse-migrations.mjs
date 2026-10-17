@@ -49,14 +49,15 @@ function findExecutionMethod() {
                     const tempFile = join(tmpdir(), `parse_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`);
                     try {
                         writeFileSync(tempFile, sql, 'utf8');
+                        // The password travels in the child's SQLCMDPASSWORD environment variable,
+                        // never in argv, where any same-host process could read it from the process list.
                         execFileSync(c, [
                             '-S', `${host},${port}`,
                             '-U', user,
-                            '-P', password,
                             '-C',
                             '-b',
                             '-i', tempFile
-                        ], { stdio: 'pipe' });
+                        ], { stdio: 'pipe', env: { ...process.env, SQLCMDPASSWORD: password } });
                     } finally {
                         try { unlinkSync(tempFile); } catch {}
                     }
