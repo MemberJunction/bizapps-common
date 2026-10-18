@@ -70,7 +70,11 @@ function normalize(value: string | null | undefined): string | null {
     return trimmed ? trimmed : null;
 }
 
-function graphDate(slot: { dateTime?: string; timeZone?: string } | undefined): Date | null {
+/**
+ * A Graph event time as an instant, or null when it names none. Exported so the calendar transport
+ * pages by the same reading of `start` that the mapper files the event under.
+ */
+export function GraphEventInstant(slot: { dateTime?: string; timeZone?: string } | undefined): Date | null {
     const raw = slot?.dateTime?.trim();
     if (!raw) return null;
     const zone = (slot?.timeZone ?? 'UTC').trim().toUpperCase();
@@ -87,7 +91,7 @@ export function MapGraphEvent(event: GraphEventLike, issues: string[]): Normaliz
         issues.push('An event carried no id and was skipped — it cannot be deduped.');
         return null;
     }
-    const startedAt = graphDate(event.start);
+    const startedAt = GraphEventInstant(event.start);
     if (!startedAt) {
         issues.push(`Event ${externalID} had no usable start time and was skipped.`);
         return null;
@@ -114,7 +118,7 @@ export function MapGraphEvent(event: GraphEventLike, issues: string[]): Normaliz
         });
     }
 
-    const endedAt = graphDate(event.end);
+    const endedAt = GraphEventInstant(event.end);
     return {
         ExternalID: externalID,
         ExternalThreadID: event.seriesMasterId?.trim() || null,
