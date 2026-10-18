@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202610151021__v5.53.x__Restamp_Pipeline_Job_Functions.sql
+-- Migration: V202610181000__v5.55.x__Restamp_Pipeline_Job_Functions.sql
 -- Description: One-time data fix. Restamp the PersonJobFunction rows that the
 --              "Job Function and Seniority Derivation" Feature Pipeline wrote
 --              before its output mapping stamped its own rows Source = 'Derived'.
