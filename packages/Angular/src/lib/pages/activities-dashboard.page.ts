@@ -289,7 +289,7 @@ export interface ActivityKPIs {
 
         .mja-kpi { display: flex; flex-direction: column; gap: 2px; }
         .mja-kpi__label { font-size: 11px; font-weight: 600; color: var(--mj-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.04em; }
-        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-mono, monospace); color: var(--mj-text-primary, #0f172a); }
+        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-family-mono); color: var(--mj-text-primary, #0f172a); }
         .mja-val--green { color: #16a34a; }
         .mja-val--blue { color: #0284c7; }
         .mja-val--amber { color: #d97706; }
@@ -439,7 +439,7 @@ export interface ActivityKPIs {
         .mja-item__time {
             font-size: 12px;
             color: var(--mj-text-muted, #64748b);
-            font-family: var(--mj-font-mono, monospace);
+            font-family: var(--mj-font-family-mono);
         }
 
         .mja-item__desc {
