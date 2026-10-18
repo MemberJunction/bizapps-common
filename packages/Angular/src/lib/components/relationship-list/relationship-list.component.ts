@@ -570,10 +570,10 @@ export class RelationshipListComponent {
     /** Checks whether the current entity (Person or Org) is on the "From" side. */
     private isCurrentEntityOnFromSide(rel: mjBizAppsCommonRelationshipEntity): boolean {
         if (this._personID) {
-            return rel.FromPersonID === this._personID;
+            return UUIDsEqual(rel.FromPersonID, this._personID);
         }
         if (this._organizationID) {
-            return rel.FromOrganizationID === this._organizationID;
+            return UUIDsEqual(rel.FromOrganizationID, this._organizationID);
         }
         return true;
     }
@@ -866,7 +866,7 @@ export class RelationshipListComponent {
             // Find the relationship entity in our loaded data
             let rel: mjBizAppsCommonRelationshipEntity | undefined;
             for (const group of this.GroupedRelationships) {
-                const found = group.Items.find(i => i.Relationship.ID === this.EditingId);
+                const found = group.Items.find(i => UUIDsEqual(i.Relationship.ID, this.EditingId));
                 if (found) {
                     rel = found.Relationship;
                     break;
@@ -882,7 +882,7 @@ export class RelationshipListComponent {
             rel.JobFunctionID = this.EditForm.JobFunctionID || null;
             rel.SeniorityLevelID = this.EditForm.SeniorityLevelID || null;
 
-            if (this._collection && this._collection.Items.some(i => i.ID === rel!.ID)) {
+            if (this._collection && this._collection.Items.some(i => UUIDsEqual(i.ID, rel!.ID))) {
                 this.EditingId = null;
                 this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
                 this.DataChanged.emit();
@@ -914,7 +914,7 @@ export class RelationshipListComponent {
             rel.Status = 'Ended';
             rel.EndDate = BusinessTimeZoneEngine.Instance.TodayAsDate();
 
-            if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
+            if (this._collection && this._collection.Items.some(i => UUIDsEqual(i.ID, rel.ID))) {
                 this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
                 this.DataChanged.emit();
                 return;
@@ -943,7 +943,7 @@ export class RelationshipListComponent {
         this.cdr.detectChanges();
 
         try {
-            if (this._collection && this._collection.Items.some(i => i.ID === rel.ID)) {
+            if (this._collection && this._collection.Items.some(i => UUIDsEqual(i.ID, rel.ID))) {
                 this._collection.Remove(rel);
                 this.GroupedRelationships = this.buildGroups([...this._collection.Items, ...this._incomingRelationships]);
                 this.DataChanged.emit();

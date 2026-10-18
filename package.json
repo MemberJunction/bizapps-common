@@ -33,6 +33,7 @@
     "check:release-seed:test": "node --test scripts/check-release-seed-coverage.spec.mjs",
     "check:seed-cadence": "node scripts/check-release-seed-cadence.mjs",
     "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
+    "check:uuid": "node scripts/check-uuid-comparisons.mjs",
     "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs",
     "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
     "lint:release-pushes": "node scripts/check-release-pushes.mjs",

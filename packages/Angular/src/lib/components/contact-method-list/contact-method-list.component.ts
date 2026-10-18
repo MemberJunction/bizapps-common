@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
+import { UUIDsEqual } from '@memberjunction/global';
 import {
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
@@ -280,7 +281,7 @@ export class ContactMethodListComponent {
 
     /** Returns the DisplayRank for a contact type, defaulting to 999 if not found. */
     private getTypeRank(typeID: string): number {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         return ct?.DisplayRank ?? 999;
     }
 
@@ -294,7 +295,7 @@ export class ContactMethodListComponent {
      * @returns The CSS class string for the icon (e.g., `'fa-solid fa-envelope'`)
      */
     getContactTypeIcon(typeID: string): string {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         return ct?.IconClass || 'fa-solid fa-circle-info';
     }
 
@@ -308,7 +309,7 @@ export class ContactMethodListComponent {
      * @returns A CSS class string such as `'icon-email'` or `'icon-linkedin'`
      */
     getIconColorClass(typeID: string): string {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         if (!ct) return 'icon-default';
         const key = ct.Name.toLowerCase();
         return this.iconColorMap[key] || 'icon-default';
@@ -336,7 +337,7 @@ export class ContactMethodListComponent {
      * @returns A placeholder string such as `'Enter email address...'`
      */
     getPlaceholder(typeID: string): string {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         if (!ct) return 'Enter value...';
         const name = ct.Name.toLowerCase();
         if (name.includes('email')) return 'Enter email address...';
@@ -353,7 +354,7 @@ export class ContactMethodListComponent {
      * @returns `true` for LinkedIn, Twitter/X, and Website types; `false` otherwise
      */
     isLinkType(typeID: string): boolean {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         if (!ct) return false;
         return this.linkTypeNames.has(ct.Name.toLowerCase());
     }
@@ -477,6 +478,11 @@ export class ContactMethodListComponent {
         }
     }
 
+    /** Whether this row is the one being edited. IDs compare case-insensitively. */
+    IsEditing(cm: mjBizAppsCommonContactMethodEntity): boolean {
+        return this.EditingId !== null && UUIDsEqual(this.EditingId, cm.ID);
+    }
+
     /**
      * Opens the inline edit form for an existing contact method, populating
      * the form fields from the current entity data.
@@ -487,7 +493,8 @@ export class ContactMethodListComponent {
      */
     onEdit(cm: mjBizAppsCommonContactMethodEntity): void {
         this.EditForm = {
-            TypeID: cm.ContactTypeID,
+            // The select matches options with ===, so use the option's own ID spelling.
+            TypeID: this.ContactTypes.find(t => UUIDsEqual(t.ID, cm.ContactTypeID))?.ID ?? cm.ContactTypeID,
             Value: cm.Value,
             Label: cm.Label || '',
             IsPrimary: cm.IsPrimary
@@ -518,7 +525,7 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
-            const cm = this.ContactMethods.find(c => c.ID === this.EditingId);
+            const cm = this.ContactMethods.find(c => UUIDsEqual(c.ID, this.EditingId));
             if (!cm) return;
 
             // If setting primary, clear other primaries of same type
@@ -619,7 +626,7 @@ export class ContactMethodListComponent {
 
     /** Removes the primary flag from all contact methods of the given type. */
     private async clearPrimariesForType(typeID: string): Promise<void> {
-        const sameType = this.ContactMethods.filter(c => c.ContactTypeID === typeID && c.IsPrimary);
+        const sameType = this.ContactMethods.filter(c => UUIDsEqual(c.ContactTypeID, typeID) && c.IsPrimary);
         for (const c of sameType) {
             c.IsPrimary = false;
             if (!this._collection) {
