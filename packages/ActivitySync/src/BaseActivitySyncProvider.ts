@@ -75,7 +75,10 @@ export abstract class BaseActivitySyncProvider {
                 // next pass re-reads the window rather than stepping over mail it never fetched.
                 // The items in hand are still returned and still written — only the claim to have
                 // seen everything up to their newest is withheld, because it is not true.
-                HighWatermark: raw.Capped ? null : this.ComputeHighWatermark(items, observedAt),
+                //
+                // A read that stopped part of the way names how far it got (`ReadThrough`); that is
+                // the claim it can make, and the next pass starts there.
+                HighWatermark: raw.Capped ? null : (raw.ReadThrough ?? this.ComputeHighWatermark(items, observedAt)),
                 Issues: raw.Issues,
             };
         } catch (error) {

@@ -158,6 +158,14 @@ export interface RawBatch {
      * costs are not comparable, which is the rule `watermark.ts` already states.
      */
     Capped?: boolean;
+    /**
+     * The read covered everything received up to this instant and stopped short of the present.
+     *
+     * Set by a transport that reads oldest-window-first and ran out of requests before catching up.
+     * The watermark moves to exactly this point, even when no item sits on it, so the next pass
+     * continues where this one stopped instead of re-reading the same page. Ignored when `Capped`.
+     */
+    ReadThrough?: Date;
 }
 
 /** One provider pass. */

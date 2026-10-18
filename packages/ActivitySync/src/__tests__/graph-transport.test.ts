@@ -149,8 +149,8 @@ describe('GraphCommunicationTransport — the live path', () => {
     });
 
     it('warns when a capped read may have left mail behind', async () => {
-        // Limit is the only bound available until MJ#4123 publishes a date filter. Hitting it while
-        // a watermark is set means the pass is incomplete, and saying so is the whole point.
+        // A provider that reports no applied date bound leaves Limit as the only bound. Hitting it
+        // while a watermark is set means the pass is incomplete, and saying so is the whole point.
         const payloads = Array.from({ length: 5 }, (_, i) => ({ ...GRAPH_MESSAGE, id: `m-${i}` }));
         const reader = readerReturning({ Success: true, SourceData: payloads });
         const batch = await liveTransport(reader).Fetch({ ...QUERY, Since: new Date('2026-08-01'), Limit: 5 });
@@ -759,5 +759,124 @@ describe('a capped REPLAY withholds the watermark too', () => {
         const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
         expect(batch.HighWatermark, 'a capped replay must not claim to have seen past its newest item').toBeNull();
         expect(batch.Items.length, 'the items it DID read are still returned').toBeGreaterThan(0);
+    });
+});
+
+describe('a backlog larger than one page drains over runs (#308)', () => {
+    /**
+     * THE DEFECT. `GetMessages` sends `$top` with no ordering, so one request returns the newest
+     * `Limit` messages. A capped run withheld the watermark and the next run sent the same request,
+     * got the same page, and the older mail was never read on any run.
+     */
+    const NOW = new Date('2026-09-04T12:00:00Z');
+    const SINCE = new Date('2026-08-01T00:00:00Z');
+    const at = (day: number, second = 0) => new Date(Date.UTC(2026, 7, day, 9, 0, second)).toISOString();
+    const msg = (id: string, when: string) => ({ ...GRAPH_MESSAGE, id, receivedDateTime: when, sentDateTime: when });
+    const BACKLOG = Array.from({ length: 12 }, (_, i) => msg(`m-${i}`, at(2 + i)));
+
+    /** Behaves like MJ's Graph provider: inclusive date bounds, newest first, `$top` honoured. */
+    function mailbox(messages: ReturnType<typeof msg>[], appliesBounds = true): GraphMessageReader {
+        const GetMessages = vi.fn(
+            async (params: { NumMessages: number; ReceivedAfter?: Date; ReceivedBefore?: Date }) => {
+                const after = appliesBounds ? params.ReceivedAfter?.getTime() : undefined;
+                const before = appliesBounds ? params.ReceivedBefore?.getTime() : undefined;
+                const page = messages
+                    .filter((m) => after === undefined || Date.parse(m.receivedDateTime) >= after)
+                    .filter((m) => before === undefined || Date.parse(m.receivedDateTime) <= before)
+                    .sort((a, b) => Date.parse(b.receivedDateTime) - Date.parse(a.receivedDateTime))
+                    .slice(0, params.NumMessages);
+                return {
+                    Success: true,
+                    SourceData: page,
+                    AppliedFilters: {
+                        ReceivedAfter: appliesBounds && !!params.ReceivedAfter,
+                        ReceivedBefore: appliesBounds && !!params.ReceivedBefore,
+                    },
+                };
+            },
+        );
+        return { GetMessages } as unknown as GraphMessageReader;
+    }
+
+    function drainingTransport(reader: GraphMessageReader) {
+        return new GraphCommunicationTransport(
+            { ResolveCredential: async () => CREDENTIAL, ResolveProvider: async () => reader },
+            undefined,
+            () => NOW,
+        );
+    }
+
+    /** Runs the provider the way the engine does: each run starts at the last run's watermark. */
+    async function runUntilQuiet(reader: GraphMessageReader, since: Date | null, limit: number, maxRuns = 10) {
+        const provider = new MSGraphActivitySyncProvider(true, drainingTransport(reader));
+        const read = new Set<string>();
+        let watermark = since;
+        for (let run = 1; run <= maxRuns; run++) {
+            const batch = await provider.Fetch({ ...QUERY, Since: watermark, Limit: limit });
+            batch.Items.forEach((i) => read.add(i.ExternalID));
+            expect(batch.Items.length).toBeLessThanOrEqual(limit);
+            if (batch.HighWatermark && (!watermark || batch.HighWatermark > watermark)) {
+                watermark = batch.HighWatermark;
+            }
+            if (batch.Issues.length === 0) return { read, runs: run, watermark };
+        }
+        return { read, runs: maxRuns + 1, watermark };
+    }
+
+    it('reads every message in a backlog of more than one page, over a few runs', async () => {
+        const result = await runUntilQuiet(mailbox(BACKLOG), SINCE, 5);
+        expect([...result.read].sort()).toEqual(BACKLOG.map((m) => m.id).sort());
+        expect(result.runs).toBeLessThanOrEqual(4);
+        expect(result.watermark).toEqual(new Date(at(13)));
+    });
+
+    it('drains a FIRST run with more history than one page as well', async () => {
+        const result = await runUntilQuiet(mailbox(BACKLOG), null, 5);
+        expect([...result.read].sort()).toEqual(BACKLOG.map((m) => m.id).sort());
+    });
+
+    it('moves the watermark to where a partial run stopped, so the next run starts there', async () => {
+        const provider = new MSGraphActivitySyncProvider(true, drainingTransport(mailbox(BACKLOG)));
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 5 });
+
+        expect(batch.HighWatermark).not.toBeNull();
+        expect(batch.HighWatermark!.getTime()).toBeGreaterThan(SINCE.getTime());
+        // Never past mail it has not read: every backlog message up to the watermark was returned.
+        const upTo = BACKLOG.filter((m) => Date.parse(m.receivedDateTime) <= batch.HighWatermark!.getTime());
+        expect(batch.Items.map((i) => i.ExternalID).sort()).toEqual(upTo.map((m) => m.id).sort());
+        expect(batch.Issues.join(' ')).toMatch(/next run continues from there/);
+    });
+
+    it('sends the watermark as the lower bound', async () => {
+        const reader = mailbox(BACKLOG);
+        await drainingTransport(reader).Fetch({ ...QUERY, Since: SINCE, Limit: 50 });
+        const params = (reader.GetMessages as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(params.ReceivedAfter).toEqual(SINCE);
+        expect(params.ReceivedBefore).toBeUndefined();
+    });
+
+    it('makes one request and raises nothing when the backlog fits a page', async () => {
+        const reader = mailbox(BACKLOG);
+        const batch = await drainingTransport(reader).Fetch({ ...QUERY, Since: SINCE, Limit: 50 });
+        expect(reader.GetMessages).toHaveBeenCalledTimes(1);
+        expect(batch.Payloads).toHaveLength(12);
+        expect(batch.Capped).toBeFalsy();
+        expect(batch.ReadThrough).toBeUndefined();
+        expect(batch.Issues).toEqual([]);
+    });
+
+    it('withholds the watermark and says why when Graph ignores the date bound', async () => {
+        const batch = await drainingTransport(mailbox(BACKLOG, false)).Fetch({ ...QUERY, Since: SINCE, Limit: 5 });
+        expect(batch.Capped).toBe(true);
+        expect(batch.Issues.join(' ')).toMatch(/did not apply the received-date bound/);
+    });
+
+    it('reports more than a page of mail inside one second rather than narrowing forever', async () => {
+        const burst = Array.from({ length: 6 }, (_, i) => msg(`b-${i}`, at(10)));
+        const reader = mailbox(burst);
+        const batch = await drainingTransport(reader).Fetch({ ...QUERY, Since: new Date(at(10)), Limit: 5 });
+        expect(batch.Capped).toBe(true);
+        expect(batch.Issues.join(' ')).toMatch(/within one second/);
+        expect((reader.GetMessages as ReturnType<typeof vi.fn>).mock.calls.length).toBeLessThan(16);
     });
 });
