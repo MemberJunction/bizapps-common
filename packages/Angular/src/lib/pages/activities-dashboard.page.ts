@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RunView } from '@memberjunction/core';
+import { UUIDsEqual } from '@memberjunction/global';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 import { COMMON_ENTITIES } from '../data/entity-names';
@@ -119,7 +120,7 @@ export interface ActivityKPIs {
                 } @else {
                     <div class="mja-timeline">
                         @for (act of FilteredActivities; track act.ID) {
-                            <div class="mja-item" (click)="SelectActivity(act)" [class.mja-item--selected]="SelectedActivity?.ID === act.ID">
+                            <div class="mja-item" (click)="SelectActivity(act)" [class.mja-item--selected]="IsSelected(act)">
                                 <div class="mja-item__icon" [attr.data-dir]="act.Direction">
                                     <i [class]="getTypeIcon(act.ActivityType)"></i>
                                 </div>
@@ -674,6 +675,11 @@ export class CommonActivitiesPageComponent implements OnInit {
 
     public OnSearchChanged(): void {
         this.cdr.markForCheck();
+    }
+
+    /** Whether this row is the open one. IDs compare case-insensitively. */
+    public IsSelected(act: ActivityDashboardRow): boolean {
+        return this.SelectedActivity !== null && UUIDsEqual(this.SelectedActivity.ID, act.ID);
     }
 
     public SelectActivity(act: ActivityDashboardRow): void {
