@@ -202,6 +202,26 @@
             "lastModified": "2026-09-17T23:07:00.915Z",
             "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
           }
+        },
+        {
+          "_comments": [
+            "LinkedUserID is an active optional 1:1 foreign key linking a Person to an authenticated MJ User (__mj.User).",
+            "While automatic MJ User provisioning on Person save was removed in v5.33.0, LinkedUserID remains the",
+            "canonical optional link used by user-scoped agents (such as Chief of Staff), tasks, and issues to resolve",
+            "an MJ User's organizational Person record. Pin AutoUpdateDescription=false so CodeGen preserves this description."
+          ],
+          "fields": {
+            "Status": "Active",
+            "Description": "Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.",
+            "AutoUpdateDescription": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LinkedUserID&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-10-17T17:21:49.518Z",
+            "checksum": "90880ae4c536f004e66c0ae4580fe7bf76e9135ff5f155992d57f9f04b16176c"
+          }
         }
       ]
     },
@@ -675,8 +695,8 @@
       ]
     },
     "sync": {
-      "lastModified": "2026-09-17T23:07:00.419Z",
-      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+      "lastModified": "2026-10-17T17:21:49.480Z",
+      "checksum": "1e84ee6a55f414a7509bb36d66744f0f58200492094217e65798c3682348e81d"
     }
   },
   {
