@@ -101,46 +101,56 @@
         }
 
         <ng-content></ng-content>
+    }
 
-        @if (EditMode) {
-            <div class="biz-hero__edit">
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="FirstName"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LastName"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PreferredName"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Prefix"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Suffix"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="DateOfBirth"
-                        Type="datepicker" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Gender"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="SeniorityLevelID"
-                        Type="dropdownlist" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field biz-hero__field--span">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PhotoURL"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
-                </div>
+    <!-- Outside the collapse: this hero claims the generated identity section, so these are the only
+         inputs for its fields. Collapsing the header must not take them away (#343). -->
+    @if (EditMode) {
+        <div class="biz-hero__edit">
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="FirstName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
             </div>
-        }
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="MiddleName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LastName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PreferredName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Prefix"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Suffix"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="DisplayName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="DateOfBirth"
+                    Type="datepicker" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Gender"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="SeniorityLevelID"
+                    Type="dropdownlist" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field biz-hero__field--span">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="PhotoURL"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+            </div>
+        </div>
     }
 </div>

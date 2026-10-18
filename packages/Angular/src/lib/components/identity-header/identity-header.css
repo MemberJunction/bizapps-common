@@ -356,3 +356,7 @@ button.biz-hero__stat-val:hover {
 .biz-hero--collapsed .biz-hero__name {
     font-size: 1.15rem;
 }
+
+.biz-hero--collapsed .biz-hero__edit {
+    margin-top: var(--mj-space-3);
+}
