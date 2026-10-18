@@ -177,4 +177,14 @@ describe('ActivityIdentityComponent and Panel Contributions', () => {
         expect(comp.SentimentTone).toBe('info');
         expect(comp.SentimentIcon).toBe('fa-solid fa-face-meh');
     });
+
+    it('aligns PersonAddressesPanel and OrganizationAddressesPanel replacesSectionKey with generated form sections', () => {
+        const regs = MJGlobal.Instance.ClassFactory.GetAllRegistrations(BaseFormPanel);
+        const personAddresses = regs.find(r => r.Key === 'form-panel:People:addresses');
+        const orgAddresses = regs.find(r => r.Key === 'form-panel:Organizations:addresses');
+
+        expect((personAddresses?.Metadata as Record<string, unknown> | undefined)?.['replacesSectionKey']).toBe('locationDetails');
+        expect((orgAddresses?.Metadata as Record<string, unknown> | undefined)?.['replacesSectionKey']).toBe('locationAndAddress');
+    });
 });
+
