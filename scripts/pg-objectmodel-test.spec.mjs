@@ -20,19 +20,17 @@ const SCRIPT = join(HERE, 'pg-objectmodel-test.mjs');
 const { PGHOST: _pgHost, PGPORT: _pgPort, ...BASE_ENV } = process.env;
 
 /**
- * `pg` is an undeclared dependency here (tooling-3, deferred): it only resolves in a workspace
- * that happens to provide it transitively (e.g. this repo nested under a sibling MJ dev
- * checkout). CI's `release-tooling` job runs this glob with no `pnpm install`, so a plain clone
- * has no `pg` at all. Resolve it from the SCRIPT's own location -- the same resolution the
- * spawned child process will do -- and skip with a named reason rather than failing on an
- * environment gap this spec doesn't own fixing.
+ * `pg` is a root devDependency, so it resolves after `pnpm install`. A job that runs this glob
+ * without installing (the `repo: guards` job today) has no `pg`. Resolve it from the SCRIPT's own
+ * location -- the same resolution the spawned child process will do -- and skip with a named
+ * reason rather than failing on an environment that installed nothing.
  */
 function pgUnavailableReason() {
   try {
     createRequire(SCRIPT).resolve('pg');
     return false;
   } catch {
-    return 'pg is not installed here (undeclared dependency, see tooling-3)';
+    return 'pg is not installed here (run pnpm install)';
   }
 }
 const skipNoPg = pgUnavailableReason();

@@ -8,7 +8,7 @@ name: Mutation Harnesses
 # When it runs:
 #   - nightly on next, so a mutant that stopped being caught is found within a day, and a failure
 #     opens (or comments on) an issue instead of notifying only the last editor of this file;
-#   - on a PR that edits a harness or this workflow;
+#   - on a PR that edits a harness, the shared test-harnesses/mutation-suite.mjs, or this workflow;
 #   - on a PR labelled `run-mutants`, the opt-in for a change to the source the mutants cover.
 #
 # No `paths:` filter on the trigger: a workflow skipped that way creates no check run at all. The
@@ -65,7 +65,7 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if gh api --paginate "repos/${{ github.repository }}/pulls/$PR/files" --jq '.[].filename' \
-              | grep -qE '^(packages/[^/]+/test-harnesses/|\.github/workflows/mutants\.yml$)'; then
+              | grep -qE '^(test-harnesses/mutation-suite\.mjs$|packages/[^/]+/test-harnesses/|\.github/workflows/mutants\.yml$)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
