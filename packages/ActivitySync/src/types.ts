@@ -134,7 +134,11 @@ export interface ActivitySourceQuery {
      * already seen.
      */
     Since: Date | null;
-    /** Hard cap on items returned. */
+    /**
+     * Hard cap on items returned. The calendar surface, which re-reads a fixed window every run,
+     * uses it as the size of one page and pages through the window (bounded by
+     * `DEFAULT_MAX_CALENDAR_PAGES`), so a window holding more than `Limit` events is still read.
+     */
     Limit: number;
 }
 
