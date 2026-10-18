@@ -2,4 +2,4 @@
 "@mj-biz-apps/common-ng": patch
 ---
 
-Align PersonAddressesPanel and OrganizationAddressesPanel replacesSectionKey with generated form section keys (locationDetails and locationAndAddress) and remove deprecated LinkedUserID field from generated People form template.
+Align PersonAddressesPanel and OrganizationAddressesPanel replacesSectionKey with generated form section keys (locationDetails and locationAndAddress).
