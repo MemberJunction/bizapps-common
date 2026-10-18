@@ -1,0 +1,32 @@
+[
+  {
+    "_comments": [
+      "Configures MJ_BizApps_Common: Activity Sync Run Details to use SaveReturnMode = datestamps_only so spCreate/spUpdate return only [ID], [__mj_CreatedAt], [__mj_UpdatedAt] from BaseTable instead of re-reading BaseView."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Sync Run Details",
+      "TrackRecordChanges": false,
+      "Configuration": {
+        "SaveReturnMode": "datestamps_only"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details"
+    }
+  },
+  {
+    "_comments": [
+      "Configures MJ_BizApps_Common: Activity Sync Runs to use SaveReturnMode = datestamps_only so spCreate/spUpdate return only [ID], [__mj_CreatedAt], [__mj_UpdatedAt] from BaseTable instead of re-reading BaseView."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Sync Runs",
+      "TrackRecordChanges": false,
+      "Configuration": {
+        "SaveReturnMode": "datestamps_only"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Runs"
+    }
+  }
+]
