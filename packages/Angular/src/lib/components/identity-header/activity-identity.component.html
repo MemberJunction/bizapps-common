@@ -94,12 +94,12 @@
                     </span>
                 </div>
             }
-            @if (Record.ParentActivity) {
+            @if (Record.ParentActivityID) {
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Thread / Parent</span>
                     <button type="button" class="biz-hero__stat-val" (click)="OnParentActivityClick($event)">
                         <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
-                        {{ Record.ParentActivity }}
+                        {{ ParentActivityLabel }}
                     </button>
                 </div>
             }

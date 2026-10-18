@@ -37,7 +37,9 @@
     "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs",
     "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
     "lint:release-pushes": "node scripts/check-release-pushes.mjs",
-    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs"
+    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs",
+    "check:mj-tokens": "node scripts/check-mj-tokens.mjs",
+    "check:mj-tokens:test": "node --test scripts/check-mj-tokens.spec.mjs"
   },
   "repository": {
     "type": "git",
