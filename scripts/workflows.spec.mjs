@@ -52,3 +52,36 @@ test('a PR touching only ordinary source or the integration harness does not sta
         assert.doesNotMatch(file, selector, file);
     }
 });
+
+// ── sqlcmd install steps: fail loudly, and the same in both workflows (issue #320) ──────────────
+
+const SQLCMD_INSTALL_WORKFLOWS = ['.github/workflows/changes.yml', '.github/workflows/clean-room-gate.yml'];
+
+/** The command lines of a workflow's `Install sqlcmd` step that do the installing. */
+function sqlcmdInstallCommands(workflow) {
+    const match = readRepoFile(workflow).match(/- name: Install sqlcmd[^\n]*\n\s+run: \|\n((?:[ \t]+[^\n]*\n)+?)\s*\n/);
+    assert.ok(match, `${workflow} has no "Install sqlcmd" step; update this spec`);
+    return match[1]
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /\b(curl|gpg|apt-get|tee)\b/.test(line));
+}
+
+test('no sqlcmd install command hides its failure', () => {
+    for (const workflow of SQLCMD_INSTALL_WORKFLOWS) {
+        const commands = sqlcmdInstallCommands(workflow);
+        assert.equal(commands.length, 4, `${workflow}: expected key, sources list, update and install`);
+        for (const command of commands) {
+            assert.doesNotMatch(command, /\|\|\s*true|2>\s*\/dev\/null/, `${workflow}: ${command}`);
+        }
+        assert.ok(
+            commands.some((c) => c.includes('gpg --batch --yes --dearmor')),
+            `${workflow}: gpg needs --batch --yes to overwrite a keyring the runner already has`,
+        );
+    }
+});
+
+test('changes.yml and clean-room-gate.yml install sqlcmd with the same commands', () => {
+    const [first, second] = SQLCMD_INSTALL_WORKFLOWS.map(sqlcmdInstallCommands);
+    assert.deepEqual(first, second);
+});
