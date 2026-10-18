@@ -1,5 +1,9 @@
 # BizApps Common OpenApp — Design Proposal
 
+> **Superseded.** This is the early "MJ Commons" proposal, kept for history. It does not describe
+> this repo: the shipped design is in the [README](../README.md#entity-model) and the schema in
+> [`migrations/`](../migrations/). Names, entities and phases below may not exist.
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Naming Options](#naming-options)
@@ -826,7 +830,7 @@ MJ's existing `List` entity (polymorphic grouping) remains useful for ad-hoc col
 
 ### Prerequisites
 
-- [ ] **AllowMultipleSubtypes on Entity** — implement the IS-A overlapping subtypes plan (`plans/isa-overlapping-subtypes.md`)
+- [ ] **AllowMultipleSubtypes on Entity** — implement IS-A overlapping subtypes (the plan this pointed to, `plans/isa-overlapping-subtypes.md`, was never committed to this repo or to MJ)
 - [ ] **OpenApp runtime** — implement enough of the OpenApp spec to support install/dependency resolution (at minimum: schema creation, migrations, metadata push)
 
 ### Phase 1: Entity Schema & Metadata
