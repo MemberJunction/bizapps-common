@@ -1,5 +1,13 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.54.0
+
+### Patch Changes
+
+- Updated dependencies [70960e4]
+- Updated dependencies [a5cd21a]
+  - @mj-biz-apps/common-entities@5.54.0
+
 ## 5.53.1
 
 ### Patch Changes

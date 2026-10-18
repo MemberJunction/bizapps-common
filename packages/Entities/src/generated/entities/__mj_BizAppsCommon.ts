@@ -171,19 +171,11 @@ export const mjBizAppsCommonActivitySchema = z.object({
     Address: z.string().nullable().describe(`
         * * Field Name: Address
         * * Display Name: Address Details
-        * * SQL Data Type: nvarchar(255)`),
+        * * SQL Data Type: nvarchar(400)`),
     ActivitySyncConnection: z.string().nullable().describe(`
         * * Field Name: ActivitySyncConnection
         * * Display Name: Sync Connection Name
         * * SQL Data Type: nvarchar(200)`),
-    __mj_Latitude: z.number().nullable().describe(`
-        * * Field Name: __mj_Latitude
-        * * Display Name: Mj Latitude
-        * * SQL Data Type: decimal(10, 6)`),
-    __mj_Longitude: z.number().nullable().describe(`
-        * * Field Name: __mj_Longitude
-        * * Display Name: Mj Longitude
-        * * SQL Data Type: decimal(10, 6)`),
     RootParentActivityID: z.string().nullable().describe(`
         * * Field Name: RootParentActivityID
         * * Display Name: Root Parent Activity
@@ -620,7 +612,7 @@ export const mjBizAppsCommonActivitySyncExclusionSchema = z.object({
     Person: z.string().nullable().describe(`
         * * Field Name: Person
         * * Display Name: Person Name
-        * * SQL Data Type: nvarchar(201)`),
+        * * SQL Data Type: nvarchar(250)`),
 });
 
 export type mjBizAppsCommonActivitySyncExclusionEntityType = z.infer<typeof mjBizAppsCommonActivitySyncExclusionSchema>;
@@ -1379,7 +1371,7 @@ export const mjBizAppsCommonAddressLinkSchema = z.object({
     Address: z.string().nullable().describe(`
         * * Field Name: Address
         * * Display Name: Address
-        * * SQL Data Type: nvarchar(255)`),
+        * * SQL Data Type: nvarchar(400)`),
     Entity: z.string().describe(`
         * * Field Name: Entity
         * * Display Name: Entity Name
@@ -1507,6 +1499,11 @@ export const mjBizAppsCommonAddressSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    DisplayName: z.string().nullable().describe(`
+        * * Field Name: DisplayName
+        * * Display Name: Display Name
+        * * SQL Data Type: nvarchar(400)
+        * * Description: One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field.`),
     __mj_Latitude: z.number().nullable().describe(`
         * * Field Name: __mj_Latitude
         * * Display Name: __mj_Latitude
@@ -1572,7 +1569,7 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
     Person: z.string().nullable().describe(`
         * * Field Name: Person
         * * Display Name: Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * SQL Data Type: nvarchar(250)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
         * * Display Name: Organization Name
@@ -1982,7 +1979,7 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Linked User ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-        * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.`),
+        * * Description: Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.`),
     Status: z.union([z.literal('Active'), z.literal('Deceased'), z.literal('Inactive')]).describe(`
         * * Field Name: Status
         * * Display Name: Status
@@ -2004,16 +2001,17 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
-    DisplayName: z.string().describe(`
-        * * Field Name: DisplayName
-        * * Display Name: Display Name
-        * * SQL Data Type: nvarchar(201)`),
     SeniorityLevelID: z.string().nullable().describe(`
         * * Field Name: SeniorityLevelID
         * * Display Name: Seniority Level
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Seniority Levels (vwSeniorityLevels.ID)
         * * Description: Current primary seniority level for this person.`),
+    DisplayName: z.string().describe(`
+        * * Field Name: DisplayName
+        * * Display Name: Display Name
+        * * SQL Data Type: nvarchar(250)
+        * * Description: Full name for display: FirstName LastName Suffix ("John Smith Jr."). Blank parts are skipped; empty when every part is blank. Computed and stored; this is the entity name field.`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
         * * Display Name: Linked User
@@ -2143,7 +2141,7 @@ export const mjBizAppsCommonPersonJobFunctionSchema = z.object({
     Person: z.string().describe(`
         * * Field Name: Person
         * * Display Name: Person Name
-        * * SQL Data Type: nvarchar(201)`),
+        * * SQL Data Type: nvarchar(250)`),
     JobFunction: z.string().describe(`
         * * Field Name: JobFunction
         * * Display Name: Job Function Name
@@ -2311,7 +2309,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     FromPerson: z.string().nullable().describe(`
         * * Field Name: FromPerson
         * * Display Name: From Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * SQL Data Type: nvarchar(250)`),
     FromOrganization: z.string().nullable().describe(`
         * * Field Name: FromOrganization
         * * Display Name: From Organization Name
@@ -2319,7 +2317,7 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
     ToPerson: z.string().nullable().describe(`
         * * Field Name: ToPerson
         * * Display Name: To Person
-        * * SQL Data Type: nvarchar(201)`),
+        * * SQL Data Type: nvarchar(250)`),
     ToOrganization: z.string().nullable().describe(`
         * * Field Name: ToOrganization
         * * Display Name: To Organization Name
@@ -2332,6 +2330,10 @@ export const mjBizAppsCommonRelationshipSchema = z.object({
         * * Field Name: SeniorityLevel
         * * Display Name: Seniority Level Name
         * * SQL Data Type: nvarchar(100)`),
+    DisplayName: z.string().nullable().describe(`
+        * * Field Name: DisplayName
+        * * Display Name: Display Name
+        * * SQL Data Type: nvarchar(1000)`),
 });
 
 export type mjBizAppsCommonRelationshipEntityType = z.infer<typeof mjBizAppsCommonRelationshipSchema>;
@@ -2884,7 +2886,7 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     /**
     * * Field Name: Address
     * * Display Name: Address Details
-    * * SQL Data Type: nvarchar(255)
+    * * SQL Data Type: nvarchar(400)
     */
     get Address(): string | null {
         return this.Get('Address');
@@ -2897,24 +2899,6 @@ export class mjBizAppsCommonActivityEntity extends BaseEntity<mjBizAppsCommonAct
     */
     get ActivitySyncConnection(): string | null {
         return this.Get('ActivitySyncConnection');
-    }
-
-    /**
-    * * Field Name: __mj_Latitude
-    * * Display Name: Mj Latitude
-    * * SQL Data Type: decimal(10, 6)
-    */
-    get __mj_Latitude(): number | null {
-        return this.Get('__mj_Latitude');
-    }
-
-    /**
-    * * Field Name: __mj_Longitude
-    * * Display Name: Mj Longitude
-    * * SQL Data Type: decimal(10, 6)
-    */
-    get __mj_Longitude(): number | null {
-        return this.Get('__mj_Longitude');
     }
 
     /**
@@ -4105,7 +4089,7 @@ export class mjBizAppsCommonActivitySyncExclusionEntity extends BaseEntity<mjBiz
     /**
     * * Field Name: Person
     * * Display Name: Person Name
-    * * SQL Data Type: nvarchar(201)
+    * * SQL Data Type: nvarchar(250)
     */
     get Person(): string | null {
         return this.Get('Person');
@@ -6292,7 +6276,7 @@ export class mjBizAppsCommonAddressLinkEntity extends BaseEntity<mjBizAppsCommon
     /**
     * * Field Name: Address
     * * Display Name: Address
-    * * SQL Data Type: nvarchar(255)
+    * * SQL Data Type: nvarchar(400)
     */
     get Address(): string | null {
         return this.Get('Address');
@@ -6632,6 +6616,16 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     }
 
     /**
+    * * Field Name: DisplayName
+    * * Display Name: Display Name
+    * * SQL Data Type: nvarchar(400)
+    * * Description: One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field.
+    */
+    get DisplayName(): string | null {
+        return this.Get('DisplayName');
+    }
+
+    /**
     * * Field Name: __mj_Latitude
     * * Display Name: __mj_Latitude
     * * SQL Data Type: decimal(9, 6)
@@ -6839,7 +6833,7 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     /**
     * * Field Name: Person
     * * Display Name: Person
-    * * SQL Data Type: nvarchar(201)
+    * * SQL Data Type: nvarchar(250)
     */
     get Person(): string | null {
         return this.Get('Person');
@@ -7959,10 +7953,9 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     /**
     * * Field Name: LinkedUserID
     * * Display Name: Linked User ID
-    * * 
-    * * @deprecated This field is deprecated and will be removed in a future version. Using it will result in console warnings.SQL Data Type: uniqueidentifier
+    * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Users (vwUsers.ID)
-    * * Description: DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release.
+    * * Description: Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.
     */
     get LinkedUserID(): string | null {
         return this.Get('LinkedUserID');
@@ -8011,15 +8004,6 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     }
 
     /**
-    * * Field Name: DisplayName
-    * * Display Name: Display Name
-    * * SQL Data Type: nvarchar(201)
-    */
-    get DisplayName(): string {
-        return this.Get('DisplayName');
-    }
-
-    /**
     * * Field Name: SeniorityLevelID
     * * Display Name: Seniority Level
     * * SQL Data Type: uniqueidentifier
@@ -8031,6 +8015,16 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     }
     set SeniorityLevelID(value: string | null) {
         this.Set('SeniorityLevelID', value);
+    }
+
+    /**
+    * * Field Name: DisplayName
+    * * Display Name: Display Name
+    * * SQL Data Type: nvarchar(250)
+    * * Description: Full name for display: FirstName LastName Suffix ("John Smith Jr."). Blank parts are skipped; empty when every part is blank. Computed and stored; this is the entity name field.
+    */
+    get DisplayName(): string {
+        return this.Get('DisplayName');
     }
 
     /**
@@ -8366,7 +8360,7 @@ export class mjBizAppsCommonPersonJobFunctionEntity extends BaseEntity<mjBizApps
     /**
     * * Field Name: Person
     * * Display Name: Person Name
-    * * SQL Data Type: nvarchar(201)
+    * * SQL Data Type: nvarchar(250)
     */
     get Person(): string {
         return this.Get('Person');
@@ -8843,7 +8837,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: FromPerson
     * * Display Name: From Person
-    * * SQL Data Type: nvarchar(201)
+    * * SQL Data Type: nvarchar(250)
     */
     get FromPerson(): string | null {
         return this.Get('FromPerson');
@@ -8861,7 +8855,7 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     /**
     * * Field Name: ToPerson
     * * Display Name: To Person
-    * * SQL Data Type: nvarchar(201)
+    * * SQL Data Type: nvarchar(250)
     */
     get ToPerson(): string | null {
         return this.Get('ToPerson');
@@ -8892,6 +8886,15 @@ export class mjBizAppsCommonRelationshipEntity extends BaseEntity<mjBizAppsCommo
     */
     get SeniorityLevel(): string | null {
         return this.Get('SeniorityLevel');
+    }
+
+    /**
+    * * Field Name: DisplayName
+    * * Display Name: Display Name
+    * * SQL Data Type: nvarchar(1000)
+    */
+    get DisplayName(): string | null {
+        return this.Get('DisplayName');
     }
 }
 
