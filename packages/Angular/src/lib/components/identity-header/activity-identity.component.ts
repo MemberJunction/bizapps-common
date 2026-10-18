@@ -1,10 +1,15 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey } from '@memberjunction/core';
+import { CompositeKey, LogError, RunView } from '@memberjunction/core';
+import { UUIDsEqual } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
+
+import { EscapeFilterValue } from '../../data/directory-stats';
+
+const ACTIVITIES_ENTITY = 'MJ_BizApps_Common: Activities';
 
 export interface ActivityTypeStyle {
     icon: string;
@@ -76,7 +81,11 @@ export class ActivityIdentityComponent implements OnInit {
 
     public Collapsed = false;
 
+    private parentTitle: string | null = null;
+    private parentTitleFor: string | null = null;
+
     public ngOnInit(): void {
+        void this.loadParentTitle();
         const raw = UserInfoEngine.Instance.GetSetting('mj.identityHeader.collapsed.activity');
         if (raw) {
             try {
@@ -196,6 +205,37 @@ export class ActivityIdentityComponent implements OnInit {
         return 'Manual';
     }
 
+    /**
+     * The "Thread / Parent" label. Reads `ParentActivityID` and the parent's own Title, never the
+     * virtual `ParentActivity` name field: V202609112330 removes that field on hosts whose
+     * `vwActivities` lacks the column, where it always reads null and hid the link (#311).
+     */
+    public get ParentActivityLabel(): string {
+        const loaded = this.parentTitle && UUIDsEqual(this.parentTitleFor, this.Record.ParentActivityID);
+        return loaded ? (this.parentTitle as string) : 'Parent activity';
+    }
+
+    private async loadParentTitle(): Promise<void> {
+        const parentID = this.Record.ParentActivityID;
+        if (!parentID) {
+            return;
+        }
+        const result = await new RunView(this.Record.RunViewProviderToUse).RunView<{ Title: string | null }>({
+            EntityName: ACTIVITIES_ENTITY,
+            Fields: ['Title'],
+            ExtraFilter: `ID = '${EscapeFilterValue(parentID)}'`,
+            ResultType: 'simple',
+            MaxRows: 1,
+        });
+        if (!result.Success) {
+            // The link still renders, with a generic label; only the parent's name is missing.
+            LogError(`ActivityIdentity: failed to load parent activity '${parentID}': ${result.ErrorMessage ?? 'unknown error'}`);
+            return;
+        }
+        this.parentTitle = result.Results[0]?.Title || null;
+        this.parentTitleFor = parentID;
+    }
+
     public OnParentActivityClick(event: MouseEvent): void {
         const id = this.Record.ParentActivityID;
         if (!id) return;
@@ -203,7 +243,7 @@ export class ActivityIdentityComponent implements OnInit {
         event.stopPropagation();
         this.Navigate.emit({
             Kind: 'record',
-            EntityName: 'MJ_BizApps_Common: Activities',
+            EntityName: ACTIVITIES_ENTITY,
             PrimaryKey: CompositeKey.FromKeyValuePair('ID', id),
             OpenInNewTab: event.ctrlKey || event.metaKey,
         });
