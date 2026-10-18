@@ -14,7 +14,7 @@ const HERE = path.dirname(SELF);
 const REPO_ROOT = path.join(HERE, '..');
 
 /** Root-level directories whose scripts run from the repo root, resolving against its node_modules. */
-const ROOT_SCRIPT_DIRS = ['scripts', 'ci'];
+const ROOT_SCRIPT_DIRS = ['scripts', 'ci', 'test-harnesses'];
 
 const STATIC_IMPORT = /^\s*import\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gm;
 const DYNAMIC_IMPORT = /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
