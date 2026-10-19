@@ -60,9 +60,8 @@
     background: var(--mj-bg-surface-card);
 }
 
-/* Brand tint, not the success colour: green on this list now means opted in. */
 .cm-flat-row.primary {
-    background: color-mix(in srgb, var(--mj-brand-primary) 8%, var(--mj-bg-surface));
+    background: var(--mj-status-success-bg);
 }
 
 /* Icon */
@@ -159,8 +158,8 @@
 }
 
 .badge-primary {
-    background: color-mix(in srgb, var(--mj-brand-primary) 14%, var(--mj-bg-surface));
-    color: var(--mj-brand-primary);
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 
 /* Actions */
