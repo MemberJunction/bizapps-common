@@ -46,6 +46,16 @@
                             <label>Label</label>
                             <input type="text" [(ngModel)]="EditForm.Label" placeholder="e.g., Work">
                         </div>
+                        @if (isConsentType(EditForm.TypeID)) {
+                            <div class="form-field consent-field">
+                                <label>Consent</label>
+                                <select [(ngModel)]="EditForm.ConsentStatus">
+                                    @for (s of ConsentStatuses; track s) {
+                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                    }
+                                </select>
+                            </div>
+                        }
                         <div class="checkbox-field">
                             <input type="checkbox" [id]="'primary-edit-' + cm.ID" [(ngModel)]="EditForm.IsPrimary">
                             <label [for]="'primary-edit-' + cm.ID">Primary</label>
@@ -74,6 +84,32 @@
                     <div class="cm-flat-badges">
                         @if (cm.IsPrimary) {
                             <span class="badge badge-primary"><i class="fa-solid fa-star"></i></span>
+                        }
+                        @if (isConsentType(cm.ContactTypeID)) {
+                            <span class="badge badge-consent" [ngClass]="getConsentBadgeClass(cm.ConsentStatus)"
+                                  (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
+                                <i [class]="getConsentIcon(cm.ConsentStatus)"></i>
+                                {{ getConsentLabel(cm.ConsentStatus) }}
+                            </span>
+                            @if (ConsentHistoryFor === cm.ID) {
+                                <div class="consent-history" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
+                                    <div class="consent-history-title">Consent history · {{ cm.Value }}</div>
+                                    @if (ConsentHistoryLoading) {
+                                        <div class="consent-history-empty">Loading history...</div>
+                                    } @else {
+                                        @for (h of ConsentHistory; track h.ID; let i = $index) {
+                                            <div class="consent-history-row" [class.current]="i === 0">
+                                                <span>{{ h.ConsentStatusAt | date:'mediumDate' }}</span>
+                                                <span>{{ getConsentLabel(h.NewConsentStatus) }}</span>
+                                                <span class="consent-history-source">{{ h.ConsentSource }}</span>
+                                            </div>
+                                        } @empty {
+                                            <div class="consent-history-empty">No consent recorded yet</div>
+                                        }
+                                        <div class="consent-history-note">Newest first; top row = current status</div>
+                                    }
+                                </div>
+                            }
                         }
                     </div>
                     <div class="cm-flat-actions">
@@ -123,6 +159,16 @@
                     <label>Label</label>
                     <input type="text" [(ngModel)]="AddForm.Label" placeholder="e.g., Direct Line">
                 </div>
+                @if (isConsentType(AddForm.TypeID)) {
+                    <div class="form-field consent-field">
+                        <label>Consent</label>
+                        <select [(ngModel)]="AddForm.ConsentStatus">
+                            @for (s of ConsentStatuses; track s) {
+                                <option [value]="s">{{ getConsentLabel(s) }}</option>
+                            }
+                        </select>
+                    </div>
+                }
                 <div class="checkbox-field">
                     <input type="checkbox" id="primary-add" [(ngModel)]="AddForm.IsPrimary">
                     <label for="primary-add">Primary</label>

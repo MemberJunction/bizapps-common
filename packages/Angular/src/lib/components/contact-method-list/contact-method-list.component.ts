@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
 import {
+    CONTACT_CONSENT_STATUSES,
+    mjBizAppsCommonContactConsentHistoryEntity,
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
 } from '@mj-biz-apps/common-entities';
@@ -28,6 +30,12 @@ interface ContactFormData {
 
     /** Whether this contact method should be flagged as the primary for its type. */
     IsPrimary: boolean;
+
+    /**
+     * The consent status to record. Only shown for types that map to a channel (email, phone);
+     * a change on save writes a `ContactConsentHistory` row with source "Staff".
+     */
+    ConsentStatus: mjBizAppsCommonContactMethodEntity['ConsentStatus'];
 }
 
 /**
@@ -176,6 +184,21 @@ export class ContactMethodListComponent {
      */
     AddForm: ContactFormData = this.createEmptyForm();
 
+    /** The consent choices offered on the add and edit rows, in the order the CHECK constraint lists them. */
+    ConsentStatuses = CONTACT_CONSENT_STATUSES;
+
+    /** The contact method whose consent history is open under its badge, or `null`. */
+    ConsentHistoryFor: string | null = null;
+
+    /** The history rows shown for {@link ConsentHistoryFor}, newest first. */
+    ConsentHistory: mjBizAppsCommonContactConsentHistoryEntity[] = [];
+
+    /** True while the history for {@link ConsentHistoryFor} is being read. */
+    ConsentHistoryLoading = false;
+
+    /** History already read this session, by contact method ID; dropped for a row when it is saved. */
+    private consentHistoryCache = new Map<string, mjBizAppsCommonContactConsentHistoryEntity[]>();
+
     /** Maps lowercase contact type names to CSS icon-color classes. */
     private iconColorMap: Record<string, string> = {
         'email': 'icon-email',
@@ -195,7 +218,7 @@ export class ContactMethodListComponent {
 
     /** Creates a blank {@link ContactFormData} with empty defaults. */
     private createEmptyForm(): ContactFormData {
-        return { TypeID: '', Value: '', Label: '', IsPrimary: false };
+        return { TypeID: '', Value: '', Label: '', IsPrimary: false, ConsentStatus: 'NotSpecified' };
     }
 
     /**
@@ -359,6 +382,97 @@ export class ContactMethodListComponent {
     }
 
     /**
+     * Whether a contact type carries consent: it maps to one of MJ's communication channels
+     * (Email, Phone, SMS). LinkedIn, Website and the like do not, so they show no badge.
+     *
+     * @param typeID - The ContactType record ID to check
+     */
+    isConsentType(typeID: string): boolean {
+        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        return !!ct?.CommunicationBaseMessageTypeID;
+    }
+
+    /** The status to store for a form: what was chosen for a channel type, `NotSpecified` for any other. */
+    private consentForType(form: ContactFormData): mjBizAppsCommonContactMethodEntity['ConsentStatus'] {
+        return this.isConsentType(form.TypeID) ? form.ConsentStatus : 'NotSpecified';
+    }
+
+    /** The badge colour class for a consent status. */
+    getConsentBadgeClass(status: mjBizAppsCommonContactMethodEntity['ConsentStatus']): string {
+        switch (status) {
+            case 'OptedIn': return 'consent-in';
+            case 'OptedOut': return 'consent-out';
+            default: return 'consent-unknown';
+        }
+    }
+
+    /** The Font Awesome icon for a consent status. */
+    getConsentIcon(status: mjBizAppsCommonContactMethodEntity['ConsentStatus']): string {
+        switch (status) {
+            case 'OptedIn': return 'fa-solid fa-check';
+            case 'OptedOut': return 'fa-solid fa-ban';
+            default: return 'fa-regular fa-circle-question';
+        }
+    }
+
+    /** The label shown for a consent status, on badges, in history rows and in the dropdowns. */
+    getConsentLabel(status: mjBizAppsCommonContactMethodEntity['ConsentStatus']): string {
+        switch (status) {
+            case 'OptedIn': return 'Opted in';
+            case 'OptedOut': return 'Opted out';
+            default: return 'Not specified';
+        }
+    }
+
+    /**
+     * Opens the consent history under a row's badge, reading it on first hover and reusing it
+     * afterwards until that row is saved again.
+     *
+     * @param cm - The contact method whose badge is being hovered
+     */
+    async onShowConsentHistory(cm: mjBizAppsCommonContactMethodEntity): Promise<void> {
+        this.ConsentHistoryFor = cm.ID;
+        const cached = this.consentHistoryCache.get(cm.ID);
+        if (cached) {
+            this.ConsentHistory = cached;
+            this.cdr.detectChanges();
+            return;
+        }
+        this.ConsentHistory = [];
+        this.ConsentHistoryLoading = true;
+        this.cdr.detectChanges();
+        const rows = await this.loadConsentHistory(cm.ID);
+        this.consentHistoryCache.set(cm.ID, rows);
+        if (this.ConsentHistoryFor === cm.ID) {
+            this.ConsentHistory = rows;
+        }
+        this.ConsentHistoryLoading = false;
+        this.cdr.detectChanges();
+    }
+
+    /** Closes the consent history. */
+    onHideConsentHistory(): void {
+        this.ConsentHistoryFor = null;
+        this.cdr.detectChanges();
+    }
+
+    /** Reads a contact method's consent history, newest change first. */
+    private async loadConsentHistory(contactMethodID: string): Promise<mjBizAppsCommonContactConsentHistoryEntity[]> {
+        const rv = new RunView();
+        const result = await rv.RunView<mjBizAppsCommonContactConsentHistoryEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Consent Histories',
+            ExtraFilter: `ContactMethodID='${contactMethodID}'`,
+            OrderBy: 'ConsentStatusAt DESC',
+            ResultType: 'entity_object'
+        });
+        if (!result.Success) {
+            console.error('ContactMethodList: Error loading consent history', result.ErrorMessage);
+            return [];
+        }
+        return result.Results;
+    }
+
+    /**
      * Copies the given string value to the system clipboard.
      *
      * Silently ignores clipboard write failures (e.g., when the Clipboard
@@ -435,6 +549,7 @@ export class ContactMethodListComponent {
                 cm.Value = this.AddForm.Value;
                 cm.Label = this.AddForm.Label || null;
                 cm.IsPrimary = this.AddForm.IsPrimary;
+                cm.ConsentStatus = this.consentForType(this.AddForm);
 
                 if (this.AddForm.IsPrimary) {
                     await this.clearPrimariesForType(this.AddForm.TypeID);
@@ -454,6 +569,7 @@ export class ContactMethodListComponent {
             cm.Value = this.AddForm.Value;
             cm.Label = this.AddForm.Label || null;
             cm.IsPrimary = this.AddForm.IsPrimary;
+            cm.ConsentStatus = this.consentForType(this.AddForm);
 
             if (this._personID) {
                 cm.PersonID = this._personID;
@@ -490,7 +606,8 @@ export class ContactMethodListComponent {
             TypeID: cm.ContactTypeID,
             Value: cm.Value,
             Label: cm.Label || '',
-            IsPrimary: cm.IsPrimary
+            IsPrimary: cm.IsPrimary,
+            ConsentStatus: cm.ConsentStatus
         };
         this.EditingId = cm.ID;
         this.ShowAddForm = false;
@@ -530,6 +647,8 @@ export class ContactMethodListComponent {
             cm.Value = this.EditForm.Value;
             cm.Label = this.EditForm.Label || null;
             cm.IsPrimary = this.EditForm.IsPrimary;
+            cm.ConsentStatus = this.consentForType(this.EditForm);
+            this.consentHistoryCache.delete(cm.ID);
 
             if (this._collection) {
                 this.ContactMethods = [...this._collection.Items];

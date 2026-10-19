@@ -233,7 +233,7 @@
   },
   {
     "_comments": [
-      "Activities hanging off an Address via optional AddressID sit in More — not a primary address concern."
+      "Activities hanging off an Address via optional AddressID sit in More \u2014 not a primary address concern."
     ],
     "fields": {
       "Configuration": {
@@ -248,6 +248,24 @@
     "sync": {
       "lastModified": "2026-08-24T20:06:03.645Z",
       "checksum": "58975efd1d9187857b888d0129194c7b3c6f8248bca208c86585ea58e2517426"
+    }
+  },
+  {
+    "_comments": [
+      "Consent history loads, validates and saves with its contact method, so a status change and its",
+      "history row are one unit of work (ContactMethodEntity.Save adds the row). Newest first, so",
+      "Items[0] is the change that set the current ConsentStatus."
+    ],
+    "fields": {
+      "RelatedRecordCollection": {
+        "Name": "ConsentHistory",
+        "OrderBy": "ConsentStatusAt DESC",
+        "Load": "explicit",
+        "OnRemove": "delete"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Contact Methods&RelatedEntity=MJ_BizApps_Common: Contact Consent Histories&RelatedEntityJoinField=ContactMethodID"
     }
   }
 ]
