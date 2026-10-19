@@ -1014,7 +1014,7 @@ GO
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('3eaca132-4061-43c7-817a-5954af97b94c', '44B3ED10-B4B9-4243-B876-E469A3022240', (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44B3ED10-B4B9-4243-B876-E469A3022240')1 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
+                                       ('3eaca132-4061-43c7-817a-5954af97b94c', '44B3ED10-B4B9-4243-B876-E469A3022240', 1, 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
 
 /* SQL text to insert entity field value with ID 6bf59906-f00a-457b-b6ff-d8c51f86c2a4 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
