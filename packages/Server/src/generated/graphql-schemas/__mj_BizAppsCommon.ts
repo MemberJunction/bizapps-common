@@ -3942,7 +3942,7 @@ export class mjBizAppsCommonContactConsentHistory_ {
     @Field({nullable: true, description: "When the change took effect in the real world (the unsubscribe click, the form submission, the import's own date), not when this row was saved. The row with the latest value is the current status."}) 
     ConsentStatusAt?: Date;
         
-    @Field({nullable: true, description: "Where the change came from, for example \"Web signup\", \"Unsubscribe link\", \"Import: Tessitura\" or \"Staff\"."}) 
+    @Field({nullable: true, description: "Where the change came from, for example \"Web signup\", \"Unsubscribe link\", \"Import: CRM\" or \"Staff\"."}) 
     @MaxLength(200)
     ConsentSource?: string;
         

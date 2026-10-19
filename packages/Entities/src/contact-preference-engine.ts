@@ -43,7 +43,7 @@ export interface ContactSubject {
 export interface SetConsentArgs {
     ContactMethodID: string;
     Status: ContactConsentStatus;
-    /** Where the change came from, for example "Web signup", "Unsubscribe link", "Import: Tessitura". */
+    /** Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM". */
     Source: string;
     /** When it took effect in the real world. Defaults to now. */
     At?: Date;

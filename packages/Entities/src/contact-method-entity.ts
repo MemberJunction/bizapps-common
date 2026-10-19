@@ -45,7 +45,7 @@ export class ContactMethodEntity extends mjBizAppsCommonContactMethodEntity {
     /**
      * Queues the history row for the current `ConsentStatus`, to be saved with this record.
      *
-     * @param source - Where the change came from, for example "Web signup" or "Import: Tessitura".
+     * @param source - Where the change came from, for example "Web signup" or "Import: CRM".
      * @param at - When it took effect in the real world. Defaults to now.
      * @param notes - Evidence for the change.
      * @returns The queued row, so a caller can set anything else on it before saving.

@@ -14,9 +14,9 @@ Consent is split across three layers, each doing one job:
   skips those who may not, and logs why.
 - **BizApps Common stores** it where the contact details already live. Contact methods are 1:M per
   person or organization, so consent is recorded per email or phone, never per person. Every app on
-  Common gets it, not just TRG.
-- **TRG keeps interim flags** (`MailOptIn`, `EmailOptIn`, `PhoneOptIn`, nullable booleans on its
-  Customer table) until Common's part lands, then moves them onto the customer's contact methods.
+  Common gets it.
+- **An app that already has its own opt-in flags** keeps them until Common's part lands, then moves
+  them onto its people's contact methods (see "Apps with existing flags" below).
 
 The layers depend downward. Comms never needs to know Common's tables, because Common plugs into
 Comms' hook, not the other way round.
@@ -59,17 +59,20 @@ this change.
 ignores them. SMS has no contact type of its own yet; a mobile number's consent answers for Phone.
 Whether SMS needs its own type or a second link on `ContactType` is open.
 
-## TRG, after this ships
+## Apps with existing flags, after this ships
 
-| TRG flag today | Moves to |
+An app that carries per-person opt-in booleans (email, phone, postal) moves them like this:
+
+| Flag today | Moves to |
 |---|---|
-| `EmailOptIn` | `ConsentStatus` on the customer's primary email |
-| `PhoneOptIn` | `ConsentStatus` on the customer's primary phone |
-| `MailOptIn` | Stays on Customer until postal consent has a home in Common |
+| email opt-in | `ConsentStatus` on the person's primary email |
+| phone opt-in | `ConsentStatus` on the person's primary phone |
+| postal opt-in | Stays on the app's table until postal consent has a home in Common |
 
 `true` becomes `OptedIn`, `false` becomes `OptedOut`, `NULL` becomes `NotSpecified`. Each moved flag
-gets one history row with source `Import: TRG`; where ODS or Purple 7 hold consent dates, those
-become history rows with their real dates. Then the Customer columns are dropped.
+gets one history row with a source naming the app it came from (`Import: <app>`); where the app's
+source systems hold consent dates, those become history rows with their real dates. Then the app's
+columns are dropped.
 
 ## Still to settle
 

@@ -122,7 +122,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.fn_listextendedproperty(N'MS_Description', N'SC
 BEGIN
     EXEC sp_addextendedproperty
         @name = N'MS_Description',
-        @value = N'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: Tessitura" or "Staff".',
+        @value = N'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".',
         @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
         @level1type = N'TABLE', @level1name = N'ContactConsentHistory',
         @level2type = N'COLUMN', @level2name = N'ConsentSource';
@@ -733,7 +733,7 @@ GO
             (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'B99C00A2-C42A-4E20-B23E-D8C88E2602D9'),
             'ConsentSource',
             'Consent Source',
-            'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: Tessitura" or "Staff".',
+            'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".',
             'nvarchar',
             400,
             0,

@@ -17,9 +17,6 @@ export type ContactConsentStatus = (typeof CONTACT_CONSENT_STATUSES)[number];
 /** The source recorded when a staff member changes consent in a form rather than through an import or a link. */
 export const CONSENT_SOURCE_STAFF = 'Staff';
 
-/** The source recorded when a flag is carried over from a TRG customer record. */
-export const CONSENT_SOURCE_TRG_IMPORT = 'Import: TRG';
-
 /** The channels Comms can ask about. Each is the `Type` of an `MJ: Communication Base Message Types` row. */
 export const CONTACT_CHANNELS = ['Email', 'Phone', 'SMS'] as const;
 

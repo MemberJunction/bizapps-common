@@ -1549,7 +1549,7 @@ export const mjBizAppsCommonContactConsentHistorySchema = z.object({
         * * Field Name: ConsentSource
         * * Display Name: Consent Source
         * * SQL Data Type: nvarchar(200)
-        * * Description: Where the change came from, for example "Web signup", "Unsubscribe link", "Import: Tessitura" or "Staff".`),
+        * * Description: Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".`),
     RecordedByUserID: z.string().nullable().describe(`
         * * Field Name: RecordedByUserID
         * * Display Name: Recorded By User ID
@@ -6822,7 +6822,7 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
     * * Field Name: ConsentSource
     * * Display Name: Consent Source
     * * SQL Data Type: nvarchar(200)
-    * * Description: Where the change came from, for example "Web signup", "Unsubscribe link", "Import: Tessitura" or "Staff".
+    * * Description: Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".
     */
     get ConsentSource(): string {
         return this.Get('ConsentSource');
