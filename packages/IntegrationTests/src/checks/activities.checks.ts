@@ -255,6 +255,83 @@ const checks: NamedCheck[] = [
             Assert(await connection.Delete(), 'cleanup connection');
         },
     },
+    {
+        Id: 'activities.A6',
+        Name: 'A6 — ActivitySyncRuns and ActivitySyncRunDetails SaveReturnMode datestamps_only verification and benchmark log',
+        RequiresMutation: true,
+        Fn: async (ctx) => {
+            const fs = await import('node:fs');
+            const path = await import('node:path');
+            const { performance } = await import('node:perf_hooks');
+            const { fileURLToPath } = await import('node:url');
+
+            const getSaveReturnMode = (info: { Configuration?: string | null } & Record<string, unknown>): string => {
+                if (typeof info.SaveReturnMode === 'string') return info.SaveReturnMode;
+                if (typeof info.Configuration === 'string' && info.Configuration.trim()) {
+                    return (JSON.parse(info.Configuration) as { SaveReturnMode?: string }).SaveReturnMode ?? 'full';
+                }
+                return 'full';
+            };
+            const syncRunInfo = ctx.Provider.EntityByName(COMMON_ENTITIES.ActivitySyncRun);
+            const syncRunDetailInfo = ctx.Provider.EntityByName(COMMON_ENTITIES.ActivitySyncRunDetail);
+            Assert(!!syncRunInfo, 'Activity Sync Runs entity metadata');
+            Assert(!!syncRunDetailInfo, 'Activity Sync Run Details entity metadata');
+            AssertEqual(getSaveReturnMode(syncRunInfo! as unknown as { Configuration?: string | null } & Record<string, unknown>), 'datestamps_only', 'Activity Sync Runs SaveReturnMode');
+            AssertEqual(getSaveReturnMode(syncRunDetailInfo! as unknown as { Configuration?: string | null } & Record<string, unknown>), 'datestamps_only', 'Activity Sync Run Details SaveReturnMode');
+
+            const connection = await ctx.Provider.GetEntityObject<mjBizAppsCommonActivitySyncConnectionEntity>(
+                COMMON_ENTITIES.ActivitySyncConnection,
+                ctx.User,
+            );
+            connection.NewRecord();
+            connection.Name = `COM-TEST SyncPerf ${Date.now()}`;
+            connection.Provider = 'Gmail';
+            connection.Status = 'Paused';
+            connection.Direction = 'Inbound';
+            connection.OwnerUserID = ctx.User.ID;
+            connection.Mailbox = `syncperf.${Date.now()}@${WORLD_EMAIL_DOMAIN}`;
+            await RequireSave(connection, 'A6 connection');
+
+            const createdRuns: Array<{ Delete: () => Promise<boolean> }> = [];
+            try {
+                const t0 = performance.now();
+                for (let i = 0; i < 5; i++) {
+                    const syncRun = await ctx.Provider.GetEntityObject(COMMON_ENTITIES.ActivitySyncRun, ctx.User);
+                    syncRun.NewRecord();
+                    syncRun.Set('ActivitySyncConnectionID', connection.ID);
+                    syncRun.Set('StartedAt', new Date());
+                    syncRun.Set('EndedAt', new Date());
+                    syncRun.Set('Status', 'Completed');
+                    syncRun.Set('ScannedCount', 25);
+                    syncRun.Set('MatchedCount', 10);
+                    syncRun.Set('CreatedCount', 5);
+                    syncRun.Set('SkippedCount', 15);
+                    syncRun.Set('FailedCount', 0);
+                    await RequireSave(syncRun, `A6 syncRun #${i}`);
+                    Assert(!!syncRun.Get('ID'), 'syncRun ID populated');
+                    Assert(!!syncRun.Get('__mj_CreatedAt'), 'syncRun __mj_CreatedAt populated');
+                    createdRuns.push(syncRun);
+                }
+                const elapsedMs = Number((performance.now() - t0).toFixed(2));
+                const logDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../benchmark-logs');
+                fs.mkdirSync(logDir, { recursive: true });
+                const entry = {
+                    Timestamp: new Date().toISOString(),
+                    Package: '@mj-biz-apps/common-integration-tests',
+                    Check: 'activities.A6',
+                    DatestampsOnlyEntities: [COMMON_ENTITIES.ActivitySyncRun, COMMON_ENTITIES.ActivitySyncRunDetail],
+                    FiveActivitySyncRunSavesMs: elapsedMs,
+                };
+                fs.writeFileSync(path.join(logDir, 'latest.json'), JSON.stringify(entry, null, 2), 'utf8');
+                fs.appendFileSync(path.join(logDir, 'history.jsonl'), JSON.stringify(entry) + '\n', 'utf8');
+            } finally {
+                for (const sr of createdRuns) {
+                    await sr.Delete();
+                }
+                await connection.Delete();
+            }
+        },
+    },
 ];
 
 for (const check of checks) {

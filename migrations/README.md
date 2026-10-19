@@ -45,6 +45,9 @@ and runs anywhere.
   changed after the seed's last commit. This is what catches a seed generated before a later metadata
   PR merged. It matters most for the records keyed by `@lookup:` instead of a UUID (73 of the 251
   here), which coverage has no id to check.
+  A commit after the seed that only rewrites `sync` blocks (`lastModified`, `checksum`) also counts as
+  a change and fails this check, because it compares whole files. Commit the push's `sync`
+  write-back in the same commit as the seed.
 
 These see an **edited** record only by order: that a record moved after the last release and after
 the seed. None of them reads the seed's SQL to confirm it carries the edit, so a seed committed after

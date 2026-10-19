@@ -14,7 +14,7 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         entity: 'MJ_BizApps_Common: Organizations',
         slot: 'after-fields',
         sortKey: 90,
-        replacesSectionKey: 'addressInformation',
+        replacesSectionKey: 'locationAndAddress',
         contributionKey: 'addresses',
     },
 })
