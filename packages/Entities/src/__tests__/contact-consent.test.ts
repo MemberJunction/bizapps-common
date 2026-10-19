@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
     ConsentHistoryEntry,
+    ConsentRow,
     DecideContact,
     IsContactConsentStatus,
     IsLatestConsentChange,
+    PickConsentForOrganization,
     ResolveCurrentConsent,
 } from '../contact-consent.js';
 
@@ -12,6 +14,18 @@ const at = (iso: string): Date => new Date(iso);
 const entry = (status: ConsentHistoryEntry['NewConsentStatus'], iso: string): ConsentHistoryEntry => ({
     NewConsentStatus: status,
     ConsentStatusAt: at(iso),
+});
+
+const METHOD = '11111111-1111-1111-1111-111111111111';
+const PURPOSE = '22222222-2222-2222-2222-222222222222';
+const ORG_A = '33333333-3333-3333-3333-333333333333';
+const ORG_B = '44444444-4444-4444-4444-444444444444';
+
+const consent = (status: ConsentRow['ConsentStatus'], organizationID: string | null): ConsentRow => ({
+    ContactMethodID: METHOD,
+    ConsentPurposeID: PURPOSE,
+    OrganizationID: organizationID,
+    ConsentStatus: status,
 });
 
 describe('ResolveCurrentConsent', () => {
@@ -52,6 +66,28 @@ describe('IsLatestConsentChange', () => {
     });
 });
 
+describe('PickConsentForOrganization', () => {
+    const rows = [consent('OptedIn', null), consent('OptedOut', ORG_A)];
+
+    it("uses the asking organization's own row when it has one", () => {
+        expect(PickConsentForOrganization(rows, ORG_A)?.ConsentStatus).toBe('OptedOut');
+        expect(PickConsentForOrganization(rows, ORG_A.toLowerCase())?.ConsentStatus).toBe('OptedOut');
+    });
+
+    it('falls back to the installation-wide row for an organization with no row of its own', () => {
+        expect(PickConsentForOrganization(rows, ORG_B)?.ConsentStatus).toBe('OptedIn');
+    });
+
+    it('returns only the installation-wide row when no organization is asking, never a scoped one', () => {
+        expect(PickConsentForOrganization(rows, null)?.ConsentStatus).toBe('OptedIn');
+        expect(PickConsentForOrganization([consent('OptedOut', ORG_A)], undefined)).toBeNull();
+    });
+
+    it('returns null when the method has no consent at all', () => {
+        expect(PickConsentForOrganization([], ORG_A)).toBeNull();
+    });
+});
+
 describe('DecideContact', () => {
     it('refuses when there is no contact method on the channel', () => {
         const d = DecideContact([], 'SMS');
@@ -67,7 +103,7 @@ describe('DecideContact', () => {
         expect(DecideContact(['OptedOut', 'OptedOut'], 'Phone')).toMatchObject({ Allowed: false, Status: 'OptedOut' });
     });
 
-    it('allows an unspecified status by default, because every pre-existing method is unspecified', () => {
+    it('allows an unspecified status by default, because every pre-existing method has nothing recorded', () => {
         expect(DecideContact(['OptedOut', 'NotSpecified'], 'Email')).toMatchObject({ Allowed: true, Status: 'NotSpecified' });
     });
 

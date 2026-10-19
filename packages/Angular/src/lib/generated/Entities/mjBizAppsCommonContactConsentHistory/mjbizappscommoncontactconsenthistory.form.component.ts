@@ -15,8 +15,8 @@ export class mjBizAppsCommonContactConsentHistoryFormComponent extends BaseFormC
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'consentDetails', sectionName: 'Consent Details', isExpanded: true },
-            { sectionKey: 'auditAndNotes', sectionName: 'Audit and Notes', isExpanded: true },
+            { sectionKey: 'consentHistoryDetails', sectionName: 'Consent History Details', isExpanded: true },
+            { sectionKey: 'auditInformation', sectionName: 'Audit Information', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }

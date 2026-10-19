@@ -1517,6 +1517,51 @@ export const mjBizAppsCommonAddressSchema = z.object({
 export type mjBizAppsCommonAddressEntityType = z.infer<typeof mjBizAppsCommonAddressSchema>;
 
 /**
+ * zod schema definition for the entity MJ_BizApps_Common: Consent Purposes
+ */
+export const mjBizAppsCommonConsentPurposeSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    Name: z.string().describe(`
+        * * Field Name: Name
+        * * Display Name: Name
+        * * SQL Data Type: nvarchar(100)
+        * * Description: Display name of the purpose, unique within the installation.`),
+    Description: z.string().nullable().describe(`
+        * * Field Name: Description
+        * * Display Name: Description
+        * * SQL Data Type: nvarchar(MAX)
+        * * Description: What kinds of messages this purpose covers.`),
+    DisplayRank: z.number().describe(`
+        * * Field Name: DisplayRank
+        * * Display Name: Display Rank
+        * * SQL Data Type: int
+        * * Default Value: 100
+        * * Description: Sort order in dropdown lists. Lower values appear first.`),
+    IsActive: z.boolean().describe(`
+        * * Field Name: IsActive
+        * * Display Name: Active
+        * * SQL Data Type: bit
+        * * Default Value: 1
+        * * Description: Whether this purpose is offered for new consents. Inactive purposes are hidden from dropdowns but preserved for existing records.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+});
+
+export type mjBizAppsCommonConsentPurposeEntityType = z.infer<typeof mjBizAppsCommonConsentPurposeSchema>;
+
+/**
  * zod schema definition for the entity MJ_BizApps_Common: Contact Consent Histories
  */
 export const mjBizAppsCommonContactConsentHistorySchema = z.object({
@@ -1525,11 +1570,11 @@ export const mjBizAppsCommonContactConsentHistorySchema = z.object({
         * * Display Name: ID
         * * SQL Data Type: uniqueidentifier
         * * Default Value: newsequentialid()`),
-    ContactMethodID: z.string().describe(`
-        * * Field Name: ContactMethodID
-        * * Display Name: Contact Method ID
+    ContactConsentID: z.string().describe(`
+        * * Field Name: ContactConsentID
+        * * Display Name: Contact Consent ID
         * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Methods (vwContactMethods.ID)`),
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Consents (vwContactConsents.ID)`),
     NewConsentStatus: z.union([z.literal('NotSpecified'), z.literal('OptedIn'), z.literal('OptedOut')]).describe(`
         * * Field Name: NewConsentStatus
         * * Display Name: New Consent Status
@@ -1570,10 +1615,6 @@ export const mjBizAppsCommonContactConsentHistorySchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
-    ContactMethod: z.string().describe(`
-        * * Field Name: ContactMethod
-        * * Display Name: Contact Method
-        * * SQL Data Type: nvarchar(500)`),
     RecordedByUser: z.string().nullable().describe(`
         * * Field Name: RecordedByUser
         * * Display Name: Recorded By User
@@ -1581,6 +1622,67 @@ export const mjBizAppsCommonContactConsentHistorySchema = z.object({
 });
 
 export type mjBizAppsCommonContactConsentHistoryEntityType = z.infer<typeof mjBizAppsCommonContactConsentHistorySchema>;
+
+/**
+ * zod schema definition for the entity MJ_BizApps_Common: Contact Consents
+ */
+export const mjBizAppsCommonContactConsentSchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()`),
+    ContactMethodID: z.string().describe(`
+        * * Field Name: ContactMethodID
+        * * Display Name: Contact Method
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Methods (vwContactMethods.ID)`),
+    ConsentPurposeID: z.string().describe(`
+        * * Field Name: ConsentPurposeID
+        * * Display Name: Consent Purpose
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Consent Purposes (vwConsentPurposes.ID)`),
+    OrganizationID: z.string().nullable().describe(`
+        * * Field Name: OrganizationID
+        * * Display Name: Organization
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)`),
+    ConsentStatus: z.union([z.literal('NotSpecified'), z.literal('OptedIn'), z.literal('OptedOut')]).describe(`
+        * * Field Name: ConsentStatus
+        * * Display Name: Consent Status
+        * * SQL Data Type: nvarchar(20)
+        * * Default Value: NotSpecified
+    * * Value List Type: List
+    * * Possible Values 
+    *   * NotSpecified
+    *   * OptedIn
+    *   * OptedOut
+        * * Description: The current consent: NotSpecified, OptedIn or OptedOut.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    ContactMethod: z.string().describe(`
+        * * Field Name: ContactMethod
+        * * Display Name: Contact Method Text
+        * * SQL Data Type: nvarchar(500)`),
+    ConsentPurpose: z.string().describe(`
+        * * Field Name: ConsentPurpose
+        * * Display Name: Consent Purpose Text
+        * * SQL Data Type: nvarchar(100)`),
+    Organization: z.string().nullable().describe(`
+        * * Field Name: Organization
+        * * Display Name: Organization Name
+        * * SQL Data Type: nvarchar(255)`),
+});
+
+export type mjBizAppsCommonContactConsentEntityType = z.infer<typeof mjBizAppsCommonContactConsentSchema>;
 
 /**
  * zod schema definition for the entity MJ_BizApps_Common: Contact Methods
@@ -1632,17 +1734,6 @@ export const mjBizAppsCommonContactMethodSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
-    ConsentStatus: z.union([z.literal('NotSpecified'), z.literal('OptedIn'), z.literal('OptedOut')]).describe(`
-        * * Field Name: ConsentStatus
-        * * Display Name: Consent Status
-        * * SQL Data Type: nvarchar(20)
-        * * Default Value: NotSpecified
-    * * Value List Type: List
-    * * Possible Values 
-    *   * NotSpecified
-    *   * OptedIn
-    *   * OptedOut
-        * * Description: The current consent for contacting this email or phone: NotSpecified, OptedIn or OptedOut. Always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it.`),
     Person: z.string().nullable().describe(`
         * * Field Name: Person
         * * Display Name: Person
@@ -1712,7 +1803,7 @@ export const mjBizAppsCommonContactTypeSchema = z.object({
         * * Related Entity/Foreign Key: MJ: Communication Base Message Types (vwCommunicationBaseMessageTypes.ID)`),
     CommunicationBaseMessageType: z.string().nullable().describe(`
         * * Field Name: CommunicationBaseMessageType
-        * * Display Name: Communication Base Message Type
+        * * Display Name: Communication Base Message Type Name
         * * SQL Data Type: nvarchar(100)`),
 });
 
@@ -6732,11 +6823,130 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
 
 
 /**
+ * MJ_BizApps_Common: Consent Purposes - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ConsentPurpose
+ * * Base View: vwConsentPurposes
+ * * @description What a consent is for: Marketing, Transactional, Fundraising, and whatever else an installation needs. Consent is recorded per contact method and purpose, so one email can be opted in for transactional messages and opted out of marketing. Seeded by metadata; add rows rather than columns.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Consent Purposes')
+export class mjBizAppsCommonConsentPurposeEntity extends BaseEntity<mjBizAppsCommonConsentPurposeEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Consent Purposes record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Consent Purposes record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonConsentPurposeEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: Name
+    * * Display Name: Name
+    * * SQL Data Type: nvarchar(100)
+    * * Description: Display name of the purpose, unique within the installation.
+    */
+    get Name(): string {
+        return this.Get('Name');
+    }
+    set Name(value: string) {
+        this.Set('Name', value);
+    }
+
+    /**
+    * * Field Name: Description
+    * * Display Name: Description
+    * * SQL Data Type: nvarchar(MAX)
+    * * Description: What kinds of messages this purpose covers.
+    */
+    get Description(): string | null {
+        return this.Get('Description');
+    }
+    set Description(value: string | null) {
+        this.Set('Description', value);
+    }
+
+    /**
+    * * Field Name: DisplayRank
+    * * Display Name: Display Rank
+    * * SQL Data Type: int
+    * * Default Value: 100
+    * * Description: Sort order in dropdown lists. Lower values appear first.
+    */
+    get DisplayRank(): number {
+        return this.Get('DisplayRank');
+    }
+    set DisplayRank(value: number) {
+        this.Set('DisplayRank', value);
+    }
+
+    /**
+    * * Field Name: IsActive
+    * * Display Name: Active
+    * * SQL Data Type: bit
+    * * Default Value: 1
+    * * Description: Whether this purpose is offered for new consents. Inactive purposes are hidden from dropdowns but preserved for existing records.
+    */
+    get IsActive(): boolean {
+        return this.Get('IsActive');
+    }
+    set IsActive(value: boolean) {
+        this.Set('IsActive', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+}
+
+
+/**
  * MJ_BizApps_Common: Contact Consent Histories - strongly typed entity sub-class
  * * Schema: __mj_BizAppsCommon
  * * Base Table: ContactConsentHistory
  * * Base View: vwContactConsentHistories
- * * @description One row per consent change on a contact method (an email or phone): the status it set, when it took effect in the real world, and where it came from. ContactMethod.ConsentStatus mirrors the row with the latest ConsentStatusAt. A late-arriving change with an older date is kept here but does not change the current status. Deleting the contact method deletes its history.
+ * * @description One row per change on a ContactConsent: the status it set, when it took effect in the real world, and where it came from. ContactConsent.ConsentStatus mirrors the row with the latest ConsentStatusAt. A late-arriving change with an older date is kept here but does not change the current status. Deleting the consent deletes its history.
  * * Primary Key: ID
  * @extends {BaseEntity}
  * @class
@@ -6775,16 +6985,16 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * * Field Name: ContactMethodID
-    * * Display Name: Contact Method ID
+    * * Field Name: ContactConsentID
+    * * Display Name: Contact Consent ID
     * * SQL Data Type: uniqueidentifier
-    * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Methods (vwContactMethods.ID)
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Consents (vwContactConsents.ID)
     */
-    get ContactMethodID(): string {
-        return this.Get('ContactMethodID');
+    get ContactConsentID(): string {
+        return this.Get('ContactConsentID');
     }
-    set ContactMethodID(value: string) {
-        this.Set('ContactMethodID', value);
+    set ContactConsentID(value: string) {
+        this.Set('ContactConsentID', value);
     }
 
     /**
@@ -6878,8 +7088,158 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * * Field Name: ContactMethod
+    * * Field Name: RecordedByUser
+    * * Display Name: Recorded By User
+    * * SQL Data Type: nvarchar(100)
+    */
+    get RecordedByUser(): string | null {
+        return this.Get('RecordedByUser');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Contact Consents - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: ContactConsent
+ * * Base View: vwContactConsents
+ * * @description The current consent for one contact method (an email or phone), for one purpose, from one organization or from the whole installation when OrganizationID is null. A contact method has many of these, the way a person has many contact methods. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Contact Consents')
+export class mjBizAppsCommonContactConsentEntity extends BaseEntity<mjBizAppsCommonContactConsentEntityType> {
+
+  /**
+  * Related records: MJ_BizApps_Common: Contact Consent Histories
+  *
+  * Loads, validates and persists as one unit with this MJ_BizApps_Common: Contact Consents record — see
+  * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
+  * the 'MJ_BizApps_Common: Contact Consents → MJ_BizApps_Common: Contact Consent Histories' relationship; edit that row, not this file.
+  *
+  */
+  public readonly History = this.DeclareRelatedRecords<mjBizAppsCommonContactConsentHistoryEntity>({
+      Name: 'History',
+        RelatedEntity: 'MJ_BizApps_Common: Contact Consent Histories',
+        RelatedEntityJoinField: 'ContactConsentID',
+        OrderBy: 'ConsentStatusAt DESC',
+        Load: 'explicit',
+        OnRemove: 'delete',
+  });
+
+    /**
+    * Loads the MJ_BizApps_Common: Contact Consents record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Contact Consents record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonContactConsentEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: ContactMethodID
     * * Display Name: Contact Method
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Methods (vwContactMethods.ID)
+    */
+    get ContactMethodID(): string {
+        return this.Get('ContactMethodID');
+    }
+    set ContactMethodID(value: string) {
+        this.Set('ContactMethodID', value);
+    }
+
+    /**
+    * * Field Name: ConsentPurposeID
+    * * Display Name: Consent Purpose
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Consent Purposes (vwConsentPurposes.ID)
+    */
+    get ConsentPurposeID(): string {
+        return this.Get('ConsentPurposeID');
+    }
+    set ConsentPurposeID(value: string) {
+        this.Set('ConsentPurposeID', value);
+    }
+
+    /**
+    * * Field Name: OrganizationID
+    * * Display Name: Organization
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: Organizations (vwOrganizations.ID)
+    */
+    get OrganizationID(): string | null {
+        return this.Get('OrganizationID');
+    }
+    set OrganizationID(value: string | null) {
+        this.Set('OrganizationID', value);
+    }
+
+    /**
+    * * Field Name: ConsentStatus
+    * * Display Name: Consent Status
+    * * SQL Data Type: nvarchar(20)
+    * * Default Value: NotSpecified
+    * * Value List Type: List
+    * * Possible Values 
+    *   * NotSpecified
+    *   * OptedIn
+    *   * OptedOut
+    * * Description: The current consent: NotSpecified, OptedIn or OptedOut.
+    */
+    get ConsentStatus(): 'NotSpecified' | 'OptedIn' | 'OptedOut' {
+        return this.Get('ConsentStatus');
+    }
+    set ConsentStatus(value: 'NotSpecified' | 'OptedIn' | 'OptedOut') {
+        this.Set('ConsentStatus', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: ContactMethod
+    * * Display Name: Contact Method Text
     * * SQL Data Type: nvarchar(500)
     */
     get ContactMethod(): string {
@@ -6887,12 +7247,21 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
     }
 
     /**
-    * * Field Name: RecordedByUser
-    * * Display Name: Recorded By User
+    * * Field Name: ConsentPurpose
+    * * Display Name: Consent Purpose Text
     * * SQL Data Type: nvarchar(100)
     */
-    get RecordedByUser(): string | null {
-        return this.Get('RecordedByUser');
+    get ConsentPurpose(): string {
+        return this.Get('ConsentPurpose');
+    }
+
+    /**
+    * * Field Name: Organization
+    * * Display Name: Organization Name
+    * * SQL Data Type: nvarchar(255)
+    */
+    get Organization(): string | null {
+        return this.Get('Organization');
     }
 }
 
@@ -6912,18 +7281,17 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
 export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsCommonContactMethodEntityType> {
 
   /**
-  * Related records: MJ_BizApps_Common: Contact Consent Histories
+  * Related records: MJ_BizApps_Common: Contact Consents
   *
   * Loads, validates and persists as one unit with this MJ_BizApps_Common: Contact Methods record — see
   * guides/TRANSACTIONS_AND_BATCHING_GUIDE.md. Declared by the RelatedRecordCollection metadata on
-  * the 'MJ_BizApps_Common: Contact Methods → MJ_BizApps_Common: Contact Consent Histories' relationship; edit that row, not this file.
+  * the 'MJ_BizApps_Common: Contact Methods → MJ_BizApps_Common: Contact Consents' relationship; edit that row, not this file.
   *
   */
-  public readonly ConsentHistory = this.DeclareRelatedRecords<mjBizAppsCommonContactConsentHistoryEntity>({
-      Name: 'ConsentHistory',
-        RelatedEntity: 'MJ_BizApps_Common: Contact Consent Histories',
+  public readonly Consents = this.DeclareRelatedRecords<mjBizAppsCommonContactConsentEntity>({
+      Name: 'Consents',
+        RelatedEntity: 'MJ_BizApps_Common: Contact Consents',
         RelatedEntityJoinField: 'ContactMethodID',
-        OrderBy: 'ConsentStatusAt DESC',
         Load: 'explicit',
         OnRemove: 'delete',
   });
@@ -7101,25 +7469,6 @@ export class mjBizAppsCommonContactMethodEntity extends BaseEntity<mjBizAppsComm
     }
 
     /**
-    * * Field Name: ConsentStatus
-    * * Display Name: Consent Status
-    * * SQL Data Type: nvarchar(20)
-    * * Default Value: NotSpecified
-    * * Value List Type: List
-    * * Possible Values 
-    *   * NotSpecified
-    *   * OptedIn
-    *   * OptedOut
-    * * Description: The current consent for contacting this email or phone: NotSpecified, OptedIn or OptedOut. Always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it.
-    */
-    get ConsentStatus(): 'NotSpecified' | 'OptedIn' | 'OptedOut' {
-        return this.Get('ConsentStatus');
-    }
-    set ConsentStatus(value: 'NotSpecified' | 'OptedIn' | 'OptedOut') {
-        this.Set('ConsentStatus', value);
-    }
-
-    /**
     * * Field Name: Person
     * * Display Name: Person
     * * SQL Data Type: nvarchar(250)
@@ -7293,7 +7642,7 @@ export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommon
 
     /**
     * * Field Name: CommunicationBaseMessageType
-    * * Display Name: Communication Base Message Type
+    * * Display Name: Communication Base Message Type Name
     * * SQL Data Type: nvarchar(100)
     */
     get CommunicationBaseMessageType(): string | null {

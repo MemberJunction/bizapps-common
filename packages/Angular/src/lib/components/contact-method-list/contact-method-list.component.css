@@ -489,3 +489,45 @@
 .form-field.consent-field select {
     min-width: 130px;
 }
+
+/* A method's consents: one badge per purpose (and organization), hover for history */
+.consent-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.badge-consent .consent-purpose {
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.badge-consent .consent-purpose::after {
+    content: '·';
+    margin: 0 2px 0 4px;
+}
+
+.consent-history-row {
+    grid-template-columns: 90px 1fr 90px 1fr;
+}
+
+.consent-history-purpose {
+    color: var(--mj-text-secondary);
+}
+
+/* One dropdown per purpose under the add and edit rows */
+.cm-flat-add-form,
+.cm-flat-edit-row .form-row {
+    flex-wrap: wrap;
+}
+
+.form-row.consent-row {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--mj-border-subtle);
+}

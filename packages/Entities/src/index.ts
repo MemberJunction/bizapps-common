@@ -11,7 +11,7 @@ export * from './business-time-zone-engine.js';
 export * from './external-field-limits.js';
 export * from './person-user-link.js';
 export * from './contact-consent.js';
-export * from './contact-method-entity.js';
+export * from './contact-consent-entity.js';
 export * from './contact-preference-engine.js';
 
 /**

@@ -78,14 +78,6 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="ConsentStatus"
-            Type="select"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
 
     </mj-collapsible-panel>
 
@@ -121,25 +113,25 @@
          RELATED ENTITY PANELS
          ======================================== -->
 
-    <!-- Contact Consent Histories Section -->
+    <!-- Contact Consents Section -->
     <mj-collapsible-panel
-        SectionKey="mJBizAppsCommonContactConsentHistories"
-        SectionName="Contact Consent Histories"
-        Icon="fa fa-history"
+        SectionKey="mJBizAppsCommonContactConsents"
+        SectionName="Contact Consents"
+        Icon="fa fa-shield-alt"
         Variant="related-entity"
         [Form]="this"
         [FormContext]="formContext"
-        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonContactConsentHistories')"
+        [BadgeCount]="GetSectionRowCount('mJBizAppsCommonContactConsents')"
         [DefaultExpanded]="false">
         @if (record.IsSaved) {
         <div>
             <mj-explorer-entity-data-grid
-                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Contact Consent Histories','ContactMethodID')"
-                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Contact Consent Histories','ContactMethodID')"
-                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonContactConsentHistories')"
+                [Params]="BuildRelationshipViewParamsByEntityName('MJ_BizApps_Common: Contact Consents','ContactMethodID')"
+                [NewRecordValues]="NewRecordValues('MJ_BizApps_Common: Contact Consents','ContactMethodID')"
+                [AllowLoad]="IsSectionExpanded('mJBizAppsCommonContactConsents')"
                 [ShowToolbar]="true"
                 (Navigate)="OnFormNavigate($event)"
-                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonContactConsentHistories', $event.totalRowCount)"
+                (AfterDataLoad)="SetSectionRowCount('mJBizAppsCommonContactConsents', $event.totalRowCount)"
                 >
             </mj-explorer-entity-data-grid>
         </div>

@@ -252,20 +252,35 @@
   },
   {
     "_comments": [
-      "Consent history loads, validates and saves with its contact method, so a status change and its",
-      "history row are one unit of work (ContactMethodEntity.Save adds the row). Newest first, so",
-      "Items[0] is the change that set the current ConsentStatus."
+      "A contact method's consents (one per purpose and organization) load, validate and save with it,",
+      "the way its history saves with each consent."
     ],
     "fields": {
       "RelatedRecordCollection": {
-        "Name": "ConsentHistory",
+        "Name": "Consents",
+        "Load": "explicit",
+        "OnRemove": "delete"
+      }
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Contact Methods&RelatedEntity=MJ_BizApps_Common: Contact Consents&RelatedEntityJoinField=ContactMethodID"
+    }
+  },
+  {
+    "_comments": [
+      "Consent history loads, validates and saves with its consent, so a status change and its history row",
+      "are one unit of work (ContactConsentEntity.Save adds the row). Newest first, so Items[0] set the current status."
+    ],
+    "fields": {
+      "RelatedRecordCollection": {
+        "Name": "History",
         "OrderBy": "ConsentStatusAt DESC",
         "Load": "explicit",
         "OnRemove": "delete"
       }
     },
     "primaryKey": {
-      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Contact Methods&RelatedEntity=MJ_BizApps_Common: Contact Consent Histories&RelatedEntityJoinField=ContactMethodID"
+      "ID": "@lookup:MJ: Entity Relationships.Entity=MJ_BizApps_Common: Contact Consents&RelatedEntity=MJ_BizApps_Common: Contact Consent Histories&RelatedEntityJoinField=ContactConsentID"
     }
   }
 ]

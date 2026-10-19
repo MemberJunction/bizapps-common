@@ -158,8 +158,14 @@ line is hidden while editing so it does not compete with the live fields.
      ├───►│   ContactMethod     │◄┘
      │    │  (PersonID or       │
      │    │   OrganizationID)   │──────► ContactType ──────► MJ: Communication
-     │    │   ConsentStatus     │                            Base Message Type
-     │    └─────────┬────────────┘                            (Email, Phone, SMS)
+     │    └─────────┬────────────┘                            Base Message Type
+     │              │ 1:M                                     (Email, Phone, SMS)
+     │    ┌─────────┴────────────┐
+     │    │   ContactConsent    │──────► ConsentPurpose
+     │    │  (purpose, optional │         (Marketing,
+     │    │   OrganizationID)   │          Transactional, ...)
+     │    │   ConsentStatus     │
+     │    └─────────┬────────────┘
      │              │ 1:M
      │    ┌─────────┴────────────┐
      │    │ ContactConsentHistory│
@@ -189,7 +195,7 @@ line is hidden while editing so it does not compete with the live fields.
 
 **Contact Method Flexibility** -- ContactMethods attach to either a Person or Organization via nullable FKs. Primary flags are scoped per ContactType, so a person can have a primary email AND a primary phone.
 
-**Per-Method Consent** -- Each ContactMethod has a `ConsentStatus` (NotSpecified, OptedIn or OptedOut): its current consent, so a person can be opted in on a home email and opted out on a work email. Every change is kept in `ContactConsentHistory`: the new status, when it took effect (`ConsentStatusAt`), where it came from (`ConsentSource`) and who recorded it. `ConsentStatus` always matches the history row with the latest `ConsentStatusAt`. Each ContactType links to MJ's communication message types (Email, Phone, SMS), so code never matches on type names. Use `ContactPreferenceEngine` to read and set consent; it writes the history row and the current status together.
+**Per-Method Consent** -- Consent hangs off each ContactMethod the way contact methods hang off a person: a `ContactConsent` row per purpose (`ConsentPurpose`: Marketing, Transactional, ...) and, optionally, per organization, holds the current `ConsentStatus` (NotSpecified, OptedIn or OptedOut). So one email can be opted in to transactional messages and out of marketing, or say yes to one organization and no to another. Every change is kept in `ContactConsentHistory`: the new status, when it took effect (`ConsentStatusAt`), where it came from (`ConsentSource`) and who recorded it, and `ConsentStatus` always matches the row with the latest `ConsentStatusAt`. Each ContactType links to MJ's communication message types (Email, Phone, SMS), so code never matches on type names. Use `ContactPreferenceEngine` to read and set consent; it writes the history row and the current status together.
 
 See [Entity Model Reference](docs/entity-model.md) for the complete schema documentation.
 

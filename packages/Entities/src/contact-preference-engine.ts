@@ -1,20 +1,26 @@
 /**
  * Contact preferences: the one place to read and set consent on contact methods.
  *
- * `CanContact` is what Comms' send-time hook calls: for a person or organization and a channel
- * (Email, Phone, SMS) it rolls the consent of every contact method on that channel into one
- * decision with a reason. `SetConsent` and `OptOutByValue` write a history row and the current
- * status together, through the contact method's `ConsentHistory` collection, so the two can never
- * disagree. A change that arrives with an older date than the latest change is kept in history
- * and leaves the current status alone.
+ * `CanContact` is what Comms' send-time hook calls: for a person or organization, a channel (Email,
+ * Phone, SMS), a purpose (Marketing, Transactional, ...) and optionally the organization asking, it
+ * rolls the consent of every contact method on that channel into one decision with a reason.
+ * `SetConsent` and `OptOutByValue` write a history row and the current status together, through
+ * the consent's `History` collection, so the two can never disagree. A change that arrives with an
+ * older date than the latest change is kept in history and leaves the current status alone.
  *
- * The engine caches Contact Types, which carry the link from a type to its channel, so a decision
- * costs one RunView. Call `await ContactPreferenceEngine.Instance.Config(false, user, provider)`
- * where the other engines are configured; the read methods configure lazily if nobody did.
+ * The engine caches Contact Types (which carry the link from a type to its channel), MJ core's
+ * message types (the channels themselves) and Consent Purposes, so a decision costs one batched
+ * read. Call `await ContactPreferenceEngine.Instance.Config(false, user, provider)` where the other
+ * engines are configured; the read methods configure lazily if nobody did.
  */
 import { BaseEngine, BaseEnginePropertyConfig, IMetadataProvider, RunView, UserInfo } from '@memberjunction/core';
 import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
-import { mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity } from './generated/entity_subclasses';
+import {
+    mjBizAppsCommonConsentPurposeEntity,
+    mjBizAppsCommonContactConsentEntity,
+    mjBizAppsCommonContactMethodEntity,
+    mjBizAppsCommonContactTypeEntity,
+} from './generated/entity_subclasses';
 import {
     ContactChannel,
     ContactConsentStatus,
@@ -22,16 +28,22 @@ import {
     ContactDecisionPolicy,
     DecideContact,
     IsLatestConsentChange,
+    PickConsentForOrganization,
 } from './contact-consent.js';
-import { ContactMethodEntity } from './contact-method-entity.js';
+import { ContactConsentEntity } from './contact-consent-entity.js';
 
 export const CONTACT_TYPES_ENTITY = 'MJ_BizApps_Common: Contact Types';
 export const CONTACT_METHODS_ENTITY = 'MJ_BizApps_Common: Contact Methods';
+export const CONTACT_CONSENTS_ENTITY = 'MJ_BizApps_Common: Contact Consents';
+export const CONSENT_PURPOSES_ENTITY = 'MJ_BizApps_Common: Consent Purposes';
 /** MJ core's channel table. Its `Type` column is the key Comms routes on (Email, Phone, SMS). */
 export const MESSAGE_TYPES_ENTITY = 'MJ: Communication Base Message Types';
 
 /** The columns of a Contact Types row the engine reads, typed from the generated entity. */
 export type ContactTypeChannelRow = Pick<mjBizAppsCommonContactTypeEntity, 'ID' | 'Name' | 'IsActive' | 'CommunicationBaseMessageTypeID'>;
+
+/** The columns of a Consent Purposes row the engine reads. */
+export type ConsentPurposeRow = Pick<mjBizAppsCommonConsentPurposeEntity, 'ID' | 'Name' | 'IsActive' | 'DisplayRank'>;
 
 /**
  * The two columns of an `MJ: Communication Base Message Types` row the engine reads. Declared here
@@ -48,7 +60,15 @@ export interface ContactSubject {
     OrganizationID?: string;
 }
 
-export interface SetConsentArgs {
+/** What a consent is for and who is asking. */
+export interface ConsentScope {
+    /** The Consent Purpose by name, for example "Marketing". */
+    Purpose: string;
+    /** The organization asking, or null / omitted for the installation-wide answer. */
+    OrganizationID?: string | null;
+}
+
+export interface SetConsentArgs extends ConsentScope {
     ContactMethodID: string;
     Status: ContactConsentStatus;
     /** Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM". */
@@ -73,9 +93,12 @@ export interface OptOutByValueResult {
     Errors: string[];
 }
 
+type ConsentStatusRow = Pick<mjBizAppsCommonContactConsentEntity, 'ContactMethodID' | 'ConsentPurposeID' | 'OrganizationID' | 'ConsentStatus'>;
+
 export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine> {
     private _contactTypes: ContactTypeChannelRow[] = [];
     private _messageTypes: MessageTypeRow[] = [];
+    private _purposes: ConsentPurposeRow[] = [];
 
     public static get Instance(): ContactPreferenceEngine {
         return super.getInstance<ContactPreferenceEngine>();
@@ -83,16 +106,9 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
 
     public async Config(forceRefresh?: boolean, contextUser?: UserInfo, provider?: IMetadataProvider): Promise<unknown> {
         const params: Array<Partial<BaseEnginePropertyConfig>> = [
-            {
-                PropertyName: '_contactTypes',
-                EntityName: CONTACT_TYPES_ENTITY,
-                ResultType: 'simple',
-            },
-            {
-                PropertyName: '_messageTypes',
-                EntityName: MESSAGE_TYPES_ENTITY,
-                ResultType: 'simple',
-            },
+            { PropertyName: '_contactTypes', EntityName: CONTACT_TYPES_ENTITY, ResultType: 'simple' },
+            { PropertyName: '_messageTypes', EntityName: MESSAGE_TYPES_ENTITY, ResultType: 'simple' },
+            { PropertyName: '_purposes', EntityName: CONSENT_PURPOSES_ENTITY, ResultType: 'simple' },
         ];
         return await this.Load(params, provider as IMetadataProvider, forceRefresh ?? false, contextUser);
     }
@@ -105,6 +121,11 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
     /** The cached core message types; a channel name resolves to one of these rows' IDs. */
     public get MessageTypes(): MessageTypeRow[] {
         return this.GetConfigData<MessageTypeRow>('_messageTypes');
+    }
+
+    /** The cached Consent Purposes, active ones first by display rank. */
+    public get Purposes(): ConsentPurposeRow[] {
+        return this.GetConfigData<ConsentPurposeRow>('_purposes');
     }
 
     /** The ID of the core message type whose `Type` key is the channel, or null when core has no such row. */
@@ -123,59 +144,73 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
             .map((t) => t.ID);
     }
 
+    /** The ID of the purpose with this name, or null when the installation has no such purpose. */
+    public PurposeIDByName(name: string): string | null {
+        const wanted = name.trim().toLowerCase();
+        return this.Purposes.find((p) => p.Name.trim().toLowerCase() === wanted)?.ID ?? null;
+    }
+
     /**
-     * Whether a person or organization may be contacted on a channel, and why.
+     * Whether a person or organization may be contacted on a channel for a purpose, and why.
      *
-     * One read: the consent status of every contact method the subject has on that channel. The
-     * roll-up rule is {@link DecideContact}.
+     * One batched read: the subject's contact methods on that channel, and the consents those
+     * methods hold for the purpose. Each method answers with its most specific consent (the asking
+     * organization's row, else the installation-wide row, else nothing recorded); the roll-up across
+     * methods is {@link DecideContact}.
      */
     public async CanContact(
         subject: ContactSubject,
         channel: ContactChannel,
+        scope: ConsentScope,
         policy: ContactDecisionPolicy = {},
         contextUser?: UserInfo,
     ): Promise<ContactDecision> {
         await this.EnsureLoaded(contextUser);
         const typeIDs = this.ContactTypeIDsForChannel(channel);
-        if (typeIDs.length === 0) {
+        const purposeID = this.PurposeIDByName(scope.Purpose);
+        if (typeIDs.length === 0 || !purposeID) {
             return DecideContact([], channel, policy);
         }
-        const statuses = await this.loadConsentStatuses(subject, typeIDs, contextUser);
+        const statuses = await this.loadConsentStatuses(subject, typeIDs, purposeID, scope.OrganizationID ?? null, contextUser);
         return DecideContact(statuses, channel, policy);
     }
 
     /**
-     * Records a consent change on one contact method: a history row always, and the current status
-     * when the change is the latest one. Saved together.
+     * Records a consent change for one contact method, purpose and (optional) organization: the
+     * consent row is created if the method has none for that scope, a history row is always added,
+     * and the current status moves when the change is the latest one. Saved together.
      */
     public async SetConsent(args: SetConsentArgs, contextUser?: UserInfo): Promise<ConsentChangeResult> {
-        const cm = await this.ProviderToUse.GetEntityObject<ContactMethodEntity>(CONTACT_METHODS_ENTITY, contextUser);
-        if (!(await cm.Load(args.ContactMethodID))) {
-            return { Success: false, StatusChanged: false, ErrorMessage: `Contact method ${args.ContactMethodID} not found` };
+        await this.EnsureLoaded(contextUser);
+        const purposeID = this.PurposeIDByName(args.Purpose);
+        if (!purposeID) {
+            return { Success: false, StatusChanged: false, ErrorMessage: `No consent purpose named '${args.Purpose}'` };
         }
-        await cm.ConsentHistory.Load();
+        const consent = await this.findOrCreateConsent(args.ContactMethodID, purposeID, args.OrganizationID ?? null, contextUser);
         const at = args.At ?? new Date();
-        const isLatest = IsLatestConsentChange(cm.ConsentHistory.Items, at);
+        const isLatest = IsLatestConsentChange(consent.History.Items, at);
         if (isLatest) {
-            cm.ConsentStatus = args.Status;
+            consent.ConsentStatus = args.Status;
         }
-        const row = await cm.RecordConsentChange(args.Source, at, args.Notes ?? null);
+        const row = await consent.RecordConsentChange(args.Source, at, args.Notes ?? null);
         row.NewConsentStatus = args.Status;
-        const saved = await cm.Save();
+        const saved = await consent.Save();
         return {
             Success: saved,
             StatusChanged: saved && isLatest,
-            ErrorMessage: saved ? undefined : cm.LatestResult?.CompleteMessage,
+            ErrorMessage: saved ? undefined : consent.LatestResult?.CompleteMessage,
         };
     }
 
     /**
-     * Opts out every contact method whose value is the given email or phone, across people and
-     * organizations. This is what an unsubscribe link or a bounce handler calls, since it knows the
-     * address and not the record.
+     * Opts out every contact method whose value is the given email or phone, for one purpose and
+     * (optional) organization, across people and organizations. This is what an unsubscribe link or
+     * a bounce handler calls, since it knows the address and not the record. The scope is explicit
+     * so an unsubscribe from one organization never opts a person out of another.
      */
     public async OptOutByValue(
         value: string,
+        scope: ConsentScope,
         source: string,
         at: Date = new Date(),
         notes: string | null = null,
@@ -184,7 +219,7 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
         const ids = await this.findContactMethodIDsByValue(value, contextUser);
         const result: OptOutByValueResult = { Matched: ids.length, Changed: 0, Errors: [] };
         for (const id of ids) {
-            const change = await this.SetConsent({ ContactMethodID: id, Status: 'OptedOut', Source: source, At: at, Notes: notes }, contextUser);
+            const change = await this.SetConsent({ ...scope, ContactMethodID: id, Status: 'OptedOut', Source: source, At: at, Notes: notes }, contextUser);
             if (!change.Success) {
                 result.Errors.push(`${id}: ${change.ErrorMessage ?? 'unknown error'}`);
             } else if (change.StatusChanged) {
@@ -194,22 +229,78 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
         return result;
     }
 
-    private async loadConsentStatuses(subject: ContactSubject, typeIDs: string[], contextUser?: UserInfo): Promise<ContactConsentStatus[]> {
+    private async loadConsentStatuses(
+        subject: ContactSubject,
+        typeIDs: string[],
+        purposeID: string,
+        organizationID: string | null,
+        contextUser?: UserInfo,
+    ): Promise<ContactConsentStatus[]> {
         const rv = new RunView(this.RunViewProviderToUse);
         const typeList = typeIDs.map((id) => `'${EscapeSQLString(id)}'`).join(',');
-        const result = await rv.RunView<Pick<mjBizAppsCommonContactMethodEntity, 'ID' | 'ConsentStatus'>>(
+        const methodFilter = `${this.subjectFilter(subject)} AND ContactTypeID IN (${typeList})`;
+        const [methods, consents] = await rv.RunViews(
+            [
+                { EntityName: CONTACT_METHODS_ENTITY, ExtraFilter: methodFilter, Fields: ['ID'], ResultType: 'simple' },
+                {
+                    EntityName: CONTACT_CONSENTS_ENTITY,
+                    ExtraFilter: `ConsentPurposeID='${EscapeSQLString(purposeID)}' AND ContactMethodID IN (SELECT ID FROM [${this.contactMethodsView()}] WHERE ${methodFilter})`,
+                    Fields: ['ContactMethodID', 'ConsentPurposeID', 'OrganizationID', 'ConsentStatus'],
+                    ResultType: 'simple',
+                },
+            ],
+            contextUser,
+        );
+        if (!methods.Success || !consents.Success) {
+            throw new Error(`ContactPreferenceEngine: could not read consents: ${methods.ErrorMessage ?? consents.ErrorMessage}`);
+        }
+        const methodRows = methods.Results as Pick<mjBizAppsCommonContactMethodEntity, 'ID'>[];
+        const consentRows = consents.Results as ConsentStatusRow[];
+        return methodRows.map((m) => {
+            const mine = consentRows.filter((c) => UUIDsEqual(c.ContactMethodID, m.ID));
+            return PickConsentForOrganization(mine, organizationID)?.ConsentStatus ?? 'NotSpecified';
+        });
+    }
+
+    /** The schema-qualified base view of contact methods, for the subquery in a consent filter. */
+    private contactMethodsView(): string {
+        const entity = this.ProviderToUse.EntityByName(CONTACT_METHODS_ENTITY);
+        if (!entity) {
+            throw new Error(`ContactPreferenceEngine: entity '${CONTACT_METHODS_ENTITY}' is not in metadata`);
+        }
+        return `${entity.SchemaName}].[${entity.BaseView}`;
+    }
+
+    private async findOrCreateConsent(
+        contactMethodID: string,
+        purposeID: string,
+        organizationID: string | null,
+        contextUser?: UserInfo,
+    ): Promise<ContactConsentEntity> {
+        const rv = new RunView(this.RunViewProviderToUse);
+        const orgFilter = organizationID ? `OrganizationID='${EscapeSQLString(organizationID)}'` : 'OrganizationID IS NULL';
+        const existing = await rv.RunView<ContactConsentEntity>(
             {
-                EntityName: CONTACT_METHODS_ENTITY,
-                ExtraFilter: `${this.subjectFilter(subject)} AND ContactTypeID IN (${typeList})`,
-                Fields: ['ID', 'ConsentStatus'],
-                ResultType: 'simple',
+                EntityName: CONTACT_CONSENTS_ENTITY,
+                ExtraFilter: `ContactMethodID='${EscapeSQLString(contactMethodID)}' AND ConsentPurposeID='${EscapeSQLString(purposeID)}' AND ${orgFilter}`,
+                ResultType: 'entity_object',
             },
             contextUser,
         );
-        if (!result.Success) {
-            throw new Error(`ContactPreferenceEngine: could not read contact methods: ${result.ErrorMessage}`);
+        if (!existing.Success) {
+            throw new Error(`ContactPreferenceEngine: could not read consents: ${existing.ErrorMessage}`);
         }
-        return result.Results.map((row) => row.ConsentStatus);
+        if (existing.Results.length > 0) {
+            const consent = existing.Results[0];
+            await consent.History.Load();
+            return consent;
+        }
+        const consent = await this.ProviderToUse.GetEntityObject<ContactConsentEntity>(CONTACT_CONSENTS_ENTITY, contextUser);
+        consent.NewRecord();
+        consent.ContactMethodID = contactMethodID;
+        consent.ConsentPurposeID = purposeID;
+        consent.OrganizationID = organizationID;
+        return consent;
     }
 
     private async findContactMethodIDsByValue(value: string, contextUser?: UserInfo): Promise<string[]> {

@@ -1,20 +1,23 @@
 /**
  * Contact consent, the pure part: the status values, how a current status is resolved from a
- * history, and how a channel decision is made from the statuses of a person's contact methods.
+ * history, which of a contact method's consents answers for a given organization, and how a
+ * channel decision is made from the statuses of a person's contact methods.
  *
- * Consent is recorded per contact method (each email, each phone), never per person, because a
- * person can be opted in on a home email and opted out on a work email. The current status lives
- * on `ContactMethod.ConsentStatus`; every change is a `ContactConsentHistory` row, and the status
- * always equals the row with the latest `ConsentStatusAt`. These functions hold that rule so the
- * entity subclass, the engine and the tests all agree on it.
+ * Consent hangs off a contact method the way contact methods hang off a person: one `ContactConsent`
+ * row per purpose (Marketing, Transactional, ...) and, optionally, per organization. So one email can
+ * be opted in to receipts and out of newsletters, or say yes to one organization and no to another.
+ * Each row's `ConsentStatus` always equals the `ContactConsentHistory` row with the latest
+ * `ConsentStatusAt`. These functions hold those rules so the entity subclass, the engine and the
+ * tests all agree on them.
  */
-import type { mjBizAppsCommonContactConsentHistoryEntity, mjBizAppsCommonContactMethodEntity } from './generated/entity_subclasses';
+import { UUIDsEqual } from '@memberjunction/global';
+import type { mjBizAppsCommonContactConsentEntity, mjBizAppsCommonContactConsentHistoryEntity } from './generated/entity_subclasses';
 
 /**
- * The consent states a contact method can be in. Derived from the generated entity, so it follows
- * `CK_ContactMethod_ConsentStatus` whenever CodeGen regenerates.
+ * The consent states a contact method can be in for a purpose. Derived from the generated entity,
+ * so it follows `CK_ContactConsent_ConsentStatus` whenever CodeGen regenerates.
  */
-export type ContactConsentStatus = mjBizAppsCommonContactMethodEntity['ConsentStatus'];
+export type ContactConsentStatus = mjBizAppsCommonContactConsentEntity['ConsentStatus'];
 
 /**
  * The same values as a runtime list, in the order the CHECK constraint names them, for dropdowns.
@@ -44,6 +47,9 @@ export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
 /** The two columns of a history row that resolution needs. */
 export type ConsentHistoryEntry = Pick<mjBizAppsCommonContactConsentHistoryEntity, 'NewConsentStatus' | 'ConsentStatusAt'>;
+
+/** The columns of a consent row that scoping and decisions need. */
+export type ConsentRow = Pick<mjBizAppsCommonContactConsentEntity, 'ContactMethodID' | 'ConsentPurposeID' | 'OrganizationID' | 'ConsentStatus'>;
 
 /** True when `value` is one of the consent statuses. */
 export function IsContactConsentStatus(value: unknown): value is ContactConsentStatus {
@@ -76,6 +82,19 @@ export function IsLatestConsentChange(history: ReadonlyArray<ConsentHistoryEntry
     return history.every((entry) => entry.ConsentStatusAt.getTime() <= at.getTime());
 }
 
+/**
+ * Of one contact method's consent rows for one purpose, the row that answers for an organization:
+ * that organization's own row when it has one, else the installation-wide row (OrganizationID
+ * null), else nothing. Asking with no organization returns only the installation-wide row.
+ */
+export function PickConsentForOrganization<T extends ConsentRow>(rows: ReadonlyArray<T>, organizationID: string | null | undefined): T | null {
+    const unscoped = rows.find((r) => r.OrganizationID == null) ?? null;
+    if (!organizationID) {
+        return unscoped;
+    }
+    return rows.find((r) => r.OrganizationID != null && UUIDsEqual(r.OrganizationID, organizationID)) ?? unscoped;
+}
+
 /** Why a channel decision came out the way it did. */
 export type ContactDecisionStatus =
     /** At least one contact method on the channel is opted in. */
@@ -98,8 +117,8 @@ export interface ContactDecision {
 export interface ContactDecisionPolicy {
     /**
      * When true, only an explicit opt-in allows contact; `NotSpecified` is treated like an opt-out.
-     * Off by default, because every contact method predating this feature is `NotSpecified` and a
-     * strict default would silently stop all sends on upgrade.
+     * Off by default, because every contact method predating this feature has no consent recorded
+     * and a strict default would silently stop all sends on upgrade.
      */
     RequireOptIn?: boolean;
 }

@@ -1,0 +1,42 @@
+[
+  {
+    "fields": {
+      "Name": "Marketing",
+      "Description": "Promotional and informational messages: newsletters, offers, announcements.",
+      "DisplayRank": 10
+    },
+    "primaryKey": {
+      "ID": "960DC81B-D57E-4851-96AD-B534EBB6C426"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Transactional",
+      "Description": "Messages about something the person did or owns: receipts, confirmations, reminders.",
+      "DisplayRank": 20
+    },
+    "primaryKey": {
+      "ID": "41C807B6-EB29-45A4-84EC-5796513768DC"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Fundraising",
+      "Description": "Appeals, pledges and donor communications.",
+      "DisplayRank": 30
+    },
+    "primaryKey": {
+      "ID": "5660EC2F-4718-458C-A42C-A733EC17B01B"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Surveys",
+      "Description": "Feedback and research requests.",
+      "DisplayRank": 40
+    },
+    "primaryKey": {
+      "ID": "942901FF-4C31-4865-A7B9-161A2831ABB0"
+    }
+  }
+]

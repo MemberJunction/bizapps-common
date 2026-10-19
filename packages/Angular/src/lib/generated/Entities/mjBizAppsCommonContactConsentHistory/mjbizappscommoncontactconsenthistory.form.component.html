@@ -10,17 +10,17 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Consent Details Section -->
+    <!-- Consent History Details Section -->
     <mj-collapsible-panel
-        SectionKey="consentDetails"
-        SectionName="Consent Details"
-        Icon="fa fa-shield-alt"
+        SectionKey="consentHistoryDetails"
+        SectionName="Consent History Details"
+        Icon="fa fa-history"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
-            FieldName="ContactMethodID"
+            FieldName="ContactConsentID"
             Type="textbox"
             [EditMode]="EditMode"
             [FormContext]="formContext"
@@ -53,11 +53,11 @@
 
     </mj-collapsible-panel>
 
-    <!-- Audit and Notes Section -->
+    <!-- Audit Information Section -->
     <mj-collapsible-panel
-        SectionKey="auditAndNotes"
-        SectionName="Audit and Notes"
-        Icon="fa fa-clipboard-list"
+        SectionKey="auditInformation"
+        SectionName="Audit Information"
+        Icon="fa fa-user-shield"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
