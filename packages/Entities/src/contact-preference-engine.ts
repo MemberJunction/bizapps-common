@@ -2,8 +2,9 @@
  * Contact preferences: the one place to read and set consent on contact methods.
  *
  * `CanContact` is what Comms' send-time hook calls: for a person or organization, a channel (Email,
- * Phone, SMS), a purpose (Marketing, Transactional, ...) and optionally the organization asking, it
- * rolls the consent of every contact method on that channel into one decision with a reason.
+ * Phone, SMS), optionally a purpose (Marketing, Transactional, ...) and optionally the organization
+ * asking, it rolls the consent of every contact method on that channel into one decision with a
+ * reason. Each method answers with its most specific consent, down to its general row.
  * `SetConsent` and `OptOutByValue` write a history row and the current status together, through
  * the consent's `History` collection, so the two can never disagree. A change that arrives with an
  * older date than the latest change is kept in history and leaves the current status alone.
@@ -28,7 +29,7 @@ import {
     ContactDecisionPolicy,
     DecideContact,
     IsLatestConsentChange,
-    PickConsentForOrganization,
+    ResolveConsentForScope,
 } from './contact-consent.js';
 import { ContactConsentEntity } from './contact-consent-entity.js';
 
@@ -62,8 +63,8 @@ export interface ContactSubject {
 
 /** What a consent is for and who is asking. */
 export interface ConsentScope {
-    /** The Consent Purpose by name, for example "Marketing". */
-    Purpose: string;
+    /** The Consent Purpose by name, for example "Marketing"; null / omitted means the general answer for the address. */
+    Purpose?: string | null;
     /** The organization asking, or null / omitted for the installation-wide answer. */
     OrganizationID?: string | null;
 }
@@ -167,10 +168,10 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
     ): Promise<ContactDecision> {
         await this.EnsureLoaded(contextUser);
         const typeIDs = this.ContactTypeIDsForChannel(channel);
-        const purposeID = this.PurposeIDByName(scope.Purpose);
-        if (typeIDs.length === 0 || !purposeID) {
+        if (typeIDs.length === 0) {
             return DecideContact([], channel, policy);
         }
+        const purposeID = this.resolvePurposeID(scope);
         const statuses = await this.loadConsentStatuses(subject, typeIDs, purposeID, scope.OrganizationID ?? null, contextUser);
         return DecideContact(statuses, channel, policy);
     }
@@ -182,11 +183,10 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
      */
     public async SetConsent(args: SetConsentArgs, contextUser?: UserInfo): Promise<ConsentChangeResult> {
         await this.EnsureLoaded(contextUser);
-        const purposeID = this.PurposeIDByName(args.Purpose);
-        if (!purposeID) {
+        if (args.Purpose && !this.PurposeIDByName(args.Purpose)) {
             return { Success: false, StatusChanged: false, ErrorMessage: `No consent purpose named '${args.Purpose}'` };
         }
-        const consent = await this.findOrCreateConsent(args.ContactMethodID, purposeID, args.OrganizationID ?? null, contextUser);
+        const consent = await this.findOrCreateConsent(args.ContactMethodID, this.resolvePurposeID(args), args.OrganizationID ?? null, contextUser);
         const at = args.At ?? new Date();
         const isLatest = IsLatestConsentChange(consent.History.Items, at);
         if (isLatest) {
@@ -203,8 +203,8 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
     }
 
     /**
-     * Opts out every contact method whose value is the given email or phone, for one purpose and
-     * (optional) organization, across people and organizations. This is what an unsubscribe link or
+     * Opts out every contact method whose value is the given email or phone, for one purpose (or in
+     * general) and (optional) organization, across people and organizations. This is what an unsubscribe link or
      * a bounce handler calls, since it knows the address and not the record. The scope is explicit
      * so an unsubscribe from one organization never opts a person out of another.
      */
@@ -229,10 +229,15 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
         return result;
     }
 
+    /** The purpose ID a scope names, or null for the general answer. Unknown names resolve to null too. */
+    private resolvePurposeID(scope: ConsentScope): string | null {
+        return scope.Purpose ? this.PurposeIDByName(scope.Purpose) : null;
+    }
+
     private async loadConsentStatuses(
         subject: ContactSubject,
         typeIDs: string[],
-        purposeID: string,
+        purposeID: string | null,
         organizationID: string | null,
         contextUser?: UserInfo,
     ): Promise<ContactConsentStatus[]> {
@@ -244,7 +249,7 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
                 { EntityName: CONTACT_METHODS_ENTITY, ExtraFilter: methodFilter, Fields: ['ID'], ResultType: 'simple' },
                 {
                     EntityName: CONTACT_CONSENTS_ENTITY,
-                    ExtraFilter: `ConsentPurposeID='${EscapeSQLString(purposeID)}' AND ContactMethodID IN (SELECT ID FROM [${this.contactMethodsView()}] WHERE ${methodFilter})`,
+                    ExtraFilter: `${this.purposeFilter(purposeID)} AND ContactMethodID IN (SELECT ID FROM [${this.contactMethodsView()}] WHERE ${methodFilter})`,
                     Fields: ['ContactMethodID', 'ConsentPurposeID', 'OrganizationID', 'ConsentStatus'],
                     ResultType: 'simple',
                 },
@@ -258,8 +263,13 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
         const consentRows = consents.Results as ConsentStatusRow[];
         return methodRows.map((m) => {
             const mine = consentRows.filter((c) => UUIDsEqual(c.ContactMethodID, m.ID));
-            return PickConsentForOrganization(mine, organizationID)?.ConsentStatus ?? 'NotSpecified';
+            return ResolveConsentForScope(mine, { PurposeID: purposeID, OrganizationID: organizationID })?.ConsentStatus ?? 'NotSpecified';
         });
+    }
+
+    /** The rows that can answer for a purpose: that purpose's rows and the general (no purpose) rows. */
+    private purposeFilter(purposeID: string | null): string {
+        return purposeID ? `(ConsentPurposeID='${EscapeSQLString(purposeID)}' OR ConsentPurposeID IS NULL)` : 'ConsentPurposeID IS NULL';
     }
 
     /** The schema-qualified base view of contact methods, for the subquery in a consent filter. */
@@ -273,16 +283,17 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
 
     private async findOrCreateConsent(
         contactMethodID: string,
-        purposeID: string,
+        purposeID: string | null,
         organizationID: string | null,
         contextUser?: UserInfo,
     ): Promise<ContactConsentEntity> {
         const rv = new RunView(this.RunViewProviderToUse);
+        const purposeFilter = purposeID ? `ConsentPurposeID='${EscapeSQLString(purposeID)}'` : 'ConsentPurposeID IS NULL';
         const orgFilter = organizationID ? `OrganizationID='${EscapeSQLString(organizationID)}'` : 'OrganizationID IS NULL';
         const existing = await rv.RunView<ContactConsentEntity>(
             {
                 EntityName: CONTACT_CONSENTS_ENTITY,
-                ExtraFilter: `ContactMethodID='${EscapeSQLString(contactMethodID)}' AND ConsentPurposeID='${EscapeSQLString(purposeID)}' AND ${orgFilter}`,
+                ExtraFilter: `ContactMethodID='${EscapeSQLString(contactMethodID)}' AND ${purposeFilter} AND ${orgFilter}`,
                 ResultType: 'entity_object',
             },
             contextUser,

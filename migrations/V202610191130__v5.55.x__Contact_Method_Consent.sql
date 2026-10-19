@@ -4,8 +4,9 @@
 --              (plans/contact-consent.md)
 --              - ConsentPurpose: what a consent is for (Marketing, Transactional, ...), a lookup
 --                like ContactType so a customer adds purposes without DDL
---              - ContactConsent: one current status per contact method, purpose and (optional)
---                organization, so one email can say yes to one sender and no to another
+--              - ContactConsent: one current status per contact method, (optional) purpose and
+--                (optional) organization: a row with no purpose is the general answer for the
+--                address, so one email can say yes in general, no to one purpose, no to one sender
 --              - ContactConsentHistory: one row per change on a ContactConsent, with when it
 --                took effect and where it came from
 --              - ContactType.CommunicationBaseMessageTypeID: which MJ communication channel
@@ -109,7 +110,7 @@ BEGIN
     CREATE TABLE [${flyway:defaultSchema}].[ContactConsent] (
         ID UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
         ContactMethodID UNIQUEIDENTIFIER NOT NULL,
-        ConsentPurposeID UNIQUEIDENTIFIER NOT NULL,
+        ConsentPurposeID UNIQUEIDENTIFIER NULL,
         OrganizationID UNIQUEIDENTIFIER NULL,
         ConsentStatus NVARCHAR(20) NOT NULL DEFAULT N'NotSpecified',
         CONSTRAINT PK_ContactConsent PRIMARY KEY (ID),
@@ -130,7 +131,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.fn_listextendedproperty(N'MS_Description', N'SC
 BEGIN
     EXEC sp_addextendedproperty
         @name = N'MS_Description',
-        @value = N'The current consent for one contact method (an email or phone), for one purpose, from one organization or from the whole installation when OrganizationID is null. A contact method has many of these, the way a person has many contact methods. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents.',
+        @value = N'The current consent for one contact method (an email or phone): for one purpose or, when ConsentPurposeID is null, for anything; from one organization or, when OrganizationID is null, from the whole installation. A contact method has many of these, the way a person has many contact methods, and the most specific row answers: purpose and organization, then purpose, then organization, then the general row. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents.',
         @level0type = N'SCHEMA', @level0name = N'${flyway:defaultSchema}',
         @level1type = N'TABLE', @level1name = N'ContactConsent';
 END
@@ -321,7 +322,7 @@ GO
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '44a8c590-484b-4b65-9195-bd42796ecade',
+         '7e461bc4-be9a-417f-a5e0-2b884dadd3f8',
          'MJ_BizApps_Common: Consent Purposes',
          'Consent Purposes',
          'What a consent is for: Marketing, Transactional, Fundraising, and whatever else an installation needs. Consent is recorded per contact method and purpose, so one email can be opted in for transactional messages and opted out of marketing. Seeded by metadata; add rows rather than columns.',
@@ -347,33 +348,33 @@ GO
 /* SQL generated to add new entity MJ_BizApps_Common: Consent Purposes to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '44a8c590-484b-4b65-9195-bd42796ecade', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '7e461bc4-be9a-417f-a5e0-2b884dadd3f8', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Consent Purposes for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Consent Purposes for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Consent Purposes for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('44a8c590-484b-4b65-9195-bd42796ecade' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('7e461bc4-be9a-417f-a5e0-2b884dadd3f8' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to create new entity MJ_BizApps_Common: Contact Consents */
@@ -402,10 +403,10 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         'a8a816b3-3238-4931-ac07-fea3f13dca05',
+         'd3ab1411-7e47-4ee7-9b1e-8b42dba35904',
          'MJ_BizApps_Common: Contact Consents',
          'Contact Consents',
-         'The current consent for one contact method (an email or phone), for one purpose, from one organization or from the whole installation when OrganizationID is null. A contact method has many of these, the way a person has many contact methods. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents.',
+         'The current consent for one contact method (an email or phone): for one purpose or, when ConsentPurposeID is null, for anything; from one organization or, when OrganizationID is null, from the whole installation. A contact method has many of these, the way a person has many contact methods, and the most specific row answers: purpose and organization, then purpose, then organization, then the general row. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents.',
          NULL,
          'ContactConsent',
          'vwContactConsents',
@@ -428,33 +429,33 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Contact Consents to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'a8a816b3-3238-4931-ac07-fea3f13dca05', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', 'd3ab1411-7e47-4ee7-9b1e-8b42dba35904', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consents for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consents for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consents for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('a8a816b3-3238-4931-ac07-fea3f13dca05' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('d3ab1411-7e47-4ee7-9b1e-8b42dba35904' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to create new entity MJ_BizApps_Common: Contact Consent Histories */
@@ -483,7 +484,7 @@ INSERT INTO [${mjSchema}].[EntityPermission]
          , [__mj_UpdatedAt]
       )
       VALUES (
-         '953fd481-ed1d-4b8a-98f7-dd9a85111dba',
+         '22e5fe8e-8670-4e8e-980e-f66af472f43d',
          'MJ_BizApps_Common: Contact Consent Histories',
          'Contact Consent Histories',
          'One row per change on a ContactConsent: the status it set, when it took effect in the real world, and where it came from. ContactConsent.ConsentStatus mirrors the row with the latest ConsentStatusAt. A late-arriving change with an older date is kept here but does not change the current status. Deleting the consent deletes its history.',
@@ -509,33 +510,33 @@ INSERT INTO [${mjSchema}].[EntityPermission]
 /* SQL generated to add new entity MJ_BizApps_Common: Contact Consent Histories to application ID: 'B479EB79-1260-40AF-A5EA-F8AA0B71384F' */
 INSERT INTO [${mjSchema}].[ApplicationEntity]
                                        ([ApplicationID], [EntityID], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt]) VALUES
-                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '953fd481-ed1d-4b8a-98f7-dd9a85111dba', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
+                                       ('B479EB79-1260-40AF-A5EA-F8AA0B71384F', '22e5fe8e-8670-4e8e-980e-f66af472f43d', (SELECT COALESCE(MAX([Sequence]),0)+1 FROM [${mjSchema}].[ApplicationEntity] WHERE [ApplicationID] = 'B479EB79-1260-40AF-A5EA-F8AA0B71384F'), GETUTCDATE(), GETUTCDATE());
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consent Histories for role UI */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier), CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 0, 0, 0, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier) AND [RoleID] = CAST('E0AFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consent Histories for role Developer */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier), CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier) AND [RoleID] = CAST('DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL generated to add new permission for entity MJ_BizApps_Common: Contact Consent Histories for role Integration */
 INSERT INTO [${mjSchema}].[EntityPermission]
                 ([EntityID], [RoleID], [Type], [CanRead], [CanCreate], [CanUpdate], [CanDelete], [__mj_CreatedAt], [__mj_UpdatedAt])
-              SELECT CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
+              SELECT CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier), CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier), 'Allow', 1, 1, 1, 1, GETUTCDATE(), GETUTCDATE()
               WHERE NOT EXISTS (
                 SELECT 1 FROM [${mjSchema}].[EntityPermission]
-                WHERE [EntityID] = CAST('953fd481-ed1d-4b8a-98f7-dd9a85111dba' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
+                WHERE [EntityID] = CAST('22e5fe8e-8670-4e8e-980e-f66af472f43d' AS uniqueidentifier) AND [RoleID] = CAST('DFAFCCEC-6A37-EF11-86D4-000D3A4E707E' AS uniqueidentifier) AND [Type] = 'Allow'
               );
 
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ConsentPurpose */
@@ -570,38 +571,6 @@ GO
 ALTER TABLE [${flyway:defaultSchema}].[ConsentPurpose] ADD CONSTRAINT [DF___mj_BizAppsCommon_ConsentPurpose___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
 GO
 
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-UPDATE [${flyway:defaultSchema}].[ContactConsentHistory] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD CONSTRAINT [DF___mj_BizAppsCommon_ContactConsentHistory___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-UPDATE [${flyway:defaultSchema}].[ContactConsentHistory] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
-GO
-
-/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
-ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD CONSTRAINT [DF___mj_BizAppsCommon_ContactConsentHistory___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
-GO
-
 /* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsent */
 ALTER TABLE [${flyway:defaultSchema}].[ContactConsent] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
 GO
@@ -634,9 +603,41 @@ GO
 ALTER TABLE [${flyway:defaultSchema}].[ContactConsent] ADD CONSTRAINT [DF___mj_BizAppsCommon_ContactConsent___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
 GO
 
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD [__mj_CreatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+UPDATE [${flyway:defaultSchema}].[ContactConsentHistory] SET [__mj_CreatedAt] = GETUTCDATE() WHERE [__mj_CreatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ALTER COLUMN [__mj_CreatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_CreatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD CONSTRAINT [DF___mj_BizAppsCommon_ContactConsentHistory___mj_CreatedAt] DEFAULT GETUTCDATE() FOR [__mj_CreatedAt];
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD [__mj_UpdatedAt] DATETIMEOFFSET NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+UPDATE [${flyway:defaultSchema}].[ContactConsentHistory] SET [__mj_UpdatedAt] = GETUTCDATE() WHERE [__mj_UpdatedAt] IS NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ALTER COLUMN [__mj_UpdatedAt] DATETIMEOFFSET NOT NULL;
+GO
+
+/* SQL text to add special date field __mj_UpdatedAt to entity ${flyway:defaultSchema}.ContactConsentHistory */
+ALTER TABLE [${flyway:defaultSchema}].[ContactConsentHistory] ADD CONSTRAINT [DF___mj_BizAppsCommon_ContactConsentHistory___mj_UpdatedAt] DEFAULT GETUTCDATE() FOR [__mj_UpdatedAt];
+GO
+
 /* SQL text to insert 24 new entity field(s) */
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'd0e260b2-4bd4-4ad7-9ca9-caa3d25ecb78' OR (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'CommunicationBaseMessageTypeID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '180b944d-0b26-46d1-b6e4-30871b956d3c' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -669,7 +670,448 @@ GO
          )
          VALUES
          (
-            'd0e260b2-4bd4-4ad7-9ca9-caa3d25ecb78',
+            '180b944d-0b26-46d1-b6e4-30871b956d3c',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5655d4f1-6c44-4ce6-bb17-cff4a214b849' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = 'Name')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5655d4f1-6c44-4ce6-bb17-cff4a214b849',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            'Name',
+            'Name',
+            'Display name of the purpose, unique within the installation.',
+            'nvarchar',
+            200,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '65cc4d51-6aaa-47fd-87db-1aae84af54e0' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = 'Description')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '65cc4d51-6aaa-47fd-87db-1aae84af54e0',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            'Description',
+            'Description',
+            'What kinds of messages this purpose covers.',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1fad7ce1-f02c-4c7f-9512-40c36607d5eb' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = 'DisplayRank')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '1fad7ce1-f02c-4c7f-9512-40c36607d5eb',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            'DisplayRank',
+            'Display Rank',
+            'Sort order in dropdown lists. Lower values appear first.',
+            'int',
+            4,
+            10,
+            0,
+            0,
+            '(100)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '857b4e9a-1d18-4c89-a764-6b6d8f367f3d' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = 'IsActive')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '857b4e9a-1d18-4c89-a764-6b6d8f367f3d',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            'IsActive',
+            'Is Active',
+            'Whether this purpose is offered for new consents. Inactive purposes are hidden from dropdowns but preserved for existing records.',
+            'bit',
+            1,
+            1,
+            0,
+            0,
+            '(1)',
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '49636b28-99bc-4500-b10e-14490a0c7433' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = '__mj_CreatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '49636b28-99bc-4500-b10e-14490a0c7433',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8c12b39d-239b-48ba-9ba6-ef165dea7a21' OR (EntityID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND Name = '__mj_UpdatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '8c12b39d-239b-48ba-9ba6-ef165dea7a21',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', -- Entity: MJ_BizApps_Common: Consent Purposes
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'),
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '220d9d13-864a-461e-aa06-fd0ffa3d417f' OR (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'CommunicationBaseMessageTypeID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '220d9d13-864a-461e-aa06-fd0ffa3d417f',
             '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ_BizApps_Common: Contact Types
             (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5'),
             'CommunicationBaseMessageTypeID',
@@ -699,7 +1141,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '78fe7e83-2a35-4b09-bed4-d916e17ec806' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = 'ID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '564490be-a253-4d86-be14-7035792ea683' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -732,9 +1174,9 @@ GO
          )
          VALUES
          (
-            '78fe7e83-2a35-4b09-bed4-d916e17ec806',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
+            '564490be-a253-4d86-be14-7035792ea683',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ID',
             'ID',
             NULL,
@@ -762,7 +1204,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '87ccd965-c421-4c63-909e-0ae1eec7d233' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = 'Name')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8fed315d-f210-4f2c-b05e-8a0e2b907fef' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ContactMethodID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -795,1017 +1237,9 @@ GO
          )
          VALUES
          (
-            '87ccd965-c421-4c63-909e-0ae1eec7d233',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            'Name',
-            'Name',
-            'Display name of the purpose, unique within the installation.',
-            'nvarchar',
-            200,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'efdc585b-079f-4b65-b407-4a3180102cce' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = 'Description')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'efdc585b-079f-4b65-b407-4a3180102cce',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            'Description',
-            'Description',
-            'What kinds of messages this purpose covers.',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '341fb737-4608-4032-a6af-15d8156a4679' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = 'DisplayRank')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '341fb737-4608-4032-a6af-15d8156a4679',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            'DisplayRank',
-            'Display Rank',
-            'Sort order in dropdown lists. Lower values appear first.',
-            'int',
-            4,
-            10,
-            0,
-            0,
-            '(100)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '07d66e12-ef82-4545-9850-08a7be6ee525' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = 'IsActive')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '07d66e12-ef82-4545-9850-08a7be6ee525',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            'IsActive',
-            'Is Active',
-            'Whether this purpose is offered for new consents. Inactive purposes are hidden from dropdowns but preserved for existing records.',
-            'bit',
-            1,
-            1,
-            0,
-            0,
-            '(1)',
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '07f763ab-0ac9-4589-9f6d-bd9297e464f6' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '07f763ab-0ac9-4589-9f6d-bd9297e464f6',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1e2b0ef3-aab3-4725-8053-f4ccedb75292' OR (EntityID = '44A8C590-484B-4B65-9195-BD42796ECADE' AND Name = '__mj_UpdatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '1e2b0ef3-aab3-4725-8053-f4ccedb75292',
-            '44A8C590-484B-4B65-9195-BD42796ECADE', -- Entity: MJ_BizApps_Common: Consent Purposes
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE'),
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '42be174f-001b-46c3-87da-d8de4da3eaf4' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'ID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '42be174f-001b-46c3-87da-d8de4da3eaf4',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8ebc64f7-2569-406a-9d63-df18a3f62e3c' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'ContactConsentID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '8ebc64f7-2569-406a-9d63-df18a3f62e3c',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'ContactConsentID',
-            'Contact Consent ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2d309d21-4596-4b19-ad7e-07b329dd68aa' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'NewConsentStatus')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '2d309d21-4596-4b19-ad7e-07b329dd68aa',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'NewConsentStatus',
-            'New Consent Status',
-            'The consent status this change set: NotSpecified, OptedIn or OptedOut.',
-            'nvarchar',
-            40,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5faf0e60-3440-4929-b1d2-266957df9d53' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'ConsentStatusAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '5faf0e60-3440-4929-b1d2-266957df9d53',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'ConsentStatusAt',
-            'Consent Status At',
-            'When the change took effect in the real world (the unsubscribe click, the form submission, the import''s own date), not when this row was saved. The row with the latest value is the current status.',
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0134e27e-6605-4626-a3c4-2dcea2435ae6' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'ConsentSource')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '0134e27e-6605-4626-a3c4-2dcea2435ae6',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'ConsentSource',
-            'Consent Source',
-            'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".',
-            'nvarchar',
-            400,
-            0,
-            0,
-            0,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'a606f530-79bf-47cd-9a0c-df9360651443' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'RecordedByUserID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'a606f530-79bf-47cd-9a0c-df9360651443',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'RecordedByUserID',
-            'Recorded By User ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            'E1238F34-2837-EF11-86D4-6045BDEE16E6',
-            'ID',
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '833a5fc5-5ede-4216-866d-487f523b3fb3' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'Notes')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '833a5fc5-5ede-4216-866d-487f523b3fb3',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'Notes',
-            'Notes',
-            'Evidence for the change, such as a form ID or the unsubscribe email''s message ID.',
-            'nvarchar',
-            -1,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            1,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0a2ca89d-72af-4f94-9fe0-f54725c3a4a6' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = '__mj_CreatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '0a2ca89d-72af-4f94-9fe0-f54725c3a4a6',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            '__mj_CreatedAt',
-            'Created At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'cd1bc85e-4626-45f5-9ede-77607617228a' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = '__mj_UpdatedAt')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'cd1bc85e-4626-45f5-9ede-77607617228a',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            '__mj_UpdatedAt',
-            'Updated At',
-            NULL,
-            'datetimeoffset',
-            10,
-            34,
-            7,
-            0,
-            'getutcdate()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b465e01f-6f97-44fb-aa87-a2b28e6659fe' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'b465e01f-6f97-44fb-aa87-a2b28e6659fe',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
-            'ID',
-            'ID',
-            NULL,
-            'uniqueidentifier',
-            16,
-            0,
-            0,
-            0,
-            'newsequentialid()',
-            0,
-            0,
-            0,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'cf794624-48c3-4c76-a932-a5f3978b94b5' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ContactMethodID')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            'cf794624-48c3-4c76-a932-a5f3978b94b5',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '8fed315d-f210-4f2c-b05e-8a0e2b907fef',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ContactMethodID',
             'Contact Method ID',
             NULL,
@@ -1833,7 +1267,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5796b5e9-d321-40ec-a89f-b6a7d850cca3' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ConsentPurposeID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '0eb73d4b-a2eb-4216-afc0-38f13c869183' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ConsentPurposeID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1866,9 +1300,9 @@ GO
          )
          VALUES
          (
-            '5796b5e9-d321-40ec-a89f-b6a7d850cca3',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '0eb73d4b-a2eb-4216-afc0-38f13c869183',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ConsentPurposeID',
             'Consent Purpose ID',
             NULL,
@@ -1876,13 +1310,13 @@ GO
             16,
             0,
             0,
-            0,
+            1,
             NULL,
             0,
             1,
             0,
             0,
-            '44A8C590-484B-4B65-9195-BD42796ECADE',
+            '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8',
             'ID',
             0,
             0,
@@ -1896,7 +1330,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '56ec38ca-9d32-4bb8-a8b6-daa10f9d8b34' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'OrganizationID')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '25b684ba-9321-43eb-a677-4998ea657b7a' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'OrganizationID')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1929,9 +1363,9 @@ GO
          )
          VALUES
          (
-            '56ec38ca-9d32-4bb8-a8b6-daa10f9d8b34',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '25b684ba-9321-43eb-a677-4998ea657b7a',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'OrganizationID',
             'Organization ID',
             NULL,
@@ -1959,7 +1393,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '7d7d7b01-0fe3-4653-876b-8d578d139a3a' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ConsentStatus')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '59f57802-3b68-4185-b84c-28bd69461b1f' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ConsentStatus')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -1992,9 +1426,9 @@ GO
          )
          VALUES
          (
-            '7d7d7b01-0fe3-4653-876b-8d578d139a3a',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '59f57802-3b68-4185-b84c-28bd69461b1f',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ConsentStatus',
             'Consent Status',
             'The current consent: NotSpecified, OptedIn or OptedOut.',
@@ -2022,7 +1456,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3bf3b850-0161-4e7e-b820-43d3a3669ff4' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = '__mj_CreatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1f2a80dd-3858-47a3-af29-efe02ab3f4f1' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = '__mj_CreatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2055,9 +1489,9 @@ GO
          )
          VALUES
          (
-            '3bf3b850-0161-4e7e-b820-43d3a3669ff4',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '1f2a80dd-3858-47a3-af29-efe02ab3f4f1',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             '__mj_CreatedAt',
             'Created At',
             NULL,
@@ -2085,7 +1519,7 @@ GO
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f0e48c87-da1c-48a9-a449-a89b5f87c7e2' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = '__mj_UpdatedAt')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c098eb09-bc0d-4c82-9028-dc5abe2ddb58' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = '__mj_UpdatedAt')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -2118,9 +1552,9 @@ GO
          )
          VALUES
          (
-            'f0e48c87-da1c-48a9-a449-a89b5f87c7e2',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            'c098eb09-bc0d-4c82-9028-dc5abe2ddb58',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             '__mj_UpdatedAt',
             'Updated At',
             NULL,
@@ -2148,47 +1582,614 @@ GO
          )
       END;
 
-/* SQL text to insert entity field value with ID 3505e6d4-2585-45b4-a809-f5b86b9a6f34 */
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5a67f7ac-440c-4230-9589-65249925b616' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'ID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5a67f7ac-440c-4230-9589-65249925b616',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'ID',
+            'ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            'newsequentialid()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '4666c636-ee4a-4636-b1da-25f2f4d8bc7e' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'ContactConsentID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '4666c636-ee4a-4636-b1da-25f2f4d8bc7e',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'ContactConsentID',
+            'Contact Consent ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'c0c7b5d8-256f-4451-ba87-972a77cfdedd' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'NewConsentStatus')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'c0c7b5d8-256f-4451-ba87-972a77cfdedd',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'NewConsentStatus',
+            'New Consent Status',
+            'The consent status this change set: NotSpecified, OptedIn or OptedOut.',
+            'nvarchar',
+            40,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'f7ce05d0-efef-40fa-92f8-2a22f4cf7b5d' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'ConsentStatusAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'f7ce05d0-efef-40fa-92f8-2a22f4cf7b5d',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'ConsentStatusAt',
+            'Consent Status At',
+            'When the change took effect in the real world (the unsubscribe click, the form submission, the import''s own date), not when this row was saved. The row with the latest value is the current status.',
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '5c88f0df-59b1-4b2a-9d32-e12cf14332e4' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'ConsentSource')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '5c88f0df-59b1-4b2a-9d32-e12cf14332e4',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'ConsentSource',
+            'Consent Source',
+            'Where the change came from, for example "Web signup", "Unsubscribe link", "Import: CRM" or "Staff".',
+            'nvarchar',
+            400,
+            0,
+            0,
+            0,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'fd15ff4f-1e6d-4b53-9dae-e484af981a4e' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'RecordedByUserID')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'fd15ff4f-1e6d-4b53-9dae-e484af981a4e',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'RecordedByUserID',
+            'Recorded By User ID',
+            NULL,
+            'uniqueidentifier',
+            16,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            'E1238F34-2837-EF11-86D4-6045BDEE16E6',
+            'ID',
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '862c0f47-7d92-4115-956f-ef6893dc61ed' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'Notes')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '862c0f47-7d92-4115-956f-ef6893dc61ed',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'Notes',
+            'Notes',
+            'Evidence for the change, such as a form ID or the unsubscribe email''s message ID.',
+            'nvarchar',
+            -1,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            1,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '62f75b57-7d9d-4d22-ab13-316a2d1b6d2f' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = '__mj_CreatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            '62f75b57-7d9d-4d22-ab13-316a2d1b6d2f',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            '__mj_CreatedAt',
+            'Created At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'b15616be-b917-47e7-b7da-d8014284d78b' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = '__mj_UpdatedAt')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'b15616be-b917-47e7-b7da-d8014284d78b',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            '__mj_UpdatedAt',
+            'Updated At',
+            NULL,
+            'datetimeoffset',
+            10,
+            34,
+            7,
+            0,
+            'getutcdate()',
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+/* SQL text to insert entity field value with ID d8b54919-6380-4658-a53d-0248db4faa46 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('3505e6d4-2585-45b4-a809-f5b86b9a6f34', '7D7D7B01-0FE3-4653-876B-8D578D139A3A', 1, 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
+                                       ('d8b54919-6380-4658-a53d-0248db4faa46', '59F57802-3B68-4185-B84C-28BD69461B1F', 1, 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 629cc743-c462-4a8c-b4cf-27b60920e3e2 */
+/* SQL text to insert entity field value with ID 0a705645-d637-4093-baf1-27fd5c62686b */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('629cc743-c462-4a8c-b4cf-27b60920e3e2', '7D7D7B01-0FE3-4653-876B-8D578D139A3A', 2, 'OptedIn', 'OptedIn', GETUTCDATE(), GETUTCDATE());
+                                       ('0a705645-d637-4093-baf1-27fd5c62686b', '59F57802-3B68-4185-B84C-28BD69461B1F', 2, 'OptedIn', 'OptedIn', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 1f3f2136-29fb-4455-89f6-2f04ec2a67aa */
+/* SQL text to insert entity field value with ID b66a3935-e4ef-4ec0-aa14-dd4336cfe0fb */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('1f3f2136-29fb-4455-89f6-2f04ec2a67aa', '7D7D7B01-0FE3-4653-876B-8D578D139A3A', 3, 'OptedOut', 'OptedOut', GETUTCDATE(), GETUTCDATE());
+                                       ('b66a3935-e4ef-4ec0-aa14-dd4336cfe0fb', '59F57802-3B68-4185-B84C-28BD69461B1F', 3, 'OptedOut', 'OptedOut', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 7D7D7B01-0FE3-4653-876B-8D578D139A3A */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='7D7D7B01-0FE3-4653-876B-8D578D139A3A';
+/* SQL text to update ValueListType for entity field ID 59F57802-3B68-4185-B84C-28BD69461B1F */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='59F57802-3B68-4185-B84C-28BD69461B1F';
 
-/* SQL text to insert entity field value with ID 9105363a-6458-481c-a8b6-59f55c4321ad */
+/* SQL text to insert entity field value with ID fe6399e4-7501-4250-a2b7-0bcede85fbde */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('9105363a-6458-481c-a8b6-59f55c4321ad', '2D309D21-4596-4B19-AD7E-07B329DD68AA', 1, 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
+                                       ('fe6399e4-7501-4250-a2b7-0bcede85fbde', 'C0C7B5D8-256F-4451-BA87-972A77CFDEDD', 1, 'NotSpecified', 'NotSpecified', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 8e950a0b-0283-49a2-b677-f10a7179da37 */
+/* SQL text to insert entity field value with ID b4bf8bcc-741f-4c86-857d-dd5bf5795f9c */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('8e950a0b-0283-49a2-b677-f10a7179da37', '2D309D21-4596-4B19-AD7E-07B329DD68AA', 2, 'OptedIn', 'OptedIn', GETUTCDATE(), GETUTCDATE());
+                                       ('b4bf8bcc-741f-4c86-857d-dd5bf5795f9c', 'C0C7B5D8-256F-4451-BA87-972A77CFDEDD', 2, 'OptedIn', 'OptedIn', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to insert entity field value with ID 8b7ba97c-ab13-4950-b196-eea146a481b8 */
+/* SQL text to insert entity field value with ID 8acee8ea-6306-42ea-8957-0abc442d05e8 */
 INSERT INTO [${mjSchema}].[EntityFieldValue]
                                        ([ID], [EntityFieldID], [Sequence], [Value], [Code], [__mj_CreatedAt], [__mj_UpdatedAt])
                                     VALUES
-                                       ('8b7ba97c-ab13-4950-b196-eea146a481b8', '2D309D21-4596-4B19-AD7E-07B329DD68AA', 3, 'OptedOut', 'OptedOut', GETUTCDATE(), GETUTCDATE());
+                                       ('8acee8ea-6306-42ea-8957-0abc442d05e8', 'C0C7B5D8-256F-4451-BA87-972A77CFDEDD', 3, 'OptedOut', 'OptedOut', GETUTCDATE(), GETUTCDATE());
 
-/* SQL text to update ValueListType for entity field ID 2D309D21-4596-4B19-AD7E-07B329DD68AA */
-UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='2D309D21-4596-4B19-AD7E-07B329DD68AA';
+/* SQL text to update ValueListType for entity field ID C0C7B5D8-256F-4451-BA87-972A77CFDEDD */
+UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='C0C7B5D8-256F-4451-BA87-972A77CFDEDD';
 
 /* Deterministic search-flag hygiene — clear AllowUserSearchAPI */
 
@@ -2212,61 +2213,61 @@ UPDATE [${mjSchema}].[EntityField] SET ValueListType='List' WHERE ID='2D309D21-4
 
 /* Create Entity Relationship: MJ_BizApps_Common: Contact Methods -> MJ_BizApps_Common: Contact Consents (One To Many via ContactMethodID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'c59bb1d1-23d6-474f-9292-4abf80f589d3'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '4757d4e8-7780-4c2d-aed3-3e10012f4cc1'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('c59bb1d1-23d6-474f-9292-4abf80f589d3', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', 'ContactMethodID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ: Users -> MJ_BizApps_Common: Contact Consent Histories (One To Many via RecordedByUserID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'bff086bb-629e-44fa-aec8-7be778f029a2'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('bff086bb-629e-44fa-aec8-7be778f029a2', 'E1238F34-2837-EF11-86D4-6045BDEE16E6', '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', 'RecordedByUserID', 'One To Many', 1, 1, 124, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ: Communication Base Message Types -> MJ_BizApps_Common: Contact Types (One To Many via CommunicationBaseMessageTypeID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'fe49d5b0-a0f1-4b73-88b9-6e0b08a5c439'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('fe49d5b0-a0f1-4b73-88b9-6e0b08a5c439', '47248F34-2837-EF11-86D4-6045BDEE16E6', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'CommunicationBaseMessageTypeID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
-   END;
-
-
-/* Create Entity Relationship: MJ_BizApps_Common: Organizations -> MJ_BizApps_Common: Contact Consents (One To Many via OrganizationID) */
-   IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '33823239-75c7-4c4c-b112-1ae1830624ff'
-   )
-   BEGIN
-      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('33823239-75c7-4c4c-b112-1ae1830624ff', 'C70448F9-9792-41D7-A82C-784B66429D54', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', 'OrganizationID', 'One To Many', 1, 1, 5, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('4757d4e8-7780-4c2d-aed3-3e10012f4cc1', '32C45078-D33B-4760-9BE5-0DF7F483F591', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', 'ContactMethodID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
    END;
 
 
 /* Create Entity Relationship: MJ_BizApps_Common: Consent Purposes -> MJ_BizApps_Common: Contact Consents (One To Many via ConsentPurposeID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'b11c0f53-737e-4976-a649-c1372971598d'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '8fd91063-ce00-428b-9043-a9417cedae18'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('b11c0f53-737e-4976-a649-c1372971598d', '44A8C590-484B-4B65-9195-BD42796ECADE', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', 'ConsentPurposeID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('8fd91063-ce00-428b-9043-a9417cedae18', '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', 'ConsentPurposeID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ: Users -> MJ_BizApps_Common: Contact Consent Histories (One To Many via RecordedByUserID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'fa5ebead-8a7f-4b96-80fb-214b3cb23f7a'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('fa5ebead-8a7f-4b96-80fb-214b3cb23f7a', 'E1238F34-2837-EF11-86D4-6045BDEE16E6', '22E5FE8E-8670-4E8E-980E-F66AF472F43D', 'RecordedByUserID', 'One To Many', 1, 1, 124, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ: Communication Base Message Types -> MJ_BizApps_Common: Contact Types (One To Many via CommunicationBaseMessageTypeID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '2ff7e909-aa83-4e4d-960e-d4866ff7b221'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('2ff7e909-aa83-4e4d-960e-d4866ff7b221', '47248F34-2837-EF11-86D4-6045BDEE16E6', '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', 'CommunicationBaseMessageTypeID', 'One To Many', 1, 1, 3, GETUTCDATE(), GETUTCDATE())
+   END;
+
+
+/* Create Entity Relationship: MJ_BizApps_Common: Organizations -> MJ_BizApps_Common: Contact Consents (One To Many via OrganizationID) */
+   IF NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'aa308995-ab42-4057-8754-c97af6f25afe'
+   )
+   BEGIN
+      INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
+                    VALUES ('aa308995-ab42-4057-8754-c97af6f25afe', 'C70448F9-9792-41D7-A82C-784B66429D54', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', 'OrganizationID', 'One To Many', 1, 1, 5, GETUTCDATE(), GETUTCDATE())
    END;
 
 
 /* Create Entity Relationship: MJ_BizApps_Common: Contact Consents -> MJ_BizApps_Common: Contact Consent Histories (One To Many via ContactConsentID) */
    IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = 'd3941063-0c7a-4f33-aacf-b40deee9e60e'
+      SELECT 1 FROM [${mjSchema}].[EntityRelationship] WHERE [ID] = '6c846e44-acc5-4a58-9171-08fb028207ea'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntityRelationship] ([ID], [EntityID], [RelatedEntityID], [RelatedEntityJoinField], [Type], [BundleInAPI], [DisplayInForm], [Sequence], [__mj_CreatedAt], [__mj_UpdatedAt])
-                    VALUES ('d3941063-0c7a-4f33-aacf-b40deee9e60e', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', 'ContactConsentID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
+                    VALUES ('6c846e44-acc5-4a58-9171-08fb028207ea', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', '22E5FE8E-8670-4E8E-980E-F66AF472F43D', 'ContactConsentID', 'One To Many', 1, 1, 1, GETUTCDATE(), GETUTCDATE())
    END;
 
 /* spCreate SQL for MJ_BizApps_Common: Activity Sync Runs */
@@ -2819,8 +2820,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ContactConsentHistory_RecordedByUserID ON [${flyway:defaultSchema}].[ContactConsentHistory] ([RecordedByUserID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID A606F530-79BF-47CD-9A0C-DF9360651443 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='A606F530-79BF-47CD-9A0C-DF9360651443', @RelatedEntityNameFieldMap='RecordedByUser';
+/* SQL text to update entity field related entity name field map for entity field ID FD15FF4F-1E6D-4B53-9DAE-E484AF981A4E */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='FD15FF4F-1E6D-4B53-9DAE-E484AF981A4E', @RelatedEntityNameFieldMap='RecordedByUser';
 
 /* Index for Foreign Keys for ContactConsent */
 -----------------------------------------------------------------
@@ -2858,8 +2859,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ContactConsent_OrganizationID ON [${flyway:defaultSchema}].[ContactConsent] ([OrganizationID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID CF794624-48C3-4C76-A932-A5F3978B94B5 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='CF794624-48C3-4C76-A932-A5F3978B94B5', @RelatedEntityNameFieldMap='ContactMethod';
+/* SQL text to update entity field related entity name field map for entity field ID 8FED315D-F210-4F2C-B05E-8A0E2B907FEF */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='8FED315D-F210-4F2C-B05E-8A0E2B907FEF', @RelatedEntityNameFieldMap='ContactMethod';
 
 /* Index for Foreign Keys for ContactType */
 -----------------------------------------------------------------
@@ -2879,8 +2880,8 @@ IF NOT EXISTS (
 )
 CREATE INDEX IDX_AUTO_MJ_FKEY_ContactType_CommunicationBaseMessageTypeID ON [${flyway:defaultSchema}].[ContactType] ([CommunicationBaseMessageTypeID]);
 
-/* SQL text to update entity field related entity name field map for entity field ID D0E260B2-4BD4-4AD7-9CA9-CAA3D25ECB78 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='D0E260B2-4BD4-4AD7-9CA9-CAA3D25ECB78', @RelatedEntityNameFieldMap='CommunicationBaseMessageType';
+/* SQL text to update entity field related entity name field map for entity field ID 220D9D13-864A-461E-AA06-FD0FFA3D417F */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='220D9D13-864A-461E-AA06-FD0FFA3D417F', @RelatedEntityNameFieldMap='CommunicationBaseMessageType';
 
 /* Base View SQL for MJ_BizApps_Common: Consent Purposes */
 -----------------------------------------------------------------
@@ -3127,276 +3128,6 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteConsentPurpose] TO [cdp_Deve
 /* spDelete Permissions for MJ_BizApps_Common: Consent Purposes */
 
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteConsentPurpose] TO [cdp_Developer], [cdp_Integration];
-
-/* SQL text to update entity field related entity name field map for entity field ID 5796B5E9-D321-40EC-A89F-B6A7D850CCA3 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='5796B5E9-D321-40EC-A89F-B6A7D850CCA3', @RelatedEntityNameFieldMap='ConsentPurpose';
-
-/* Base View SQL for MJ_BizApps_Common: Contact Consent Histories */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Contact Consent Histories
--- Item: vwContactConsentHistories
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Contact Consent Histories
------               SCHEMA:      ${flyway:defaultSchema}
------               BASE TABLE:  ContactConsentHistory
------               PRIMARY KEY: ID
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[vwContactConsentHistories]', 'V') IS NOT NULL
-    DROP VIEW [${flyway:defaultSchema}].[vwContactConsentHistories];
-GO
-
-CREATE VIEW [${flyway:defaultSchema}].[vwContactConsentHistories]
-AS
-SELECT
-    c.*,
-    MJUser_RecordedByUserID.[Name] AS [RecordedByUser]
-FROM
-    [${flyway:defaultSchema}].[ContactConsentHistory] AS c
-LEFT OUTER JOIN
-    [${mjSchema}].[User] AS MJUser_RecordedByUserID
-  ON
-    [c].[RecordedByUserID] = MJUser_RecordedByUserID.[ID]
-GO
-GRANT SELECT ON [${flyway:defaultSchema}].[vwContactConsentHistories] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* Base View Permissions SQL for MJ_BizApps_Common: Contact Consent Histories */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Contact Consent Histories
--- Item: Permissions for vwContactConsentHistories
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-GRANT SELECT ON [${flyway:defaultSchema}].[vwContactConsentHistories] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
-
-/* spCreate SQL for MJ_BizApps_Common: Contact Consent Histories */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Contact Consent Histories
--- Item: spCreateContactConsentHistory
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ CREATE PROCEDURE FOR ContactConsentHistory
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateContactConsentHistory]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateContactConsentHistory];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateContactConsentHistory]
-    @ID uniqueidentifier = NULL,
-    @ContactConsentID uniqueidentifier,
-    @NewConsentStatus nvarchar(20),
-    @ConsentStatusAt datetimeoffset,
-    @ConsentSource nvarchar(200),
-    @RecordedByUserID_Clear bit = 0,
-    @RecordedByUserID uniqueidentifier = NULL,
-    @Notes_Clear bit = 0,
-    @Notes nvarchar(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
-
-    IF @ID IS NOT NULL
-    BEGIN
-        -- User provided a value, use it
-        INSERT INTO [${flyway:defaultSchema}].[ContactConsentHistory]
-            (
-                [ID],
-                [ContactConsentID],
-                [NewConsentStatus],
-                [ConsentStatusAt],
-                [ConsentSource],
-                [RecordedByUserID],
-                [Notes]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ID,
-                @ContactConsentID,
-                @NewConsentStatus,
-                @ConsentStatusAt,
-                @ConsentSource,
-                CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, NULL) END,
-                CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, NULL) END
-            )
-    END
-    ELSE
-    BEGIN
-        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
-        INSERT INTO [${flyway:defaultSchema}].[ContactConsentHistory]
-            (
-                [ContactConsentID],
-                [NewConsentStatus],
-                [ConsentStatusAt],
-                [ConsentSource],
-                [RecordedByUserID],
-                [Notes]
-            )
-        OUTPUT INSERTED.[ID] INTO @InsertedRow
-        VALUES
-            (
-                @ContactConsentID,
-                @NewConsentStatus,
-                @ConsentStatusAt,
-                @ConsentSource,
-                CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, NULL) END,
-                CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, NULL) END
-            )
-    END
-    -- return the new record from the base view, which might have some calculated fields
-    SELECT * FROM [${flyway:defaultSchema}].[vwContactConsentHistories] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
-
-/* spCreate Permissions for MJ_BizApps_Common: Contact Consent Histories */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
-
-/* spUpdate SQL for MJ_BizApps_Common: Contact Consent Histories */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Contact Consent Histories
--- Item: spUpdateContactConsentHistory
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ UPDATE PROCEDURE FOR ContactConsentHistory
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateContactConsentHistory]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateContactConsentHistory];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateContactConsentHistory]
-    @ID uniqueidentifier,
-    @ContactConsentID uniqueidentifier = NULL,
-    @NewConsentStatus nvarchar(20) = NULL,
-    @ConsentStatusAt datetimeoffset = NULL,
-    @ConsentSource nvarchar(200) = NULL,
-    @RecordedByUserID_Clear bit = 0,
-    @RecordedByUserID uniqueidentifier = NULL,
-    @Notes_Clear bit = 0,
-    @Notes nvarchar(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ContactConsentHistory]
-    SET
-        [ContactConsentID] = ISNULL(@ContactConsentID, [ContactConsentID]),
-        [NewConsentStatus] = ISNULL(@NewConsentStatus, [NewConsentStatus]),
-        [ConsentStatusAt] = ISNULL(@ConsentStatusAt, [ConsentStatusAt]),
-        [ConsentSource] = ISNULL(@ConsentSource, [ConsentSource]),
-        [RecordedByUserID] = CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, [RecordedByUserID]) END,
-        [Notes] = CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, [Notes]) END
-    WHERE
-        [ID] = @ID
-
-    -- Check if the update was successful
-    IF @@ROWCOUNT = 0
-        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
-        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwContactConsentHistories] WHERE 1=0
-    ELSE
-        -- Return the updated record so the caller can see the updated values and any calculated fields
-        SELECT
-                                        *
-                                    FROM
-                                        [${flyway:defaultSchema}].[vwContactConsentHistories]
-                                    WHERE
-                                        [ID] = @ID
-                                    
-END
-GO
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateContactConsentHistory] TO [cdp_Developer], [cdp_Integration]
-GO
-
-------------------------------------------------------------
------ TRIGGER FOR __mj_UpdatedAt field for the ContactConsentHistory table
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateContactConsentHistory]', 'TR') IS NOT NULL
-    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateContactConsentHistory];
-GO
-CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateContactConsentHistory
-ON [${flyway:defaultSchema}].[ContactConsentHistory]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE
-        [${flyway:defaultSchema}].[ContactConsentHistory]
-    SET
-        __mj_UpdatedAt = GETUTCDATE()
-    FROM
-        [${flyway:defaultSchema}].[ContactConsentHistory] AS _organicTable
-    INNER JOIN
-        INSERTED AS I ON
-        _organicTable.[ID] = I.[ID];
-END;
-GO
-
-/* spUpdate Permissions for MJ_BizApps_Common: Contact Consent Histories */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete SQL for MJ_BizApps_Common: Contact Consent Histories */
------------------------------------------------------------------
--- SQL Code Generation
--- Entity: MJ_BizApps_Common: Contact Consent Histories
--- Item: spDeleteContactConsentHistory
---
--- This was generated by the MemberJunction CodeGen tool.
--- This file should NOT be edited by hand.
------------------------------------------------------------------
-
-------------------------------------------------------------
------ DELETE PROCEDURE FOR ContactConsentHistory
-------------------------------------------------------------
-IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteContactConsentHistory]', 'P') IS NOT NULL
-    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteContactConsentHistory];
-GO
-
-CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteContactConsentHistory]
-    @ID uniqueidentifier
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM
-        [${flyway:defaultSchema}].[ContactConsentHistory]
-    WHERE
-        [ID] = @ID
-
-
-    -- Check if the delete was successful
-    IF @@ROWCOUNT = 0
-        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
-    ELSE
-        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
-END
-GO
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
-
-/* spDelete Permissions for MJ_BizApps_Common: Contact Consent Histories */
-
-GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
 
 /* Base View SQL for MJ_BizApps_Common: Contact Types */
 -----------------------------------------------------------------
@@ -3683,8 +3414,278 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactType] TO [cdp_Integra
 REVOKE EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactType] FROM [cdp_Integration]
 GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactType] TO [cdp_Integration];
 
-/* SQL text to update entity field related entity name field map for entity field ID 56EC38CA-9D32-4BB8-A8B6-DAA10F9D8B34 */
-EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='56EC38CA-9D32-4BB8-A8B6-DAA10F9D8B34', @RelatedEntityNameFieldMap='Organization';
+/* Base View SQL for MJ_BizApps_Common: Contact Consent Histories */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Consent Histories
+-- Item: vwContactConsentHistories
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- BASE VIEW FOR ENTITY:      MJ_BizApps_Common: Contact Consent Histories
+-----               SCHEMA:      ${flyway:defaultSchema}
+-----               BASE TABLE:  ContactConsentHistory
+-----               PRIMARY KEY: ID
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[vwContactConsentHistories]', 'V') IS NOT NULL
+    DROP VIEW [${flyway:defaultSchema}].[vwContactConsentHistories];
+GO
+
+CREATE VIEW [${flyway:defaultSchema}].[vwContactConsentHistories]
+AS
+SELECT
+    c.*,
+    MJUser_RecordedByUserID.[Name] AS [RecordedByUser]
+FROM
+    [${flyway:defaultSchema}].[ContactConsentHistory] AS c
+LEFT OUTER JOIN
+    [${mjSchema}].[User] AS MJUser_RecordedByUserID
+  ON
+    [c].[RecordedByUserID] = MJUser_RecordedByUserID.[ID]
+GO
+GRANT SELECT ON [${flyway:defaultSchema}].[vwContactConsentHistories] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* Base View Permissions SQL for MJ_BizApps_Common: Contact Consent Histories */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Consent Histories
+-- Item: Permissions for vwContactConsentHistories
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+GRANT SELECT ON [${flyway:defaultSchema}].[vwContactConsentHistories] TO [cdp_UI], [cdp_Developer], [cdp_Integration];
+
+/* spCreate SQL for MJ_BizApps_Common: Contact Consent Histories */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Consent Histories
+-- Item: spCreateContactConsentHistory
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- CREATE PROCEDURE FOR ContactConsentHistory
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spCreateContactConsentHistory]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spCreateContactConsentHistory];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateContactConsentHistory]
+    @ID uniqueidentifier = NULL,
+    @ContactConsentID uniqueidentifier,
+    @NewConsentStatus nvarchar(20),
+    @ConsentStatusAt datetimeoffset,
+    @ConsentSource nvarchar(200),
+    @RecordedByUserID_Clear bit = 0,
+    @RecordedByUserID uniqueidentifier = NULL,
+    @Notes_Clear bit = 0,
+    @Notes nvarchar(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @InsertedRow TABLE ([ID] UNIQUEIDENTIFIER)
+
+    IF @ID IS NOT NULL
+    BEGIN
+        -- User provided a value, use it
+        INSERT INTO [${flyway:defaultSchema}].[ContactConsentHistory]
+            (
+                [ID],
+                [ContactConsentID],
+                [NewConsentStatus],
+                [ConsentStatusAt],
+                [ConsentSource],
+                [RecordedByUserID],
+                [Notes]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ID,
+                @ContactConsentID,
+                @NewConsentStatus,
+                @ConsentStatusAt,
+                @ConsentSource,
+                CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, NULL) END,
+                CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, NULL) END
+            )
+    END
+    ELSE
+    BEGIN
+        -- No value provided, let database use its default (e.g., NEWSEQUENTIALID())
+        INSERT INTO [${flyway:defaultSchema}].[ContactConsentHistory]
+            (
+                [ContactConsentID],
+                [NewConsentStatus],
+                [ConsentStatusAt],
+                [ConsentSource],
+                [RecordedByUserID],
+                [Notes]
+            )
+        OUTPUT INSERTED.[ID] INTO @InsertedRow
+        VALUES
+            (
+                @ContactConsentID,
+                @NewConsentStatus,
+                @ConsentStatusAt,
+                @ConsentSource,
+                CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, NULL) END,
+                CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, NULL) END
+            )
+    END
+    -- return the new record from the base view, which might have some calculated fields
+    SELECT * FROM [${flyway:defaultSchema}].[vwContactConsentHistories] WHERE [ID] = (SELECT [ID] FROM @InsertedRow)
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
+
+/* spCreate Permissions for MJ_BizApps_Common: Contact Consent Histories */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spCreateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
+
+/* spUpdate SQL for MJ_BizApps_Common: Contact Consent Histories */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Consent Histories
+-- Item: spUpdateContactConsentHistory
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- UPDATE PROCEDURE FOR ContactConsentHistory
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spUpdateContactConsentHistory]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spUpdateContactConsentHistory];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateContactConsentHistory]
+    @ID uniqueidentifier,
+    @ContactConsentID uniqueidentifier = NULL,
+    @NewConsentStatus nvarchar(20) = NULL,
+    @ConsentStatusAt datetimeoffset = NULL,
+    @ConsentSource nvarchar(200) = NULL,
+    @RecordedByUserID_Clear bit = 0,
+    @RecordedByUserID uniqueidentifier = NULL,
+    @Notes_Clear bit = 0,
+    @Notes nvarchar(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ContactConsentHistory]
+    SET
+        [ContactConsentID] = ISNULL(@ContactConsentID, [ContactConsentID]),
+        [NewConsentStatus] = ISNULL(@NewConsentStatus, [NewConsentStatus]),
+        [ConsentStatusAt] = ISNULL(@ConsentStatusAt, [ConsentStatusAt]),
+        [ConsentSource] = ISNULL(@ConsentSource, [ConsentSource]),
+        [RecordedByUserID] = CASE WHEN @RecordedByUserID_Clear = 1 THEN NULL ELSE ISNULL(@RecordedByUserID, [RecordedByUserID]) END,
+        [Notes] = CASE WHEN @Notes_Clear = 1 THEN NULL ELSE ISNULL(@Notes, [Notes]) END
+    WHERE
+        [ID] = @ID
+
+    -- Check if the update was successful
+    IF @@ROWCOUNT = 0
+        -- Nothing was updated, return no rows, but column structure from base view intact, semantically correct this way.
+        SELECT TOP 0 * FROM [${flyway:defaultSchema}].[vwContactConsentHistories] WHERE 1=0
+    ELSE
+        -- Return the updated record so the caller can see the updated values and any calculated fields
+        SELECT
+                                        *
+                                    FROM
+                                        [${flyway:defaultSchema}].[vwContactConsentHistories]
+                                    WHERE
+                                        [ID] = @ID
+                                    
+END
+GO
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateContactConsentHistory] TO [cdp_Developer], [cdp_Integration]
+GO
+
+------------------------------------------------------------
+----- TRIGGER FOR __mj_UpdatedAt field for the ContactConsentHistory table
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[trgUpdateContactConsentHistory]', 'TR') IS NOT NULL
+    DROP TRIGGER [${flyway:defaultSchema}].[trgUpdateContactConsentHistory];
+GO
+CREATE TRIGGER [${flyway:defaultSchema}].trgUpdateContactConsentHistory
+ON [${flyway:defaultSchema}].[ContactConsentHistory]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE
+        [${flyway:defaultSchema}].[ContactConsentHistory]
+    SET
+        __mj_UpdatedAt = GETUTCDATE()
+    FROM
+        [${flyway:defaultSchema}].[ContactConsentHistory] AS _organicTable
+    INNER JOIN
+        INSERTED AS I ON
+        _organicTable.[ID] = I.[ID];
+END;
+GO
+
+/* spUpdate Permissions for MJ_BizApps_Common: Contact Consent Histories */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spUpdateContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete SQL for MJ_BizApps_Common: Contact Consent Histories */
+-----------------------------------------------------------------
+-- SQL Code Generation
+-- Entity: MJ_BizApps_Common: Contact Consent Histories
+-- Item: spDeleteContactConsentHistory
+--
+-- This was generated by the MemberJunction CodeGen tool.
+-- This file should NOT be edited by hand.
+-----------------------------------------------------------------
+
+------------------------------------------------------------
+----- DELETE PROCEDURE FOR ContactConsentHistory
+------------------------------------------------------------
+IF OBJECT_ID('[${flyway:defaultSchema}].[spDeleteContactConsentHistory]', 'P') IS NOT NULL
+    DROP PROCEDURE [${flyway:defaultSchema}].[spDeleteContactConsentHistory];
+GO
+
+CREATE PROCEDURE [${flyway:defaultSchema}].[spDeleteContactConsentHistory]
+    @ID uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM
+        [${flyway:defaultSchema}].[ContactConsentHistory]
+    WHERE
+        [ID] = @ID
+
+
+    -- Check if the delete was successful
+    IF @@ROWCOUNT = 0
+        SELECT NULL AS [ID] -- Return NULL for all primary key fields to indicate no record was deleted
+    ELSE
+        SELECT @ID AS [ID] -- Return the primary key values to indicate we successfully deleted the record
+END
+GO
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
+
+/* spDelete Permissions for MJ_BizApps_Common: Contact Consent Histories */
+
+GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsentHistory] TO [cdp_Developer], [cdp_Integration];
+
+/* SQL text to update entity field related entity name field map for entity field ID 0EB73D4B-A2EB-4216-AFC0-38F13C869183 */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='0EB73D4B-A2EB-4216-AFC0-38F13C869183', @RelatedEntityNameFieldMap='ConsentPurpose';
+
+/* SQL text to update entity field related entity name field map for entity field ID 25B684BA-9321-43EB-A677-4998EA657B7A */
+EXEC [${mjSchema}].[spUpdateEntityFieldRelatedEntityNameFieldMap] @EntityFieldID='25B684BA-9321-43EB-A677-4998EA657B7A', @RelatedEntityNameFieldMap='Organization';
 
 /* Base View SQL for MJ_BizApps_Common: Contact Consents */
 -----------------------------------------------------------------
@@ -3719,7 +3720,7 @@ INNER JOIN
     [${flyway:defaultSchema}].[ContactMethod] AS mjBizAppsCommonContactMethod_ContactMethodID
   ON
     [c].[ContactMethodID] = mjBizAppsCommonContactMethod_ContactMethodID.[ID]
-INNER JOIN
+LEFT OUTER JOIN
     [${flyway:defaultSchema}].[ConsentPurpose] AS mjBizAppsCommonConsentPurpose_ConsentPurposeID
   ON
     [c].[ConsentPurposeID] = mjBizAppsCommonConsentPurpose_ConsentPurposeID.[ID]
@@ -3762,7 +3763,8 @@ GO
 CREATE PROCEDURE [${flyway:defaultSchema}].[spCreateContactConsent]
     @ID uniqueidentifier = NULL,
     @ContactMethodID uniqueidentifier,
-    @ConsentPurposeID uniqueidentifier,
+    @ConsentPurposeID_Clear bit = 0,
+    @ConsentPurposeID uniqueidentifier = NULL,
     @OrganizationID_Clear bit = 0,
     @OrganizationID uniqueidentifier = NULL,
     @ConsentStatus nvarchar(20) = NULL
@@ -3787,7 +3789,7 @@ BEGIN
             (
                 @ID,
                 @ContactMethodID,
-                @ConsentPurposeID,
+                CASE WHEN @ConsentPurposeID_Clear = 1 THEN NULL ELSE ISNULL(@ConsentPurposeID, NULL) END,
                 CASE WHEN @OrganizationID_Clear = 1 THEN NULL ELSE ISNULL(@OrganizationID, NULL) END,
                 ISNULL(@ConsentStatus, 'NotSpecified')
             )
@@ -3806,7 +3808,7 @@ BEGIN
         VALUES
             (
                 @ContactMethodID,
-                @ConsentPurposeID,
+                CASE WHEN @ConsentPurposeID_Clear = 1 THEN NULL ELSE ISNULL(@ConsentPurposeID, NULL) END,
                 CASE WHEN @OrganizationID_Clear = 1 THEN NULL ELSE ISNULL(@OrganizationID, NULL) END,
                 ISNULL(@ConsentStatus, 'NotSpecified')
             )
@@ -3841,6 +3843,7 @@ GO
 CREATE PROCEDURE [${flyway:defaultSchema}].[spUpdateContactConsent]
     @ID uniqueidentifier,
     @ContactMethodID uniqueidentifier = NULL,
+    @ConsentPurposeID_Clear bit = 0,
     @ConsentPurposeID uniqueidentifier = NULL,
     @OrganizationID_Clear bit = 0,
     @OrganizationID uniqueidentifier = NULL,
@@ -3852,7 +3855,7 @@ BEGIN
         [${flyway:defaultSchema}].[ContactConsent]
     SET
         [ContactMethodID] = ISNULL(@ContactMethodID, [ContactMethodID]),
-        [ConsentPurposeID] = ISNULL(@ConsentPurposeID, [ConsentPurposeID]),
+        [ConsentPurposeID] = CASE WHEN @ConsentPurposeID_Clear = 1 THEN NULL ELSE ISNULL(@ConsentPurposeID, [ConsentPurposeID]) END,
         [OrganizationID] = CASE WHEN @OrganizationID_Clear = 1 THEN NULL ELSE ISNULL(@OrganizationID, [OrganizationID]) END,
         [ConsentStatus] = ISNULL(@ConsentStatus, [ConsentStatus])
     WHERE
@@ -3949,7 +3952,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
 
 /* SQL text to insert 5 new entity field(s) */
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '80bd89e4-cc1c-4cab-8e36-9ad1925b558d' OR (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'CommunicationBaseMessageType')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '46a3022b-0cb0-4078-9531-ac53477819cd' OR (EntityID = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5' AND Name = 'CommunicationBaseMessageType')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -3982,7 +3985,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
          VALUES
          (
-            '80bd89e4-cc1c-4cab-8e36-9ad1925b558d',
+            '46a3022b-0cb0-4078-9531-ac53477819cd',
             '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5', -- Entity: MJ_BizApps_Common: Contact Types
             (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '7355A5EF-B3BE-4D6D-B48B-5F8FD76F97B5'),
             'CommunicationBaseMessageType',
@@ -4012,7 +4015,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '3c4e6244-1e69-4ee5-9ab4-26eeec3b22f4' OR (EntityID = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND Name = 'RecordedByUser')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '1aa32191-2e94-4352-8d11-1e9098b2fa4d' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ContactMethod')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4045,72 +4048,9 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
          VALUES
          (
-            '3c4e6244-1e69-4ee5-9ab4-26eeec3b22f4',
-            '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', -- Entity: MJ_BizApps_Common: Contact Consent Histories
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA'),
-            'RecordedByUser',
-            'Recorded By User',
-            NULL,
-            'nvarchar',
-            200,
-            0,
-            0,
-            1,
-            NULL,
-            0,
-            0,
-            1,
-            0,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            'Search',
-            GETUTCDATE(),
-            GETUTCDATE()
-         )
-      END;
-
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '8f10cf1d-d737-4209-bc02-0c7541956b76' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ContactMethod')) BEGIN
-         INSERT INTO [${mjSchema}].[EntityField]
-         (
-            [ID],
-            [EntityID],
-            [Sequence],
-            [Name],
-            [DisplayName],
-            [Description],
-            [Type],
-            [Length],
-            [Precision],
-            [Scale],
-            [AllowsNull],
-            [DefaultValue],
-            [AutoIncrement],
-            [AllowUpdateAPI],
-            [IsVirtual],
-            [IsComputed],
-            [RelatedEntityID],
-            [RelatedEntityFieldName],
-            [IsNameField],
-            [IncludeInUserSearchAPI],
-            [IncludeRelatedEntityNameFieldInBaseView],
-            [DefaultInView],
-            [IsPrimaryKey],
-            [IsUnique],
-            [RelatedEntityDisplayType],
-            [__mj_CreatedAt],
-            [__mj_UpdatedAt]
-         )
-         VALUES
-         (
-            '8f10cf1d-d737-4209-bc02-0c7541956b76',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '1aa32191-2e94-4352-8d11-1e9098b2fa4d',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ContactMethod',
             'Contact Method',
             NULL,
@@ -4138,7 +4078,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '2c6ae453-8439-4c86-8295-3dbdd8058719' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'ConsentPurpose')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '21c9a830-abe5-4591-8e4d-3e846c683a62' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'ConsentPurpose')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4171,9 +4111,9 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
          VALUES
          (
-            '2c6ae453-8439-4c86-8295-3dbdd8058719',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '21c9a830-abe5-4591-8e4d-3e846c683a62',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'ConsentPurpose',
             'Consent Purpose',
             NULL,
@@ -4181,7 +4121,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
             200,
             0,
             0,
-            0,
+            1,
             NULL,
             0,
             0,
@@ -4201,7 +4141,7 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
       END;
 
-      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '11ccc756-ec7c-41b0-a290-60ab306a554d' OR (EntityID = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND Name = 'Organization')) BEGIN
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = '20f65e01-9ded-4d83-b161-786395af1d8f' OR (EntityID = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND Name = 'Organization')) BEGIN
          INSERT INTO [${mjSchema}].[EntityField]
          (
             [ID],
@@ -4234,9 +4174,9 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
          VALUES
          (
-            '11ccc756-ec7c-41b0-a290-60ab306a554d',
-            'A8A816B3-3238-4931-AC07-FEA3F13DCA05', -- Entity: MJ_BizApps_Common: Contact Consents
-            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05'),
+            '20f65e01-9ded-4d83-b161-786395af1d8f',
+            'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', -- Entity: MJ_BizApps_Common: Contact Consents
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904'),
             'Organization',
             'Organization',
             NULL,
@@ -4264,12 +4204,105 @@ GRANT EXECUTE ON [${flyway:defaultSchema}].[spDeleteContactConsent] TO [cdp_Deve
          )
       END;
 
+      IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityField] WHERE ID = 'e71f087b-43e9-4176-a4ac-9cabfcab2678' OR (EntityID = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND Name = 'RecordedByUser')) BEGIN
+         INSERT INTO [${mjSchema}].[EntityField]
+         (
+            [ID],
+            [EntityID],
+            [Sequence],
+            [Name],
+            [DisplayName],
+            [Description],
+            [Type],
+            [Length],
+            [Precision],
+            [Scale],
+            [AllowsNull],
+            [DefaultValue],
+            [AutoIncrement],
+            [AllowUpdateAPI],
+            [IsVirtual],
+            [IsComputed],
+            [RelatedEntityID],
+            [RelatedEntityFieldName],
+            [IsNameField],
+            [IncludeInUserSearchAPI],
+            [IncludeRelatedEntityNameFieldInBaseView],
+            [DefaultInView],
+            [IsPrimaryKey],
+            [IsUnique],
+            [RelatedEntityDisplayType],
+            [__mj_CreatedAt],
+            [__mj_UpdatedAt]
+         )
+         VALUES
+         (
+            'e71f087b-43e9-4176-a4ac-9cabfcab2678',
+            '22E5FE8E-8670-4E8E-980E-F66AF472F43D', -- Entity: MJ_BizApps_Common: Contact Consent Histories
+            (SELECT COALESCE(MAX([Sequence]), 0) + 1 FROM [${mjSchema}].[EntityField] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D'),
+            'RecordedByUser',
+            'Recorded By User',
+            NULL,
+            'nvarchar',
+            200,
+            0,
+            0,
+            1,
+            NULL,
+            0,
+            0,
+            1,
+            0,
+            NULL,
+            NULL,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            'Search',
+            GETUTCDATE(),
+            GETUTCDATE()
+         )
+      END;
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET IsNameField = 1
+               WHERE ID = 'C0C7B5D8-256F-4451-BA87-972A77CFDEDD'
+               AND AutoUpdateIsNameField = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = 'E71F087B-43E9-4176-A4AC-9CABFCAB2678'
+               AND AutoUpdateDefaultInView = 1;
+
 /* Set field properties for entity */
 
             UPDATE [${mjSchema}].[Entity]
             SET AllowUserSearchAPI = 0
-            WHERE ID = '44A8C590-484B-4B65-9195-BD42796ECADE'
+            WHERE ID = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8'
             AND AutoUpdateAllowUserSearchAPI = 1;
+
+/* Set categories for 2 fields */
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.CommunicationBaseMessageTypeID 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category'
+WHERE 
+   ID = '220D9D13-864A-461E-AA06-FD0FFA3D417F';
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.CommunicationBaseMessageType 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Type Definition',
+   GeneratedFormSection = 'Category'
+WHERE 
+   ID = '46A3022B-0CB0-4078-9531-AC53477819CD';
 
 /* Set categories for 7 fields */
 
@@ -4279,7 +4312,7 @@ SET
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '78FE7E83-2A35-4B09-BED4-D916E17EC806';
+   ID = '180B944D-0B26-46D1-B6E4-30871B956D3C';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.Name 
 UPDATE [${mjSchema}].[EntityField]
@@ -4287,7 +4320,7 @@ SET
    Category = 'Consent Purpose Details',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '87CCD965-C421-4C63-909E-0AE1EEC7D233';
+   ID = '5655D4F1-6C44-4CE6-BB17-CFF4A214B849';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.Description 
 UPDATE [${mjSchema}].[EntityField]
@@ -4295,7 +4328,7 @@ SET
    Category = 'Consent Purpose Details',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = 'EFDC585B-079F-4B65-B407-4A3180102CCE';
+   ID = '65CC4D51-6AAA-47FD-87DB-1AAE84AF54E0';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.DisplayRank 
 UPDATE [${mjSchema}].[EntityField]
@@ -4303,16 +4336,15 @@ SET
    Category = 'Consent Purpose Details',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '341FB737-4608-4032-A6AF-15D8156A4679';
+   ID = '1FAD7CE1-F02C-4C7F-9512-40C36607D5EB';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.IsActive 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'Consent Purpose Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Active'
+   GeneratedFormSection = 'Category'
 WHERE 
-   ID = '07D66E12-EF82-4545-9850-08A7BE6EE525';
+   ID = '857B4E9A-1D18-4C89-A764-6B6D8F367F3D';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -4320,7 +4352,7 @@ SET
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '07F763AB-0AC9-4589-9F6D-BD9297E464F6';
+   ID = '49636B28-99BC-4500-B10E-14490A0C7433';
 
 -- UPDATE Entity Field Category Info MJ_BizApps_Common: Consent Purposes.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
@@ -4328,23 +4360,23 @@ SET
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '1E2B0EF3-AAB3-4725-8053-F4CCEDB75292';
+   ID = '8C12B39D-239B-48BA-9BA6-EF165DEA7A21';
 
 /* Set entity icon to fa fa-shield-alt */
 
                UPDATE [${mjSchema}].[Entity]
                SET [Icon] = 'fa fa-shield-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '44A8C590-484B-4B65-9195-BD42796ECADE';
+               WHERE [ID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8';
 
 /* Insert FieldCategoryInfo setting for entity */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE' AND [Name] = 'FieldCategoryInfo'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND [Name] = 'FieldCategoryInfo'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('af161dee-41e3-597b-9d2e-ded0e132db54', '44A8C590-484B-4B65-9195-BD42796ECADE', 'FieldCategoryInfo', '{
+               VALUES ('47763911-2f28-571f-9eeb-57776bc7c750', '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', 'FieldCategoryInfo', '{
   "Consent Purpose Details": {
-    "description": "Core configuration details for the consent purpose",
+    "description": "Core configuration and display details for consent purposes",
     "icon": "fa fa-shield-alt"
   },
   "System Metadata": {
@@ -4356,11 +4388,11 @@ IF NOT EXISTS (
 
 /* Insert FieldCategoryIcons setting (legacy) */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE' AND [Name] = 'FieldCategoryIcons'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8' AND [Name] = 'FieldCategoryIcons'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('28e62fdd-2dd5-55d3-b1e7-f823c5da832a', '44A8C590-484B-4B65-9195-BD42796ECADE', 'FieldCategoryIcons', '{
+               VALUES ('dfd50b14-be8c-517f-8ec6-dc1f705526aa', '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8', 'FieldCategoryIcons', '{
   "Consent Purpose Details": "fa fa-shield-alt",
   "System Metadata": "fa fa-cog"
 }', GETUTCDATE(), GETUTCDATE())
@@ -4370,161 +4402,111 @@ IF NOT EXISTS (
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '44A8C590-484B-4B65-9195-BD42796ECADE';
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '8F10CF1D-D737-4209-BC02-0C7541956B76'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '2C6AE453-8439-4C86-8295-3DBDD8058719'
-               AND AutoUpdateDefaultInView = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '11CCC756-EC7C-41B0-A290-60AB306A554D'
-               AND AutoUpdateDefaultInView = 1;
-
-/* Set categories for 2 fields */
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.CommunicationBaseMessageTypeID 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Type Definition',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Communication Base Message Type'
-WHERE 
-   ID = 'D0E260B2-4BD4-4AD7-9CA9-CAA3D25ECB78';
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Types.CommunicationBaseMessageType 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Type Definition',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Communication Base Message Type Name'
-WHERE 
-   ID = '80BD89E4-CC1C-4CAB-8E36-9AD1925B558D';
-
-/* Set field properties for entity */
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET IsNameField = 1
-               WHERE ID = '2D309D21-4596-4B19-AD7E-07B329DD68AA'
-               AND AutoUpdateIsNameField = 1;
-
-               UPDATE [${mjSchema}].[EntityField]
-               SET DefaultInView = 1
-               WHERE ID = '3C4E6244-1E69-4EE5-9AB4-26EEEC3B22F4'
-               AND AutoUpdateDefaultInView = 1;
+         WHERE [EntityID] = '7E461BC4-BE9A-417F-A5E0-2B884DADD3F8';
 
 /* Set categories for 10 fields */
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = 'B465E01F-6F97-44FB-AA87-A2B28E6659FE';
+   ID = '5A67F7AC-440C-4230-9589-65249925B616';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ContactMethodID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ContactConsentID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent Details',
+   Category = 'Consent History Details',
    GeneratedFormSection = 'Category',
-   DisplayName = 'Contact Method'
+   DisplayName = 'Contact Consent'
 WHERE 
-   ID = 'CF794624-48C3-4C76-A932-A5F3978B94B5';
+   ID = '4666C636-EE4A-4636-B1DA-25F2F4D8BC7E';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentPurposeID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.NewConsentStatus 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Consent Purpose'
-WHERE 
-   ID = '5796B5E9-D321-40EC-A89F-B6A7D850CCA3';
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.OrganizationID 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Consent Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization'
-WHERE 
-   ID = '56EC38CA-9D32-4BB8-A8B6-DAA10F9D8B34';
-
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentStatus 
-UPDATE [${mjSchema}].[EntityField]
-SET 
-   Category = 'Consent Details',
+   Category = 'Consent History Details',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '7D7D7B01-0FE3-4653-876B-8D578D139A3A';
+   ID = 'C0C7B5D8-256F-4451-BA87-972A77CFDEDD';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ContactMethod 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ConsentStatusAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Contact Method Text'
+   Category = 'Consent History Details',
+   GeneratedFormSection = 'Category'
 WHERE 
-   ID = '8F10CF1D-D737-4209-BC02-0C7541956B76';
+   ID = 'F7CE05D0-EFEF-40FA-92F8-2A22F4CF7B5D';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentPurpose 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ConsentSource 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Consent Purpose Text'
+   Category = 'Consent History Details',
+   GeneratedFormSection = 'Category'
 WHERE 
-   ID = '2C6AE453-8439-4C86-8295-3DBDD8058719';
+   ID = '5C88F0DF-59B1-4B2A-9D32-E12CF14332E4';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.Organization 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.RecordedByUserID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent Details',
-   GeneratedFormSection = 'Category',
-   DisplayName = 'Organization Name'
+   Category = 'Audit Information',
+   GeneratedFormSection = 'Category'
 WHERE 
-   ID = '11CCC756-EC7C-41B0-A290-60AB306A554D';
+   ID = 'FD15FF4F-1E6D-4B53-9DAE-E484AF981A4E';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.RecordedByUser 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Audit Information',
+   GeneratedFormSection = 'Category'
+WHERE 
+   ID = 'E71F087B-43E9-4176-A4AC-9CABFCAB2678';
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.Notes 
+UPDATE [${mjSchema}].[EntityField]
+SET 
+   Category = 'Audit Information',
+   GeneratedFormSection = 'Category'
+WHERE 
+   ID = '862C0F47-7D92-4115-956F-EF6893DC61ED';
+
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '3BF3B850-0161-4E7E-B820-43D3A3669FF4';
+   ID = '62F75B57-7D9D-4D22-AB13-316A2D1B6D2F';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = 'F0E48C87-DA1C-48A9-A449-A89B5F87C7E2';
+   ID = 'B15616BE-B917-47E7-B7DA-D8014284D78B';
 
-/* Set entity icon to fa fa-shield-alt */
+/* Set entity icon to fa fa-history */
 
                UPDATE [${mjSchema}].[Entity]
-               SET [Icon] = 'fa fa-shield-alt', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05';
+               SET [Icon] = 'fa fa-history', [__mj_UpdatedAt] = GETUTCDATE()
+               WHERE [ID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D';
 
 /* Insert FieldCategoryInfo setting for entity */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND [Name] = 'FieldCategoryInfo'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND [Name] = 'FieldCategoryInfo'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('9f3dd29e-f012-509a-b673-c44d3cd1bfe5', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', 'FieldCategoryInfo', '{
-  "Consent Details": {
-    "description": "Information regarding contact consent status, purposes, and associated methods or organizations",
-    "icon": "fa fa-check-circle"
+               VALUES ('a1751161-b7bb-5a5a-8b05-77fc35d55541', '22E5FE8E-8670-4E8E-980E-F66AF472F43D', 'FieldCategoryInfo', '{
+  "Audit Information": {
+    "description": "Information about who recorded the consent change and supporting evidence notes",
+    "icon": "fa fa-user-shield"
+  },
+  "Consent History Details": {
+    "description": "Core details tracking the status, effective date, and source of consent changes",
+    "icon": "fa fa-clipboard-list"
   },
   "System Metadata": {
     "description": "System-managed audit and tracking fields",
@@ -4535,12 +4517,13 @@ IF NOT EXISTS (
 
 /* Insert FieldCategoryIcons setting (legacy) */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05' AND [Name] = 'FieldCategoryIcons'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D' AND [Name] = 'FieldCategoryIcons'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('dd7bd02e-c383-5b77-aac3-ae84db9f3528', 'A8A816B3-3238-4931-AC07-FEA3F13DCA05', 'FieldCategoryIcons', '{
-  "Consent Details": "fa fa-check-circle",
+               VALUES ('23959947-2aa2-5b93-aa10-149257b8ba68', '22E5FE8E-8670-4E8E-980E-F66AF472F43D', 'FieldCategoryIcons', '{
+  "Audit Information": "fa fa-user-shield",
+  "Consent History Details": "fa fa-clipboard-list",
   "System Metadata": "fa fa-cog"
 }', GETUTCDATE(), GETUTCDATE())
    END;
@@ -4549,113 +4532,132 @@ IF NOT EXISTS (
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = 'A8A816B3-3238-4931-AC07-FEA3F13DCA05';
+         WHERE [EntityID] = '22E5FE8E-8670-4E8E-980E-F66AF472F43D';
+
+/* Set field properties for entity */
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '1AA32191-2E94-4352-8D11-1E9098B2FA4D'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '21C9A830-ABE5-4591-8E4D-3E846C683A62'
+               AND AutoUpdateDefaultInView = 1;
+
+               UPDATE [${mjSchema}].[EntityField]
+               SET DefaultInView = 1
+               WHERE ID = '20F65E01-9DED-4D83-B161-786395AF1D8F'
+               AND AutoUpdateDefaultInView = 1;
 
 /* Set categories for 10 fields */
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '42BE174F-001B-46C3-87DA-D8DE4DA3EAF4';
+   ID = '564490BE-A253-4D86-BE14-7035792EA683';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ContactConsentID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ContactMethodID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent History Details',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Contact Method'
 WHERE 
-   ID = '8EBC64F7-2569-406A-9D63-DF18A3F62E3C';
+   ID = '8FED315D-F210-4F2C-B05E-8A0E2B907FEF';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.NewConsentStatus 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentPurposeID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent History Details',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Consent Purpose'
 WHERE 
-   ID = '2D309D21-4596-4B19-AD7E-07B329DD68AA';
+   ID = '0EB73D4B-A2EB-4216-AFC0-38F13C869183';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ConsentStatusAt 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.OrganizationID 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent History Details',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Organization'
 WHERE 
-   ID = '5FAF0E60-3440-4929-B1D2-266957DF9D53';
+   ID = '25B684BA-9321-43EB-A677-4998EA657B7A';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.ConsentSource 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentStatus 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Consent History Details',
+   Category = 'Consent Details',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '0134E27E-6605-4626-A3C4-2DCEA2435AE6';
+   ID = '59F57802-3B68-4185-B84C-28BD69461B1F';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.RecordedByUserID 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ContactMethod 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Audit Information',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Contact Method Detail'
 WHERE 
-   ID = 'A606F530-79BF-47CD-9A0C-DF9360651443';
+   ID = '1AA32191-2E94-4352-8D11-1E9098B2FA4D';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.RecordedByUser 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.ConsentPurpose 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Audit Information',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Consent Purpose Detail'
 WHERE 
-   ID = '3C4E6244-1E69-4EE5-9AB4-26EEEC3B22F4';
+   ID = '21C9A830-ABE5-4591-8E4D-3E846C683A62';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.Notes 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.Organization 
 UPDATE [${mjSchema}].[EntityField]
 SET 
-   Category = 'Audit Information',
-   GeneratedFormSection = 'Category'
+   Category = 'Consent Details',
+   GeneratedFormSection = 'Category',
+   DisplayName = 'Organization Detail'
 WHERE 
-   ID = '833A5FC5-5EDE-4216-866D-487F523B3FB3';
+   ID = '20F65E01-9DED-4D83-B161-786395AF1D8F';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.__mj_CreatedAt 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.__mj_CreatedAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = '0A2CA89D-72AF-4F94-9FE0-F54725C3A4A6';
+   ID = '1F2A80DD-3858-47A3-AF29-EFE02AB3F4F1';
 
--- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consent Histories.__mj_UpdatedAt 
+-- UPDATE Entity Field Category Info MJ_BizApps_Common: Contact Consents.__mj_UpdatedAt 
 UPDATE [${mjSchema}].[EntityField]
 SET 
    Category = 'System Metadata',
    GeneratedFormSection = 'Category'
 WHERE 
-   ID = 'CD1BC85E-4626-45F5-9EDE-77607617228A';
+   ID = 'C098EB09-BC0D-4C82-9028-DC5ABE2DDB58';
 
-/* Set entity icon to fa fa-history */
+/* Set entity icon to fa fa-shield-alt */
 
                UPDATE [${mjSchema}].[Entity]
-               SET [Icon] = 'fa fa-history', [__mj_UpdatedAt] = GETUTCDATE()
-               WHERE [ID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA';
+               SET [Icon] = 'fa fa-shield-alt', [__mj_UpdatedAt] = GETUTCDATE()
+               WHERE [ID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904';
 
 /* Insert FieldCategoryInfo setting for entity */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND [Name] = 'FieldCategoryInfo'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND [Name] = 'FieldCategoryInfo'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('74ae6e26-7622-5dc0-9640-248e05efc8c7', '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', 'FieldCategoryInfo', '{
-  "Audit Information": {
-    "description": "Information about who recorded the consent change and supporting notes.",
-    "icon": "fa fa-user-shield"
-  },
-  "Consent History Details": {
-    "description": "Details regarding the consent status change, effective dates, and sources.",
-    "icon": "fa fa-history"
+               VALUES ('98eb1790-4e14-5c19-b6ed-1a4318f7825b', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', 'FieldCategoryInfo', '{
+  "Consent Details": {
+    "description": "Details regarding contact consent status, purpose, and organization associations",
+    "icon": "fa fa-shield-alt"
   },
   "System Metadata": {
-    "description": "System-managed audit and tracking fields.",
+    "description": "System-managed audit and tracking fields",
     "icon": "fa fa-cog"
   }
 }', GETUTCDATE(), GETUTCDATE())
@@ -4663,13 +4665,12 @@ IF NOT EXISTS (
 
 /* Insert FieldCategoryIcons setting (legacy) */
 IF NOT EXISTS (
-      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA' AND [Name] = 'FieldCategoryIcons'
+      SELECT 1 FROM [${mjSchema}].[EntitySetting] WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904' AND [Name] = 'FieldCategoryIcons'
    )
    BEGIN
       INSERT INTO [${mjSchema}].[EntitySetting] ([ID], [EntityID], [Name], [Value], [__mj_CreatedAt], [__mj_UpdatedAt])
-               VALUES ('81a7c8b0-33f0-5013-bb89-a572484f22ac', '953FD481-ED1D-4B8A-98F7-DD9A85111DBA', 'FieldCategoryIcons', '{
-  "Audit Information": "fa fa-user-shield",
-  "Consent History Details": "fa fa-history",
+               VALUES ('4450a667-24d7-59c3-b15e-8bb2a5432404', 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904', 'FieldCategoryIcons', '{
+  "Consent Details": "fa fa-shield-alt",
   "System Metadata": "fa fa-cog"
 }', GETUTCDATE(), GETUTCDATE())
    END;
@@ -4678,5 +4679,5 @@ IF NOT EXISTS (
 
          UPDATE [${mjSchema}].[ApplicationEntity]
          SET [DefaultForNewUser] = 0, [__mj_UpdatedAt] = GETUTCDATE()
-         WHERE [EntityID] = '953FD481-ED1D-4B8A-98F7-DD9A85111DBA';
+         WHERE [EntityID] = 'D3AB1411-7E47-4EE7-9B1E-8B42DBA35904';
 

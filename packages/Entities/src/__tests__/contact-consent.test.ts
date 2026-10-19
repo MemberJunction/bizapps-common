@@ -5,7 +5,7 @@ import {
     DecideContact,
     IsContactConsentStatus,
     IsLatestConsentChange,
-    PickConsentForOrganization,
+    ResolveConsentForScope,
     ResolveCurrentConsent,
 } from '../contact-consent.js';
 
@@ -21,9 +21,9 @@ const PURPOSE = '22222222-2222-2222-2222-222222222222';
 const ORG_A = '33333333-3333-3333-3333-333333333333';
 const ORG_B = '44444444-4444-4444-4444-444444444444';
 
-const consent = (status: ConsentRow['ConsentStatus'], organizationID: string | null): ConsentRow => ({
+const consent = (status: ConsentRow['ConsentStatus'], purposeID: string | null, organizationID: string | null): ConsentRow => ({
     ContactMethodID: METHOD,
-    ConsentPurposeID: PURPOSE,
+    ConsentPurposeID: purposeID,
     OrganizationID: organizationID,
     ConsentStatus: status,
 });
@@ -66,25 +66,41 @@ describe('IsLatestConsentChange', () => {
     });
 });
 
-describe('PickConsentForOrganization', () => {
-    const rows = [consent('OptedIn', null), consent('OptedOut', ORG_A)];
+describe('ResolveConsentForScope', () => {
+    const rows = [
+        consent('OptedIn', null, null),          // general, installation-wide
+        consent('OptedOut', PURPOSE, null),      // Marketing, installation-wide
+        consent('OptedIn', PURPOSE, ORG_A),      // Marketing, from org A
+        consent('OptedOut', null, ORG_B),        // general, from org B
+    ];
 
-    it("uses the asking organization's own row when it has one", () => {
-        expect(PickConsentForOrganization(rows, ORG_A)?.ConsentStatus).toBe('OptedOut');
-        expect(PickConsentForOrganization(rows, ORG_A.toLowerCase())?.ConsentStatus).toBe('OptedOut');
+    it('rung 1: this purpose from this organization wins over everything', () => {
+        expect(ResolveConsentForScope(rows, { PurposeID: PURPOSE, OrganizationID: ORG_A })?.ConsentStatus).toBe('OptedIn');
+        expect(ResolveConsentForScope(rows, { PurposeID: PURPOSE, OrganizationID: ORG_A.toLowerCase() })?.ConsentStatus).toBe('OptedIn');
     });
 
-    it('falls back to the installation-wide row for an organization with no row of its own', () => {
-        expect(PickConsentForOrganization(rows, ORG_B)?.ConsentStatus).toBe('OptedIn');
+    it('rung 2: this purpose from anyone, when the organization has no row for the purpose', () => {
+        expect(ResolveConsentForScope(rows, { PurposeID: PURPOSE, OrganizationID: ORG_B })?.ConsentStatus).toBe('OptedOut');
     });
 
-    it('returns only the installation-wide row when no organization is asking, never a scoped one', () => {
-        expect(PickConsentForOrganization(rows, null)?.ConsentStatus).toBe('OptedIn');
-        expect(PickConsentForOrganization([consent('OptedOut', ORG_A)], undefined)).toBeNull();
+    it('general never means default: a general opt-in loses to a Marketing opt-out for a Marketing question', () => {
+        expect(ResolveConsentForScope(rows, { PurposeID: PURPOSE })?.ConsentStatus).toBe('OptedOut');
     });
 
-    it('returns null when the method has no consent at all', () => {
-        expect(PickConsentForOrganization([], ORG_A)).toBeNull();
+    it('rung 3: a question with no purpose uses the organization\'s general row', () => {
+        expect(ResolveConsentForScope(rows, { OrganizationID: ORG_B })?.ConsentStatus).toBe('OptedOut');
+    });
+
+    it('rung 4: the general installation-wide row answers everything else', () => {
+        expect(ResolveConsentForScope(rows, {})?.ConsentStatus).toBe('OptedIn');
+        expect(ResolveConsentForScope(rows, { OrganizationID: ORG_A })?.ConsentStatus).toBe('OptedIn');
+        const other = '55555555-5555-5555-5555-555555555555';
+        expect(ResolveConsentForScope(rows, { PurposeID: other, OrganizationID: ORG_A })?.ConsentStatus).toBe('OptedIn');
+    });
+
+    it('rung 5: nothing recorded', () => {
+        expect(ResolveConsentForScope([], { PurposeID: PURPOSE })).toBeNull();
+        expect(ResolveConsentForScope([consent('OptedOut', PURPOSE, ORG_A)], {})).toBeNull();
     });
 });
 

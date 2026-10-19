@@ -27,11 +27,12 @@ describe('the contact consent migration', () => {
         expect(flat).toContain('IsActive BIT NOT NULL DEFAULT 1');
     });
 
-    it('creates ContactConsent with one row per method, purpose and organization, and the CHECK the code mirrors', () => {
+    it('creates ContactConsent with one row per method, optional purpose and optional organization, and the CHECK the code mirrors', () => {
         expect(flat).toContain('CREATE TABLE [${flyway:defaultSchema}].[ContactConsent]');
         expect(flat).toContain("ConsentStatus NVARCHAR(20) NOT NULL DEFAULT N'NotSpecified'");
         expect(flat).toContain(`CONSTRAINT CK_ContactConsent_ConsentStatus CHECK (ConsentStatus IN (${statusList}))`);
         expect(flat).toContain('UNIQUE (ContactMethodID, ConsentPurposeID, OrganizationID)');
+        expect(flat).toContain('ConsentPurposeID UNIQUEIDENTIFIER NULL');
         expect(flat).toContain('OrganizationID UNIQUEIDENTIFIER NULL');
         expect(flat).toMatch(
             /FK_ContactConsent_ContactMethod FOREIGN KEY \(ContactMethodID\) REFERENCES \[\$\{flyway:defaultSchema\}\]\.\[ContactMethod\]\(ID\) ON DELETE CASCADE/,

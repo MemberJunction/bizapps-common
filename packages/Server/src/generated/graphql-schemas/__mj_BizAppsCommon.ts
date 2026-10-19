@@ -4292,7 +4292,7 @@ export class mjBizAppsCommonContactConsentHistoryResolver extends ResolverBase {
 //****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Contact Consents
 //****************************************************************************
-@ObjectType({ description: "The current consent for one contact method (an email or phone), for one purpose, from one organization or from the whole installation when OrganizationID is null. A contact method has many of these, the way a person has many contact methods. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents." })
+@ObjectType({ description: "The current consent for one contact method (an email or phone): for one purpose or, when ConsentPurposeID is null, for anything; from one organization or, when OrganizationID is null, from the whole installation. A contact method has many of these, the way a person has many contact methods, and the most specific row answers: purpose and organization, then purpose, then organization, then the general row. ConsentStatus always equals NewConsentStatus on the ContactConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents." })
 export class mjBizAppsCommonContactConsent_ {
     @Field() 
     @MaxLength(36)
@@ -4349,7 +4349,7 @@ export class CreatemjBizAppsCommonContactConsentInput {
     ContactMethodID?: string;
 
     @Field({ nullable: true })
-    ConsentPurposeID?: string;
+    ConsentPurposeID: string | null;
 
     @Field({ nullable: true })
     OrganizationID: string | null;
@@ -4374,7 +4374,7 @@ export class UpdatemjBizAppsCommonContactConsentInput {
     ContactMethodID?: string;
 
     @Field({ nullable: true })
-    ConsentPurposeID?: string;
+    ConsentPurposeID?: string | null;
 
     @Field({ nullable: true })
     OrganizationID?: string | null;

@@ -60,8 +60,16 @@
                             <button class="btn btn-cancel btn-sm" (click)="onCancelEdit()">Cancel</button>
                         </div>
                     </div>
-                    @if (isConsentType(EditForm.TypeID) && ConsentPurposes.length > 0) {
+                    @if (isConsentType(EditForm.TypeID)) {
                         <div class="form-row consent-row">
+                            <div class="form-field consent-field">
+                                <label>General</label>
+                                <select [(ngModel)]="EditForm.Consents[GeneralKey]">
+                                    @for (s of ConsentStatuses; track s) {
+                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                    }
+                                </select>
+                            </div>
                             @for (p of ConsentPurposes; track p.ID) {
                                 <div class="form-field consent-field">
                                     <label>{{ p.Name }}</label>
@@ -186,8 +194,16 @@
                     </button>
                     <button class="btn btn-cancel btn-sm" (click)="onCancelAdd()">Cancel</button>
                 </div>
-                @if (isConsentType(AddForm.TypeID) && ConsentPurposes.length > 0) {
+                @if (isConsentType(AddForm.TypeID)) {
                     <div class="form-row consent-row">
+                        <div class="form-field consent-field">
+                            <label>General</label>
+                            <select [(ngModel)]="AddForm.Consents[GeneralKey]">
+                                @for (s of ConsentStatuses; track s) {
+                                    <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                }
+                            </select>
+                        </div>
                         @for (p of ConsentPurposes; track p.ID) {
                             <div class="form-field consent-field">
                                 <label>{{ p.Name }}</label>

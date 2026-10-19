@@ -37,10 +37,10 @@ interface ContactFormData {
     IsPrimary: boolean;
 
     /**
-     * The installation-wide consent to record per purpose, keyed by Consent Purpose ID. Only shown
-     * for types that map to a channel (email, phone); a change on save writes a
-     * `ContactConsentHistory` row with source "Staff". Per-organization consents are managed on
-     * the Contact Consents records themselves.
+     * The installation-wide consents to record, keyed by Consent Purpose ID, plus the general
+     * (any purpose) answer under {@link GENERAL_CONSENT_KEY}. Only shown for types that map to a
+     * channel (email, phone); a change on save writes a `ContactConsentHistory` row with source
+     * "Staff". Per-organization consents are managed on the Contact Consents records themselves.
      */
     Consents: Record<string, ContactConsentStatus>;
 }
@@ -53,6 +53,15 @@ interface ConsentHistoryLine {
     ConsentStatusAt: Date;
     NewConsentStatus: ContactConsentStatus;
     ConsentSource: string;
+}
+
+/** The form key for a method's general consent: the row with no purpose, which answers for anything. */
+export const GENERAL_CONSENT_KEY = 'general';
+
+/** True when two purpose IDs name the same purpose, treating null (general) as a value. */
+function samePurpose(a: string | null | undefined, b: string | null | undefined): boolean {
+    if (!a || !b) return !a && !b;
+    return UUIDsEqual(a, b);
 }
 
 /** True when a metadata provider also serves views, as every MJ provider does. */
@@ -196,6 +205,9 @@ export class ContactMethodListComponent {
 
     /** The consent choices offered per purpose, in the order the CHECK constraint lists them. */
     ConsentStatuses = CONTACT_CONSENT_STATUSES;
+
+    /** The form key of the general (any purpose) consent, for the template. */
+    GeneralKey = GENERAL_CONSENT_KEY;
 
     /** Each loaded method's consent rows (every purpose and organization), keyed by contact method ID. */
     private consentsByMethod = new Map<string, mjBizAppsCommonContactConsentEntity[]>();
@@ -486,15 +498,17 @@ export class ContactMethodListComponent {
         });
     }
 
-    /** Returns the DisplayRank for a consent purpose, defaulting to 999 if not found. */
-    private getPurposeRank(purposeID: string): number {
+    /** Returns the DisplayRank for a consent purpose; the general row (no purpose) sorts first. */
+    private getPurposeRank(purposeID: string | null): number {
+        if (!purposeID) return -1;
         const p = this.ConsentPurposes.find(x => UUIDsEqual(x.ID, purposeID));
         return p?.DisplayRank ?? 999;
     }
 
-    /** The badge text for a consent row: its purpose, and the organization when it is scoped to one. */
+    /** The badge text for a consent row: its purpose (or General), and the organization when it is scoped to one. */
     getConsentBadgeText(consent: mjBizAppsCommonContactConsentEntity): string {
-        return consent.Organization ? `${consent.ConsentPurpose} · ${consent.Organization}` : consent.ConsentPurpose;
+        const purpose = consent.ConsentPurpose ?? 'General';
+        return consent.Organization ? `${purpose} · ${consent.Organization}` : purpose;
     }
 
     /** The badge colour class for a consent status. */
@@ -578,7 +592,7 @@ export class ContactMethodListComponent {
             const consent = consents.find((c) => UUIDsEqual(c.ID, h.ContactConsentID));
             return {
                 ID: h.ID,
-                Purpose: consent?.ConsentPurpose ?? '',
+                Purpose: consent?.ConsentPurpose ?? 'General',
                 Organization: consent?.Organization ?? null,
                 ConsentStatusAt: h.ConsentStatusAt,
                 NewConsentStatus: h.NewConsentStatus,
@@ -633,6 +647,7 @@ export class ContactMethodListComponent {
         if (this.ContactTypes.length > 0) {
             this.AddForm.TypeID = this.ContactTypes[0].ID;
         }
+        this.AddForm.Consents[GENERAL_CONSENT_KEY] = 'NotSpecified';
         for (const p of this.ConsentPurposes) {
             this.AddForm.Consents[p.ID] = 'NotSpecified';
         }
@@ -713,6 +728,7 @@ export class ContactMethodListComponent {
      */
     onEdit(cm: mjBizAppsCommonContactMethodEntity): void {
         const consents: Record<string, ContactConsentStatus> = {};
+        consents[GENERAL_CONSENT_KEY] = this.findUnscopedConsent(cm, null)?.ConsentStatus ?? 'NotSpecified';
         for (const p of this.ConsentPurposes) {
             const row = this.findUnscopedConsent(cm, p.ID);
             consents[p.ID] = row?.ConsentStatus ?? 'NotSpecified';
@@ -786,10 +802,10 @@ export class ContactMethodListComponent {
         }
     }
 
-    /** The method's installation-wide consent row for a purpose, from the loaded rows, or null. */
-    private findUnscopedConsent(cm: mjBizAppsCommonContactMethodEntity, purposeID: string): mjBizAppsCommonContactConsentEntity | null {
+    /** The method's installation-wide consent row for a purpose (null = the general row), from the loaded rows, or null. */
+    private findUnscopedConsent(cm: mjBizAppsCommonContactMethodEntity, purposeID: string | null): mjBizAppsCommonContactConsentEntity | null {
         const rows = this.consentsByMethod.get(cm.ID) ?? [];
-        return rows.find((r) => r.OrganizationID == null && UUIDsEqual(r.ConsentPurposeID, purposeID)) ?? null;
+        return rows.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID)) ?? null;
     }
 
     /**
@@ -805,16 +821,20 @@ export class ContactMethodListComponent {
         if (cm.IsSaved && !cm.Consents.IsLoaded) {
             await cm.Consents.Load();
         }
-        for (const p of this.ConsentPurposes) {
-            const wanted = form.Consents[p.ID] ?? 'NotSpecified';
-            const existing = cm.Consents.Items.find((r) => r.OrganizationID == null && UUIDsEqual(r.ConsentPurposeID, p.ID));
+        const keys: Array<{ key: string; purposeID: string | null }> = [
+            { key: GENERAL_CONSENT_KEY, purposeID: null },
+            ...this.ConsentPurposes.map((p) => ({ key: p.ID, purposeID: p.ID })),
+        ];
+        for (const { key, purposeID } of keys) {
+            const wanted = form.Consents[key] ?? 'NotSpecified';
+            const existing = cm.Consents.Items.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID));
             if (existing) {
                 if (existing.ConsentStatus !== wanted) {
                     existing.ConsentStatus = wanted;
                 }
             } else if (wanted !== 'NotSpecified') {
                 const row = await cm.Consents.Create();
-                row.ConsentPurposeID = p.ID;
+                row.ConsentPurposeID = purposeID;
                 row.OrganizationID = null;
                 row.ConsentStatus = wanted;
             }

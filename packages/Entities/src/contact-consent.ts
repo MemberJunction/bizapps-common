@@ -1,14 +1,14 @@
 /**
  * Contact consent, the pure part: the status values, how a current status is resolved from a
- * history, which of a contact method's consents answers for a given organization, and how a
- * channel decision is made from the statuses of a person's contact methods.
+ * history, which of a contact method's consents answers for a purpose and an organization, and how
+ * a channel decision is made from the statuses of a person's contact methods.
  *
  * Consent hangs off a contact method the way contact methods hang off a person: one `ContactConsent`
- * row per purpose (Marketing, Transactional, ...) and, optionally, per organization. So one email can
- * be opted in to receipts and out of newsletters, or say yes to one organization and no to another.
- * Each row's `ConsentStatus` always equals the `ContactConsentHistory` row with the latest
- * `ConsentStatusAt`. These functions hold those rules so the entity subclass, the engine and the
- * tests all agree on them.
+ * row per purpose (Marketing, Transactional, ...) or for anything (no purpose), and per organization
+ * or for the whole installation (no organization). So one email can be opted in in general, out of
+ * newsletters, and out for one organization. The most specific row answers. Each row's
+ * `ConsentStatus` always equals the `ContactConsentHistory` row with the latest `ConsentStatusAt`.
+ * These functions hold those rules so the entity subclass, the engine and the tests all agree.
  */
 import { UUIDsEqual } from '@memberjunction/global';
 import type { mjBizAppsCommonContactConsentEntity, mjBizAppsCommonContactConsentHistoryEntity } from './generated/entity_subclasses';
@@ -82,17 +82,44 @@ export function IsLatestConsentChange(history: ReadonlyArray<ConsentHistoryEntry
     return history.every((entry) => entry.ConsentStatusAt.getTime() <= at.getTime());
 }
 
+/** What a consent question is about: a purpose or anything, from an organization or from anyone. */
+export interface ConsentScopeKey {
+    /** The Consent Purpose ID, or null / omitted for the general answer ("anything"). */
+    PurposeID?: string | null;
+    /** The organization asking, or null / omitted for the installation-wide answer. */
+    OrganizationID?: string | null;
+}
+
+function sameID(a: string | null | undefined, b: string | null | undefined): boolean {
+    if (!a || !b) return !a && !b;
+    return UUIDsEqual(a, b);
+}
+
 /**
- * Of one contact method's consent rows for one purpose, the row that answers for an organization:
- * that organization's own row when it has one, else the installation-wide row (OrganizationID
- * null), else nothing. Asking with no organization returns only the installation-wide row.
+ * Of one contact method's consent rows, the row that answers a question, most specific first:
+ *
+ * 1. this purpose, this organization;
+ * 2. this purpose, any organization;
+ * 3. any purpose, this organization;
+ * 4. any purpose, any organization (the general row);
+ * 5. nothing, when none of those exist.
+ *
+ * A question with no purpose starts at rung 3; one with no organization skips rungs 1 and 3.
+ * General never means default: a general opt-in loses to a Marketing opt-out for a Marketing send.
  */
-export function PickConsentForOrganization<T extends ConsentRow>(rows: ReadonlyArray<T>, organizationID: string | null | undefined): T | null {
-    const unscoped = rows.find((r) => r.OrganizationID == null) ?? null;
-    if (!organizationID) {
-        return unscoped;
+export function ResolveConsentForScope<T extends ConsentRow>(rows: ReadonlyArray<T>, scope: ConsentScopeKey): T | null {
+    const purposeID = scope.PurposeID ?? null;
+    const organizationID = scope.OrganizationID ?? null;
+    const find = (p: string | null, o: string | null): T | null =>
+        rows.find((r) => sameID(r.ConsentPurposeID, p) && sameID(r.OrganizationID, o)) ?? null;
+    if (purposeID) {
+        const exact = organizationID ? find(purposeID, organizationID) : null;
+        if (exact) return exact;
+        const anyOrg = find(purposeID, null);
+        if (anyOrg) return anyOrg;
     }
-    return rows.find((r) => r.OrganizationID != null && UUIDsEqual(r.OrganizationID, organizationID)) ?? unscoped;
+    const generalForOrg = organizationID ? find(null, organizationID) : null;
+    return generalForOrg ?? find(null, null);
 }
 
 /** Why a channel decision came out the way it did. */

@@ -26,10 +26,10 @@ Comms' hook, not the other way round.
 | Change | What it is |
 |---|---|
 | `ConsentPurpose` | What a consent is for: Marketing, Transactional, Fundraising, Surveys to start. A lookup like ContactType, seeded by metadata, so an installation adds purposes without DDL |
-| `ContactConsent` | One row per contact method, purpose and (optional) organization, holding the current status: `NotSpecified`, `OptedIn` or `OptedOut`. A contact method has many of these, the way a person has many contact methods |
+| `ContactConsent` | One row per contact method, optional purpose and optional organization, holding the current status: `NotSpecified`, `OptedIn` or `OptedOut`. No purpose means the general answer for the address; no organization means the installation-wide answer. A contact method has many of these, the way a person has many contact methods |
 | `ContactConsentHistory` | One row per change on a ContactConsent: the new status, when it took effect in the real world (`ConsentStatusAt`), where it came from (`ConsentSource`), who recorded it, and evidence (`Notes`) |
 | `ContactType.CommunicationBaseMessageTypeID` | Links each type to Comms' message types, so each is known to be Email, Phone or SMS and code never matches on names |
-| `ContactPreferenceEngine` | `CanContact`, `SetConsent`, `OptOutByValue`, each taking a purpose and an optional organization. Setting consent writes the history row and the current status together. This is what Comms' hook calls |
+| `ContactPreferenceEngine` | `CanContact`, `SetConsent`, `OptOutByValue`, each taking an optional purpose and an optional organization. Setting consent writes the history row and the current status together. This is what Comms' hook calls |
 
 Why two scope dimensions: consent in the GDPR and CAN-SPAM sense is per sender and per purpose,
 not per address. A person can be opted in to receipts and out of newsletters, and a person who deals
@@ -46,10 +46,12 @@ Rules:
   so the rule holds for a form edit too.
 - An import that arrives late with an older date is added to history but does not change the
   current status.
-- `CanContact` for a channel, purpose and organization uses the most specific consent a method has:
-  that organization's row, else the installation-wide row, else nothing recorded. Across a person's
-  methods on the channel, an opt-in anywhere wins; nothing recorded allows contact unless the caller
-  requires an explicit opt-in.
+- `CanContact` uses the most specific consent a method has, in this order: this purpose from this
+  organization; this purpose from anyone; any purpose from this organization; the general row; then
+  nothing recorded. A question with no purpose starts at the third rung. General never means default:
+  a general opt-in loses to a Marketing opt-out for a Marketing send. Across a person's methods on the
+  channel, an opt-in anywhere wins; nothing recorded allows contact unless the caller requires an
+  explicit opt-in.
 - Deleting a contact method deletes its consents and their history (`ON DELETE CASCADE`).
 - MemberJunction's record change tracking stays on as the system audit (who changed a row in MJ,
   and when). The history table holds the real-world history.
@@ -59,9 +61,9 @@ Rules:
 Consent shows on each contact method in the existing contact method list: one badge per consent the
 method has (purpose and status), or a single Not specified badge when it has none, for every type
 that maps to a channel. Hovering the badges shows the method's history across its consents, newest
-first, with the source of each change. The edit row offers a Consent dropdown per active purpose for
-the installation-wide answer; per-organization consents are managed on the Contact Consents records
-themselves.
+first, with the source of each change. The edit row offers a General dropdown and one per active purpose,
+for the installation-wide answers; per-organization consents are managed on the Contact Consents
+records themselves.
 
 ## Channel mapping
 
@@ -76,8 +78,8 @@ An app that carries per-person opt-in booleans (email, phone, postal) moves them
 
 | Flag today | Moves to |
 |---|---|
-| email opt-in | a `ContactConsent` on the person's primary email, for the purpose the flag meant (usually Marketing) |
-| phone opt-in | a `ContactConsent` on the person's primary phone, for that purpose |
+| email opt-in | a general `ContactConsent` (no purpose) on the person's primary email, because the flag never had one |
+| phone opt-in | a general `ContactConsent` on the person's primary phone |
 | postal opt-in | Stays on the app's table until postal consent has a home in Common |
 
 `true` becomes `OptedIn`, `false` becomes `OptedOut`, `NULL` becomes `NotSpecified`. Each moved flag
@@ -90,7 +92,5 @@ columns are dropped.
 1. **The hook's contract.** What Comms asks (recipient, channel, maybe purpose) and what it gets back.
    `ContactPreferenceEngine.CanContact` returns `{ Allowed, Status, Reason }` for a person or
    organization and a channel; adjust it to the hook when the hook exists.
-2. **Default purpose for callers that do not name one.** `CanContact` requires a purpose. Whether
-   Comms always knows the purpose of a send, or needs a default, is part of the hook contract.
-3. **Contact center's do-not-call list.** `DoNotCallEntry` in bizapps-contact-center overlaps with
+2. **Contact center's do-not-call list.** `DoNotCallEntry` in bizapps-contact-center overlaps with
    phone opt-outs. Whether contact center reads Common's consent, feeds into it, or both.
