@@ -13416,6 +13416,10 @@ EXEC [${mjSchema}].spCreateTemplateParam @ID = @ID_7ffc807670ca,
 GO
 
 -- Save MJ: AI Prompts (core SP call only)
+-- MJ core shipped a prompt with this same ID (MJ v6.2.0-edge.0/.1, migration V202609221852). MJ core's later
+-- V202610022141 removes that copy only when nothing references it, so on some databases the row already exists here.
+-- Create the prompt when it is missing; otherwise adopt the existing row by updating it to bizapps-common's values
+-- (its template B8221E1A, its Description, ...). A plain create would fail with a primary-key violation.
 DECLARE @ID_abc44ee165ae UNIQUEIDENTIFIER,
 @Name_abc44ee165ae NVARCHAR(255),
 @Description_abc44ee165ae NVARCHAR(MAX),
@@ -13534,6 +13538,8 @@ SET
   @PrefillFallbackMode_abc44ee165ae = N'Ignore'
 SET
   @RequireSpecificModels_abc44ee165ae = 0
+IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[AIPrompt] WHERE [ID] = @ID_abc44ee165ae)
+BEGIN
 EXEC [${mjSchema}].spCreateAIPrompt @ID = @ID_abc44ee165ae,
   @Name = @Name_abc44ee165ae,
   @Description = @Description_abc44ee165ae,
@@ -13605,10 +13611,184 @@ EXEC [${mjSchema}].spCreateAIPrompt @ID = @ID_abc44ee165ae,
   @AssistantPrefill_Clear = 1,
   @PrefillFallbackMode = @PrefillFallbackMode_abc44ee165ae,
   @RequireSpecificModels = @RequireSpecificModels_abc44ee165ae;
+END ELSE
+BEGIN
+EXEC [${mjSchema}].spUpdateAIPrompt @ID = @ID_abc44ee165ae,
+  @Name = @Name_abc44ee165ae,
+  @Description = @Description_abc44ee165ae,
+  @TemplateID = @TemplateID_abc44ee165ae,
+  @CategoryID = @CategoryID_abc44ee165ae,
+  @TypeID = @TypeID_abc44ee165ae,
+  @Status = @Status_abc44ee165ae,
+  @ResponseFormat = @ResponseFormat_abc44ee165ae,
+  @ModelSpecificResponseFormat = @ModelSpecificResponseFormat_abc44ee165ae,
+  @ModelSpecificResponseFormat_Clear = 1,
+  @AIModelTypeID = @AIModelTypeID_abc44ee165ae,
+  @AIModelTypeID_Clear = 1,
+  @MinPowerRank = @MinPowerRank_abc44ee165ae,
+  @SelectionStrategy = @SelectionStrategy_abc44ee165ae,
+  @PowerPreference = @PowerPreference_abc44ee165ae,
+  @ParallelizationMode = @ParallelizationMode_abc44ee165ae,
+  @ParallelCount = @ParallelCount_abc44ee165ae,
+  @ParallelCount_Clear = 1,
+  @ParallelConfigParam = @ParallelConfigParam_abc44ee165ae,
+  @ParallelConfigParam_Clear = 1,
+  @OutputType = @OutputType_abc44ee165ae,
+  @OutputExample = @OutputExample_abc44ee165ae,
+  @OutputExample_Clear = 1,
+  @ValidationBehavior = @ValidationBehavior_abc44ee165ae,
+  @MaxRetries = @MaxRetries_abc44ee165ae,
+  @RetryDelayMS = @RetryDelayMS_abc44ee165ae,
+  @RetryStrategy = @RetryStrategy_abc44ee165ae,
+  @ResultSelectorPromptID = @ResultSelectorPromptID_abc44ee165ae,
+  @ResultSelectorPromptID_Clear = 1,
+  @EnableCaching = @EnableCaching_abc44ee165ae,
+  @CacheTTLSeconds = @CacheTTLSeconds_abc44ee165ae,
+  @CacheTTLSeconds_Clear = 1,
+  @CacheMatchType = @CacheMatchType_abc44ee165ae,
+  @CacheSimilarityThreshold = @CacheSimilarityThreshold_abc44ee165ae,
+  @CacheSimilarityThreshold_Clear = 1,
+  @CacheMustMatchModel = @CacheMustMatchModel_abc44ee165ae,
+  @CacheMustMatchVendor = @CacheMustMatchVendor_abc44ee165ae,
+  @CacheMustMatchAgent = @CacheMustMatchAgent_abc44ee165ae,
+  @CacheMustMatchConfig = @CacheMustMatchConfig_abc44ee165ae,
+  @PromptRole = @PromptRole_abc44ee165ae,
+  @PromptPosition = @PromptPosition_abc44ee165ae,
+  @Temperature = @Temperature_abc44ee165ae,
+  @Temperature_Clear = 1,
+  @TopP = @TopP_abc44ee165ae,
+  @TopP_Clear = 1,
+  @TopK = @TopK_abc44ee165ae,
+  @TopK_Clear = 1,
+  @MinP = @MinP_abc44ee165ae,
+  @MinP_Clear = 1,
+  @FrequencyPenalty = @FrequencyPenalty_abc44ee165ae,
+  @FrequencyPenalty_Clear = 1,
+  @PresencePenalty = @PresencePenalty_abc44ee165ae,
+  @PresencePenalty_Clear = 1,
+  @Seed = @Seed_abc44ee165ae,
+  @Seed_Clear = 1,
+  @StopSequences = @StopSequences_abc44ee165ae,
+  @StopSequences_Clear = 1,
+  @IncludeLogProbs = @IncludeLogProbs_abc44ee165ae,
+  @TopLogProbs = @TopLogProbs_abc44ee165ae,
+  @TopLogProbs_Clear = 1,
+  @FailoverStrategy = @FailoverStrategy_abc44ee165ae,
+  @FailoverMaxAttempts = @FailoverMaxAttempts_abc44ee165ae,
+  @FailoverDelaySeconds = @FailoverDelaySeconds_abc44ee165ae,
+  @FailoverModelStrategy = @FailoverModelStrategy_abc44ee165ae,
+  @FailoverErrorScope = @FailoverErrorScope_abc44ee165ae,
+  @EffortLevel = @EffortLevel_abc44ee165ae,
+  @EffortLevel_Clear = 1,
+  @AssistantPrefill = @AssistantPrefill_abc44ee165ae,
+  @AssistantPrefill_Clear = 1,
+  @PrefillFallbackMode = @PrefillFallbackMode_abc44ee165ae,
+  @RequireSpecificModels = @RequireSpecificModels_abc44ee165ae;
+END;
+
+-- MJ core's former template for this prompt (FE0A363B, content 00AAECBA, param A6FE72EC) is left behind when MJ
+-- core's prompt copy was adopted above. Remove it only when nothing references it: no foreign key into the template
+-- (other than its own contents and params), into content 00AAECBA or into param A6FE72EC, and the template has no
+-- contents or params besides those two (the delete procedures do not cascade).
+DECLARE @BizEnv6_TemplateID UNIQUEIDENTIFIER = 'FE0A363B-4EF6-4CCA-A7E3-93E3C015F3AF',
+  @BizEnv6_TemplateContentID UNIQUEIDENTIFIER = '00AAECBA-0772-49C0-9E6A-B9E6205E1A4B',
+  @BizEnv6_TemplateParamID UNIQUEIDENTIFIER = 'A6FE72EC-AA38-444A-A38D-DC33FA7F0030',
+  @BizEnv6_TemplateReferenceCount INT = 0,
+  @BizEnv6_TemplateCountSQL NVARCHAR(MAX);
+IF EXISTS (SELECT 1 FROM [${mjSchema}].[Template] WHERE [ID] = @BizEnv6_TemplateID)
+BEGIN
+  SELECT @BizEnv6_TemplateCountSQL = STRING_AGG(CONVERT(NVARCHAR(MAX),
+      N'SELECT @Count = @Count + COUNT(*) FROM ' + QUOTENAME(OBJECT_SCHEMA_NAME(fkc.parent_object_id)) + N'.'
+      + QUOTENAME(OBJECT_NAME(fkc.parent_object_id)) + N' WHERE '
+      + QUOTENAME(COL_NAME(fkc.parent_object_id, fkc.parent_column_id))
+      + CASE fkc.referenced_object_id
+          WHEN OBJECT_ID(N'[${mjSchema}].[Template]') THEN N' = @ID;'
+          WHEN OBJECT_ID(N'[${mjSchema}].[TemplateContent]') THEN N' = @ContentID;'
+          ELSE N' = @ParamID;' END), NCHAR(10))
+  FROM sys.foreign_key_columns fkc
+  WHERE (fkc.referenced_object_id = OBJECT_ID(N'[${mjSchema}].[Template]')
+      AND fkc.parent_object_id NOT IN (
+        OBJECT_ID(N'[${mjSchema}].[TemplateContent]'),
+        OBJECT_ID(N'[${mjSchema}].[TemplateParam]')
+      ))
+    OR fkc.referenced_object_id IN (
+      OBJECT_ID(N'[${mjSchema}].[TemplateContent]'),
+      OBJECT_ID(N'[${mjSchema}].[TemplateParam]')
+    );
+  IF @BizEnv6_TemplateCountSQL IS NOT NULL
+    EXEC sp_executesql @BizEnv6_TemplateCountSQL,
+      N'@ID UNIQUEIDENTIFIER, @ContentID UNIQUEIDENTIFIER, @ParamID UNIQUEIDENTIFIER, @Count INT OUTPUT',
+      @ID = @BizEnv6_TemplateID, @ContentID = @BizEnv6_TemplateContentID, @ParamID = @BizEnv6_TemplateParamID,
+      @Count = @BizEnv6_TemplateReferenceCount OUTPUT;
+  SELECT @BizEnv6_TemplateReferenceCount = @BizEnv6_TemplateReferenceCount
+    + (SELECT COUNT(*) FROM [${mjSchema}].[TemplateContent]
+       WHERE [TemplateID] = @BizEnv6_TemplateID AND [ID] <> @BizEnv6_TemplateContentID)
+    + (SELECT COUNT(*) FROM [${mjSchema}].[TemplateParam]
+       WHERE [TemplateID] = @BizEnv6_TemplateID AND [ID] <> @BizEnv6_TemplateParamID);
+  IF @BizEnv6_TemplateReferenceCount = 0
+  BEGIN
+    IF EXISTS (SELECT 1 FROM [${mjSchema}].[TemplateContent] WHERE [ID] = @BizEnv6_TemplateContentID)
+      EXEC [${mjSchema}].spDeleteTemplateContent @ID = @BizEnv6_TemplateContentID;
+    IF EXISTS (SELECT 1 FROM [${mjSchema}].[TemplateParam] WHERE [ID] = @BizEnv6_TemplateParamID)
+      EXEC [${mjSchema}].spDeleteTemplateParam @ID = @BizEnv6_TemplateParamID;
+    EXEC [${mjSchema}].spDeleteTemplate @ID = @BizEnv6_TemplateID;
+  END
+END
 
 GO
 
 -- Save MJ: AI Prompt Models (core SP call only)
+-- MJ core's former copy of this prompt (adopted in the batch above) came with two model bindings: 29E25958 (the
+-- same model, vendor and NULL configuration as FE550867 below) and EBCD12BB (Vertex AI, Priority 2, which the
+-- 'Specific' selection strategy would try first). The prompt must end with only this package's binding, as on a
+-- fresh install, so FE550867 stays pushable from metadata/:
+-- - a core binding that no foreign key references is deleted here;
+-- - a referenced 29E25958 is replaced by FE550867: its referencing rows (every foreign key into AIPromptModel,
+--   e.g. AICredentialBinding) are repointed to FE550867 after the create below, then 29E25958 is deleted. Both rows
+--   name the same model and vendor, so a repointed credential keeps serving the same vendor;
+-- - a referenced EBCD12BB is kept: repointing its rows would move a Vertex AI credential onto a Google binding.
+-- The delete procedure does not cascade, so a reference this count missed fails the batch instead of being lost.
+DECLARE @BizEnv6_BindingID UNIQUEIDENTIFIER,
+  @BizEnv6_BindingReferenceCount INT,
+  @BizEnv6_BindingCountSQL NVARCHAR(MAX),
+  @BizEnv6_BindingRepointSQL NVARCHAR(MAX),
+  @BizEnv6_ReplaceCoreBinding BIT = 0,
+  @BizEnv6_CoreBindingID UNIQUEIDENTIFIER = '29E25958-922D-4148-A9DB-01770ED9F3B0';
+DECLARE @BizEnv6_CoreBindings TABLE ([ID] UNIQUEIDENTIFIER PRIMARY KEY);
+INSERT INTO @BizEnv6_CoreBindings ([ID])
+SELECT [ID] FROM [${mjSchema}].[AIPromptModel]
+WHERE [PromptID] = '7C46041F-0412-4C2E-9B9E-3ED61D32210C'
+  AND [ID] IN ('29E25958-922D-4148-A9DB-01770ED9F3B0', 'EBCD12BB-B5D0-45A5-84E0-C6EAEA8ADF0A');
+SELECT @BizEnv6_BindingCountSQL = STRING_AGG(CONVERT(NVARCHAR(MAX),
+    N'SELECT @Count = @Count + COUNT(*) FROM ' + QUOTENAME(OBJECT_SCHEMA_NAME(fkc.parent_object_id)) + N'.'
+    + QUOTENAME(OBJECT_NAME(fkc.parent_object_id)) + N' WHERE '
+    + QUOTENAME(COL_NAME(fkc.parent_object_id, fkc.parent_column_id)) + N' = @ID;'), NCHAR(10)),
+  @BizEnv6_BindingRepointSQL = STRING_AGG(CONVERT(NVARCHAR(MAX),
+    N'UPDATE ' + QUOTENAME(OBJECT_SCHEMA_NAME(fkc.parent_object_id)) + N'.'
+    + QUOTENAME(OBJECT_NAME(fkc.parent_object_id)) + N' SET '
+    + QUOTENAME(COL_NAME(fkc.parent_object_id, fkc.parent_column_id)) + N' = @NewID WHERE '
+    + QUOTENAME(COL_NAME(fkc.parent_object_id, fkc.parent_column_id)) + N' = @OldID;'), NCHAR(10))
+FROM sys.foreign_key_columns fkc
+WHERE fkc.referenced_object_id = OBJECT_ID(N'[${mjSchema}].[AIPromptModel]');
+WHILE EXISTS (SELECT 1 FROM @BizEnv6_CoreBindings)
+BEGIN
+  SELECT TOP 1 @BizEnv6_BindingID = [ID] FROM @BizEnv6_CoreBindings ORDER BY [ID];
+  SET @BizEnv6_BindingReferenceCount = 0;
+  IF @BizEnv6_BindingCountSQL IS NOT NULL
+    EXEC sp_executesql @BizEnv6_BindingCountSQL, N'@ID UNIQUEIDENTIFIER, @Count INT OUTPUT',
+      @ID = @BizEnv6_BindingID, @Count = @BizEnv6_BindingReferenceCount OUTPUT;
+  IF @BizEnv6_BindingReferenceCount = 0
+    EXEC [${mjSchema}].spDeleteAIPromptModel @ID = @BizEnv6_BindingID;
+  ELSE IF @BizEnv6_BindingID = @BizEnv6_CoreBindingID
+    SET @BizEnv6_ReplaceCoreBinding = 1;
+  DELETE FROM @BizEnv6_CoreBindings WHERE [ID] = @BizEnv6_BindingID;
+END
+
+-- UQ_AIPromptModel_Prompt_Model_Vendor_ConfigID (prompt, model, vendor, configuration) does not allow FE550867 and
+-- 29E25958 side by side. While 29E25958 waits for its rows to be repointed, clear its vendor so its key differs;
+-- it is deleted at the end of this batch, and the migration runs in one transaction, so this state never persists.
+IF @BizEnv6_ReplaceCoreBinding = 1
+  EXEC [${mjSchema}].spUpdateAIPromptModel @ID = @BizEnv6_CoreBindingID, @VendorID_Clear = 1;
 DECLARE @ID_88bac8023101 UNIQUEIDENTIFIER,
 @PromptID_88bac8023101 UNIQUEIDENTIFIER,
 @ModelID_88bac8023101 UNIQUEIDENTIFIER,
@@ -13657,6 +13837,14 @@ EXEC [${mjSchema}].spCreateAIPromptModel @ID = @ID_88bac8023101,
   @ParallelConfigParam_Clear = 1,
   @EffortLevel = @EffortLevel_88bac8023101,
   @EffortLevel_Clear = 1;
+
+-- Move the rows that referenced MJ core's 29E25958 to FE550867, then delete 29E25958 (see the top of this batch).
+IF @BizEnv6_ReplaceCoreBinding = 1
+BEGIN
+  EXEC sp_executesql @BizEnv6_BindingRepointSQL, N'@OldID UNIQUEIDENTIFIER, @NewID UNIQUEIDENTIFIER',
+    @OldID = @BizEnv6_CoreBindingID, @NewID = @ID_88bac8023101;
+  EXEC [${mjSchema}].spDeleteAIPromptModel @ID = @BizEnv6_CoreBindingID;
+END
 
 GO
 

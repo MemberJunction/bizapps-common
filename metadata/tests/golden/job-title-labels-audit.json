@@ -1,0 +1,1719 @@
+{
+  "InstructionsNote": "InstructionsSha256 is of the instructions exactly as sent on 2026-10-14. Afterwards the guide's first heading lost an internal task reference and its last note lost a parenthetical; the labels, guide rules and taxonomy did not change. The guide's abstain-rule section was added later still; it governs only the 6 required specification cases of the golden set, which no labeler labelled and this file does not cover.",
+  "InstructionsSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c",
+  "Labelers": [
+    {
+      "ID": "A",
+      "Vendor": "independent blind labeler (model not recorded)",
+      "Model": "not recorded",
+      "PromptSha256": null
+    },
+    {
+      "ID": "B",
+      "Vendor": "OpenAI",
+      "Model": "GPT-6 Astra",
+      "PromptSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c"
+    },
+    {
+      "ID": "C",
+      "Vendor": "Google",
+      "Model": "Gemini 3.8 Flash",
+      "PromptSha256": "ea0dc1ea10074b40565177f389799bf77011fed1ae7b359af74d2123bdfde06c"
+    }
+  ],
+  "Labelled": [
+    {
+      "ID": "g01",
+      "Input": {
+        "CurrentJobTitle": "Interim CEO"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g02",
+      "Input": {
+        "CurrentJobTitle": "Owner/Operator"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g03",
+      "Input": {
+        "CurrentJobTitle": "Creamery Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g04",
+      "Input": {
+        "CurrentJobTitle": "Cheese Monger II"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g05",
+      "Input": {
+        "CurrentJobTitle": "Curriculum Lead"
+      },
+      "A": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Team Lead"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g06",
+      "Input": {
+        "CurrentJobTitle": "Junior Cheesemonger"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g07",
+      "Input": {
+        "CurrentJobTitle": "Product Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g08",
+      "Input": {
+        "CurrentJobTitle": "Cheesemaker & Co-owner"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g09",
+      "Input": {
+        "CurrentJobTitle": "Cheese Program Director"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g10",
+      "Input": {
+        "CurrentJobTitle": "Jefe de Producción"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g11",
+      "Input": {
+        "CurrentJobTitle": "Co-owner"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g12",
+      "Input": {
+        "CurrentJobTitle": "Owner"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g13",
+      "Input": {
+        "CurrentJobTitle": "Affinage Apprentice"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g14",
+      "Input": {
+        "CurrentJobTitle": "Founder"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g15",
+      "Input": {
+        "CurrentJobTitle": "VP Procurement"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g16",
+      "Input": {
+        "CurrentJobTitle": "Affineur"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g17",
+      "Input": {
+        "CurrentJobTitle": "Affineur & Owner"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g18",
+      "Input": {
+        "CurrentJobTitle": "Technical Sales Representative"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g19",
+      "Input": {
+        "CurrentJobTitle": "Head Cheesemaker"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g20",
+      "Input": {
+        "CurrentJobTitle": "Associate Brand Mgr"
+      },
+      "A": {
+        "JobFunctions": [
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g21",
+      "Input": {
+        "CurrentJobTitle": "Store Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g22",
+      "Input": {
+        "CurrentJobTitle": "Dir. Quality Assurance"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g23",
+      "Input": {
+        "CurrentJobTitle": "Board Chair"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Board Member"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Board Member"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Board Member"
+        ]
+      }
+    },
+    {
+      "ID": "g24",
+      "Input": {
+        "CurrentJobTitle": "Principal"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g25",
+      "Input": {
+        "CurrentJobTitle": "Head of People"
+      },
+      "A": {
+        "JobFunctions": [
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g26",
+      "Input": {
+        "CurrentJobTitle": "Cheesemonger"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g27",
+      "Input": {
+        "CurrentJobTitle": "Senior Lecturer"
+      },
+      "A": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g28",
+      "Input": {
+        "CurrentJobTitle": "Instructor"
+      },
+      "A": {
+        "JobFunctions": [
+          "Education & Training",
+          "Operations",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Education & Training",
+          "Human Resources"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g29",
+      "Input": {
+        "CurrentJobTitle": "Specialty Cheese Buyer"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g30",
+      "Input": {
+        "CurrentJobTitle": "Program Director"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Product"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g31",
+      "Input": {
+        "CurrentJobTitle": "Food Safety Consultant"
+      },
+      "A": {
+        "JobFunctions": [
+          "Legal",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Legal",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Legal",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g32",
+      "Input": {
+        "CurrentJobTitle": "Head Cheesemonger"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g33",
+      "Input": {
+        "CurrentJobTitle": "Sales Director"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g34",
+      "Input": {
+        "CurrentJobTitle": "Operations Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g35",
+      "Input": {
+        "CurrentJobTitle": "Account Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Customer Success"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Customer Success"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Customer Success"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g36",
+      "Input": {
+        "CurrentJobTitle": "VP Ops"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g37",
+      "Input": {
+        "CurrentJobTitle": "Herd Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g38",
+      "Input": {
+        "CurrentJobTitle": "Regional Sales Director"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "Vice President"
+        ]
+      }
+    },
+    {
+      "ID": "g39",
+      "Input": {
+        "CurrentJobTitle": "Chief Cheese Officer"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive",
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive",
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive",
+          "Marketing"
+        ],
+        "SeniorityLevel": [
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g40",
+      "Input": {
+        "CurrentJobTitle": "Sr. Mgr, Supply Chain"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      }
+    },
+    {
+      "ID": "g41",
+      "Input": {
+        "CurrentJobTitle": "Assistant Cheesemaker"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g42",
+      "Input": {
+        "CurrentJobTitle": "Production Lead"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g43",
+      "Input": {
+        "CurrentJobTitle": "Quality Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g44",
+      "Input": {
+        "CurrentJobTitle": "Cheesemaker"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g45",
+      "Input": {
+        "CurrentJobTitle": "Cheese Buyer"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Finance"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g46",
+      "Input": {
+        "CurrentJobTitle": "Counter Lead"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Team Lead",
+          "Manager"
+        ]
+      }
+    },
+    {
+      "ID": "g47",
+      "Input": {
+        "CurrentJobTitle": "Fromager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Sales",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g48",
+      "Input": {
+        "CurrentJobTitle": "Responsable Qualité"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Legal"
+        ],
+        "SeniorityLevel": [
+          "Manager",
+          "Director"
+        ]
+      }
+    },
+    {
+      "ID": "g49",
+      "Input": {
+        "CurrentJobTitle": "Principal Engineer"
+      },
+      "A": {
+        "JobFunctions": [
+          "Engineering"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Engineering"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Engineering"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g50",
+      "Input": {
+        "CurrentJobTitle": "Volunteer Coordinator"
+      },
+      "A": {
+        "JobFunctions": [
+          "Human Resources",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Human Resources",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Human Resources",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    },
+    {
+      "ID": "g51",
+      "Input": {
+        "CurrentJobTitle": "GM"
+      },
+      "A": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Executive",
+          "Operations"
+        ],
+        "SeniorityLevel": [
+          "Director",
+          "C-Level"
+        ]
+      }
+    },
+    {
+      "ID": "g52",
+      "Input": {
+        "CurrentJobTitle": "Asst. to the Regional Manager"
+      },
+      "A": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "B": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      },
+      "C": {
+        "JobFunctions": [
+          "Operations",
+          "Sales"
+        ],
+        "SeniorityLevel": [
+          "Individual Contributor"
+        ]
+      }
+    }
+  ],
+  "Spend": {
+    "Calls": 104,
+    "PromptTokens": 106365,
+    "CompletionTokens": 25301,
+    "CacheReadTokens": 103277,
+    "Cost": 0.33408902500000004,
+    "LastCallCost": 0.0025529999999999997
+  }
+}

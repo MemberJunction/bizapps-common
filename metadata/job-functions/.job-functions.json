@@ -92,7 +92,7 @@
   {
     "fields": {
       "Name": "Operations",
-      "Description": "Business operations, revenue operations, IT operations, and supply chain.",
+      "Description": "Business operations, revenue operations, IT operations, supply chain, procurement, production and store operations.",
       "Sequence": 70,
       "Status": "Active"
     },
@@ -167,7 +167,7 @@
   {
     "fields": {
       "Name": "Executive",
-      "Description": "Executive leadership, general management, and corporate strategy.",
+      "Description": "Executive leadership, general management, corporate strategy, founders and owners.",
       "Sequence": 120,
       "Status": "Active"
     },
@@ -177,6 +177,17 @@
     "sync": {
       "lastModified": "2026-09-21T18:02:39.677Z",
       "checksum": "a0c5e1e1073f51bdd47e311adf4d9d26715f49cdc9c1de61dbcb14d928fa8030"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Education & Training",
+      "Description": "Teaching, instruction, curriculum, continuing education, certification programs and member learning.",
+      "Sequence": 130,
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "E8942FE3-8A0E-458C-83CF-36B6F3862F16"
     }
   }
 ]
