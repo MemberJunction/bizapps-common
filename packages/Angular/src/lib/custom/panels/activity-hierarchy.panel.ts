@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RegisterClassEx } from '@memberjunction/global';
+import { RegisterClassEx, UUIDsEqual } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { UserInfoEngine } from '@memberjunction/core-entities';
@@ -81,7 +81,7 @@ export class ActivityHierarchyPanel extends BaseFormPanel<mjBizAppsCommonActivit
 
     public get treeConfig(): HierarchyTreeConfig {
         const recId = this.Record?.ID || null;
-        if (!this._treeConfig || this._cachedRecordId !== recId) {
+        if (!this._treeConfig || !UUIDsEqual(this._cachedRecordId, recId)) {
             this._cachedRecordId = recId;
             const rootId = this.Record?.RootParentActivityID || recId;
             const extraFilter = rootId

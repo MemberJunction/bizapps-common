@@ -78,26 +78,48 @@
         }
 
         <ng-content></ng-content>
+    }
 
-        @if (EditMode) {
-            <div class="biz-hero__edit">
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Name"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LegalName"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Website"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
-                </div>
-                <div class="biz-hero__field">
-                    <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
-                        Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
-                </div>
+    <!-- Outside the collapse: this hero claims the generated identity section, so these are the only
+         inputs for its fields. Collapsing the header must not take them away (#343). -->
+    @if (EditMode) {
+        <div class="biz-hero__edit">
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Name"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
             </div>
-        }
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LegalName"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="OrganizationTypeID"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="Record"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Status"
+                    Type="select" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="FoundedDate"
+                    Type="datepicker" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="TaxID"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Website"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="LogoURL"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="URL"></mj-form-field>
+            </div>
+            <div class="biz-hero__field biz-hero__field--span">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Description"
+                    Type="textarea" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+        </div>
     }
 </div>

@@ -44,6 +44,18 @@ export interface GraphServicePrincipal {
     clientSecret: string;
 }
 
+/**
+ * How many requests one mail pass may make while it looks for a date window that fits `Limit`.
+ *
+ * Each request is one `GetMessages` call of at most `Limit` messages. Halving a window that holds
+ * too much converges in about log2(span / fitting width) requests, so this covers a span of decades
+ * down to a window of minutes; a pass that runs out says so rather than looping.
+ */
+export const DEFAULT_MAX_MAIL_REQUESTS = 16;
+
+/** A window narrower than this that still overflows a page is reported, not narrowed further. */
+const MIN_MAIL_WINDOW_MS = 1_000;
+
 /** The slice of MJ's communication provider this uses. Structural, to avoid a hard runtime import. */
 export interface GraphMessageReader {
     GetMessages(
@@ -51,6 +63,8 @@ export interface GraphMessageReader {
             Identifier?: string;
             NumMessages: number;
             UnreadOnly?: boolean;
+            ReceivedAfter?: Date;
+            ReceivedBefore?: Date;
             ContextData?: Record<string, unknown>;
         },
         credentials?: unknown,
@@ -59,7 +73,7 @@ export interface GraphMessageReader {
         Messages?: unknown[];
         SourceData?: unknown[];
         ErrorMessage?: string;
-        AppliedFilters?: unknown;
+        AppliedFilters?: { ReceivedAfter?: boolean; ReceivedBefore?: boolean };
     }>;
 }
 
@@ -99,7 +113,12 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
     public readonly Describe = 'Microsoft Graph (live, via MJ Communication)';
     public readonly IsLive = true;
 
-    public constructor(private readonly Deps: GraphTransportDeps) {}
+    public constructor(
+        private readonly Deps: GraphTransportDeps,
+        private readonly MaxRequests: number = DEFAULT_MAX_MAIL_REQUESTS,
+        /** Injectable so a test can pin the end of the window without freezing global time. */
+        private readonly Now: () => Date = () => new Date(),
+    ) {}
 
     public async Fetch(query: ActivitySourceQuery): Promise<RawBatch> {
         const issues: string[] = [];
@@ -118,71 +137,201 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
         }
 
         const provider = await this.Deps.ResolveProvider();
+        const drain = await this.drain(provider, credential, query);
+        return this.toBatch(drain, query, issues);
+    }
 
-        // NO DATE BOUND IS SENT YET, DELIBERATELY. `GetMessages` has no date parameter, and the
-        // one operation that does — `SearchMessages`, whose FromDate/ToDate become a plain
-        // `receivedDateTime` $filter — returns only MJ's normalized Messages with no SourceData,
-        // which this transport cannot use (see the module header). Expressing "since the
-        // watermark" on GetMessages today would mean ContextData.Filter — a provider-specific
-        // escape hatch that ALSO silently discarded any other clause. MemberJunction/MJ#4123 adds
-        // ReceivedAfter to GetMessages and fixes that overwrite. Until it publishes, the window is
-        // applied downstream in Normalize, which already filters on query.Since. The cost is
-        // over-fetching rather than a correctness gap — EXCEPT that Limit bounds the read, so a
-        // mailbox holding more than Limit messages newer than the watermark will not drain in one
-        // pass. Hence the issue recorded below rather than silence.
-        //
-        // `accountEmail` IS REQUIRED BY MJ. `MSGraphProvider.resolveCredentials` validates four
-        // fields — tenantId, clientId, clientSecret AND accountEmail — before it does anything, and
-        // the "Azure Service Principal" credential carries only the first three. Without this the
-        // very first live call fails with "Missing required credentials: accountEmail" on any host
-        // that does not happen to export AZURE_ACCOUNT_EMAIL, which is exactly the machine-specific
-        // failure this transport exists to end. The request path already targets `Identifier`, so
-        // the value here only satisfies validation — and the mailbox named in the query is the one
-        // correct value per connection, where a host-wide environment variable could never be.
-        //
-        // `disableEnvironmentFallback` MAKES THE HEADER'S PROMISE ENFORCED. MJ resolves each field as
-        // "the value passed, else the AZURE_* environment variable". Without this flag a credential
-        // with a blank field would silently borrow the host's, and read whatever mailbox THAT points
-        // at. With it, an incomplete credential fails loudly on the field name instead.
+    /**
+     * Read the mailbox OLDEST WINDOW FIRST, so a backlog larger than one page still drains (#308).
+     *
+     * WHY NOT ONE REQUEST. MJ's `GetMessages` sends `$top` with no `$orderby` and no paging, so one
+     * request of `Limit` returns the newest `Limit` messages. When more than that arrived since the
+     * watermark, the watermark was withheld and the next run sent the same request and got the same
+     * page back: the older mail was never read on any run.
+     *
+     * HOW. `ReceivedAfter`/`ReceivedBefore` (inclusive, Graph `ge`/`le`) bound a window starting at
+     * the watermark. A window whose page comes back SHORT holds nothing more, so everything received
+     * up to its end has been read and the next window starts there, twice as wide. A FULL page says
+     * only that the window holds too much, whatever order Graph returned it in, so the window is
+     * narrowed and read again. Progress is kept across runs through the watermark itself: a pass that
+     * stops before reaching now reports `ReadThrough`, the end of the last window it drained.
+     *
+     * Messages from a full page are not kept. Drained windows are kept only while their total stays
+     * within `Limit`, so a pass never returns more than one page's worth.
+     */
+    private async drain(
+        provider: GraphMessageReader,
+        credential: GraphServicePrincipal,
+        query: ActivitySourceQuery,
+    ): Promise<MailDrain> {
+        const now = this.Now();
+        const state: MailDrain = { Drained: [], FirstPage: [], ReadThrough: null, Requests: 0, Stop: 'Budget' };
+        const seen = new Set<string>();
+        let cursor = query.Since ?? new Date(0);
+        let width = Math.max(now.getTime() - cursor.getTime(), MIN_MAIL_WINDOW_MS);
+        while (state.Requests < this.MaxRequests) {
+            const hi = new Date(cursor.getTime() + width);
+            const open = hi.getTime() >= now.getTime();
+            const after = cursor.getTime() > 0 ? cursor : undefined;
+            const page = await this.readPage(provider, credential, query, after, open ? undefined : hi);
+            state.Requests++;
+            if (state.Requests === 1) state.FirstPage = page.Payloads;
+            const full = page.Payloads.length >= query.Limit;
+            if (!full && (open || page.Bounded)) {
+                // Drained: everything in this window is on this page. Taken only while the pass stays
+                // within Limit; past that the window is left for the next run, which starts here.
+                const merged = keepNew(state.Drained, page.Payloads, seen);
+                if (merged.length > query.Limit) return state;
+                state.Drained = merged;
+                if (open) return { ...state, Stop: 'CaughtUp' };
+                state.ReadThrough = hi;
+                cursor = hi;
+                width *= 2;
+                continue;
+            }
+            if (!page.Bounded) return { ...state, Stop: 'Unbounded' };
+            width = narrowedWidth(cursor, open ? now : hi, page.Payloads);
+            if (width < MIN_MAIL_WINDOW_MS) return { ...state, Stop: 'Crowded', CrowdedAt: cursor };
+        }
+        return state;
+    }
+
+    /**
+     * One `GetMessages` request, and whether Graph applied the bounds it was sent.
+     *
+     * `accountEmail` IS REQUIRED BY MJ. `MSGraphProvider.resolveCredentials` validates four fields —
+     * tenantId, clientId, clientSecret AND accountEmail — before it does anything, and the "Azure
+     * Service Principal" credential carries only the first three. The request path already targets
+     * `Identifier`, so the value here only satisfies validation, and the mailbox named in the query
+     * is the one correct value per connection, where a host-wide environment variable could never be.
+     *
+     * `disableEnvironmentFallback` MAKES THE HEADER'S PROMISE ENFORCED. MJ resolves each field as
+     * "the value passed, else the AZURE_* environment variable". Without this flag a credential with
+     * a blank field would silently borrow the host's, and read whatever mailbox THAT points at.
+     *
+     * A BOUND GRAPH IGNORED IS NOT A BOUND. MJ documents that a provider unable to filter by date
+     * returns unfiltered results rather than failing; `AppliedFilters` is how that is told apart.
+     */
+    private async readPage(
+        provider: GraphMessageReader,
+        credential: GraphServicePrincipal,
+        query: ActivitySourceQuery,
+        after: Date | undefined,
+        before: Date | undefined,
+    ): Promise<{ Payloads: Record<string, unknown>[]; Bounded: boolean }> {
         const result = await provider.GetMessages(
-            { Identifier: query.Mailbox, NumMessages: query.Limit },
+            { Identifier: query.Mailbox, NumMessages: query.Limit, ReceivedAfter: after, ReceivedBefore: before },
             { ...credential, accountEmail: query.Mailbox, disableEnvironmentFallback: true },
         );
-
         if (!result?.Success) {
             throw new Error(result?.ErrorMessage?.trim() || `Graph returned no result for mailbox "${query.Mailbox}".`);
         }
-
-        const payloads = (result.SourceData ?? []) as Record<string, unknown>[];
-
-        // A FULL PAGE MEANS THERE MAY BE MORE, WATERMARK OR NOT.
-        //
-        // This used to require `query.Since`, which left the FIRST run — the one most likely to
-        // overflow a page — unprotected. No date bound is sent, so Graph returns the newest `Limit`
-        // messages; `BaseActivitySyncProvider` then computes a high watermark from them and the next
-        // run asks for everything AFTER the newest. Every message older than that first page is
-        // skipped permanently, and the run reports Success with no issue. A mailbox with more history
-        // than one page silently loses all of it.
-        //
-        // `Capped` also withholds the watermark upstream, which is what actually prevents the loss;
-        // the issue below is how anyone finds out a re-run is needed.
-        const capped = payloads.length >= query.Limit;
-        if (capped) {
-            const context = query.Since
-                ? 'while a watermark was set, so older items may remain unread'
-                : 'on a FIRST run with no watermark, so anything older than this page has not been read';
-            issues.push(
-                `Fetched the maximum of ${query.Limit} message(s) for "${query.Mailbox}" ${context}. ` +
-                    'The watermark is being withheld so nothing is skipped — re-run to continue, or raise ' +
-                    'the limit. A server-side date bound (MemberJunction/MJ#4123) removes this entirely.',
-            );
-        }
-
-        // `Capped` is what actually protects the mail; the issue above only TELLS someone. Without
-        // it the watermark advanced to the newest item in a truncated batch and the remainder was
-        // never read again.
-        return { Payloads: payloads, Issues: issues, Capped: capped };
+        const applied = result.AppliedFilters;
+        const bounded =
+            (!after || applied?.ReceivedAfter === true) && (!before || applied?.ReceivedBefore === true);
+        return { Payloads: (result.SourceData ?? []) as Record<string, unknown>[], Bounded: bounded };
     }
+
+    /**
+     * What the drain read, as a batch the provider base understands.
+     *
+     * Caught up: the drained mail, and the watermark comes from its newest item as before. Drained
+     * part of the way: the drained mail, NOT capped, with `ReadThrough` so the watermark moves to the
+     * end of the last drained window and the next run starts there. Drained nothing: the first page,
+     * CAPPED, so the watermark is withheld — the old behaviour, now reached only when the date bound
+     * cannot help, and saying why.
+     */
+    private toBatch(drain: MailDrain, query: ActivitySourceQuery, issues: string[]): RawBatch {
+        if (drain.Stop === 'CaughtUp') {
+            return { Payloads: drain.Drained, Issues: issues };
+        }
+        const reason = stopReason(drain, query);
+        if (drain.ReadThrough) {
+            issues.push(
+                `Read mail for "${query.Mailbox}" received through ${drain.ReadThrough.toISOString()} in ` +
+                    `${drain.Requests} request(s); newer mail remains and the next run continues from there. ${reason}`.trim(),
+            );
+            return { Payloads: drain.Drained, Issues: issues, ReadThrough: drain.ReadThrough };
+        }
+        // `Capped` is what actually protects the mail; the issue only TELLS someone. Without it the
+        // watermark would advance to the newest item in a truncated batch and the rest never be read.
+        const context = query.Since
+            ? 'while a watermark was set, so older items may remain unread'
+            : 'on a FIRST run with no watermark, so anything older than this page has not been read';
+        issues.push(
+            `Fetched the maximum of ${query.Limit} message(s) for "${query.Mailbox}" ${context}. ` +
+                `The watermark is being withheld so nothing is skipped. ${reason}`.trim(),
+        );
+        return { Payloads: drain.FirstPage, Issues: issues, Capped: true };
+    }
+}
+
+/** Where a drain stopped, and what it had when it did. */
+interface MailDrain {
+    /** Every message from windows that came back short, de-duplicated by Graph id. At most `Limit`. */
+    Drained: Record<string, unknown>[];
+    /** The first request's page, returned when nothing could be drained. */
+    FirstPage: Record<string, unknown>[];
+    /** End of the last drained window; null when none was. */
+    ReadThrough: Date | null;
+    Requests: number;
+    Stop: 'CaughtUp' | 'Budget' | 'Unbounded' | 'Crowded';
+    /** For `Crowded`: the instant more than one page of mail arrived within a second of. */
+    CrowdedAt?: Date;
+}
+
+function stopReason(drain: MailDrain, query: ActivitySourceQuery): string {
+    switch (drain.Stop) {
+        case 'Unbounded':
+            return 'Graph did not apply the received-date bound, so a re-run reads this same page; raise the limit.';
+        case 'Crowded':
+            return (
+                `More than ${query.Limit} message(s) were received within one second of ` +
+                `${drain.CrowdedAt?.toISOString()}; raise the limit.`
+            );
+        case 'Budget':
+            return drain.ReadThrough
+                ? ''
+                : `No date window narrow enough to fit the limit was found in ${drain.Requests} request(s); raise the limit.`;
+        default:
+            return '';
+    }
+}
+
+/**
+ * The width of the next window to try after `[from, to]` overflowed a page: half of it, or less when
+ * the page itself shows that everything it returned arrived later than that. Graph returns newest
+ * first in practice, so the oldest message on a full page is usually where the unread mail begins;
+ * nothing relies on that, it only lets the window shrink faster.
+ *
+ * Zero when every message on the page was received AT `from`: no narrower window can hold fewer.
+ */
+function narrowedWidth(from: Date, to: Date, page: readonly Record<string, unknown>[]): number {
+    let width = Math.floor((to.getTime() - from.getTime()) / 2);
+    let allAtStart = page.length > 0;
+    for (const message of page) {
+        const raw = message.receivedDateTime;
+        const at = typeof raw === 'string' ? new Date(raw).getTime() : NaN;
+        if (Number.isNaN(at) || at > from.getTime()) allAtStart = false;
+        if (!Number.isNaN(at) && at > from.getTime()) width = Math.min(width, at - from.getTime());
+    }
+    return allAtStart ? 0 : width;
+}
+
+/** `kept` plus whatever in `page` it does not already hold by Graph id. Windows share their boundary instant. */
+function keepNew(
+    kept: Record<string, unknown>[],
+    page: readonly Record<string, unknown>[],
+    seen: Set<string>,
+): Record<string, unknown>[] {
+    const out = [...kept];
+    for (const message of page) {
+        const id = typeof message.id === 'string' ? message.id : '';
+        if (id && seen.has(id)) continue;
+        if (id) seen.add(id);
+        out.push(message);
+    }
+    return out;
 }
 
 /**

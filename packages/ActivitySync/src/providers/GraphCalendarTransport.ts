@@ -27,6 +27,7 @@ import type { UserInfo } from '@memberjunction/core';
 
 import type { ActivitySourceQuery, RawBatch } from '../types.js';
 import type { ActivityMessageTransport } from './MessageTransport.js';
+import { GraphEventInstant, type GraphEventLike } from './MSGraphCalendarSyncProvider.js';
 // Reused, not redeclared: mail and calendar reach the SAME MJ provider under the same registration
 // name and resolve the SAME credential type. Two copies could drift into naming different things.
 import {
@@ -53,6 +54,16 @@ export const DEFAULT_FIRST_RUN_LOOKBACK_DAYS = 30;
  * produce one.
  */
 export const DEFAULT_FORWARD_HORIZON_DAYS = 30;
+
+/**
+ * How many requests one calendar pass may make before it stops and reports.
+ *
+ * `Limit` is the size of ONE request. The window is the same on every run (see `Fetch`), so when a
+ * mailbox held more than `Limit` events in it, every run read the same first page and nothing past
+ * it, on any run (#312). The pass now pages through the window until a page comes back short; this
+ * bound keeps a pathological calendar from turning one run into an unbounded number of requests.
+ */
+export const DEFAULT_MAX_CALENDAR_PAGES = 10;
 
 /** The slice of MJ's communication provider this uses. Structural, to avoid a hard runtime import. */
 export interface GraphEventReader {
@@ -109,6 +120,7 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
         private readonly ForwardDays: number = DEFAULT_FORWARD_HORIZON_DAYS,
         /** Injectable so a test can pin the window without freezing global time. */
         private readonly Now: () => Date = () => new Date(),
+        private readonly MaxPages: number = DEFAULT_MAX_CALENDAR_PAGES,
     ) {}
 
     public async Fetch(query: ActivitySourceQuery): Promise<RawBatch> {
@@ -161,11 +173,74 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
         }
 
         const provider = await this.Deps.ResolveProvider();
+        const read = await this.readWindow(provider, credential, query, start, end, issues);
+        return { Payloads: read.Payloads, Issues: issues, Capped: read.Capped };
+    }
+
+    /**
+     * Every event in `[start, end]`, one page at a time.
+     *
+     * `/calendarView` is ordered by start, so the next page starts where the last one ended: at the
+     * latest start it returned, less a millisecond. The window selects OVERLAP, so that page also
+     * brings back events already read (anything still running at that instant, and ties at it);
+     * they are dropped by Graph `id` here rather than handed to the writer twice in one batch.
+     *
+     * CAPPED ONLY WHEN SOMETHING WAS LEFT UNREAD: the page budget ran out, or a full page could not
+     * move the cursor because more than `Limit` events overlap one instant.
+     */
+    private async readWindow(
+        provider: GraphEventReader,
+        credential: GraphServicePrincipal,
+        query: ActivitySourceQuery,
+        start: Date,
+        end: Date,
+        issues: string[],
+    ): Promise<{ Payloads: Record<string, unknown>[]; Capped: boolean }> {
+        const seen = new Set<string>();
+        const payloads: Record<string, unknown>[] = [];
+        let cursor = start;
+        let collapsedReported = false;
+        for (let page = 0; page < this.MaxPages; page++) {
+            const read = await this.readPage(provider, credential, query, cursor, end);
+            if (read.RecurrenceExpanded === false && !collapsedReported) {
+                issues.push(RECURRENCE_NOT_EXPANDED);
+                collapsedReported = true;
+            }
+            const fresh = read.Events.filter((e) => firstSighting(e, seen));
+            payloads.push(...fresh);
+            if (read.Events.length < query.Limit) {
+                return { Payloads: payloads, Capped: false };
+            }
+            const next = latestStart(read.Events);
+            if (fresh.length === 0 || next === null || next.getTime() - 1 <= cursor.getTime()) {
+                issues.push(
+                    `The calendar read for ${query.Mailbox} could not page past ${cursor.toISOString()}: ` +
+                        `more than ${query.Limit} events overlap that instant. Raise the limit to read the rest of the window.`,
+                );
+                return { Payloads: payloads, Capped: true };
+            }
+            cursor = new Date(next.getTime() - 1);
+        }
+        issues.push(
+            `The calendar read hit its limit of ${this.MaxPages} page(s) of ${query.Limit} events for ` +
+                `${query.Mailbox}; the window holds more than this pass returned.`,
+        );
+        return { Payloads: payloads, Capped: true };
+    }
+
+    /** One `/calendarView` request from `from` to `end`. Throws on a refusal, never returns empty for one. */
+    private async readPage(
+        provider: GraphEventReader,
+        credential: GraphServicePrincipal,
+        query: ActivitySourceQuery,
+        from: Date,
+        end: Date,
+    ): Promise<{ Events: Record<string, unknown>[]; RecurrenceExpanded?: boolean }> {
         const result = await provider.GetEvents(
             {
                 Identifier: query.Mailbox,
                 NumEvents: query.Limit,
-                StartDateTime: start,
+                StartDateTime: from,
                 EndDateTime: end,
                 // A cancellation is a real thing that happened to a meeting somebody attended, and
                 // `MapGraphEvent` already carries `Cancelled` through to the Activity.
@@ -184,31 +259,41 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
                 result?.ErrorMessage?.trim() || `Graph returned no calendar result for mailbox "${query.Mailbox}".`,
             );
         }
-
-        // BOTH BOUNDS WERE SENT, so MJ should have expanded recurrence. If it says otherwise the
-        // payloads are series MASTERS, and one row would be filed for a weekly meeting at whatever
-        // date the series began. That is wrong in a way no downstream check would catch, because a
-        // master and an occurrence look alike.
-        if (result.RecurrenceExpanded === false) {
-            issues.push(
-                'Graph did not expand recurring series despite a bounded window, so repeating meetings ' +
-                    'are represented by their series master rather than by occurrences. Times for those ' +
-                    'will be the start of the series.',
-            );
-        }
-
-        const payloads = (result.SourceData ?? []) as Record<string, unknown>[];
-
-        const capped = payloads.length >= query.Limit;
-        if (capped) {
-            issues.push(
-                `The calendar read hit its limit of ${query.Limit} events for ${query.Mailbox}; ` +
-                    'the window may hold more than this pass returned.',
-            );
-        }
-
-        return { Payloads: payloads, Issues: issues, Capped: capped };
+        return {
+            Events: (result.SourceData ?? []) as Record<string, unknown>[],
+            RecurrenceExpanded: result.RecurrenceExpanded,
+        };
     }
+}
+
+/**
+ * BOTH BOUNDS WERE SENT, so MJ should have expanded recurrence. If it says otherwise the payloads
+ * are series MASTERS, and one row would be filed for a weekly meeting at whatever date the series
+ * began. That is wrong in a way no downstream check would catch, because a master and an occurrence
+ * look alike.
+ */
+const RECURRENCE_NOT_EXPANDED =
+    'Graph did not expand recurring series despite a bounded window, so repeating meetings ' +
+    'are represented by their series master rather than by occurrences. Times for those ' +
+    'will be the start of the series.';
+
+/** True the first time an event's Graph `id` is met. An event with no id is kept; the mapper reports it. */
+function firstSighting(event: Record<string, unknown>, seen: Set<string>): boolean {
+    const id = typeof event.id === 'string' ? event.id : '';
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+}
+
+/** The latest start on a page, read the way `MapGraphEvent` reads it. Null when none parses. */
+function latestStart(events: readonly Record<string, unknown>[]): Date | null {
+    let latest: Date | null = null;
+    for (const event of events) {
+        const at = GraphEventInstant((event as GraphEventLike).start);
+        if (at && (latest === null || at.getTime() > latest.getTime())) latest = at;
+    }
+    return latest;
 }
 
 /**

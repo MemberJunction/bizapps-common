@@ -451,7 +451,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
             .mjc-mix__track {
                 height: 8px;
                 background: var(--mj-bg-surface-sunken);
-                border-radius: var(--mj-radius-pill, 999px);
+                border-radius: var(--mj-radius-full);
                 overflow: hidden;
             }
             .mjc-mix__fill {

@@ -31,15 +31,27 @@ importers:
       '@memberjunction/cli':
         specifier: ^6.1.5
         version: 6.1.5(@aws-sdk/credential-provider-node@3.972.83)(@aws-sdk/credential-providers@3.1131.0)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.3)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(socks@2.8.10)(typescript@5.9.3)(ws@8.21.3)
+      '@memberjunction/core':
+        specifier: ^6.1.5
+        version: 6.1.5
+      '@memberjunction/testing-integration':
+        specifier: ^6.1.5
+        version: 6.1.5(@aws-sdk/credential-provider-node@3.972.83)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.3)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.21.3)(zod@3.25.76)
       '@types/node':
         specifier: ^22.10.0
         version: 22.20.1
       beasties:
         specifier: 0.3.5
         version: 0.3.5
+      dotenv:
+        specifier: ^17.2.4
+        version: 17.4.2
       mrmime:
         specifier: 2.0.1
         version: 2.0.1
+      pg:
+        specifier: ^8.13.3
+        version: 8.23.0
       rolldown:
         specifier: 1.0.0-beta.58
         version: 1.0.0-beta.58(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)

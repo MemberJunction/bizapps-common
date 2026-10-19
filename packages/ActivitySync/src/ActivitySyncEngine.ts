@@ -11,7 +11,7 @@ import {
     type IMetadataProvider,
     type UserInfo,
 } from '@memberjunction/core';
-import { MJGlobal } from '@memberjunction/global';
+import { MJGlobal, NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import type {
     mjBizAppsCommonActivitySyncConnectionEntity,
     mjBizAppsCommonActivitySyncExtensionEntity,
@@ -175,16 +175,18 @@ export function healthErrorFromResults(results: readonly SyncEngineResult[]): st
  * is clean for that row writes null.
  */
 export function collapseExtensionStamps(stamps: readonly ExtensionStamp[]): ExtensionStamp[] {
-    const byId = new Map<string, string | null>();
+    // Keyed by the normalized ID so one row stamped in two casings is still one save.
+    const byId = new Map<string, ExtensionStamp>();
     for (const stamp of stamps) {
-        const prev = byId.get(stamp.ID);
+        const key = NormalizeUUID(stamp.ID);
+        const prev = byId.get(key);
         if (stamp.LastError) {
-            byId.set(stamp.ID, stamp.LastError);
+            byId.set(key, { ID: prev?.ID ?? stamp.ID, LastError: stamp.LastError });
         } else if (prev === undefined) {
-            byId.set(stamp.ID, null);
+            byId.set(key, { ID: stamp.ID, LastError: null });
         }
     }
-    return [...byId.entries()].map(([ID, LastError]) => ({ ID, LastError }));
+    return [...byId.values()];
 }
 
 function failedSurfaceResult(issues: readonly string[]): SyncEngineResult {
@@ -277,7 +279,7 @@ export class ActivitySyncEngine {
         };
 
         let connection = surface?.connection;
-        if (!connection || connection.ID !== connectionID) {
+        if (!connection || !UUIDsEqual(connection.ID, connectionID)) {
             const loadedConnection = await this.loadConnection(connectionID, contextUser);
             if (loadedConnection.Failed) {
                 result.Issues.push(loadedConnection.Issue);
@@ -573,7 +575,7 @@ export class ActivitySyncEngine {
             // FileStorageAccount configured, so there is nowhere to put them. What changed is that
             // the request is now honoured or REPORTED, instead of silently discarded.
             const decidingRule = verdict.ActivitySyncRuleID
-                ? rules.Rows.find((r) => r.ID === verdict.ActivitySyncRuleID)
+                ? rules.Rows.find((r) => UUIDsEqual(r.ID, verdict.ActivitySyncRuleID))
                 : null;
             const attachmentPolicy = AttachmentPolicyFor(decidingRule, item);
             if (attachmentPolicy.Fetch && !this.fileSink) {

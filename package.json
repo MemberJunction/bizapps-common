@@ -33,10 +33,13 @@
     "check:release-seed:test": "node --test scripts/check-release-seed-coverage.spec.mjs",
     "check:seed-cadence": "node scripts/check-release-seed-cadence.mjs",
     "check:seed-cadence:test": "node --test scripts/check-release-seed-cadence.spec.mjs",
+    "check:uuid": "node scripts/check-uuid-comparisons.mjs",
     "lint:paths-touched:test": "node --test scripts/check-paths-touched.spec.mjs",
     "sync-app-version:test": "node --test scripts/sync-app-version.spec.mjs",
     "lint:release-pushes": "node scripts/check-release-pushes.mjs",
-    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs"
+    "lint:release-pushes:test": "node --test scripts/check-release-pushes.spec.mjs",
+    "check:mj-tokens": "node scripts/check-mj-tokens.mjs",
+    "check:mj-tokens:test": "node --test scripts/check-mj-tokens.spec.mjs"
   },
   "repository": {
     "type": "git",
@@ -46,9 +49,13 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
     "@memberjunction/cli": "^6.1.5",
+    "@memberjunction/core": "^6.1.5",
+    "@memberjunction/testing-integration": "^6.1.5",
     "@types/node": "^22.10.0",
     "beasties": "0.3.5",
+    "dotenv": "^17.2.4",
     "mrmime": "2.0.1",
+    "pg": "^8.13.3",
     "rolldown": "1.0.0-beta.58",
     "rollup": "^4.43.0",
     "simple-git": "^3.31.1",

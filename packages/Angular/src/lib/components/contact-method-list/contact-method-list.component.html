@@ -27,7 +27,7 @@
 
         @for (cm of ContactMethods; track cm.ID) {
             <!-- Edit mode for this row -->
-            @if (EditingId === cm.ID) {
+            @if (IsEditing(cm)) {
                 <div class="cm-flat-edit-row">
                     <div class="form-row">
                         <div class="form-field type-field">
