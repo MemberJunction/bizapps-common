@@ -8,27 +8,44 @@
  * always equals the row with the latest `ConsentStatusAt`. These functions hold that rule so the
  * entity subclass, the engine and the tests all agree on it.
  */
+import type { mjBizAppsCommonContactConsentHistoryEntity, mjBizAppsCommonContactMethodEntity } from './generated/entity_subclasses';
 
-/** The three consent states a contact method can be in. Mirrors `CK_ContactMethod_ConsentStatus`. */
-export const CONTACT_CONSENT_STATUSES = ['NotSpecified', 'OptedIn', 'OptedOut'] as const;
+/**
+ * The consent states a contact method can be in. Derived from the generated entity, so it follows
+ * `CK_ContactMethod_ConsentStatus` whenever CodeGen regenerates.
+ */
+export type ContactConsentStatus = mjBizAppsCommonContactMethodEntity['ConsentStatus'];
 
-export type ContactConsentStatus = (typeof CONTACT_CONSENT_STATUSES)[number];
+/**
+ * The same values as a runtime list, in the order the CHECK constraint names them, for dropdowns.
+ * A type cannot produce a list, so this is written out; {@link CONSENT_STATUS_LIST_COMPLETE} fails
+ * the build if the generated union ever has a value this list lacks.
+ */
+export const CONTACT_CONSENT_STATUSES = ['NotSpecified', 'OptedIn', 'OptedOut'] as const satisfies readonly ContactConsentStatus[];
+
+type StatusListIsComplete = [Exclude<ContactConsentStatus, (typeof CONTACT_CONSENT_STATUSES)[number]>] extends [never]
+    ? true
+    : 'CONTACT_CONSENT_STATUSES is missing a value the ConsentStatus CHECK constraint allows';
+
+/** Compile-time proof that {@link CONTACT_CONSENT_STATUSES} covers the generated union. */
+export const CONSENT_STATUS_LIST_COMPLETE: StatusListIsComplete = true;
 
 /** The source recorded when a staff member changes consent in a form rather than through an import or a link. */
 export const CONSENT_SOURCE_STAFF = 'Staff';
 
-/** The channels Comms can ask about. Each is the `Type` of an `MJ: Communication Base Message Types` row. */
+/**
+ * The channels Comms can ask about. Each is the `Type` key of a row MJ core seeds in
+ * `MJ: Communication Base Message Types`; `ContactPreferenceEngine` resolves a channel to that
+ * row's ID and matches contact types on the foreign key, never on a name.
+ */
 export const CONTACT_CHANNELS = ['Email', 'Phone', 'SMS'] as const;
 
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
 /** The two columns of a history row that resolution needs. */
-export interface ConsentHistoryEntry {
-    NewConsentStatus: ContactConsentStatus;
-    ConsentStatusAt: Date;
-}
+export type ConsentHistoryEntry = Pick<mjBizAppsCommonContactConsentHistoryEntity, 'NewConsentStatus' | 'ConsentStatusAt'>;
 
-/** True when `value` is one of the three consent statuses. */
+/** True when `value` is one of the consent statuses. */
 export function IsContactConsentStatus(value: unknown): value is ContactConsentStatus {
     return typeof value === 'string' && (CONTACT_CONSENT_STATUSES as readonly string[]).includes(value);
 }

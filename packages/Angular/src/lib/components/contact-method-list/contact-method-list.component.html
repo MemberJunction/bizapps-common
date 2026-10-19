@@ -95,7 +95,7 @@
                                 <div class="consent-history" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
                                     <div class="consent-history-title">Consent history · {{ cm.Value }}</div>
                                     @if (ConsentHistoryLoading) {
-                                        <div class="consent-history-empty">Loading history...</div>
+                                        <mj-loading Text="Loading history..." Size="small"></mj-loading>
                                     } @else {
                                         @for (h of ConsentHistory; track h.ID; let i = $index) {
                                             <div class="consent-history-row" [class.current]="i === 0">

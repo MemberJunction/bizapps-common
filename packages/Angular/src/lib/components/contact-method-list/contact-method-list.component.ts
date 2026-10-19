@@ -1,7 +1,9 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
+import { IMetadataProvider, IRunViewProvider, LogError, Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
+import { EscapeSQLString } from '@memberjunction/global';
+import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
     CONTACT_CONSENT_STATUSES,
     mjBizAppsCommonContactConsentHistoryEntity,
@@ -38,6 +40,11 @@ interface ContactFormData {
     ConsentStatus: mjBizAppsCommonContactMethodEntity['ConsentStatus'];
 }
 
+/** True when a metadata provider also serves views, as every MJ provider does. */
+function isRunViewProvider(p: IMetadataProvider): p is IMetadataProvider & IRunViewProvider {
+    return typeof (p as Partial<IRunViewProvider>).RunView === 'function';
+}
+
 /**
  * Displays and manages contact methods (email, phone, social, etc.) for a
  * Person or Organization record.
@@ -62,7 +69,7 @@ interface ContactFormData {
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, SharedGenericModule],
     selector: 'bizapps-contact-method-list',
     templateUrl: './contact-method-list.component.html',
     styleUrls: ['./contact-method-list.component.css']
@@ -76,6 +83,23 @@ export class ContactMethodListComponent {
      * Copy and open-link actions remain available regardless of this setting.
      */
     @Input() EditMode = false;
+
+    /**
+     * The metadata provider to read and write through. Defaults to the global provider, which is
+     * right for a single-server Explorer; a host on several providers passes its own.
+     */
+    @Input() Provider?: IMetadataProvider;
+
+    /** The provider this component reads and writes with. */
+    public get ProviderToUse(): IMetadataProvider {
+        return this.Provider ?? Metadata.Provider;
+    }
+
+    /** The same provider for RunView, when it serves views; otherwise RunView's own default. */
+    private get runViewToUse(): IRunViewProvider | null {
+        const p = this.ProviderToUse;
+        return isRunViewProvider(p) ? p : null;
+    }
 
     /** Emitted after any mutation (save, delete, set-primary) so the parent can refresh derived data. */
     @Output() DataChanged = new EventEmitter<void>();
@@ -232,7 +256,7 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
-            const rv = new RunView();
+            const rv = new RunView(this.runViewToUse);
 
             // Always ensure contact types are loaded
             if (this.ContactTypes.length === 0) {
@@ -262,9 +286,9 @@ export class ContactMethodListComponent {
             // Build filter for standalone mode
             let filter = '';
             if (this._personID) {
-                filter = `PersonID='${this._personID}'`;
+                filter = `PersonID='${EscapeSQLString(this._personID)}'`;
             } else if (this._organizationID) {
-                filter = `OrganizationID='${this._organizationID}'`;
+                filter = `OrganizationID='${EscapeSQLString(this._organizationID)}'`;
             } else {
                 return;
             }
@@ -286,7 +310,7 @@ export class ContactMethodListComponent {
                 this.AddForm.TypeID = this.ContactTypes[0].ID;
             }
         } catch (err) {
-            console.error('ContactMethodList: Error loading data', err);
+            LogError(`ContactMethodList: Error loading data: ${String(err)}`);
         } finally {
             this.Loading = false;
             this.cdr.detectChanges();
@@ -458,15 +482,15 @@ export class ContactMethodListComponent {
 
     /** Reads a contact method's consent history, newest change first. */
     private async loadConsentHistory(contactMethodID: string): Promise<mjBizAppsCommonContactConsentHistoryEntity[]> {
-        const rv = new RunView();
+        const rv = new RunView(this.runViewToUse);
         const result = await rv.RunView<mjBizAppsCommonContactConsentHistoryEntity>({
             EntityName: 'MJ_BizApps_Common: Contact Consent Histories',
-            ExtraFilter: `ContactMethodID='${contactMethodID}'`,
+            ExtraFilter: `ContactMethodID='${EscapeSQLString(contactMethodID)}'`,
             OrderBy: 'ConsentStatusAt DESC',
             ResultType: 'entity_object'
         });
         if (!result.Success) {
-            console.error('ContactMethodList: Error loading consent history', result.ErrorMessage);
+            LogError(`ContactMethodList: Error loading consent history: ${result.ErrorMessage}`);
             return [];
         }
         return result.Results;
@@ -562,8 +586,7 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            const md = new Metadata();
-            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
+            const cm = await this.ProviderToUse.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
             cm.NewRecord();
             cm.ContactTypeID = this.AddForm.TypeID;
             cm.Value = this.AddForm.Value;
@@ -586,7 +609,7 @@ export class ContactMethodListComponent {
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error adding contact', err);
+            LogError(`ContactMethodList: Error adding contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
@@ -662,7 +685,7 @@ export class ContactMethodListComponent {
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error saving contact', err);
+            LogError(`ContactMethodList: Error saving contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
@@ -698,7 +721,7 @@ export class ContactMethodListComponent {
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error setting primary', err);
+            LogError(`ContactMethodList: Error setting primary: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
@@ -729,7 +752,7 @@ export class ContactMethodListComponent {
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error deleting contact', err);
+            LogError(`ContactMethodList: Error deleting contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();

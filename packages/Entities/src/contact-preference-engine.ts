@@ -13,7 +13,7 @@
  * where the other engines are configured; the read methods configure lazily if nobody did.
  */
 import { BaseEngine, BaseEnginePropertyConfig, IMetadataProvider, RunView, UserInfo } from '@memberjunction/core';
-import { EscapeSQLString } from '@memberjunction/global';
+import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
 import { mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity } from './generated/entity_subclasses';
 import {
     ContactChannel,
@@ -27,12 +27,20 @@ import { ContactMethodEntity } from './contact-method-entity.js';
 
 export const CONTACT_TYPES_ENTITY = 'MJ_BizApps_Common: Contact Types';
 export const CONTACT_METHODS_ENTITY = 'MJ_BizApps_Common: Contact Methods';
+/** MJ core's channel table. Its `Type` column is the key Comms routes on (Email, Phone, SMS). */
+export const MESSAGE_TYPES_ENTITY = 'MJ: Communication Base Message Types';
 
 /** The columns of a Contact Types row the engine reads, typed from the generated entity. */
-export type ContactTypeChannelRow = Pick<
-    mjBizAppsCommonContactTypeEntity,
-    'ID' | 'Name' | 'IsActive' | 'CommunicationBaseMessageTypeID' | 'CommunicationBaseMessageType'
->;
+export type ContactTypeChannelRow = Pick<mjBizAppsCommonContactTypeEntity, 'ID' | 'Name' | 'IsActive' | 'CommunicationBaseMessageTypeID'>;
+
+/**
+ * The two columns of an `MJ: Communication Base Message Types` row the engine reads. Declared here
+ * because this package depends on `@memberjunction/core` only, not on the core entity classes.
+ */
+export interface MessageTypeRow {
+    ID: string;
+    Type: string;
+}
 
 /** Whose contact methods a decision is about. Exactly one of the two. */
 export interface ContactSubject {
@@ -67,6 +75,7 @@ export interface OptOutByValueResult {
 
 export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine> {
     private _contactTypes: ContactTypeChannelRow[] = [];
+    private _messageTypes: MessageTypeRow[] = [];
 
     public static get Instance(): ContactPreferenceEngine {
         return super.getInstance<ContactPreferenceEngine>();
@@ -79,18 +88,39 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
                 EntityName: CONTACT_TYPES_ENTITY,
                 ResultType: 'simple',
             },
+            {
+                PropertyName: '_messageTypes',
+                EntityName: MESSAGE_TYPES_ENTITY,
+                ResultType: 'simple',
+            },
         ];
         return await this.Load(params, provider as IMetadataProvider, forceRefresh ?? false, contextUser);
     }
 
-    /** The cached Contact Types, each with the channel it maps to (or null for types like LinkedIn). */
+    /** The cached Contact Types, each with the ID of the channel it maps to (null for types like LinkedIn). */
     public get ContactTypes(): ContactTypeChannelRow[] {
         return this.GetConfigData<ContactTypeChannelRow>('_contactTypes');
     }
 
-    /** IDs of the active contact types that carry the given channel. */
+    /** The cached core message types; a channel name resolves to one of these rows' IDs. */
+    public get MessageTypes(): MessageTypeRow[] {
+        return this.GetConfigData<MessageTypeRow>('_messageTypes');
+    }
+
+    /** The ID of the core message type whose `Type` key is the channel, or null when core has no such row. */
+    public MessageTypeIDForChannel(channel: ContactChannel): string | null {
+        return this.MessageTypes.find((m) => m.Type === channel)?.ID ?? null;
+    }
+
+    /** IDs of the active contact types linked to the channel's message type, matched on the foreign key. */
     public ContactTypeIDsForChannel(channel: ContactChannel): string[] {
-        return this.ContactTypes.filter((t) => t.IsActive && t.CommunicationBaseMessageType === channel).map((t) => t.ID);
+        const messageTypeID = this.MessageTypeIDForChannel(channel);
+        if (!messageTypeID) {
+            return [];
+        }
+        return this.ContactTypes
+            .filter((t) => t.IsActive && t.CommunicationBaseMessageTypeID != null && UUIDsEqual(t.CommunicationBaseMessageTypeID, messageTypeID))
+            .map((t) => t.ID);
     }
 
     /**
