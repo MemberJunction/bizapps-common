@@ -1,5 +1,36 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+
+## 5.54.0
+
+### Patch Changes
+
+- Updated dependencies [70960e4]
+- Updated dependencies [a5cd21a]
+  - @mj-biz-apps/common-entities@5.54.0
+
+## 5.53.1
+
+### Patch Changes
+
+- e731cac: The packages' dependencies on each other are caret ranges (`^5.53.0`) instead of exact versions. A host that pins or overrides one common package at a later compatible version no longer forces an exact-match copy of its sibling: `common-server` 5.53.0 required `common-activity-sync` at exactly 5.53.0, so a host overriding it at any other version got a second copy or an unresolvable lockfile. Changesets keeps the caret and moves its floor on each release.
+  - @mj-biz-apps/common-entities@5.53.1
+
+## 5.53.0
+
+### Patch Changes
+
+- Updated dependencies [1045bc7]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+
 ## 5.52.0
 
 ### Patch Changes

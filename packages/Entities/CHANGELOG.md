@@ -1,5 +1,37 @@
 # Change Log - mj_generatedentities
 
+## 5.55.0
+
+### Minor Changes
+
+- aa193b3: Add missing `IDX_AUTO_MJ_FKEY_*` foreign key indexes on `ActivityFile`, `ActivityLink`, `Person`, `PersonJobFunction`, and `Relationship`, and add CI schema consistency checks verifying FK index coverage.
+- 575a10c: Moves to MemberJunction 6.1.6 (`mjVersionRange` `>=6.1.6 <7.0.0`). The 5.55 Metadata_Sync ships People.LinkedUserID as an active, documented field (Status Active, new description, AutoUpdateDescription off), with its Postgres counterpart. SaveReturnMode `datestamps_only` on Activity Sync Runs and Activity Sync Run Details is withdrawn until an MJ release supports it. Field-level security for People stays held back, as in 5.48 through 5.54.
+
+## 5.54.0
+
+### Minor Changes
+
+- 70960e4: Readable record names for Addresses, Relationships, Address Links and People.
+
+  - **Addresses**: new stored, indexed `DisplayName` column, a one-line label in US order (`123 Main St, Springfield, IL 62701, United States`), with blank parts skipped. It replaces `Line1`, which can be empty, as the name field. `vwAddressLinks.Address` and `vwActivities.Address` now show this label.
+  - **Relationships**: `vwRelationships` becomes a layered view (`vwRelationshipsGenerated` plus a thin wrapper) that adds `DisplayName` = `From → To (Type)`, for example `Jane Smith → Acme (Employee)`. It replaces `Title` as the name field.
+  - **Address Links**: the name field is now `Address` (the linked address's label) instead of `AddressType`.
+  - **People**: `DisplayName` now skips blank name parts and includes `Suffix` (`John Smith Jr.`).
+  - **Geocoding**: Address's `Line1`, `City`, `StateProvince`, `PostalCode` and `Country` are now tagged `GeoAddress` / `GeoCity` / `GeoStateProvince` / `GeoPostalCode` / `GeoCountry`, so an Address saved without coordinates can be geocoded from its parts (the new `DisplayName` stays untagged). Activity's free-text `Location` is no longer tagged `GeoAddress`, so saving an Activity no longer calls the geocoder or writes a failed `RecordGeoCode` row; `vwActivities` drops the `vwRecordGeoCodes` join and Activities lose the `__mj_Latitude` / `__mj_Longitude` fields (`_mj__Latitude` / `_mj__Longitude` in GraphQL). Address Links are pinned as not geocoded.
+
+  Five migrations (`V202610151046`, `V202610151047`, `V202610151048`, `V202610151049`, `V202610151050`). The name-field settings and the Address geo tags reach hosts in the release metadata seed. PostgreSQL counterparts are left to the release build.
+
+- a5cd21a: The 5.54 Metadata_Sync ships the name-field settings for Addresses, Relationships, Address Links and People (6 Entity Fields) and pins Address Links as not geocoded, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. The five 5.54 schema migrations and the Metadata_Sync now have Postgres counterparts. Field-level security for People stays held back, as in 5.48, 5.51 and 5.53.
+
+## 5.53.1
+
+## 5.53.0
+
+### Minor Changes
+
+- 1045bc7: The 5.53 Metadata_Sync ships the 15 CHECK-constraint validators pinned in metadata/generated-codes since 5.52, so a host that upgrades by migration gets the same validator rows as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in 5.48 and 5.51.
+- c842ff1: Pins the remaining 15 CHECK-constraint validators as `GeneratedCode` rows in `metadata/generated-codes/`, copied unchanged from the generated entity classes, so regenerating from migrations reuses every validator instead of asking the AI again. No generated code changes. The next release seed carries the rows to hosts.
+
 ## 5.52.0
 
 ### Minor Changes

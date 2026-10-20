@@ -17,7 +17,7 @@ import { MaxLength } from 'class-validator';
 import * as mj_core_schema_server_object_types from '@memberjunction/server'
 
 
-import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonEnrichmentProviderRateEntity, mjBizAppsCommonEnrichmentProviderEntity, mjBizAppsCommonJobFunctionEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonPersonEducationEntity, mjBizAppsCommonPersonExternalIdentityEntity, mjBizAppsCommonPersonJobFunctionEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity, mjBizAppsCommonSeniorityLevelEntity } from '@mj-biz-apps/common-entities';
+import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonJobFunctionEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonPersonJobFunctionEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity, mjBizAppsCommonSeniorityLevelEntity } from '@mj-biz-apps/common-entities';
     
 
 //****************************************************************************
@@ -123,18 +123,12 @@ export class mjBizAppsCommonActivity_ {
     LoggedByUser?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(255)
+    @MaxLength(400)
     Address?: string;
         
     @Field({nullable: true}) 
     @MaxLength(200)
     ActivitySyncConnection?: string;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Latitude?: number;
-        
-    @Field(() => Float, {nullable: true}) 
-    _mj__Longitude?: number;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -1325,7 +1319,7 @@ export class mjBizAppsCommonActivitySyncExclusion_ {
     ActivitySyncRuleSet?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(250)
     Person?: string;
         
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
@@ -3349,7 +3343,7 @@ export class mjBizAppsCommonAddressLink_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(255)
+    @MaxLength(400)
     Address?: string;
         
     @Field({nullable: true}) 
@@ -3745,6 +3739,10 @@ export class mjBizAppsCommonAddress_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
+    @Field({nullable: true, description: "One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field."}) 
+    @MaxLength(400)
+    DisplayName?: string;
+        
     @Field(() => Float, {nullable: true}) 
     _mj__Latitude?: number;
         
@@ -3963,7 +3961,7 @@ export class mjBizAppsCommonContactMethod_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(250)
     Person?: string;
         
     @Field({nullable: true}) 
@@ -4306,443 +4304,6 @@ export class mjBizAppsCommonContactTypeResolver extends ResolverBase {
         const provider = GetReadWriteProvider(providers);
         const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
         return this.DeleteRecord('MJ_BizApps_Common: Contact Types', key, options, provider, userPayload, pubSub);
-    }
-    
-}
-
-//****************************************************************************
-// ENTITY CLASS for MJ_BizApps_Common: Enrichment Provider Rates
-//****************************************************************************
-@ObjectType({ description: "How many vendor credits each operation uses, per provider. Used to estimate cost before a run or import." })
-export class mjBizAppsCommonEnrichmentProviderRate_ {
-    @Field() 
-    @MaxLength(36)
-    ID: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(36)
-    EnrichmentProviderID?: string;
-        
-    @Field({nullable: true, description: "Enrich (bulk match of existing people), Count (counting a cohort), Search (one page of an import) or SchoolLookup (resolving a school name)."}) 
-    @MaxLength(30)
-    Operation?: string;
-        
-    @Field({nullable: true, description: "What the vendor bills per: MatchedPerson, ReturnedRecord, NonEmptyRequest (a request that returned anything) or Request."}) 
-    @MaxLength(30)
-    Unit?: string;
-        
-    @Field(() => Float, {nullable: true, description: "Credits used per unit. 0 means free."}) 
-    CreditsPerUnit?: number;
-        
-    @Field({nullable: true, description: "Where the number came from and when it was checked, e.g. \"Phase 0 spike, 2026-10\"."}) 
-    Notes?: string;
-        
-    @Field() 
-    _mj__CreatedAt: Date;
-        
-    @Field() 
-    _mj__UpdatedAt: Date;
-        
-    @Field({nullable: true}) 
-    @MaxLength(100)
-    EnrichmentProvider?: string;
-        
-    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
-    ReadableFields___?: string[];
-        
-}
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Enrichment Provider Rates
-//****************************************************************************
-@InputType()
-export class CreatemjBizAppsCommonEnrichmentProviderRateInput {
-    @Field({ nullable: true })
-    ID?: string;
-
-    @Field({ nullable: true })
-    EnrichmentProviderID?: string;
-
-    @Field({ nullable: true })
-    Operation?: string;
-
-    @Field({ nullable: true })
-    Unit?: string;
-
-    @Field(() => Float, { nullable: true })
-    CreditsPerUnit?: number;
-
-    @Field({ nullable: true })
-    Notes: string | null;
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Enrichment Provider Rates
-//****************************************************************************
-@InputType()
-export class UpdatemjBizAppsCommonEnrichmentProviderRateInput {
-    @Field()
-    ID: string;
-
-    @Field({ nullable: true })
-    EnrichmentProviderID?: string;
-
-    @Field({ nullable: true })
-    Operation?: string;
-
-    @Field({ nullable: true })
-    Unit?: string;
-
-    @Field(() => Float, { nullable: true })
-    CreditsPerUnit?: number;
-
-    @Field({ nullable: true })
-    Notes?: string | null;
-
-    @Field(() => [KeyValuePairInput], { nullable: true })
-    OldValues___?: KeyValuePairInput[];
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-//****************************************************************************
-// RESOLVER for MJ_BizApps_Common: Enrichment Provider Rates
-//****************************************************************************
-@ObjectType()
-export class RunmjBizAppsCommonEnrichmentProviderRateViewResult {
-    @Field(() => [mjBizAppsCommonEnrichmentProviderRate_])
-    Results: mjBizAppsCommonEnrichmentProviderRate_[];
-
-    @Field(() => String, {nullable: true})
-    UserViewRunID?: string;
-
-    @Field(() => Int, {nullable: true})
-    RowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    TotalRowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    ExecutionTime: number;
-
-    @Field({nullable: true})
-    ErrorMessage?: string;
-
-    @Field(() => Boolean, {nullable: false})
-    Success: boolean;
-}
-
-@Resolver(mjBizAppsCommonEnrichmentProviderRate_)
-export class mjBizAppsCommonEnrichmentProviderRateResolver extends ResolverBase {
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderRateViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderRateViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderRateViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderRateViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderRateViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderRateDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ_BizApps_Common: Enrichment Provider Rates';
-        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
-    }
-    @Query(() => mjBizAppsCommonEnrichmentProviderRate_, { nullable: true })
-    async mjBizAppsCommonEnrichmentProviderRate(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonEnrichmentProviderRate_ | null> {
-        this.CheckUserReadPermissions('MJ_BizApps_Common: Enrichment Provider Rates', userPayload);
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwEnrichmentProviderRates')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Enrichment Provider Rates', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Enrichment Provider Rates', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
-        return result;
-    }
-    
-    @Mutation(() => mjBizAppsCommonEnrichmentProviderRate_)
-    async CreatemjBizAppsCommonEnrichmentProviderRate(
-        @Arg('input', () => CreatemjBizAppsCommonEnrichmentProviderRateInput) input: CreatemjBizAppsCommonEnrichmentProviderRateInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ_BizApps_Common: Enrichment Provider Rates', input, provider, userPayload, pubSub)
-    }
-        
-    @Mutation(() => mjBizAppsCommonEnrichmentProviderRate_)
-    async UpdatemjBizAppsCommonEnrichmentProviderRate(
-        @Arg('input', () => UpdatemjBizAppsCommonEnrichmentProviderRateInput) input: UpdatemjBizAppsCommonEnrichmentProviderRateInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ_BizApps_Common: Enrichment Provider Rates', input, provider, userPayload, pubSub);
-    }
-    
-    @Mutation(() => mjBizAppsCommonEnrichmentProviderRate_)
-    async DeletemjBizAppsCommonEnrichmentProviderRate(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadWriteProvider(providers);
-        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ_BizApps_Common: Enrichment Provider Rates', key, options, provider, userPayload, pubSub);
-    }
-    
-}
-
-//****************************************************************************
-// ENTITY CLASS for MJ_BizApps_Common: Enrichment Providers
-//****************************************************************************
-@ObjectType({ description: "Registry of person-enrichment vendor plugins. Each row names a class registered under BaseEnrichmentProvider." })
-export class mjBizAppsCommonEnrichmentProvider_ {
-    @Field() 
-    @MaxLength(36)
-    ID: string;
-        
-    @Field({nullable: true, description: "Stable short code, e.g. Apollo or PDL. Also written as SourceSystem on every row this provider produces. Never rename."}) 
-    @MaxLength(60)
-    Code?: string;
-        
-    @Field({nullable: true, description: "Display name."}) 
-    @MaxLength(100)
-    Name?: string;
-        
-    @Field({nullable: true, description: "What the provider supplies and any caveats."}) 
-    Description?: string;
-        
-    @Field({nullable: true, description: "ClassFactory key of the BaseEnrichmentProvider subclass that implements this provider."}) 
-    @MaxLength(200)
-    DriverClass?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(36)
-    IntegrationID?: string;
-        
-    @Field(() => Int, {nullable: true, description: "Most people the vendor accepts in one request (Apollo 10, PDL 100). The engine batches to this size."}) 
-    MaxBatchSize?: number;
-        
-    @Field(() => Int, {nullable: true, description: "Optional client-side request ceiling. NULL means rely on the vendor's 429 responses."}) 
-    RequestsPerMinute?: number;
-        
-    @Field({nullable: true, description: "Provider-specific JSON options, e.g. a PDL minimum likelihood. Engine-wide policy lives on the action params, not here."}) 
-    Configuration?: string;
-        
-    @Field(() => Float, {nullable: true, description: "This host's price for one vendor credit, from its own contract. NULL means unpriced: estimates then show credits only, never a zero cost."}) 
-    CreditPrice?: number;
-        
-    @Field({nullable: true, description: "ISO 4217 code for CreditPrice, e.g. USD. Required when CreditPrice is set."}) 
-    @MaxLength(3)
-    CreditCurrency?: string;
-        
-    @Field(() => Int, {nullable: true, description: "Display and preference order when several providers are active."}) 
-    Sequence?: number;
-        
-    @Field(() => Boolean, {nullable: true, description: "Inactive providers are refused by the engine."}) 
-    IsActive?: boolean;
-        
-    @Field() 
-    _mj__CreatedAt: Date;
-        
-    @Field() 
-    _mj__UpdatedAt: Date;
-        
-    @Field({nullable: true}) 
-    @MaxLength(100)
-    Integration?: string;
-        
-    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
-    ReadableFields___?: string[];
-        
-}
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Enrichment Providers
-//****************************************************************************
-@InputType()
-export class CreatemjBizAppsCommonEnrichmentProviderInput {
-    @Field({ nullable: true })
-    ID?: string;
-
-    @Field({ nullable: true })
-    Code?: string;
-
-    @Field({ nullable: true })
-    Name?: string;
-
-    @Field({ nullable: true })
-    Description: string | null;
-
-    @Field({ nullable: true })
-    DriverClass?: string;
-
-    @Field({ nullable: true })
-    IntegrationID: string | null;
-
-    @Field(() => Int, { nullable: true })
-    MaxBatchSize?: number;
-
-    @Field(() => Int, { nullable: true })
-    RequestsPerMinute: number | null;
-
-    @Field({ nullable: true })
-    Configuration: string | null;
-
-    @Field(() => Float, { nullable: true })
-    CreditPrice: number | null;
-
-    @Field({ nullable: true })
-    CreditCurrency: string | null;
-
-    @Field(() => Int, { nullable: true })
-    Sequence?: number;
-
-    @Field(() => Boolean, { nullable: true })
-    IsActive?: boolean;
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Enrichment Providers
-//****************************************************************************
-@InputType()
-export class UpdatemjBizAppsCommonEnrichmentProviderInput {
-    @Field()
-    ID: string;
-
-    @Field({ nullable: true })
-    Code?: string;
-
-    @Field({ nullable: true })
-    Name?: string;
-
-    @Field({ nullable: true })
-    Description?: string | null;
-
-    @Field({ nullable: true })
-    DriverClass?: string;
-
-    @Field({ nullable: true })
-    IntegrationID?: string | null;
-
-    @Field(() => Int, { nullable: true })
-    MaxBatchSize?: number;
-
-    @Field(() => Int, { nullable: true })
-    RequestsPerMinute?: number | null;
-
-    @Field({ nullable: true })
-    Configuration?: string | null;
-
-    @Field(() => Float, { nullable: true })
-    CreditPrice?: number | null;
-
-    @Field({ nullable: true })
-    CreditCurrency?: string | null;
-
-    @Field(() => Int, { nullable: true })
-    Sequence?: number;
-
-    @Field(() => Boolean, { nullable: true })
-    IsActive?: boolean;
-
-    @Field(() => [KeyValuePairInput], { nullable: true })
-    OldValues___?: KeyValuePairInput[];
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-//****************************************************************************
-// RESOLVER for MJ_BizApps_Common: Enrichment Providers
-//****************************************************************************
-@ObjectType()
-export class RunmjBizAppsCommonEnrichmentProviderViewResult {
-    @Field(() => [mjBizAppsCommonEnrichmentProvider_])
-    Results: mjBizAppsCommonEnrichmentProvider_[];
-
-    @Field(() => String, {nullable: true})
-    UserViewRunID?: string;
-
-    @Field(() => Int, {nullable: true})
-    RowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    TotalRowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    ExecutionTime: number;
-
-    @Field({nullable: true})
-    ErrorMessage?: string;
-
-    @Field(() => Boolean, {nullable: false})
-    Success: boolean;
-}
-
-@Resolver(mjBizAppsCommonEnrichmentProvider_)
-export class mjBizAppsCommonEnrichmentProviderResolver extends ResolverBase {
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonEnrichmentProviderViewResult)
-    async RunmjBizAppsCommonEnrichmentProviderDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ_BizApps_Common: Enrichment Providers';
-        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
-    }
-    @Query(() => mjBizAppsCommonEnrichmentProvider_, { nullable: true })
-    async mjBizAppsCommonEnrichmentProvider(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonEnrichmentProvider_ | null> {
-        this.CheckUserReadPermissions('MJ_BizApps_Common: Enrichment Providers', userPayload);
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwEnrichmentProviders')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Enrichment Providers', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Enrichment Providers', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
-        return result;
-    }
-    
-    @Mutation(() => mjBizAppsCommonEnrichmentProvider_)
-    async CreatemjBizAppsCommonEnrichmentProvider(
-        @Arg('input', () => CreatemjBizAppsCommonEnrichmentProviderInput) input: CreatemjBizAppsCommonEnrichmentProviderInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ_BizApps_Common: Enrichment Providers', input, provider, userPayload, pubSub)
-    }
-        
-    @Mutation(() => mjBizAppsCommonEnrichmentProvider_)
-    async UpdatemjBizAppsCommonEnrichmentProvider(
-        @Arg('input', () => UpdatemjBizAppsCommonEnrichmentProviderInput) input: UpdatemjBizAppsCommonEnrichmentProviderInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ_BizApps_Common: Enrichment Providers', input, provider, userPayload, pubSub);
-    }
-    
-    @Mutation(() => mjBizAppsCommonEnrichmentProvider_)
-    async DeletemjBizAppsCommonEnrichmentProvider(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadWriteProvider(providers);
-        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ_BizApps_Common: Enrichment Providers', key, options, provider, userPayload, pubSub);
     }
     
 }
@@ -5481,7 +5042,7 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true, description: "Biographical text or notes about this person"}) 
     Bio?: string;
         
-    @Field({nullable: true, description: "DEPRECATED: Do not use. bizapps-common no longer reads or writes this column; person-to-MJ-User bindings are owned by platform-layer IS-A subtypes of Person (e.g., BCSaaS 'BC: People'). Retained only for backward compatibility and scheduled for removal in the next major release."}) 
+    @Field({nullable: true, description: "Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users."}) 
     @MaxLength(36)
     LinkedUserID?: string;
         
@@ -5495,13 +5056,13 @@ export class mjBizAppsCommonPerson_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
-    @Field({nullable: true}) 
-    @MaxLength(201)
-    DisplayName?: string;
-        
     @Field({nullable: true, description: "Current primary seniority level for this person."}) 
     @MaxLength(36)
     SeniorityLevelID?: string;
+        
+    @Field({nullable: true, description: "Full name for display: FirstName LastName Suffix (\"John Smith Jr.\"). Blank parts are skipped; empty when every part is blank. Computed and stored; this is the entity name field."}) 
+    @MaxLength(250)
+    DisplayName?: string;
         
     @Field({nullable: true}) 
     @MaxLength(100)
@@ -5789,469 +5350,6 @@ export class mjBizAppsCommonPersonResolver extends ResolverBase {
 }
 
 //****************************************************************************
-// ENTITY CLASS for MJ_BizApps_Common: Person Educations
-//****************************************************************************
-@ObjectType({ description: "Schools and degrees a person has attended or earned. Any number per person, from any source." })
-export class mjBizAppsCommonPersonEducation_ {
-    @Field() 
-    @MaxLength(36)
-    ID: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(36)
-    PersonID?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(36)
-    OrganizationID?: string;
-        
-    @Field({nullable: true, description: "The school name exactly as the source gave it. Kept even when OrganizationID is set, so unmatched names are never lost."}) 
-    @MaxLength(255)
-    InstitutionName?: string;
-        
-    @Field({nullable: true, description: "Degree as the source gave it, e.g. \"Master of Public Administration\" or \"MPP\"."}) 
-    @MaxLength(200)
-    Degree?: string;
-        
-    @Field({nullable: true, description: "Major or field of study, when known."}) 
-    @MaxLength(200)
-    FieldOfStudy?: string;
-        
-    @Field({nullable: true, description: "Date study began, when known."}) 
-    StartDate?: Date;
-        
-    @Field({nullable: true, description: "Graduation or end date, when known."}) 
-    EndDate?: Date;
-        
-    @Field({nullable: true, description: "Manual (entered by a person), Import (bulk load) or Enrichment (written by an enrichment provider). Enrichment never edits Manual rows."}) 
-    @MaxLength(20)
-    Source?: string;
-        
-    @Field({nullable: true, description: "Which system supplied a non-manual row. Equals EnrichmentProvider.Code for enrichment rows."}) 
-    @MaxLength(80)
-    SourceSystem?: string;
-        
-    @Field({nullable: true, description: "When the source last confirmed this row."}) 
-    LastVerifiedAt?: Date;
-        
-    @Field({nullable: true, description: "Free text."}) 
-    Notes?: string;
-        
-    @Field() 
-    _mj__CreatedAt: Date;
-        
-    @Field() 
-    _mj__UpdatedAt: Date;
-        
-    @Field({nullable: true}) 
-    @MaxLength(201)
-    Person?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(255)
-    Organization?: string;
-        
-    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
-    ReadableFields___?: string[];
-        
-}
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Person Educations
-//****************************************************************************
-@InputType()
-export class CreatemjBizAppsCommonPersonEducationInput {
-    @Field({ nullable: true })
-    ID?: string;
-
-    @Field({ nullable: true })
-    PersonID?: string;
-
-    @Field({ nullable: true })
-    OrganizationID: string | null;
-
-    @Field({ nullable: true })
-    InstitutionName?: string;
-
-    @Field({ nullable: true })
-    Degree: string | null;
-
-    @Field({ nullable: true })
-    FieldOfStudy: string | null;
-
-    @Field({ nullable: true })
-    StartDate: Date | null;
-
-    @Field({ nullable: true })
-    EndDate: Date | null;
-
-    @Field({ nullable: true })
-    Source?: string;
-
-    @Field({ nullable: true })
-    SourceSystem: string | null;
-
-    @Field({ nullable: true })
-    LastVerifiedAt: Date | null;
-
-    @Field({ nullable: true })
-    Notes: string | null;
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Person Educations
-//****************************************************************************
-@InputType()
-export class UpdatemjBizAppsCommonPersonEducationInput {
-    @Field()
-    ID: string;
-
-    @Field({ nullable: true })
-    PersonID?: string;
-
-    @Field({ nullable: true })
-    OrganizationID?: string | null;
-
-    @Field({ nullable: true })
-    InstitutionName?: string;
-
-    @Field({ nullable: true })
-    Degree?: string | null;
-
-    @Field({ nullable: true })
-    FieldOfStudy?: string | null;
-
-    @Field({ nullable: true })
-    StartDate?: Date | null;
-
-    @Field({ nullable: true })
-    EndDate?: Date | null;
-
-    @Field({ nullable: true })
-    Source?: string;
-
-    @Field({ nullable: true })
-    SourceSystem?: string | null;
-
-    @Field({ nullable: true })
-    LastVerifiedAt?: Date | null;
-
-    @Field({ nullable: true })
-    Notes?: string | null;
-
-    @Field(() => [KeyValuePairInput], { nullable: true })
-    OldValues___?: KeyValuePairInput[];
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-//****************************************************************************
-// RESOLVER for MJ_BizApps_Common: Person Educations
-//****************************************************************************
-@ObjectType()
-export class RunmjBizAppsCommonPersonEducationViewResult {
-    @Field(() => [mjBizAppsCommonPersonEducation_])
-    Results: mjBizAppsCommonPersonEducation_[];
-
-    @Field(() => String, {nullable: true})
-    UserViewRunID?: string;
-
-    @Field(() => Int, {nullable: true})
-    RowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    TotalRowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    ExecutionTime: number;
-
-    @Field({nullable: true})
-    ErrorMessage?: string;
-
-    @Field(() => Boolean, {nullable: false})
-    Success: boolean;
-}
-
-@Resolver(mjBizAppsCommonPersonEducation_)
-export class mjBizAppsCommonPersonEducationResolver extends ResolverBase {
-    @Query(() => RunmjBizAppsCommonPersonEducationViewResult)
-    async RunmjBizAppsCommonPersonEducationViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonPersonEducationViewResult)
-    async RunmjBizAppsCommonPersonEducationViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonPersonEducationViewResult)
-    async RunmjBizAppsCommonPersonEducationDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ_BizApps_Common: Person Educations';
-        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
-    }
-    @Query(() => mjBizAppsCommonPersonEducation_, { nullable: true })
-    async mjBizAppsCommonPersonEducation(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonPersonEducation_ | null> {
-        this.CheckUserReadPermissions('MJ_BizApps_Common: Person Educations', userPayload);
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwPersonEducations')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Person Educations', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Person Educations', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
-        return result;
-    }
-    
-    @Mutation(() => mjBizAppsCommonPersonEducation_)
-    async CreatemjBizAppsCommonPersonEducation(
-        @Arg('input', () => CreatemjBizAppsCommonPersonEducationInput) input: CreatemjBizAppsCommonPersonEducationInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ_BizApps_Common: Person Educations', input, provider, userPayload, pubSub)
-    }
-        
-    @Mutation(() => mjBizAppsCommonPersonEducation_)
-    async UpdatemjBizAppsCommonPersonEducation(
-        @Arg('input', () => UpdatemjBizAppsCommonPersonEducationInput) input: UpdatemjBizAppsCommonPersonEducationInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ_BizApps_Common: Person Educations', input, provider, userPayload, pubSub);
-    }
-    
-    @Mutation(() => mjBizAppsCommonPersonEducation_)
-    async DeletemjBizAppsCommonPersonEducation(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadWriteProvider(providers);
-        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ_BizApps_Common: Person Educations', key, options, provider, userPayload, pubSub);
-    }
-    
-}
-
-//****************************************************************************
-// ENTITY CLASS for MJ_BizApps_Common: Person External Identities
-//****************************************************************************
-@ObjectType({ description: "A person's identifier in an external system and the outcome of the last match attempt. One row per person per system." })
-export class mjBizAppsCommonPersonExternalIdentity_ {
-    @Field() 
-    @MaxLength(36)
-    ID: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(36)
-    PersonID?: string;
-        
-    @Field({nullable: true, description: "The external system, e.g. Apollo or PDL."}) 
-    @MaxLength(80)
-    SourceSystem?: string;
-        
-    @Field({nullable: true, description: "The person's ID in that system. Unique per system. Required when MatchStatus is Matched."}) 
-    @MaxLength(400)
-    ExternalID?: string;
-        
-    @Field({nullable: true, description: "Matched; NotFound (the system had no match, retried after a cooling-off period); Ambiguous (the system's ID already belongs to another Person, so a human must resolve the possible duplicate)."}) 
-    @MaxLength(20)
-    MatchStatus?: string;
-        
-    @Field({nullable: true, description: "Which identifier produced the match: ExternalID, Email, LinkedIn, NameAndDomain or Manual."}) 
-    @MaxLength(20)
-    MatchedBy?: string;
-        
-    @Field(() => Float, {nullable: true, description: "Vendor match confidence from 0 to 1, when the vendor reports one."}) 
-    MatchConfidence?: number;
-        
-    @Field({nullable: true, description: "When this person was last sent to this system. Drives re-enrichment eligibility."}) 
-    LastCheckedAt?: Date;
-        
-    @Field({nullable: true, description: "When the system last returned a match."}) 
-    LastMatchedAt?: Date;
-        
-    @Field() 
-    _mj__CreatedAt: Date;
-        
-    @Field() 
-    _mj__UpdatedAt: Date;
-        
-    @Field({nullable: true}) 
-    @MaxLength(201)
-    Person?: string;
-        
-    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
-    ReadableFields___?: string[];
-        
-}
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Person External Identities
-//****************************************************************************
-@InputType()
-export class CreatemjBizAppsCommonPersonExternalIdentityInput {
-    @Field({ nullable: true })
-    ID?: string;
-
-    @Field({ nullable: true })
-    PersonID?: string;
-
-    @Field({ nullable: true })
-    SourceSystem?: string;
-
-    @Field({ nullable: true })
-    ExternalID: string | null;
-
-    @Field({ nullable: true })
-    MatchStatus?: string;
-
-    @Field({ nullable: true })
-    MatchedBy: string | null;
-
-    @Field(() => Float, { nullable: true })
-    MatchConfidence: number | null;
-
-    @Field({ nullable: true })
-    LastCheckedAt?: Date;
-
-    @Field({ nullable: true })
-    LastMatchedAt: Date | null;
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-
-//****************************************************************************
-// INPUT TYPE for MJ_BizApps_Common: Person External Identities
-//****************************************************************************
-@InputType()
-export class UpdatemjBizAppsCommonPersonExternalIdentityInput {
-    @Field()
-    ID: string;
-
-    @Field({ nullable: true })
-    PersonID?: string;
-
-    @Field({ nullable: true })
-    SourceSystem?: string;
-
-    @Field({ nullable: true })
-    ExternalID?: string | null;
-
-    @Field({ nullable: true })
-    MatchStatus?: string;
-
-    @Field({ nullable: true })
-    MatchedBy?: string | null;
-
-    @Field(() => Float, { nullable: true })
-    MatchConfidence?: number | null;
-
-    @Field({ nullable: true })
-    LastCheckedAt?: Date;
-
-    @Field({ nullable: true })
-    LastMatchedAt?: Date | null;
-
-    @Field(() => [KeyValuePairInput], { nullable: true })
-    OldValues___?: KeyValuePairInput[];
-
-    @Field(() => RestoreContextInput, { nullable: true })
-    RestoreContext___?: RestoreContextInput;
-}
-    
-//****************************************************************************
-// RESOLVER for MJ_BizApps_Common: Person External Identities
-//****************************************************************************
-@ObjectType()
-export class RunmjBizAppsCommonPersonExternalIdentityViewResult {
-    @Field(() => [mjBizAppsCommonPersonExternalIdentity_])
-    Results: mjBizAppsCommonPersonExternalIdentity_[];
-
-    @Field(() => String, {nullable: true})
-    UserViewRunID?: string;
-
-    @Field(() => Int, {nullable: true})
-    RowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    TotalRowCount: number;
-
-    @Field(() => Int, {nullable: true})
-    ExecutionTime: number;
-
-    @Field({nullable: true})
-    ErrorMessage?: string;
-
-    @Field(() => Boolean, {nullable: false})
-    Success: boolean;
-}
-
-@Resolver(mjBizAppsCommonPersonExternalIdentity_)
-export class mjBizAppsCommonPersonExternalIdentityResolver extends ResolverBase {
-    @Query(() => RunmjBizAppsCommonPersonExternalIdentityViewResult)
-    async RunmjBizAppsCommonPersonExternalIdentityViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonPersonExternalIdentityViewResult)
-    async RunmjBizAppsCommonPersonExternalIdentityViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
-    }
-
-    @Query(() => RunmjBizAppsCommonPersonExternalIdentityViewResult)
-    async RunmjBizAppsCommonPersonExternalIdentityDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        input.EntityName = 'MJ_BizApps_Common: Person External Identities';
-        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
-    }
-    @Query(() => mjBizAppsCommonPersonExternalIdentity_, { nullable: true })
-    async mjBizAppsCommonPersonExternalIdentity(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonPersonExternalIdentity_ | null> {
-        this.CheckUserReadPermissions('MJ_BizApps_Common: Person External Identities', userPayload);
-        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
-        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwPersonExternalIdentities')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Person External Identities', userPayload, EntityPermissionType.Read, 'AND');
-        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
-        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Person External Identities', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
-        return result;
-    }
-    
-    @Mutation(() => mjBizAppsCommonPersonExternalIdentity_)
-    async CreatemjBizAppsCommonPersonExternalIdentity(
-        @Arg('input', () => CreatemjBizAppsCommonPersonExternalIdentityInput) input: CreatemjBizAppsCommonPersonExternalIdentityInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.CreateRecord('MJ_BizApps_Common: Person External Identities', input, provider, userPayload, pubSub)
-    }
-        
-    @Mutation(() => mjBizAppsCommonPersonExternalIdentity_)
-    async UpdatemjBizAppsCommonPersonExternalIdentity(
-        @Arg('input', () => UpdatemjBizAppsCommonPersonExternalIdentityInput) input: UpdatemjBizAppsCommonPersonExternalIdentityInput,
-        @Ctx() { providers, userPayload }: AppContext,
-        @PubSub() pubSub: PubSubEngine
-    ) {
-        const provider = GetReadWriteProvider(providers);
-        return this.UpdateRecord('MJ_BizApps_Common: Person External Identities', input, provider, userPayload, pubSub);
-    }
-    
-    @Mutation(() => mjBizAppsCommonPersonExternalIdentity_)
-    async DeletemjBizAppsCommonPersonExternalIdentity(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
-        const provider = GetReadWriteProvider(providers);
-        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
-        return this.DeleteRecord('MJ_BizApps_Common: Person External Identities', key, options, provider, userPayload, pubSub);
-    }
-    
-}
-
-//****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Person Job Functions
 //****************************************************************************
 @ObjectType({ description: "1:M assignment of job functions to a person, supporting plural functions and ranking order." })
@@ -6285,7 +5383,7 @@ export class mjBizAppsCommonPersonJobFunction_ {
     _mj__UpdatedAt: Date;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(250)
     Person?: string;
         
     @Field({nullable: true}) 
@@ -6702,20 +5800,12 @@ export class mjBizAppsCommonRelationship_ {
     @MaxLength(36)
     SeniorityLevelID?: string;
         
-    @Field({nullable: true, description: "Manual, Import or Enrichment. Enrichment only updates or ends relationships it created."}) 
-    @MaxLength(20)
-    Source?: string;
-        
-    @Field({nullable: true, description: "Which system supplied a non-manual relationship."}) 
-    @MaxLength(80)
-    SourceSystem?: string;
-        
     @Field({nullable: true}) 
     @MaxLength(100)
     RelationshipType?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(250)
     FromPerson?: string;
         
     @Field({nullable: true}) 
@@ -6723,7 +5813,7 @@ export class mjBizAppsCommonRelationship_ {
     FromOrganization?: string;
         
     @Field({nullable: true}) 
-    @MaxLength(201)
+    @MaxLength(250)
     ToPerson?: string;
         
     @Field({nullable: true}) 
@@ -6737,6 +5827,10 @@ export class mjBizAppsCommonRelationship_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     SeniorityLevel?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(1000)
+    DisplayName?: string;
         
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
     ReadableFields___?: string[];
@@ -6787,12 +5881,6 @@ export class CreatemjBizAppsCommonRelationshipInput {
     @Field({ nullable: true })
     SeniorityLevelID: string | null;
 
-    @Field({ nullable: true })
-    Source?: string;
-
-    @Field({ nullable: true })
-    SourceSystem: string | null;
-
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -6841,12 +5929,6 @@ export class UpdatemjBizAppsCommonRelationshipInput {
 
     @Field({ nullable: true })
     SeniorityLevelID?: string | null;
-
-    @Field({ nullable: true })
-    Source?: string;
-
-    @Field({ nullable: true })
-    SourceSystem?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
