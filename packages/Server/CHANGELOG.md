@@ -1,5 +1,16 @@
 # @mj-biz-apps/common-server
 
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+  - @mj-biz-apps/common-actions@5.55.0
+  - @mj-biz-apps/common-activity-sync@5.55.0
+  - @mj-biz-apps/common-core-entities-server@5.55.0
+
 ## 5.54.0
 
 ### Minor Changes
