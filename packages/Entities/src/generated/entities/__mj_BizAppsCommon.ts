@@ -1572,7 +1572,7 @@ export const mjBizAppsCommonContactConsentHistorySchema = z.object({
         * * Default Value: newsequentialid()`),
     ContactConsentID: z.string().describe(`
         * * Field Name: ContactConsentID
-        * * Display Name: Contact Consent
+        * * Display Name: Contact Consent ID
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Consents (vwContactConsents.ID)`),
     NewConsentStatus: z.union([z.literal('NotSpecified'), z.literal('OptedIn'), z.literal('OptedOut')]).describe(`
@@ -1670,15 +1670,15 @@ export const mjBizAppsCommonContactConsentSchema = z.object({
         * * Default Value: getutcdate()`),
     ContactMethod: z.string().describe(`
         * * Field Name: ContactMethod
-        * * Display Name: Contact Method Detail
+        * * Display Name: Contact Method Name
         * * SQL Data Type: nvarchar(500)`),
     ConsentPurpose: z.string().nullable().describe(`
         * * Field Name: ConsentPurpose
-        * * Display Name: Consent Purpose Detail
+        * * Display Name: Consent Purpose Name
         * * SQL Data Type: nvarchar(100)`),
     Organization: z.string().nullable().describe(`
         * * Field Name: Organization
-        * * Display Name: Organization Detail
+        * * Display Name: Organization Name
         * * SQL Data Type: nvarchar(255)`),
 });
 
@@ -1798,7 +1798,7 @@ export const mjBizAppsCommonContactTypeSchema = z.object({
         * * Default Value: getutcdate()`),
     CommunicationBaseMessageTypeID: z.string().nullable().describe(`
         * * Field Name: CommunicationBaseMessageTypeID
-        * * Display Name: Communication Base Message Type ID
+        * * Display Name: Communication Base Message Type
         * * SQL Data Type: uniqueidentifier
         * * Related Entity/Foreign Key: MJ: Communication Base Message Types (vwCommunicationBaseMessageTypes.ID)`),
     CommunicationBaseMessageType: z.string().nullable().describe(`
@@ -6986,7 +6986,7 @@ export class mjBizAppsCommonContactConsentHistoryEntity extends BaseEntity<mjBiz
 
     /**
     * * Field Name: ContactConsentID
-    * * Display Name: Contact Consent
+    * * Display Name: Contact Consent ID
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ_BizApps_Common: Contact Consents (vwContactConsents.ID)
     */
@@ -7239,7 +7239,7 @@ export class mjBizAppsCommonContactConsentEntity extends BaseEntity<mjBizAppsCom
 
     /**
     * * Field Name: ContactMethod
-    * * Display Name: Contact Method Detail
+    * * Display Name: Contact Method Name
     * * SQL Data Type: nvarchar(500)
     */
     get ContactMethod(): string {
@@ -7248,7 +7248,7 @@ export class mjBizAppsCommonContactConsentEntity extends BaseEntity<mjBizAppsCom
 
     /**
     * * Field Name: ConsentPurpose
-    * * Display Name: Consent Purpose Detail
+    * * Display Name: Consent Purpose Name
     * * SQL Data Type: nvarchar(100)
     */
     get ConsentPurpose(): string | null {
@@ -7257,7 +7257,7 @@ export class mjBizAppsCommonContactConsentEntity extends BaseEntity<mjBizAppsCom
 
     /**
     * * Field Name: Organization
-    * * Display Name: Organization Detail
+    * * Display Name: Organization Name
     * * SQL Data Type: nvarchar(255)
     */
     get Organization(): string | null {
@@ -7629,7 +7629,7 @@ export class mjBizAppsCommonContactTypeEntity extends BaseEntity<mjBizAppsCommon
 
     /**
     * * Field Name: CommunicationBaseMessageTypeID
-    * * Display Name: Communication Base Message Type ID
+    * * Display Name: Communication Base Message Type
     * * SQL Data Type: uniqueidentifier
     * * Related Entity/Foreign Key: MJ: Communication Base Message Types (vwCommunicationBaseMessageTypes.ID)
     */

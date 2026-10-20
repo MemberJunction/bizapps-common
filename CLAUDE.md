@@ -117,7 +117,7 @@ This clone is a member of an **`mj dev workspace`**: the parent folder (one leve
 
 ## MemberJunction version policy
 
-The pins are a **floor**, not a target. `^6.1.5` means "at least 6.1.5"; development happens on `next` through the workspace link above.
+The pins are a **floor**, not a target. `^6.1.6` means "at least 6.1.6"; development happens on `next` through the workspace link above.
 
 - **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range and never appears in `dependencies`: the host installs one copy, and a `~6.1.N` or exact peer makes every later host install a second tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor. `.github/scripts/check-dependency-model.mjs` enforces this in CI; it accepts a prerelease caret such as `^6.2.0-edge.3`. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
 - **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here.

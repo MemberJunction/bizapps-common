@@ -16,7 +16,7 @@ export class mjBizAppsCommonContactConsentHistoryFormComponent extends BaseFormC
         await super.ngOnInit();
         this.initSections([
             { sectionKey: 'consentHistoryDetails', sectionName: 'Consent History Details', isExpanded: true },
-            { sectionKey: 'auditInformation', sectionName: 'Audit Information', isExpanded: true },
+            { sectionKey: 'auditAndTracking', sectionName: 'Audit and Tracking', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
