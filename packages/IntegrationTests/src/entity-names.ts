@@ -15,8 +15,6 @@ export const COMMON_ENTITIES = {
     ActivityFile: 'MJ_BizApps_Common: Activity Files',
     ActivitySyncConnection: 'MJ_BizApps_Common: Activity Sync Connections',
     ActivitySyncRule: 'MJ_BizApps_Common: Activity Sync Rules',
-    ActivitySyncRun: 'MJ_BizApps_Common: Activity Sync Runs',
-    ActivitySyncRunDetail: 'MJ_BizApps_Common: Activity Sync Run Details',
 } as const;
 
 /** Email / name suffix that identifies COM-WORLD rows for cleanup. */
