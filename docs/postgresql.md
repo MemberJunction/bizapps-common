@@ -33,8 +33,8 @@ On SQL Server the flow is identical without `DB_PLATFORM` (defaults to `sqlserve
 
 ## How platform selection works (inherited from the MJ CLI — no custom code)
 
-The mechanism is entirely provided by `@memberjunction/cli` (pinned at 5.40.2). BizApps Common does
-**not** reimplement any of it:
+The mechanism is entirely provided by `@memberjunction/cli` (declared at `^6.1.6`, the repo's MJ floor).
+BizApps Common does **not** reimplement any of it:
 
 - **`DB_PLATFORM`** (`sqlserver` | `postgresql`) is read by the CLI. There is no new config key to set
   — do **not** hardcode `dbPlatform` in `mj.config.cjs`, because the file value would override the
@@ -172,26 +172,33 @@ CodeGen-generated CRUD functions), the read path (FK-join base views), the polym
 its own test rows) and exits non-zero on any failure. Requires a PG instance with the app installed
 (migrate → codegen → sync). Currently 17/17 passing.
 
-## Version note — why MJ 5.40.2
+## Version note — the MJ floor
 
-BizApps Common pins `@memberjunction/*` at **5.40.2**. Two things make this the right floor for
-PostgreSQL:
+BizApps Common declares `@memberjunction/*` at **`^6.1.6`**, the MJ 6.1 LTS line (`mj-app.json`
+`mjVersionRange` is `>=6.1.6 <7.0.0`). PostgreSQL needs MJ 5.39.0 or later, which the floor covers:
 
 - **App-schema `mj sync push` works.** Seeding the reference tables (AddressTypes, etc.) calls the
   app-schema `spCreate*` functions. In MJ ≤ 5.37.0 the PostgreSQL data provider hardcoded the **core**
   `__mj` schema for every CRUD-function call, so an app-schema seed resolved to a non-existent
   `__mj.spCreateAddressType` and silently seeded nothing. That was fixed in 5.39.0+
   (`PostgreSQLDataProvider` now qualifies the call with the entity's own schema). The full
-  `migrate → codegen → sync push → object-model` flow is verified end-to-end on 5.40.2.
+  `migrate → codegen → sync push → object-model` flow was verified end-to-end on 5.40.2, when that
+  was the floor.
+- **The folder swap.** On 6.1.6, `getSkywayConfig` in `@memberjunction/cli` resolves
+  `./migrations-pg` when `DB_PLATFORM=postgresql` and `./migrations` otherwise, with no `--dir`.
 
 ## Known limitations
 
-- **`mj app install` (the OpenApp installer) is SQL-Server-only in published MemberJunction.** It reads
-  `mj-app.json`'s `migrations.directory` literally and uses the SQL Server Skyway provider, with no
-  platform folder-swap. Installing onto a PostgreSQL MJ instance therefore uses the developer flow
-  above (`mj migrate` / `mj codegen` / `mj sync push`), which is fully platform-aware. Platform-aware
-  `mj app install` (PG provider + `migrations-pg` selection + app-schema create/drop) is implemented in
-  the MemberJunction-core PR that accompanies this work and ships on a future MJ release.
+- **`mj app install` (the OpenApp installer) is platform-aware from MJ 6.1.6.** On PostgreSQL,
+  `@memberjunction/open-app-engine` downloads `<migrations.directory>-pg` (`migrations-pg`) from the
+  release, falling back to `migrations` only when that folder is empty, runs it with Skyway's
+  PostgreSQL provider, and uses `<teardownDirectory>-pg` on remove. Checked on 6.1.6 against
+  PostgreSQL 17 with a fresh MJ core: `DownloadMigrations` fetched v5.55.0's 20 `migrations-pg`
+  files, and `RunAppMigrations` with `Platform: 'postgresql'` applied them through the PostgreSQL
+  provider. It stopped where `mj migrate` stops, at `V202610151046__v5.54.x__Address_DisplayName.pg.sql`
+  (`column "DisplayName" does not exist`). That failure is in this repo's PostgreSQL migrations, not
+  the installer: the file creates `IX_Address_DisplayName` before it adds the column, and a fresh
+  PostgreSQL install from either path stops there until that is fixed.
 - **A *fresh* MemberJunction-core install on PostgreSQL is a separate, MJ-core concern.** BizApps Common
   installs *into* an existing MJ instance and runs only its own `migrations-pg`, which are
   platform-independent of the core baselines. The MJ-core PostgreSQL baseline regeneration (so a brand-new
