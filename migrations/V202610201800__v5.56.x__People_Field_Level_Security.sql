@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202610081600__v5.52.x__People_Field_Level_Security.sql
+-- Migration: V202610201800__v5.56.x__People_Field_Level_Security.sql
 -- Description: Turn on field-level security for MJ_BizApps_Common: People and
 --              give every role that can read People a permission row on each
 --              restrictable field, computed from this host's own permissions

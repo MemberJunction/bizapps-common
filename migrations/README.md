@@ -209,7 +209,7 @@ release PR is even opened and again before anything is published or tagged.
 
 ## People columns ship their field permissions
 
-People has field-level security on (`V202610081600__v5.52.x__People_Field_Level_Security.sql`,
+People has field-level security on (`V202610201800__v5.56.x__People_Field_Level_Security.sql`,
 #216). On such an entity, a field with no `MJ: Entity Field Permissions` row is denied to every
 user, the system user included. MJ writes those rows only when an Entity or EntityPermission is
 saved through its entity layer, or in CodeGen. Hosts upgrade by migration and run neither.
