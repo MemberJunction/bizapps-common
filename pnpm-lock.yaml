@@ -184,6 +184,9 @@ importers:
       '@memberjunction/ng-ui-components':
         specifier: ^6.1.6
         version: 6.1.6(f555aaaffc2013cbecd9ce8e8e312d81)
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
