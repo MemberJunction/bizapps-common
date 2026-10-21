@@ -4721,6 +4721,10 @@ export class mjBizAppsCommonOrganization_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
+    @Field({nullable: true, description: "Lower-cased host of Website, without the http(s):// scheme, a leading www. or any path. NULL when Website is empty. Computed and stored, indexed for prefix search by domain."}) 
+    @MaxLength(255)
+    WebsiteDomain?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     OrganizationType?: string;
@@ -5063,6 +5067,10 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true, description: "Full name for display: FirstName LastName Suffix (\"John Smith Jr.\"). Blank parts are skipped; empty when every part is blank. Computed and stored; this is the entity name field."}) 
     @MaxLength(250)
     DisplayName?: string;
+        
+    @Field({nullable: true, description: "Lower-cased domain of Email: the text after the first @. NULL when Email is empty, has no @, or has nothing after it. Computed and stored, indexed for prefix search by domain."}) 
+    @MaxLength(255)
+    EmailDomain?: string;
         
     @Field({nullable: true}) 
     @MaxLength(100)

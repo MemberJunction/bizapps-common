@@ -1816,6 +1816,11 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Display Name: Updated At
         * * SQL Data Type: datetimeoffset
         * * Default Value: getutcdate()`),
+    WebsiteDomain: z.string().nullable().describe(`
+        * * Field Name: WebsiteDomain
+        * * Display Name: Website Domain
+        * * SQL Data Type: nvarchar(255)
+        * * Description: Lower-cased host of Website, without the http(s):// scheme, a leading www. or any path. NULL when Website is empty. Computed and stored, indexed for prefix search by domain.`),
     OrganizationType: z.string().nullable().describe(`
         * * Field Name: OrganizationType
         * * Display Name: Organization Type Name
@@ -2012,6 +2017,11 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Display Name
         * * SQL Data Type: nvarchar(250)
         * * Description: Full name for display: FirstName LastName Suffix ("John Smith Jr."). Blank parts are skipped; empty when every part is blank. Computed and stored; this is the entity name field.`),
+    EmailDomain: z.string().nullable().describe(`
+        * * Field Name: EmailDomain
+        * * Display Name: Email Domain
+        * * SQL Data Type: nvarchar(255)
+        * * Description: Lower-cased domain of Email: the text after the first @. NULL when Email is empty, has no @, or has nothing after it. Computed and stored, indexed for prefix search by domain.`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
         * * Display Name: Linked User
@@ -7523,6 +7533,16 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     }
 
     /**
+    * * Field Name: WebsiteDomain
+    * * Display Name: Website Domain
+    * * SQL Data Type: nvarchar(255)
+    * * Description: Lower-cased host of Website, without the http(s):// scheme, a leading www. or any path. NULL when Website is empty. Computed and stored, indexed for prefix search by domain.
+    */
+    get WebsiteDomain(): string | null {
+        return this.Get('WebsiteDomain');
+    }
+
+    /**
     * * Field Name: OrganizationType
     * * Display Name: Organization Type Name
     * * SQL Data Type: nvarchar(100)
@@ -8025,6 +8045,16 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     */
     get DisplayName(): string {
         return this.Get('DisplayName');
+    }
+
+    /**
+    * * Field Name: EmailDomain
+    * * Display Name: Email Domain
+    * * SQL Data Type: nvarchar(255)
+    * * Description: Lower-cased domain of Email: the text after the first @. NULL when Email is empty, has no @, or has nothing after it. Computed and stored, indexed for prefix search by domain.
+    */
+    get EmailDomain(): string | null {
+        return this.Get('EmailDomain');
     }
 
     /**

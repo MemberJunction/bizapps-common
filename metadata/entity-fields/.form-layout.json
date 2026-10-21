@@ -873,5 +873,25 @@
       "lastModified": "2026-10-06T23:21:11.339Z",
       "checksum": "fb5af7b68b734dee3c19721a3a2bfbb3c6fb4f3ca87d5786c439fd01f68d2681"
     }
+  },
+  {
+    "fields": {
+      "Category": "Professional and Profile",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: People&Name=EmailDomain"
+    }
+  },
+  {
+    "fields": {
+      "Category": "Contact Information",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=WebsiteDomain"
+    }
   }
 ]
