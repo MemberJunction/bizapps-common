@@ -2,7 +2,7 @@ import '@angular/compiler';
 import { ChangeDetectorRef, Injector, runInInjectionContext } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const H = vi.hoisted(() => ({ logError: vi.fn(), runQuery: vi.fn() }));
+const H = vi.hoisted(() => ({ logError: vi.fn(), runQuery: vi.fn(), runView: vi.fn() }));
 
 vi.mock('@memberjunction/core', async (importOriginal) => ({
     ...(await importOriginal<object>()),
@@ -10,6 +10,12 @@ vi.mock('@memberjunction/core', async (importOriginal) => ({
     RunQuery: class {
         public RunQuery = H.runQuery;
     },
+    Metadata: class {
+        public static Provider = {
+            EntityByName: (name: string) => (name === 'Organizations' ? { NameField: { Name: 'Name' } } : undefined),
+        };
+    },
+    RunView: { FromMetadataProvider: () => ({ RunView: H.runView }) },
 }));
 vi.mock('@memberjunction/ng-base-forms', () => ({ BaseFormsModule: class {} }));
 vi.mock('@memberjunction/ng-ui-components', () => ({ MJComboboxComponent: class {} }));
@@ -19,21 +25,44 @@ import type { PartyLookupParams } from '../party-lookup-term';
 
 interface FakeRecord {
     values: Record<string, unknown>;
-    EntityInfo: { Fields: { Name: string; DisplayNameOrName: string; RelatedEntityNameFieldMap: string | null }[] };
+    dirty: boolean;
+    EntityInfo: {
+        Fields: {
+            Name: string;
+            DisplayNameOrName: string;
+            RelatedEntityNameFieldMap: string | null;
+            RelatedEntity: string;
+            RelatedEntityFieldName: string;
+        }[];
+    };
     Get(field: string): unknown;
     Set(field: string, value: unknown): void;
+    GetFieldByName(field: string): { Dirty: boolean } | null;
 }
 
-function record(accountID: string | null, accountName: string | null = null): FakeRecord {
+function record(accountID: string | null, accountName: string | null = null, dirty = false): FakeRecord {
     const values: Record<string, unknown> = { AccountID: accountID, Account: accountName };
-    return {
+    const rec: FakeRecord = {
         values,
-        EntityInfo: { Fields: [{ Name: 'AccountID', DisplayNameOrName: 'Account', RelatedEntityNameFieldMap: 'Account' }] },
+        dirty,
+        EntityInfo: {
+            Fields: [
+                {
+                    Name: 'AccountID',
+                    DisplayNameOrName: 'Account',
+                    RelatedEntityNameFieldMap: 'Account',
+                    RelatedEntity: 'Organizations',
+                    RelatedEntityFieldName: 'ID',
+                },
+            ],
+        },
         Get: (field: string) => values[field],
         Set: (field: string, value: unknown) => {
             values[field] = value;
         },
+        GetFieldByName: () => ({ Dirty: rec.dirty }),
     };
+    return rec;
 }
 
 /** Stubs the RunQuery seam: each call returns a promise the test resolves by hand, in any order. */
@@ -64,8 +93,34 @@ describe('PartyFieldComponent', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         H.logError.mockReset();
+        H.runView.mockReset();
     });
     afterEach(() => vi.useRealTimers());
+
+    it('names a value set in code (no name on the record) with one lookup on the related entity', async () => {
+        H.runView.mockResolvedValue({ Success: true, Results: [{ ID: 'o-new', Name: 'New Co' }] });
+        const c = build(record('o-new', null));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.runView).toHaveBeenCalledWith(
+            expect.objectContaining({ EntityName: 'Organizations', ExtraFilter: "ID='o-new'", Fields: ['ID', 'Name'], MaxRows: 1 }),
+        );
+        expect(c.Options).toEqual([{ ID: 'o-new', Name: 'New Co', Detail: null }]);
+    });
+
+    it('re-reads the name when the field was changed in code, since the view name is stale', async () => {
+        H.runView.mockResolvedValue({ Success: true, Results: [{ ID: 'o-new', Name: 'New Co' }] });
+        const c = build(record('o-new', 'Old Co', true));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([{ ID: 'o-new', Name: 'New Co', Detail: null }]);
+    });
+
+    it('logs a failed name lookup and keeps the ID as the label', async () => {
+        H.runView.mockResolvedValue({ Success: false, ErrorMessage: 'denied', Results: [] });
+        const c = build(record('o-new', null));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.logError).toHaveBeenCalled();
+        expect(c.Options).toEqual([{ ID: 'o-new', Name: 'o-new', Detail: null }]);
+    });
 
     it('sends nothing and lists nothing for one character', async () => {
         const c = build(record(null));
@@ -117,6 +172,21 @@ describe('PartyFieldComponent', () => {
         expect(c.CurrentID).toBe('o-old');
         expect(c.Label).toBe('Account');
         expect(c.Calls).toHaveLength(0);
+        expect(H.runView).not.toHaveBeenCalled();
+    });
+
+    it('keeps the picked name when focus leaves after a pick', async () => {
+        const rec = record('o-old', 'Old Co');
+        const c = build(rec);
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        c.OnSelect('o-dave');
+        rec.dirty = true;
+        c.OnFocusOut();
+        await vi.advanceTimersByTimeAsync(300);
+        expect(c.Options).toEqual([DAVE]);
     });
 
     it('writes null when cleared', () => {

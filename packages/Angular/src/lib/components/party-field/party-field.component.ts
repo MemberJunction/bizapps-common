@@ -10,7 +10,8 @@ import {
     inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { BaseEntity, LogError, RunQuery } from '@memberjunction/core';
+import { BaseEntity, LogError, Metadata, RunQuery, RunView } from '@memberjunction/core';
+import { EscapeSQLString } from '@memberjunction/global';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { MJComboboxComponent } from '@memberjunction/ng-ui-components';
 import { Subject, Subscription, debounceTime, from, switchMap } from 'rxjs';
@@ -128,11 +129,17 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
     public Options: PartyOption[] = [];
     public SearchFailed = false;
 
+    /** The current value as a one-item list (empty when unset): what the list goes back to. */
+    private current: PartyOption[] = [];
     private readonly terms = new Subject<string>();
     private subscription?: Subscription;
 
     public ngOnInit(): void {
-        this.Options = this.currentOption();
+        this.current = this.currentOption();
+        this.Options = this.current;
+        if (this.needsNameLookup()) {
+            void this.resolveCurrentName();
+        }
         this.subscription = this.terms
             .pipe(
                 debounceTime(DEBOUNCE_MS),
@@ -167,7 +174,8 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         const newValue = value ? String(value) : null;
         const picked = this.Options.find((option) => option.ID === newValue);
         this.Record.Set(this.FieldName, newValue);
-        this.Options = picked ? [picked] : [];
+        this.current = picked ? [picked] : [];
+        this.Options = this.current;
         this.ValueChange.emit({ FieldName: this.FieldName, OldValue: oldValue, NewValue: newValue });
         this.cdr.markForCheck();
     }
@@ -178,7 +186,7 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
      */
     public OnFocusOut(): void {
         this.terms.next('');
-        this.Options = this.currentOption();
+        this.Options = this.current;
         this.cdr.markForCheck();
     }
 
@@ -202,7 +210,7 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         this.SearchFailed = false;
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
-            return term ? [] : this.currentOption();
+            return term ? [] : this.current;
         }
         try {
             return await this.runSearch(params);
@@ -213,15 +221,57 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         }
     }
 
-    /** The saved value as an option, named from the record's related-name field; no lookup. */
+    /**
+     * The current value as an option, named from the record's related-name view column. That
+     * column is empty, or stale, when code set the foreign key after load (Deal's
+     * FillContactsFromAccount); the ID stands in until resolveCurrentName replaces it.
+     */
     private currentOption(): PartyOption[] {
         const id = this.CurrentID;
         if (!id) {
             return [];
         }
+        const name = this.needsNameLookup() ? null : this.recordName();
+        return [{ ID: id, Name: name ?? id, Detail: null }];
+    }
+
+    private recordName(): string | null {
         const nameField = this.fieldInfo()?.RelatedEntityNameFieldMap;
         const name = nameField ? this.Record.Get(nameField) : null;
-        return [{ ID: id, Name: name ? String(name) : id, Detail: null }];
+        return name ? String(name) : null;
+    }
+
+    private needsNameLookup(): boolean {
+        if (!this.CurrentID) {
+            return false;
+        }
+        return !this.recordName() || this.Record.GetFieldByName(this.FieldName)?.Dirty === true;
+    }
+
+    /** One read of the related record's name field. A failure is logged and the ID stays as the label. */
+    private async resolveCurrentName(): Promise<void> {
+        const id = this.CurrentID;
+        const field = this.fieldInfo();
+        const nameField = field ? Metadata.Provider.EntityByName(field.RelatedEntity)?.NameField?.Name : undefined;
+        if (!id || !field || !nameField) {
+            return;
+        }
+        const result = await RunView.FromMetadataProvider(Metadata.Provider).RunView<Record<string, unknown>>({
+            EntityName: field.RelatedEntity,
+            ExtraFilter: `${field.RelatedEntityFieldName}='${EscapeSQLString(id)}'`,
+            Fields: [field.RelatedEntityFieldName, nameField],
+            ResultType: 'simple',
+            MaxRows: 1,
+        });
+        const name = result.Success ? result.Results[0]?.[nameField] : null;
+        if (!result.Success) {
+            LogError(`bizapps-party-field: could not read the name of ${field.RelatedEntity} ${id}: ${result.ErrorMessage}`);
+        }
+        if (name && this.CurrentID === id) {
+            this.current = [{ ID: id, Name: String(name), Detail: null }];
+            this.Options = this.current;
+            this.cdr.markForCheck();
+        }
     }
 
     private fieldInfo() {
