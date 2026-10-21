@@ -60,6 +60,28 @@
                             <button class="btn btn-cancel btn-sm" (click)="onCancelEdit()">Cancel</button>
                         </div>
                     </div>
+                    @if (isConsentType(EditForm.TypeID)) {
+                        <div class="form-row consent-row">
+                            <div class="form-field consent-field">
+                                <label>General</label>
+                                <select [(ngModel)]="EditForm.Consents[GeneralKey]">
+                                    @for (s of ConsentStatuses; track s) {
+                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                    }
+                                </select>
+                            </div>
+                            @for (p of ConsentPurposes; track p.ID) {
+                                <div class="form-field consent-field">
+                                    <label>{{ p.Name }}</label>
+                                    <select [(ngModel)]="EditForm.Consents[p.ID]">
+                                        @for (s of ConsentStatuses; track s) {
+                                            <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             } @else {
                 <!-- Display row -->
@@ -74,6 +96,42 @@
                     <div class="cm-flat-badges">
                         @if (cm.IsPrimary) {
                             <span class="badge badge-primary"><i class="fa-solid fa-star"></i></span>
+                        }
+                        @if (isConsentType(cm.ContactTypeID)) {
+                            <span class="consent-badges" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
+                                @for (c of getConsents(cm); track c.ID) {
+                                    <span class="badge badge-consent" [ngClass]="getConsentBadgeClass(c.ConsentStatus)">
+                                        <i [class]="getConsentIcon(c.ConsentStatus)"></i>
+                                        <span class="consent-purpose">{{ getConsentBadgeText(c) }}</span>
+                                        {{ getConsentLabel(c.ConsentStatus) }}
+                                    </span>
+                                } @empty {
+                                    <span class="badge badge-consent consent-unknown">
+                                        <i class="fa-regular fa-circle-question"></i>
+                                        Not specified
+                                    </span>
+                                }
+                            </span>
+                            @if (ConsentHistoryFor === cm.ID) {
+                                <div class="consent-history" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
+                                    <div class="consent-history-title">Consent history · {{ cm.Value }}</div>
+                                    @if (ConsentHistoryLoading) {
+                                        <mj-loading Text="Loading history..." Size="small"></mj-loading>
+                                    } @else {
+                                        @for (h of ConsentHistory; track h.ID) {
+                                            <div class="consent-history-row">
+                                                <span>{{ h.ConsentStatusAt | date:'mediumDate' }}</span>
+                                                <span class="consent-history-purpose">{{ h.Purpose }}@if (h.Organization) { · {{ h.Organization }}}</span>
+                                                <span>{{ getConsentLabel(h.NewConsentStatus) }}</span>
+                                                <span class="consent-history-source">{{ h.ConsentSource }}</span>
+                                            </div>
+                                        } @empty {
+                                            <div class="consent-history-empty">No consent recorded yet</div>
+                                        }
+                                        <div class="consent-history-note">Newest first; the top row for each purpose is its current status</div>
+                                    }
+                                </div>
+                            }
                         }
                     </div>
                     <div class="cm-flat-actions">
@@ -136,6 +194,28 @@
                     </button>
                     <button class="btn btn-cancel btn-sm" (click)="onCancelAdd()">Cancel</button>
                 </div>
+                @if (isConsentType(AddForm.TypeID)) {
+                    <div class="form-row consent-row">
+                        <div class="form-field consent-field">
+                            <label>General</label>
+                            <select [(ngModel)]="AddForm.Consents[GeneralKey]">
+                                @for (s of ConsentStatuses; track s) {
+                                    <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                }
+                            </select>
+                        </div>
+                        @for (p of ConsentPurposes; track p.ID) {
+                            <div class="form-field consent-field">
+                                <label>{{ p.Name }}</label>
+                                <select [(ngModel)]="AddForm.Consents[p.ID]">
+                                    @for (s of ConsentStatuses; track s) {
+                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         }
 

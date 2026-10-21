@@ -9,6 +9,7 @@
     "application-settings",
     "address-types",
     "contact-types",
+    "consent-purposes",
     "organization-types",
     "relationship-types",
     "activity-sync-provider-types",

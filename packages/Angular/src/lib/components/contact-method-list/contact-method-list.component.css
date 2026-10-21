@@ -408,3 +408,126 @@
     width: 100%;
     justify-content: center;
 }
+
+/* Consent badge: one per contact method whose type maps to a channel */
+.badge-consent {
+    cursor: default;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.badge-consent.consent-in {
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
+}
+
+.badge-consent.consent-out {
+    background: var(--mj-status-error-bg);
+    color: var(--mj-status-error-text);
+}
+
+.badge-consent.consent-unknown {
+    background: var(--mj-bg-surface-sunken);
+    color: var(--mj-text-secondary);
+    border: 1px solid var(--mj-border-subtle);
+}
+
+/* Consent history: shown while hovering a badge, newest change first */
+.cm-flat-badges {
+    position: relative;
+}
+
+.consent-history {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    min-width: 300px;
+    padding: 10px 12px;
+    background: var(--mj-bg-surface-card);
+    border: 1px solid var(--mj-border-default);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--mj-text-primary) 14%, transparent);
+    font-size: 12px;
+    color: var(--mj-text-primary);
+}
+
+.consent-history-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--mj-text-primary);
+}
+
+.consent-history-row {
+    display: grid;
+    grid-template-columns: 90px 90px 1fr;
+    gap: 8px;
+    padding: 3px 0;
+    border-top: 1px solid var(--mj-border-subtle);
+}
+
+.consent-history-row:first-of-type {
+    border-top: none;
+}
+
+.consent-history-row.current {
+    font-weight: 600;
+}
+
+.consent-history-source {
+    color: var(--mj-text-secondary);
+}
+
+.consent-history-empty,
+.consent-history-note {
+    color: var(--mj-text-muted);
+    font-size: 11px;
+    margin-top: 6px;
+}
+
+/* Consent dropdown on the add and edit rows */
+.form-field.consent-field select {
+    min-width: 130px;
+}
+
+/* A method's consents: one badge per purpose (and organization), hover for history */
+.consent-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.badge-consent .consent-purpose {
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.badge-consent .consent-purpose::after {
+    content: '·';
+    margin: 0 2px 0 4px;
+}
+
+.consent-history-row {
+    grid-template-columns: 90px 1fr 90px 1fr;
+}
+
+.consent-history-purpose {
+    color: var(--mj-text-secondary);
+}
+
+/* One dropdown per purpose under the add and edit rows */
+.cm-flat-add-form,
+.cm-flat-edit-row .form-row {
+    flex-wrap: wrap;
+}
+
+.form-row.consent-row {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--mj-border-subtle);
+}

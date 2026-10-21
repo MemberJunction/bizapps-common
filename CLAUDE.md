@@ -177,7 +177,7 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 
 ## Database migrations
 
-- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Guarded DDL (`IF OBJECT_ID(...) IS NULL`), `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
+- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Plain DDL with no existence guards: Skyway runs each migration exactly once, in order, so no `IF OBJECT_ID(...) IS NULL`, `IF COL_LENGTH(...) IS NULL` or `IF NOT EXISTS` wrappers, around descriptions included. A guard turns a schema mismatch into silence and makes the PostgreSQL conversion harder. `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
 - The stamp (`V<YYYYMMDDHHMM>`, Central Time) must sort after every migration on `next` at merge time; `changes.yml` rejects one that doesn't. A shipped migration is immutable.
 - T-SQL only in a feature PR. The PostgreSQL twin is release work (`docs/postgresql.md`).
 - Full rules: [`.claude/mj/migrations/CLAUDE.md`](.claude/mj/migrations/CLAUDE.md); the release-seed runbook: [`migrations/README.md`](migrations/README.md).

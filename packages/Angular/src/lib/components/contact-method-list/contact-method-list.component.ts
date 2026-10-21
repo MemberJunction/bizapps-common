@@ -1,8 +1,15 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
+import { IMetadataProvider, IRunViewProvider, LogError, Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
+import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
+import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
+    CONTACT_CONSENT_STATUSES,
+    ContactConsentStatus,
+    mjBizAppsCommonConsentPurposeEntity,
+    mjBizAppsCommonContactConsentEntity,
+    mjBizAppsCommonContactConsentHistoryEntity,
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
 } from '@mj-biz-apps/common-entities';
@@ -28,17 +35,53 @@ interface ContactFormData {
 
     /** Whether this contact method should be flagged as the primary for its type. */
     IsPrimary: boolean;
+
+    /**
+     * The installation-wide consents to record, keyed by Consent Purpose ID, plus the general
+     * (any purpose) answer under {@link GENERAL_CONSENT_KEY}. Only shown for types that map to a
+     * channel (email, phone); a change on save writes a `ContactConsentHistory` row with source
+     * "Staff". Per-organization consents are managed on the Contact Consents records themselves.
+     */
+    Consents: Record<string, ContactConsentStatus>;
+}
+
+/** One line of the consent history panel: a change on one of the method's consents. */
+interface ConsentHistoryLine {
+    ID: string;
+    Purpose: string;
+    Organization: string | null;
+    ConsentStatusAt: Date;
+    NewConsentStatus: ContactConsentStatus;
+    ConsentSource: string;
+}
+
+/** The form key for a method's general consent: the row with no purpose, which answers for anything. */
+export const GENERAL_CONSENT_KEY = 'general';
+
+/** True when two purpose IDs name the same purpose, treating null (general) as a value. */
+function samePurpose(a: string | null | undefined, b: string | null | undefined): boolean {
+    if (!a || !b) return !a && !b;
+    return UUIDsEqual(a, b);
+}
+
+/** True when a metadata provider also serves views, as every MJ provider does. */
+function isRunViewProvider(p: IMetadataProvider): p is IMetadataProvider & IRunViewProvider {
+    return typeof (p as Partial<IRunViewProvider>).RunView === 'function';
 }
 
 /**
  * Displays and manages contact methods (email, phone, social, etc.) for a
- * Person or Organization record.
+ * Person or Organization record, with each method's consents.
  *
  * Contact methods are loaded from the `MJ_BizApps_Common: Contact Methods`
  * entity, filtered by either {@link PersonID}, {@link OrganizationID}, or
  * bound directly via a strongly-typed {@link Collection} (`RelatedRecordCollection`).
  * The component provides inline add, edit, delete, set-primary, copy-to-clipboard,
  * and open-link functionality.
+ *
+ * Consent hangs off each method as `MJ_BizApps_Common: Contact Consents` rows, one per purpose
+ * and optional organization. Every channel type (email, phone) shows a badge per consent, with
+ * the method's consent history on hover, and the edit row offers a dropdown per active purpose.
  *
  * Primary management is scoped per contact type -- setting a contact as primary
  * only demotes other primaries of the **same** type.
@@ -54,7 +97,7 @@ interface ContactFormData {
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, SharedGenericModule],
     selector: 'bizapps-contact-method-list',
     templateUrl: './contact-method-list.component.html',
     styleUrls: ['./contact-method-list.component.css']
@@ -68,6 +111,23 @@ export class ContactMethodListComponent {
      * Copy and open-link actions remain available regardless of this setting.
      */
     @Input() EditMode = false;
+
+    /**
+     * The metadata provider to read and write through. Defaults to the global provider, which is
+     * right for a single-server Explorer; a host on several providers passes its own.
+     */
+    @Input() Provider?: IMetadataProvider;
+
+    /** The provider this component reads and writes with. */
+    public get ProviderToUse(): IMetadataProvider {
+        return this.Provider ?? Metadata.Provider;
+    }
+
+    /** The same provider for RunView, when it serves views; otherwise RunView's own default. */
+    private get runViewToUse(): IRunViewProvider | null {
+        const p = this.ProviderToUse;
+        return isRunViewProvider(p) ? p : null;
+    }
 
     /** Emitted after any mutation (save, delete, set-primary) so the parent can refresh derived data. */
     @Output() DataChanged = new EventEmitter<void>();
@@ -140,6 +200,18 @@ export class ContactMethodListComponent {
      */
     ContactTypes: mjBizAppsCommonContactTypeEntity[] = [];
 
+    /** The active consent purposes, by display rank: one dropdown each on the add and edit rows. */
+    ConsentPurposes: mjBizAppsCommonConsentPurposeEntity[] = [];
+
+    /** The consent choices offered per purpose, in the order the CHECK constraint lists them. */
+    ConsentStatuses = CONTACT_CONSENT_STATUSES;
+
+    /** The form key of the general (any purpose) consent, for the template. */
+    GeneralKey = GENERAL_CONSENT_KEY;
+
+    /** Each loaded method's consent rows (every purpose and organization), keyed by contact method ID. */
+    private consentsByMethod = new Map<string, mjBizAppsCommonContactConsentEntity[]>();
+
     /**
      * The ID of the contact method currently being edited, or `null` when
      * not in edit mode.
@@ -176,6 +248,18 @@ export class ContactMethodListComponent {
      */
     AddForm: ContactFormData = this.createEmptyForm();
 
+    /** The contact method whose consent history is open under its badges, or `null`. */
+    ConsentHistoryFor: string | null = null;
+
+    /** The history lines shown for {@link ConsentHistoryFor}, newest first, across the method's consents. */
+    ConsentHistory: ConsentHistoryLine[] = [];
+
+    /** True while the history for {@link ConsentHistoryFor} is being read. */
+    ConsentHistoryLoading = false;
+
+    /** History already read this session, by contact method ID; dropped for a row when it is saved. */
+    private consentHistoryCache = new Map<string, ConsentHistoryLine[]>();
+
     /** Maps lowercase contact type names to CSS icon-color classes. */
     private iconColorMap: Record<string, string> = {
         'email': 'icon-email',
@@ -195,11 +279,11 @@ export class ContactMethodListComponent {
 
     /** Creates a blank {@link ContactFormData} with empty defaults. */
     private createEmptyForm(): ContactFormData {
-        return { TypeID: '', Value: '', Label: '', IsPrimary: false };
+        return { TypeID: '', Value: '', Label: '', IsPrimary: false, Consents: {} };
     }
 
     /**
-     * Loads contact methods and contact types from the server or collection.
+     * Loads contact methods, contact types, consent purposes and the methods' consents.
      * Resets editing state before loading.
      */
     private async loadData(): Promise<void> {
@@ -209,64 +293,99 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
-            const rv = new RunView();
-
-            // Always ensure contact types are loaded
-            if (this.ContactTypes.length === 0) {
-                const typesResult = await rv.RunView<mjBizAppsCommonContactTypeEntity>({
-                    EntityName: 'MJ_BizApps_Common: Contact Types',
-                    ExtraFilter: 'IsActive=1',
-                    OrderBy: 'DisplayRank ASC',
-                    ResultType: 'entity_object'
-                });
-                if (typesResult.Success && typesResult.Results) {
-                    this.ContactTypes = typesResult.Results;
-                }
-            }
+            await this.loadLookups();
 
             if (this._collection) {
                 if (!this._collection.IsLoaded) {
                     await this._collection.Load();
                 }
                 this.ContactMethods = [...this._collection.Items];
-                this.sortContactMethods();
-                if (this.ContactTypes.length > 0 && !this.AddForm.TypeID) {
-                    this.AddForm.TypeID = this.ContactTypes[0].ID;
-                }
-                return;
-            }
-
-            // Build filter for standalone mode
-            let filter = '';
-            if (this._personID) {
-                filter = `PersonID='${this._personID}'`;
-            } else if (this._organizationID) {
-                filter = `OrganizationID='${this._organizationID}'`;
             } else {
-                return;
+                this.ContactMethods = await this.loadStandaloneMethods();
             }
-
-            const methodsResult = await rv.RunView<mjBizAppsCommonContactMethodEntity>({
-                EntityName: 'MJ_BizApps_Common: Contact Methods',
-                ExtraFilter: filter,
-                ResultType: 'entity_object'
-            });
-
-            this.ContactMethods = methodsResult.Success
-                ? (methodsResult.Results as mjBizAppsCommonContactMethodEntity[])
-                : [];
 
             this.sortContactMethods();
+            await this.loadConsents();
 
-            // Set default type for add form
-            if (this.ContactTypes.length > 0) {
+            if (this.ContactTypes.length > 0 && !this.AddForm.TypeID) {
                 this.AddForm.TypeID = this.ContactTypes[0].ID;
             }
         } catch (err) {
-            console.error('ContactMethodList: Error loading data', err);
+            LogError(`ContactMethodList: Error loading data: ${String(err)}`);
         } finally {
             this.Loading = false;
             this.cdr.detectChanges();
+        }
+    }
+
+    /** Reads contact types and consent purposes once, in one round trip. */
+    private async loadLookups(): Promise<void> {
+        if (this.ContactTypes.length > 0 && this.ConsentPurposes.length > 0) {
+            return;
+        }
+        const rv = new RunView(this.runViewToUse);
+        const [types, purposes] = await rv.RunViews([
+            {
+                EntityName: 'MJ_BizApps_Common: Contact Types',
+                ExtraFilter: 'IsActive=1',
+                OrderBy: 'DisplayRank ASC',
+                ResultType: 'entity_object'
+            },
+            {
+                EntityName: 'MJ_BizApps_Common: Consent Purposes',
+                ExtraFilter: 'IsActive=1',
+                OrderBy: 'DisplayRank ASC',
+                ResultType: 'entity_object'
+            }
+        ]);
+        if (types.Success) {
+            this.ContactTypes = types.Results as mjBizAppsCommonContactTypeEntity[];
+        }
+        if (purposes.Success) {
+            this.ConsentPurposes = purposes.Results as mjBizAppsCommonConsentPurposeEntity[];
+        }
+    }
+
+    /** Reads the person's or organization's contact methods when no collection was bound. */
+    private async loadStandaloneMethods(): Promise<mjBizAppsCommonContactMethodEntity[]> {
+        let filter = '';
+        if (this._personID) {
+            filter = `PersonID='${EscapeSQLString(this._personID)}'`;
+        } else if (this._organizationID) {
+            filter = `OrganizationID='${EscapeSQLString(this._organizationID)}'`;
+        } else {
+            return [];
+        }
+        const rv = new RunView(this.runViewToUse);
+        const result = await rv.RunView<mjBizAppsCommonContactMethodEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Methods',
+            ExtraFilter: filter,
+            ResultType: 'entity_object'
+        });
+        return result.Success ? result.Results : [];
+    }
+
+    /** Reads every consent row of the loaded (saved) methods in one query and groups them by method. */
+    private async loadConsents(): Promise<void> {
+        this.consentsByMethod.clear();
+        const ids = this.ContactMethods.filter((cm) => cm.IsSaved).map((cm) => `'${EscapeSQLString(cm.ID)}'`);
+        if (ids.length === 0) {
+            return;
+        }
+        const rv = new RunView(this.runViewToUse);
+        const result = await rv.RunView<mjBizAppsCommonContactConsentEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Consents',
+            ExtraFilter: `ContactMethodID IN (${ids.join(',')})`,
+            ResultType: 'entity_object'
+        });
+        if (!result.Success) {
+            LogError(`ContactMethodList: Error loading consents: ${result.ErrorMessage}`);
+            return;
+        }
+        for (const consent of result.Results) {
+            const list = this.consentsByMethod.get(consent.ContactMethodID) ?? [];
+            list.push(consent);
+            this.consentsByMethod.set(consent.ContactMethodID, list);
         }
     }
 
@@ -359,6 +478,130 @@ export class ContactMethodListComponent {
     }
 
     /**
+     * Whether a contact type carries consent: it maps to one of MJ's communication channels
+     * (Email, Phone, SMS). LinkedIn, Website and the like do not, so they show no badges.
+     *
+     * @param typeID - The ContactType record ID to check
+     */
+    isConsentType(typeID: string): boolean {
+        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        return !!ct?.CommunicationBaseMessageTypeID;
+    }
+
+    /** The consent rows a method has, in purpose display order, installation-wide rows before scoped ones. */
+    getConsents(cm: mjBizAppsCommonContactMethodEntity): mjBizAppsCommonContactConsentEntity[] {
+        const rows = this.consentsByMethod.get(cm.ID) ?? [];
+        return [...rows].sort((a, b) => {
+            const rank = this.getPurposeRank(a.ConsentPurposeID) - this.getPurposeRank(b.ConsentPurposeID);
+            if (rank !== 0) return rank;
+            return (a.OrganizationID ? 1 : 0) - (b.OrganizationID ? 1 : 0);
+        });
+    }
+
+    /** Returns the DisplayRank for a consent purpose; the general row (no purpose) sorts first. */
+    private getPurposeRank(purposeID: string | null): number {
+        if (!purposeID) return -1;
+        const p = this.ConsentPurposes.find(x => UUIDsEqual(x.ID, purposeID));
+        return p?.DisplayRank ?? 999;
+    }
+
+    /** The badge text for a consent row: its purpose (or General), and the organization when it is scoped to one. */
+    getConsentBadgeText(consent: mjBizAppsCommonContactConsentEntity): string {
+        const purpose = consent.ConsentPurpose ?? 'General';
+        return consent.Organization ? `${purpose} · ${consent.Organization}` : purpose;
+    }
+
+    /** The badge colour class for a consent status. */
+    getConsentBadgeClass(status: ContactConsentStatus): string {
+        switch (status) {
+            case 'OptedIn': return 'consent-in';
+            case 'OptedOut': return 'consent-out';
+            default: return 'consent-unknown';
+        }
+    }
+
+    /** The Font Awesome icon for a consent status. */
+    getConsentIcon(status: ContactConsentStatus): string {
+        switch (status) {
+            case 'OptedIn': return 'fa-solid fa-check';
+            case 'OptedOut': return 'fa-solid fa-ban';
+            default: return 'fa-regular fa-circle-question';
+        }
+    }
+
+    /** The label shown for a consent status, on badges, in history rows and in the dropdowns. */
+    getConsentLabel(status: ContactConsentStatus): string {
+        switch (status) {
+            case 'OptedIn': return 'Opted in';
+            case 'OptedOut': return 'Opted out';
+            default: return 'Not specified';
+        }
+    }
+
+    /**
+     * Opens the consent history under a row's badges, reading it on first hover and reusing it
+     * afterwards until that row is saved again.
+     *
+     * @param cm - The contact method whose badges are being hovered
+     */
+    async onShowConsentHistory(cm: mjBizAppsCommonContactMethodEntity): Promise<void> {
+        this.ConsentHistoryFor = cm.ID;
+        const cached = this.consentHistoryCache.get(cm.ID);
+        if (cached) {
+            this.ConsentHistory = cached;
+            this.cdr.detectChanges();
+            return;
+        }
+        this.ConsentHistory = [];
+        this.ConsentHistoryLoading = true;
+        this.cdr.detectChanges();
+        const lines = await this.loadConsentHistory(cm);
+        this.consentHistoryCache.set(cm.ID, lines);
+        if (this.ConsentHistoryFor === cm.ID) {
+            this.ConsentHistory = lines;
+        }
+        this.ConsentHistoryLoading = false;
+        this.cdr.detectChanges();
+    }
+
+    /** Closes the consent history. */
+    onHideConsentHistory(): void {
+        this.ConsentHistoryFor = null;
+        this.cdr.detectChanges();
+    }
+
+    /** Reads the history of every consent a method has, newest change first, labelled with its purpose. */
+    private async loadConsentHistory(cm: mjBizAppsCommonContactMethodEntity): Promise<ConsentHistoryLine[]> {
+        const consents = this.consentsByMethod.get(cm.ID) ?? [];
+        if (consents.length === 0) {
+            return [];
+        }
+        const ids = consents.map((c) => `'${EscapeSQLString(c.ID)}'`).join(',');
+        const rv = new RunView(this.runViewToUse);
+        const result = await rv.RunView<mjBizAppsCommonContactConsentHistoryEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Consent Histories',
+            ExtraFilter: `ContactConsentID IN (${ids})`,
+            OrderBy: 'ConsentStatusAt DESC',
+            ResultType: 'entity_object'
+        });
+        if (!result.Success) {
+            LogError(`ContactMethodList: Error loading consent history: ${result.ErrorMessage}`);
+            return [];
+        }
+        return result.Results.map((h) => {
+            const consent = consents.find((c) => UUIDsEqual(c.ID, h.ContactConsentID));
+            return {
+                ID: h.ID,
+                Purpose: consent?.ConsentPurpose ?? 'General',
+                Organization: consent?.Organization ?? null,
+                ConsentStatusAt: h.ConsentStatusAt,
+                NewConsentStatus: h.NewConsentStatus,
+                ConsentSource: h.ConsentSource
+            };
+        });
+    }
+
+    /**
      * Copies the given string value to the system clipboard.
      *
      * Silently ignores clipboard write failures (e.g., when the Clipboard
@@ -404,6 +647,10 @@ export class ContactMethodListComponent {
         if (this.ContactTypes.length > 0) {
             this.AddForm.TypeID = this.ContactTypes[0].ID;
         }
+        this.AddForm.Consents[GENERAL_CONSENT_KEY] = 'NotSpecified';
+        for (const p of this.ConsentPurposes) {
+            this.AddForm.Consents[p.ID] = 'NotSpecified';
+        }
         this.ShowAddForm = true;
         this.cdr.detectChanges();
     }
@@ -417,7 +664,7 @@ export class ContactMethodListComponent {
     }
 
     /**
-     * Persists the new contact method from the add form.
+     * Persists the new contact method from the add form, with any consents chosen for it.
      *
      * When the "Primary" flag is set, other primaries of the same contact
      * type are demoted first. The contact list is reloaded after saving.
@@ -429,17 +676,28 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
 
         try {
-            if (this._collection) {
-                const cm = await this._collection.Create();
-                cm.ContactTypeID = this.AddForm.TypeID;
-                cm.Value = this.AddForm.Value;
-                cm.Label = this.AddForm.Label || null;
-                cm.IsPrimary = this.AddForm.IsPrimary;
-
-                if (this.AddForm.IsPrimary) {
-                    await this.clearPrimariesForType(this.AddForm.TypeID);
+            const cm = this._collection
+                ? await this._collection.Create()
+                : await this.ProviderToUse.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
+            if (!this._collection) {
+                cm.NewRecord();
+                if (this._personID) {
+                    cm.PersonID = this._personID;
+                } else if (this._organizationID) {
+                    cm.OrganizationID = this._organizationID;
                 }
+            }
+            cm.ContactTypeID = this.AddForm.TypeID;
+            cm.Value = this.AddForm.Value;
+            cm.Label = this.AddForm.Label || null;
+            cm.IsPrimary = this.AddForm.IsPrimary;
+            await this.applyConsentsFromForm(cm, this.AddForm);
 
+            if (this.AddForm.IsPrimary) {
+                await this.clearPrimariesForType(this.AddForm.TypeID);
+            }
+
+            if (this._collection) {
                 this.ContactMethods = [...this._collection.Items];
                 this.sortContactMethods();
                 this.ShowAddForm = false;
@@ -447,30 +705,13 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            const md = new Metadata();
-            const cm = await md.GetEntityObject<mjBizAppsCommonContactMethodEntity>('MJ_BizApps_Common: Contact Methods');
-            cm.NewRecord();
-            cm.ContactTypeID = this.AddForm.TypeID;
-            cm.Value = this.AddForm.Value;
-            cm.Label = this.AddForm.Label || null;
-            cm.IsPrimary = this.AddForm.IsPrimary;
-
-            if (this._personID) {
-                cm.PersonID = this._personID;
-            } else if (this._organizationID) {
-                cm.OrganizationID = this._organizationID;
+            if (!(await cm.Save())) {
+                LogError(`ContactMethodList: Error adding contact: ${cm.LatestResult?.CompleteMessage ?? 'unknown error'}`);
             }
-
-            // If setting primary, clear other primaries of same type
-            if (this.AddForm.IsPrimary) {
-                await this.clearPrimariesForType(this.AddForm.TypeID);
-            }
-
-            await cm.Save();
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error adding contact', err);
+            LogError(`ContactMethodList: Error adding contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
@@ -479,18 +720,25 @@ export class ContactMethodListComponent {
 
     /**
      * Opens the inline edit form for an existing contact method, populating
-     * the form fields from the current entity data.
+     * the form fields from the current entity data and its installation-wide consents.
      *
      * Closes the add form if it is currently open.
      *
      * @param cm - The contact method entity to edit
      */
     onEdit(cm: mjBizAppsCommonContactMethodEntity): void {
+        const consents: Record<string, ContactConsentStatus> = {};
+        consents[GENERAL_CONSENT_KEY] = this.findUnscopedConsent(cm, null)?.ConsentStatus ?? 'NotSpecified';
+        for (const p of this.ConsentPurposes) {
+            const row = this.findUnscopedConsent(cm, p.ID);
+            consents[p.ID] = row?.ConsentStatus ?? 'NotSpecified';
+        }
         this.EditForm = {
             TypeID: cm.ContactTypeID,
             Value: cm.Value,
             Label: cm.Label || '',
-            IsPrimary: cm.IsPrimary
+            IsPrimary: cm.IsPrimary,
+            Consents: consents
         };
         this.EditingId = cm.ID;
         this.ShowAddForm = false;
@@ -506,7 +754,7 @@ export class ContactMethodListComponent {
     }
 
     /**
-     * Persists the edited contact method from the edit form.
+     * Persists the edited contact method from the edit form, with its consents.
      *
      * When the "Primary" flag is newly set, other primaries of the same
      * contact type are demoted first. The contact list is reloaded after saving.
@@ -530,6 +778,8 @@ export class ContactMethodListComponent {
             cm.Value = this.EditForm.Value;
             cm.Label = this.EditForm.Label || null;
             cm.IsPrimary = this.EditForm.IsPrimary;
+            await this.applyConsentsFromForm(cm, this.EditForm);
+            this.consentHistoryCache.delete(cm.ID);
 
             if (this._collection) {
                 this.ContactMethods = [...this._collection.Items];
@@ -539,14 +789,55 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            await cm.Save();
+            if (!(await cm.Save())) {
+                LogError(`ContactMethodList: Error saving contact: ${cm.LatestResult?.CompleteMessage ?? 'unknown error'}`);
+            }
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error saving contact', err);
+            LogError(`ContactMethodList: Error saving contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
+        }
+    }
+
+    /** The method's installation-wide consent row for a purpose (null = the general row), from the loaded rows, or null. */
+    private findUnscopedConsent(cm: mjBizAppsCommonContactMethodEntity, purposeID: string | null): mjBizAppsCommonContactConsentEntity | null {
+        const rows = this.consentsByMethod.get(cm.ID) ?? [];
+        return rows.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID)) ?? null;
+    }
+
+    /**
+     * Writes the form's per-purpose choices onto the method's `Consents` collection, so they save
+     * with the method: an existing installation-wide row is updated when its status changed, and
+     * a new row is created when a purpose was given a status for the first time. The consent
+     * entity's own Save adds the history row for each change.
+     */
+    private async applyConsentsFromForm(cm: mjBizAppsCommonContactMethodEntity, form: ContactFormData): Promise<void> {
+        if (!this.isConsentType(form.TypeID)) {
+            return;
+        }
+        if (cm.IsSaved && !cm.Consents.IsLoaded) {
+            await cm.Consents.Load();
+        }
+        const keys: Array<{ key: string; purposeID: string | null }> = [
+            { key: GENERAL_CONSENT_KEY, purposeID: null },
+            ...this.ConsentPurposes.map((p) => ({ key: p.ID, purposeID: p.ID })),
+        ];
+        for (const { key, purposeID } of keys) {
+            const wanted = form.Consents[key] ?? 'NotSpecified';
+            const existing = cm.Consents.Items.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID));
+            if (existing) {
+                if (existing.ConsentStatus !== wanted) {
+                    existing.ConsentStatus = wanted;
+                }
+            } else if (wanted !== 'NotSpecified') {
+                const row = await cm.Consents.Create();
+                row.ConsentPurposeID = purposeID;
+                row.OrganizationID = null;
+                row.ConsentStatus = wanted;
+            }
         }
     }
 
@@ -575,11 +866,13 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            await cm.Save();
+            if (!(await cm.Save())) {
+                LogError(`ContactMethodList: Error setting primary: ${cm.LatestResult?.CompleteMessage ?? 'unknown error'}`);
+            }
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error setting primary', err);
+            LogError(`ContactMethodList: Error setting primary: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
@@ -606,11 +899,13 @@ export class ContactMethodListComponent {
                 return;
             }
 
-            await cm.Delete();
+            if (!(await cm.Delete())) {
+                LogError(`ContactMethodList: Error deleting contact: ${cm.LatestResult?.CompleteMessage ?? 'unknown error'}`);
+            }
             await this.loadData();
             this.DataChanged.emit();
         } catch (err) {
-            console.error('ContactMethodList: Error deleting contact', err);
+            LogError(`ContactMethodList: Error deleting contact: ${String(err)}`);
         } finally {
             this.Saving = false;
             this.cdr.detectChanges();
