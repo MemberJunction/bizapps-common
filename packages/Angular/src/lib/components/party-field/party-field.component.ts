@@ -7,7 +7,6 @@ import {
     OnDestroy,
     OnInit,
     Output,
-    ViewChild,
     inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -27,9 +26,6 @@ export interface PartyOption {
 }
 
 const DEBOUNCE_MS = 250;
-
-/** ID of the "Create …" option that ends a search's results; never written to the record. */
-export const PARTY_CREATE_ID = '__bizapps-party-create__';
 
 /**
  * `bizapps-party-field` — a Person or Organization foreign key that searches as you type.
@@ -67,13 +63,9 @@ export const PARTY_CREATE_ID = '__bizapps-party-create__';
                     (ValueChange)="OnSelect($event)"
                 >
                     <ng-template #mjComboboxItem let-item>
-                        @if (item.ID === CreateID) {
-                            <div class="mj-fk-create-footer"><i class="fa-solid fa-plus"></i> {{ item.Name }}</div>
-                        } @else {
-                            <div class="bizapps-party-option">{{ item.Name }}</div>
-                            @if (item.Detail) {
-                                <div class="bizapps-party-option-detail">{{ item.Detail }}</div>
-                            }
+                        <div class="bizapps-party-option">{{ item.Name }}</div>
+                        @if (item.Detail) {
+                            <div class="bizapps-party-option-detail">{{ item.Detail }}</div>
                         }
                     </ng-template>
                 </mj-combobox>
@@ -110,13 +102,6 @@ export const PARTY_CREATE_ID = '__bizapps-party-create__';
                 font-size: var(--mj-text-xs);
                 color: var(--mj-text-muted);
             }
-            .mj-fk-create-footer {
-                display: flex;
-                align-items: center;
-                gap: var(--mj-space-2);
-                color: var(--mj-brand-primary);
-                font-weight: var(--mj-font-semibold);
-            }
             .bizapps-party-field-hint {
                 font-size: var(--mj-text-xs);
                 color: var(--mj-status-error);
@@ -136,8 +121,6 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
     @Input() EditMode = false;
     @Input() ShowLabel = true;
     @Input() FormContext?: FormContext;
-    /** Offer "Create …" after a search, as the stock field does, when the user may create the related entity. */
-    @Input() AllowCreate = true;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
     @Output() ValueChange = new EventEmitter<{ FieldName: string; OldValue: unknown; NewValue: unknown }>();
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
@@ -145,14 +128,9 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
     /** What the dropdown lists: search results, or just the current value when not searching. */
     public Options: PartyOption[] = [];
     public SearchFailed = false;
-    public readonly CreateID = PARTY_CREATE_ID;
-
-    @ViewChild(MJComboboxComponent) private combobox?: MJComboboxComponent;
 
     /** The current value as a one-item list (empty when unset): what the list goes back to. */
     private current: PartyOption[] = [];
-    /** The last term searched for, to prefill a created record's name. */
-    private lastTerm = '';
     private readonly terms = new Subject<string>();
     private subscription?: Subscription;
 
@@ -192,10 +170,6 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
 
     /** Picked (an ID) or cleared (null). */
     public OnSelect(value: unknown): void {
-        if (value === PARTY_CREATE_ID) {
-            this.requestCreate();
-            return;
-        }
         const oldValue = this.Record.Get(this.FieldName);
         const newValue = value ? String(value) : null;
         const picked = this.Options.find((option) => option.ID === newValue);
@@ -238,67 +212,13 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         if (!params) {
             return term ? [] : this.current;
         }
-        this.lastTerm = params.Term;
         try {
-            return this.withCreateOption(await this.runSearch(params), params.Term);
+            return await this.runSearch(params);
         } catch (error) {
             LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
             this.SearchFailed = true;
             return [];
         }
-    }
-
-    private withCreateOption(rows: PartyOption[], term: string): PartyOption[] {
-        if (!this.canCreate()) {
-            return rows;
-        }
-        return [...rows, { ID: PARTY_CREATE_ID, Name: `Create "${term}"`, Detail: null }];
-    }
-
-    private canCreate(): boolean {
-        const related = this.relatedEntity();
-        const user = Metadata.Provider.CurrentUser;
-        return this.AllowCreate && !!related && !!user && related.GetUserPermisions(user)?.CanCreate === true;
-    }
-
-    /**
-     * Same contract as the stock field's create footer: emit `create-related` and let the host's
-     * form presenter open the create form; it calls Complete with the saved record (or null).
-     * The field keeps its value until then, and the combobox text goes back to it.
-     */
-    private requestCreate(): void {
-        const field = this.fieldInfo();
-        const nameField = this.relatedEntity()?.NameField?.Name;
-        this.Options = this.current;
-        this.combobox?.writeValue(this.CurrentID);
-        this.cdr.markForCheck();
-        if (!field) {
-            return;
-        }
-        this.Navigate.emit({
-            Kind: 'create-related',
-            EntityName: field.RelatedEntity,
-            NewRecordValues: nameField && this.lastTerm ? { [nameField]: this.lastTerm } : undefined,
-            Presentation: 'dialog',
-            Complete: (created: BaseEntity | null) => this.selectCreated(created),
-        });
-    }
-
-    private selectCreated(created: BaseEntity | null): void {
-        const field = this.fieldInfo();
-        const nameField = this.relatedEntity()?.NameField?.Name;
-        const id = created && field ? created.Get(field.RelatedEntityFieldName) : null;
-        if (!id) {
-            return;
-        }
-        const name = nameField ? created?.Get(nameField) : null;
-        this.Options = [{ ID: String(id), Name: name ? String(name) : String(id), Detail: null }];
-        this.OnSelect(String(id));
-    }
-
-    private relatedEntity() {
-        const field = this.fieldInfo();
-        return field ? Metadata.Provider.EntityByName(field.RelatedEntity) : undefined;
     }
 
     /**
@@ -332,7 +252,7 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
     private async resolveCurrentName(): Promise<void> {
         const id = this.CurrentID;
         const field = this.fieldInfo();
-        const nameField = this.relatedEntity()?.NameField?.Name;
+        const nameField = field ? Metadata.Provider.EntityByName(field.RelatedEntity)?.NameField?.Name : undefined;
         if (!id || !field || !nameField) {
             return;
         }

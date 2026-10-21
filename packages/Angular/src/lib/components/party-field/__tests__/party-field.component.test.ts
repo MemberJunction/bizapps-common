@@ -2,7 +2,7 @@ import '@angular/compiler';
 import { ChangeDetectorRef, Injector, runInInjectionContext } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const H = vi.hoisted(() => ({ logError: vi.fn(), runQuery: vi.fn(), runView: vi.fn(), canCreate: true }));
+const H = vi.hoisted(() => ({ logError: vi.fn(), runQuery: vi.fn(), runView: vi.fn() }));
 
 vi.mock('@memberjunction/core', async (importOriginal) => ({
     ...(await importOriginal<object>()),
@@ -12,11 +12,7 @@ vi.mock('@memberjunction/core', async (importOriginal) => ({
     },
     Metadata: class {
         public static Provider = {
-            CurrentUser: { ID: 'u1' },
-            EntityByName: (name: string) =>
-                name === 'Organizations'
-                    ? { DisplayName: 'Organizations', NameField: { Name: 'Name' }, GetUserPermisions: () => ({ CanCreate: H.canCreate }) }
-                    : undefined,
+            EntityByName: (name: string) => (name === 'Organizations' ? { NameField: { Name: 'Name' } } : undefined),
         };
     },
     RunView: { FromMetadataProvider: () => ({ RunView: H.runView }) },
@@ -24,7 +20,7 @@ vi.mock('@memberjunction/core', async (importOriginal) => ({
 vi.mock('@memberjunction/ng-base-forms', () => ({ BaseFormsModule: class {} }));
 vi.mock('@memberjunction/ng-ui-components', () => ({ MJComboboxComponent: class {} }));
 
-import { PARTY_CREATE_ID, PartyFieldComponent, type PartyOption } from '../party-field.component';
+import { PartyFieldComponent, type PartyOption } from '../party-field.component';
 import type { PartyLookupParams } from '../party-lookup-term';
 
 interface FakeRecord {
@@ -98,7 +94,6 @@ describe('PartyFieldComponent', () => {
         vi.useFakeTimers();
         H.logError.mockReset();
         H.runView.mockReset();
-        H.canCreate = false; // create option covered in its own block below
     });
     afterEach(() => vi.useRealTimers());
 
@@ -270,80 +265,5 @@ describe('PartyFieldComponent.runSearch', () => {
         const c = bare();
         c.Kind = 'Person';
         await expect(c.Search({ Term: 'ze', Domain: null })).rejects.toThrow('denied');
-    });
-});
-
-describe('PartyFieldComponent inline create', () => {
-    beforeEach(() => {
-        vi.useFakeTimers();
-        H.canCreate = true;
-    });
-    afterEach(() => vi.useRealTimers());
-
-    async function searched(c: TestPartyField, term: string, rows: PartyOption[]): Promise<void> {
-        c.OnFilterChange(term);
-        await vi.advanceTimersByTimeAsync(250);
-        c.Calls[c.Calls.length - 1].resolve(rows);
-        await vi.advanceTimersByTimeAsync(0);
-    }
-
-    it('ends search results with a create option named after the typed text', async () => {
-        const c = build(record(null));
-        await searched(c, 'dave', [DAVE]);
-        expect(c.Options).toEqual([DAVE, { ID: PARTY_CREATE_ID, Name: 'Create "dave"', Detail: null }]);
-    });
-
-    it('offers no create option without permission or when turned off', async () => {
-        H.canCreate = false;
-        const c = build(record(null));
-        await searched(c, 'dave', [DAVE]);
-        expect(c.Options).toEqual([DAVE]);
-
-        H.canCreate = true;
-        const off = build(record(null));
-        off.AllowCreate = false;
-        await searched(off, 'dave', []);
-        expect(off.Options).toEqual([]);
-    });
-
-    it('asks the host to create the related record, prefilled with the typed text, without touching the field', async () => {
-        const c = build(record('o-old', 'Old Co'));
-        const events: { Kind: string; EntityName?: string; NewRecordValues?: Record<string, unknown> }[] = [];
-        c.Navigate.subscribe((e) => events.push(e as (typeof events)[number]));
-        await searched(c, 'dave', [DAVE]);
-        c.OnSelect(PARTY_CREATE_ID);
-        expect(events).toEqual([
-            expect.objectContaining({ Kind: 'create-related', EntityName: 'Organizations', NewRecordValues: { Name: 'dave' } }),
-        ]);
-        expect(c.Record.Get('AccountID')).toBe('o-old');
-        expect(c.Options).toEqual([{ ID: 'o-old', Name: 'Old Co', Detail: null }]);
-    });
-
-    it('selects the created record when the host completes', async () => {
-        const c = build(record(null));
-        const changes: unknown[] = [];
-        c.ValueChange.subscribe((e) => changes.push(e));
-        let complete: ((created: { Get(f: string): unknown } | null) => void) | undefined;
-        c.Navigate.subscribe((e) => {
-            complete = (e as unknown as { Complete: typeof complete }).Complete;
-        });
-        await searched(c, 'dave', []);
-        c.OnSelect(PARTY_CREATE_ID);
-        complete?.({ Get: (f: string) => ({ ID: 'o-created', Name: 'Dave Created' })[f] });
-        expect(c.Record.Get('AccountID')).toBe('o-created');
-        expect(c.Options).toEqual([{ ID: 'o-created', Name: 'Dave Created', Detail: null }]);
-        expect(changes).toEqual([{ FieldName: 'AccountID', OldValue: null, NewValue: 'o-created' }]);
-    });
-
-    it('leaves the field alone when the host reports a cancelled create', async () => {
-        const c = build(record('o-old', 'Old Co'));
-        let complete: ((created: null) => void) | undefined;
-        c.Navigate.subscribe((e) => {
-            complete = (e as unknown as { Complete: typeof complete }).Complete;
-        });
-        await searched(c, 'dave', []);
-        c.OnSelect(PARTY_CREATE_ID);
-        complete?.(null);
-        expect(c.Record.Get('AccountID')).toBe('o-old');
     });
 });
