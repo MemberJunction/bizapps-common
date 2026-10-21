@@ -46,6 +46,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `contacts-addresses` | CA1–CA3 |
 | `relationships` | R1–R4 |
 | `activities` | A1–A5 |
+| `party-lookup` | PL1–PL3 |
 
 ## Rules
 
