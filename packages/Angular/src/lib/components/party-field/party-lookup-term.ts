@@ -24,11 +24,16 @@ const MIN_TERM_LENGTH = 2;
  */
 export function PartyLookupParamsFor(kind: PartyKind, raw: string): PartyLookupParams | null {
     const term = raw.trim();
-    if (term.length < MIN_TERM_LENGTH) {
+    if (!longEnough(term)) {
         return null;
     }
     const domain = kind === 'Person' ? emailDomainOf(term) : websiteDomainOf(term);
-    return { Term: term, Domain: domain && domain.length >= MIN_TERM_LENGTH ? domain : null };
+    return { Term: term, Domain: domain && longEnough(domain) ? domain : null };
+}
+
+/** `%` does not count: sqlLikeBegins strips boundary wildcards, so "%%" would match every row. */
+function longEnough(text: string): boolean {
+    return text.replace(/%/g, '').length >= MIN_TERM_LENGTH;
 }
 
 /** `@aqha.com` → `aqha.com`. Only a term that looks like part of an address gets a domain. */

@@ -2,11 +2,13 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DoCheck,
     EventEmitter,
     Input,
     OnDestroy,
     OnInit,
     Output,
+    ViewChild,
     inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -109,7 +111,7 @@ const DEBOUNCE_MS = 250;
         `,
     ],
 })
-export class PartyFieldComponent implements OnInit, OnDestroy {
+export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
 
     @Input({ required: true }) Record!: BaseEntity;
@@ -134,21 +136,32 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
     private readonly terms = new Subject<string>();
     private subscription?: Subscription;
 
+    @ViewChild(MJComboboxComponent) private combobox?: MJComboboxComponent;
+
     public ngOnInit(): void {
-        this.current = this.currentOption();
-        this.Options = this.current;
-        if (this.needsNameLookup()) {
-            void this.resolveCurrentName();
-        }
+        this.seedCurrent();
         this.subscription = this.terms
             .pipe(
                 debounceTime(DEBOUNCE_MS),
                 switchMap((term) => from(this.optionsFor(term))),
             )
             .subscribe((options) => {
-                this.Options = options;
+                this.SearchFailed = options === null;
+                this.Options = options ?? [];
                 this.cdr.markForCheck();
             });
+    }
+
+    /**
+     * Code can change the value after load (Deal's FillContactsFromAccount, a cancelled edit
+     * reverting the record). Re-seed when the record no longer holds the value this field shows.
+     */
+    public ngDoCheck(): void {
+        const shown = this.current[0]?.ID ?? null;
+        if (this.subscription && this.CurrentID?.toLowerCase() !== shown?.toLowerCase()) {
+            this.seedCurrent();
+            this.RefreshComboboxText();
+        }
     }
 
     public ngOnDestroy(): void {
@@ -206,8 +219,28 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         return (result.Results as PartyOption[]).map((row) => ({ ID: row.ID, Name: row.Name, Detail: row.Detail ?? null }));
     }
 
-    private async optionsFor(term: string): Promise<PartyOption[]> {
-        this.SearchFailed = false;
+    /**
+     * mj-combobox re-reads its text from Data only while the text is empty, so a name that arrives
+     * after the ID was shown has to be pushed: Data first, then the value. A test seam.
+     */
+    protected RefreshComboboxText(): void {
+        if (this.combobox) {
+            this.combobox.Data = this.Options;
+            this.combobox.writeValue(this.CurrentID);
+        }
+        this.cdr.markForCheck();
+    }
+
+    private seedCurrent(): void {
+        this.current = this.currentOption();
+        this.Options = this.current;
+        if (this.needsNameLookup()) {
+            void this.resolveCurrentName();
+        }
+    }
+
+    /** The options to list, or null when the search failed (logged). */
+    private async optionsFor(term: string): Promise<PartyOption[] | null> {
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
             return term ? [] : this.current;
@@ -216,8 +249,7 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
             return await this.runSearch(params);
         } catch (error) {
             LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
-            this.SearchFailed = true;
-            return [];
+            return null;
         }
     }
 
@@ -270,7 +302,7 @@ export class PartyFieldComponent implements OnInit, OnDestroy {
         if (name && this.CurrentID === id) {
             this.current = [{ ID: id, Name: String(name), Detail: null }];
             this.Options = this.current;
-            this.cdr.markForCheck();
+            this.RefreshComboboxText();
         }
     }
 

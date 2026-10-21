@@ -71,6 +71,11 @@ class TestPartyField extends PartyFieldComponent {
     protected override runSearch(params: PartyLookupParams): Promise<PartyOption[]> {
         return new Promise((resolve, reject) => this.Calls.push({ params, resolve, reject }));
     }
+    /** Labels the combobox was told to show: the visible text, not just the option list. */
+    public Shown: (string | null)[] = [];
+    protected override RefreshComboboxText(): void {
+        this.Shown.push(this.Options.find((o) => o.ID === this.CurrentID)?.Name ?? null);
+    }
 }
 
 function build(rec: FakeRecord): TestPartyField {
@@ -203,6 +208,46 @@ describe('PartyFieldComponent', () => {
         await vi.advanceTimersByTimeAsync(0);
         c.OnFocusOut();
         expect(c.Options).toEqual([{ ID: 'o-old', Name: 'Old Co', Detail: null }]);
+    });
+
+    it('shows the resolved name in the combobox, not only in the option list', async () => {
+        H.runView.mockResolvedValue({ Success: true, Results: [{ ID: 'o-new', Name: 'New Co' }] });
+        const c = build(record('o-new', null));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Shown.at(-1)).toBe('New Co');
+    });
+
+    it('re-reads the current value when it changes outside the picker', async () => {
+        H.runView.mockResolvedValue({ Success: true, Results: [{ ID: 'o-new', Name: 'New Co' }] });
+        const rec = record('o-old', 'Old Co');
+        const c = build(rec);
+        rec.values['AccountID'] = 'o-new';
+        rec.dirty = true;
+        c.ngDoCheck();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([{ ID: 'o-new', Name: 'New Co', Detail: null }]);
+        expect(c.Shown.at(-1)).toBe('New Co');
+    });
+
+    it('does nothing on a check when the value has not changed', () => {
+        const c = build(record('o-old', 'Old Co'));
+        c.ngDoCheck();
+        expect(H.runView).not.toHaveBeenCalled();
+        expect(c.Shown).toEqual([]);
+    });
+
+    it('does not show a stale failure beside newer results', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('da');
+        await vi.advanceTimersByTimeAsync(250);
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[1].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        c.Calls[0].reject(new Error('late'));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([DAVE]);
+        expect(c.SearchFailed).toBe(false);
     });
 
     it('logs a failed search and shows an empty list with a hint', async () => {

@@ -7,6 +7,12 @@ describe('PartyLookupParamsFor', () => {
         expect(PartyLookupParamsFor('Organization', '')).toBeNull();
     });
 
+    it('does not count % toward the two characters, so "%%" cannot match every row', () => {
+        expect(PartyLookupParamsFor('Person', '%%')).toBeNull();
+        expect(PartyLookupParamsFor('Organization', '%a%')).toBeNull();
+        expect(PartyLookupParamsFor('Organization', 'ab%')).toEqual({ Term: 'ab%', Domain: null });
+    });
+
     it('sends a trimmed name term with no domain', () => {
         expect(PartyLookupParamsFor('Person', ' da ')).toEqual({ Term: 'da', Domain: null });
         expect(PartyLookupParamsFor('Organization', 'acme')).toEqual({ Term: 'acme', Domain: null });
