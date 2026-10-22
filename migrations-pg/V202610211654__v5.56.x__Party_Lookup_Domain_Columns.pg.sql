@@ -96,269 +96,274 @@ CREATE INDEX IF NOT EXISTS "IDX_AUTO_MJ_FKEY_Person_SeniorityLevelID" ON __mj_Bi
 
 -- ===================== Helper Functions (fn*) =====================
 
-CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetHierarchyMeta"
-(
-    p_RecordID UUID,
-    p_ParentID UUID
-)
-RETURNS TABLE
-AS
-RETURN
-(
-    WITH CTE_Ancestors AS (
-        SELECT
-            "ID",
-            "ParentID",
-            0 AS "Depth",
-            CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization"
-        WHERE
-            "ID" = p_RecordID
+-- NEUTRALIZED (release work, 22 Oct 2026): the four Organization ParentID hierarchy functions below are
+-- T-SQL table-valued functions the converter left live (RETURNS TABLE AS RETURN), which PostgreSQL
+-- rejects. As in the v5.54 twins, PostgreSQL CodeGen regenerates them natively.
+-- CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetHierarchyMeta"
+-- (
+--     p_RecordID UUID,
+--     p_ParentID UUID
+-- )
+-- RETURNS TABLE
+-- AS
+-- RETURN
+-- (
+--     WITH CTE_Ancestors AS (
+--         SELECT
+--             "ID",
+--             "ParentID",
+--             0 AS "Depth",
+--             CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization"
+--         WHERE
+--             "ID" = p_RecordID
 
-        UNION ALL
+--         UNION ALL
 
-        SELECT
-            p."ID",
-            p."ParentID",
-            c."Depth" + 1 AS "Depth",
-            CAST('/' || CAST(p."ID" AS VARCHAR(36)) || c."Path" AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization" p
-        INNER JOIN
-            CTE_Ancestors c ON p."ID" = c."ParentID"
-        WHERE
-            c."Depth" < 100
-    )
-    SELECT         a."ID" AS "RootID",
-        (SELECT MAX("Depth") FROM CTE_Ancestors) AS "Depth",
-        (SELECT "Path" FROM CTE_Ancestors ORDER BY "Depth" DESC
-LIMIT 1) AS "Path",
-        CAST(CASE WHEN EXISTS (SELECT 1 FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = p_RecordID) THEN 0 ELSE 1 END AS BOOLEAN) AS "IsLeaf",
-        (SELECT COUNT(1) FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = p_RecordID) AS "ChildCount"
-    FROM
-        CTE_Ancestors a
-    WHERE
-        a."ParentID" IS NULL OR p_ParentID IS NULL
-    ORDER BY
-        a."Depth" DESC
+--         SELECT
+--             p."ID",
+--             p."ParentID",
+--             c."Depth" + 1 AS "Depth",
+--             CAST('/' || CAST(p."ID" AS VARCHAR(36)) || c."Path" AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization" p
+--         INNER JOIN
+--             CTE_Ancestors c ON p."ID" = c."ParentID"
+--         WHERE
+--             c."Depth" < 100
+--     )
+--     SELECT         a."ID" AS "RootID",
+--         (SELECT MAX("Depth") FROM CTE_Ancestors) AS "Depth",
+--         (SELECT "Path" FROM CTE_Ancestors ORDER BY "Depth" DESC
+-- LIMIT 1) AS "Path",
+--         CAST(CASE WHEN EXISTS (SELECT 1 FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = p_RecordID) THEN 0 ELSE 1 END AS BOOLEAN) AS "IsLeaf",
+--         (SELECT COUNT(1) FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = p_RecordID) AS "ChildCount"
+--     FROM
+--         CTE_Ancestors a
+--     WHERE
+--         a."ParentID" IS NULL OR p_ParentID IS NULL
+--     ORDER BY
+--         a."Depth" DESC
 
-LIMIT 1);
+-- LIMIT 1);
 
-CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetDescendants"
-(
-    p_RootID UUID,
-    p_MaxDepth INTEGER = NULL
-)
-RETURNS TABLE
-AS
-RETURN
-(
-    WITH CTE_Descendants AS (
-        SELECT
-            "ID",
-            "ParentID",
-            0 AS "RelativeDepth",
-            CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization"
-        WHERE
-            "ID" = p_RootID
+-- CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetDescendants"
+-- (
+--     p_RootID UUID,
+--     p_MaxDepth INTEGER = NULL
+-- )
+-- RETURNS TABLE
+-- AS
+-- RETURN
+-- (
+--     WITH CTE_Descendants AS (
+--         SELECT
+--             "ID",
+--             "ParentID",
+--             0 AS "RelativeDepth",
+--             CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization"
+--         WHERE
+--             "ID" = p_RootID
 
-        UNION ALL
+--         UNION ALL
 
-        SELECT
-            c."ID",
-            c."ParentID",
-            p."RelativeDepth" || 1 AS "RelativeDepth",
-            CAST(p."Path" || CAST(c."ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization" c
-        INNER JOIN
-            CTE_Descendants p ON c."ParentID" = p."ID"
-        WHERE
-            (p_MaxDepth IS NULL OR p."RelativeDepth" < p_MaxDepth)
-            AND p."RelativeDepth" < 100
-    )
-    SELECT
-        d."ID" AS "ID",
-        d."RelativeDepth" AS "Depth",
-        d."Path",
-        CAST(CASE WHEN EXISTS (SELECT 1 FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = d."ID") THEN 0 ELSE 1 END AS BOOLEAN) AS "IsLeaf",
-        (SELECT COUNT(1) FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = d."ID") AS "ChildCount"
-    FROM
-        CTE_Descendants d
-);
+--         SELECT
+--             c."ID",
+--             c."ParentID",
+--             p."RelativeDepth" || 1 AS "RelativeDepth",
+--             CAST(p."Path" || CAST(c."ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization" c
+--         INNER JOIN
+--             CTE_Descendants p ON c."ParentID" = p."ID"
+--         WHERE
+--             (p_MaxDepth IS NULL OR p."RelativeDepth" < p_MaxDepth)
+--             AND p."RelativeDepth" < 100
+--     )
+--     SELECT
+--         d."ID" AS "ID",
+--         d."RelativeDepth" AS "Depth",
+--         d."Path",
+--         CAST(CASE WHEN EXISTS (SELECT 1 FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = d."ID") THEN 0 ELSE 1 END AS BOOLEAN) AS "IsLeaf",
+--         (SELECT COUNT(1) FROM __mj_BizAppsCommon."Organization" WHERE "ParentID" = d."ID") AS "ChildCount"
+--     FROM
+--         CTE_Descendants d
+-- );
 
-CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetAncestors"
-(
-    p_RecordID UUID
-)
-RETURNS TABLE
-AS
-RETURN
-(
-    WITH CTE_Ancestors AS (
-        SELECT
-            "ID",
-            "ParentID",
-            0 AS "LevelUp",
-            CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization"
-        WHERE
-            "ID" = p_RecordID
+-- CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetAncestors"
+-- (
+--     p_RecordID UUID
+-- )
+-- RETURNS TABLE
+-- AS
+-- RETURN
+-- (
+--     WITH CTE_Ancestors AS (
+--         SELECT
+--             "ID",
+--             "ParentID",
+--             0 AS "LevelUp",
+--             CAST('/' || CAST("ID" AS VARCHAR(36)) || '/' AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization"
+--         WHERE
+--             "ID" = p_RecordID
 
-        UNION ALL
+--         UNION ALL
 
-        SELECT
-            p."ID",
-            p."ParentID",
-            c."LevelUp" + 1 AS "LevelUp",
-            CAST('/' || CAST(p."ID" AS VARCHAR(36)) || c."Path" AS TEXT) AS "Path"
-        FROM
-            __mj_BizAppsCommon."Organization" p
-        INNER JOIN
-            CTE_Ancestors c ON p."ID" = c."ParentID"
-        WHERE
-            c."LevelUp" < 100
-    )
-    SELECT
-        a."ID" AS "ID",
-        a."LevelUp",
-        a."Path"
-    FROM
-        CTE_Ancestors a
-);
+--         SELECT
+--             p."ID",
+--             p."ParentID",
+--             c."LevelUp" + 1 AS "LevelUp",
+--             CAST('/' || CAST(p."ID" AS VARCHAR(36)) || c."Path" AS TEXT) AS "Path"
+--         FROM
+--             __mj_BizAppsCommon."Organization" p
+--         INNER JOIN
+--             CTE_Ancestors c ON p."ID" = c."ParentID"
+--         WHERE
+--             c."LevelUp" < 100
+--     )
+--     SELECT
+--         a."ID" AS "ID",
+--         a."LevelUp",
+--         a."Path"
+--     FROM
+--         CTE_Ancestors a
+-- );
 
-CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetRootID"
-(
-    p_RecordID UUID,
-    p_ParentID UUID
-)
-RETURNS TABLE
-AS
-RETURN
-(
-    WITH CTE_RootParent AS (
-        SELECT
-            "ID",
-            "ParentID",
-            "ID" AS "RootParentID",
-            0 AS "Depth"
-        FROM
-            __mj_BizAppsCommon."Organization"
-        WHERE
-            "ID" = COALESCE(p_ParentID, p_RecordID)
+-- CREATE FUNCTION __mj_BizAppsCommon."fnOrganizationParentID_GetRootID"
+-- (
+--     p_RecordID UUID,
+--     p_ParentID UUID
+-- )
+-- RETURNS TABLE
+-- AS
+-- RETURN
+-- (
+--     WITH CTE_RootParent AS (
+--         SELECT
+--             "ID",
+--             "ParentID",
+--             "ID" AS "RootParentID",
+--             0 AS "Depth"
+--         FROM
+--             __mj_BizAppsCommon."Organization"
+--         WHERE
+--             "ID" = COALESCE(p_ParentID, p_RecordID)
 
-        UNION ALL
+--         UNION ALL
 
-        SELECT
-            c."ID",
-            c."ParentID",
-            c."ID" AS "RootParentID",
-            p."Depth" + 1 AS "Depth"
-        FROM
-            __mj_BizAppsCommon."Organization" c
-        INNER JOIN
-            CTE_RootParent p ON c."ID" = p."ParentID"
-        WHERE
-            p."Depth" < 100
-    )
-    SELECT         "RootParentID" AS RootID
-    FROM
-        CTE_RootParent
-    WHERE
-        "ParentID" IS NULL
-    ORDER BY
-        "RootParentID"
+--         SELECT
+--             c."ID",
+--             c."ParentID",
+--             c."ID" AS "RootParentID",
+--             p."Depth" + 1 AS "Depth"
+--         FROM
+--             __mj_BizAppsCommon."Organization" c
+--         INNER JOIN
+--             CTE_RootParent p ON c."ID" = p."ParentID"
+--         WHERE
+--             p."Depth" < 100
+--     )
+--     SELECT         "RootParentID" AS RootID
+--     FROM
+--         CTE_RootParent
+--     WHERE
+--         "ParentID" IS NULL
+--     ORDER BY
+--         "RootParentID"
 
-LIMIT 1);
-
+-- LIMIT 1);
 
 -- ===================== Views =====================
 
-DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationsGenerated" CASCADE;
-DO $do$
-DECLARE
-  v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
-  v_target_name CONSTANT TEXT := 'vwOrganizationsGenerated';
-  vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwOrganizationsGenerated"
-AS SELECT
-    o.*,
-    "mjBizAppsCommonOrganizationType_OrganizationTypeID"."Name" AS "OrganizationType",
-    "mjBizAppsCommonOrganization_ParentID"."Name" AS "Parent",
-    "hier_ParentID"."RootID" AS "RootParentID",
-    "hier_ParentID"."Depth" AS "ParentIDDepth",
-    "hier_ParentID"."Path" AS "ParentIDPath",
-    "hier_ParentID"."IsLeaf" AS "ParentIDIsLeaf",
-    "hier_ParentID"."ChildCount" AS "ParentIDChildCount"
-FROM
-    __mj_BizAppsCommon."Organization" AS o
-LEFT OUTER JOIN
-    __mj_BizAppsCommon."OrganizationType" AS "mjBizAppsCommonOrganizationType_OrganizationTypeID"
-  ON
-    o."OrganizationTypeID" = "mjBizAppsCommonOrganizationType_OrganizationTypeID"."ID"
-LEFT OUTER JOIN
-    __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_ParentID"
-  ON
-    o."ParentID" = "mjBizAppsCommonOrganization_ParentID"."ID"
-LEFT JOIN LATERAL (SELECT * FROM __mj_BizAppsCommon."fnOrganizationParentID_GetHierarchyMeta"(o."ID", o."ParentID")) AS "hier_ParentID"
-    ON TRUE$vsql$;
-  v_target_oid OID;
-  v_dep RECORD;
-  v_captured JSONB[] := ARRAY[]::JSONB[];
-  v_n INTEGER;
-BEGIN
-  EXECUTE vsql;
-EXCEPTION WHEN invalid_table_definition THEN
-  -- Column list changed; need CASCADE. Preserve dependent views first.
-  SELECT c.oid INTO v_target_oid
-  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-  WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
-  IF v_target_oid IS NOT NULL THEN
-    FOR v_dep IN
-      WITH RECURSIVE deps AS (
-        SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
-        FROM pg_rewrite r
-        JOIN pg_depend d ON d.objid = r.oid
-        JOIN pg_class c ON c.oid = r.ev_class
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
-          AND c.oid <> v_target_oid AND c.relkind = 'v'
-        UNION
-        SELECT c.oid, c.relname, n.nspname, p.depth + 1
-        FROM deps p
-        JOIN pg_rewrite r ON TRUE
-        JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
-        JOIN pg_class c ON c.oid = r.ev_class
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relkind = 'v' AND c.oid <> p.oid
-      )
-      SELECT oid, name, schema, MAX(depth) AS max_depth,
-             pg_catalog.pg_get_viewdef(oid, true) AS viewdef
-      FROM deps GROUP BY oid, name, schema
-      ORDER BY MAX(depth) ASC
-    LOOP
-      v_captured := v_captured || jsonb_build_object(
-        'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
-    END LOOP;
-  END IF;
-  EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
-  EXECUTE vsql;
-  IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
-    FOR v_n IN 1..array_length(v_captured, 1) LOOP
-      BEGIN
-        EXECUTE format('CREATE VIEW %I.%I AS %s',
-          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
-      EXCEPTION WHEN others THEN
-        RAISE WARNING 'Could not restore dependent view %.%: %',
-          v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
-      END;
-    END LOOP;
-  END IF;
-END;
-$do$;
+-- NEUTRALIZED (release work, 22 Oct 2026): vwOrganizationsGenerated joins the ParentID hierarchy
+-- function neutralized above, which no PostgreSQL migration creates, so this block would fail the
+-- file. PostgreSQL CodeGen regenerates the view (docs/postgresql.md).
+-- DROP VIEW IF EXISTS __mj_BizAppsCommon."vwOrganizationsGenerated" CASCADE;
+-- DO $do$
+-- DECLARE
+--   v_target_schema CONSTANT TEXT := '__mj_BizAppsCommon';
+--   v_target_name CONSTANT TEXT := 'vwOrganizationsGenerated';
+--   vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_BizAppsCommon."vwOrganizationsGenerated"
+-- AS SELECT
+--     o.*,
+--     "mjBizAppsCommonOrganizationType_OrganizationTypeID"."Name" AS "OrganizationType",
+--     "mjBizAppsCommonOrganization_ParentID"."Name" AS "Parent",
+--     "hier_ParentID"."RootID" AS "RootParentID",
+--     "hier_ParentID"."Depth" AS "ParentIDDepth",
+--     "hier_ParentID"."Path" AS "ParentIDPath",
+--     "hier_ParentID"."IsLeaf" AS "ParentIDIsLeaf",
+--     "hier_ParentID"."ChildCount" AS "ParentIDChildCount"
+-- FROM
+--     __mj_BizAppsCommon."Organization" AS o
+-- LEFT OUTER JOIN
+--     __mj_BizAppsCommon."OrganizationType" AS "mjBizAppsCommonOrganizationType_OrganizationTypeID"
+--   ON
+--     o."OrganizationTypeID" = "mjBizAppsCommonOrganizationType_OrganizationTypeID"."ID"
+-- LEFT OUTER JOIN
+--     __mj_BizAppsCommon."Organization" AS "mjBizAppsCommonOrganization_ParentID"
+--   ON
+--     o."ParentID" = "mjBizAppsCommonOrganization_ParentID"."ID"
+-- LEFT JOIN LATERAL (SELECT * FROM __mj_BizAppsCommon."fnOrganizationParentID_GetHierarchyMeta"(o."ID", o."ParentID")) AS "hier_ParentID"
+--     ON TRUE$vsql$;
+--   v_target_oid OID;
+--   v_dep RECORD;
+--   v_captured JSONB[] := ARRAY[]::JSONB[];
+--   v_n INTEGER;
+-- BEGIN
+--   EXECUTE vsql;
+-- EXCEPTION WHEN invalid_table_definition THEN
+--   -- Column list changed; need CASCADE. Preserve dependent views first.
+--   SELECT c.oid INTO v_target_oid
+--   FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+--   WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
+--   IF v_target_oid IS NOT NULL THEN
+--     FOR v_dep IN
+--       WITH RECURSIVE deps AS (
+--         SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
+--         FROM pg_rewrite r
+--         JOIN pg_depend d ON d.objid = r.oid
+--         JOIN pg_class c ON c.oid = r.ev_class
+--         JOIN pg_namespace n ON c.relnamespace = n.oid
+--         WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
+--           AND c.oid <> v_target_oid AND c.relkind = 'v'
+--         UNION
+--         SELECT c.oid, c.relname, n.nspname, p.depth + 1
+--         FROM deps p
+--         JOIN pg_rewrite r ON TRUE
+--         JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+--         JOIN pg_class c ON c.oid = r.ev_class
+--         JOIN pg_namespace n ON c.relnamespace = n.oid
+--         WHERE c.relkind = 'v' AND c.oid <> p.oid
+--       )
+--       SELECT oid, name, schema, MAX(depth) AS max_depth,
+--              pg_catalog.pg_get_viewdef(oid, true) AS viewdef
+--       FROM deps GROUP BY oid, name, schema
+--       ORDER BY MAX(depth) ASC
+--     LOOP
+--       v_captured := v_captured || jsonb_build_object(
+--         'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef);
+--     END LOOP;
+--   END IF;
+--   EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
+--   EXECUTE vsql;
+--   IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
+--     FOR v_n IN 1..array_length(v_captured, 1) LOOP
+--       BEGIN
+--         EXECUTE format('CREATE VIEW %I.%I AS %s',
+--           v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
+--       EXCEPTION WHEN others THEN
+--         RAISE WARNING 'Could not restore dependent view %.%: %',
+--           v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
+--       END;
+--     END LOOP;
+--   END IF;
+-- END;
+-- $do$;
 
 DROP VIEW IF EXISTS __mj_BizAppsCommon."vwPeopleGenerated" CASCADE;
 DO $do$

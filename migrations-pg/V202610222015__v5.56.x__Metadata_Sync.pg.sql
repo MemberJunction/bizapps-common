@@ -9,7 +9,9 @@
 --     the 108 Entity Field Permission rows). 18 records: each is a DO block that calls the core
 --     function in whichever signature the host has (jsonb or named parameters), as in 5.55.
 --   * Core schema: `__mj` -> `${mjSchema}` in the 36 calls and the 18 signature probes.
---   * Every string value matches the T-SQL file, including the two queries' SQL text.
+--   * Every string value matches the T-SQL file, including the two queries' SQL text: the converter
+--     rewrote type names inside 14 string literals (two EntityField descriptions and six query fields'
+--     SQLBaseType / SQLFullType), and those were copied back from the T-SQL file, as in 5.53-5.55.
 -- =============================================================================================
 
 SET standard_conforming_strings = on;
@@ -73,7 +75,7 @@ DECLARE
   p_ID_6c27268f4a8b UUID;
 BEGIN
   p_DisplayName_6c27268f4a8b := 'Record ID';
-  p_Description_6c27268f4a8b := 'Primary key of the resolved record. TEXT so composite keys work. Required with EntityID; must be null when the link is an unresolved identity.';
+  p_Description_6c27268f4a8b := 'Primary key of the resolved record. NVARCHAR so composite keys work. Required with EntityID; must be null when the link is an unresolved identity.';
   p_AutoUpdateDescription_6c27268f4a8b := TRUE;
   p_IsPrimaryKey_6c27268f4a8b := FALSE;
   p_IsUnique_6c27268f4a8b := TRUE;
@@ -235,7 +237,7 @@ DECLARE
   p_ID_f7571042d3dc UUID;
 BEGIN
   p_DisplayName_f7571042d3dc := 'Record ID';
-  p_Description_f7571042d3dc := 'Primary key value(s) of the linked record. VARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys';
+  p_Description_f7571042d3dc := 'Primary key value(s) of the linked record. NVARCHAR(700) to support concatenated composite keys for entities without single-valued primary keys';
   p_AutoUpdateDescription_f7571042d3dc := TRUE;
   p_IsPrimaryKey_f7571042d3dc := FALSE;
   p_IsUnique_f7571042d3dc := FALSE;
@@ -872,8 +874,8 @@ BEGIN
   p_Name_a41da6863aa8 := 'ID';
   p_Description_a41da6863aa8 := 'ID';
   p_Sequence_a41da6863aa8 := 1;
-  p_SQLBaseType_a41da6863aa8 := 'UUID';
-  p_SQLFullType_a41da6863aa8 := 'UUID';
+  p_SQLBaseType_a41da6863aa8 := 'uniqueidentifier';
+  p_SQLFullType_a41da6863aa8 := 'uniqueidentifier';
   p_SourceEntityID_a41da6863aa8 := 'C70448F9-9792-41D7-A82C-784B66429D54';
   p_SourceFieldName_a41da6863aa8 := 'ID';
   p_IsComputed_a41da6863aa8 := FALSE;
@@ -930,8 +932,8 @@ BEGIN
   p_Name_6f1631f21e4c := 'Name';
   p_Description_6f1631f21e4c := 'Name';
   p_Sequence_6f1631f21e4c := 2;
-  p_SQLBaseType_6f1631f21e4c := 'TEXT';
-  p_SQLFullType_6f1631f21e4c := 'VARCHAR(255)';
+  p_SQLBaseType_6f1631f21e4c := 'nvarchar';
+  p_SQLFullType_6f1631f21e4c := 'nvarchar(255)';
   p_SourceEntityID_6f1631f21e4c := 'C70448F9-9792-41D7-A82C-784B66429D54';
   p_SourceFieldName_6f1631f21e4c := 'Name';
   p_IsComputed_6f1631f21e4c := FALSE;
@@ -988,8 +990,8 @@ BEGIN
   p_Name_bf0eb9203dbd := 'Detail';
   p_Description_bf0eb9203dbd := 'WebsiteDomain (aliased as Detail)';
   p_Sequence_bf0eb9203dbd := 3;
-  p_SQLBaseType_bf0eb9203dbd := 'TEXT';
-  p_SQLFullType_bf0eb9203dbd := 'VARCHAR(255)';
+  p_SQLBaseType_bf0eb9203dbd := 'nvarchar';
+  p_SQLFullType_bf0eb9203dbd := 'nvarchar(255)';
   p_SourceEntityID_bf0eb9203dbd := 'C70448F9-9792-41D7-A82C-784B66429D54';
   p_SourceFieldName_bf0eb9203dbd := 'WebsiteDomain';
   p_IsComputed_bf0eb9203dbd := FALSE;
@@ -1262,8 +1264,8 @@ BEGIN
   p_Name_7e6b6ac93ad0 := 'ID';
   p_Description_7e6b6ac93ad0 := 'ID';
   p_Sequence_7e6b6ac93ad0 := 1;
-  p_SQLBaseType_7e6b6ac93ad0 := 'UUID';
-  p_SQLFullType_7e6b6ac93ad0 := 'UUID';
+  p_SQLBaseType_7e6b6ac93ad0 := 'uniqueidentifier';
+  p_SQLFullType_7e6b6ac93ad0 := 'uniqueidentifier';
   p_SourceEntityID_7e6b6ac93ad0 := '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
   p_SourceFieldName_7e6b6ac93ad0 := 'ID';
   p_IsComputed_7e6b6ac93ad0 := FALSE;
@@ -1320,8 +1322,8 @@ BEGIN
   p_Name_4527f9461e8c := 'Name';
   p_Description_4527f9461e8c := 'DisplayName (aliased as Name)';
   p_Sequence_4527f9461e8c := 2;
-  p_SQLBaseType_4527f9461e8c := 'TEXT';
-  p_SQLFullType_4527f9461e8c := 'VARCHAR(250)';
+  p_SQLBaseType_4527f9461e8c := 'nvarchar';
+  p_SQLFullType_4527f9461e8c := 'nvarchar(250)';
   p_SourceEntityID_4527f9461e8c := '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
   p_SourceFieldName_4527f9461e8c := 'DisplayName';
   p_IsComputed_4527f9461e8c := FALSE;
@@ -1378,8 +1380,8 @@ BEGIN
   p_Name_42df43331db7 := 'Detail';
   p_Description_42df43331db7 := 'Email (aliased as Detail)';
   p_Sequence_42df43331db7 := 3;
-  p_SQLBaseType_42df43331db7 := 'TEXT';
-  p_SQLFullType_42df43331db7 := 'VARCHAR(255)';
+  p_SQLBaseType_42df43331db7 := 'nvarchar';
+  p_SQLFullType_42df43331db7 := 'nvarchar(255)';
   p_SourceEntityID_42df43331db7 := '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F';
   p_SourceFieldName_42df43331db7 := 'Email';
   p_IsComputed_42df43331db7 := FALSE;
