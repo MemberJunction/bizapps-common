@@ -16,6 +16,10 @@
     "relatedEntities": {},
     "primaryKey": {
       "ID": "42438426-39E0-41A9-A40C-12BAE6487BFC"
+    },
+    "sync": {
+      "lastModified": "2026-10-22T20:08:54.134Z",
+      "checksum": "b74e0d480d48b21d2a328a1f0ebdfede60d757877a389db3158c43a12943796e"
     }
   }
 ]
