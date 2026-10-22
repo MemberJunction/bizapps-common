@@ -1,0 +1,25 @@
+[
+  {
+    "fields": {
+      "Name": "Common: Party Lookup People",
+      "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
+      "UserQuestion": "Which people match what the user is typing into a person picker?",
+      "Description": "Up to 20 people whose last name, display name or email starts with the typed term, or whose email domain starts with the typed domain. Backs bizapps-party-field.",
+      "TechnicalDescription": "Grain: one row per Person, TOP 20 ordered by DisplayName, ID. Base table __mj_BizAppsCommon.Person, prefix LIKE on indexed LastName, DisplayName, Email and EmailDomain; no view, no COUNT. Parameters: Term (required), Domain (optional, lower-cased, no leading @). Columns: ID, Name, Detail (Email).",
+      "SQL": "@file:SQL/party-lookup-people.sql",
+      "Status": "Approved",
+      "QualityRank": 9,
+      "ExecutionCostRank": 1,
+      "Reusable": true,
+      "UsesTemplate": true
+    },
+    "relatedEntities": {},
+    "primaryKey": {
+      "ID": "42438426-39E0-41A9-A40C-12BAE6487BFC"
+    },
+    "sync": {
+      "lastModified": "2026-10-22T20:08:54.134Z",
+      "checksum": "b74e0d480d48b21d2a328a1f0ebdfede60d757877a389db3158c43a12943796e"
+    }
+  }
+]

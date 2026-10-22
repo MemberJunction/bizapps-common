@@ -1,0 +1,25 @@
+[
+  {
+    "fields": {
+      "Name": "Common: Party Lookup Organizations",
+      "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
+      "UserQuestion": "Which organizations match what the user is typing into an organization picker?",
+      "Description": "Up to 20 organizations whose name or legal name starts with the typed term, or whose website domain starts with the typed domain. Backs bizapps-party-field.",
+      "TechnicalDescription": "Grain: one row per Organization, TOP 20 ordered by Name, ID. Base table __mj_BizAppsCommon.Organization, prefix LIKE on indexed Name, LegalName and WebsiteDomain; no view, no COUNT. Parameters: Term (required), Domain (optional, lower-cased host without scheme, www. or path). Columns: ID, Name, Detail (WebsiteDomain).",
+      "SQL": "@file:SQL/party-lookup-organizations.sql",
+      "Status": "Approved",
+      "QualityRank": 9,
+      "ExecutionCostRank": 1,
+      "Reusable": true,
+      "UsesTemplate": true
+    },
+    "relatedEntities": {},
+    "primaryKey": {
+      "ID": "90E212A2-5E1B-46DC-B468-38B6AF5E2352"
+    },
+    "sync": {
+      "lastModified": "2026-10-22T20:08:53.906Z",
+      "checksum": "69f2d69060bc8e6d49653a95cc97080fc1f4622bf5d4fd66fa242918099b9800"
+    }
+  }
+]

@@ -13,6 +13,7 @@
  *   contacts-addresses   CA1–CA3   address links, contact exclusivity, primary email
  *   relationships        R1–R4     employment, exclusivity, person-to-person, status
  *   activities           A1–A5     types, regarding/xor/unresolved links, ExternalID, sync
+ *   party-lookup         PL1–PL3   party lookup queries: prefix, email/website domain, literal wildcards
  */
 import { LoadGeneratedEntities } from '@mj-biz-apps/common-entities';
 
@@ -28,6 +29,7 @@ export * from './checks/organizations.checks.js';
 export * from './checks/contacts-addresses.checks.js';
 export * from './checks/relationships.checks.js';
 export * from './checks/activities.checks.js';
+export * from './checks/party-lookup.checks.js';
 
 export function LoadCommonIntegrationTests(): void {
     // side-effect import is the registration

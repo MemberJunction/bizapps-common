@@ -1,0 +1,56 @@
+[
+  {
+    "_comments": [
+      "Polymorphic foreign key declaration(s) on MJ_BizApps_Common: Activity Links: each payload field sets EntityIDFieldName to its companion EntityID discriminator field."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Links"
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "EntityIDFieldName": "EntityID"
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links&Name=RecordID"
+          },
+          "sync": {
+            "lastModified": "2026-10-22T20:08:47.192Z",
+            "checksum": "8c1529516623f71e9a9a7d4b0c8c294e92f021530c2a466407618e135135f525"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links"
+    }
+  },
+  {
+    "_comments": [
+      "Polymorphic foreign key declaration(s) on MJ_BizApps_Common: Address Links: each payload field sets EntityIDFieldName to its companion EntityID discriminator field."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Address Links"
+    },
+    "relatedEntities": {
+      "MJ: Entity Fields": [
+        {
+          "fields": {
+            "EntityIDFieldName": "EntityID"
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Address Links&Name=RecordID"
+          },
+          "sync": {
+            "lastModified": "2026-10-22T20:08:47.229Z",
+            "checksum": "8c1529516623f71e9a9a7d4b0c8c294e92f021530c2a466407618e135135f525"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Address Links"
+    }
+  }
+]
