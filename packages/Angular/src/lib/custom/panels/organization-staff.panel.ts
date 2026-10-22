@@ -90,13 +90,7 @@ interface StaffTableColumn {
                             @for (member of Staff; track member.PersonID) {
                                 <tr>
                                     <td>
-                                        <button type="button" class="bizapps-staff-link"
-                                                mjRecordLink
-                                                [EntityName]="'MJ_BizApps_Common: People'"
-                                                [RecordID]="member.PersonID"
-                                                [DisplayName]="member.Name"
-                                                [HandleClick]="false"
-                                                (click)="OpenPerson(member)">{{ member.Name }}</button>
+                                        <button type="button" class="bizapps-staff-link" (click)="OpenPerson(member)">{{ member.Name }}</button>
                                     </td>
                                     <td>{{ member.Title || '—' }}</td>
                                     <td>{{ member.StartDate ? (member.StartDate | date: 'MMM y' : 'UTC') : '—' }}</td>

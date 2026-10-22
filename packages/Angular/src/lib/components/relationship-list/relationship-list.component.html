@@ -58,12 +58,6 @@
                                         <span class="rel-timeline-label">{{ item.DirectionLabel }}</span>
                                         @if (item.TargetEntityName && item.TargetID) {
                                             <a class="rel-timeline-target" href="javascript:void(0)"
-                                               mjRecordLink
-                                               [EntityName]="item.TargetEntityName"
-                                               [RecordID]="item.TargetID"
-                                               [DisplayName]="item.TargetName"
-                                               [HandleClick]="false"
-                                               (Navigate)="Navigate.emit($event)"
                                                (click)="onNavigateToTarget(item, $event)">{{ item.TargetName }}</a>
                                         } @else {
                                             <span class="rel-timeline-target">{{ item.TargetName }}</span>
