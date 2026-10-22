@@ -1,7 +1,7 @@
 {
   "source": "MemberJunction/MJ",
   "branch": "next",
-  "rev": "ac24ffeb8a",
-  "copiedAt": "2026-10-12T16:28:13Z",
+  "rev": "663ff804",
+  "copiedAt": "2026-10-22T20:27:31Z",
   "script": "scripts/sync-mj-claude-docs.sh"
 }
