@@ -43,7 +43,13 @@
                     <div class="biz-hero__stat">
                         <span class="biz-hero__stat-label">Parent Org</span>
                         @if (Record.ParentID) {
-                            <button type="button" class="biz-hero__stat-val" (click)="OnParentClick($event)">
+                            <button type="button" class="biz-hero__stat-val"
+                                    [mjRecordLink]="Record"
+                                    FieldName="ParentID"
+                                    EntityName="MJ_BizApps_Common: Organizations"
+                                    [HandleClick]="false"
+                                    (Navigate)="Navigate.emit($event)"
+                                    (click)="OnParentClick($event)">
                                 {{ Record.Parent }}
                             </button>
                         } @else {
