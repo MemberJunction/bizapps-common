@@ -97,7 +97,12 @@
             @if (Record.ParentActivity) {
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Thread / Parent</span>
-                    <button type="button" class="biz-hero__stat-val" (click)="OnParentActivityClick($event)">
+                    <button type="button" class="biz-hero__stat-val"
+                            [mjRecordLink]="Record"
+                            FieldName="ParentActivityID"
+                            [HandleClick]="false"
+                            (Navigate)="Navigate.emit($event)"
+                            (click)="OnParentActivityClick($event)">
                         <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
                         {{ Record.ParentActivity }}
                     </button>

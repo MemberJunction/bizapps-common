@@ -39,7 +39,14 @@
             <div class="hierarchy-tree">
                 <!-- Parent organization (if exists) -->
                 @if (ParentNode) {
-                    <div class="tree-item" (click)="OnNavigateToOrg(ParentNode, $event)">
+                    <div class="tree-item"
+                         mjRecordLink
+                         [EntityName]="'MJ_BizApps_Common: Organizations'"
+                         [RecordID]="ParentNode.ID"
+                         [DisplayName]="ParentNode.Name"
+                         [HandleClick]="false"
+                         (Navigate)="Navigate.emit($event)"
+                         (click)="OnNavigateToOrg(ParentNode, $event)">
                         <div class="tree-icon"><i class="fa-solid fa-building"></i></div>
                         <div>
                             <div class="tree-name">{{ ParentNode.Name }}</div>
@@ -61,6 +68,12 @@
                 @for (child of ChildNodes; track child.ID) {
                     <div class="tree-item tree-indent-child"
                         [class.tree-indent-deep]="ParentNode !== null"
+                        mjRecordLink
+                        [EntityName]="'MJ_BizApps_Common: Organizations'"
+                        [RecordID]="child.ID"
+                        [DisplayName]="child.Name"
+                        [HandleClick]="false"
+                        (Navigate)="Navigate.emit($event)"
                         (click)="OnNavigateToOrg(child, $event)">
                         <div class="tree-icon"><i class="fa-solid fa-building"></i></div>
                         <div>
