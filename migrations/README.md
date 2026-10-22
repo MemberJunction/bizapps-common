@@ -25,7 +25,8 @@ the release:  mj sync push against a clean DB  →  ONE consolidated Metadata_Sy
 ```
 
 **A feature PR carries no `Metadata_Sync` migration.** It carries the JSON: fields, `@lookup` /
-`@file` / `@parent` references, a `primaryKey` UUID from `uuidgen`, and no `sync` block. The release
+`@file` / `@parent` references, a `primaryKey` on every record (a `uuidgen` UUID for a new row, an
+`@lookup` for a row the migrations or CodeGen already created), and no `sync` block. The release
 push writes the `sync` block back. The build engineer takes everything merged on `next` and generates
 one consolidated seed for the release. This is MJ's model (`MJ/metadata/CLAUDE.md` §1b and §10). The
 reason for it is drift: per-PR sync migrations duplicate the release step, produce many small files
