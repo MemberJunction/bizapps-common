@@ -184,7 +184,7 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 
 ## Metadata
 
-Declarative JSON under `metadata/`, pushed by `mj sync push`. Primary keys come from `uuidgen`; references use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
+Declarative JSON under `metadata/`, pushed by `mj sync push`. Every record, nested `relatedEntities` children included, has a `primaryKey`: a `uuidgen` UUID for a row the file creates, or an `@lookup` for a row the migration stack or CodeGen already created (a record without one is inserted as a new row). References use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
 
 ---
 
