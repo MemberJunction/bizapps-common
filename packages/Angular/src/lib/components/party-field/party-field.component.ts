@@ -65,10 +65,12 @@ const DEBOUNCE_MS = 250;
                     (ValueChange)="OnSelect($event)"
                 >
                     <ng-template #mjComboboxItem let-item>
-                        <div class="bizapps-party-option">{{ item.Name }}</div>
-                        @if (item.Detail) {
-                            <div class="bizapps-party-option-detail">{{ item.Detail }}</div>
-                        }
+                        <div class="bizapps-party-option">
+                            <span>{{ item.Name }}</span>
+                            @if (item.Detail) {
+                                <span class="bizapps-party-option-detail">{{ item.Detail }}</span>
+                            }
+                        </div>
                     </ng-template>
                 </mj-combobox>
                 @if (SearchFailed) {
@@ -99,6 +101,11 @@ const DEBOUNCE_MS = 250;
                 font-size: var(--mj-text-sm);
                 font-weight: var(--mj-font-medium);
                 color: var(--mj-text-secondary);
+            }
+            .bizapps-party-option {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
             }
             .bizapps-party-option-detail {
                 font-size: var(--mj-text-xs);
