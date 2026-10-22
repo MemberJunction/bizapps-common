@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey, RunView } from '@memberjunction/core';
-import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
+import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities';
@@ -30,7 +30,7 @@ export interface OrgTreeNode {
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, HierarchyTreeComponent],
+    imports: [CommonModule, BaseFormsModule, HierarchyTreeComponent],
     selector: 'bizapps-org-hierarchy-tree',
     templateUrl: './org-hierarchy-tree.component.html',
     styleUrls: ['./org-hierarchy-tree.component.css']

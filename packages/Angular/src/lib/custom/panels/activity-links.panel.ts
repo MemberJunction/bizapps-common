@@ -54,7 +54,13 @@ interface ActivityLinkRow {
             } @else {
                 <div class="mja-links-grid">
                     @for (link of Links; track link.ID) {
-                        <div class="mja-link-card" (click)="OpenLink(link)">
+                        <div class="mja-link-card"
+                             mjRecordLink
+                             [EntityName]="link.Entity"
+                             [RecordID]="link.RecordID"
+                             [DisplayName]="link.IdentityValue || link.Entity || 'Linked Record'"
+                             [HandleClick]="false"
+                             (click)="OpenLink(link)">
                             <div class="mja-link-card__role" [attr.data-role]="link.Role.toLowerCase()">
                                 {{ link.Role }}
                             </div>
