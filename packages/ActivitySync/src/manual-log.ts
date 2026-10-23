@@ -36,7 +36,10 @@ export const LOG_ACTIVITY_DEFAULT_SOURCE_SYSTEM = 'EntityAction';
 const DIRECTIONS: readonly ActivityDirection[] = ['Inbound', 'Outbound', 'Internal'];
 const STATUSES: readonly ActivityStatusValue[] = ['Logged', 'Scheduled', 'Completed', 'Cancelled', 'Failed'];
 const VISIBILITIES: readonly ActivityVisibilityValue[] = ['Internal', 'Private'];
-const SOURCES: readonly Exclude<ActivitySourceValue, 'Integration'>[] = ['Manual', 'System'];
+// 'System' is reserved for the sync engine's own writes and 'Integration' for live providers — a
+// declarative or manual log may only claim 'Manual' provenance, so action params cannot spoof an
+// engine-written row.
+const SOURCES: readonly Extract<ActivitySourceValue, 'Manual'>[] = ['Manual'];
 
 /**
  * Declarative "link the activity to whatever this record points at": read `Field` from

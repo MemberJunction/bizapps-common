@@ -179,14 +179,20 @@ function findSqlcmd() {
 // findSqlcmd() or exit the process as a side effect.
 let SQLCMD;
 
-/** Run `sql` against `database` and return raw stdout. Throws with the server's message. */
+/** Run `sql` against `database` and return raw stdout. Throws with the server's message.
+ *  The password travels in the child's SQLCMDPASSWORD environment variable, never in argv,
+ *  where any same-host process could read it from the process list. */
 function exec(sql, database) {
     try {
         return execFileSync(
             SQLCMD,
-            ['-S', `${host},${port}`, '-U', user, '-P', password, '-d', database,
+            ['-S', `${host},${port}`, '-U', user, '-d', database,
              '-C', '-b', '-l', '30', '-h', '-1', '-W', '-s', '|', '-Q', sql],
-            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+            {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'pipe'],
+                env: { ...process.env, SQLCMDPASSWORD: password },
+            },
         );
     } catch (err) {
         const detail = (err.stdout?.toString() || '') + (err.stderr?.toString() || '') || err.message;
