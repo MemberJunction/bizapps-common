@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey, LogError, RunView } from '@memberjunction/core';
+import { EscapeSQLString } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
@@ -37,7 +38,7 @@ export class PersonIdentityComponent implements OnInit {
                 const result = await rv.RunView<{ JobFunction: string }>({
                     EntityName: 'MJ_BizApps_Common: Person Job Functions',
                     Fields: ['JobFunction'],
-                    ExtraFilter: `PersonID = '${this.Record.ID}'`,
+                    ExtraFilter: `PersonID = '${EscapeSQLString(this.Record.ID)}'`,
                     OrderBy: 'Sequence ASC, JobFunction ASC',
                     ResultType: 'simple',
                 });
