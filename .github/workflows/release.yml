@@ -23,6 +23,12 @@
 # rule; `deletion`, `non_fast_forward` and the eight `rr:`/`build` checks live in
 # `protect-main-checks`, which the App does NOT bypass. A dispatch cannot merge a release that
 # fails the gate, and cannot delete or force-push `main`.
+#
+# The human override survives the split. Whatever could bypass `protect-main` before it — the
+# repository admin role, plus the break-glass teams in the repos that have them — carries over
+# to `protect-main-checks`, so a person can still force a release past a stuck check, exactly as
+# on MJ's `next-protect`. The App is the one actor deliberately left out of that half, because it
+# is the one actor a `workflow_dispatch` can drive.
 name: Cut the Release
 
 on:
