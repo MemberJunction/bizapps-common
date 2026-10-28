@@ -34,7 +34,7 @@ const DEFAULT_SEARCH_TIMEOUT_MS = 20_000;
 /** Why the last search showed no rows: it failed, or it ran past `SearchTimeoutMs`. */
 export type PartySearchError = 'failed' | 'timeout';
 
-/** Thrown by `optionsFor` when a search runs past its deadline. */
+/** Thrown by `withTimeout` when a search runs past its deadline. */
 class PartySearchTimeoutError extends Error {}
 
 /**
@@ -150,6 +150,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     public Options: PartyOption[] = [];
     public SearchError: PartySearchError | null = null;
 
+    /** True when the last search showed no rows because of an error: a failure or a timeout. */
     public get SearchFailed(): boolean {
         return this.SearchError !== null;
     }
@@ -157,6 +158,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     /** The current value as a one-item list (empty when unset): what the list goes back to. */
     private current: PartyOption[] = [];
     private readonly terms = new Subject<string>();
+    /** Counts searches, so a superseded one that fails or times out is not logged. */
+    private searchCount = 0;
     private subscription?: Subscription;
 
     @ViewChild(MJComboboxComponent) private combobox?: MJComboboxComponent;
@@ -207,12 +210,19 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         this.terms.next(text);
     }
 
-    /** Picked (an ID) or cleared (null). */
+    /**
+     * Picked (an ID) or cleared (null). Writes the related name field too, as the stock field does,
+     * so a list built from an unsaved record shows the name rather than nothing.
+     */
     public OnSelect(value: unknown): void {
         const oldValue = this.Record.Get(this.FieldName);
         const newValue = value ? String(value) : null;
         const picked = this.Options.find((option) => option.ID === newValue);
         this.Record.Set(this.FieldName, newValue);
+        const nameField = this.fieldInfo()?.RelatedEntityNameFieldMap;
+        if (nameField && (picked || !newValue)) {
+            this.Record.Set(nameField, picked?.Name ?? null);
+        }
         this.current = picked ? [picked] : [];
         this.Options = this.current;
         this.ValueChange.emit({ FieldName: this.FieldName, OldValue: oldValue, NewValue: newValue });
@@ -224,8 +234,17 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * show its name rather than a raw ID, and cancels any search still pending.
      */
     public OnFocusOut(): void {
+        this.ClearSearch();
+    }
+
+    /**
+     * Cancels any pending search, drops its results and hint, and lists the current value again.
+     * For a host that resets the field without it losing focus (a changed relationship type).
+     */
+    public ClearSearch(): void {
         this.terms.next('');
         this.Options = this.current;
+        this.SearchError = null;
         this.cdr.markForCheck();
     }
 
@@ -267,6 +286,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
 
     /** The options to list, or why there are none (logged). */
     private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
+        const search = ++this.searchCount;
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
             return term ? [] : this.current;
@@ -274,7 +294,9 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         try {
             return await this.withTimeout(this.runSearch(params));
         } catch (error) {
-            LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
+            if (search === this.searchCount) {
+                LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
+            }
             return error instanceof PartySearchTimeoutError ? 'timeout' : 'failed';
         }
     }

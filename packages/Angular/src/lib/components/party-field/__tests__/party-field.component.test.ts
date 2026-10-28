@@ -215,10 +215,21 @@ describe('PartyFieldComponent', () => {
         expect(c.Options).toEqual([DAVE]);
     });
 
-    it('writes null when cleared', () => {
+    it('writes the picked name to the related name field, as the stock field does', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        c.OnSelect('o-dave');
+        expect(c.Record.Get('Account')).toBe('Dave Co');
+    });
+
+    it('writes null when cleared, to the key and the name field', () => {
         const c = build(record('o-old', 'Old Co'));
         c.OnSelect(null);
         expect(c.Record.Get('AccountID')).toBeNull();
+        expect(c.Record.Get('Account')).toBeNull();
     });
 
     it('goes back to the current value when focus leaves mid-search', async () => {
@@ -320,15 +331,56 @@ describe('PartyFieldComponent', () => {
         expect(c.Options).toEqual([DAVE]);
     });
 
-    it('waits indefinitely when the timeout is zero', async () => {
+    it.each([0, -1, undefined, NaN])('waits indefinitely when the timeout is %s', async (ms) => {
         const c = build(record(null));
-        c.SearchTimeoutMs = 0;
+        c.SearchTimeoutMs = ms as number;
         c.OnFilterChange('dave');
         await vi.advanceTimersByTimeAsync(60_250);
         expect(c.SearchError).toBeNull();
         c.Calls[0].resolve([DAVE]);
         await vi.advanceTimersByTimeAsync(0);
         expect(c.Options).toEqual([DAVE]);
+    });
+
+    it('leaves no timer pending once a search answers', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('counts a timeout as a failed search', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 1_000;
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(1_250);
+        expect(c.SearchFailed).toBe(true);
+    });
+
+    it('does not log the timeout of a search a newer one replaced', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 1_000;
+        c.OnFilterChange('da');
+        await vi.advanceTimersByTimeAsync(250);
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[1].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(H.logError).not.toHaveBeenCalled();
+        expect(c.Options).toEqual([DAVE]);
+    });
+
+    it('drops the timeout hint at once when the host clears the search', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 1_000;
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(1_250);
+        expect(c.SearchError).toBe('timeout');
+        c.ClearSearch();
+        expect(c.SearchError).toBeNull();
+        expect(c.Options).toEqual([]);
     });
 });
 

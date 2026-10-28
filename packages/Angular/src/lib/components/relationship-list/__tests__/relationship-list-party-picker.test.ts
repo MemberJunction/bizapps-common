@@ -31,6 +31,11 @@ describe('relationship list target pickers', () => {
         expect(html).not.toMatch(/<mj-form-field[^>]*FieldName="To(Person|Organization)ID"/s);
     });
 
+    it('clears the pickers\' search when the relationship type changes', () => {
+        const handler = ts.match(/onAddTypeChange\(\): void \{[\s\S]*?\n    \}/);
+        expect(handler?.[0]).toContain('ClearSearch()');
+    });
+
     it('imports PartyFieldComponent into the standalone component', () => {
         expect(ts).toMatch(/imports:\s*\[[^\]]*PartyFieldComponent[^\]]*\]/);
     });

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
@@ -206,6 +206,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: 
 })
 export class RelationshipListComponent {
     private cdr = inject(ChangeDetectorRef);
+    @ViewChildren(PartyFieldComponent) private partyFields?: QueryList<PartyFieldComponent>;
 
     /** Active draft relationship object used for the Add form link fields. */
     public DraftRelationship: mjBizAppsCommonRelationshipEntity | null = null;
@@ -696,6 +697,8 @@ export class RelationshipListComponent {
             this.DraftRelationship.ToPersonID = null;
             this.DraftRelationship.ToOrganizationID = null;
         }
+        // A picker that survives the type change (person to person) keeps its last search otherwise.
+        this.partyFields?.forEach(field => field.ClearSearch());
         this.cdr.detectChanges();
     }
 
