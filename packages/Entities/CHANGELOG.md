@@ -1,5 +1,15 @@
 # Change Log - mj_generatedentities
 
+## 5.57.0
+
+### Minor Changes
+
+- 692f407: The 5.57 Metadata_Sync ships the Party Lookup Organizations query change and the form and search settings for the new Organizations Acronym field, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Organization_Acronym migration have Postgres counterparts. Field-level security for People stays held back, as in every release since 5.48.
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
 ## 5.56.0
 
 ### Minor Changes
