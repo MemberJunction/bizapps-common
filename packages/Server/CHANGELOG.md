@@ -1,5 +1,23 @@
 # @mj-biz-apps/common-server
 
+## 5.57.0
+
+### Minor Changes
+
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+  - @mj-biz-apps/common-actions@5.57.0
+  - @mj-biz-apps/common-activity-sync@5.57.0
+  - @mj-biz-apps/common-core-entities-server@5.57.0
+
 ## 5.56.0
 
 ### Patch Changes
