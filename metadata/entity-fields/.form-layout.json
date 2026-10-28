@@ -901,5 +901,15 @@
       "lastModified": "2026-10-22T20:08:47.504Z",
       "checksum": "077c08625c17d6af4c7f07b88d01747e45df3b90025c8c48b22cb96b6153ae9f"
     }
+  },
+  {
+    "fields": {
+      "Category": "Organization Identity",
+      "GeneratedFormSection": "Category",
+      "AutoUpdateCategory": false
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entity Fields.Entity=MJ_BizApps_Common: Organizations&Name=Acronym"
+    }
   }
 ]
