@@ -28,6 +28,14 @@ export interface PartyOption {
 }
 
 const DEBOUNCE_MS = 250;
+/** How long a search may run before the field says it took too long. */
+const DEFAULT_SEARCH_TIMEOUT_MS = 20_000;
+
+/** Why the last search showed no rows: it failed, or it ran past `SearchTimeoutMs`. */
+export type PartySearchError = 'failed' | 'timeout';
+
+/** Thrown by `optionsFor` when a search runs past its deadline. */
+class PartySearchTimeoutError extends Error {}
 
 /**
  * `bizapps-party-field` — a Person or Organization foreign key that searches as you type.
@@ -73,8 +81,10 @@ const DEBOUNCE_MS = 250;
                         </div>
                     </ng-template>
                 </mj-combobox>
-                @if (SearchFailed) {
+                @if (SearchError === 'failed') {
                     <div class="bizapps-party-field-hint">Search failed. Try again.</div>
+                } @else if (SearchError === 'timeout') {
+                    <div class="bizapps-party-field-hint">The search took too long. Keep typing to try again.</div>
                 }
             </div>
         } @else {
@@ -130,13 +140,19 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     @Input() EditMode = false;
     @Input() ShowLabel = true;
     @Input() FormContext?: FormContext;
+    /** Milliseconds before a search is reported as too slow; zero or less waits indefinitely. */
+    @Input() SearchTimeoutMs = DEFAULT_SEARCH_TIMEOUT_MS;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
     @Output() ValueChange = new EventEmitter<{ FieldName: string; OldValue: unknown; NewValue: unknown }>();
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
 
     /** What the dropdown lists: search results, or just the current value when not searching. */
     public Options: PartyOption[] = [];
-    public SearchFailed = false;
+    public SearchError: PartySearchError | null = null;
+
+    public get SearchFailed(): boolean {
+        return this.SearchError !== null;
+    }
 
     /** The current value as a one-item list (empty when unset): what the list goes back to. */
     private current: PartyOption[] = [];
@@ -153,8 +169,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
                 switchMap((term) => from(this.optionsFor(term))),
             )
             .subscribe((options) => {
-                this.SearchFailed = options === null;
-                this.Options = options ?? [];
+                this.SearchError = Array.isArray(options) ? null : options;
+                this.Options = Array.isArray(options) ? options : [];
                 this.cdr.markForCheck();
             });
     }
@@ -246,18 +262,34 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         }
     }
 
-    /** The options to list, or null when the search failed (logged). */
-    private async optionsFor(term: string): Promise<PartyOption[] | null> {
+    /** The options to list, or why there are none (logged). */
+    private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
             return term ? [] : this.current;
         }
         try {
-            return await this.runSearch(params);
+            return await this.withTimeout(this.runSearch(params));
         } catch (error) {
             LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
-            return null;
+            return error instanceof PartySearchTimeoutError ? 'timeout' : 'failed';
         }
+    }
+
+    /**
+     * Rejects when the search runs past `SearchTimeoutMs`. The request is not cancelled; its late
+     * answer is ignored, and the next keystroke starts a new search.
+     */
+    private withTimeout<T>(search: Promise<T>): Promise<T> {
+        const ms = this.SearchTimeoutMs;
+        if (!(ms > 0)) {
+            return search;
+        }
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const deadline = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new PartySearchTimeoutError(`search took longer than ${ms} ms`)), ms);
+        });
+        return Promise.race([search, deadline]).finally(() => clearTimeout(timer));
     }
 
     /**

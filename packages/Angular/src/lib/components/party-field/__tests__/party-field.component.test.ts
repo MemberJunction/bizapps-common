@@ -259,6 +259,55 @@ describe('PartyFieldComponent', () => {
         expect(H.logError).toHaveBeenCalled();
         expect(c.Options).toEqual([]);
         expect(c.SearchFailed).toBe(true);
+        expect(c.SearchError).toBe('failed');
+    });
+
+    it('says the search took too long when it runs past the timeout', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        await vi.advanceTimersByTimeAsync(19_999);
+        expect(c.SearchError).toBeNull();
+        await vi.advanceTimersByTimeAsync(1);
+        expect(c.SearchError).toBe('timeout');
+        expect(c.Options).toEqual([]);
+        expect(H.logError).toHaveBeenCalled();
+    });
+
+    it('ignores the late answer of a timed-out search', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 1_000;
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(1_250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.SearchError).toBe('timeout');
+        expect(c.Options).toEqual([]);
+    });
+
+    it('clears the timeout once the next search answers', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 1_000;
+        c.OnFilterChange('da');
+        await vi.advanceTimersByTimeAsync(1_250);
+        expect(c.SearchError).toBe('timeout');
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[1].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.SearchError).toBeNull();
+        expect(c.Options).toEqual([DAVE]);
+    });
+
+    it('waits indefinitely when the timeout is zero', async () => {
+        const c = build(record(null));
+        c.SearchTimeoutMs = 0;
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(60_250);
+        expect(c.SearchError).toBeNull();
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([DAVE]);
     });
 });
 
