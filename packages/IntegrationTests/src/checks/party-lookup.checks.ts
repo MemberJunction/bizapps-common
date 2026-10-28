@@ -49,11 +49,17 @@ async function newPerson(ctx: IntegrationCheckContext, first: string, last: stri
     return person;
 }
 
-async function newOrganization(ctx: IntegrationCheckContext, name: string, website: string | null): Promise<mjBizAppsCommonOrganizationEntity> {
+async function newOrganization(
+    ctx: IntegrationCheckContext,
+    name: string,
+    website: string | null,
+    acronym: string | null = null,
+): Promise<mjBizAppsCommonOrganizationEntity> {
     const org = await ctx.Provider.GetEntityObject<mjBizAppsCommonOrganizationEntity>(COMMON_ENTITIES.Organization, ctx.User);
     org.NewRecord();
     org.Name = name;
     org.Website = website;
+    org.Acronym = acronym;
     org.Status = 'Active';
     await RequireSave(org, `organization ${name}`);
     return org;
@@ -106,6 +112,27 @@ const checks: NamedCheck[] = [
             } finally {
                 Assert(await mark.Delete(), 'cleanup Quillmark');
                 Assert(await acme.Delete(), 'cleanup Acme');
+            }
+        },
+    },
+    {
+        Id: 'party-lookup.PL4',
+        Name: 'PL4 — organizations by acronym prefix; Detail joins acronym and domain',
+        RequiresMutation: true,
+        Fn: async (ctx) => {
+            // Acronym is nvarchar(20): a 13-digit stamp plus a 3-letter prefix fits.
+            const acronym = `QZ${Date.now()}X`;
+            const withSite = await newOrganization(ctx, `Zephyr Guild ${acronym}`, `https://${acronym.toLowerCase()}.org`, acronym);
+            const noSite = await newOrganization(ctx, `Quartz Union ${acronym}`, null, acronym);
+            try {
+                const byAcronym = await lookup(ctx, ORGANIZATIONS, acronym.slice(0, 10).toLowerCase());
+                Assert(has(byAcronym, withSite.ID) && has(byAcronym, noSite.ID), 'acronym prefix finds both, case-insensitively');
+                const detailOf = (id: string): string | null | undefined => byAcronym.find((row) => SameID(row.ID, id))?.Detail;
+                Assert(detailOf(withSite.ID) === `${acronym} · ${acronym.toLowerCase()}.org`, 'Detail is acronym · domain');
+                Assert(detailOf(noSite.ID) === acronym, 'Detail is the acronym alone when there is no website');
+            } finally {
+                Assert(await withSite.Delete(), 'cleanup Zephyr');
+                Assert(await noSite.Delete(), 'cleanup Quartz');
             }
         },
     },

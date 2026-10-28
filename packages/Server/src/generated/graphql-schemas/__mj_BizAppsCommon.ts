@@ -4725,6 +4725,10 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(255)
     WebsiteDomain?: string;
         
+    @Field({nullable: true, description: "Short name or initials the organization is commonly known by. Searched by the organization pickers as a starts-with match and shown under the name."}) 
+    @MaxLength(20)
+    Acronym?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     OrganizationType?: string;
@@ -4846,6 +4850,9 @@ export class CreatemjBizAppsCommonOrganizationInput {
     @Field({ nullable: true })
     Status?: string;
 
+    @Field({ nullable: true })
+    Acronym: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -4894,6 +4901,9 @@ export class UpdatemjBizAppsCommonOrganizationInput {
 
     @Field({ nullable: true })
     Status?: string;
+
+    @Field({ nullable: true })
+    Acronym?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
