@@ -180,6 +180,27 @@ describe('PartyFieldComponent', () => {
         expect(H.runView).not.toHaveBeenCalled();
     });
 
+    it('labels the field with its name field ("Person"), as read mode does, not the key ("Person ID")', () => {
+        const rec = record('o-old', 'Old Co');
+        rec.EntityInfo.Fields[0].DisplayNameOrName = 'Account ID';
+        rec.EntityInfo.Fields.push({
+            Name: 'Account',
+            DisplayNameOrName: 'Account',
+            RelatedEntityNameFieldMap: null,
+            RelatedEntity: '',
+            RelatedEntityFieldName: '',
+        });
+        expect(build(rec).Label).toBe('Account');
+    });
+
+    it('falls back to the key field label when there is no name field', () => {
+        const rec = record('o-old', 'Old Co');
+        rec.EntityInfo.Fields[0].DisplayNameOrName = 'Account ID';
+        rec.EntityInfo.Fields[0].RelatedEntityNameFieldMap = null;
+        H.runView.mockResolvedValue({ Success: true, Results: [] });
+        expect(build(rec).Label).toBe('Account ID');
+    });
+
     it('keeps the picked name when focus leaves after a pick', async () => {
         const rec = record('o-old', 'Old Co');
         const c = build(rec);

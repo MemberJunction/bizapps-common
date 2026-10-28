@@ -14,6 +14,7 @@ import {
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
 import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
+import { PartyFieldComponent } from '../party-field/party-field.component';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -198,7 +199,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: 
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule, BaseFormsModule],
+    imports: [CommonModule, FormsModule, BaseFormsModule, PartyFieldComponent],
     selector: 'bizapps-relationship-list',
     templateUrl: './relationship-list.component.html',
     styleUrls: ['./relationship-list.component.css']

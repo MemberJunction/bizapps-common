@@ -191,8 +191,11 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         this.subscription?.unsubscribe();
     }
 
+    /** The same label read mode shows: the related name field's ("Person"), not the key's ("Person ID"). */
     public get Label(): string {
-        return this.fieldInfo()?.DisplayNameOrName ?? this.FieldName;
+        const nameFieldMap = this.fieldInfo()?.RelatedEntityNameFieldMap;
+        const nameField = nameFieldMap ? this.Record?.EntityInfo?.Fields.find((field) => field.Name === nameFieldMap) : undefined;
+        return nameField?.DisplayNameOrName ?? this.fieldInfo()?.DisplayNameOrName ?? this.FieldName;
     }
 
     public get CurrentID(): string | null {
