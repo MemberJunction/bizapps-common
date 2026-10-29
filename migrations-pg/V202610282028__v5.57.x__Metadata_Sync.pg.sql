@@ -1,0 +1,492 @@
+-- =============================================================================================
+-- PostgreSQL counterpart of V202610282028__v5.57.x__Metadata_Sync.sql -- BizApps Common v5.57.x Metadata_Sync
+-- =============================================================================================
+-- Same records, same values, same order as the T-SQL file; see its header for what ships and what
+-- is held back.
+--
+-- HOW IT WAS MADE
+--   * `mj sql-convert --from tsql --to postgres` (MJ CLI 6.1.6) on the push log the T-SQL file was
+--     generated from, held-back records removed as in the T-SQL file (the People spUpdateEntity and
+--     the 108 Entity Field Permission rows). 4 records: each is a DO block that calls the core
+--     function in whichever signature the host has (jsonb or named parameters).
+--   * Core calls use ${mjSchema}.
+--   * Every string value matches the T-SQL file, including the query's SQL text: the converter
+--     rewrote T-SQL inside 3 string literals, and those were copied back from the T-SQL file.
+-- =============================================================================================
+-- Save MJ: Entity Fields (core SP call only)
+DO $mj$
+DECLARE
+  p_DisplayName_3214787c7dd4 VARCHAR(255);
+  p_Description_3214787c7dd4 TEXT;
+  p_AutoUpdateDescription_3214787c7dd4 BOOLEAN;
+  p_IsPrimaryKey_3214787c7dd4 BOOLEAN;
+  p_IsUnique_3214787c7dd4 BOOLEAN;
+  p_Category_3214787c7dd4 VARCHAR(255);
+  p_ValueListType_3214787c7dd4 VARCHAR(20);
+  p_ExtendedType_3214787c7dd4 VARCHAR(50);
+  p_CodeType_3214787c7dd4 VARCHAR(50);
+  p_DefaultInView_3214787c7dd4 BOOLEAN;
+  p_ViewCellTemplate_3214787c7dd4 TEXT;
+  p_DefaultColumnWidth_3214787c7dd4 INTEGER;
+  p_AllowUpdateAPI_3214787c7dd4 BOOLEAN;
+  p_AllowUpdateInView_3214787c7dd4 BOOLEAN;
+  p_IncludeInUserSearchAPI_3214787c7dd4 BOOLEAN;
+  p_FullTextSearchEnabled_3214787c7dd4 BOOLEAN;
+  p_UserSearchParamFormatAPI_3214787c7dd4 VARCHAR(500);
+  p_IncludeInGeneratedForm_3214787c7dd4 BOOLEAN;
+  p_GeneratedFormSection_3214787c7dd4 VARCHAR(10);
+  p_IsNameField_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityID_3214787c7dd4 UUID;
+  p_RelatedEntityFieldName_3214787c7dd4 VARCHAR(255);
+  p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityNameFieldMap_3214787c7dd4 VARCHAR(255);
+  p_RelatedEntityDisplayType_3214787c7dd4 VARCHAR(20);
+  p_EntityIDFieldName_3214787c7dd4 VARCHAR(100);
+  p_ScopeDefault_3214787c7dd4 VARCHAR(100);
+  p_AutoUpdateRelatedEntityInfo_3214787c7dd4 BOOLEAN;
+  p_ValuesToPackWithSchema_3214787c7dd4 VARCHAR(10);
+  p_Status_3214787c7dd4 VARCHAR(25);
+  p_AutoUpdateIsNameField_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateDefaultInView_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateCategory_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateDisplayName_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4 BOOLEAN;
+  p_Encrypt_3214787c7dd4 BOOLEAN;
+  p_EncryptionKeyID_3214787c7dd4 UUID;
+  p_AllowDecryptInAPI_3214787c7dd4 BOOLEAN;
+  p_SendEncryptedValue_3214787c7dd4 BOOLEAN;
+  p_IsSoftPrimaryKey_3214787c7dd4 BOOLEAN;
+  p_IsSoftForeignKey_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityJoinFields_3214787c7dd4 TEXT;
+  p_JSONType_3214787c7dd4 VARCHAR(255);
+  p_JSONTypeIsArray_3214787c7dd4 BOOLEAN;
+  p_JSONTypeDefinition_3214787c7dd4 TEXT;
+  p_UserSearchPredicateAPI_3214787c7dd4 VARCHAR(20);
+  p_AutoUpdateUserSearchPredicate_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateFullTextSearch_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateExtendedType_3214787c7dd4 BOOLEAN;
+  p_IsComputed_3214787c7dd4 BOOLEAN;
+  p_EmbeddedRecord_3214787c7dd4 TEXT;
+  p_Configuration_3214787c7dd4 TEXT;
+  p_ID_3214787c7dd4 UUID;
+BEGIN
+  p_DisplayName_3214787c7dd4 := 'Acronym';
+  p_Description_3214787c7dd4 := 'Short name or initials the organization is commonly known by. Searched by the organization pickers as a starts-with match and shown under the name.';
+  p_AutoUpdateDescription_3214787c7dd4 := TRUE;
+  p_IsPrimaryKey_3214787c7dd4 := FALSE;
+  p_IsUnique_3214787c7dd4 := FALSE;
+  p_Category_3214787c7dd4 := 'Organization Identity';
+  p_ValueListType_3214787c7dd4 := 'None';
+  p_DefaultInView_3214787c7dd4 := TRUE;
+  p_DefaultColumnWidth_3214787c7dd4 := 150;
+  p_AllowUpdateAPI_3214787c7dd4 := TRUE;
+  p_AllowUpdateInView_3214787c7dd4 := TRUE;
+  p_IncludeInUserSearchAPI_3214787c7dd4 := TRUE;
+  p_FullTextSearchEnabled_3214787c7dd4 := FALSE;
+  p_IncludeInGeneratedForm_3214787c7dd4 := TRUE;
+  p_GeneratedFormSection_3214787c7dd4 := 'Category';
+  p_IsNameField_3214787c7dd4 := FALSE;
+  p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4 := FALSE;
+  p_RelatedEntityDisplayType_3214787c7dd4 := 'Search';
+  p_AutoUpdateRelatedEntityInfo_3214787c7dd4 := TRUE;
+  p_ValuesToPackWithSchema_3214787c7dd4 := 'Auto';
+  p_Status_3214787c7dd4 := 'Active';
+  p_AutoUpdateIsNameField_3214787c7dd4 := TRUE;
+  p_AutoUpdateDefaultInView_3214787c7dd4 := TRUE;
+  p_AutoUpdateCategory_3214787c7dd4 := TRUE;
+  p_AutoUpdateDisplayName_3214787c7dd4 := TRUE;
+  p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4 := FALSE;
+  p_Encrypt_3214787c7dd4 := FALSE;
+  p_AllowDecryptInAPI_3214787c7dd4 := FALSE;
+  p_SendEncryptedValue_3214787c7dd4 := FALSE;
+  p_IsSoftPrimaryKey_3214787c7dd4 := FALSE;
+  p_IsSoftForeignKey_3214787c7dd4 := FALSE;
+  p_JSONTypeIsArray_3214787c7dd4 := FALSE;
+  p_UserSearchPredicateAPI_3214787c7dd4 := 'BeginsWith';
+  p_AutoUpdateUserSearchPredicate_3214787c7dd4 := FALSE;
+  p_AutoUpdateFullTextSearch_3214787c7dd4 := TRUE;
+  p_AutoUpdateExtendedType_3214787c7dd4 := TRUE;
+  p_IsComputed_3214787c7dd4 := FALSE;
+  p_ID_3214787c7dd4 := '72FB8C84-F602-4D27-AB5D-7820998C97F7';
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = '${mjSchema}' AND p.proname = 'spUpdateEntityField'
+       AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
+  ) THEN
+    PERFORM "${mjSchema}"."spUpdateEntityField"(p_data := jsonb_build_object(
+    'DisplayName', p_DisplayName_3214787c7dd4,
+    'Description', p_Description_3214787c7dd4,
+    'AutoUpdateDescription', p_AutoUpdateDescription_3214787c7dd4,
+    'IsPrimaryKey', p_IsPrimaryKey_3214787c7dd4,
+    'IsUnique', p_IsUnique_3214787c7dd4,
+    'Category', p_Category_3214787c7dd4,
+    'ValueListType', p_ValueListType_3214787c7dd4,
+    'ExtendedType', p_ExtendedType_3214787c7dd4,
+    'CodeType', p_CodeType_3214787c7dd4,
+    'DefaultInView', p_DefaultInView_3214787c7dd4,
+    'ViewCellTemplate', p_ViewCellTemplate_3214787c7dd4,
+    'DefaultColumnWidth', p_DefaultColumnWidth_3214787c7dd4,
+    'AllowUpdateAPI', p_AllowUpdateAPI_3214787c7dd4,
+    'AllowUpdateInView', p_AllowUpdateInView_3214787c7dd4,
+    'IncludeInUserSearchAPI', p_IncludeInUserSearchAPI_3214787c7dd4,
+    'FullTextSearchEnabled', p_FullTextSearchEnabled_3214787c7dd4,
+    'UserSearchParamFormatAPI', p_UserSearchParamFormatAPI_3214787c7dd4,
+    'IncludeInGeneratedForm', p_IncludeInGeneratedForm_3214787c7dd4,
+    'GeneratedFormSection', p_GeneratedFormSection_3214787c7dd4,
+    'IsNameField', p_IsNameField_3214787c7dd4,
+    'RelatedEntityID', p_RelatedEntityID_3214787c7dd4,
+    'RelatedEntityFieldName', p_RelatedEntityFieldName_3214787c7dd4,
+    'IncludeRelatedEntityNameFieldInBaseView', p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4,
+    'RelatedEntityNameFieldMap', p_RelatedEntityNameFieldMap_3214787c7dd4,
+    'RelatedEntityDisplayType', p_RelatedEntityDisplayType_3214787c7dd4,
+    'EntityIDFieldName', p_EntityIDFieldName_3214787c7dd4,
+    'ScopeDefault', p_ScopeDefault_3214787c7dd4,
+    'AutoUpdateRelatedEntityInfo', p_AutoUpdateRelatedEntityInfo_3214787c7dd4,
+    'ValuesToPackWithSchema', p_ValuesToPackWithSchema_3214787c7dd4,
+    'Status', p_Status_3214787c7dd4,
+    'AutoUpdateIsNameField', p_AutoUpdateIsNameField_3214787c7dd4,
+    'AutoUpdateDefaultInView', p_AutoUpdateDefaultInView_3214787c7dd4,
+    'AutoUpdateCategory', p_AutoUpdateCategory_3214787c7dd4,
+    'AutoUpdateDisplayName', p_AutoUpdateDisplayName_3214787c7dd4,
+    'AutoUpdateIncludeInUserSearchAPI', p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4,
+    'Encrypt', p_Encrypt_3214787c7dd4,
+    'EncryptionKeyID', p_EncryptionKeyID_3214787c7dd4,
+    'AllowDecryptInAPI', p_AllowDecryptInAPI_3214787c7dd4,
+    'SendEncryptedValue', p_SendEncryptedValue_3214787c7dd4,
+    'IsSoftPrimaryKey', p_IsSoftPrimaryKey_3214787c7dd4,
+    'IsSoftForeignKey', p_IsSoftForeignKey_3214787c7dd4,
+    'RelatedEntityJoinFields', p_RelatedEntityJoinFields_3214787c7dd4,
+    'JSONType', p_JSONType_3214787c7dd4,
+    'JSONTypeIsArray', p_JSONTypeIsArray_3214787c7dd4,
+    'JSONTypeDefinition', p_JSONTypeDefinition_3214787c7dd4,
+    'UserSearchPredicateAPI', p_UserSearchPredicateAPI_3214787c7dd4,
+    'AutoUpdateUserSearchPredicate', p_AutoUpdateUserSearchPredicate_3214787c7dd4,
+    'AutoUpdateFullTextSearch', p_AutoUpdateFullTextSearch_3214787c7dd4,
+    'AutoUpdateExtendedType', p_AutoUpdateExtendedType_3214787c7dd4,
+    'IsComputed', p_IsComputed_3214787c7dd4
+  ) ||
+  jsonb_build_object(
+    'EmbeddedRecord', p_EmbeddedRecord_3214787c7dd4,
+    'Configuration', p_Configuration_3214787c7dd4,
+    'ID', p_ID_3214787c7dd4
+  ));
+  ELSE
+    PERFORM "${mjSchema}"."spUpdateEntityField"(p_DisplayName := p_DisplayName_3214787c7dd4, p_Description := p_Description_3214787c7dd4, p_AutoUpdateDescription := p_AutoUpdateDescription_3214787c7dd4, p_IsPrimaryKey := p_IsPrimaryKey_3214787c7dd4, p_IsUnique := p_IsUnique_3214787c7dd4, p_Category := p_Category_3214787c7dd4, p_ValueListType := p_ValueListType_3214787c7dd4, p_ExtendedType := p_ExtendedType_3214787c7dd4, p_ExtendedType_Clear := TRUE, p_CodeType := p_CodeType_3214787c7dd4, p_CodeType_Clear := TRUE, p_DefaultInView := p_DefaultInView_3214787c7dd4, p_ViewCellTemplate := p_ViewCellTemplate_3214787c7dd4, p_ViewCellTemplate_Clear := TRUE, p_DefaultColumnWidth := p_DefaultColumnWidth_3214787c7dd4, p_AllowUpdateAPI := p_AllowUpdateAPI_3214787c7dd4, p_AllowUpdateInView := p_AllowUpdateInView_3214787c7dd4, p_IncludeInUserSearchAPI := p_IncludeInUserSearchAPI_3214787c7dd4, p_FullTextSearchEnabled := p_FullTextSearchEnabled_3214787c7dd4, p_UserSearchParamFormatAPI := p_UserSearchParamFormatAPI_3214787c7dd4, p_UserSearchParamFormatAPI_Clear := TRUE, p_IncludeInGeneratedForm := p_IncludeInGeneratedForm_3214787c7dd4, p_GeneratedFormSection := p_GeneratedFormSection_3214787c7dd4, p_IsNameField := p_IsNameField_3214787c7dd4, p_RelatedEntityID := p_RelatedEntityID_3214787c7dd4, p_RelatedEntityID_Clear := TRUE, p_RelatedEntityFieldName := p_RelatedEntityFieldName_3214787c7dd4, p_RelatedEntityFieldName_Clear := TRUE, p_IncludeRelatedEntityNameFieldInBaseView := p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4, p_RelatedEntityNameFieldMap := p_RelatedEntityNameFieldMap_3214787c7dd4, p_RelatedEntityNameFieldMap_Clear := TRUE, p_RelatedEntityDisplayType := p_RelatedEntityDisplayType_3214787c7dd4, p_EntityIDFieldName := p_EntityIDFieldName_3214787c7dd4, p_EntityIDFieldName_Clear := TRUE, p_ScopeDefault := p_ScopeDefault_3214787c7dd4, p_ScopeDefault_Clear := TRUE, p_AutoUpdateRelatedEntityInfo := p_AutoUpdateRelatedEntityInfo_3214787c7dd4, p_ValuesToPackWithSchema := p_ValuesToPackWithSchema_3214787c7dd4, p_Status := p_Status_3214787c7dd4, p_AutoUpdateIsNameField := p_AutoUpdateIsNameField_3214787c7dd4, p_AutoUpdateDefaultInView := p_AutoUpdateDefaultInView_3214787c7dd4, p_AutoUpdateCategory := p_AutoUpdateCategory_3214787c7dd4, p_AutoUpdateDisplayName := p_AutoUpdateDisplayName_3214787c7dd4, p_AutoUpdateIncludeInUserSearchAPI := p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4, p_Encrypt := p_Encrypt_3214787c7dd4, p_EncryptionKeyID := p_EncryptionKeyID_3214787c7dd4, p_EncryptionKeyID_Clear := TRUE, p_AllowDecryptInAPI := p_AllowDecryptInAPI_3214787c7dd4, p_SendEncryptedValue := p_SendEncryptedValue_3214787c7dd4, p_IsSoftPrimaryKey := p_IsSoftPrimaryKey_3214787c7dd4, p_IsSoftForeignKey := p_IsSoftForeignKey_3214787c7dd4, p_RelatedEntityJoinFields := p_RelatedEntityJoinFields_3214787c7dd4, p_RelatedEntityJoinFields_Clear := TRUE, p_JSONType := p_JSONType_3214787c7dd4, p_JSONType_Clear := TRUE, p_JSONTypeIsArray := p_JSONTypeIsArray_3214787c7dd4, p_JSONTypeDefinition := p_JSONTypeDefinition_3214787c7dd4, p_JSONTypeDefinition_Clear := TRUE, p_UserSearchPredicateAPI := p_UserSearchPredicateAPI_3214787c7dd4, p_AutoUpdateUserSearchPredicate := p_AutoUpdateUserSearchPredicate_3214787c7dd4, p_AutoUpdateFullTextSearch := p_AutoUpdateFullTextSearch_3214787c7dd4, p_AutoUpdateExtendedType := p_AutoUpdateExtendedType_3214787c7dd4, p_IsComputed := p_IsComputed_3214787c7dd4, p_EmbeddedRecord := p_EmbeddedRecord_3214787c7dd4, p_EmbeddedRecord_Clear := TRUE, p_Configuration := p_Configuration_3214787c7dd4, p_Configuration_Clear := TRUE, p_ID := p_ID_3214787c7dd4);
+  END IF;
+END $mj$;
+
+-- Save MJ: Entity Fields (core SP call only)
+DO $mj$
+DECLARE
+  p_DisplayName_3214787c7dd4 VARCHAR(255);
+  p_Description_3214787c7dd4 TEXT;
+  p_AutoUpdateDescription_3214787c7dd4 BOOLEAN;
+  p_IsPrimaryKey_3214787c7dd4 BOOLEAN;
+  p_IsUnique_3214787c7dd4 BOOLEAN;
+  p_Category_3214787c7dd4 VARCHAR(255);
+  p_ValueListType_3214787c7dd4 VARCHAR(20);
+  p_ExtendedType_3214787c7dd4 VARCHAR(50);
+  p_CodeType_3214787c7dd4 VARCHAR(50);
+  p_DefaultInView_3214787c7dd4 BOOLEAN;
+  p_ViewCellTemplate_3214787c7dd4 TEXT;
+  p_DefaultColumnWidth_3214787c7dd4 INTEGER;
+  p_AllowUpdateAPI_3214787c7dd4 BOOLEAN;
+  p_AllowUpdateInView_3214787c7dd4 BOOLEAN;
+  p_IncludeInUserSearchAPI_3214787c7dd4 BOOLEAN;
+  p_FullTextSearchEnabled_3214787c7dd4 BOOLEAN;
+  p_UserSearchParamFormatAPI_3214787c7dd4 VARCHAR(500);
+  p_IncludeInGeneratedForm_3214787c7dd4 BOOLEAN;
+  p_GeneratedFormSection_3214787c7dd4 VARCHAR(10);
+  p_IsNameField_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityID_3214787c7dd4 UUID;
+  p_RelatedEntityFieldName_3214787c7dd4 VARCHAR(255);
+  p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityNameFieldMap_3214787c7dd4 VARCHAR(255);
+  p_RelatedEntityDisplayType_3214787c7dd4 VARCHAR(20);
+  p_EntityIDFieldName_3214787c7dd4 VARCHAR(100);
+  p_ScopeDefault_3214787c7dd4 VARCHAR(100);
+  p_AutoUpdateRelatedEntityInfo_3214787c7dd4 BOOLEAN;
+  p_ValuesToPackWithSchema_3214787c7dd4 VARCHAR(10);
+  p_Status_3214787c7dd4 VARCHAR(25);
+  p_AutoUpdateIsNameField_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateDefaultInView_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateCategory_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateDisplayName_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4 BOOLEAN;
+  p_Encrypt_3214787c7dd4 BOOLEAN;
+  p_EncryptionKeyID_3214787c7dd4 UUID;
+  p_AllowDecryptInAPI_3214787c7dd4 BOOLEAN;
+  p_SendEncryptedValue_3214787c7dd4 BOOLEAN;
+  p_IsSoftPrimaryKey_3214787c7dd4 BOOLEAN;
+  p_IsSoftForeignKey_3214787c7dd4 BOOLEAN;
+  p_RelatedEntityJoinFields_3214787c7dd4 TEXT;
+  p_JSONType_3214787c7dd4 VARCHAR(255);
+  p_JSONTypeIsArray_3214787c7dd4 BOOLEAN;
+  p_JSONTypeDefinition_3214787c7dd4 TEXT;
+  p_UserSearchPredicateAPI_3214787c7dd4 VARCHAR(20);
+  p_AutoUpdateUserSearchPredicate_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateFullTextSearch_3214787c7dd4 BOOLEAN;
+  p_AutoUpdateExtendedType_3214787c7dd4 BOOLEAN;
+  p_IsComputed_3214787c7dd4 BOOLEAN;
+  p_EmbeddedRecord_3214787c7dd4 TEXT;
+  p_Configuration_3214787c7dd4 TEXT;
+  p_ID_3214787c7dd4 UUID;
+BEGIN
+  p_DisplayName_3214787c7dd4 := 'Acronym';
+  p_Description_3214787c7dd4 := 'Short name or initials the organization is commonly known by. Searched by the organization pickers as a starts-with match and shown under the name.';
+  p_AutoUpdateDescription_3214787c7dd4 := TRUE;
+  p_IsPrimaryKey_3214787c7dd4 := FALSE;
+  p_IsUnique_3214787c7dd4 := FALSE;
+  p_Category_3214787c7dd4 := 'Organization Identity';
+  p_ValueListType_3214787c7dd4 := 'None';
+  p_DefaultInView_3214787c7dd4 := TRUE;
+  p_DefaultColumnWidth_3214787c7dd4 := 150;
+  p_AllowUpdateAPI_3214787c7dd4 := TRUE;
+  p_AllowUpdateInView_3214787c7dd4 := TRUE;
+  p_IncludeInUserSearchAPI_3214787c7dd4 := TRUE;
+  p_FullTextSearchEnabled_3214787c7dd4 := FALSE;
+  p_IncludeInGeneratedForm_3214787c7dd4 := TRUE;
+  p_GeneratedFormSection_3214787c7dd4 := 'Category';
+  p_IsNameField_3214787c7dd4 := FALSE;
+  p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4 := FALSE;
+  p_RelatedEntityDisplayType_3214787c7dd4 := 'Search';
+  p_AutoUpdateRelatedEntityInfo_3214787c7dd4 := TRUE;
+  p_ValuesToPackWithSchema_3214787c7dd4 := 'Auto';
+  p_Status_3214787c7dd4 := 'Active';
+  p_AutoUpdateIsNameField_3214787c7dd4 := TRUE;
+  p_AutoUpdateDefaultInView_3214787c7dd4 := TRUE;
+  p_AutoUpdateCategory_3214787c7dd4 := FALSE;
+  p_AutoUpdateDisplayName_3214787c7dd4 := TRUE;
+  p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4 := FALSE;
+  p_Encrypt_3214787c7dd4 := FALSE;
+  p_AllowDecryptInAPI_3214787c7dd4 := FALSE;
+  p_SendEncryptedValue_3214787c7dd4 := FALSE;
+  p_IsSoftPrimaryKey_3214787c7dd4 := FALSE;
+  p_IsSoftForeignKey_3214787c7dd4 := FALSE;
+  p_JSONTypeIsArray_3214787c7dd4 := FALSE;
+  p_UserSearchPredicateAPI_3214787c7dd4 := 'BeginsWith';
+  p_AutoUpdateUserSearchPredicate_3214787c7dd4 := FALSE;
+  p_AutoUpdateFullTextSearch_3214787c7dd4 := TRUE;
+  p_AutoUpdateExtendedType_3214787c7dd4 := TRUE;
+  p_IsComputed_3214787c7dd4 := FALSE;
+  p_ID_3214787c7dd4 := '72FB8C84-F602-4D27-AB5D-7820998C97F7';
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = '${mjSchema}' AND p.proname = 'spUpdateEntityField'
+       AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
+  ) THEN
+    PERFORM "${mjSchema}"."spUpdateEntityField"(p_data := jsonb_build_object(
+    'DisplayName', p_DisplayName_3214787c7dd4,
+    'Description', p_Description_3214787c7dd4,
+    'AutoUpdateDescription', p_AutoUpdateDescription_3214787c7dd4,
+    'IsPrimaryKey', p_IsPrimaryKey_3214787c7dd4,
+    'IsUnique', p_IsUnique_3214787c7dd4,
+    'Category', p_Category_3214787c7dd4,
+    'ValueListType', p_ValueListType_3214787c7dd4,
+    'ExtendedType', p_ExtendedType_3214787c7dd4,
+    'CodeType', p_CodeType_3214787c7dd4,
+    'DefaultInView', p_DefaultInView_3214787c7dd4,
+    'ViewCellTemplate', p_ViewCellTemplate_3214787c7dd4,
+    'DefaultColumnWidth', p_DefaultColumnWidth_3214787c7dd4,
+    'AllowUpdateAPI', p_AllowUpdateAPI_3214787c7dd4,
+    'AllowUpdateInView', p_AllowUpdateInView_3214787c7dd4,
+    'IncludeInUserSearchAPI', p_IncludeInUserSearchAPI_3214787c7dd4,
+    'FullTextSearchEnabled', p_FullTextSearchEnabled_3214787c7dd4,
+    'UserSearchParamFormatAPI', p_UserSearchParamFormatAPI_3214787c7dd4,
+    'IncludeInGeneratedForm', p_IncludeInGeneratedForm_3214787c7dd4,
+    'GeneratedFormSection', p_GeneratedFormSection_3214787c7dd4,
+    'IsNameField', p_IsNameField_3214787c7dd4,
+    'RelatedEntityID', p_RelatedEntityID_3214787c7dd4,
+    'RelatedEntityFieldName', p_RelatedEntityFieldName_3214787c7dd4,
+    'IncludeRelatedEntityNameFieldInBaseView', p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4,
+    'RelatedEntityNameFieldMap', p_RelatedEntityNameFieldMap_3214787c7dd4,
+    'RelatedEntityDisplayType', p_RelatedEntityDisplayType_3214787c7dd4,
+    'EntityIDFieldName', p_EntityIDFieldName_3214787c7dd4,
+    'ScopeDefault', p_ScopeDefault_3214787c7dd4,
+    'AutoUpdateRelatedEntityInfo', p_AutoUpdateRelatedEntityInfo_3214787c7dd4,
+    'ValuesToPackWithSchema', p_ValuesToPackWithSchema_3214787c7dd4,
+    'Status', p_Status_3214787c7dd4,
+    'AutoUpdateIsNameField', p_AutoUpdateIsNameField_3214787c7dd4,
+    'AutoUpdateDefaultInView', p_AutoUpdateDefaultInView_3214787c7dd4,
+    'AutoUpdateCategory', p_AutoUpdateCategory_3214787c7dd4,
+    'AutoUpdateDisplayName', p_AutoUpdateDisplayName_3214787c7dd4,
+    'AutoUpdateIncludeInUserSearchAPI', p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4,
+    'Encrypt', p_Encrypt_3214787c7dd4,
+    'EncryptionKeyID', p_EncryptionKeyID_3214787c7dd4,
+    'AllowDecryptInAPI', p_AllowDecryptInAPI_3214787c7dd4,
+    'SendEncryptedValue', p_SendEncryptedValue_3214787c7dd4,
+    'IsSoftPrimaryKey', p_IsSoftPrimaryKey_3214787c7dd4,
+    'IsSoftForeignKey', p_IsSoftForeignKey_3214787c7dd4,
+    'RelatedEntityJoinFields', p_RelatedEntityJoinFields_3214787c7dd4,
+    'JSONType', p_JSONType_3214787c7dd4,
+    'JSONTypeIsArray', p_JSONTypeIsArray_3214787c7dd4,
+    'JSONTypeDefinition', p_JSONTypeDefinition_3214787c7dd4,
+    'UserSearchPredicateAPI', p_UserSearchPredicateAPI_3214787c7dd4,
+    'AutoUpdateUserSearchPredicate', p_AutoUpdateUserSearchPredicate_3214787c7dd4,
+    'AutoUpdateFullTextSearch', p_AutoUpdateFullTextSearch_3214787c7dd4,
+    'AutoUpdateExtendedType', p_AutoUpdateExtendedType_3214787c7dd4,
+    'IsComputed', p_IsComputed_3214787c7dd4
+  ) ||
+  jsonb_build_object(
+    'EmbeddedRecord', p_EmbeddedRecord_3214787c7dd4,
+    'Configuration', p_Configuration_3214787c7dd4,
+    'ID', p_ID_3214787c7dd4
+  ));
+  ELSE
+    PERFORM "${mjSchema}"."spUpdateEntityField"(p_DisplayName := p_DisplayName_3214787c7dd4, p_Description := p_Description_3214787c7dd4, p_AutoUpdateDescription := p_AutoUpdateDescription_3214787c7dd4, p_IsPrimaryKey := p_IsPrimaryKey_3214787c7dd4, p_IsUnique := p_IsUnique_3214787c7dd4, p_Category := p_Category_3214787c7dd4, p_ValueListType := p_ValueListType_3214787c7dd4, p_ExtendedType := p_ExtendedType_3214787c7dd4, p_ExtendedType_Clear := TRUE, p_CodeType := p_CodeType_3214787c7dd4, p_CodeType_Clear := TRUE, p_DefaultInView := p_DefaultInView_3214787c7dd4, p_ViewCellTemplate := p_ViewCellTemplate_3214787c7dd4, p_ViewCellTemplate_Clear := TRUE, p_DefaultColumnWidth := p_DefaultColumnWidth_3214787c7dd4, p_AllowUpdateAPI := p_AllowUpdateAPI_3214787c7dd4, p_AllowUpdateInView := p_AllowUpdateInView_3214787c7dd4, p_IncludeInUserSearchAPI := p_IncludeInUserSearchAPI_3214787c7dd4, p_FullTextSearchEnabled := p_FullTextSearchEnabled_3214787c7dd4, p_UserSearchParamFormatAPI := p_UserSearchParamFormatAPI_3214787c7dd4, p_UserSearchParamFormatAPI_Clear := TRUE, p_IncludeInGeneratedForm := p_IncludeInGeneratedForm_3214787c7dd4, p_GeneratedFormSection := p_GeneratedFormSection_3214787c7dd4, p_IsNameField := p_IsNameField_3214787c7dd4, p_RelatedEntityID := p_RelatedEntityID_3214787c7dd4, p_RelatedEntityID_Clear := TRUE, p_RelatedEntityFieldName := p_RelatedEntityFieldName_3214787c7dd4, p_RelatedEntityFieldName_Clear := TRUE, p_IncludeRelatedEntityNameFieldInBaseView := p_IncludeRelatedEntityNameFieldInBaseView_3214787c7dd4, p_RelatedEntityNameFieldMap := p_RelatedEntityNameFieldMap_3214787c7dd4, p_RelatedEntityNameFieldMap_Clear := TRUE, p_RelatedEntityDisplayType := p_RelatedEntityDisplayType_3214787c7dd4, p_EntityIDFieldName := p_EntityIDFieldName_3214787c7dd4, p_EntityIDFieldName_Clear := TRUE, p_ScopeDefault := p_ScopeDefault_3214787c7dd4, p_ScopeDefault_Clear := TRUE, p_AutoUpdateRelatedEntityInfo := p_AutoUpdateRelatedEntityInfo_3214787c7dd4, p_ValuesToPackWithSchema := p_ValuesToPackWithSchema_3214787c7dd4, p_Status := p_Status_3214787c7dd4, p_AutoUpdateIsNameField := p_AutoUpdateIsNameField_3214787c7dd4, p_AutoUpdateDefaultInView := p_AutoUpdateDefaultInView_3214787c7dd4, p_AutoUpdateCategory := p_AutoUpdateCategory_3214787c7dd4, p_AutoUpdateDisplayName := p_AutoUpdateDisplayName_3214787c7dd4, p_AutoUpdateIncludeInUserSearchAPI := p_AutoUpdateIncludeInUserSearchAPI_3214787c7dd4, p_Encrypt := p_Encrypt_3214787c7dd4, p_EncryptionKeyID := p_EncryptionKeyID_3214787c7dd4, p_EncryptionKeyID_Clear := TRUE, p_AllowDecryptInAPI := p_AllowDecryptInAPI_3214787c7dd4, p_SendEncryptedValue := p_SendEncryptedValue_3214787c7dd4, p_IsSoftPrimaryKey := p_IsSoftPrimaryKey_3214787c7dd4, p_IsSoftForeignKey := p_IsSoftForeignKey_3214787c7dd4, p_RelatedEntityJoinFields := p_RelatedEntityJoinFields_3214787c7dd4, p_RelatedEntityJoinFields_Clear := TRUE, p_JSONType := p_JSONType_3214787c7dd4, p_JSONType_Clear := TRUE, p_JSONTypeIsArray := p_JSONTypeIsArray_3214787c7dd4, p_JSONTypeDefinition := p_JSONTypeDefinition_3214787c7dd4, p_JSONTypeDefinition_Clear := TRUE, p_UserSearchPredicateAPI := p_UserSearchPredicateAPI_3214787c7dd4, p_AutoUpdateUserSearchPredicate := p_AutoUpdateUserSearchPredicate_3214787c7dd4, p_AutoUpdateFullTextSearch := p_AutoUpdateFullTextSearch_3214787c7dd4, p_AutoUpdateExtendedType := p_AutoUpdateExtendedType_3214787c7dd4, p_IsComputed := p_IsComputed_3214787c7dd4, p_EmbeddedRecord := p_EmbeddedRecord_3214787c7dd4, p_EmbeddedRecord_Clear := TRUE, p_Configuration := p_Configuration_3214787c7dd4, p_Configuration_Clear := TRUE, p_ID := p_ID_3214787c7dd4);
+  END IF;
+END $mj$;
+
+-- Save MJ: Queries (core SP call only)
+DO $mj$
+DECLARE
+  p_Name_a5c607129cb3 VARCHAR(255);
+  p_CategoryID_a5c607129cb3 UUID;
+  p_UserQuestion_a5c607129cb3 TEXT;
+  p_Description_a5c607129cb3 TEXT;
+  p_SQL_a5c607129cb3 TEXT;
+  p_TechnicalDescription_a5c607129cb3 TEXT;
+  p_OriginalSQL_a5c607129cb3 TEXT;
+  p_Feedback_a5c607129cb3 TEXT;
+  p_Status_a5c607129cb3 VARCHAR(15);
+  p_QualityRank_a5c607129cb3 INTEGER;
+  p_ExecutionCostRank_a5c607129cb3 INTEGER;
+  p_UsesTemplate_a5c607129cb3 BOOLEAN;
+  p_AuditQueryRuns_a5c607129cb3 BOOLEAN;
+  p_CacheEnabled_a5c607129cb3 BOOLEAN;
+  p_CacheTTLMinutes_a5c607129cb3 INTEGER;
+  p_CacheMaxSize_a5c607129cb3 INTEGER;
+  p_EmbeddingVector_a5c607129cb3 TEXT;
+  p_EmbeddingModelID_a5c607129cb3 UUID;
+  p_CacheValidationSQL_a5c607129cb3 TEXT;
+  p_SQLDialectID_a5c607129cb3 UUID;
+  p_Reusable_a5c607129cb3 BOOLEAN;
+  p_ExternalDataSourceID_a5c607129cb3 UUID;
+  p_IsMaterialized_a5c607129cb3 BOOLEAN;
+  p_ID_a5c607129cb3 UUID;
+BEGIN
+  p_Name_a5c607129cb3 := 'Common: Party Lookup Organizations';
+  p_CategoryID_a5c607129cb3 := '6C0A1000-0000-4000-A000-000000000001';
+  p_UserQuestion_a5c607129cb3 := 'Which organizations match what the user is typing into an organization picker?';
+  p_Description_a5c607129cb3 := 'Up to 20 organizations whose name, legal name or acronym starts with the typed term, or whose website domain starts with the typed domain. Backs bizapps-party-field.';
+  p_SQL_a5c607129cb3 := '-- Party lookup for Organizations: prefix match on indexed base-table columns, TOP 20, no COUNT.
+-- Contract shared by every party lookup query (bizapps-party-field): columns ID, Name, Detail;
+-- parameters Term (required) and Domain (optional, already normalized by the picker).
+-- sqlLikeBegins escapes the term and appends the trailing wildcard.
+-- Detail shows the acronym and the website domain ("NAR · nar.realtor"), whichever exist, so two
+-- organizations with the same name or acronym can be told apart.
+SELECT TOP 20
+    o.ID,
+    o.Name,
+    NULLIF(CONCAT_WS(N'' · '', o.Acronym, o.WebsiteDomain), N'''') AS Detail
+FROM [__mj_BizAppsCommon].[Organization] o
+WHERE o.Name LIKE {{ Term | sqlLikeBegins }}
+   OR o.LegalName LIKE {{ Term | sqlLikeBegins }}
+   OR o.Acronym LIKE {{ Term | sqlLikeBegins }}
+{% if Domain %}   OR o.WebsiteDomain LIKE {{ Domain | sqlLikeBegins }}
+{% endif %}ORDER BY o.Name, o.ID
+';
+  p_TechnicalDescription_a5c607129cb3 := 'Grain: one row per Organization, TOP 20 ordered by Name, ID. Base table __mj_BizAppsCommon.Organization, prefix LIKE on indexed Name, LegalName, Acronym and WebsiteDomain; no view, no COUNT. Parameters: Term (required), Domain (optional, lower-cased host without scheme, www. or path). Columns: ID, Name, Detail (Acronym and WebsiteDomain joined by '' · '', whichever are set).';
+  p_Status_a5c607129cb3 := 'Approved';
+  p_QualityRank_a5c607129cb3 := 9;
+  p_ExecutionCostRank_a5c607129cb3 := 1;
+  p_UsesTemplate_a5c607129cb3 := TRUE;
+  p_AuditQueryRuns_a5c607129cb3 := FALSE;
+  p_CacheEnabled_a5c607129cb3 := FALSE;
+  p_EmbeddingVector_a5c607129cb3 := '[0.006480431649833918,0.048146866261959076,0.027303636074066162,-0.02322639711201191,0.021986879408359528,-0.062769815325737,0.06422384083271027,0.01737532578408718,0.03978175297379494,-0.0032650409266352654,-0.024370450526475906,0.013735589571297169,0.03167782723903656,0.05833525210618973,-0.06271875649690628,-0.0028276124503463507,0.008296167477965355,-0.021348970010876656,-0.004642288200557232,-0.039454612880945206,-0.016670916229486465,-0.006627839524298906,-0.03861987590789795,-0.0055473255924880505,0.010913249105215073,0.016527479514479637,-0.008530231192708015,-0.02117462083697319,0.03270137682557106,-0.02845059148967266,0.0017705584177747369,-0.011607117019593716,-0.03832199424505234,0.024590294808149338,0.0000022524809537571855,-0.0442630834877491,-0.06814736872911453,-0.02433175779879093,-0.004636896774172783,-0.009650051593780518,-0.005281900987029076,0.0455467663705349,-0.02165006846189499,0.006040769163519144,0.03382285684347153,0.032737210392951965,0.021864138543605804,0.001769011141732335,-0.029859943315386772,-0.0008165679755620658,0.021179424598813057,0.0229503121227026,-0.014701614156365395,0.01960138790309429,-0.02617052011191845,-0.0536934994161129,0.04103407636284828,-0.07994423806667328,0.031537946313619614,0.016751736402511597,0.03335600718855858,-0.03451903536915779,-0.05588335543870926,-0.024783454835414886,-0.016868282109498978,0.05396736413240433,-0.06184839457273483,-0.01502666249871254,0.002162698656320572,-0.009892494417726994,0.05970512703061104,0.023515669628977776,-0.051087867468595505,-0.07868979871273041,-0.009153277613222599,0.06257473677396774,0.012434247881174088,0.024838684126734734,-0.005179563071578741,-0.015494491904973984,0.040522608906030655,0.07677558809518814,-0.008256275206804276,0.042248647660017014,-0.05235749110579491,0.08295246958732605,-0.0021693578455597162,0.010660003870725632,0.004237326793372631,-0.003397925989702344,-0.008271315135061741,-0.007284331135451794,0.0251829344779253,-0.009210971184074879,-0.0459480956196785,-0.015484340488910675,-0.005341081880033016,0.009010277688503265,0.06340709328651428,-0.02261890284717083,-0.018268940970301628,0.0034300750121474266,-0.029764950275421143,0.025818301364779472,0.05020548403263092,-0.04701339453458786,-0.007999942637979984,0.03160800784826279,0.015286951325833797,-0.052818235009908676,-0.03348468989133835,-0.012361557222902775,-0.03179541975259781,0.05909310281276703,-0.027639521285891533,-0.021609477698802948,-0.06692541390657425,0.025563202798366547,-0.011158615350723267,0.006014745216816664,0.059201132506132126,0.0011327065294608474,0.0647977739572525,-0.025749005377292633,-0.06739600002765656,-0.025639822706580162,-0.04387011379003525,-0.006658418569713831,-0.0038191331550478935,-0.010580873116850853,0.04377080500125885,-0.03716196119785309,0.0457090325653553,-0.03781289979815483,0.028606535866856575,0.007462347857654095,0.02135397493839264,-0.033316291868686676,0.0487741194665432,0.04095577076077461,0.027664756402373314,-0.03193499520421028,0.005755940452218056,0.04651108756661415,0.013905351981520653,-0.02185182087123394,0.01592588983476162,-0.08674237877130508,-0.012915441766381264,0.018328756093978882,-0.05156756192445755,0.017176460474729538,-0.05138864368200302,-0.012180685997009277,0.030224967747926712,-0.018300669267773628,-0.024676164612174034,-0.007621322758495808,0.015054496005177498,-0.011538389138877392,0.008249840699136257,-0.024873772636055946,0.03848059102892876,0.01451033540070057,-0.018149323761463165,0.005698256194591522,0.07190248370170593,0.040710289031267166,-0.01568109728395939,0.04927024245262146,-0.01522046234458685,-0.01842406950891018,0.016663599759340286,-0.05488026142120361,0.005185915622860193,0.0904351994395256,0.0693710520863533,0.009855871088802814,-0.027086490765213966,-0.029757609590888023,0.0013050460256636143,-0.06827795505523682,-0.04015415534377098,0.029652586206793785,-0.024779003113508224,-0.0014721064362674952,0.03917023539543152,0.03991677239537239,-0.005839172285050154,0.029706304892897606,0.004267884884029627,0.013601215556263924,-0.04096316918730736,0.026240117847919464,0.020474441349506378,-0.05404531955718994,-0.022647395730018616,-0.03977474197745323,-0.015509534627199173,0.028237774968147278,-0.06039338558912277,-0.06279172748327255,-0.02649965137243271,0.09385406970977783,0.020738210529088974,-0.04465848580002785,0.006411271169781685,0.005510064773261547,-0.017459023743867874,0.039064496755599976,0.028579412028193474,0.030001914128661156,0.018029501661658287,0.05191860347986221,0.00047214169171638787,0.12496308982372284,0.020248834043741226,0.03784315660595894,-0.01704498380422592,-0.0011521378764882684,-0.017671996727585793,0.013398880138993263,0.0023411207366734743,0.016166415065526962,-0.01969185471534729,0.06948596984148026,-0.013998263515532017,0.01045313011854887,0.008557054214179516,-0.009215456433594227,0.025046082213521004,0.002063311403617263,0.029697399586439133,0.00963390339165926,0.055740222334861755,-0.08327573537826538,0.09085375815629959,0.09313050657510757,0.01958508789539337,0.04298294335603714,0.014267460443079472,-0.03367985785007477,0.001608963473699987,0.004501753952354193,0.013912075199186802,0.024724658578634262,-0.015600423328578472,0.02321375347673893,0.011695298366248608,0.003565363120287657,0.004788802471011877,-0.0021810797043144703,0.039581213146448135,-0.021780436858534813,-0.02850133739411831,-0.03355199098587036,-0.031442027539014816,-0.004371635150164366,-0.019416827708482742,0.03786676377058029,0.01702212728559971,-0.03524177148938179,0.01232375018298626,-0.0025156985502690077,-0.01844056323170662,0.0032584017608314753,-0.045846834778785706,0.00039375433698296547,0.03059021569788456,0.023206528276205063,-0.03394521027803421,-0.06433485448360443,0.02350015938282013,-0.007674059364944696,0.04172336682677269,0.0643768161535263,-0.012450405396521091,-0.0033283608499914408,0.037677425891160965,-0.00971200317144394,-0.0026341176126152277,-0.09254101663827896,-0.02531081810593605,0.002486826153472066,-0.014967091381549835,0.017633594572544098,0.03380856662988663,-0.14396455883979797,0.01763145625591278,-0.045577794313430786,-0.045572325587272644,-0.030658170580863953,-0.006079280748963356,-0.03450842201709747,0.03956381604075432,0.012518779374659061,-0.03180346637964249,0.06740183383226395,0.021832779049873352,0.013650341890752316,0.019188513979315758,0.046921420842409134,-0.06340023130178452,-0.034535251557826996,0.009489505551755428,0.0025086896494030952,0.04895244166254997,-0.0015326598659157753,0.03085537999868393,0.08585212379693985,-0.05045263469219208,0.023488083854317665,0.033699534833431244,-0.02439740300178528,0.025995953008532524,-0.0046649109572172165,-0.00011741678463295102,-0.04276597872376442,-0.04067642614245415,0.033120810985565186,0.06008349731564522,0.034542012959718704,0.015403334982693195,-0.008295701816678047,0.005265025421977043,0.03638773784041405,-0.009847020730376244,0.008737865835428238,-0.013630655594170094,0.01735566183924675,0.0213998481631279,0.0634768158197403,-0.044740546494722366,0.022275105118751526,0.01661456562578678,-0.024194957688450813,-0.04046756029129028,0.11694659292697906,0.048819418996572495,0.04539117217063904,0.0014472673647105694,-0.015822341665625572,-0.03277583792805672,-0.01667511835694313,-0.006064976565539837,0.033374249935150146,-0.04847818240523338,-0.007960381917655468,-0.061167456209659576,0.004431223031133413,0.006069881375879049,0.037516847252845764,0.010200439020991325,-0.00970118772238493,-0.006959838792681694,-0.05669822171330452,-0.016729755327105522,-0.003976079635322094,0.011966681107878685,-0.007006579544395208,-0.10827178508043289,-0.05112362653017044,0.03529291972517967,-0.02393464371562004,-0.016309352591633797,-0.016178054735064507,-0.0011791371507570148,-0.09736595302820206,-0.004517876077443361,-0.017192106693983078,0.003528416622430086,0.010384459979832172,0.057835184037685394,0.006616057362407446,0.016301603987812996,-0.03766879811882973,-0.01627783104777336,0.025877080857753754,0.006572691723704338,0.03438836336135864,0.043980732560157776,-0.050844378769397736,0.0026547142770141363,-0.003348639467731118,-0.029219409450888634,-0.05258926749229431,-0.035208333283662796,-0.03145172819495201,-0.054560888558626175,-0.028405485674738884,-0.04720523580908775,0.05250620096921921,0.01850009895861149,0.005407996010035276,0.032683178782463074,-0.04567153379321098,-0.06580907851457596,-0.0022826092317700386,-0.02969953417778015,-0.018893683329224586,0.013645545579493046,-0.008328902535140514,0.006199460476636887,0.01291966438293457,-0.01776893250644207,0.04139159992337227,0.030267979949712753,0.03341345861554146,0.004859496373683214,0.017705680802464485,0.018229322507977486,-0.026015307754278183,-0.015576444566249847,0.021686451509594917,0.016334181651473045,-0.027388516813516617,0.049963608384132385,0.005073800217360258,-0.015074706636369228,0.04623333737254143,-0.01041453517973423,-0.010062845423817635,0.020659908652305603,0.010935403406620026,-0.008553337305784225,-0.023955905809998512,0.014180639758706093,-0.015511899255216122,0.04247503727674484,0.0005493588978424668,-0.03793104365468025,0.0700497105717659,-0.059016499668359756,0.008750288747251034,-0.02102256938815117,0.0371522381901741,-0.005351594649255276,-0.02002582885324955,-0.007696750573813915,0.0012770754983648658,0.048918284475803375,0.04100269079208374,0.01649954356253147,-0.0023648771457374096,0.048784300684928894,-0.011391584761440754,0.03949761390686035,0.05384775623679161,0.026710782200098038,-0.02606853097677231,-0.0073143853805959225,-0.049818702042102814,-0.06932803243398666,0.013766842894256115,0.003548107575625181,-0.03814499080181122,0.011790848337113857,0.09820785373449326,-0.02275107428431511,0.07067923992872238,-0.012928478419780731,0.022954249754548073,-0.028980080038309097,-0.014694917015731335,-0.0028365440666675568,0.00221384153701365,-0.014859205111861229,0.023340150713920593,-0.012286725454032421,-0.027696210891008377,-0.003728425595909357,0.03680279850959778,-0.005492254160344601,-0.018985159695148468,0.01699107326567173,0.014763846062123775,-0.04598565772175789,-0.057749755680561066,-0.027139635756611824,0.0202998835593462,0.02938818372786045,-0.005090505350381136,-0.006950998678803444,-0.013231595978140831,0.015143275260925293,-0.0023322664201259613,0.023659275844693184,0.029621658846735954,-0.0024433608632534742,-0.019384119659662247,0.005585840903222561,-0.08868076652288437,-0.016541829332709312,0.020593203604221344,-0.05350726470351219,0.09573660790920258,0.021954858675599098,0.03057759627699852,0.0019464504439383745,0.027901742607355118,0.03344138339161873,0.0037257294170558453,-0.021696295589208603,-0.031537577509880066,-0.020203886553645134,0.04979653283953667,0.00496868509799242,-0.05773540958762169,0.021857405081391335,-0.0017241163877770305,-0.03129372000694275,-0.007718001492321491,-0.022405844181776047,0.014911146834492683,0.01960783079266548,0.12765295803546906,-0.022082114592194557,0.045812420547008514,-0.04208798706531525,0.005407119169831276,0.02207190915942192,-0.00664393650367856,-0.00025636202190071344,0.030697330832481384,-0.06520554423332214,0.01077642384916544,0.03241562843322754,-0.000979083590209484,-0.04118777811527252,0.01141374371945858,0.05796835198998451,-0.03744083270430565,0.0022722561843693256,0.04998863488435745,0.002003357047215104,0.010073266923427582,-0.04531509429216385,0.03239644318819046,-0.03647337481379509,0.03636012598872185,0.002354626776650548,0.028255844488739967,-0.048810526728630066,-0.05166907608509064,-0.004262129310518503,0.028986124321818352,-0.025227412581443787,0.006732353940606117,0.010277371853590012,-0.0008247300866059959,-0.007154678460210562,-0.020880021154880524,-0.08667557686567307,-0.04357704892754555,0.04175766557455063,-6.786902509516701e-33,-0.05105769634246826,-0.03129557520151138,0.023390742018818855,-0.0874917283654213,-0.04709860682487488,-0.023437393829226494,0.00940854661166668,0.017291352152824402,-0.03766978904604912,-0.00008808696293272078,-0.04689105227589607,-0.03075522929430008,0.01861126720905304,-0.003985233139246702,0.04349539056420326,-0.019134705886244774,-0.030297068879008293,0.014812027104198933,-0.006108682136982679,-0.03962450474500656,0.0046221548691391945,0.02474965527653694,-0.009569093585014343,0.006359029561281204,-0.042391110211610794,0.013934311456978321,0.008880067616701126,-0.00836300477385521,0.03897475823760033,0.05315863713622093,0.03771188482642174,-0.06209142506122589,-0.022142989560961723,-0.02697162516415119,0.013139964081346989,0.01245314721018076,-0.03338344022631645,0.01811787113547325,-0.005891967099159956,0.01050955057144165,0.11838027834892273,-0.003580778371542692,-0.028101230040192604,-0.035937584936618805,0.0017884564585983753,0.006424865685403347,0.021093077957630157,-0.05087203159928322,-0.07719430327415466,0.05300113558769226,-0.005598599091172218,-0.025177961215376854,0.04841694235801697,0.0714273676276207,0.014634812250733376,-0.024378184229135513,0.02114161290228367,0.009616486728191376,0.007594435941427946,0.01677858643233776,-0.029751170426607132,0.0045692166313529015,-0.01793212629854679,0.0031059845350682735,-0.008381697349250317,0.02238692156970501,-0.09270033985376358,-0.031020769849419594,-0.04465212672948837,-0.10175798833370209,-0.06254296749830246,0.052035946398973465,-0.027150435373187065,-0.015000641345977783,0.04412658512592316,-0.006556394975632429,0.00958411954343319,-0.005408207420259714,0.03764404356479645,-0.0820382758975029,0.05184052884578705,-0.004691679496318102,-0.010411860421299934,0.00729377893730998,0.019220083951950073,0.03312654420733452,-0.021432146430015564,-0.03947918117046356,0.009865345433354378,0.012257901020348072,-0.03679712861776352,0.028785422444343567,-0.018244683742523193,-0.059561144560575485,-0.06919186562299728,0.04722856357693672,0.015297438018023968,0.012681078165769577,-0.006497861351817846,-0.015427147969603539,-0.044966258108615875,0.024630775675177574,-0.059260327368974686,-0.03426841273903847,0.046300631016492844,0.01182135846465826,-0.013360788114368916,-0.05173162370920181,-0.043394193053245544,-0.0034435626585036516,0.012549301609396935,-0.0081737469881773,-0.04619632661342621,-0.026942724362015724,0.04424101114273071,0.0021637151949107647,0.01489566545933485,-0.01714540272951126,0.004203885328024626,0.0052649821154773235,0.055049359798431396,0.05223682522773743,-0.043228793889284134,0.027941841632127762,-0.04083489999175072,0.018598182126879692,-0.022457124665379524,-0.019044775515794754,0.02338004857301712,0.015600706450641155,0.0055504292249679565,-0.036242738366127014,3.023060628493113e-7,0.0033199971076101065,0.03546583652496338,-0.04239479824900627,0.07638847827911377,-0.011322494596242905,-0.018775518983602524,0.048802249133586884,0.007056694012135267,-0.03583456575870514,-0.03789312392473221,-0.03978536278009415,-0.0500020794570446,0.02656264416873455,0.026218004524707794,-0.04969052970409393,-0.051148850470781326,0.05297822505235672,0.04641325771808624,-0.03718969225883484,0.0069941189140081406,-0.08190912008285522,-0.004555907100439072,0.05251884087920189,0.004317489452660084,0.01313941739499569,0.00008695898577570915,0.014449778944253922,-0.0365343913435936,-0.0071713486686348915,0.05112557113170624,0.004883653484284878,-0.08059345930814743,0.002580898115411401,0.06602906435728073,-0.010851755738258362,0.03656722232699394,0.004034968093037605,-0.010808468796312809,0.001206573797389865,-0.017032209783792496,0.015750793740153313,-0.08015687018632889,0.0075656455010175705,0.011155550368130207,0.02040037326514721,-0.011301347985863686,0.014565201476216316,0.028924671933054924,-0.030427563935518265,-0.07454171031713486,0.032288603484630585,-0.012365633621811867,0.029973819851875305,-0.007248351816087961,0.02253808081150055,-0.052547190338373184,0.018772507086396217,0.03367266058921814,0.052456509321928024,-0.0243576318025589,0.013494948856532574,-0.004777961876243353,-0.0021698169875890017,-0.0477253757417202,0.11421430855989456,0.0034138201735913754,-0.044290997087955475,2.852632063801688e-34,-0.013076032511889935,0.01239768322557211,0.027524564415216446,0.06356770545244217,0.01764800027012825,0.005261527840048075,0.015329944901168346,-0.009175939485430717,0.007081704214215279,0.04744323343038559,0.03680618852376938]';
+  p_EmbeddingModelID_a5c607129cb3 := '1D45AA65-41EC-4572-9ECD-AB2826C9B059';
+  p_SQLDialectID_a5c607129cb3 := '1F203987-A37B-4BC1-85B3-BA50DC33C3E0';
+  p_Reusable_a5c607129cb3 := TRUE;
+  p_IsMaterialized_a5c607129cb3 := FALSE;
+  p_ID_a5c607129cb3 := '90E212A2-5E1B-46DC-B468-38B6AF5E2352';
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = '${mjSchema}' AND p.proname = 'spUpdateQuery'
+       AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
+  ) THEN
+    PERFORM "${mjSchema}"."spUpdateQuery"(p_data := jsonb_build_object(
+    'Name', p_Name_a5c607129cb3,
+    'CategoryID', p_CategoryID_a5c607129cb3,
+    'UserQuestion', p_UserQuestion_a5c607129cb3,
+    'Description', p_Description_a5c607129cb3,
+    'SQL', p_SQL_a5c607129cb3,
+    'TechnicalDescription', p_TechnicalDescription_a5c607129cb3,
+    'OriginalSQL', p_OriginalSQL_a5c607129cb3,
+    'Feedback', p_Feedback_a5c607129cb3,
+    'Status', p_Status_a5c607129cb3,
+    'QualityRank', p_QualityRank_a5c607129cb3,
+    'ExecutionCostRank', p_ExecutionCostRank_a5c607129cb3,
+    'UsesTemplate', p_UsesTemplate_a5c607129cb3,
+    'AuditQueryRuns', p_AuditQueryRuns_a5c607129cb3,
+    'CacheEnabled', p_CacheEnabled_a5c607129cb3,
+    'CacheTTLMinutes', p_CacheTTLMinutes_a5c607129cb3,
+    'CacheMaxSize', p_CacheMaxSize_a5c607129cb3,
+    'EmbeddingVector', p_EmbeddingVector_a5c607129cb3,
+    'EmbeddingModelID', p_EmbeddingModelID_a5c607129cb3,
+    'CacheValidationSQL', p_CacheValidationSQL_a5c607129cb3,
+    'SQLDialectID', p_SQLDialectID_a5c607129cb3,
+    'Reusable', p_Reusable_a5c607129cb3,
+    'ExternalDataSourceID', p_ExternalDataSourceID_a5c607129cb3,
+    'IsMaterialized', p_IsMaterialized_a5c607129cb3,
+    'ID', p_ID_a5c607129cb3
+  ));
+  ELSE
+    PERFORM "${mjSchema}"."spUpdateQuery"(p_Name := p_Name_a5c607129cb3, p_CategoryID := p_CategoryID_a5c607129cb3, p_UserQuestion := p_UserQuestion_a5c607129cb3, p_Description := p_Description_a5c607129cb3, p_SQL := p_SQL_a5c607129cb3, p_TechnicalDescription := p_TechnicalDescription_a5c607129cb3, p_OriginalSQL := p_OriginalSQL_a5c607129cb3, p_OriginalSQL_Clear := TRUE, p_Feedback := p_Feedback_a5c607129cb3, p_Feedback_Clear := TRUE, p_Status := p_Status_a5c607129cb3, p_QualityRank := p_QualityRank_a5c607129cb3, p_ExecutionCostRank := p_ExecutionCostRank_a5c607129cb3, p_UsesTemplate := p_UsesTemplate_a5c607129cb3, p_AuditQueryRuns := p_AuditQueryRuns_a5c607129cb3, p_CacheEnabled := p_CacheEnabled_a5c607129cb3, p_CacheTTLMinutes := p_CacheTTLMinutes_a5c607129cb3, p_CacheTTLMinutes_Clear := TRUE, p_CacheMaxSize := p_CacheMaxSize_a5c607129cb3, p_CacheMaxSize_Clear := TRUE, p_EmbeddingVector := p_EmbeddingVector_a5c607129cb3, p_EmbeddingModelID := p_EmbeddingModelID_a5c607129cb3, p_CacheValidationSQL := p_CacheValidationSQL_a5c607129cb3, p_CacheValidationSQL_Clear := TRUE, p_SQLDialectID := p_SQLDialectID_a5c607129cb3, p_Reusable := p_Reusable_a5c607129cb3, p_ExternalDataSourceID := p_ExternalDataSourceID_a5c607129cb3, p_ExternalDataSourceID_Clear := TRUE, p_IsMaterialized := p_IsMaterialized_a5c607129cb3, p_ID := p_ID_a5c607129cb3);
+  END IF;
+END $mj$;
+
+-- Save MJ: Query Fields (core SP call only)
+DO $mj$
+DECLARE
+  p_QueryID_bf0eb9203dbd UUID;
+  p_Name_bf0eb9203dbd VARCHAR(255);
+  p_Description_bf0eb9203dbd TEXT;
+  p_Sequence_bf0eb9203dbd INTEGER;
+  p_SQLBaseType_bf0eb9203dbd VARCHAR(50);
+  p_SQLFullType_bf0eb9203dbd VARCHAR(100);
+  p_SourceEntityID_bf0eb9203dbd UUID;
+  p_SourceFieldName_bf0eb9203dbd VARCHAR(255);
+  p_IsComputed_bf0eb9203dbd BOOLEAN;
+  p_ComputationDescription_bf0eb9203dbd TEXT;
+  p_IsSummary_bf0eb9203dbd BOOLEAN;
+  p_SummaryDescription_bf0eb9203dbd TEXT;
+  p_DetectionMethod_bf0eb9203dbd VARCHAR(50);
+  p_AutoDetectConfidenceScore_bf0eb9203dbd NUMERIC(3,2);
+  p_ID_bf0eb9203dbd UUID;
+BEGIN
+  p_QueryID_bf0eb9203dbd := '90E212A2-5E1B-46DC-B468-38B6AF5E2352';
+  p_Name_bf0eb9203dbd := 'Detail';
+  p_Description_bf0eb9203dbd := 'Computed column: Detail';
+  p_Sequence_bf0eb9203dbd := 3;
+  p_SQLBaseType_bf0eb9203dbd := 'nvarchar';
+  p_SQLFullType_bf0eb9203dbd := 'nvarchar(255)';
+  p_IsComputed_bf0eb9203dbd := TRUE;
+  p_IsSummary_bf0eb9203dbd := FALSE;
+  p_DetectionMethod_bf0eb9203dbd := 'Manual';
+  p_ID_bf0eb9203dbd := '9A99C114-5742-490C-AF4C-1E7D6D321D0D';
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = '${mjSchema}' AND p.proname = 'spUpdateQueryField'
+       AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
+  ) THEN
+    PERFORM "${mjSchema}"."spUpdateQueryField"(p_data := jsonb_build_object(
+    'QueryID', p_QueryID_bf0eb9203dbd,
+    'Name', p_Name_bf0eb9203dbd,
+    'Description', p_Description_bf0eb9203dbd,
+    'Sequence', p_Sequence_bf0eb9203dbd,
+    'SQLBaseType', p_SQLBaseType_bf0eb9203dbd,
+    'SQLFullType', p_SQLFullType_bf0eb9203dbd,
+    'SourceEntityID', p_SourceEntityID_bf0eb9203dbd,
+    'SourceFieldName', p_SourceFieldName_bf0eb9203dbd,
+    'IsComputed', p_IsComputed_bf0eb9203dbd,
+    'ComputationDescription', p_ComputationDescription_bf0eb9203dbd,
+    'IsSummary', p_IsSummary_bf0eb9203dbd,
+    'SummaryDescription', p_SummaryDescription_bf0eb9203dbd,
+    'DetectionMethod', p_DetectionMethod_bf0eb9203dbd,
+    'AutoDetectConfidenceScore', p_AutoDetectConfidenceScore_bf0eb9203dbd,
+    'ID', p_ID_bf0eb9203dbd
+  ));
+  ELSE
+    PERFORM "${mjSchema}"."spUpdateQueryField"(p_QueryID := p_QueryID_bf0eb9203dbd, p_Name := p_Name_bf0eb9203dbd, p_Description := p_Description_bf0eb9203dbd, p_Sequence := p_Sequence_bf0eb9203dbd, p_SQLBaseType := p_SQLBaseType_bf0eb9203dbd, p_SQLFullType := p_SQLFullType_bf0eb9203dbd, p_SourceEntityID := p_SourceEntityID_bf0eb9203dbd, p_SourceEntityID_Clear := TRUE, p_SourceFieldName := p_SourceFieldName_bf0eb9203dbd, p_SourceFieldName_Clear := TRUE, p_IsComputed := p_IsComputed_bf0eb9203dbd, p_ComputationDescription := p_ComputationDescription_bf0eb9203dbd, p_ComputationDescription_Clear := TRUE, p_IsSummary := p_IsSummary_bf0eb9203dbd, p_SummaryDescription := p_SummaryDescription_bf0eb9203dbd, p_SummaryDescription_Clear := TRUE, p_DetectionMethod := p_DetectionMethod_bf0eb9203dbd, p_AutoDetectConfidenceScore := p_AutoDetectConfidenceScore_bf0eb9203dbd, p_AutoDetectConfidenceScore_Clear := TRUE, p_ID := p_ID_bf0eb9203dbd);
+  END IF;
+END $mj$;

@@ -1821,6 +1821,11 @@ export const mjBizAppsCommonOrganizationSchema = z.object({
         * * Display Name: Website Domain
         * * SQL Data Type: nvarchar(255)
         * * Description: Lower-cased host of Website, without the http(s):// scheme, a leading www. or any path. NULL when Website is empty. Computed and stored, indexed for prefix search by domain.`),
+    Acronym: z.string().nullable().describe(`
+        * * Field Name: Acronym
+        * * Display Name: Acronym
+        * * SQL Data Type: nvarchar(20)
+        * * Description: Short name or initials the organization is commonly known by. Searched by the organization pickers as a starts-with match and shown under the name.`),
     OrganizationType: z.string().nullable().describe(`
         * * Field Name: OrganizationType
         * * Display Name: Organization Type Name
@@ -7540,6 +7545,19 @@ export class mjBizAppsCommonOrganizationEntity extends BaseEntity<mjBizAppsCommo
     */
     get WebsiteDomain(): string | null {
         return this.Get('WebsiteDomain');
+    }
+
+    /**
+    * * Field Name: Acronym
+    * * Display Name: Acronym
+    * * SQL Data Type: nvarchar(20)
+    * * Description: Short name or initials the organization is commonly known by. Searched by the organization pickers as a starts-with match and shown under the name.
+    */
+    get Acronym(): string | null {
+        return this.Get('Acronym');
+    }
+    set Acronym(value: string | null) {
+        this.Set('Acronym', value);
     }
 
     /**
