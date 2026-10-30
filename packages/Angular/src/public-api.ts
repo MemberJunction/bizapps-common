@@ -39,6 +39,57 @@ export {
     type PartyLookupParams,
 } from './lib/components/party-field/party-lookup-term';
 export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
+
+// Dashboard filter bar: period + company, plus the pure period and ID-list rules it applies.
+export { DashboardFilterBarComponent } from './lib/components/dashboard-filter-bar/dashboard-filter-bar.component';
+export {
+    BusinessToday,
+    CALENDAR_YEAR_START,
+    DEFAULT_PERIOD,
+    DayLabel,
+    DescribeFiscalBasis,
+    FiscalQuarterOf,
+    FiscalYearOf,
+    FormatWindow,
+    IsoDay,
+    MonthDayLabel,
+    MonthDayText,
+    PENDING_FISCAL_BASIS,
+    PERIOD_OPTIONS,
+    PeriodKeyOf,
+    PeriodParameters,
+    PeriodPhrase,
+    PeriodSqlFilter,
+    ResolveFiscalYearStart,
+    ResolvePeriod,
+    WithinWindow,
+    type CustomRange,
+    type FiscalBasis,
+    type FiscalYearStart,
+    type FiscalYearStartResolution,
+    type PeriodKey,
+    type PeriodWindow,
+} from './lib/components/dashboard-filter-bar/dashboard-period';
+export {
+    DEFAULT_PERIOD_STATE,
+    NormalizePeriodState,
+    PERIOD_PARAM,
+    ParsePeriodParams,
+    ParsePeriodStateJSON,
+    PeriodStateParams,
+    PeriodWindowOf,
+    SamePeriodState,
+    type DashboardPeriodState,
+} from './lib/components/dashboard-filter-bar/dashboard-period-state';
+export {
+    CleanIDs,
+    HasID,
+    SameIDs,
+    SelectionLabel,
+    SortedOptions,
+    ToggleID,
+    type FilterOption,
+} from './lib/components/dashboard-filter-bar/dashboard-id-lists';
 export {
     FilterForRelatedLink,
     LabelForRelatedLink,
