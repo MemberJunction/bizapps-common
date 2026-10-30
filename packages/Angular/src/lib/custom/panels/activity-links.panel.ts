@@ -28,6 +28,7 @@ interface ActivityLinkRow {
         slot: 'after-fields',
         sortKey: 80,
         contributionKey: 'links',
+        sectionKey: 'activityParticipants',
         relatedEntity: 'MJ_BizApps_Common: Activity Links',
         relatedJoinField: 'ActivityID',
     },
