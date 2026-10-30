@@ -27,7 +27,7 @@
               "Description": "data.Status",
               "EntityName": "static:MJ_BizApps_Common: People",
               "RecordID": "data.ID",
-              "Source": "static:System"
+              "Source": "static:Manual"
             },
             "ActionOutputMapping": {
               "ActivityID": "loggedActivityID",
