@@ -31,7 +31,7 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { StatTileComponent, type StatTileTone } from './lib/components/stat-tile/stat-tile.component';
 export { StatRowComponent } from './lib/components/stat-tile/stat-row.component';
-export { PartyFieldComponent, type PartyOption } from './lib/components/party-field/party-field.component';
+export { PartyFieldComponent, type PartyOption, type PartySearchError } from './lib/components/party-field/party-field.component';
 export {
     PARTY_LOOKUP_QUERIES,
     PartyLookupParamsFor,

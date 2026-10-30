@@ -1,5 +1,11 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.57.1
+
 ## 5.57.0
 
 ### Patch Changes

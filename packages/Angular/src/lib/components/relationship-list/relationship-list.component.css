@@ -510,44 +510,6 @@ span.rel-timeline-target {
     min-width: 0;
 }
 
-.target-field-wrapper ::ng-deep mj-form-field {
-    width: 100%;
-    display: block;
-}
-
-.target-field-wrapper ::ng-deep .mj-forms-field {
-    display: block !important;
-    width: 100% !important;
-    padding: 0 !important;
-}
-
-.target-field-wrapper ::ng-deep .mj-forms-field-control {
-    width: 100% !important;
-}
-
-.target-field-wrapper ::ng-deep .mj-fk-search {
-    width: 100% !important;
-}
-
-.target-field-wrapper ::ng-deep .mj-forms-input-wrapper {
-    width: 100% !important;
-    min-height: 40px !important;
-    border-radius: var(--mj-radius-sm, 6px) !important;
-    background: var(--mj-bg-surface-sunken, #0b1220) !important;
-    border: 1px solid var(--mj-border-default, #223254) !important;
-}
-
-.target-field-wrapper ::ng-deep input.mj-forms-field-input {
-    font-size: 13px !important;
-    padding: 9px 12px !important;
-    color: var(--mj-text-primary, #f1f5f9) !important;
-}
-
-.target-field-wrapper ::ng-deep .mj-fk-dropdown {
-    width: 100% !important;
-    max-width: none !important;
-}
-
 .field-hint {
     display: block;
     font-size: 11px;

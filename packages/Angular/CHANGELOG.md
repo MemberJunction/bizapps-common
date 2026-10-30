@@ -1,5 +1,13 @@
 # @mj-biz-apps/common-ng
 
+## 5.57.1
+
+### Patch Changes
+
+- cd67bbf: `bizapps-party-field`: a search that runs past `SearchTimeoutMs` (default 20 s; zero or less waits indefinitely) now says "The search took too long" instead of leaving an empty list with no message. Its late answer is ignored and the next keystroke searches again. The new `SearchError` property says whether the last search failed or timed out; `SearchFailed` stays as a getter over it. (bc-aidp-next-golive#343)
+- af716fa: The relationship list's Add form searches the target person or organization with the fast party picker (nothing listed until two characters, prefix search on indexed columns) instead of the stock lookup. The party picker labels a field by its related name field ("Person"), as read mode does, instead of the key ("Person ID"). Picking a party now also writes the related name field (`ToPerson`, `ToOrganization`), as the stock field does, so a relationship just added shows its target's name instead of "Unknown". New `ClearSearch()` drops a pending search and its hint; the relationship list calls it when the type changes.
+  - @mj-biz-apps/common-entities@5.57.1
+
 ## 5.57.0
 
 ### Minor Changes
