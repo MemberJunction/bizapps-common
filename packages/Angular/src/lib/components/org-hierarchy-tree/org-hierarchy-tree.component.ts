@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey, RunView } from '@memberjunction/core';
+import { EscapeSQLString } from '@memberjunction/global';
 import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
@@ -105,7 +106,7 @@ export class OrgHierarchyTreeComponent implements OnInit {
 
             const currentResult = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${this._organizationID}'`,
+                ExtraFilter: `ID='${EscapeSQLString(this._organizationID)}'`,
                 ResultType: 'entity_object'
             });
 
@@ -138,14 +139,14 @@ export class OrgHierarchyTreeComponent implements OnInit {
         if (parentID) {
             queries.push({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${parentID}'`,
+                ExtraFilter: `ID='${EscapeSQLString(parentID)}'`,
                 ResultType: 'entity_object'
             });
         }
 
         queries.push({
             EntityName: 'MJ_BizApps_Common: Organizations',
-            ExtraFilter: `ParentID='${this._organizationID}'`,
+            ExtraFilter: `ParentID='${EscapeSQLString(this._organizationID)}'`,
             OrderBy: 'Name ASC',
             ResultType: 'entity_object'
         });
