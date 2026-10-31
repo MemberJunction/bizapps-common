@@ -390,7 +390,7 @@ export class AddressEditorComponent {
 
             // Load all referenced addresses in one batch if we have links
             if (links.length > 0) {
-                const addressIDs = links.map(l => `'${l.AddressID}'`).join(',');
+                const addressIDs = links.map(l => `'${EscapeFilterValue(l.AddressID)}'`).join(',');
                 const addressResult = await rv.RunView<mjBizAppsCommonAddressEntity>({
                     EntityName: 'MJ_BizApps_Common: Addresses',
                     ExtraFilter: `ID IN (${addressIDs})`,

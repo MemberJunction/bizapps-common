@@ -244,7 +244,11 @@ function bothCases(ids: readonly string[]): string[] {
     return [...new Set(ids.flatMap((id) => [id.toLowerCase(), id.toUpperCase()]))];
 }
 
-/** IDs reach here only through uniqueUUIDs or IsValidUUID. */
+/** IDs reach here only through uniqueUUIDs or IsValidUUID; the assertion keeps a future caller honest. */
 function quoteList(ids: readonly string[]): string {
+    const invalid = ids.find((id) => !IsValidUUID(id));
+    if (invalid !== undefined) {
+        throw new Error(`quoteList received a non-UUID value: '${invalid}'. Validate IDs before building the filter.`);
+    }
     return ids.map((id) => `'${id}'`).join(', ');
 }
