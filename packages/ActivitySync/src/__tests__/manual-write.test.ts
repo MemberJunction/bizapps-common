@@ -55,6 +55,7 @@ function fakeProvider() {
             { Name: PEOPLE, ID: 'entity-people' },
             { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-orgs' },
         ],
+        EntityByName: (name: string) => ({ Name: name, ID: `entity-${name}` }),
         BeginEntityTransaction: async () => ({
             Commit: async () => {
                 state.committed = true;
