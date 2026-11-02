@@ -45,11 +45,22 @@ function normalizeAddress(raw: string): string {
     return raw.trim().toLowerCase();
 }
 
-/** At least one `.`, non-empty labels on both sides of every dot, no whitespace. */
+/*
+ * Character sets. These values end up in a `From:` header that a vertical writes, so anything that
+ * could close a header field or start a new one (CR, LF, other control characters, `<`, `>`, `"`,
+ * `,`) is refused here rather than trusted to every caller's escaping.
+ * - Local part: the RFC 5322 dot-atom set (quoted local parts are not supported).
+ * - Domain label: letters, digits and hyphens; an internationalised domain is entered as punycode.
+ * - Display name: free text, minus control characters and the three that delimit an address.
+ */
+const LOCAL_PART = /^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+$/;
+const DOMAIN_LABEL = /^[a-z0-9-]+$/;
+const DISPLAY_NAME_FORBIDDEN = /[\x00-\x1f\x7f"<>]/;
+
+/** At least one `.`, and every label non-empty and made of letters, digits and hyphens. */
 function isDottedDomain(domain: string): boolean {
-    if (/\s/.test(domain)) return false;
     const labels = domain.split('.');
-    return labels.length >= 2 && labels.every((label) => label.length > 0);
+    return labels.length >= 2 && labels.every((label) => DOMAIN_LABEL.test(label));
 }
 
 /** The lower-cased part after the last `@`, or null when the address has no `@`. */
@@ -79,14 +90,20 @@ export function IsSenderAllowedForCompany(
     });
 }
 
-/** The company's default Mailbox as a From pair, or null when it has none (a default Domain row does not count). */
+/**
+ * The company's default Mailbox as a From pair, or null when it has none (a default Domain row does
+ * not count). The stored row is re-checked before it is returned: a row written around the entity
+ * (direct SQL, an old import) must not reach a `From:` header, so a malformed default gives null.
+ */
 export function DefaultSenderForCompany(
     companyId: string,
     identities: readonly CompanySenderIdentityRow[],
 ): SenderFrom | null {
     const row = identities.find((r) => UUIDsEqual(r.CompanyID, companyId) && r.Kind === 'Mailbox' && r.IsDefault);
     if (!row) return null;
-    return { from: normalizeAddress(row.Address), fromName: row.DisplayName };
+    const checked = NormalizeSenderIdentity('Mailbox', row.Address, row.DisplayName);
+    if (checked.errors.length > 0) return null;
+    return { from: checked.address, fromName: checked.displayName };
 }
 
 function addressErrors(kind: SenderIdentityKind, address: string, raw: string): string[] {
@@ -96,8 +113,16 @@ function addressErrors(kind: SenderIdentityKind, address: string, raw: string): 
         return isDottedDomain(address) ? [] : [`Domain "${address}" must be a dotted domain such as example.com`];
     }
     const parts = address.split('@');
-    const valid = parts.length === 2 && parts[0].length > 0 && !/\s/.test(parts[0]) && isDottedDomain(parts[1]);
+    const valid = parts.length === 2 && LOCAL_PART.test(parts[0]) && isDottedDomain(parts[1]);
     return valid ? [] : [`Mailbox "${address}" must look like name@example.com`];
+}
+
+function nameErrors(kind: SenderIdentityKind, address: string, name: string | null): string[] {
+    if (name === null) return [];
+    if (kind === 'Domain') return [`Domain "${address}" must not have a display name ("${name}")`];
+    return DISPLAY_NAME_FORBIDDEN.test(name)
+        ? [`Display name for "${address}" must not contain line breaks, control characters, quotes or angle brackets (got ${JSON.stringify(name)})`]
+        : [];
 }
 
 /** Trim + lower-case the address and check its shape for the kind. Every error names the offending value. */
@@ -109,8 +134,7 @@ export function NormalizeSenderIdentity(
     const normalized = normalizeAddress(address);
     const name = displayName?.trim() ? displayName.trim() : null;
     const addressProblems = addressErrors(kind, normalized, address);
-    const displayNameProblems =
-        kind === 'Domain' && name !== null ? [`Domain "${normalized}" must not have a display name ("${name}")`] : [];
+    const displayNameProblems = nameErrors(kind, normalized, name);
     return {
         address: normalized,
         displayName: name,

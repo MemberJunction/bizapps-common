@@ -60,3 +60,47 @@ describe('NormalizeSenderIdentity', () => {
     it('empty-address error names the raw input', () => expect(NormalizeSenderIdentity('Mailbox', '   ', null).errors[0]).toContain('"   "'));
     it('every error names the value', () => expect(NormalizeSenderIdentity('Domain', 'hr@acme.com', null).errors[0]).toContain('hr@acme.com'));
 });
+
+describe('header-safety of stored values', () => {
+    it.each([
+        ['a line break', 'Acme\r\nBcc: x@evil.test'],
+        ['a NUL', 'Acme\u0000HR'],
+        ['a double quote', 'Acme "HR"'],
+        ['an angle bracket', 'Acme <hr@acme.com>'],
+    ])('rejects a display name with %s and names the address', (_label, name) => {
+        const result = NormalizeSenderIdentity('Mailbox', 'hr@acme.com', name);
+        expect(result.displayNameErrors).toHaveLength(1);
+        expect(result.errors[0]).toContain('hr@acme.com');
+    });
+
+    it('keeps an ordinary display name with punctuation', () => {
+        expect(NormalizeSenderIdentity('Mailbox', 'hr@acme.com', "Acme HR (O'Neil & Co.)").errors).toEqual([]);
+    });
+
+    it.each(['a<b@acme.com', 'a,b@acme.com', 'a"b@acme.com', 'a\u0000b@acme.com', 'hr@ac_me.com', 'hr@acme.c<m'])(
+        'rejects the mailbox %j',
+        (address) => expect(NormalizeSenderIdentity('Mailbox', address, null).errors).toHaveLength(1),
+    );
+
+    it('rejects a domain with a character outside letters, digits and hyphens', () => {
+        expect(NormalizeSenderIdentity('Domain', 'acme>.com', null).errors).toHaveLength(1);
+    });
+
+    it('accepts RFC 5322 dot-atom local parts', () => {
+        expect(NormalizeSenderIdentity('Mailbox', "o'neil+jobs@acme-co.com", null).errors).toEqual([]);
+    });
+
+    it('DefaultSenderForCompany refuses a stored default whose display name would break the header', () => {
+        const tampered = [{ CompanyID: ACME, Kind: 'Mailbox', Address: 'hr@acme.com', DisplayName: 'Acme\r\nBcc: x@evil.test', IsDefault: true }] as const;
+        expect(DefaultSenderForCompany(ACME, tampered)).toBeNull();
+    });
+
+    it('DefaultSenderForCompany refuses a stored default whose address is malformed', () => {
+        const tampered = [{ CompanyID: ACME, Kind: 'Mailbox', Address: 'hr@acme.com>, x@evil.test', DisplayName: null, IsDefault: true }] as const;
+        expect(DefaultSenderForCompany(ACME, tampered)).toBeNull();
+    });
+
+    it('IsSenderAllowedForCompany refuses a caller address carrying a header break', () => {
+        expect(IsSenderAllowedForCompany(ACME, 'hr@acme.com\r\nBcc: x@evil.test', rows)).toBe(false);
+    });
+});
