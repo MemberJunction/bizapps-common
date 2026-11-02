@@ -1,0 +1,16 @@
+<mj-collapsible-panel
+    SectionKey="companySenderIdentities"
+    SectionName="Email senders"
+    Icon="fa-solid fa-paper-plane"
+    Variant="related-entity"
+    [Form]="FormComponent"
+    [FormContext]="FormContext"
+    [DefaultExpanded]="true">
+    @if (Record.IsSaved) {
+        <bizapps-company-sender-identities
+            [CompanyID]="Record.ID"
+            [EditMode]="EditMode"
+            (DataChanged)="OnWidgetDataChanged()">
+        </bizapps-company-sender-identities>
+    }
+</mj-collapsible-panel>
