@@ -3,15 +3,13 @@ import {
     Component,
     EventEmitter,
     Input,
-    OnChanges,
     OnInit,
     Output,
-    SimpleChanges,
     inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IMetadataProvider, Metadata, RunView } from '@memberjunction/core';
-import { UUIDsEqual } from '@memberjunction/global';
+import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
 import { MJButtonDirective, MJConfirmService } from '@memberjunction/ng-ui-components';
 import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
@@ -24,6 +22,17 @@ const ENTITY_NAME = 'MJ_BizApps_Common: Company Sender Identities';
 
 /** Shown after a successful add. The panel never calls the mail provider (spec §8). */
 export const SENDER_VERIFICATION_REMINDER = 'Make sure this sender is verified in your mail provider before using it.';
+
+/**
+ * What a write did. `Saved` is the caller's answer; `Changed` says whether the database moved,
+ * which is what decides the reload and DataChanged. They differ when a two-step write half-fails.
+ */
+interface WriteOutcome {
+    readonly Saved: boolean;
+    readonly Changed: boolean;
+}
+const SAVED: WriteOutcome = { Saved: true, Changed: true };
+const NOT_SAVED: WriteOutcome = { Saved: false, Changed: false };
 
 /**
  * Lists and edits the From addresses a Company may send mail as: Mailbox rows (one address) and
@@ -39,11 +48,28 @@ export const SENDER_VERIFICATION_REMINDER = 'Make sure this sender is verified i
     templateUrl: './company-sender-identities.component.html',
     styleUrls: ['./company-sender-identities.component.css'],
 })
-export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
+export class CompanySenderIdentitiesComponent implements OnInit {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly confirm = inject(MJConfirmService);
+    private _companyID: string | null = null;
+    private initialized = false;
 
-    @Input() CompanyID: string | null = null;
+    /**
+     * The host form reuses this component when it moves to another Company, so a new value resets
+     * the previous company's rows, messages and add-form draft and reloads.
+     */
+    @Input()
+    public set CompanyID(value: string | null) {
+        if (sameCompany(value, this._companyID)) return;
+        this._companyID = value;
+        if (!this.initialized) return;
+        this.resetForCompany();
+        void this.loadAll();
+    }
+    public get CompanyID(): string | null {
+        return this._companyID;
+    }
+
     @Input() EditMode = true;
     @Input() Provider?: IMetadataProvider;
 
@@ -67,13 +93,8 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
     }
 
     public async ngOnInit(): Promise<void> {
+        this.initialized = true;
         await this.loadAll();
-    }
-
-    public async ngOnChanges(changes: SimpleChanges): Promise<void> {
-        if (changes['CompanyID'] && !changes['CompanyID'].firstChange) {
-            await this.loadAll();
-        }
     }
 
     /** Set default is offered only on a Mailbox row that is not already the default. */
@@ -81,19 +102,27 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
         return row.Kind === 'Mailbox' && !row.IsDefault;
     }
 
-    /** Reload the company's rows (one RunView). */
+    /**
+     * Reload the company's rows (one RunView). A load that finishes after the input moved to
+     * another company is dropped, so a slow answer for the old company never overwrites the new one.
+     */
     public async loadAll(): Promise<void> {
+        const companyId = this.CompanyID;
         this.Loading = true;
         this.Error = null;
         this.cdr.detectChanges();
         try {
-            await this.fetchRows();
+            const rows = await this.queryRows(companyId);
+            if (sameCompany(companyId, this.CompanyID)) this.Rows = rows;
         } catch (err) {
-            this.Error = `Could not load email senders for company ${this.CompanyID}: ${err instanceof Error ? err.message : String(err)}`;
+            if (!sameCompany(companyId, this.CompanyID)) return;
+            this.Error = `Could not load email senders for company ${companyId}: ${err instanceof Error ? err.message : String(err)}`;
             console.error('[CompanySenderIdentities]', this.Error, err);
         } finally {
-            this.Loading = false;
-            this.cdr.detectChanges();
+            if (sameCompany(companyId, this.CompanyID)) {
+                this.Loading = false;
+                this.cdr.detectChanges();
+            }
         }
     }
 
@@ -121,11 +150,11 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
             entity.IsDefault = false;
             if (!(await entity.Save())) {
                 this.Error = failureText(`Could not add "${normalized.address}"`, entity);
-                return false;
+                return NOT_SAVED;
             }
             this.resetAddForm();
             this.Notice = SENDER_VERIFICATION_REMINDER;
-            return true;
+            return SAVED;
         });
     }
 
@@ -141,14 +170,15 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
             const current = this.Rows.find((r) => r.IsDefault && !UUIDsEqual(r.ID, row.ID));
             if (current && !(await this.saveIsDefault(current, false))) {
                 this.Error = failureText(`Could not remove the default from "${current.Address}"`, current);
-                return false;
+                return NOT_SAVED;
             }
             if (!(await this.saveIsDefault(row, true))) {
                 const lost = current ? `; "${current.Address}" is no longer the default` : '';
                 this.Error = failureText(`Could not make "${row.Address}" the default`, row) + lost;
-                return false;
+                // The demote already committed, so the list is re-read and the host told.
+                return { Saved: false, Changed: current !== undefined };
             }
-            return true;
+            return SAVED;
         });
     }
 
@@ -163,11 +193,15 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
             return false;
         }
         return this.runMutation(`removing "${row.Address}"`, async () => {
+            const address = row.Address;
             if (!(await row.Delete())) {
-                this.Error = failureText(`Could not remove "${row.Address}"`, row);
-                return false;
+                this.Error = failureText(`Could not remove "${address}"`, row);
+                return NOT_SAVED;
             }
-            return true;
+            // Drop it now: BaseEntity resets a deleted object's fields, and a row still in the list
+            // until the reload lands would re-render with changed values (NG0100 in dev mode).
+            this.Rows = this.Rows.filter((r) => !UUIDsEqual(r.ID, row.ID));
+            return SAVED;
         });
     }
 
@@ -193,11 +227,12 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
     }
 
     /**
-     * Shared wrapper for every write: one write at a time, a fresh error/notice, a reload and
-     * DataChanged on success. `work` sets `Error` itself on an expected failure and returns false;
-     * an unexpected throw is reported with `context` (which names the address).
+     * Shared wrapper for every write: one write at a time, a fresh error/notice, and a reload plus
+     * DataChanged whenever the database changed (even when the write as a whole did not succeed).
+     * `work` sets `Error` itself on an expected failure; an unexpected throw is reported with
+     * `context` (which names the address).
      */
-    private async runMutation(context: string, work: () => Promise<boolean>): Promise<boolean> {
+    private async runMutation(context: string, work: () => Promise<WriteOutcome>): Promise<boolean> {
         if (this.Saving) {
             return false;
         }
@@ -206,12 +241,12 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
         this.Notice = null;
         this.cdr.detectChanges();
         try {
-            const ok = await work();
-            if (ok) {
+            const outcome = await work();
+            if (outcome.Changed) {
                 await this.reloadAfterWrite(context);
                 this.DataChanged.emit();
             }
-            return ok;
+            return outcome.Saved;
         } catch (err) {
             this.Error = `Failed while ${context}: ${err instanceof Error ? err.message : String(err)}`;
             console.error('[CompanySenderIdentities]', this.Error, err);
@@ -224,25 +259,24 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
 
     /** The write already succeeded, so a failed reload is reported as such rather than as a failed write. */
     private async reloadAfterWrite(context: string): Promise<void> {
+        const companyId = this.CompanyID;
         try {
-            await this.fetchRows();
+            const rows = await this.queryRows(companyId);
+            if (sameCompany(companyId, this.CompanyID)) this.Rows = rows;
         } catch (err) {
             this.Error = `Saved while ${context}, but the list could not be reloaded: ${err instanceof Error ? err.message : String(err)}`;
             console.error('[CompanySenderIdentities]', this.Error, err);
         }
     }
 
-    /** Throws (with context) when the RunView fails, so callers report it. */
-    private async fetchRows(): Promise<void> {
-        if (!this.CompanyID) {
-            this.Rows = [];
-            return;
-        }
+    /** The company's rows. Throws (with context) when the RunView fails, so callers report it. */
+    private async queryRows(companyId: string | null): Promise<CompanySenderIdentityEntity[]> {
+        if (!companyId) return [];
         const p = this.ProviderToUse;
         const result = await RunView.FromMetadataProvider(p).RunView<CompanySenderIdentityEntity>(
             {
                 EntityName: ENTITY_NAME,
-                ExtraFilter: `CompanyID = '${this.CompanyID}'`,
+                ExtraFilter: `CompanyID = '${EscapeSQLString(companyId)}'`,
                 OrderBy: 'Address ASC',
                 ResultType: 'entity_object',
                 // BypassCache also keeps this read out of the client's RunView coalescer, which
@@ -258,7 +292,7 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
         if (!result.Success) {
             throw new Error(result.ErrorMessage || 'RunView returned no error message');
         }
-        this.Rows = result.Results ?? [];
+        return result.Results ?? [];
     }
 
     /** Sets IsDefault and saves; on failure restores the local value so the list matches the database. */
@@ -278,6 +312,14 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
         return this.CompanyID;
     }
 
+    /** Forget everything that belonged to the previous company. */
+    private resetForCompany(): void {
+        this.Rows = [];
+        this.Error = null;
+        this.Notice = null;
+        this.resetAddForm();
+    }
+
     private resetAddForm(): void {
         this.ShowAddForm = false;
         this.NewKind = 'Mailbox';
@@ -290,4 +332,9 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
 function failureText(prefix: string, entity: CompanySenderIdentityEntity): string {
     const detail = entity.LatestResult?.CompleteMessage || entity.LatestResult?.Message;
     return detail ? `${prefix}: ${detail}` : prefix;
+}
+
+/** Company IDs compare with UUIDsEqual (SQL Server and PostgreSQL differ in case); null only equals null. */
+function sameCompany(a: string | null, b: string | null): boolean {
+    return a !== null && b !== null ? UUIDsEqual(a, b) : a === b;
 }

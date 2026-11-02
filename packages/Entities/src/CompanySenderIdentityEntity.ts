@@ -22,9 +22,9 @@ export class CompanySenderIdentityEntity extends mjBizAppsCommonCompanySenderIde
      */
     public override Validate(): ValidationResult {
         const result = super.Validate();
-        this.validateDefaultIsMailbox(result);
         const normalized = this.normalize();
         if (normalized === null) return result;
+        this.validateDefaultIsMailbox(result, normalized.address);
         const displayNameErrors = new Set(normalized.displayNameErrors);
         for (const message of normalized.errors) {
             const source = displayNameErrors.has(message) ? 'DisplayName' : 'Address';
@@ -35,10 +35,14 @@ export class CompanySenderIdentityEntity extends mjBizAppsCommonCompanySenderIde
         return result;
     }
 
-    /** A default must be a Mailbox row: a Domain has no local part to send from (spec section 7). */
-    private validateDefaultIsMailbox(result: ValidationResult): void {
+    /**
+     * A default must be a Mailbox row: a Domain has no local part to send from (spec section 7).
+     * `address` is the normalised value, so the message reads the same whether `Validate` is called
+     * directly or from `Save` (which writes the normalised value first).
+     */
+    private validateDefaultIsMailbox(result: ValidationResult, address: string): void {
         if (!this.IsDefault || this.Kind !== 'Domain') return;
-        const message = `"${this.Address}" is a Domain row and cannot be the default sender; only a Mailbox row can be the default`;
+        const message = `"${address}" is a Domain row and cannot be the default sender; only a Mailbox row can be the default`;
         result.Errors.push(new ValidationErrorInfo('IsDefault', message, this.IsDefault));
         result.Success = false;
     }

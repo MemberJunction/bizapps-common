@@ -23,7 +23,7 @@ import { CompanySenderIdentitiesComponent } from '../company-sender-identities.c
 interface FakeRow {
     ID: string;
     CompanyID: string;
-    Kind: 'Mailbox' | 'Domain';
+    Kind: CompanySenderIdentityEntity['Kind'];
     Address: string;
     DisplayName: string | null;
     IsDefault: boolean;
@@ -32,7 +32,7 @@ interface FakeRow {
     Delete: ReturnType<typeof vi.fn>;
 }
 
-function row(id: string, address: string, isDefault: boolean, kind: 'Mailbox' | 'Domain' = 'Mailbox'): FakeRow {
+function row(id: string, address: string, isDefault: boolean, kind: CompanySenderIdentityEntity['Kind'] = 'Mailbox'): FakeRow {
     return {
         ID: id,
         CompanyID: 'co-1',
@@ -99,6 +99,16 @@ describe('CompanySenderIdentitiesComponent', () => {
         expect(component.Error).toBeNull();
     });
 
+    it('loadAll escapes the company ID in the filter', async () => {
+        const { component } = build([]);
+        component.CompanyID = "co-1' OR 1=1 --";
+
+        await component.loadAll();
+
+        const params = H.runView.mock.calls[0][0] as { ExtraFilter: string };
+        expect(params.ExtraFilter).toBe("CompanyID = 'co-1'' OR 1=1 --'");
+    });
+
     it('addRow refuses a malformed address before any save and shows the error', async () => {
         const { component, getEntityObject } = build([]);
 
@@ -156,6 +166,7 @@ describe('CompanySenderIdentitiesComponent', () => {
         H.runView.mockResolvedValue({ Success: false, ErrorMessage: 'connection reset', Results: [] });
         const emitted = vi.fn();
         component.DataChanged.subscribe(emitted);
+        const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
         const added = await component.addRow('Mailbox', 'hr@acme.com', null);
 
@@ -165,6 +176,8 @@ describe('CompanySenderIdentitiesComponent', () => {
         expect(component.Error).toContain('hr@acme.com');
         expect(component.Error).toContain('could not be reloaded');
         expect(emitted).toHaveBeenCalledTimes(1);
+        expect(errorLog).toHaveBeenCalledWith('[CompanySenderIdentities]', component.Error, expect.any(Error));
+        errorLog.mockRestore();
     });
 
     it('addRow reports a failed save with the address', async () => {
@@ -260,6 +273,22 @@ describe('CompanySenderIdentitiesComponent', () => {
         expect(emitted).toHaveBeenCalledTimes(1);
     });
 
+    // BaseEntity resets a deleted object's fields, so a row left in the list until the reload
+    // finishes re-renders with a changed value (Angular NG0100 in dev mode).
+    it('removeRow drops the deleted row from the list even when the reload after it fails', async () => {
+        const keep = row('r1', 'keep@acme.com', false);
+        const target = row('r2', 'gone@acme.com', false);
+        const { component } = build([keep, target]);
+        await component.loadAll();
+        H.runView.mockRejectedValueOnce(new Error('connection reset'));
+        const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        expect(await component.removeRow(asEntity(target))).toBe(true);
+
+        expect(component.Rows.map((r) => r.ID)).toEqual(['r1']);
+        errorLog.mockRestore();
+    });
+
     it('removeRow does nothing when the user cancels the confirmation', async () => {
         const target = row('r1', 'hr@acme.com', false);
         const { component, confirmDelete } = build([target]);
@@ -280,5 +309,73 @@ describe('CompanySenderIdentitiesComponent', () => {
         expect(await component.removeRow(asEntity(target))).toBe(false);
         expect(component.Error).toContain('hr@acme.com');
         expect(component.Error).toContain('in use');
+    });
+
+    describe('switching to another company', () => {
+        // The host form reuses this component when it navigates from one Company to the next.
+        it('discards a slow load for the previous company that resolves after the switch', async () => {
+            const stale: { resolve: (v: { Success: boolean; Results: FakeRow[] }) => void } = { resolve: () => undefined };
+            const { component } = build([]);
+            H.runView.mockReturnValueOnce(new Promise((resolve) => (stale.resolve = resolve)));
+            const pendingFirst = component.ngOnInit(); // co-1's load stays pending
+
+            H.runView.mockResolvedValueOnce({ Success: true, Results: [row('b1', 'jobs@bolt.io', false)] });
+            component.CompanyID = 'co-2';
+            await vi.waitFor(() => expect(component.Rows.map((r) => r.ID)).toEqual(['b1']));
+
+            stale.resolve({ Success: true, Results: [row('a1', 'hr@acme.com', false)] });
+            await pendingFirst;
+
+            expect(component.Rows.map((r) => r.ID)).toEqual(['b1']);
+            expect(component.Loading).toBe(false);
+        });
+
+        it('reloads for the new company through the CompanyID input', async () => {
+            const { component } = build([]);
+            await component.ngOnInit();
+            H.runView.mockClear();
+
+            component.CompanyID = 'co-2';
+
+            await vi.waitFor(() => expect(H.runView).toHaveBeenCalledTimes(1));
+            const params = H.runView.mock.calls[0][0] as { ExtraFilter: string };
+            expect(params.ExtraFilter).toContain("CompanyID = 'co-2'");
+        });
+
+        it("clears the previous company's notice, error and add-form draft", async () => {
+            const { component } = build([], row('new', '', false));
+            await component.ngOnInit();
+            component.openAddForm('Domain');
+            component.NewAddress = 'half-typed.com';
+            component.Notice = 'Make sure this sender is verified';
+            component.Error = 'old error';
+
+            component.CompanyID = 'co-2';
+
+            expect(component.Notice).toBeNull();
+            expect(component.Error).toBeNull();
+            expect(component.ShowAddForm).toBe(false);
+            expect(component.NewAddress).toBe('');
+            expect(component.NewKind).toBe('Mailbox');
+        });
+    });
+
+    it('setDefault reloads and emits DataChanged when the demote saved but the promote failed', async () => {
+        const current = row('r1', 'old@acme.com', true);
+        const chosen = row('r2', 'new@acme.com', false);
+        chosen.Save.mockResolvedValue(false);
+        const { component } = build([current, chosen]);
+        await component.loadAll();
+        H.runView.mockClear();
+        H.runView.mockResolvedValue({ Success: true, Results: [current, chosen] });
+        const emitted = vi.fn();
+        component.DataChanged.subscribe(emitted);
+
+        const ok = await component.setDefault(asEntity(chosen));
+
+        expect(ok).toBe(false);
+        expect(H.runView).toHaveBeenCalledTimes(1); // the list is re-read: the database changed
+        expect(emitted).toHaveBeenCalledTimes(1);
+        expect(component.Error).toContain('"old@acme.com" is no longer the default');
     });
 });

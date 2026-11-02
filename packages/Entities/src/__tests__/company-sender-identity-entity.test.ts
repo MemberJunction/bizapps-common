@@ -1,9 +1,10 @@
 import type { EntityInfo } from '@memberjunction/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SenderIdentityKind } from '../sender-identity.js';
 
 /** The slice of `BaseEntity` the subclass depends on, backed by a plain record. */
 interface SenderRecord {
-    Kind: 'Domain' | 'Mailbox';
+    Kind: SenderIdentityKind;
     Address: string;
     DisplayName: string | null;
     IsDefault?: boolean;
@@ -69,6 +70,12 @@ describe('CompanySenderIdentityEntity', () => {
         expect(result.Success).toBe(false);
         expect(result.Errors[0].Source).toBe('IsDefault');
         expect(result.Errors[0].Message).toContain('"acme.com"');
+    });
+
+    it('Validate names the normalised domain when refusing it as the default, before Save has normalised it', () => {
+        const result = makeEntity({ Kind: 'Domain', Address: '  ACME.com ', DisplayName: null, IsDefault: true }).Validate();
+        const message = result.Errors.find((e) => e.Source === 'IsDefault')?.Message ?? '';
+        expect(message).toContain('"acme.com" is a Domain row');
     });
 
     it('Validate accepts a default Mailbox row', () => {

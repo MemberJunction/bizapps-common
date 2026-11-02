@@ -14,8 +14,10 @@
  */
 
 import { UUIDsEqual } from '@memberjunction/global';
+import type { mjBizAppsCommonCompanySenderIdentityEntity } from './generated/entity_subclasses';
 
-export type SenderIdentityKind = 'Mailbox' | 'Domain';
+/** Derived from the generated entity, so a value added to the CHECK constraint flows through here. */
+export type SenderIdentityKind = mjBizAppsCommonCompanySenderIdentityEntity['Kind'];
 
 export interface CompanySenderIdentityRow {
     readonly CompanyID: string;
