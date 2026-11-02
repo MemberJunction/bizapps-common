@@ -48,14 +48,16 @@ function normalizeAddress(raw: string): string {
 /*
  * Character sets. These values end up in a `From:` header that a vertical writes, so anything that
  * could close a header field or start a new one (CR, LF, other control characters, `<`, `>`, `"`,
- * `,`) is refused here rather than trusted to every caller's escaping.
+ * and `,` in an address) is refused here rather than trusted to every caller's escaping.
  * - Local part: the RFC 5322 dot-atom set (quoted local parts are not supported).
  * - Domain label: letters, digits and hyphens; an internationalised domain is entered as punycode.
- * - Display name: free text, minus control characters and the three that delimit an address.
+ * - Display name: free text (commas and parentheses included, as in "Acme, Inc."), minus C0/C1
+ *   control characters, Unicode line separators, `"`, `\`, `<` and `>`. What remains is always
+ *   safe inside a quoted-string, so a caller writes `"${fromName}" <${from}>` without escaping.
  */
 const LOCAL_PART = /^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+$/;
 const DOMAIN_LABEL = /^[a-z0-9-]+$/;
-const DISPLAY_NAME_FORBIDDEN = /[\x00-\x1f\x7f"<>]/;
+const DISPLAY_NAME_FORBIDDEN = /[\x00-\x1f\x7f-\x9f\u2028\u2029"\\<>]/;
 
 /** At least one `.`, and every label non-empty and made of letters, digits and hyphens. */
 function isDottedDomain(domain: string): boolean {
@@ -121,7 +123,7 @@ function nameErrors(kind: SenderIdentityKind, address: string, name: string | nu
     if (name === null) return [];
     if (kind === 'Domain') return [`Domain "${address}" must not have a display name ("${name}")`];
     return DISPLAY_NAME_FORBIDDEN.test(name)
-        ? [`Display name for "${address}" must not contain line breaks, control characters, quotes or angle brackets (got ${JSON.stringify(name)})`]
+        ? [`Display name for "${address}" must not contain line breaks, control characters, quotes, backslashes or angle brackets (got ${JSON.stringify(name)})`]
         : [];
 }
 

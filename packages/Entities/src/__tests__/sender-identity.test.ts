@@ -104,3 +104,17 @@ describe('header-safety of stored values', () => {
         expect(IsSenderAllowedForCompany(ACME, 'hr@acme.com\r\nBcc: x@evil.test', rows)).toBe(false);
     });
 });
+
+describe('display names stay safe inside a quoted-string', () => {
+    it.each([
+        ['a backslash', 'Acme\\HR'],
+        ['a C1 control (NEL)', 'Acme\u0085HR'],
+        ['a Unicode line separator', 'Acme HR'],
+    ])('rejects %s', (_label, name) => {
+        expect(NormalizeSenderIdentity('Mailbox', 'hr@acme.com', name).displayNameErrors).toHaveLength(1);
+    });
+
+    it('keeps commas, as in "Acme, Inc."', () => {
+        expect(NormalizeSenderIdentity('Mailbox', 'hr@acme.com', 'Acme, Inc.').errors).toEqual([]);
+    });
+});

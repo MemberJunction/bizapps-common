@@ -88,9 +88,11 @@ describe('CompanySenderIdentitiesComponent', () => {
         await component.loadAll();
 
         expect(H.runView).toHaveBeenCalledTimes(1);
-        const params = H.runView.mock.calls[0][0] as { EntityName: string; ExtraFilter: string; OrderBy: string };
+        const params = H.runView.mock.calls[0][0] as { EntityName: string; ExtraFilter: string; OrderBy: string; BypassCache?: boolean };
         expect(params.EntityName).toBe('MJ_BizApps_Common: Company Sender Identities');
-        expect(params.ExtraFilter).toContain('co-1');
+        expect(params.ExtraFilter).toContain("CompanyID = 'co-1'");
+        // Keeps the read out of the client coalescer, where another component's failing query rejects it.
+        expect(params.BypassCache).toBe(true);
         expect(params.OrderBy).toContain('Address');
         expect(component.Rows.map((r) => r.ID)).toEqual(['r1', 'r2']);
         expect(component.Loading).toBe(false);
@@ -105,6 +107,29 @@ describe('CompanySenderIdentitiesComponent', () => {
         expect(added).toBe(false);
         expect(getEntityObject).not.toHaveBeenCalled();
         expect(component.Error).toContain('not-an-address');
+    });
+
+    it('addRow refuses an address already listed, in any case, before any save', async () => {
+        const { component, getEntityObject } = build([row('r1', 'hr@acme.com', false)]);
+        await component.loadAll();
+
+        const added = await component.addRow('Mailbox', ' HR@ACME.com ', null);
+
+        expect(added).toBe(false);
+        expect(getEntityObject).not.toHaveBeenCalled();
+        expect(component.Error).toContain('"hr@acme.com" is already in this company\'s senders');
+    });
+
+    it('cancelAdd closes the form and clears its validation error', async () => {
+        const { component } = build([]);
+        component.openAddForm('Mailbox');
+        await component.addRow('Mailbox', 'not-an-address', null);
+        expect(component.Error).not.toBeNull();
+
+        component.cancelAdd();
+
+        expect(component.ShowAddForm).toBe(false);
+        expect(component.Error).toBeNull();
     });
 
     it('addRow saves a valid sender, shows the verification reminder and emits DataChanged', async () => {

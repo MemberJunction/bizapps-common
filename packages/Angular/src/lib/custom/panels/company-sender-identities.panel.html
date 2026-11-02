@@ -6,10 +6,15 @@
     [Form]="FormComponent"
     [FormContext]="FormContext"
     [DefaultExpanded]="true">
+    <!--
+        No [EditMode] binding on purpose. MJ's form shell hides every related-entity section while
+        the record is in edit mode (.mj-forms-panels--edit-mode .mj-panel--related-entity), so a
+        widget that shows its controls only in edit mode could never be used. The widget saves each
+        row itself, independent of the form's Save, so its controls belong in view mode.
+    -->
     @if (Record.IsSaved) {
         <bizapps-company-sender-identities
             [CompanyID]="Record.ID"
-            [EditMode]="EditMode"
             (DataChanged)="OnWidgetDataChanged()">
         </bizapps-company-sender-identities>
     }

@@ -100,8 +100,13 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
     /** Add a Mailbox or Domain row. Refuses a malformed address before anything is saved. */
     public async addRow(kind: SenderIdentityKind, address: string, displayName: string | null): Promise<boolean> {
         const normalized = NormalizeSenderIdentity(kind, address, displayName);
-        if (normalized.errors.length > 0) {
-            this.Error = normalized.errors.join('; ');
+        // The unique index on (CompanyID, Address) is the real guard; this check only spares the
+        // operator the server's raw SQL error text for the common case of re-adding a listed address.
+        const problems = this.Rows.some((r) => r.Address === normalized.address)
+            ? [...normalized.errors, `"${normalized.address}" is already in this company's senders`]
+            : normalized.errors;
+        if (problems.length > 0) {
+            this.Error = problems.join('; ');
             this.Notice = null;
             this.cdr.detectChanges();
             return false;
@@ -180,8 +185,10 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
         this.cdr.detectChanges();
     }
 
+    /** Close the add form. Its validation error goes with it, so a stale message never lingers. */
     public cancelAdd(): void {
         this.resetAddForm();
+        this.Error = null;
         this.cdr.detectChanges();
     }
 
@@ -238,6 +245,13 @@ export class CompanySenderIdentitiesComponent implements OnInit, OnChanges {
                 ExtraFilter: `CompanyID = '${this.CompanyID}'`,
                 OrderBy: 'Address ASC',
                 ResultType: 'entity_object',
+                // BypassCache also keeps this read out of the client's RunView coalescer, which
+                // merges concurrent RunViews from every component on the page into one batch and
+                // rejects ALL callers if any one query fails. On MJ 6.1.x the Company form's own
+                // overview panel queries the unprefixed 'Employees' entity (fixed in 6.2.0-edge.3),
+                // so a coalesced load here always failed with "Entity Employees not found".
+                // The list is a handful of rows, so skipping the cache costs nothing.
+                BypassCache: true,
             },
             p.CurrentUser,
         );
