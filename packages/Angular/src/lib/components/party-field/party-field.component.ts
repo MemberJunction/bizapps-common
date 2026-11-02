@@ -31,6 +31,9 @@ const DEBOUNCE_MS = 250;
 /** How long a search may run before the field says it took too long. */
 const DEFAULT_SEARCH_TIMEOUT_MS = 20_000;
 
+/** The ID of the dropdown row that creates a record rather than picking one. */
+export const PARTY_CREATE_OPTION_ID = '__bizapps-party-create__';
+
 /** Why the last search showed no rows: it failed, or it ran past `SearchTimeoutMs`. */
 export type PartySearchError = 'failed' | 'timeout';
 
@@ -49,6 +52,10 @@ class PartySearchTimeoutError extends Error {}
  * Read mode is the stock `mj-form-field`, so labels, links and navigation stay the platform's.
  * An app whose foreign key points at a subtype (Sales Contacts, Sales Accounts) passes its own
  * `QueryName` with the same result contract (ID, Name, Detail; parameters Term, Domain).
+ *
+ * When the record isn't found, the field offers to create one, as the stock field does: it emits
+ * the stock `create-related` Navigate event (prefilled with the typed text as the name), and the
+ * host opens the related entity's form and hands back the saved record, which the field selects.
  */
 @Component({
     selector: 'bizapps-party-field',
@@ -57,7 +64,7 @@ class PartySearchTimeoutError extends Error {}
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (EditMode) {
-            <div class="bizapps-party-field" (focusout)="OnFocusOut()">
+            <div class="bizapps-party-field" (focusout)="OnFocusOut($event)">
                 @if (ShowLabel) {
                     <label class="bizapps-party-field-label">{{ Label }}</label>
                 }
@@ -73,14 +80,26 @@ class PartySearchTimeoutError extends Error {}
                     (ValueChange)="OnSelect($event)"
                 >
                     <ng-template #mjComboboxItem let-item>
+                        @if (item.ID === CreateOptionID) {
+                            <div class="bizapps-party-option bizapps-party-option-create">
+                                <span><i class="fa-solid fa-plus" aria-hidden="true"></i> {{ item.Name }}</span>
+                            </div>
+                        } @else {
                         <div class="bizapps-party-option">
                             <span>{{ item.Name }}</span>
                             @if (item.Detail) {
                                 <span class="bizapps-party-option-detail">{{ item.Detail }}</span>
                             }
                         </div>
+                        }
                     </ng-template>
                 </mj-combobox>
+                @if (CanCreate) {
+                    <button type="button" class="bizapps-party-field-create" (mousedown)="$event.preventDefault()" (click)="OnCreateNew()">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        <span>{{ CreateLabel }}</span>
+                    </button>
+                }
                 @if (SearchError === 'failed') {
                     <div class="bizapps-party-field-hint">Search failed. Try again.</div>
                 } @else if (SearchError === 'timeout') {
@@ -117,9 +136,27 @@ class PartySearchTimeoutError extends Error {}
                 flex-direction: column;
                 min-width: 0;
             }
+            .bizapps-party-option-create {
+                color: var(--mj-brand-primary);
+            }
             .bizapps-party-option-detail {
                 font-size: var(--mj-text-xs);
                 color: var(--mj-text-muted);
+            }
+            .bizapps-party-field-create {
+                align-self: flex-start;
+                display: inline-flex;
+                align-items: center;
+                gap: var(--mj-space-1);
+                padding: 0;
+                border: none;
+                background: none;
+                font-size: var(--mj-text-xs);
+                color: var(--mj-brand-primary);
+                cursor: pointer;
+            }
+            .bizapps-party-field-create:hover {
+                text-decoration: underline;
             }
             .bizapps-party-field-hint {
                 font-size: var(--mj-text-xs);
@@ -140,6 +177,11 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     @Input() EditMode = false;
     @Input() ShowLabel = true;
     @Input() FormContext?: FormContext;
+    /**
+     * Whether to offer "create new" for the related record. It only shows when this is true AND the
+     * current user can create records of the related entity.
+     */
+    @Input() AllowCreate = true;
     /** Milliseconds before a search is reported as too slow; zero or less waits indefinitely. */
     @Input() SearchTimeoutMs = DEFAULT_SEARCH_TIMEOUT_MS;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
@@ -149,6 +191,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     /** What the dropdown lists: search results, or just the current value when not searching. */
     public Options: PartyOption[] = [];
     public SearchError: PartySearchError | null = null;
+    public readonly CreateOptionID = PARTY_CREATE_OPTION_ID;
 
     /** True when the last search showed no rows because of an error: a failure or a timeout. */
     public get SearchFailed(): boolean {
@@ -157,6 +200,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
 
     /** The current value as a one-item list (empty when unset): what the list goes back to. */
     private current: PartyOption[] = [];
+    /** The text being searched, kept so "create new" can prefill the new record's name with it. */
+    private term = '';
     private readonly terms = new Subject<string>();
     /** Counts searches, so a superseded one that fails or times out is not logged. */
     private searchCount = 0;
@@ -173,7 +218,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
             )
             .subscribe((options) => {
                 this.SearchError = Array.isArray(options) ? null : options;
-                this.Options = Array.isArray(options) ? options : [];
+                this.Options = this.withCreateOption(Array.isArray(options) ? options : []);
                 this.cdr.markForCheck();
             });
     }
@@ -207,7 +252,77 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     public OnFilterChange(text: string): void {
+        this.term = text;
         this.terms.next(text);
+    }
+
+    /** True when the field opts in and the current user may create records of the related entity. */
+    public get CanCreate(): boolean {
+        const entity = this.relatedEntity();
+        const user = Metadata.Provider?.CurrentUser;
+        return this.AllowCreate && !!entity && !!user && entity.GetUserPermisions(user)?.CanCreate === true;
+    }
+
+    /** `Create "Acme"` while searching, else `Create new Account`: the stock field's wording. */
+    public get CreateLabel(): string {
+        const term = this.term.trim();
+        return term ? `Create "${term}"` : `Create new ${this.Label}`;
+    }
+
+    /**
+     * Asks the host to create the related record, prefilled with the typed text as its name when
+     * the name field can be written (a person's display name is computed, so it is left empty).
+     * Opening the form is the host's job; it calls Complete with the saved record, or null.
+     */
+    public OnCreateNew(): void {
+        const entity = this.relatedEntity();
+        if (!entity) {
+            return;
+        }
+        const term = this.term.trim();
+        const nameField = entity.NameField;
+        const values: Record<string, unknown> = {};
+        if (term && nameField && !nameField.ReadOnly) {
+            values[nameField.Name] = term;
+        }
+        this.ClearSearch();
+        this.Navigate.emit({
+            Kind: 'create-related',
+            EntityName: entity.Name,
+            NewRecordValues: Object.keys(values).length ? values : undefined,
+            Presentation: 'dialog',
+            Complete: (created) => {
+                if (created) {
+                    this.SelectCreated(created);
+                }
+            },
+        });
+    }
+
+    /**
+     * Search results end with a "create" row while text is typed, so the action is in the list even
+     * when nothing matched (the list then covers the link under the field).
+     */
+    private withCreateOption(options: PartyOption[]): PartyOption[] {
+        if (!this.term.trim() || options === this.current || !this.CanCreate) {
+            return options;
+        }
+        return [...options, { ID: PARTY_CREATE_OPTION_ID, Name: this.CreateLabel, Detail: null }];
+    }
+
+    /** Selects a record the host just created, as though it had been picked from the list. */
+    public SelectCreated(created: BaseEntity): void {
+        const entity = this.relatedEntity();
+        const keyField = this.fieldInfo()?.RelatedEntityFieldName || 'ID';
+        const id = created.Get(keyField);
+        if (!id) {
+            return;
+        }
+        const nameField = entity?.NameField?.Name;
+        const name = nameField ? created.Get(nameField) : null;
+        this.Options = [{ ID: String(id), Name: name ? String(name) : String(id), Detail: null }];
+        this.OnSelect(String(id));
+        this.RefreshComboboxText();
     }
 
     /**
@@ -215,6 +330,11 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * so a list built from an unsaved record shows the name rather than nothing.
      */
     public OnSelect(value: unknown): void {
+        if (value === PARTY_CREATE_OPTION_ID) {
+            this.OnCreateNew();
+            this.RefreshComboboxText();
+            return;
+        }
         const oldValue = this.Record.Get(this.FieldName);
         const newValue = value ? String(value) : null;
         const picked = this.Options.find((option) => option.ID === newValue);
@@ -233,7 +353,12 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * Leaving the field mid-search puts the current value back in the list, so the combobox can
      * show its name rather than a raw ID, and cancels any search still pending.
      */
-    public OnFocusOut(): void {
+    public OnFocusOut(event?: FocusEvent): void {
+        // Focus moving to "create new" (a keyboard user tabbing to it) keeps the typed text it uses.
+        const next = event?.relatedTarget as Element | null | undefined;
+        if (next?.classList?.contains('bizapps-party-field-create')) {
+            return;
+        }
         this.ClearSearch();
     }
 
@@ -242,6 +367,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * For a host that resets the field without it losing focus (a changed relationship type).
      */
     public ClearSearch(): void {
+        this.term = '';
         this.terms.next('');
         this.Options = this.current;
         this.SearchError = null;
@@ -368,6 +494,11 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
             this.Options = this.current;
             this.RefreshComboboxText();
         }
+    }
+
+    private relatedEntity() {
+        const related = this.fieldInfo()?.RelatedEntity;
+        return related ? Metadata.Provider?.EntityByName(related) : undefined;
     }
 
     private fieldInfo() {

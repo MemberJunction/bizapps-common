@@ -2,7 +2,13 @@ import '@angular/compiler';
 import { ChangeDetectorRef, Injector, runInInjectionContext } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const H = vi.hoisted(() => ({ logError: vi.fn(), runQuery: vi.fn(), runView: vi.fn() }));
+const H = vi.hoisted(() => ({
+    logError: vi.fn(),
+    runQuery: vi.fn(),
+    runView: vi.fn(),
+    canCreate: false,
+    nameReadOnly: false,
+}));
 
 vi.mock('@memberjunction/core', async (importOriginal) => ({
     ...(await importOriginal<object>()),
@@ -12,7 +18,15 @@ vi.mock('@memberjunction/core', async (importOriginal) => ({
     },
     Metadata: class {
         public static Provider = {
-            EntityByName: (name: string) => (name === 'Organizations' ? { NameField: { Name: 'Name' } } : undefined),
+            CurrentUser: { ID: 'u-1' },
+            EntityByName: (name: string) =>
+                name === 'Organizations'
+                    ? {
+                          Name: 'Organizations',
+                          NameField: { Name: 'Name', ReadOnly: H.nameReadOnly },
+                          GetUserPermisions: () => ({ CanCreate: H.canCreate }),
+                      }
+                    : undefined,
         };
     },
     RunView: { FromMetadataProvider: () => ({ RunView: H.runView }) },
@@ -20,7 +34,7 @@ vi.mock('@memberjunction/core', async (importOriginal) => ({
 vi.mock('@memberjunction/ng-base-forms', () => ({ BaseFormsModule: class {} }));
 vi.mock('@memberjunction/ng-ui-components', () => ({ MJComboboxComponent: class {} }));
 
-import { PartyFieldComponent, type PartyOption } from '../party-field.component';
+import { PARTY_CREATE_OPTION_ID, PartyFieldComponent, type PartyOption } from '../party-field.component';
 import type { PartyLookupParams } from '../party-lookup-term';
 
 interface FakeRecord {
@@ -99,6 +113,7 @@ describe('PartyFieldComponent', () => {
         vi.useFakeTimers();
         H.logError.mockReset();
         H.runView.mockReset();
+        H.canCreate = false;
     });
     afterEach(() => vi.useRealTimers());
 
@@ -381,6 +396,131 @@ describe('PartyFieldComponent', () => {
         c.ClearSearch();
         expect(c.SearchError).toBeNull();
         expect(c.Options).toEqual([]);
+    });
+});
+
+interface CreateRequest {
+    Kind: string;
+    EntityName: string;
+    NewRecordValues?: Record<string, unknown>;
+    Complete: (created: { Get(field: string): unknown } | null) => void;
+}
+
+/** The create-related events the field emitted, as the host would receive them. */
+function createRequests(c: TestPartyField): CreateRequest[] {
+    const seen: CreateRequest[] = [];
+    c.Navigate.subscribe((event) => seen.push(event as unknown as CreateRequest));
+    return seen;
+}
+
+function savedOrganization(id: string, name: string): { Get(field: string): unknown } {
+    const values: Record<string, unknown> = { ID: id, Name: name };
+    return { Get: (field: string) => values[field] };
+}
+
+describe('PartyFieldComponent create new', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        H.canCreate = true;
+        H.nameReadOnly = false;
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('offers create only when the user can create the related entity and the field allows it', () => {
+        const c = build(record(null));
+        expect(c.CanCreate).toBe(true);
+        c.AllowCreate = false;
+        expect(c.CanCreate).toBe(false);
+        c.AllowCreate = true;
+        H.canCreate = false;
+        expect(c.CanCreate).toBe(false);
+    });
+
+    it('labels the action with the typed text, or with the field when nothing is typed', () => {
+        const c = build(record(null));
+        expect(c.CreateLabel).toBe('Create new Account');
+        c.OnFilterChange('Acme ');
+        expect(c.CreateLabel).toBe('Create "Acme"');
+    });
+
+    it('asks the host for a new related record, prefilled with the typed text as its name', () => {
+        const c = build(record(null));
+        const seen = createRequests(c);
+        c.OnFilterChange('Acme');
+        c.OnCreateNew();
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatchObject({ Kind: 'create-related', EntityName: 'Organizations', NewRecordValues: { Name: 'Acme' } });
+    });
+
+    it('leaves a computed name field empty rather than writing the typed text to it', () => {
+        H.nameReadOnly = true;
+        const c = build(record(null));
+        const seen = createRequests(c);
+        c.OnFilterChange('Smith');
+        c.OnCreateNew();
+        expect(seen[0].NewRecordValues).toBeUndefined();
+    });
+
+    it('selects the saved record, writing its ID and name and emitting the change', () => {
+        const rec = record(null);
+        const c = build(rec);
+        const seen = createRequests(c);
+        const changes: unknown[] = [];
+        c.ValueChange.subscribe((e) => changes.push(e));
+        c.OnFilterChange('Acme');
+        c.OnCreateNew();
+        seen[0].Complete(savedOrganization('o-acme', 'Acme'));
+        expect(rec.values).toMatchObject({ AccountID: 'o-acme', Account: 'Acme' });
+        expect(changes).toEqual([{ FieldName: 'AccountID', OldValue: null, NewValue: 'o-acme' }]);
+        expect(c.Shown.at(-1)).toBe('Acme');
+    });
+
+    it('changes nothing when the host reports the create was cancelled', () => {
+        const rec = record('o-dave', 'Dave Co');
+        const c = build(rec);
+        const seen = createRequests(c);
+        c.OnCreateNew();
+        seen[0].Complete(null);
+        expect(rec.values).toMatchObject({ AccountID: 'o-dave', Account: 'Dave Co' });
+    });
+
+    it('ends search results with a create row, so the action shows even when nothing matched', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('Acme');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([{ ID: PARTY_CREATE_OPTION_ID, Name: 'Create "Acme"', Detail: null }]);
+    });
+
+    it('adds no create row when the user cannot create', async () => {
+        H.canCreate = false;
+        const c = build(record(null));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([DAVE]);
+    });
+
+    it('picking the create row asks the host to create, leaving the record unchanged', () => {
+        const rec = record('o-dave', 'Dave Co');
+        const c = build(rec);
+        const seen = createRequests(c);
+        c.OnFilterChange('Acme');
+        c.OnSelect(PARTY_CREATE_OPTION_ID);
+        expect(seen[0]).toMatchObject({ Kind: 'create-related', NewRecordValues: { Name: 'Acme' } });
+        expect(rec.values).toMatchObject({ AccountID: 'o-dave', Account: 'Dave Co' });
+        expect(c.Shown.at(-1)).toBe('Dave Co');
+    });
+
+    it('keeps the typed text when focus moves to the create action', () => {
+        const c = build(record(null));
+        c.OnFilterChange('Acme');
+        c.OnFocusOut({ relatedTarget: { classList: { contains: (name: string) => name === 'bizapps-party-field-create' } } } as unknown as FocusEvent);
+        expect(c.CreateLabel).toBe('Create "Acme"');
+        c.OnFocusOut();
+        expect(c.CreateLabel).toBe('Create new Account');
     });
 });
 
