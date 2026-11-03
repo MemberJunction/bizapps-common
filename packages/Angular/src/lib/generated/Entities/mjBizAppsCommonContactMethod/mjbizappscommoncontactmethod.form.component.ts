@@ -19,7 +19,7 @@ export class mjBizAppsCommonContactMethodFormComponent extends BaseFormComponent
             { sectionKey: 'linkedRecord', sectionName: 'Linked Record', isExpanded: true },
             { sectionKey: 'contactInformation', sectionName: 'Contact Information', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonContactConsents', sectionName: 'Contact Consents', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonContactMethodConsents', sectionName: 'Contact Method Consents', isExpanded: false }
         ]);
     }
 }

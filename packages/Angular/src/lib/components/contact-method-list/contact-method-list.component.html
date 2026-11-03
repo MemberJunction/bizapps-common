@@ -66,7 +66,7 @@
                                 <label>General</label>
                                 <select [(ngModel)]="EditForm.Consents[GeneralKey]">
                                     @for (s of ConsentStatuses; track s) {
-                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                        <option [value]="s">{{ s }}</option>
                                     }
                                 </select>
                             </div>
@@ -75,7 +75,7 @@
                                     <label>{{ p.Name }}</label>
                                     <select [(ngModel)]="EditForm.Consents[p.ID]">
                                         @for (s of ConsentStatuses; track s) {
-                                            <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                            <option [value]="s">{{ s }}</option>
                                         }
                                     </select>
                                 </div>
@@ -103,12 +103,12 @@
                                     <span class="badge badge-consent" [ngClass]="getConsentBadgeClass(c.ConsentStatus)">
                                         <i [class]="getConsentIcon(c.ConsentStatus)"></i>
                                         <span class="consent-purpose">{{ getConsentBadgeText(c) }}</span>
-                                        {{ getConsentLabel(c.ConsentStatus) }}
+                                        {{ c.ConsentStatus }}
                                     </span>
                                 } @empty {
                                     <span class="badge badge-consent consent-unknown">
                                         <i class="fa-regular fa-circle-question"></i>
-                                        Not specified
+                                        Not Specified
                                     </span>
                                 }
                             </span>
@@ -121,9 +121,9 @@
                                         @for (h of ConsentHistory; track h.ID) {
                                             <div class="consent-history-row">
                                                 <span>{{ h.ConsentStatusAt | date:'mediumDate' }}</span>
-                                                <span class="consent-history-purpose">{{ h.Purpose }}@if (h.Organization) { · {{ h.Organization }}}</span>
-                                                <span>{{ getConsentLabel(h.NewConsentStatus) }}</span>
-                                                <span class="consent-history-source">{{ h.ConsentSource }}</span>
+                                                <span class="consent-history-purpose">{{ h.Purpose }}@if (h.RequestingOrganization) { · {{ h.RequestingOrganization }}}</span>
+                                                <span>{{ h.NewConsentStatus }}</span>
+                                                <span class="consent-history-source">{{ h.ConsentSource }}@if (h.ConsentDetails) { · {{ h.ConsentDetails }}}</span>
                                             </div>
                                         } @empty {
                                             <div class="consent-history-empty">No consent recorded yet</div>
@@ -200,7 +200,7 @@
                             <label>General</label>
                             <select [(ngModel)]="AddForm.Consents[GeneralKey]">
                                 @for (s of ConsentStatuses; track s) {
-                                    <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                    <option [value]="s">{{ s }}</option>
                                 }
                             </select>
                         </div>
@@ -209,7 +209,7 @@
                                 <label>{{ p.Name }}</label>
                                 <select [(ngModel)]="AddForm.Consents[p.ID]">
                                     @for (s of ConsentStatuses; track s) {
-                                        <option [value]="s">{{ getConsentLabel(s) }}</option>
+                                        <option [value]="s">{{ s }}</option>
                                     }
                                 </select>
                             </div>

@@ -32,8 +32,8 @@ import { mjBizAppsCommonAddressFormComponent } from "./Entities/mjBizAppsCommonA
 import { mjBizAppsCommonAddressLinkFormComponent } from "./Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component";
 import { mjBizAppsCommonAddressTypeFormComponent } from "./Entities/mjBizAppsCommonAddressType/mjbizappscommonaddresstype.form.component";
 import { mjBizAppsCommonConsentPurposeFormComponent } from "./Entities/mjBizAppsCommonConsentPurpose/mjbizappscommonconsentpurpose.form.component";
-import { mjBizAppsCommonContactConsentFormComponent } from "./Entities/mjBizAppsCommonContactConsent/mjbizappscommoncontactconsent.form.component";
-import { mjBizAppsCommonContactConsentHistoryFormComponent } from "./Entities/mjBizAppsCommonContactConsentHistory/mjbizappscommoncontactconsenthistory.form.component";
+import { mjBizAppsCommonContactMethodConsentFormComponent } from "./Entities/mjBizAppsCommonContactMethodConsent/mjbizappscommoncontactmethodconsent.form.component";
+import { mjBizAppsCommonContactMethodConsentHistoryFormComponent } from "./Entities/mjBizAppsCommonContactMethodConsentHistory/mjbizappscommoncontactmethodconsenthistory.form.component";
 import { mjBizAppsCommonContactMethodFormComponent } from "./Entities/mjBizAppsCommonContactMethod/mjbizappscommoncontactmethod.form.component";
 import { mjBizAppsCommonContactTypeFormComponent } from "./Entities/mjBizAppsCommonContactType/mjbizappscommoncontacttype.form.component";
 import { mjBizAppsCommonJobFunctionFormComponent } from "./Entities/mjBizAppsCommonJobFunction/mjbizappscommonjobfunction.form.component";
@@ -196,6 +196,24 @@ export class GeneratedForms_SubModule_13 { }
 
 @NgModule({
 declarations: [
+    mjBizAppsCommonContactMethodConsentHistoryFormComponent
+],
+imports: [
+    CommonModule,
+    FormsModule,
+    BaseFormsModule,
+    EntityViewerModule,
+    LinkDirectivesModule
+],
+exports: [
+]
+})
+export class GeneratedForms_SubModule_14 { }
+    
+
+
+@NgModule({
+declarations: [
     mjBizAppsCommonContactMethodFormComponent
 ],
 imports: [
@@ -209,25 +227,6 @@ exports: [
 ]
 })
 export class GeneratedForms_SubModule_16 { }
-    
-
-
-@NgModule({
-declarations: [
-    mjBizAppsCommonContactConsentFormComponent,
-    mjBizAppsCommonContactConsentHistoryFormComponent
-],
-imports: [
-    CommonModule,
-    FormsModule,
-    BaseFormsModule,
-    EntityViewerModule,
-    LinkDirectivesModule
-],
-exports: [
-]
-})
-export class GeneratedForms_SubModule_17 { }
     
 
 
@@ -305,6 +304,24 @@ exports: [
 ]
 })
 export class GeneratedForms_SubModule_23 { }
+    
+
+
+@NgModule({
+declarations: [
+    mjBizAppsCommonContactMethodConsentFormComponent
+],
+imports: [
+    CommonModule,
+    FormsModule,
+    BaseFormsModule,
+    EntityViewerModule,
+    LinkDirectivesModule
+],
+exports: [
+]
+})
+export class GeneratedForms_SubModule_24 { }
     
 
 
@@ -410,12 +427,13 @@ imports: [
     GeneratedForms_SubModule_8,
     GeneratedForms_SubModule_10,
     GeneratedForms_SubModule_13,
+    GeneratedForms_SubModule_14,
     GeneratedForms_SubModule_16,
-    GeneratedForms_SubModule_17,
     GeneratedForms_SubModule_18,
     GeneratedForms_SubModule_19,
     GeneratedForms_SubModule_21,
     GeneratedForms_SubModule_23,
+    GeneratedForms_SubModule_24,
     GeneratedForms_SubModule_26,
     GeneratedForms_SubModule_27,
     GeneratedForms_SubModule_29,

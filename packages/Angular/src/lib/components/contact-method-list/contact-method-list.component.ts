@@ -5,11 +5,12 @@ import { IMetadataProvider, IRunViewProvider, LogError, Metadata, RunView, type 
 import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
 import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
-    CONTACT_CONSENT_STATUSES,
+    ContactConsentSource,
     ContactConsentStatus,
+    ContactMethodConsentEntity,
     mjBizAppsCommonConsentPurposeEntity,
-    mjBizAppsCommonContactConsentEntity,
-    mjBizAppsCommonContactConsentHistoryEntity,
+    mjBizAppsCommonContactMethodConsentEntity,
+    mjBizAppsCommonContactMethodConsentHistoryEntity,
     mjBizAppsCommonContactMethodEntity,
     mjBizAppsCommonContactTypeEntity
 } from '@mj-biz-apps/common-entities';
@@ -39,8 +40,9 @@ interface ContactFormData {
     /**
      * The installation-wide consents to record, keyed by Consent Purpose ID, plus the general
      * (any purpose) answer under {@link GENERAL_CONSENT_KEY}. Only shown for types that map to a
-     * channel (email, phone); a change on save writes a `ContactConsentHistory` row with source
-     * "Staff". Per-organization consents are managed on the Contact Consents records themselves.
+     * channel (email, phone); a change on save writes a `ContactMethodConsentHistory` row with the
+     * default source, Staff. Consents asked by a specific organization are managed on the Contact
+     * Method Consents records themselves.
      */
     Consents: Record<string, ContactConsentStatus>;
 }
@@ -49,20 +51,15 @@ interface ContactFormData {
 interface ConsentHistoryLine {
     ID: string;
     Purpose: string;
-    Organization: string | null;
+    RequestingOrganization: string | null;
     ConsentStatusAt: Date;
     NewConsentStatus: ContactConsentStatus;
-    ConsentSource: string;
+    ConsentSource: ContactConsentSource;
+    ConsentDetails: string | null;
 }
 
 /** The form key for a method's general consent: the row with no purpose, which answers for anything. */
 export const GENERAL_CONSENT_KEY = 'general';
-
-/** True when two purpose IDs name the same purpose, treating null (general) as a value. */
-function samePurpose(a: string | null | undefined, b: string | null | undefined): boolean {
-    if (!a || !b) return !a && !b;
-    return UUIDsEqual(a, b);
-}
 
 /** True when a metadata provider also serves views, as every MJ provider does. */
 function isRunViewProvider(p: IMetadataProvider): p is IMetadataProvider & IRunViewProvider {
@@ -204,13 +201,13 @@ export class ContactMethodListComponent {
     ConsentPurposes: mjBizAppsCommonConsentPurposeEntity[] = [];
 
     /** The consent choices offered per purpose, in the order the CHECK constraint lists them. */
-    ConsentStatuses = CONTACT_CONSENT_STATUSES;
+    ConsentStatuses = ContactMethodConsentEntity.Statuses;
 
     /** The form key of the general (any purpose) consent, for the template. */
     GeneralKey = GENERAL_CONSENT_KEY;
 
     /** Each loaded method's consent rows (every purpose and organization), keyed by contact method ID. */
-    private consentsByMethod = new Map<string, mjBizAppsCommonContactConsentEntity[]>();
+    private consentsByMethod = new Map<string, mjBizAppsCommonContactMethodConsentEntity[]>();
 
     /**
      * The ID of the contact method currently being edited, or `null` when
@@ -334,7 +331,7 @@ export class ContactMethodListComponent {
             {
                 EntityName: 'MJ_BizApps_Common: Consent Purposes',
                 ExtraFilter: 'IsActive=1',
-                OrderBy: 'DisplayRank ASC',
+                OrderBy: 'Sequence ASC',
                 ResultType: 'entity_object'
             }
         ]);
@@ -373,8 +370,8 @@ export class ContactMethodListComponent {
             return;
         }
         const rv = new RunView(this.runViewToUse);
-        const result = await rv.RunView<mjBizAppsCommonContactConsentEntity>({
-            EntityName: 'MJ_BizApps_Common: Contact Consents',
+        const result = await rv.RunView<mjBizAppsCommonContactMethodConsentEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Method Consents',
             ExtraFilter: `ContactMethodID IN (${ids.join(',')})`,
             ResultType: 'entity_object'
         });
@@ -488,34 +485,55 @@ export class ContactMethodListComponent {
         return !!ct?.CommunicationBaseMessageTypeID;
     }
 
-    /** The consent rows a method has, in purpose display order, installation-wide rows before scoped ones. */
-    getConsents(cm: mjBizAppsCommonContactMethodEntity): mjBizAppsCommonContactConsentEntity[] {
-        const rows = this.consentsByMethod.get(cm.ID) ?? [];
-        return [...rows].sort((a, b) => {
+    /** The consent rows a method has, in purpose order, general and installation-wide rows first. */
+    getConsents(cm: mjBizAppsCommonContactMethodEntity): mjBizAppsCommonContactMethodConsentEntity[] {
+        return [...this.consentRowsFor(cm)].sort((a, b) => {
             const rank = this.getPurposeRank(a.ConsentPurposeID) - this.getPurposeRank(b.ConsentPurposeID);
             if (rank !== 0) return rank;
-            return (a.OrganizationID ? 1 : 0) - (b.OrganizationID ? 1 : 0);
+            return (a.RequestingOrganizationID ? 1 : 0) - (b.RequestingOrganizationID ? 1 : 0);
         });
     }
 
-    /** Returns the DisplayRank for a consent purpose; the general row (no purpose) sorts first. */
+    /**
+     * Where a method's consents are read from. Once the method's own `Consents` collection holds
+     * rows, it is the source: inside a Person form an edit stays there, unsaved, until the form is
+     * saved, and the badges must show it rather than what was loaded when the list opened.
+     * Otherwise, the rows loaded with the list.
+     */
+    private consentRowsFor(cm: mjBizAppsCommonContactMethodEntity): readonly mjBizAppsCommonContactMethodConsentEntity[] {
+        if (cm.Consents.IsLoaded || cm.Consents.Items.length > 0) {
+            return cm.Consents.Items;
+        }
+        return this.consentsByMethod.get(cm.ID) ?? [];
+    }
+
+    /** Returns the Sequence for a consent purpose; the general row (no purpose) sorts first. */
     private getPurposeRank(purposeID: string | null): number {
         if (!purposeID) return -1;
         const p = this.ConsentPurposes.find(x => UUIDsEqual(x.ID, purposeID));
-        return p?.DisplayRank ?? 999;
+        return p?.Sequence ?? 999;
     }
 
-    /** The badge text for a consent row: its purpose (or General), and the organization when it is scoped to one. */
-    getConsentBadgeText(consent: mjBizAppsCommonContactConsentEntity): string {
-        const purpose = consent.ConsentPurpose ?? 'General';
-        return consent.Organization ? `${purpose} · ${consent.Organization}` : purpose;
+    /**
+     * A purpose's name, or General for the row with no purpose. Read from the purpose lookup, not
+     * the consent's own denormalized name, which an unsaved row does not have yet.
+     */
+    private purposeName(purposeID: string | null): string {
+        if (!purposeID) return 'General';
+        return this.ConsentPurposes.find(x => UUIDsEqual(x.ID, purposeID))?.Name ?? 'Unknown purpose';
+    }
+
+    /** The badge text for a consent row: its purpose (or General), and the requesting organization when there is one. */
+    getConsentBadgeText(consent: mjBizAppsCommonContactMethodConsentEntity): string {
+        const purpose = this.purposeName(consent.ConsentPurposeID);
+        return consent.RequestingOrganization ? `${purpose} · ${consent.RequestingOrganization}` : purpose;
     }
 
     /** The badge colour class for a consent status. */
     getConsentBadgeClass(status: ContactConsentStatus): string {
         switch (status) {
-            case 'OptedIn': return 'consent-in';
-            case 'OptedOut': return 'consent-out';
+            case 'Opted In': return 'consent-in';
+            case 'Opted Out': return 'consent-out';
             default: return 'consent-unknown';
         }
     }
@@ -523,18 +541,9 @@ export class ContactMethodListComponent {
     /** The Font Awesome icon for a consent status. */
     getConsentIcon(status: ContactConsentStatus): string {
         switch (status) {
-            case 'OptedIn': return 'fa-solid fa-check';
-            case 'OptedOut': return 'fa-solid fa-ban';
+            case 'Opted In': return 'fa-solid fa-check';
+            case 'Opted Out': return 'fa-solid fa-ban';
             default: return 'fa-regular fa-circle-question';
-        }
-    }
-
-    /** The label shown for a consent status, on badges, in history rows and in the dropdowns. */
-    getConsentLabel(status: ContactConsentStatus): string {
-        switch (status) {
-            case 'OptedIn': return 'Opted in';
-            case 'OptedOut': return 'Opted out';
-            default: return 'Not specified';
         }
     }
 
@@ -570,17 +579,17 @@ export class ContactMethodListComponent {
         this.cdr.detectChanges();
     }
 
-    /** Reads the history of every consent a method has, newest change first, labelled with its purpose. */
+    /** Reads the history of every saved consent a method has, newest change first, labelled with its purpose. */
     private async loadConsentHistory(cm: mjBizAppsCommonContactMethodEntity): Promise<ConsentHistoryLine[]> {
-        const consents = this.consentsByMethod.get(cm.ID) ?? [];
+        const consents = this.consentRowsFor(cm).filter((c) => c.IsSaved);
         if (consents.length === 0) {
             return [];
         }
         const ids = consents.map((c) => `'${EscapeSQLString(c.ID)}'`).join(',');
         const rv = new RunView(this.runViewToUse);
-        const result = await rv.RunView<mjBizAppsCommonContactConsentHistoryEntity>({
-            EntityName: 'MJ_BizApps_Common: Contact Consent Histories',
-            ExtraFilter: `ContactConsentID IN (${ids})`,
+        const result = await rv.RunView<mjBizAppsCommonContactMethodConsentHistoryEntity>({
+            EntityName: 'MJ_BizApps_Common: Contact Method Consent Histories',
+            ExtraFilter: `ContactMethodConsentID IN (${ids})`,
             OrderBy: 'ConsentStatusAt DESC',
             ResultType: 'entity_object'
         });
@@ -589,14 +598,15 @@ export class ContactMethodListComponent {
             return [];
         }
         return result.Results.map((h) => {
-            const consent = consents.find((c) => UUIDsEqual(c.ID, h.ContactConsentID));
+            const consent = consents.find((c) => UUIDsEqual(c.ID, h.ContactMethodConsentID));
             return {
                 ID: h.ID,
-                Purpose: consent?.ConsentPurpose ?? 'General',
-                Organization: consent?.Organization ?? null,
+                Purpose: this.purposeName(consent?.ConsentPurposeID ?? null),
+                RequestingOrganization: consent?.RequestingOrganization ?? null,
                 ConsentStatusAt: h.ConsentStatusAt,
                 NewConsentStatus: h.NewConsentStatus,
-                ConsentSource: h.ConsentSource
+                ConsentSource: h.ConsentSource,
+                ConsentDetails: h.ConsentDetails
             };
         });
     }
@@ -647,9 +657,9 @@ export class ContactMethodListComponent {
         if (this.ContactTypes.length > 0) {
             this.AddForm.TypeID = this.ContactTypes[0].ID;
         }
-        this.AddForm.Consents[GENERAL_CONSENT_KEY] = 'NotSpecified';
+        this.AddForm.Consents[GENERAL_CONSENT_KEY] = ContactMethodConsentEntity.UnspecifiedStatus;
         for (const p of this.ConsentPurposes) {
-            this.AddForm.Consents[p.ID] = 'NotSpecified';
+            this.AddForm.Consents[p.ID] = ContactMethodConsentEntity.UnspecifiedStatus;
         }
         this.ShowAddForm = true;
         this.cdr.detectChanges();
@@ -728,10 +738,11 @@ export class ContactMethodListComponent {
      */
     onEdit(cm: mjBizAppsCommonContactMethodEntity): void {
         const consents: Record<string, ContactConsentStatus> = {};
-        consents[GENERAL_CONSENT_KEY] = this.findUnscopedConsent(cm, null)?.ConsentStatus ?? 'NotSpecified';
+        const unspecified = ContactMethodConsentEntity.UnspecifiedStatus;
+        consents[GENERAL_CONSENT_KEY] = this.findUnscopedConsent(cm, null)?.ConsentStatus ?? unspecified;
         for (const p of this.ConsentPurposes) {
             const row = this.findUnscopedConsent(cm, p.ID);
-            consents[p.ID] = row?.ConsentStatus ?? 'NotSpecified';
+            consents[p.ID] = row?.ConsentStatus ?? unspecified;
         }
         this.EditForm = {
             TypeID: cm.ContactTypeID,
@@ -802,10 +813,9 @@ export class ContactMethodListComponent {
         }
     }
 
-    /** The method's installation-wide consent row for a purpose (null = the general row), from the loaded rows, or null. */
-    private findUnscopedConsent(cm: mjBizAppsCommonContactMethodEntity, purposeID: string | null): mjBizAppsCommonContactConsentEntity | null {
-        const rows = this.consentsByMethod.get(cm.ID) ?? [];
-        return rows.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID)) ?? null;
+    /** The method's installation-wide consent row for a purpose (null = the general row), including an unsaved edit, or null. */
+    private findUnscopedConsent(cm: mjBizAppsCommonContactMethodEntity, purposeID: string | null): mjBizAppsCommonContactMethodConsentEntity | null {
+        return this.consentRowsFor(cm).find((r) => r.RequestingOrganizationID == null && UUIDsEqual(r.ConsentPurposeID, purposeID)) ?? null;
     }
 
     /**
@@ -826,16 +836,16 @@ export class ContactMethodListComponent {
             ...this.ConsentPurposes.map((p) => ({ key: p.ID, purposeID: p.ID })),
         ];
         for (const { key, purposeID } of keys) {
-            const wanted = form.Consents[key] ?? 'NotSpecified';
-            const existing = cm.Consents.Items.find((r) => r.OrganizationID == null && samePurpose(r.ConsentPurposeID, purposeID));
+            const wanted = form.Consents[key] ?? ContactMethodConsentEntity.UnspecifiedStatus;
+            const existing = cm.Consents.Items.find((r) => r.RequestingOrganizationID == null && UUIDsEqual(r.ConsentPurposeID, purposeID));
             if (existing) {
                 if (existing.ConsentStatus !== wanted) {
                     existing.ConsentStatus = wanted;
                 }
-            } else if (wanted !== 'NotSpecified') {
+            } else if (wanted !== ContactMethodConsentEntity.UnspecifiedStatus) {
                 const row = await cm.Consents.Create();
                 row.ConsentPurposeID = purposeID;
-                row.OrganizationID = null;
+                row.RequestingOrganizationID = null;
                 row.ConsentStatus = wanted;
             }
         }

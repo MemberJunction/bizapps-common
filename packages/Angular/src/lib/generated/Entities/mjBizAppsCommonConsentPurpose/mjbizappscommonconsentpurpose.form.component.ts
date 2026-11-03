@@ -18,7 +18,7 @@ export class mjBizAppsCommonConsentPurposeFormComponent extends BaseFormComponen
         this.initSections([
             { sectionKey: 'consentPurposeDetails', sectionName: 'Consent Purpose Details', isExpanded: true },
             { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false },
-            { sectionKey: 'mJBizAppsCommonContactConsents', sectionName: 'Contact Consents', isExpanded: false }
+            { sectionKey: 'mJBizAppsCommonContactMethodConsents', sectionName: 'Contact Method Consents', isExpanded: false }
         ]);
     }
 }
