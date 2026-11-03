@@ -514,6 +514,19 @@ describe('PartyFieldComponent create new', () => {
         expect(c.Shown.at(-1)).toBe('Dave Co');
     });
 
+    it('drops the typed text once a result is picked, so the action no longer quotes it', async () => {
+        const c = build(record(null));
+        const seen = createRequests(c);
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        c.OnSelect(DAVE.ID);
+        expect(c.CreateLabel).toBe('Create new Account');
+        c.OnCreateNew();
+        expect(seen[0].NewRecordValues).toBeUndefined();
+    });
+
     it('keeps the typed text when focus moves to the create action', () => {
         const c = build(record(null));
         c.OnFilterChange('Acme');

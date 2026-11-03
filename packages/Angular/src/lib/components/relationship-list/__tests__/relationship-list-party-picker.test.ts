@@ -27,6 +27,10 @@ describe('relationship list target pickers', () => {
         expect(tag).toContain('[EditMode]="true"');
     });
 
+    it.each(['ToPersonID', 'ToOrganizationID'])('%s forwards Navigate, so "create new" reaches the host form', (fieldName) => {
+        expect(tagFor(fieldName)).toContain('(Navigate)="Navigate.emit($event)"');
+    });
+
     it('leaves no stock mj-form-field on the target fields', () => {
         expect(html).not.toMatch(/<mj-form-field[^>]*FieldName="To(Person|Organization)ID"/s);
     });

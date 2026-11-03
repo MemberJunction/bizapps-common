@@ -344,6 +344,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
             this.Record.Set(nameField, picked?.Name ?? null);
         }
         this.current = picked ? [picked] : [];
+        this.term = '';
         this.Options = this.current;
         this.ValueChange.emit({ FieldName: this.FieldName, OldValue: oldValue, NewValue: newValue });
         this.cdr.markForCheck();
