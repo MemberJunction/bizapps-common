@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
@@ -14,6 +14,7 @@ import {
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
 import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
+import { PartyFieldComponent } from '../party-field/party-field.component';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -198,13 +199,14 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: 
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule, BaseFormsModule],
+    imports: [CommonModule, FormsModule, BaseFormsModule, PartyFieldComponent],
     selector: 'bizapps-relationship-list',
     templateUrl: './relationship-list.component.html',
     styleUrls: ['./relationship-list.component.css']
 })
 export class RelationshipListComponent {
     private cdr = inject(ChangeDetectorRef);
+    @ViewChildren(PartyFieldComponent) private partyFields?: QueryList<PartyFieldComponent>;
 
     /** Active draft relationship object used for the Add form link fields. */
     public DraftRelationship: mjBizAppsCommonRelationshipEntity | null = null;
@@ -695,6 +697,8 @@ export class RelationshipListComponent {
             this.DraftRelationship.ToPersonID = null;
             this.DraftRelationship.ToOrganizationID = null;
         }
+        // A picker that survives the type change (person to person) keeps its last search otherwise.
+        this.partyFields?.forEach(field => field.ClearSearch());
         this.cdr.detectChanges();
     }
 

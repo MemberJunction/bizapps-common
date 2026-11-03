@@ -1,5 +1,28 @@
 # Change Log - mj_generatedentities
 
+## 5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- 692f407: The 5.57 Metadata_Sync ships the Party Lookup Organizations query change and the form and search settings for the new Organizations Acronym field, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Organization_Acronym migration have Postgres counterparts. Field-level security for People stays held back, as in every release since 5.48.
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+## 5.56.0
+
+### Minor Changes
+
+- 8b8e5cd: Release seed for 5.56: `V202610222015__v5.56.x__Metadata_Sync.sql` and its PostgreSQL counterpart carry this release's metadata to hosts, which install by migration and never read `metadata/`. It ships the two party-lookup queries, the form placement of the new `Person.EmailDomain` and `Organization.WebsiteDomain` fields, and `EntityIDFieldName` on two polymorphic `RecordID` fields. People field-level security stays held back, as in every release since 5.48. Also adds the PostgreSQL counterpart of `V202610211654__v5.56.x__Party_Lookup_Domain_Columns`, with the two computed columns written as `GENERATED ALWAYS AS (...) STORED` (the converter cannot translate T-SQL computed columns).
+- d790620: Fast party lookup for Person and Organization foreign keys.
+
+  A migration adds two stored, indexed computed columns: `Person.EmailDomain` (the lower-cased text after the `@` of Email) and `Organization.WebsiteDomain` (the lower-cased host of Website, without scheme, `www.` or path). Two metadata queries, `Common: Party Lookup People` and `Common: Party Lookup Organizations`, prefix-match indexed base-table columns (TOP 20, no count). The new `bizapps-party-field` component (`PartyFieldComponent`) lists nothing until two characters are typed, then searches by last name, display name, email or email domain for people, and by name, legal name or website domain for organizations. Apps whose foreign key points at a subtype pass their own query with the same contract: columns `ID`, `Name`, `Detail`; parameters `Term` and `Domain`.
+
+- 01b4cc4: `metadata/entities/.polymorphic-fk-entity-fields.json` gives every `MJ: Entity Fields` entry a `primaryKey` lookup (`@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=<entity>&Name=<field>`). The entries had none, and `mj sync push` creates a new row for any record without a `primaryKey`, so on a fresh database it tried to insert a second field row with a NULL `EntityID` and the app's whole metadata push rolled back. With the lookup, push updates the field row CodeGen created and sets its `EntityIDFieldName`.
+
 ## 5.55.0
 
 ### Minor Changes

@@ -181,10 +181,11 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 - The stamp (`V<YYYYMMDDHHMM>`, Central Time) must sort after every migration on `next` at merge time; `changes.yml` rejects one that doesn't. A shipped migration is immutable.
 - T-SQL only in a feature PR. The PostgreSQL twin is release work (`docs/postgresql.md`).
 - Full rules: [`.claude/mj/migrations/CLAUDE.md`](.claude/mj/migrations/CLAUDE.md); the release-seed runbook: [`migrations/README.md`](migrations/README.md).
+- The authoring rules MJ and every BizApps repo share, each with its reason (plain DDL, CHECK values written for people, a `primaryKey` on every metadata record): MJ's [Schema and Code Authoring Guide](https://github.com/MemberJunction/MJ/blob/next/guides/SCHEMA_AND_CODE_AUTHORING_GUIDE.md).
 
 ## Metadata
 
-Declarative JSON under `metadata/`, pushed by `mj sync push`. Primary keys come from `uuidgen`; references use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
+Declarative JSON under `metadata/`, pushed by `mj sync push`. Every record, nested `relatedEntities` children included, has a `primaryKey`: a `uuidgen` UUID for a row the file creates, or an `@lookup` for a row the migration stack or CodeGen already created (a record without one is inserted as a new row). References use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
 
 ---
 
