@@ -614,11 +614,21 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Location&EntityID=@parent:ID"
           }
         }
+      ],
+      "MJ: Entity Permissions": [
+        {
+          "_comments": [
+            "Row-Level Security on UI role reads: Private activities are visible only to their",
+            "creator (LoggedByUserID) or the owner of the ActivitySyncConnection that ingested them."
+          ],
+          "fields": {
+            "ReadRLSFilterID": "@lookup:MJ: Row Level Security Filters.Name=Common: Non-Private or Own Activities"
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities&RoleID=@lookup:MJ: Roles.Name=UI"
+          }
+        }
       ]
-    },
-    "sync": {
-      "lastModified": "2026-08-24T20:06:03.051Z",
-      "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
     }
   },
   {

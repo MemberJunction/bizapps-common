@@ -117,15 +117,98 @@ function compareVersions(a, b) {
  * untestable without a git repository, and would let a stub disagree with production about the
  * definitions the checks turn on.
  */
+const SHALLOW_CLONE_PROBLEM =
+    'shallow clone detected (git rev-parse --is-shallow-repository is true, or the release baseline commit is unreachable): ' +
+    'staleness and drift cannot be answered without full commit history. Fetch full history (`fetch-depth: 0` or `git fetch --unshallow --tags`) and re-run.';
+
+const SQL_BOILERPLATE_LINE = /^\s*(?:SET\s+[A-Z_]+\s+(?:ON|OFF)\s*;?|GO|PRINT\b.*|;)\s*$/i;
+const SQL_STATEMENT_KEYWORD = /\b(?:INSERT|UPDATE|DELETE|MERGE|EXEC|EXECUTE|CREATE|ALTER|DROP|GRANT|REVOKE|DENY|TRUNCATE|CALL|DO)\b/i;
+
+/**
+ * True when `content` contains at least one real SQL statement after stripping `--` line comments,
+ * `/* ... *\/` block comments, and session boilerplate (`SET <option> ON|OFF`, `GO`, `PRINT`).
+ */
+export function hasSqlBody(content) {
+    const stripped = stripSqlComments(content)
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^\s*SET\s+[A-Z_]+\s+(?:ON|OFF)\s*;/gi, ''))
+        .filter((line) => !SQL_BOILERPLATE_LINE.test(line))
+        .join('\n')
+        .trim();
+    return stripped !== '' && SQL_STATEMENT_KEYWORD.test(stripped);
+}
+
+function canonicalizeJson(value) {
+    if (value === null || value === undefined) return null;
+    if (Array.isArray(value)) return value.map(canonicalizeJson);
+    if (typeof value === 'object') {
+        const sorted = {};
+        for (const key of Object.keys(value).sort()) {
+            sorted[key] = canonicalizeJson(value[key]);
+        }
+        return sorted;
+    }
+    return value;
+}
+
+/**
+ * True when two versions of a `.mj-sync.json` file differ in their `"defaults"` block (which feeds
+ * field values into every record in that folder). Changes limited to other keys (`directoryOrder`,
+ * `entity`, `push`, etc.) return `false`.
+ */
+export function hasMjSyncDefaultsChanged(beforeText, afterText) {
+    let beforeDefaults = null;
+    let afterDefaults = null;
+    try {
+        if (beforeText !== null && beforeText !== undefined) {
+            const parsed = JSON.parse(beforeText);
+            beforeDefaults = parsed && typeof parsed === 'object' && 'defaults' in parsed ? parsed.defaults : null;
+        }
+        if (afterText !== null && afterText !== undefined) {
+            const parsed = JSON.parse(afterText);
+            afterDefaults = parsed && typeof parsed === 'object' && 'defaults' in parsed ? parsed.defaults : null;
+        }
+    } catch {
+        // Malformed JSON is never silently ignored.
+        return true;
+    }
+    return JSON.stringify(canonicalizeJson(beforeDefaults)) !== JSON.stringify(canonicalizeJson(afterDefaults));
+}
+
+function didMjSyncDefaultsChangeSince(repoRoot, baseRef, file, defaultsChanged) {
+    if (defaultsChanged instanceof Set) return defaultsChanged.has(file);
+    if (Array.isArray(defaultsChanged)) return defaultsChanged.includes(file);
+    if (!repoRoot || !baseRef || !existsSync(repoRoot)) return false;
+    let beforeText = null;
+    try {
+        beforeText = git(repoRoot, ['show', `${baseRef}:${file}`]);
+    } catch {
+        beforeText = null;
+    }
+    const fullPath = join(repoRoot, file);
+    const afterText = existsSync(fullPath) ? readFileSync(fullPath, 'utf8') : null;
+    return hasMjSyncDefaultsChanged(beforeText, afterText);
+}
+
 export function readReleaseState(repoRoot) {
+    const isShallow = git(repoRoot, ['rev-parse', '--is-shallow-repository']).trim() === 'true';
     const tags = git(repoRoot, ['tag', '--list', 'v*'])
         .split('\n')
         .map((t) => t.trim())
         .filter(Boolean)
         .sort(compareVersions);
-    if (tags.length === 0) return { tag: null, released: [], current: [] };
+    if (isShallow) {
+        return { tag: tags[tags.length - 1] ?? null, shallow: true, released: [], current: [], metadataChanged: [] };
+    }
+    if (tags.length === 0) return { tag: null, shallow: false, released: [], current: [] };
 
     const tag = tags[tags.length - 1];
+    try {
+        git(repoRoot, ['cat-file', '-e', `${tag}^{commit}`]);
+    } catch {
+        return { tag, shallow: true, released: [], current: [], metadataChanged: [] };
+    }
+
     const listMigrations = (ref) =>
         git(repoRoot, ['ls-tree', '--name-only', ref, 'migrations/'])
             .split('\n')
@@ -143,7 +226,7 @@ export function readReleaseState(repoRoot) {
     const migrationsDir = join(repoRoot, 'migrations');
     const current = existsSync(migrationsDir) ? readdirSync(migrationsDir) : [];
 
-    return { tag, released: listMigrations(tag), current, metadataChanged };
+    return { tag, shallow: false, released: listMigrations(tag), current, metadataChanged };
 }
 
 export function findUnconsolidatedSeedDeltas(repoRoot = REPO_ROOT, readState = readReleaseState) {
@@ -152,11 +235,16 @@ export function findUnconsolidatedSeedDeltas(repoRoot = REPO_ROOT, readState = r
         state = readState(repoRoot);
     } catch (error) {
         // Never a silent pass: if we cannot read what shipped, we do not know the answer.
-        return { problems: [`could not read git history to determine what has been released: ${error.message}`], tag: null, unreleased: [] };
+        return { ok: false, problems: [`could not read git history to determine what has been released: ${error.message}`], tag: null, unreleased: [] };
+    }
+
+    if (state.shallow) {
+        return { ok: false, problems: [SHALLOW_CLONE_PROBLEM], tag: state.tag ?? null, unreleased: [] };
     }
 
     if (state.tag === null) {
         return {
+            ok: false,
             problems: ['no v* release tag found, so "what has already shipped" has no answer here. A shallow clone without tags cannot run this check — fetch tags, or run it where they exist.'],
             tag: null,
             unreleased: [],
@@ -181,19 +269,23 @@ export function findUnconsolidatedSeedDeltas(repoRoot = REPO_ROOT, readState = r
                 '  the delta then strands it with no migration naming it. migrations/README.md.',
         );
     }
-    return { problems, tag: state.tag, unreleased };
+    return { ok: problems.length === 0, problems, tag: state.tag, unreleased };
 }
 
 /**
  * Records only. `metadata/README.md` is prose about the directory, not a record in it, and a
  * documentation edit owes no seed — gating on it would teach people that the way to quiet this
  * check is to not write documentation. `.backups/` and `sql_logging/` are push by-products, ignored
- * for the same reason `check-release-seed-coverage.mjs` ignores them.
+ * for the same reason `check-release-seed-coverage.mjs` ignores them. A `.mj-sync.json` file is
+ * ignored unless its `"defaults"` object changed between `baseRef` and the working tree.
  */
-function isRecordPath(file) {
+function isRecordPath(file, { repoRoot, baseRef, defaultsChanged } = {}) {
     if (/(^|\/)README\.md$/i.test(file)) return false;
-    if (/(^|\/)\.mj-sync\.json$/.test(file)) return false;
-    return !/(^|\/)(\.backups|sql_logging)(\/|$)/.test(file);
+    if (/(^|\/)(\.backups|sql_logging)(\/|$)/.test(file)) return false;
+    if (/(^|\/)\.mj-sync\.json$/.test(file)) {
+        return didMjSyncDefaultsChangeSince(repoRoot, baseRef, file, defaultsChanged);
+    }
+    return true;
 }
 
 export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = readReleaseState) {
@@ -201,17 +293,23 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
     try {
         state = readState(repoRoot);
     } catch (error) {
-        return { problems: [`could not read git history to compare metadata/ against the last release: ${error.message}`], tag: null, changed: [] };
+        return { ok: false, problems: [`could not read git history to compare metadata/ against the last release: ${error.message}`], tag: null, changed: [] };
+    }
+    if (state.shallow) {
+        return { ok: false, problems: [SHALLOW_CLONE_PROBLEM], tag: state.tag ?? null, changed: [] };
     }
     if (state.tag === null) {
         return {
+            ok: false,
             problems: ['no v* release tag found, so "has metadata/ moved since the last release?" has no answer here. Fetch tags, or run it where they exist.'],
             tag: null,
             changed: [],
         };
     }
 
-    const changed = (state.metadataChanged ?? []).filter(isRecordPath).sort();
+    const changed = (state.metadataChanged ?? [])
+        .filter((f) => isRecordPath(f, { repoRoot, baseRef: state.tag, defaultsChanged: state.defaultsChanged }))
+        .sort();
     const unreleasedSeeds = state.current.filter((f) => SEED_PATTERN.test(f) && !new Set(state.released).has(f));
     const problems = [];
     if (changed.length > 0 && unreleasedSeeds.length === 0) {
@@ -223,7 +321,7 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
                 '  spUpdate* for edited records by construction, which is the half no id check can see.',
         );
     }
-    return { problems, tag: state.tag, changed };
+    return { ok: problems.length === 0, problems, tag: state.tag, changed };
 }
 
 /**
@@ -259,10 +357,13 @@ export function findStaleOrEmptySeeds(repoRoot = REPO_ROOT, readState = readRele
     try {
         state = readState(repoRoot);
     } catch (error) {
-        return { problems: [`could not read git history to find the release seed: ${error.message}`], seeds: [] };
+        return { ok: false, problems: [`could not read git history to find the release seed: ${error.message}`], seeds: [] };
+    }
+    if (state.shallow) {
+        return { ok: false, problems: [SHALLOW_CLONE_PROBLEM], seeds: [] };
     }
     if (state.tag === null) {
-        return { problems: ['no v* release tag found, so which seed is unreleased has no answer here. Fetch tags, or run it where they exist.'], seeds: [] };
+        return { ok: false, problems: ['no v* release tag found, so which seed is unreleased has no answer here. Fetch tags, or run it where they exist.'], seeds: [] };
     }
     const released = new Set(state.released);
     const unreleased = state.current.filter((f) => SEED_PATTERN.test(f) && !released.has(f)).sort();
@@ -275,13 +376,15 @@ export function findStaleOrEmptySeeds(repoRoot = REPO_ROOT, readState = readRele
             problems.push(`could not read the release seed ${file}: ${error.message}`);
             continue;
         }
-        if (stripSqlComments(facts.text).trim() === '') {
+        if (!hasSqlBody(facts.text)) {
             problems.push(
-                `${file} is the release's unreleased Metadata_Sync, but it holds no SQL — only whitespace or comments. ` +
+                `${file} is the release's unreleased Metadata_Sync, but it holds no SQL — only whitespace, comments, or session boilerplate (SET / GO / PRINT). ` +
                     'An empty seed ships nothing. Regenerate it (migrations/README.md).',
             );
         }
-        const newer = facts.changedSince.filter((f) => f.startsWith('metadata/') && isRecordPath(f)).sort();
+        const newer = facts.changedSince
+            .filter((f) => f.startsWith('metadata/') && isRecordPath(f, { repoRoot, baseRef: facts.lastCommit, defaultsChanged: facts.defaultsChanged ?? state.defaultsChanged }))
+            .sort();
         if (newer.length > 0) {
             problems.push(
                 `${newer.length} metadata record file(s) changed after ${file} was last committed (${facts.lastCommit.slice(0, 10)}):\n` +
@@ -291,7 +394,7 @@ export function findStaleOrEmptySeeds(repoRoot = REPO_ROOT, readState = readRele
             );
         }
     }
-    return { problems, seeds: unreleased };
+    return { ok: problems.length === 0, problems, seeds: unreleased };
 }
 
 // Compared through realpath, not as a `file://` string: that string is never equal under a path with

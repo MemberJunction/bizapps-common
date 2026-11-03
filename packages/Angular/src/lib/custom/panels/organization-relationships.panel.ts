@@ -18,10 +18,10 @@ const VIEW_SWITCHER_STYLES = `
         align-items: center;
         gap: 3px;
         padding: 3px;
-        background: var(--mj-bg-surface-sunken, #0b1220);
-        border: 1px solid var(--mj-border-default, #223254);
+        background: var(--mj-bg-surface-sunken);
+        border: 1px solid var(--mj-border-default);
         border-radius: 8px;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+        box-shadow: var(--mj-shadow-sm);
     }
 
     .bizapps-view-segment-btn {
@@ -32,7 +32,7 @@ const VIEW_SWITCHER_STYLES = `
         border: none;
         border-radius: 6px;
         background: transparent;
-        color: var(--mj-text-secondary, #94a3b8);
+        color: var(--mj-text-secondary);
         font-size: 12px;
         font-weight: 500;
         cursor: pointer;
@@ -47,15 +47,15 @@ const VIEW_SWITCHER_STYLES = `
     }
 
     .bizapps-view-segment-btn:hover:not(.active) {
-        color: var(--mj-text-primary, #f1f5f9);
-        background: rgba(255, 255, 255, 0.05);
+        color: var(--mj-text-primary);
+        background: var(--mj-bg-surface-hover);
     }
 
     .bizapps-view-segment-btn.active {
-        background: var(--mj-brand-primary, #0284c7);
-        color: #ffffff;
+        background: var(--mj-brand-primary);
+        color: var(--mj-text-inverse);
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 8px rgba(2, 132, 199, 0.3);
+        box-shadow: var(--mj-shadow-sm);
     }
 
     .bizapps-view-segment-btn.active i {

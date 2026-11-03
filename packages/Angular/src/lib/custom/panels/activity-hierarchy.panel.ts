@@ -94,7 +94,7 @@ export class ActivityHierarchyPanel extends BaseFormPanel<mjBizAppsCommonActivit
                 NameField: 'Title',
                 SubtitleField: 'ActivityType',
                 DefaultIcon: 'fa-solid fa-calendar-days',
-                DefaultColor: 'var(--mj-brand-primary, #0284c7)',
+                DefaultColor: 'var(--mj-brand-primary)',
                 ActiveRecordID: recId || undefined,
                 ExtraFilter: extraFilter,
                 OrderBy: 'StartedAt ASC, __mj_CreatedAt ASC',

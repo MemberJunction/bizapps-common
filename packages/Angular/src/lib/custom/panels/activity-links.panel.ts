@@ -78,14 +78,14 @@ interface ActivityLinkRow {
         :host { display: block; width: 100%; margin-bottom: var(--mj-space-4, 16px); }
 
         .mja-empty-sub {
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-size: 13px;
             margin: 0;
             padding: 8px 0;
         }
 
         .mja-loading-strip {
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-size: 13px;
             padding: 12px 0;
         }
@@ -103,15 +103,15 @@ interface ActivityLinkRow {
             gap: 10px;
             padding: 10px 12px;
             border-radius: var(--mj-radius-md, 8px);
-            border: 1px solid var(--mj-border-default, #e2e8f0);
-            background: var(--mj-bg-surface, #ffffff);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
             cursor: pointer;
             transition: all 0.15s ease;
         }
 
         .mja-link-card:hover {
-            border-color: var(--mj-brand-primary, #0284c7);
-            background: var(--mj-bg-surface-hover, #f8fafc);
+            border-color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
         }
 
         .mja-link-card__role {
@@ -121,14 +121,14 @@ interface ActivityLinkRow {
             letter-spacing: 0.05em;
             padding: 2px 6px;
             border-radius: 4px;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--mj-bg-surface-sunken);
+            color: var(--mj-text-secondary);
             flex-shrink: 0;
         }
 
-        .mja-link-card__role[data-role="regarding"] { background: #e0f2fe; color: #0369a1; }
-        .mja-link-card__role[data-role="organizer"] { background: #fef3c7; color: #92400e; }
-        .mja-link-card__role[data-role="attendee"] { background: #dcfce7; color: #166534; }
+        .mja-link-card__role[data-role="regarding"] { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+        .mja-link-card__role[data-role="organizer"] { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
+        .mja-link-card__role[data-role="attendee"] { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
 
         .mja-link-card__body {
             display: flex;
@@ -144,7 +144,7 @@ interface ActivityLinkRow {
             gap: 6px;
             font-size: 13px;
             font-weight: 600;
-            color: var(--mj-text-primary, #0f172a);
+            color: var(--mj-text-primary);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -152,18 +152,18 @@ interface ActivityLinkRow {
 
         .mja-link-card__entity {
             font-size: 11px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
         }
 
         .mja-link-card__open {
             font-size: 12px;
-            color: var(--mj-text-muted, #94a3b8);
+            color: var(--mj-text-muted);
             opacity: 0.6;
         }
 
         .mja-link-card:hover .mja-link-card__open {
             opacity: 1;
-            color: var(--mj-brand-primary, #0284c7);
+            color: var(--mj-brand-primary);
         }
     `]
 })

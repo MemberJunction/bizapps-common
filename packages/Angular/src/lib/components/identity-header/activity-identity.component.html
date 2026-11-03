@@ -1,7 +1,7 @@
 <div class="biz-hero" [class.biz-hero--collapsed]="Collapsed">
     <div class="biz-hero__identity">
         <div class="biz-hero__avatar" [style.background]="TypeBackground" aria-hidden="true">
-            <i [class]="TypeIcon" style="font-size: 1.5rem; color: #ffffff;"></i>
+            <i [class]="TypeIcon" style="font-size: 1.5rem; color: var(--mj-text-inverse);"></i>
         </div>
 
         <div class="biz-hero__copy">
@@ -94,19 +94,19 @@
                     </span>
                 </div>
             }
-            @if (Record.ParentActivity) {
+            @if (Record.ParentActivityID) {
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Thread / Parent</span>
                     <button type="button" class="biz-hero__stat-val" (click)="OnParentActivityClick($event)">
                         <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
-                        {{ Record.ParentActivity }}
+                        {{ ParentActivityLabel }}
                     </button>
                 </div>
             }
         </div>
 
         @if (Record.Description) {
-            <div style="padding-top: var(--mj-space-2, 8px); border-top: 1px solid var(--mj-border-subtle, #f1f5f9); font-size: var(--mj-text-sm, 13px); line-height: 1.5; color: var(--mj-text-secondary, #334155); white-space: pre-wrap;">
+            <div style="padding-top: var(--mj-space-2, 8px); border-top: 1px solid var(--mj-border-subtle); font-size: var(--mj-text-sm, 13px); line-height: 1.5; color: var(--mj-text-secondary); white-space: pre-wrap;">
                 {{ Record.Description }}
             </div>
         }

@@ -2,12 +2,19 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
     mjBizAppsCommonAddressEntity,
     mjBizAppsCommonAddressLinkEntity,
-    mjBizAppsCommonAddressTypeEntity
+    mjBizAppsCommonAddressTypeEntity,
+    NormalizeAddressFields,
+    HasMinimumAddressContent,
+    FindMatchingLinkedAddress,
+    ResolveAddressType,
+    ResolveDefaultIsPrimary,
+    LinksToDemoteFromPrimary,
 } from '@mj-biz-apps/common-entities';
 import { otherAddressReferences } from './address-references';
 import { EscapeFilterValue } from '../../data/directory-stats';
@@ -400,15 +407,15 @@ export class AddressEditorComponent {
                 const addressMap = new Map<string, mjBizAppsCommonAddressEntity>();
                 if (addressResult.Success) {
                     for (const addr of addressResult.Results) {
-                        addressMap.set(addr.ID, addr);
+                        addressMap.set(NormalizeUUID(addr.ID), addr);
                     }
                 }
 
                 this.AddressItems = links
-                    .filter(link => addressMap.has(link.AddressID))
+                    .filter(link => addressMap.has(NormalizeUUID(link.AddressID)))
                     .map(link => ({
                         Link: link,
-                        Address: addressMap.get(link.AddressID)!
+                        Address: addressMap.get(NormalizeUUID(link.AddressID))!
                     }));
 
                 // Sort: primary first, then by rank/type
@@ -422,8 +429,9 @@ export class AddressEditorComponent {
             }
 
             // Set default type for add form
-            if (this.AddressTypes.length > 0) {
-                this.EditForm.TypeID = this.AddressTypes[0].ID;
+            const defaultType = ResolveAddressType(this.AddressTypes);
+            if (defaultType) {
+                this.EditForm.TypeID = defaultType.ID;
             }
         } catch (err) {
             console.error('AddressEditor: Error loading data', err);
@@ -443,7 +451,7 @@ export class AddressEditorComponent {
      * @returns The CSS class string for the icon (e.g., `'fa-solid fa-home'`)
      */
     getAddressTypeIcon(typeID: string): string {
-        const addrType = this.AddressTypes.find(t => t.ID === typeID);
+        const addrType = this.AddressTypes.find(t => UUIDsEqual(t.ID, typeID));
         return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
     }
 
@@ -512,13 +520,14 @@ export class AddressEditorComponent {
      */
     onAdd(): void {
         this.EditForm = this.createEmptyForm();
-        if (this.AddressTypes.length > 0) {
-            this.EditForm.TypeID = this.AddressTypes[0].ID;
+        const defaultType = ResolveAddressType(this.AddressTypes);
+        if (defaultType) {
+            this.EditForm.TypeID = defaultType.ID;
         }
-        // Default to primary if no addresses exist
-        if (this.AddressItems.length === 0) {
-            this.EditForm.IsPrimary = true;
-        }
+        this.EditForm.IsPrimary = ResolveDefaultIsPrimary(
+            this.AddressItems.map(i => i.Link),
+            this.EditForm.TypeID
+        );
         this.originalPostalCode = '';
         this.EditingIndex = -1;
         this.cdr.detectChanges();
@@ -533,7 +542,8 @@ export class AddressEditorComponent {
     onEdit(index: number): void {
         const item = this.AddressItems[index];
         this.EditForm = {
-            TypeID: item.Link.AddressTypeID,
+            // The select matches options with ===, so use the option's own ID spelling.
+            TypeID: ResolveAddressType(this.AddressTypes, item.Link.AddressTypeID)?.ID ?? item.Link.AddressTypeID,
             IsPrimary: item.Link.IsPrimary,
             Line1: item.Address.Line1 || '',
             Line2: item.Address.Line2 || '',
@@ -563,7 +573,7 @@ export class AddressEditorComponent {
      * parent record are demoted. After saving, the address list is reloaded.
      */
     async onSave(): Promise<void> {
-        if (!this.EditForm.Line1 || !this.EditForm.City) return;
+        if (!HasMinimumAddressContent(this.EditForm) || !this.EditForm.Line1.trim() || !this.EditForm.City.trim()) return;
         // Both are NOT NULL uniqueidentifier columns on AddressLink; saving without them
         // produced "Conversion failed when converting from a character string to
         // uniqueidentifier" at the database instead of anything actionable.
@@ -606,49 +616,64 @@ export class AddressEditorComponent {
     }
 
     /** Updates an existing Address and its AddressLink with form data. */
-    private async saveExisting(md: Metadata): Promise<void> {
+    private async saveExisting(_md: Metadata): Promise<void> {
         const item = this.AddressItems[this.EditingIndex!];
+        const normalized = NormalizeAddressFields(this.EditForm);
 
         // Update address
-        item.Address.Line1 = this.EditForm.Line1;
-        item.Address.Line2 = this.EditForm.Line2 || null;
-        item.Address.City = this.EditForm.City;
-        item.Address.StateProvince = this.EditForm.StateProvince || null;
-        item.Address.PostalCode = this.EditForm.PostalCode || null;
-        item.Address.Country = this.EditForm.Country;
+        item.Address.Line1 = normalized.Line1 ?? '';
+        item.Address.Line2 = normalized.Line2;
+        item.Address.City = normalized.City;
+        item.Address.StateProvince = normalized.StateProvince;
+        item.Address.PostalCode = normalized.PostalCode;
+        item.Address.Country = normalized.Country;
         await item.Address.Save();
 
         // Update link
-        item.Link.AddressTypeID = this.EditForm.TypeID;
+        const resolvedType = ResolveAddressType(this.AddressTypes, this.EditForm.TypeID);
+        item.Link.AddressTypeID = resolvedType?.ID ?? this.EditForm.TypeID;
         item.Link.IsPrimary = this.EditForm.IsPrimary;
         await item.Link.Save();
     }
 
     /** Creates a new Address record and its associated AddressLink. */
     private async saveNew(md: Metadata): Promise<void> {
-        // Create new Address
-        const address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ_BizApps_Common: Addresses');
-        address.NewRecord();
-        address.Line1 = this.EditForm.Line1;
-        address.Line2 = this.EditForm.Line2 || null;
-        address.City = this.EditForm.City;
-        address.StateProvince = this.EditForm.StateProvince || null;
-        address.PostalCode = this.EditForm.PostalCode || null;
-        address.Country = this.EditForm.Country;
-        const addrSaved = await address.Save();
-        if (!addrSaved) {
-            console.error('AddressEditor: Failed to save address');
-            return;
+        const normalized = NormalizeAddressFields(this.EditForm);
+        const existingMatch = FindMatchingLinkedAddress(this.AddressItems, normalized);
+        let address: mjBizAppsCommonAddressEntity;
+
+        if (existingMatch) {
+            address = existingMatch.Address;
+        } else {
+            // Create new Address
+            address = await md.GetEntityObject<mjBizAppsCommonAddressEntity>('MJ_BizApps_Common: Addresses');
+            address.NewRecord();
+            address.Line1 = normalized.Line1 ?? '';
+            address.Line2 = normalized.Line2;
+            address.City = normalized.City;
+            address.StateProvince = normalized.StateProvince;
+            address.PostalCode = normalized.PostalCode;
+            address.Country = normalized.Country;
+            const addrSaved = await address.Save();
+            if (!addrSaved) {
+                console.error('AddressEditor: Failed to save address');
+                return;
+            }
         }
 
         // Create AddressLink
+        const resolvedType = ResolveAddressType(this.AddressTypes, this.EditForm.TypeID);
         const link = await md.GetEntityObject<mjBizAppsCommonAddressLinkEntity>('MJ_BizApps_Common: Address Links');
         link.NewRecord();
         link.AddressID = address.ID;
         link.EntityID = this.resolvedEntityID;
         link.RecordID = this._recordID;
-        link.AddressTypeID = this.EditForm.TypeID;
-        link.IsPrimary = this.EditForm.IsPrimary;
+        link.AddressTypeID = resolvedType?.ID ?? this.EditForm.TypeID;
+        link.IsPrimary = ResolveDefaultIsPrimary(
+            this.AddressItems.map(i => i.Link),
+            link.AddressTypeID,
+            this.EditForm.IsPrimary
+        );
         const linkSaved = await link.Save();
         if (!linkSaved) {
             console.error('AddressEditor: Failed to save address link');
@@ -658,14 +683,16 @@ export class AddressEditorComponent {
     /** Removes the primary flag from all other address links for this record. */
     private async clearOtherPrimaries(): Promise<void> {
         const currentEditingLinkID = this.EditingIndex !== null && this.EditingIndex >= 0
-            ? this.AddressItems[this.EditingIndex].Link.ID
+            ? this.AddressItems[this.EditingIndex]?.Link.ID ?? null
             : null;
 
-        for (const item of this.AddressItems) {
-            if (item.Link.IsPrimary && item.Link.ID !== currentEditingLinkID) {
-                item.Link.IsPrimary = false;
-                await item.Link.Save();
-            }
+        const toDemote = LinksToDemoteFromPrimary(
+            this.AddressItems.map(i => i.Link),
+            currentEditingLinkID
+        );
+        for (const link of toDemote) {
+            link.IsPrimary = false;
+            await link.Save();
         }
     }
 
@@ -678,21 +705,26 @@ export class AddressEditorComponent {
      * @param index - The zero-based index of the address item in {@link AddressItems}
      */
     async onSetPrimary(index: number): Promise<void> {
+        const target = this.AddressItems[index];
+        if (!target) return;
+
         this.Saving = true;
         this.cdr.detectChanges();
 
         try {
-            // Clear all primaries
-            for (const item of this.AddressItems) {
-                if (item.Link.IsPrimary) {
-                    item.Link.IsPrimary = false;
-                    await item.Link.Save();
-                }
+            // Clear all other primaries using shared rule
+            const toDemote = LinksToDemoteFromPrimary(
+                this.AddressItems.map(i => i.Link),
+                target.Link.ID
+            );
+            for (const link of toDemote) {
+                link.IsPrimary = false;
+                await link.Save();
             }
 
             // Set new primary
-            this.AddressItems[index].Link.IsPrimary = true;
-            await this.AddressItems[index].Link.Save();
+            target.Link.IsPrimary = true;
+            await target.Link.Save();
 
             await this.loadData();
             this.DataChanged.emit();
@@ -702,6 +734,13 @@ export class AddressEditorComponent {
             this.Saving = false;
             this.cdr.detectChanges();
         }
+    }
+
+    /**
+     * Hook allowing subclasses or tests to gate address deletion on confirmation.
+     */
+    protected confirmDelete(_item: AddressItem): boolean | Promise<boolean> {
+        return true;
     }
 
     /**
@@ -717,6 +756,10 @@ export class AddressEditorComponent {
      */
     async onDelete(index: number): Promise<void> {
         const item = this.AddressItems[index];
+        if (!item) return;
+
+        const confirmed = await this.confirmDelete(item);
+        if (!confirmed) return;
 
         this.ActionError = null;
         this.Saving = true;
@@ -731,6 +774,9 @@ export class AddressEditorComponent {
         }
 
         try {
+            if (!error) {
+                this.AddressItems = this.AddressItems.filter(i => i !== item);
+            }
             // Reload either way: on failure the entity objects still hold the failed transaction
             // group, and the list should show what the database actually has.
             await this.loadData();
@@ -785,7 +831,7 @@ export class AddressEditorComponent {
 
     /** Builds the user-facing reason for a refused delete from the entity's latest result. */
     private deleteFailure(entity: BaseEntity): string {
-        const reason = entity.LatestResult?.CompleteMessage;
+        const reason = entity.LatestResult?.CompleteMessage || entity.LatestResult?.Message;
         return `Could not remove the address${reason ? `: ${reason}` : '.'}`;
     }
 }

@@ -382,6 +382,95 @@ describe('PartyFieldComponent', () => {
         expect(c.SearchError).toBeNull();
         expect(c.Options).toEqual([]);
     });
+
+    it('ignores a stale in-flight search that resolves or fails after ClearSearch or a 1-char filter change', async () => {
+        const c = build(record('o-old', 'Old Co'));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        expect(c.Calls).toHaveLength(1);
+
+        // User clears or types a 1-char term while Calls[0] is still in flight
+        c.OnFilterChange('d');
+        expect(c.Options).toEqual([]);
+        expect(c.Loading).toBe(false);
+
+        // Stale in-flight search rejects before the 250ms debounce window elapses
+        c.Calls[0].reject(new Error('late failure'));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.logError).not.toHaveBeenCalled();
+        expect(c.SearchError).toBeNull();
+        expect(c.Options).toEqual([]);
+    });
+
+    it('offers inline creation when no exact match exists and suppresses it on exact match or when AllowCreate is false', async () => {
+        const c = build(record(null));
+        expect(c.CanOfferCreate).toBe(false);
+
+        c.OnFilterChange('New Org');
+        expect(c.Loading).toBe(true);
+        expect(c.CanOfferCreate).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Loading).toBe(false);
+        expect(c.CanOfferCreate).toBe(true);
+
+        // Exact case-insensitive match hides the create option
+        c.OnFilterChange('dave co');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[1].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.CanOfferCreate).toBe(false);
+
+        // AllowCreate = false hides the create option even without exact match
+        c.AllowCreate = false;
+        c.OnFilterChange('Another Org');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[2].resolve([]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.CanOfferCreate).toBe(false);
+    });
+
+    it('verifies a newly created record via RunView before binding and rejects unverified IDs', async () => {
+        const rec = record(null);
+        const c = build(rec);
+        const navEvents: unknown[] = [];
+        c.Navigate.subscribe((e) => navEvents.push(e));
+
+        c.OnFilterChange('Beta Corp');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[0].resolve([]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.CanOfferCreate).toBe(true);
+
+        c.OnCreateNew();
+        expect(navEvents).toHaveLength(1);
+        const createEvent = navEvents[0] as {
+            Kind: string;
+            EntityName: string;
+            NewRecordValues: Record<string, unknown>;
+            Complete: (created: unknown) => void;
+        };
+        expect(createEvent.Kind).toBe('create-related');
+        expect(createEvent.EntityName).toBe('Organizations');
+        expect(createEvent.NewRecordValues).toEqual({ Name: 'Beta Corp' });
+
+        // 1. Unverified ID (RunView returns 0 rows for both ID and fallback name) is NOT bound
+        H.runView.mockResolvedValue({ Success: true, Results: [] });
+        createEvent.Complete({ Get: (k: string) => (k === 'ID' ? 'unverified-id' : 'Beta Corp') });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(rec.Get('AccountID')).toBeNull();
+
+        // 2. Verified ID (or fallback unique name match after Is-A PK rebasing) IS bound
+        H.runView
+            .mockResolvedValueOnce({ Success: true, Results: [] })
+            .mockResolvedValueOnce({ Success: true, Results: [{ ID: 'verified-id', Name: 'Beta Corp' }] });
+        createEvent.Complete({ Get: (k: string) => (k === 'ID' ? 'rebased-temp-id' : 'Beta Corp') });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(rec.Get('AccountID')).toBe('verified-id');
+        expect(rec.Get('Account')).toBe('Beta Corp');
+    });
 });
 
 describe('PartyFieldComponent.runSearch', () => {

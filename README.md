@@ -247,6 +247,28 @@ if (result.Success) {
 </bizapps-relationship-list>
 ```
 
+### Attaching Addresses on the Server (`Common.AttachAddress`)
+
+Server-side workflows, actions, and agents can attach an address to a Person or Organization in a single transaction via the `Common.AttachAddress` action (which shares the pure normalization, deduplication, type-resolution, and primary-demotion rules exported from `@mj-biz-apps/common-entities`):
+
+```typescript
+import { ActionEngineServer } from '@memberjunction/actions';
+
+const result = await ActionEngineServer.Instance.RunAction({
+    ActionName: 'Common.AttachAddress',
+    ContextUser: contextUser,
+    Params: [
+        { Name: 'EntityName', Value: 'People', Type: 'Input' },
+        { Name: 'RecordID', Value: person.ID, Type: 'Input' },
+        { Name: 'Line1', Value: '100 Main St', Type: 'Input' },
+        { Name: 'City', Value: 'Austin', Type: 'Input' },
+        { Name: 'StateProvince', Value: 'TX', Type: 'Input' },
+        { Name: 'PostalCode', Value: '78701', Type: 'Input' },
+        { Name: 'AddressTypeID', Value: 'Work', Type: 'Input' },
+    ],
+});
+```
+
 ---
 
 ## Seed Data

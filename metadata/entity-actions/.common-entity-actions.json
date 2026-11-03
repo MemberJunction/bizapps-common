@@ -410,11 +410,17 @@
     }
   },
   {
+    "_comments": [
+      "Durable employment-start binding on MJ_BizApps_Common: Relationships. RecordData is",
+      "projected via a Script returning only the five ID columns (ID, FromPersonID, ToPersonID,",
+      "FromOrganizationID, ToOrganizationID) with LogValue = true so RedactParams keeps it in",
+      "the durable task payload without serializing the full entityObject."
+    ],
     "fields": {
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Inline",
+      "RunMode": "Durable",
       "Sequence": 10,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -490,14 +496,26 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3)."
+            "Comments": "RecordData — superseded by the durable Script projection row 01F9747B-6F07-4671-A44E-953113442879."
           },
           "primaryKey": {
             "ID": "01F9747B-6F07-4671-A44E-953113442878"
           },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:10.823Z",
-            "checksum": "15c979f0fa5b45de263fed18307677eea288a4223e3abaac73ce6a213a6ea63c"
+          "deleteRecord": {
+            "delete": true
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Script",
+            "Value": "return { ID: EntityActionContext.entityObject.ID, FromPersonID: EntityActionContext.entityObject.FromPersonID, ToPersonID: EntityActionContext.entityObject.ToPersonID, FromOrganizationID: EntityActionContext.entityObject.FromOrganizationID, ToOrganizationID: EntityActionContext.entityObject.ToOrganizationID };",
+            "LogValue": true,
+            "Comments": "RecordData — projects only the five party/record IDs needed for LinkFields so RedactParams keeps it in the durable task payload."
+          },
+          "primaryKey": {
+            "ID": "01F9747B-6F07-4671-A44E-953113442879"
           }
         },
         {
@@ -506,14 +524,11 @@
             "ActionParamID": "5ABC9668-9E20-4385-9258-F2FC106B8477",
             "ValueType": "Static",
             "Value": "[{\"Field\":\"FromPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"ToPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"FromOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"},{\"Field\":\"ToOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"}]",
+            "LogValue": true,
             "Comments": "LinkFields — routes the activity to the person and organization the relationship connects, so it lands on THEIR timelines, not only on the relationship record."
           },
           "primaryKey": {
             "ID": "0002071D-7D2B-4777-A211-9F4CCD3626E9"
-          },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:10.839Z",
-            "checksum": "55d048dc99df0d03991e1e9e03bae6fa8c4876dc8522d46604a7b8123e9ecb93"
           }
         },
         {
@@ -552,18 +567,18 @@
     },
     "primaryKey": {
       "ID": "ABF0B899-C4D8-4BF8-9AE8-4EAE7DD32346"
-    },
-    "sync": {
-      "lastModified": "2026-09-28T20:39:11.880Z",
-      "checksum": "e7a0d40dee159fbb3cc911c11dc8cd918c518f1c61c6a3e1011046f7c98fb0ce"
     }
   },
   {
+    "_comments": [
+      "Durable employment-end binding on MJ_BizApps_Common: Relationships. Uses the same",
+      "Script projection for RecordData (ID + four party FK IDs) with LogValue = true."
+    ],
     "fields": {
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Inline",
+      "RunMode": "Durable",
       "Sequence": 20,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -656,14 +671,26 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3). No EventKey: a relationship can end, restart and end again; each transition is its own entry (the filter already limits firing to the transition save)."
+            "Comments": "RecordData — superseded by the durable Script projection row 42AF8F1E-0B3E-4879-A72C-9D728D9DFAAC."
           },
           "primaryKey": {
             "ID": "42AF8F1E-0B3E-4879-A72C-9D728D9DFAAB"
           },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:10.971Z",
-            "checksum": "95aeab656fe495bb22714d78abb41c27a1894eb56e7d59795487496b7eaec1ef"
+          "deleteRecord": {
+            "delete": true
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
+            "ValueType": "Script",
+            "Value": "return { ID: EntityActionContext.entityObject.ID, FromPersonID: EntityActionContext.entityObject.FromPersonID, ToPersonID: EntityActionContext.entityObject.ToPersonID, FromOrganizationID: EntityActionContext.entityObject.FromOrganizationID, ToOrganizationID: EntityActionContext.entityObject.ToOrganizationID };",
+            "LogValue": true,
+            "Comments": "RecordData — projects only the five party/record IDs needed for LinkFields so RedactParams keeps it in the durable task payload. No EventKey: a relationship can end, restart and end again; each transition is its own entry."
+          },
+          "primaryKey": {
+            "ID": "42AF8F1E-0B3E-4879-A72C-9D728D9DFAAC"
           }
         },
         {
@@ -672,14 +699,11 @@
             "ActionParamID": "5ABC9668-9E20-4385-9258-F2FC106B8477",
             "ValueType": "Static",
             "Value": "[{\"Field\":\"FromPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"ToPersonID\",\"EntityName\":\"MJ_BizApps_Common: People\",\"Role\":\"Participant\"},{\"Field\":\"FromOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"},{\"Field\":\"ToOrganizationID\",\"EntityName\":\"MJ_BizApps_Common: Organizations\",\"Role\":\"Participant\"}]",
+            "LogValue": true,
             "Comments": "LinkFields — same routing as the start entry."
           },
           "primaryKey": {
             "ID": "C3209787-8595-49A9-A026-3C45237AB2EC"
-          },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:10.987Z",
-            "checksum": "07142d0f8038ae27dde7c088f1c9c6fd474542c882c0c1b6c110cce5cf17bcdd"
           }
         },
         {
@@ -702,10 +726,6 @@
     },
     "primaryKey": {
       "ID": "32D1707C-D9BE-48F7-BB46-701F8DB09110"
-    },
-    "sync": {
-      "lastModified": "2026-09-28T20:39:11.889Z",
-      "checksum": "592b5dbb7fb8cdd30d53b99c1a2a2b42ebbb8fcb25ce74e4ee53047b24c569c6"
     }
   }
 ]

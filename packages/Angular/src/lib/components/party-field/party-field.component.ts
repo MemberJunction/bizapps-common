@@ -18,6 +18,7 @@ import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@me
 import { MJComboboxComponent } from '@memberjunction/ng-ui-components';
 import { Subject, Subscription, debounceTime, from, switchMap } from 'rxjs';
 
+import { COMMON_ENTITIES } from '../../data/entity-names';
 import { PARTY_LOOKUP_QUERIES, PartyLookupParamsFor, type PartyKind, type PartyLookupParams } from './party-lookup-term';
 
 /** One row of a party lookup query: the contract every app's lookup query honours. */
@@ -81,6 +82,16 @@ class PartySearchTimeoutError extends Error {}
                         </div>
                     </ng-template>
                 </mj-combobox>
+                @if (CanOfferCreate) {
+                    <button
+                        type="button"
+                        class="bizapps-party-field-create"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="OnCreateNew()"
+                    >
+                        + Create new "{{ TrimmedSearchTerm }}"…
+                    </button>
+                }
                 @if (SearchError === 'failed') {
                     <div class="bizapps-party-field-hint">Search failed. Try again.</div>
                 } @else if (SearchError === 'timeout') {
@@ -121,6 +132,22 @@ class PartySearchTimeoutError extends Error {}
                 font-size: var(--mj-text-xs);
                 color: var(--mj-text-muted);
             }
+            .bizapps-party-field-create {
+                align-self: flex-start;
+                padding: var(--mj-space-1) var(--mj-space-2);
+                background: var(--mj-bg-surface-card);
+                border: 1px dashed var(--mj-border-default);
+                border-radius: var(--mj-radius-sm);
+                color: var(--mj-brand-primary);
+                font: inherit;
+                font-size: var(--mj-text-xs);
+                font-weight: var(--mj-font-semibold);
+                cursor: pointer;
+            }
+            .bizapps-party-field-create:hover {
+                background: var(--mj-bg-surface-hover);
+                border-color: var(--mj-brand-primary);
+            }
             .bizapps-party-field-hint {
                 font-size: var(--mj-text-xs);
                 color: var(--mj-status-error);
@@ -140,6 +167,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     @Input() EditMode = false;
     @Input() ShowLabel = true;
     @Input() FormContext?: FormContext;
+    /** Whether to offer an inline "Create new …" action when a search term has no exact match. */
+    @Input() AllowCreate = true;
     /** Milliseconds before a search is reported as too slow; zero or less waits indefinitely. */
     @Input() SearchTimeoutMs = DEFAULT_SEARCH_TIMEOUT_MS;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
@@ -149,10 +178,49 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     /** What the dropdown lists: search results, or just the current value when not searching. */
     public Options: PartyOption[] = [];
     public SearchError: PartySearchError | null = null;
+    public SearchTerm = '';
+    public Loading = false;
 
     /** True when the last search showed no rows because of an error: a failure or a timeout. */
     public get SearchFailed(): boolean {
         return this.SearchError !== null;
+    }
+
+    public get TrimmedSearchTerm(): string {
+        return this.SearchTerm.trim();
+    }
+
+    /** The target entity name for this foreign key, falling back to Common People / Organizations. */
+    public get TargetEntityName(): string {
+        const related = this.fieldInfo()?.RelatedEntity;
+        if (related) {
+            return related;
+        }
+        return this.Kind === 'Person' ? COMMON_ENTITIES.Person : COMMON_ENTITIES.Organization;
+    }
+
+    /**
+     * Whether to offer an inline "Create new …" action for the current search term.
+     */
+    public get CanOfferCreate(): boolean {
+        if (!this.AllowCreate || !this.EditMode || this.Loading) {
+            return false;
+        }
+        const term = this.TrimmedSearchTerm;
+        if (!PartyLookupParamsFor(this.Kind, term)) {
+            return false;
+        }
+        const lower = term.toLowerCase();
+        if (this.Options.some((opt) => opt.Name.trim().toLowerCase() === lower)) {
+            return false;
+        }
+        const entity = Metadata.Provider?.EntityByName?.(this.TargetEntityName) as
+            | { AllowCreateAPI?: boolean; UserPermissions?: { CanCreate?: boolean } }
+            | undefined;
+        if (entity?.AllowCreateAPI === false || entity?.UserPermissions?.CanCreate === false) {
+            return false;
+        }
+        return true;
     }
 
     /** The current value as a one-item list (empty when unset): what the list goes back to. */
@@ -171,9 +239,13 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
                 debounceTime(DEBOUNCE_MS),
                 switchMap((term) => from(this.optionsFor(term))),
             )
-            .subscribe((options) => {
-                this.SearchError = Array.isArray(options) ? null : options;
-                this.Options = Array.isArray(options) ? options : [];
+            .subscribe(({ search, result }) => {
+                if (search !== this.searchCount) {
+                    return;
+                }
+                this.Loading = false;
+                this.SearchError = Array.isArray(result) ? null : result;
+                this.Options = Array.isArray(result) ? result : [];
                 this.cdr.markForCheck();
             });
     }
@@ -191,6 +263,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     public ngOnDestroy(): void {
+        ++this.searchCount;
         this.subscription?.unsubscribe();
     }
 
@@ -207,7 +280,39 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     public OnFilterChange(text: string): void {
+        this.SearchTerm = text;
+        const params = PartyLookupParamsFor(this.Kind, text);
+        if (!params) {
+            ++this.searchCount;
+            this.Loading = false;
+            this.SearchError = null;
+            this.Options = text.trim() ? [] : this.current;
+            this.cdr.markForCheck();
+            return;
+        }
+        this.Loading = true;
         this.terms.next(text);
+    }
+
+    /**
+     * Emits a `create-related` navigation event pre-populated from the current search term,
+     * and binds the newly created record's ID only after verifying it exists via `RunView`.
+     */
+    public OnCreateNew(): void {
+        if (!this.CanOfferCreate) {
+            return;
+        }
+        const term = this.TrimmedSearchTerm;
+        const entityName = this.TargetEntityName;
+        const newRecordValues = this.buildNewRecordValues(term);
+        this.Navigate.emit({
+            Kind: 'create-related',
+            EntityName: entityName,
+            NewRecordValues: newRecordValues,
+            Complete: (createdRecord: BaseEntity | null) => {
+                void this.completeCreation(createdRecord, term);
+            },
+        });
     }
 
     /**
@@ -225,6 +330,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         }
         this.current = picked ? [picked] : [];
         this.Options = this.current;
+        this.SearchTerm = '';
         this.ValueChange.emit({ FieldName: this.FieldName, OldValue: oldValue, NewValue: newValue });
         this.cdr.markForCheck();
     }
@@ -242,6 +348,9 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * For a host that resets the field without it losing focus (a changed relationship type).
      */
     public ClearSearch(): void {
+        ++this.searchCount;
+        this.SearchTerm = '';
+        this.Loading = false;
         this.terms.next('');
         this.Options = this.current;
         this.SearchError = null;
@@ -285,20 +394,107 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     /** The options to list, or why there are none (logged). */
-    private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
+    private async optionsFor(term: string): Promise<{ search: number; result: PartyOption[] | PartySearchError }> {
         const search = ++this.searchCount;
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
-            return term ? [] : this.current;
+            return { search, result: term ? [] : this.current };
         }
         try {
-            return await this.withTimeout(this.runSearch(params));
+            const rows = await this.withTimeout(this.runSearch(params));
+            return { search, result: rows };
         } catch (error) {
             if (search === this.searchCount) {
                 LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
             }
-            return error instanceof PartySearchTimeoutError ? 'timeout' : 'failed';
+            return { search, result: error instanceof PartySearchTimeoutError ? 'timeout' : 'failed' };
         }
+    }
+
+    private buildNewRecordValues(term: string): Record<string, unknown> {
+        if (this.Kind === 'Person') {
+            const parts = term.split(/\s+/).filter(Boolean);
+            if (parts.length <= 1) {
+                return { FirstName: parts[0] ?? term };
+            }
+            return {
+                FirstName: parts[0],
+                LastName: parts.slice(1).join(' '),
+            };
+        }
+        const entity = Metadata.Provider?.EntityByName?.(this.TargetEntityName);
+        const nameField = entity?.NameField?.Name ?? 'Name';
+        return { [nameField]: term };
+    }
+
+    private async completeCreation(createdRecord: BaseEntity | null, fallbackTerm: string): Promise<void> {
+        if (!createdRecord) {
+            return;
+        }
+        const entityName = this.TargetEntityName;
+        const field = this.fieldInfo();
+        const entity = Metadata.Provider?.EntityByName?.(entityName);
+        const pkField = field?.RelatedEntityFieldName || 'ID';
+        const nameField = entity?.NameField?.Name || (this.Kind === 'Person' ? 'FullName' : 'Name');
+
+        const rawRecord = createdRecord as unknown as Record<string, unknown>;
+        const readField = (key: string): unknown =>
+            typeof createdRecord.Get === 'function' ? createdRecord.Get(key) : rawRecord[key];
+
+        const candidateIdRaw = readField(pkField) ?? readField('ID');
+        const candidateId = candidateIdRaw ? String(candidateIdRaw) : null;
+
+        const directName = readField(nameField) ?? readField('Name') ?? readField('FullName');
+        const composedPersonName = [readField('FirstName'), readField('LastName')]
+            .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+            .join(' ');
+        const candidateName = directName
+            ? String(directName)
+            : composedPersonName || fallbackTerm;
+
+        const rv = RunView.FromMetadataProvider(Metadata.Provider);
+        let verifiedRow: Record<string, unknown> | null = null;
+
+        if (candidateId) {
+            const idResult = await rv.RunView<Record<string, unknown>>({
+                EntityName: entityName,
+                ExtraFilter: `${pkField}='${EscapeSQLString(candidateId)}'`,
+                Fields: [pkField, nameField],
+                ResultType: 'simple',
+                MaxRows: 1,
+            });
+            if (idResult.Success && idResult.Results?.length === 1) {
+                verifiedRow = idResult.Results[0];
+            }
+        }
+
+        if (!verifiedRow && candidateName) {
+            const nameResult = await rv.RunView<Record<string, unknown>>({
+                EntityName: entityName,
+                ExtraFilter: `${nameField}='${EscapeSQLString(candidateName)}'`,
+                Fields: [pkField, nameField],
+                ResultType: 'simple',
+                MaxRows: 2,
+            });
+            if (nameResult.Success && nameResult.Results?.length === 1) {
+                verifiedRow = nameResult.Results[0];
+            }
+        }
+
+        if (!verifiedRow) {
+            return;
+        }
+
+        const verifiedId = String(verifiedRow[pkField] ?? candidateId ?? '');
+        if (!verifiedId) {
+            return;
+        }
+        const verifiedName = String(verifiedRow[nameField] ?? candidateName ?? verifiedId);
+        const option: PartyOption = { ID: verifiedId, Name: verifiedName, Detail: null };
+        this.current = [option];
+        this.Options = [option];
+        this.OnSelect(verifiedId);
+        this.RefreshComboboxText();
     }
 
     /**
