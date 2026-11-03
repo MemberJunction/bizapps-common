@@ -1,0 +1,59 @@
+[
+  {
+    "_comments": [
+      "Lets UI-role users log an activity by hand, such as a note on a deal.",
+      "CodeGen granted UI read only on Activities and Activity Links. Apps that log an activity for the",
+      "signed-in user (sales' Log Activity action) save both rows as that user, so a UI-only user was",
+      "refused at the save.",
+      "Create only: logging a new activity needs no update or delete, so those stay 0."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activities"
+    },
+    "relatedEntities": {
+      "MJ: Entity Permissions": [
+        {
+          "fields": {
+            "CanRead": 1,
+            "CanCreate": 1,
+            "CanUpdate": 0,
+            "CanDelete": 0
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities&RoleID=@lookup:MJ: Roles.Name=UI"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities"
+    }
+  },
+  {
+    "_comments": [
+      "Same grant as Activities: an activity is written together with its links, in one transaction,",
+      "so a user who may create the activity must also be able to create its links."
+    ],
+    "fields": {
+      "Name": "MJ_BizApps_Common: Activity Links"
+    },
+    "relatedEntities": {
+      "MJ: Entity Permissions": [
+        {
+          "fields": {
+            "CanRead": 1,
+            "CanCreate": 1,
+            "CanUpdate": 0,
+            "CanDelete": 0
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links&RoleID=@lookup:MJ: Roles.Name=UI"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Links"
+    }
+  }
+]
