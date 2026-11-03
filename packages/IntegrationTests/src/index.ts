@@ -14,6 +14,7 @@
  *   relationships        R1–R4     employment, exclusivity, person-to-person, status
  *   activities           A1–A5     types, regarding/xor/unresolved links, ExternalID, sync
  *   party-lookup         PL1–PL3   party lookup queries: prefix, email/website domain, literal wildcards
+ *   sender-identities    SI1–SI3   company sender identities: normalisation, duplicates, single default
  */
 import { LoadGeneratedEntities } from '@mj-biz-apps/common-entities';
 
@@ -30,6 +31,7 @@ export * from './checks/contacts-addresses.checks.js';
 export * from './checks/relationships.checks.js';
 export * from './checks/activities.checks.js';
 export * from './checks/party-lookup.checks.js';
+export * from './checks/sender-identities.checks.js';
 
 export function LoadCommonIntegrationTests(): void {
     // side-effect import is the registration
