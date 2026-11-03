@@ -37,6 +37,17 @@
       "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
     ],
     "fields": {
+      "DisplayName": "Company Sender Identities"
+    },
+    "primaryKey": {
+      "ID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Company Sender Identities"
+    }
+  },
+  {
+    "_comments": [
+      "Lock DisplayName to the unprefixed entity title so CodeGen form SectionName and Explorer chrome stay human."
+    ],
+    "fields": {
       "DisplayName": "Contact Methods"
     },
     "primaryKey": {
