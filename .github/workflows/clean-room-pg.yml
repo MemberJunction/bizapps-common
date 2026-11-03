@@ -1,0 +1,123 @@
+name: Clean-Room PostgreSQL Gate
+
+# Stands up a PostgreSQL 16 service container, installs the MemberJunction core baseline for the
+# tag declared in mj-app.json, applies migrations-pg/, runs `mj sync push --dir ./metadata --ci`,
+# and asserts that PostgreSQL query dialect rows exist for party-lookup-organizations and
+# party-lookup-people (#370, #319).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [next, main]
+  pull_request:
+    branches: [next, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-room-pg-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-clean-room:
+    name: Clean-room PostgreSQL migrate + metadata push
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 'yourStrong(!)Password123'
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_PLATFORM: postgresql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: bizapps_common_cleanroom_pg_${{ github.run_id }}_${{ github.run_attempt }}
+      DB_USERNAME: postgres
+      DB_PASSWORD: 'yourStrong(!)Password123'
+      CODEGEN_DB_USERNAME: postgres
+      CODEGEN_DB_PASSWORD: 'yourStrong(!)Password123'
+      PGPASSWORD: 'yourStrong(!)Password123'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Verify PostgreSQL parity static check
+        run: |
+          pnpm run check:pg-parity:test
+          pnpm run check:pg-parity
+
+      - name: Bootstrap PostgreSQL database and MJ roles
+        run: |
+          set -euo pipefail
+          psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d postgres -v ON_ERROR_STOP=1 <<SQL
+          DO \$\$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdp_UI') THEN CREATE ROLE "cdp_UI"; END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdp_Developer') THEN CREATE ROLE "cdp_Developer"; END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdp_Integration') THEN CREATE ROLE "cdp_Integration"; END IF;
+          END
+          \$\$;
+          CREATE DATABASE "$DB_DATABASE";
+          SQL
+
+      - name: Resolve the MJ core tag from mj-app.json
+        id: mj
+        run: |
+          TAG=$(node -e "
+            const range = require('./mj-app.json').mjVersionRange || '';
+            const m = range.match(/>=\s*([0-9][^\s]*)/);
+            if (!m) { console.error('Cannot parse mjVersionRange: ' + JSON.stringify(range)); process.exit(1); }
+            console.log('v' + m[1]);
+          ")
+          echo "Building against MJ core $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install MJ core on PostgreSQL
+        run: pnpm exec mj migrate --tag ${{ steps.mj.outputs.tag }} --verbose
+
+      - name: Apply this repo's PostgreSQL migration chain
+        run: pnpm exec mj migrate --schema __mj_BizAppsCommon --verbose
+
+      - name: Push metadata (mj sync push)
+        run: npx mj sync push --dir ./metadata --ci
+
+      - name: Verify PostgreSQL QuerySQL rows exist for party-lookup queries
+        run: |
+          set -euo pipefail
+          COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -tA -v ON_ERROR_STOP=1 -c "
+            SELECT COUNT(*)
+              FROM __mj.\"QuerySQL\" qs
+              JOIN __mj.\"Query\" q ON q.\"ID\" = qs.\"QueryID\"
+              JOIN __mj.\"SQLDialect\" d ON d.\"ID\" = qs.\"SQLDialectID\"
+             WHERE q.\"Name\" IN ('Common: Party Lookup Organizations', 'Common: Party Lookup People')
+               AND d.\"PlatformKey\" = 'postgresql';
+          ")
+          echo "Found $COUNT PostgreSQL QuerySQL row(s) for party-lookup queries"
+          if [ "$COUNT" -lt 2 ]; then
+            echo "::error::Expected 2 PostgreSQL QuerySQL rows for Common: Party Lookup Organizations and Common: Party Lookup People, got $COUNT"
+            exit 1
+          fi

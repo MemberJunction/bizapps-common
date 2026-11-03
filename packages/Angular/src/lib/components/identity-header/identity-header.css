@@ -7,7 +7,7 @@
     background: var(--mj-bg-surface-card);
     border: 1px solid var(--mj-border-default);
     border-radius: var(--mj-radius-xl, 16px);
-    box-shadow: var(--mj-shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
+    box-shadow: var(--mj-shadow-md);
     position: relative;
     overflow: hidden;
     container-type: inline-size;
@@ -21,7 +21,7 @@
     left: 0;
     right: 0;
     height: 3.5px;
-    background: linear-gradient(90deg, #38bdf8 0%, #6366f1 50%, #10b981 100%);
+    background: linear-gradient(90deg, var(--mj-brand-primary) 0%, var(--mj-brand-accent) 50%, var(--mj-status-success) 100%);
 }
 
 .biz-hero__identity {
@@ -40,8 +40,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--mj-brand-primary) 30%, var(--mj-bg-surface)) 0%, color-mix(in srgb, var(--mj-brand-accent, #6366f1) 25%, var(--mj-bg-surface)) 100%);
-    color: var(--mj-text-inverse, #ffffff);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--mj-brand-primary) 30%, var(--mj-bg-surface)) 0%, color-mix(in srgb, var(--mj-brand-accent) 25%, var(--mj-bg-surface)) 100%);
+    color: var(--mj-text-inverse);
     box-shadow: 0 4px 14px color-mix(in srgb, var(--mj-brand-primary) 25%, transparent);
     border: 2px solid color-mix(in srgb, var(--mj-brand-primary) 35%, transparent);
 }
@@ -60,7 +60,7 @@
     width: 13px;
     height: 13px;
     border-radius: 50%;
-    background: var(--mj-status-success, #10b981);
+    background: var(--mj-status-success);
     border: 2.5px solid var(--mj-bg-surface-card);
 }
 
@@ -320,7 +320,7 @@ button.biz-hero__stat-val:hover {
     width: 32px;
     height: 32px;
     border-radius: var(--mj-radius-md, 8px);
-    background: var(--mj-bg-surface-sunken, rgba(255, 255, 255, 0.04));
+    background: var(--mj-bg-surface-sunken);
     border: 1px solid var(--mj-border-default);
     color: var(--mj-text-secondary);
     cursor: pointer;
@@ -333,7 +333,7 @@ button.biz-hero__stat-val:hover {
 
 .biz-hero__toggle:hover {
     color: var(--mj-text-primary);
-    background: var(--mj-bg-hover, rgba(255, 255, 255, 0.08));
+    background: var(--mj-bg-surface-hover);
     border-color: var(--mj-brand-primary);
 }
 
@@ -355,4 +355,8 @@ button.biz-hero__stat-val:hover {
 
 .biz-hero--collapsed .biz-hero__name {
     font-size: 1.15rem;
+}
+
+.biz-hero--collapsed .biz-hero__edit {
+    margin-top: var(--mj-space-3);
 }

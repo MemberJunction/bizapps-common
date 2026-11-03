@@ -107,7 +107,7 @@ export interface ActivityKPIs {
             <main class="mja-main">
                 @if (IsLoading) {
                     <div class="mja-loading">
-                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--mj-brand-primary, #0284c7);"></i>
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--mj-brand-primary);"></i>
                         <span>Loading activity timeline…</span>
                     </div>
                 } @else if (FilteredActivities.length === 0) {
@@ -231,7 +231,7 @@ export interface ActivityKPIs {
             gap: 16px;
             padding: 20px 24px;
             min-height: 100%;
-            background: var(--mj-bg-surface-sunken, #f8fafc);
+            background: var(--mj-bg-surface-sunken);
             box-sizing: border-box;
             position: relative;
         }
@@ -241,10 +241,10 @@ export interface ActivityKPIs {
             flex-direction: column;
             gap: 16px;
             padding: 18px 22px;
-            background: var(--mj-bg-surface-card, #ffffff);
-            border: 1px solid var(--mj-border-default, #e2e8f0);
+            background: var(--mj-bg-surface-card);
+            border: 1px solid var(--mj-border-default);
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--mj-shadow-sm);
         }
 
         .mja-head__top {
@@ -265,34 +265,34 @@ export interface ActivityKPIs {
             width: 44px;
             height: 44px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-            color: #ffffff;
+            background: linear-gradient(135deg, var(--mj-brand-primary) 0%, var(--mj-brand-primary-hover) 100%);
+            color: var(--mj-text-inverse);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+            box-shadow: var(--mj-shadow-md);
             flex-shrink: 0;
         }
 
         .mja-head__titles { display: flex; flex-direction: column; gap: 2px; }
-        .mja-head__title { margin: 0; font-size: 18px; font-weight: 700; color: var(--mj-text-primary, #0f172a); }
-        .mja-head__sub { margin: 0; font-size: 12px; color: var(--mj-text-muted, #64748b); }
+        .mja-head__title { margin: 0; font-size: 18px; font-weight: 700; color: var(--mj-text-primary); }
+        .mja-head__sub { margin: 0; font-size: 12px; color: var(--mj-text-muted); }
 
         .mja-kpis {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 12px;
             padding-top: 12px;
-            border-top: 1px solid var(--mj-border-default, #e2e8f0);
+            border-top: 1px solid var(--mj-border-default);
         }
 
         .mja-kpi { display: flex; flex-direction: column; gap: 2px; }
-        .mja-kpi__label { font-size: 11px; font-weight: 600; color: var(--mj-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.04em; }
-        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-mono, monospace); color: var(--mj-text-primary, #0f172a); }
-        .mja-val--green { color: #16a34a; }
-        .mja-val--blue { color: #0284c7; }
-        .mja-val--amber { color: #d97706; }
+        .mja-kpi__label { font-size: 11px; font-weight: 600; color: var(--mj-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-family-mono, monospace); color: var(--mj-text-primary); }
+        .mja-val--green { color: var(--mj-status-success); }
+        .mja-val--blue { color: var(--mj-brand-primary); }
+        .mja-val--amber { color: var(--mj-status-warning); }
 
         .mja-toolbar {
             display: flex;
@@ -300,7 +300,7 @@ export interface ActivityKPIs {
             justify-content: space-between;
             gap: 14px;
             padding-top: 10px;
-            border-top: 1px dashed var(--mj-border-default, #e2e8f0);
+            border-top: 1px dashed var(--mj-border-default);
             flex-wrap: wrap;
         }
 
@@ -313,24 +313,24 @@ export interface ActivityKPIs {
             border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
-            border: 1px solid var(--mj-border-default, #cbd5e1);
-            background: var(--mj-bg-surface, #ffffff);
-            color: var(--mj-text-secondary, #475569);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
+            color: var(--mj-text-secondary);
             cursor: pointer;
             transition: all 0.15s ease;
         }
-        .mja-chip:hover { background: var(--mj-bg-surface-hover, #f1f5f9); }
-        .mja-chip--active { background: var(--mj-brand-primary, #0284c7); color: #ffffff !important; border-color: var(--mj-brand-primary, #0284c7); }
+        .mja-chip:hover { background: var(--mj-bg-surface-hover); }
+        .mja-chip--active { background: var(--mj-brand-primary); color: var(--mj-text-inverse) !important; border-color: var(--mj-brand-primary); }
 
         .mja-search-box { flex: 1; max-width: 380px; min-width: 220px; }
         .mja-search-input { width: 100%; font-size: 12px; }
 
         .mja-main {
-            background: var(--mj-bg-surface-card, #ffffff);
-            border: 1px solid var(--mj-border-default, #e2e8f0);
+            background: var(--mj-bg-surface-card);
+            border: 1px solid var(--mj-border-default);
             border-radius: 12px;
             padding: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--mj-shadow-sm);
             flex: 1;
         }
 
@@ -341,7 +341,7 @@ export interface ActivityKPIs {
             justify-content: center;
             gap: 10px;
             padding: 60px 20px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-size: 13px;
         }
 
@@ -357,31 +357,31 @@ export interface ActivityKPIs {
             gap: 14px;
             padding: 14px 16px;
             border-radius: 10px;
-            border: 1px solid var(--mj-border-default, #e2e8f0);
-            background: var(--mj-bg-surface, #ffffff);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
             cursor: pointer;
             transition: all 0.15s ease;
             position: relative;
         }
 
         .mja-item:hover {
-            border-color: var(--mj-brand-primary, #0284c7);
-            background: var(--mj-bg-surface-hover, #f8fafc);
+            border-color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--mj-shadow-sm);
         }
 
         .mja-item--selected {
-            border-color: var(--mj-brand-primary, #0284c7);
-            background: color-mix(in srgb, var(--mj-brand-primary, #0284c7) 6%, #ffffff);
+            border-color: var(--mj-brand-primary);
+            background: color-mix(in srgb, var(--mj-brand-primary) 6%, var(--mj-bg-surface));
         }
 
         .mja-item__icon {
             width: 38px;
             height: 38px;
             border-radius: 8px;
-            background: #f1f5f9;
-            color: #0284c7;
+            background: var(--mj-bg-surface-sunken);
+            color: var(--mj-brand-primary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -389,8 +389,8 @@ export interface ActivityKPIs {
             flex-shrink: 0;
         }
 
-        .mja-item__icon[data-dir="Inbound"] { background: #e0f2fe; color: #0369a1; }
-        .mja-item__icon[data-dir="Outbound"] { background: #dcfce7; color: #15803d; }
+        .mja-item__icon[data-dir="Inbound"] { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+        .mja-item__icon[data-dir="Outbound"] { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
 
         .mja-item__body {
             display: flex;
@@ -418,7 +418,7 @@ export interface ActivityKPIs {
         .mja-item__title {
             font-size: 14px;
             font-weight: 700;
-            color: var(--mj-text-primary, #0f172a);
+            color: var(--mj-text-primary);
         }
 
         .mja-pill {
@@ -426,26 +426,26 @@ export interface ActivityKPIs {
             border-radius: 9999px;
             font-size: 11px;
             font-weight: 600;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--mj-bg-surface-sunken);
+            color: var(--mj-text-secondary);
         }
 
-        .mja-pill[data-dir="Inbound"] { background: #e0f2fe; color: #0369a1; }
-        .mja-pill[data-dir="Outbound"] { background: #dcfce7; color: #15803d; }
-        .mja-pill--status[data-status="Scheduled"] { background: #fef3c7; color: #92400e; }
-        .mja-pill--status[data-status="Completed"] { background: #dcfce7; color: #166534; }
-        .mja-pill--outcome { background: #ede9fe; color: #6b21a8; }
+        .mja-pill[data-dir="Inbound"] { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+        .mja-pill[data-dir="Outbound"] { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+        .mja-pill--status[data-status="Scheduled"] { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
+        .mja-pill--status[data-status="Completed"] { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+        .mja-pill--outcome { background: color-mix(in srgb, var(--mj-brand-accent) 14%, var(--mj-bg-surface)); color: var(--mj-brand-accent); }
 
         .mja-item__time {
             font-size: 12px;
-            color: var(--mj-text-muted, #64748b);
-            font-family: var(--mj-font-mono, monospace);
+            color: var(--mj-text-muted);
+            font-family: var(--mj-font-family-mono, monospace);
         }
 
         .mja-item__desc {
             margin: 0;
             font-size: 13px;
-            color: var(--mj-text-secondary, #334155);
+            color: var(--mj-text-secondary);
             line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -458,7 +458,7 @@ export interface ActivityKPIs {
             align-items: center;
             gap: 12px;
             font-size: 11px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             padding-top: 2px;
             flex-wrap: wrap;
         }
@@ -467,32 +467,32 @@ export interface ActivityKPIs {
 
         .mja-item__open-btn {
             background: transparent;
-            border: 1px solid var(--mj-border-default, #cbd5e1);
+            border: 1px solid var(--mj-border-default);
             border-radius: 6px;
             padding: 6px 8px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             cursor: pointer;
             transition: all 0.15s ease;
         }
 
         .mja-item__open-btn:hover {
-            color: var(--mj-brand-primary, #0284c7);
-            border-color: var(--mj-brand-primary, #0284c7);
-            background: var(--mj-bg-surface-hover, #f1f5f9);
+            color: var(--mj-brand-primary);
+            border-color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
         }
 
         /* Slide-in Drawer */
         .mja-drawer-backdrop {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
+            position: fixed; inset: 0; background: var(--mj-bg-overlay);
             z-index: 999;
         }
 
         .mja-drawer {
             position: fixed; top: 0; right: 0; bottom: 0;
             width: 480px; max-width: 90vw;
-            background: var(--mj-bg-surface-card, #ffffff);
+            background: var(--mj-bg-surface-card);
             z-index: 1000;
-            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--mj-shadow-lg);
             display: flex;
             flex-direction: column;
             overflow-y: auto;
@@ -503,7 +503,7 @@ export interface ActivityKPIs {
             align-items: center;
             justify-content: space-between;
             padding: 16px 20px;
-            border-bottom: 1px solid var(--mj-border-default, #e2e8f0);
+            border-bottom: 1px solid var(--mj-border-default);
         }
 
         .mja-drawer__type {
@@ -512,7 +512,7 @@ export interface ActivityKPIs {
             gap: 8px;
             font-size: 14px;
             font-weight: 700;
-            color: var(--mj-brand-primary, #0284c7);
+            color: var(--mj-brand-primary);
         }
 
         .mja-drawer__actions {
@@ -525,7 +525,7 @@ export interface ActivityKPIs {
             background: transparent;
             border: none;
             font-size: 18px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             cursor: pointer;
             padding: 4px;
         }
@@ -541,7 +541,7 @@ export interface ActivityKPIs {
             margin: 0;
             font-size: 18px;
             font-weight: 700;
-            color: var(--mj-text-primary, #0f172a);
+            color: var(--mj-text-primary);
         }
 
         .mja-drawer__meta-grid {
@@ -549,24 +549,24 @@ export interface ActivityKPIs {
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             padding: 12px;
-            background: var(--mj-bg-surface-sunken, #f8fafc);
+            background: var(--mj-bg-surface-sunken);
             border-radius: 8px;
-            border: 1px solid var(--mj-border-default, #e2e8f0);
+            border: 1px solid var(--mj-border-default);
         }
 
         .mja-drawer__meta-item { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
-        .mja-drawer__meta-item label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; color: var(--mj-text-muted, #64748b); }
+        .mja-drawer__meta-item label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; color: var(--mj-text-muted); }
 
         .mja-drawer__section { display: flex; flex-direction: column; gap: 6px; }
-        .mja-drawer__section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mj-text-muted, #64748b); }
+        .mja-drawer__section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mj-text-muted); }
         .mja-drawer__notes {
             padding: 12px;
             border-radius: 8px;
-            background: var(--mj-bg-surface, #ffffff);
-            border: 1px solid var(--mj-border-default, #e2e8f0);
+            background: var(--mj-bg-surface);
+            border: 1px solid var(--mj-border-default);
             font-size: 13px;
             line-height: 1.5;
-            color: var(--mj-text-secondary, #334155);
+            color: var(--mj-text-secondary);
             white-space: pre-wrap;
         }
     `]

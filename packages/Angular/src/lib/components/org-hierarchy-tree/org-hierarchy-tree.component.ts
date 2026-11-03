@@ -84,7 +84,7 @@ export class OrgHierarchyTreeComponent implements OnInit {
             ParentField: 'ParentID',
             SubtitleField: 'OrganizationType',
             DefaultIcon: 'fa-solid fa-building',
-            DefaultColor: '#38bdf8',
+            DefaultColor: 'var(--mj-brand-primary)',
             FocusRecordID: this._organizationID || undefined,
             Height: '440px',
             ShowSearch: true,

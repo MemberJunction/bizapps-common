@@ -52,6 +52,8 @@ jobs:
         with:
           node-version: 24
 
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
       # Two refs, and they are not interchangeable:
       #
       #   sha — the MERGE BASE of the freshly-fetched base and HEAD, for "what did THIS PR
@@ -99,13 +101,18 @@ jobs:
       # green run mean something. Keep the two lines together.
       - name: EntityField Sequence must not be a literal placeholder
         run: |
-          node ./.github/scripts/check-migration-entityfield-sequence.mjs --self-test
-          node ./.github/scripts/check-migration-entityfield-sequence.mjs ${{ steps.mb.outputs.sha }} HEAD
+          pnpm run lint:entityfield-sequence:test
+          pnpm run lint:entityfield-sequence ${{ steps.mb.outputs.sha }} HEAD
 
       - name: Versioned migrations must not contain spDeleteUnneededEntityFields
         run: |
-          node ./.github/scripts/check-migration-no-prune.mjs --self-test
-          node ./.github/scripts/check-migration-no-prune.mjs ${{ steps.mb.outputs.sha }} HEAD
+          pnpm run lint:no-prune:test
+          pnpm run lint:no-prune ${{ steps.mb.outputs.sha }} HEAD
+
+      - name: Validate PostgreSQL migration parity
+        run: |
+          pnpm run check:pg-parity:test
+          pnpm run check:pg-parity
 
       # Advisory here: a missing Postgres counterpart annotates the PR but never fails it, so a
       # migration can land and get its converted file in a later PR. The release gate
@@ -254,16 +261,17 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-      - name: Install sqlcmd (if available)
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Install sqlcmd
         run: |
+          set -o pipefail
           if ! command -v sqlcmd &> /dev/null && [ ! -x /opt/mssql-tools18/bin/sqlcmd ] && [ ! -x /opt/mssql-tools/bin/sqlcmd ]; then
-            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg 2>/dev/null || true
-            curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list 2>/dev/null || true
-            sudo apt-get update -qq 2>/dev/null || true
-            sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev 2>/dev/null || true
-            if [ -d "/opt/mssql-tools18/bin" ]; then
-              echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
-            fi
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+            curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            sudo apt-get update -qq
+            sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev
+            echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
           fi
 
       - name: Parse migrations with SQL Server

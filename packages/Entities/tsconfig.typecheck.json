@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": true, "strict": true },
+  "compilerOptions": { "noEmit": true, "strict": true, "types": ["node"] },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

@@ -582,12 +582,16 @@ export class RelationshipListComponent {
 
     /** Returns the display name of the "To" side entity. */
     private getToSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.ToPerson || rel.ToOrganization || 'Unknown';
+        if (rel.ToPersonID && rel.ToPerson) return rel.ToPerson;
+        if (rel.ToOrganizationID && rel.ToOrganization) return rel.ToOrganization;
+        return 'Unknown';
     }
 
     /** Returns the display name of the "From" side entity. */
     private getFromSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.FromPerson || rel.FromOrganization || 'Unknown';
+        if (rel.FromPersonID && rel.FromPerson) return rel.FromPerson;
+        if (rel.FromOrganizationID && rel.FromOrganization) return rel.FromOrganization;
+        return 'Unknown';
     }
 
     /** Returns the display name of whichever side is NOT the current entity. */
@@ -696,6 +700,14 @@ export class RelationshipListComponent {
         if (this.DraftRelationship) {
             this.DraftRelationship.ToPersonID = null;
             this.DraftRelationship.ToOrganizationID = null;
+            if (typeof this.DraftRelationship.Set === 'function') {
+                this.DraftRelationship.Set('ToPerson', null);
+                this.DraftRelationship.Set('ToOrganization', null);
+            } else {
+                const draft = this.DraftRelationship as unknown as Record<string, unknown>;
+                draft['ToPerson'] = null;
+                draft['ToOrganization'] = null;
+            }
         }
         // A picker that survives the type change (person to person) keeps its last search otherwise.
         this.partyFields?.forEach(field => field.ClearSearch());

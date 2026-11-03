@@ -6,8 +6,12 @@
  * Everything that can go wrong on a real instance is a row shape: missing, blank, malformed JSON, a
  * zone name the runtime does not know, or MJ's own key arriving later and taking precedence.
  */
-import { describe, expect, it } from 'vitest';
-import { ResolveBusinessTimeZoneSetting, type InstanceConfigurationRow } from '../business-time-zone-engine.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+    BusinessTimeZoneEngine,
+    ResolveBusinessTimeZoneSetting,
+    type InstanceConfigurationRow,
+} from '../business-time-zone-engine.js';
 
 const row = (FeatureKey: string, Value: string | null, DefaultValue: string | null = '{"iana":"UTC","sql":"UTC"}'): InstanceConfigurationRow =>
     ({ FeatureKey, Value, DefaultValue });
@@ -59,5 +63,57 @@ describe('ResolveBusinessTimeZoneSetting', () => {
             row('BizApps.BusinessTimeZone', '{"iana":"America/Chicago","sql":"Central Standard Time"}'),
         ]);
         expect(setting.Source).toBe('fallback');
+    });
+});
+
+describe('BusinessTimeZoneEngine.SetZoneForTesting and ResetForTesting', () => {
+    afterEach(() => {
+        BusinessTimeZoneEngine.ResetForTesting();
+    });
+
+    it('sets both IANA and SQL zone names from an object and marks the engine loaded', () => {
+        const restore = BusinessTimeZoneEngine.SetZoneForTesting({
+            iana: 'America/Chicago',
+            sql: 'Central Standard Time',
+        });
+
+        expect(BusinessTimeZoneEngine.Instance.Loaded).toBe(true);
+        expect(BusinessTimeZoneEngine.Instance.Zone).toBe('America/Chicago');
+        expect(BusinessTimeZoneEngine.Instance.SqlZone).toBe('Central Standard Time');
+        expect(BusinessTimeZoneEngine.Instance.Setting).toEqual({
+            Iana: 'America/Chicago',
+            Sql: 'Central Standard Time',
+            Source: 'BizApps.BusinessTimeZone',
+        });
+
+        restore();
+        expect(BusinessTimeZoneEngine.Instance.Loaded).toBe(false);
+    });
+
+    it('accepts an IANA string, resolves its Windows SQL zone name, and restores prior state via the callback', () => {
+        const restoreOuter = BusinessTimeZoneEngine.SetZoneForTesting('America/New_York');
+        expect(BusinessTimeZoneEngine.Instance.Zone).toBe('America/New_York');
+        expect(BusinessTimeZoneEngine.Instance.SqlZone).toBe('Eastern Standard Time');
+
+        const restoreInner = BusinessTimeZoneEngine.SetZoneForTesting('Asia/Tokyo');
+        expect(BusinessTimeZoneEngine.Instance.Zone).toBe('Asia/Tokyo');
+        expect(BusinessTimeZoneEngine.Instance.SqlZone).toBe('Tokyo Standard Time');
+
+        restoreInner();
+        expect(BusinessTimeZoneEngine.Instance.Zone).toBe('America/New_York');
+        expect(BusinessTimeZoneEngine.Instance.SqlZone).toBe('Eastern Standard Time');
+
+        restoreOuter();
+        expect(BusinessTimeZoneEngine.Instance.Loaded).toBe(false);
+    });
+
+    it('ResetForTesting clears any configured zone and marks the engine unloaded', () => {
+        BusinessTimeZoneEngine.SetZoneForTesting('America/Chicago');
+        expect(BusinessTimeZoneEngine.Instance.Loaded).toBe(true);
+
+        BusinessTimeZoneEngine.ResetForTesting();
+        expect(BusinessTimeZoneEngine.Instance.Loaded).toBe(false);
+        expect(BusinessTimeZoneEngine.Instance.Zone).toBe('UTC');
+        expect(BusinessTimeZoneEngine.Instance.SqlZone).toBe('UTC');
     });
 });

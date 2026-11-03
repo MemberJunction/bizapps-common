@@ -461,6 +461,61 @@ test('a push whose target is base_ref, default_branch or ref_name is a violation
     assert.deepEqual(findProtectedPushes('git push app-push "HEAD:refs/heads/$BRANCH"\n'), []);
 });
 
+// On a push to main, `github.ref` and `$GITHUB_REF` are `refs/heads/main`; on a PR into next,
+// `pull_request.base.ref` is `next`.
+test('a push whose target is github.ref, GITHUB_REF or pull_request.base.ref is a violation', () => {
+    for (const line of [
+        'git push origin "HEAD:${{ github.ref }}"',
+        'git push origin "HEAD:${{ github.event.ref }}"',
+        'git push origin HEAD:$GITHUB_REF',
+        'git push origin "HEAD:${GITHUB_REF}"',
+        'git push origin "HEAD:${{ github.event.pull_request.base.ref }}"',
+        "execFileSync('git', ['push', 'origin', `HEAD:${process.env.GITHUB_REF}`]);",
+    ]) {
+        assert.equal(findProtectedPushes(`${line}\n`).length, 1, line);
+    }
+    // The head side of a PR is the contributor's branch, never a protected one.
+    assert.deepEqual(findProtectedPushes('git push origin "HEAD:${{ github.head_ref }}"\n'), []);
+    assert.deepEqual(findProtectedPushes('git push origin "HEAD:${{ github.event.pull_request.head.ref }}"\n'), []);
+});
+
+test('a tag push whose name uses ref_name or GITHUB_REF is allowed unless accompanied by a branch push', () => {
+    for (const line of [
+        'git push origin "refs/tags/${{ github.ref_name }}"',
+        'git push origin "refs/tags/v${{ github.ref_name }}"',
+        'git push origin "HEAD:refs/tags/${GITHUB_REF_NAME}"',
+        'git push origin ":refs/tags/${{ github.ref_name }}"',
+        'git push origin --tags',
+        "execFileSync('git', ['push', 'origin', `refs/tags/${process.env.GITHUB_REF_NAME}`]);",
+    ]) {
+        assert.deepEqual(findProtectedPushes(`${line}\n`), [], line);
+    }
+    // A branch ref pushed alongside a tag must still be flagged.
+    assert.equal(findProtectedPushes('git push origin "refs/tags/v${{ github.ref_name }}" HEAD:main\n').length, 1);
+    assert.equal(findProtectedPushes('git push origin "refs/tags/v1.0.0" "HEAD:${{ github.ref_name }}"\n').length, 1);
+});
+
+test('REST merges into main or next via gh api or octokit are violations', () => {
+    for (const snippet of [
+        'gh api repos/OWNER/REPO/merges -f base=main -f head=some-branch',
+        'gh api repos/${{ github.repository }}/merges -f base=next -f head=some-branch',
+        'gh api repos/OWNER/REPO/merges --field base=main --field head=some-branch',
+        'gh api repos/OWNER/REPO/merges --raw-field base=next --raw-field head=some-branch',
+        'gh api repos/OWNER/REPO/merges -f "base=${{ github.base_ref }}" -f head=some-branch',
+        'gh api repos/OWNER/REPO/merges --input body.json',
+        "execFileSync('gh', ['api', `repos/${repo}/merges`, '-f', 'base=main', '-f', `head=${sha}`]);",
+        "await github.rest.repos.merge({ owner, repo, base: 'main', head });",
+        "await octokit.rest.repos.merge({ owner, repo, base: 'next', head });",
+        "await octokit.repos.merge({ owner, repo, base: process.env.GITHUB_BASE_REF, head });",
+        "await octokit.request('POST /repos/{owner}/{repo}/merges', { owner, repo, base: 'main', head });",
+    ]) {
+        assert.equal(findProtectedPushes(`${snippet}\n`).length, 1, snippet);
+    }
+    assert.deepEqual(findProtectedPushes('gh api repos/OWNER/REPO/merges -f base=chore/thing -f head=some-branch\n'), []);
+    assert.deepEqual(findProtectedPushes("await github.rest.repos.merge({ owner, repo, base: 'chore/thing', head });\n"), []);
+    assert.deepEqual(findProtectedPushes("await octokit.request('POST /repos/{owner}/{repo}/merges', { owner, repo, base: 'chore/thing', head });\n"), []);
+});
+
 // Prettier splits long calls across lines; a line-by-line reader never saw them whole.
 test('a simple-git push split across lines is a violation', () => {
     const text = ['await git.push(', "    'origin',", "    'HEAD:main',", ');', ''].join('\n');
