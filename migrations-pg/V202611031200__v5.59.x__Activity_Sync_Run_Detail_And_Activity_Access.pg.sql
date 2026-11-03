@@ -29,28 +29,32 @@ WITH "RoleVerbs" AS (
 ),
 "RoleAccess" AS (
     SELECT "RoleID",
-           CASE WHEN "AllowRead"   = 1 AND "DenyRead"   = 0 THEN 1 ELSE 0 END AS "HasRead",
+           1 AS "HasRead",
            CASE WHEN "AllowUpdate" = 1 AND "DenyUpdate" = 0 THEN 1 ELSE 0 END AS "HasUpdate",
            CASE WHEN "AllowCreate" = 1 AND "DenyCreate" = 0 THEN 1 ELSE 0 END AS "HasCreate"
       FROM "RoleVerbs"
-     WHERE ("AllowRead" = 1 AND "DenyRead" = 0)
-        OR ("AllowUpdate" = 1 AND "DenyUpdate" = 0)
-        OR ("AllowCreate" = 1 AND "DenyCreate" = 0)
+     WHERE "AllowRead" = 1 AND "DenyRead" = 0
 )
 INSERT INTO ${mjSchema}."EntityFieldPermission" ("EntityFieldID", "RoleID", "ReadAccess", "UpdateAccess", "CreateAccess")
 SELECT ef."ID",
        ra."RoleID",
        CASE
-           WHEN ef."Name" IN ('CapturedContent', 'EncryptionKeyID', 'EncryptionKey') THEN
-               CASE WHEN ra."RoleID" = 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E' AND ra."HasRead" = 1 THEN 'Allow' ELSE 'No Access' END
-           WHEN ra."HasRead" = 1 THEN 'Allow'
-           ELSE 'No Access'
+           WHEN ef."Name" IN ('CapturedContent', 'EncryptionKeyID', 'EncryptionKey')
+                AND ra."RoleID" <> 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E'
+               THEN 'No Access'
+           ELSE 'Allow'
        END,
        CASE
+           WHEN ef."Name" IN ('CapturedContent', 'EncryptionKeyID', 'EncryptionKey')
+                AND ra."RoleID" <> 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E'
+               THEN 'No Access'
            WHEN ef."IsPrimaryKey" = FALSE AND ef."IsVirtual" = FALSE AND ef."Name" NOT IN ('__mj_CreatedAt', '__mj_UpdatedAt') AND ef."AllowUpdateAPI" = TRUE AND ra."HasUpdate" = 1 THEN 'Allow'
            ELSE 'No Access'
        END,
        CASE
+           WHEN ef."Name" IN ('CapturedContent', 'EncryptionKeyID', 'EncryptionKey')
+                AND ra."RoleID" <> 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E'
+               THEN 'No Access'
            WHEN ef."IsPrimaryKey" = FALSE AND ef."IsVirtual" = FALSE AND ef."Name" NOT IN ('__mj_CreatedAt', '__mj_UpdatedAt') AND ef."AllowUpdateAPI" = TRUE AND ra."HasCreate" = 1 THEN 'Allow'
            ELSE 'No Access'
        END
@@ -67,6 +71,8 @@ SELECT ef."ID",
 
 UPDATE ${mjSchema}."EntityFieldPermission" efp
    SET "ReadAccess" = 'No Access',
+       "UpdateAccess" = 'No Access',
+       "CreateAccess" = 'No Access',
        "__mj_UpdatedAt" = NOW()
   FROM ${mjSchema}."EntityField" ef
  WHERE ef."ID" = efp."EntityFieldID"
@@ -83,17 +89,16 @@ UPDATE ${mjSchema}."Entity"
 -- Part 2: Activities — Row-Level Security for Private visibility on UI role
 -- -----------------------------------------------------------------------------
 
-INSERT INTO ${mjSchema}."RowLevelSecurityFilter" ("ID", "Name", "Description", "FilterText", "PlatformVariants")
-SELECT v."ID", v."Name", v."Description", v."FilterText", v."PlatformVariants"
+INSERT INTO ${mjSchema}."RowLevelSecurityFilter" ("ID", "Name", "Description", "FilterText")
+SELECT v."ID", v."Name", v."Description", v."FilterText"
   FROM (
       VALUES (
           CAST('72E55425-8822-4E70-A075-000000000347' AS UUID),
           'Common: Non-Private or Own Activities',
           'Allows reading non-Private Activities, or Private Activities created by the requesting user or ingested through a connection owned by the requesting user.',
-          '([Visibility] <> N''Private'' OR [LoggedByUserID] = ''{{UserID}}'' OR [ActivitySyncConnectionID] IN (SELECT [ID] FROM [__mj_BizAppsCommon].[ActivitySyncConnection] WHERE [OwnerUserID] = ''{{UserID}}''))',
-          '{"postgresql":{"FilterText":"(\"Visibility\" <> ''Private'' OR \"LoggedByUserID\" = ''{{UserID}}''::uuid OR \"ActivitySyncConnectionID\" IN (SELECT \"ID\" FROM \"__mj_BizAppsCommon\".\"ActivitySyncConnection\" WHERE \"OwnerUserID\" = ''{{UserID}}''::uuid))"}}'
+          '("Visibility" <> ''Private'' OR "LoggedByUserID" = ''{{UserID}}''::uuid OR "ActivitySyncConnectionID" IN (SELECT "ID" FROM __mj_bizappscommon."ActivitySyncConnection" WHERE "OwnerUserID" = ''{{UserID}}''::uuid))'
       )
-  ) AS v("ID", "Name", "Description", "FilterText", "PlatformVariants")
+  ) AS v("ID", "Name", "Description", "FilterText")
   LEFT JOIN ${mjSchema}."RowLevelSecurityFilter" existing
     ON existing."ID" = v."ID"
     OR existing."Name" = v."Name"

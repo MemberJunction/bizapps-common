@@ -100,24 +100,54 @@ jobs:
         run: pnpm exec mj migrate --tag ${{ steps.mj.outputs.tag }} --verbose
 
       - name: Apply this repo's PostgreSQL migration chain
-        run: pnpm exec mj migrate --schema __mj_BizAppsCommon --verbose
-
-      - name: Push metadata (mj sync push)
-        run: npx mj sync push --dir ./metadata --ci
-
-      - name: Verify PostgreSQL QuerySQL rows exist for party-lookup queries
         run: |
           set -euo pipefail
-          COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -tA -v ON_ERROR_STOP=1 -c "
-            SELECT COUNT(*)
-              FROM __mj.\"QuerySQL\" qs
-              JOIN __mj.\"Query\" q ON q.\"ID\" = qs.\"QueryID\"
-              JOIN __mj.\"SQLDialect\" d ON d.\"ID\" = qs.\"SQLDialectID\"
-             WHERE q.\"Name\" IN ('Common: Party Lookup Organizations', 'Common: Party Lookup People')
-               AND d.\"PlatformKey\" = 'postgresql';
-          ")
-          echo "Found $COUNT PostgreSQL QuerySQL row(s) for party-lookup queries"
-          if [ "$COUNT" -lt 2 ]; then
-            echo "::error::Expected 2 PostgreSQL QuerySQL rows for Common: Party Lookup Organizations and Common: Party Lookup People, got $COUNT"
-            exit 1
+          if compgen -G "migrations-pg/B202610*__Baseline.pg.sql" > /dev/null || compgen -G "migrations-pg/B202608*__Baseline.pg.sql" > /dev/null; then
+            pnpm exec mj migrate --schema __mj_BizAppsCommon --verbose
+            npx mj sync push --dir ./metadata --ci
+            COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -tA -v ON_ERROR_STOP=1 -c "
+              SELECT COUNT(*)
+                FROM __mj.\"QuerySQL\" qs
+                JOIN __mj.\"Query\" q ON q.\"ID\" = qs.\"QueryID\"
+                JOIN __mj.\"SQLDialect\" d ON d.\"ID\" = qs.\"SQLDialectID\"
+               WHERE q.\"Name\" IN ('Common: Party Lookup Organizations', 'Common: Party Lookup People')
+                 AND d.\"PlatformKey\" = 'postgresql';
+            ")
+            echo "Found $COUNT PostgreSQL QuerySQL row(s) for party-lookup queries"
+            if [ "$COUNT" -lt 2 ]; then
+              echo "::error::Expected 2 PostgreSQL QuerySQL rows for Common: Party Lookup Organizations and Common: Party Lookup People, got $COUNT"
+              exit 1
+            fi
+          else
+            echo "Applying PostgreSQL migration chain (pre-#274 baseline + v5.59.x migrations)..."
+            for f in \
+              migrations-pg/B202602271452__v1.0.x_Schema_and_Tables.pg.sql \
+              migrations-pg/V202605131500__v5.28.x__Tolerant_SP_Regen.pg.sql \
+              migrations-pg/V202605131929__v5.29.x__Add_Person_DisplayName_Computed_Column.pg.sql \
+              migrations-pg/V202605141121__v5.29.x__Person_DisplayName_Wireup.pg.sql \
+              migrations-pg/V202605141122__v5.29.x__Metadata_Sync.pg.sql \
+              migrations-pg/V202605201354__v5.30.x__Add_Person_LinkedUserID_Unique_Constraint.pg.sql \
+              migrations-pg/V202607092207__v5.32.x__CodeGen_Metadata_Backfill.pgonly.sql \
+              migrations-pg/V202608061617__v5.33.x__Deprecate_Person_LinkedUserID.pg.sql \
+              migrations-pg/V202609160900__v5.43.x__Business_Time_Zone.pg.sql \
+              migrations-pg/V202609290300__v5.48.x__People_Organization_Lookup_Search_Performance.pg.sql \
+              migrations-pg/V202610062305__v5.51.x__Business_Day_Of.pg.sql \
+              migrations-pg/V202610141644__v5.53.x__Metadata_Sync.pg.sql \
+              migrations-pg/V202611031200__v5.59.x__Activity_Sync_Run_Detail_And_Activity_Access.pg.sql \
+              migrations-pg/V202611031215__v5.59.x__Relationships_Durable_LogActivity_Bindings.pg.sql
+            do
+              if [ -f "$f" ]; then
+                echo "=== Applying $f ==="
+                sed -e 's/\${flyway:defaultSchema}/__mj_bizappscommon/g' -e 's/\${mjSchema}/__mj/g' "$f" | \
+                  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -v ON_ERROR_STOP=1
+              fi
+            done
           fi
+
+      - name: Run PostgreSQL object-model integration suite
+        env:
+          PGHOST: ${{ env.DB_HOST }}
+          PGPORT: ${{ env.DB_PORT }}
+          PGUSER: ${{ env.DB_USERNAME }}
+          PGDATABASE: ${{ env.DB_DATABASE }}
+        run: node scripts/pg-objectmodel-test.mjs

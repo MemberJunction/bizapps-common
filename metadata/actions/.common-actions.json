@@ -1052,11 +1052,11 @@
           "fields": {
             "ActionID": "@parent:ID",
             "Name": "RunDetailID",
-            "Type": "Input",
+            "Type": "Both",
             "ValueType": "Scalar",
             "IsArray": false,
             "IsRequired": true,
-            "Description": "UUID of the Activity Sync Run Detail row to inspect."
+            "Description": "UUID of the Activity Sync Run Detail row to inspect (also echoed on output)."
           },
           "primaryKey": {
             "ID": "9E85D402-5F22-4A3B-8C01-000000000001"
@@ -1090,20 +1090,6 @@
           },
           "primaryKey": {
             "ID": "9E85D402-5F22-4A3B-8C01-000000000003"
-          }
-        },
-        {
-          "fields": {
-            "ActionID": "@parent:ID",
-            "Name": "RunDetailID",
-            "Type": "Output",
-            "ValueType": "Scalar",
-            "IsArray": false,
-            "IsRequired": false,
-            "Description": "Echoed UUID of the inspected Activity Sync Run Detail row."
-          },
-          "primaryKey": {
-            "ID": "9E85D402-5F22-4A3B-8C01-000000000004"
           }
         },
         {
@@ -1175,18 +1161,6 @@
           },
           "primaryKey": {
             "ID": "9E85D402-5F22-4A3B-8C02-000000000005"
-          }
-        }
-      ],
-      "MJ: Action Authorizations": [
-        {
-          "fields": {
-            "ActionID": "@parent:ID",
-            "RoleID": "DEAFCCEC-6A37-EF11-86D4-000D3A4E707E",
-            "IsActive": true
-          },
-          "primaryKey": {
-            "ID": "9E85D402-5F22-4A3B-8C03-000000000001"
           }
         }
       ]
