@@ -162,7 +162,8 @@
                                         FieldName="ToPersonID"
                                         Kind="Person"
                                         [EditMode]="true"
-                                        [ShowLabel]="false">
+                                        [ShowLabel]="false"
+                                        (Navigate)="Navigate.emit($event)">
                                     </bizapps-party-field>
                                 </div>
                                 <span class="field-hint">Type 2+ characters: last name, full name or email</span>
@@ -177,7 +178,8 @@
                                         FieldName="ToOrganizationID"
                                         Kind="Organization"
                                         [EditMode]="true"
-                                        [ShowLabel]="false">
+                                        [ShowLabel]="false"
+                                        (Navigate)="Navigate.emit($event)">
                                     </bizapps-party-field>
                                 </div>
                                 <span class="field-hint">Type 2+ characters: name or website</span>
