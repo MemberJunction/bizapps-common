@@ -7,42 +7,28 @@
 -- Move common's AI Prompt "Job Function and Seniority Derivation" from
 -- 7C46041F-0412-4C2E-9B9E-3ED61D32210C to 19736B1D-923B-4BB7-AAE8-9A98D9B25C1E, so MJ 6.2's
 -- metadata sync creates and later deletes only its own copy of 7C46041F (bizapps-common#408,
--- MemberJunction/MJ#4939). The PostgreSQL chain never seeded 7C46041F (there is no 5.47
--- Metadata_Sync twin), so on most PostgreSQL hosts the guard is false and this does nothing. It
--- matters on a host where `mj sync push` loaded common's earlier metadata, which used that ID.
+-- MemberJunction/MJ#4939). On PostgreSQL the unique key on AIPromptModel does not collide (a NULL
+-- ConfigurationID is distinct), so without this MJ's V202610022141 silently deletes common's prompt.
 --
--- Acts only when 7C46041F exists AND is common's: TemplateID is common's template B8221E1A, or
--- common's prompt model FE550867 points at it. Every foreign key to AIPrompt is NO ACTION, so the
--- final DELETE fails, and the migration rolls back, if any reference was missed.
+-- The PostgreSQL chain never seeded 7C46041F (there is no 5.47 Metadata_Sync twin), so on most
+-- PostgreSQL hosts it does not exist and every statement below touches no rows. Where it exists,
+-- `mj sync push` loaded common's earlier metadata, and it is common's. Every foreign key to AIPrompt
+-- is NO ACTION, so the final DELETE fails, and the migration rolls back, if any reference was missed.
 -- =============================================================================
 DO $$
 DECLARE
-    v_old_id      UUID := '7C46041F-0412-4C2E-9B9E-3ED61D32210C';
-    v_new_id      UUID := '19736B1D-923B-4BB7-AAE8-9A98D9B25C1E';
-    v_template_id UUID := 'B8221E1A-F5DB-4C71-8196-944EA959E82A';
-    v_model_id    UUID := 'FE550867-CA64-4578-9912-083314D3AEF2';
-    v_process_id  UUID := '7E030001-A101-4B01-8C01-000000000001';
-    v_schema      TEXT := '${mjSchema}';
-    v_prompt      REGCLASS;
-    v_is_common   BOOLEAN;
-    v_columns     TEXT;
-    v_ref         RECORD;
+    v_old_id     UUID := '7C46041F-0412-4C2E-9B9E-3ED61D32210C';
+    v_new_id     UUID := '19736B1D-923B-4BB7-AAE8-9A98D9B25C1E';
+    v_process_id UUID := '7E030001-A101-4B01-8C01-000000000001';
+    v_schema     TEXT := '${mjSchema}';
+    v_prompt     REGCLASS;
+    v_columns    TEXT;
+    v_ref        RECORD;
 BEGIN
     v_prompt := format('%I.%I', v_schema, 'AIPrompt')::REGCLASS;
 
-    EXECUTE format(
-        'SELECT EXISTS (SELECT 1 FROM %s p WHERE p."ID" = $1 AND (p."TemplateID" = $2 OR EXISTS ('
-        || 'SELECT 1 FROM %I.%I pm WHERE pm."ID" = $3 AND pm."PromptID" = $1)))',
-        v_prompt, v_schema, 'AIPromptModel')
-      INTO v_is_common
-      USING v_old_id, v_template_id, v_model_id;
-
-    IF NOT v_is_common THEN
-        RETURN;
-    END IF;
-
-    -- 1. Copy the prompt row to the new ID, unless a previous run already did. Every stored column
-    --    except ID and the __mj_ timestamps is copied, so the copy is exact on any MJ schema version.
+    -- 1. Copy the prompt row to the new ID. Every stored column except ID and the __mj_ timestamps
+    --    is copied, so the copy is exact on any MJ schema version.
     SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum)
       INTO v_columns
       FROM pg_attribute a
@@ -53,10 +39,8 @@ BEGIN
        AND a.attname <> 'ID'
        AND a.attname NOT LIKE '\_\_mj\_%';
 
-    EXECUTE format(
-        'INSERT INTO %s ("ID", %s) SELECT $1, %s FROM %s WHERE "ID" = $2 '
-        || 'AND NOT EXISTS (SELECT 1 FROM %s WHERE "ID" = $1)',
-        v_prompt, v_columns, v_columns, v_prompt, v_prompt)
+    EXECUTE format('INSERT INTO %s ("ID", %s) SELECT $1, %s FROM %s WHERE "ID" = $2',
+                   v_prompt, v_columns, v_columns, v_prompt)
       USING v_new_id, v_old_id;
 
     -- 2. Repoint every foreign-key column that references AIPrompt.
@@ -80,7 +64,7 @@ BEGIN
             '"PromptID":"19736B1D-923B-4BB7-AAE8-9A98D9B25C1E"',
             v_process_id;
 
-    -- 4. Remove the old row. A plain DELETE, not spDeleteAIPrompt: that function cascades into the
+    -- 4. Remove the old row. A plain DELETE, not the prompt delete function: that cascades into the
     --    prompt's models and runs, which now belong to the new ID.
     EXECUTE format('DELETE FROM %s WHERE "ID" = $1', v_prompt) USING v_old_id;
 END
