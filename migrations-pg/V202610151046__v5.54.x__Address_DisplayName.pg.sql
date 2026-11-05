@@ -62,6 +62,23 @@ SET standard_conforming_strings = on;
 
 -- ===================== DDL: Tables, PKs, Indexes =====================
 
+-- Added BEFORE the index and views below that read it. The converter emitted those first and the
+-- hand-written column last, so on PostgreSQL the index failed with column "DisplayName" does not exist.
+-- Address.DisplayName: "Line1, City, State PostalCode, Country", blank parts dropped, NULL when all are
+-- blank. Written by hand: the converter passes the T-SQL computed column through untranslated. concat_ws()
+-- and array_to_string() are STABLE, so the generated column joins with || and SUBSTRING (see Person.DisplayName
+-- in V202610151049); checked equal to the T-SQL on full, partial and blank addresses.
+ALTER TABLE __mj_bizappscommon."Address"
+    ADD COLUMN IF NOT EXISTS "DisplayName" VARCHAR(400) GENERATED ALWAYS AS (CAST(NULLIF(SUBSTRING(
+        COALESCE(', ' || NULLIF(TRIM("Line1"), ''), '')
+        || COALESCE(', ' || NULLIF(TRIM("City"), ''), '')
+        || COALESCE(', ' || NULLIF(SUBSTRING(
+               COALESCE(' ' || NULLIF(TRIM("StateProvince"), ''), '')
+               || COALESCE(' ' || NULLIF(TRIM("PostalCode"), ''), '')
+           FROM 2), ''), '')
+        || COALESCE(', ' || NULLIF(TRIM("Country"), ''), '')
+    FROM 3), '') AS VARCHAR(400))) STORED;
+
 CREATE INDEX IF NOT EXISTS "IX_Address_DisplayName" ON __mj_BizAppsCommon."Address" ("DisplayName");
 
 COMMENT ON COLUMN __mj_BizAppsCommon."Address"."DisplayName" IS 'One-line label for the address in US order: Line1, City, State PostalCode, Country. Blank parts are skipped; NULL when every part is blank. Computed and stored; this is the entity name field.';
@@ -1795,20 +1812,6 @@ DO $$ BEGIN GRANT EXECUTE ON FUNCTION __mj_BizAppsCommon."spDeleteAddressLink" T
 -- a GENERATED column; the counterpart needs || with COALESCE/NULLIF instead.
 -- =============================================================================
 
--- Address.DisplayName: "Line1, City, State PostalCode, Country", blank parts dropped, NULL when all are
--- blank. Written by hand: the converter passes the T-SQL computed column through untranslated. concat_ws()
--- and array_to_string() are STABLE, so the generated column joins with || and SUBSTRING (see Person.DisplayName
--- in V202610151049); checked equal to the T-SQL on full, partial and blank addresses.
-ALTER TABLE __mj_bizappscommon."Address"
-    ADD COLUMN IF NOT EXISTS "DisplayName" VARCHAR(400) GENERATED ALWAYS AS (CAST(NULLIF(SUBSTRING(
-        COALESCE(', ' || NULLIF(TRIM("Line1"), ''), '')
-        || COALESCE(', ' || NULLIF(TRIM("City"), ''), '')
-        || COALESCE(', ' || NULLIF(SUBSTRING(
-               COALESCE(' ' || NULLIF(TRIM("StateProvince"), ''), '')
-               || COALESCE(' ' || NULLIF(TRIM("PostalCode"), ''), '')
-           FROM 2), ''), '')
-        || COALESCE(', ' || NULLIF(TRIM("Country"), ''), '')
-    FROM 3), '') AS VARCHAR(400))) STORED;
 
 
 /* ============================================================================================
