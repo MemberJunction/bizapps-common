@@ -28,6 +28,8 @@ interface ActivityFileRow {
         slot: 'after-fields',
         sortKey: 70,
         contributionKey: 'files',
+        sectionKey: 'activityFiles',
+        whenEmpty: 'more',
         relatedEntity: 'MJ_BizApps_Common: Activity Files',
         relatedJoinField: 'ActivityID',
     },
