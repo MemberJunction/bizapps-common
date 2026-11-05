@@ -469,9 +469,7 @@ export class ActivityWriter {
         if (link.RecordID) {
             RequireUUID(link.RecordID, `ActivityLink.RecordID (role ${link.Role})`);
         }
-        const entityID = link.EntityName
-            ? provider.Entities.find((e) => e.Name === link.EntityName)?.ID
-            : undefined;
+        const entityID = link.EntityName ? provider.EntityByName(link.EntityName)?.ID : undefined;
         if (link.EntityName && !entityID) return null;
 
         const row = await provider.GetEntityObject<mjBizAppsCommonActivityLinkEntity>(
