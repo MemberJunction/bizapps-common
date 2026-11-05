@@ -51,6 +51,13 @@ export class SyncActivitiesAction extends BaseAction {
     }
 
     private async sync(params: RunActionParams): Promise<ActionResultSimple> {
+        // The run reads mailboxes and writes activities AS this user, so an absent ContextUser must
+        // fail here rather than reach the engine. Hosts should additionally gate invocation of this
+        // action to scheduler/admin principals — any principal allowed to run it triggers a full sync.
+        if (!params.ContextUser) {
+            return { Success: false, ResultCode: 'VALIDATION_ERROR', Message: 'ContextUser is required.' };
+        }
+
         const raw = readParam(params, P_LIMIT);
         const parsed = raw === null || raw === undefined || raw === '' ? DEFAULT_LIMIT : Number(raw);
         const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_LIMIT;

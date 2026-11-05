@@ -19,6 +19,7 @@ import {
     mjBizAppsCommonJobFunctionEntity,
     mjBizAppsCommonPersonJobFunctionEntity,
 } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Visual editor and manager for a Person's assigned Job Functions.
@@ -101,7 +102,7 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
                 rv.RunView<mjBizAppsCommonPersonJobFunctionEntity>(
                     {
                         EntityName: 'MJ_BizApps_Common: Person Job Functions',
-                        ExtraFilter: `PersonID = '${this.PersonID}'`,
+                        ExtraFilter: `PersonID = '${EscapeFilterValue(this.PersonID)}'`,
                         OrderBy: 'Sequence ASC, __mj_CreatedAt ASC',
                         ResultType: 'entity_object',
                     },

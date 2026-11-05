@@ -46,7 +46,13 @@ describe('ParseLogActivityParams', () => {
         expect(bad.Input).toBeNull();
         expect(bad.Errors.join(' ')).toMatch(/Direction must be one of/);
         // 'Integration' belongs to the sync engine's entry point, not the manual one.
-        expect(bad.Errors.join(' ')).toMatch(/Source must be one of: Manual, System/);
+        expect(bad.Errors.join(' ')).toMatch(/Source must be one of: Manual\./);
+    });
+
+    it("rejects Source 'System' — that provenance is reserved for the sync engine", () => {
+        const bad = ParseLogActivityParams({ TypeCode: 'Note', Title: 'x', Source: 'System' });
+        expect(bad.Input).toBeNull();
+        expect(bad.Errors.join(' ')).toMatch(/Source must be one of: Manual\./);
     });
 
     it('builds a Regarding link from EntityName + RecordData.ID', () => {

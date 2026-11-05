@@ -15,6 +15,11 @@ vi.mock('@memberjunction/core', () => ({
         }
     },
     LogError: () => undefined,
+    CompositeKey: class {
+        public static FromURLSegment(): Record<string, never> {
+            return {};
+        }
+    },
 }));
 
 import { ActivityWriter, ValidateManualActivityInput, type WriteManualActivityInput } from '../writer.js';
@@ -42,12 +47,13 @@ interface FakeRow {
 }
 
 /** A minimal transactional provider: records saved rows and whether the txn committed/rolled back. */
-function fakeProvider() {
+function fakeProvider(options: { targetUnreadable?: boolean } = {}) {
     const state = {
         committed: false,
         rolledBack: false,
         activities: [] as FakeRow[],
         links: [] as FakeRow[],
+        targetLoads: [] as string[],
     };
     let nextID = 0;
     const provider = {
@@ -64,6 +70,11 @@ function fakeProvider() {
             },
         }),
         GetEntityObject: async (entityName: string) => {
+            if (!entityName.endsWith('Activities') && !entityName.endsWith('Activity Links')) {
+                // writeLink's target-authorization probe: load the linked record as contextUser.
+                state.targetLoads.push(entityName);
+                return { InnerLoad: async () => !options.targetUnreadable };
+            }
             const row: FakeRow = {
                 NewRecord: () => undefined,
                 Save: async () => {
@@ -130,6 +141,9 @@ describe('ActivityWriter.WriteManual', () => {
         expect(state.links[1].IdentityKind).toBe('Email');
         expect(state.links[1].IdentityValue).toBe('a@b.test');
         expect(state.links[1].Sequence).toBe(2);
+
+        // The one resolved link's target was loaded as contextUser before it was linked.
+        expect(state.targetLoads).toEqual([PEOPLE]);
     });
 
     it('honours explicit Visibility / Source / Status overrides', async () => {
@@ -168,6 +182,21 @@ describe('ActivityWriter.WriteManual', () => {
         expect(result.Issues.join(' ')).toMatch(/Link could not be written/);
         expect(state.rolledBack).toBe(true);
         expect(state.committed).toBe(false);
+    });
+
+    it('rolls back when a link targets a record the caller cannot read, or that does not exist', async () => {
+        const { provider, state } = fakeProvider({ targetUnreadable: true });
+        const result = await new ActivityWriter().WriteManual(
+            input({ Links: [{ Role: 'Regarding', EntityName: PEOPLE, RecordID: OTHER_UUID }] }),
+            provider,
+            USER,
+        );
+        expect(result.Success).toBe(false);
+        expect(result.Issues.join(' ')).toMatch(/Link could not be written/);
+        expect(state.targetLoads).toEqual([PEOPLE]);
+        expect(state.rolledBack).toBe(true);
+        expect(state.committed).toBe(false);
+        expect(state.links).toHaveLength(0);
     });
 
     it('rolls back when a link carries a RecordID that is not a UUID', async () => {

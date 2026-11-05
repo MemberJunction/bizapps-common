@@ -14,8 +14,10 @@
  * Unmatched participants become unresolved links — never a new Person.
  */
 import {
+    CompositeKey,
     LogError,
     RunView,
+    type BaseEntity,
     type DatabaseProviderBase,
     type IMetadataProvider,
     type UserInfo,
@@ -469,10 +471,26 @@ export class ActivityWriter {
         if (link.RecordID) {
             RequireUUID(link.RecordID, `ActivityLink.RecordID (role ${link.Role})`);
         }
-        const entityID = link.EntityName
-            ? provider.Entities.find((e) => e.Name === link.EntityName)?.ID
+        const entityInfo = link.EntityName
+            ? provider.Entities.find((e) => e.Name === link.EntityName)
             : undefined;
-        if (link.EntityName && !entityID) return null;
+        if (link.EntityName && !entityInfo) return null;
+
+        // A resolved link plants this activity on the target record's timeline, and the caller
+        // controls EntityName + RecordID freely (Common.LogActivity), so the target must exist and
+        // be readable AS contextUser before it may be linked. A read-permission denial throws (the
+        // transactional core rolls the write back); a missing or row-level-filtered record fails
+        // this link the same way an unknown entity does. Fail-closed.
+        if (link.RecordID && entityInfo) {
+            const target = await provider.GetEntityObject<BaseEntity>(entityInfo.Name, contextUser);
+            const found = await target.InnerLoad(CompositeKey.FromURLSegment(entityInfo, link.RecordID));
+            if (!found) {
+                LogError(
+                    `ActivityLink target ${entityInfo.Name} '${link.RecordID}' (role ${link.Role}) was not found or is not readable by user ${contextUser.ID}.`,
+                );
+                return null;
+            }
+        }
 
         const row = await provider.GetEntityObject<mjBizAppsCommonActivityLinkEntity>(
             ACTIVITY_SYNC_ENTITIES.ActivityLinks,
@@ -482,8 +500,8 @@ export class ActivityWriter {
         row.ActivityID = activityID;
         row.Role = link.Role;
         row.Sequence = sequence;
-        if (link.RecordID && entityID) {
-            row.EntityID = entityID;
+        if (link.RecordID && entityInfo) {
+            row.EntityID = entityInfo.ID;
             row.RecordID = link.RecordID;
         } else {
             row.IdentityKind = link.IdentityKind ?? 'Email';
