@@ -14,7 +14,7 @@
     "build:generated": "turbo --log-order=stream build --filter=\"@mj-biz-apps/common-entities\" --filter=\"@mj-biz-apps/common-actions\"",
     "build:packages": "turbo --log-order=stream build --filter=\"@mj-biz-apps/common-*\"",
     "test": "turbo --log-order=stream test --filter=\"@mj-biz-apps/common-*\"",
-    "mj:migrate": "mj migrate --schema __mj_BizAppsCommon --dir ./migrations",
+    "mj:migrate": "mj migrate --schema __mj_BizAppsCommon",
     "mj:codegen": "mj codegen",
     "mj:migrate:convert": "mj migrate convert --source-dir ./migrations --output-dir ./migrations-pg --schema __mj_BizAppsCommon",
     "install:deps": "pnpm install",
