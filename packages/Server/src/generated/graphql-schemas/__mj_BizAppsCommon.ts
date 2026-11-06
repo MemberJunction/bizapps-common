@@ -17,7 +17,7 @@ import { MaxLength } from 'class-validator';
 import * as mj_core_schema_server_object_types from '@memberjunction/server'
 
 
-import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonCompanySenderIdentityEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonJobFunctionEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonPersonJobFunctionEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity, mjBizAppsCommonSeniorityLevelEntity } from '@mj-biz-apps/common-entities';
+import { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityFileEntity, mjBizAppsCommonActivityLinkEntity, mjBizAppsCommonActivitySyncConnectionRuleSetEntity, mjBizAppsCommonActivitySyncConnectionEntity, mjBizAppsCommonActivitySyncExclusionEntity, mjBizAppsCommonActivitySyncExtensionEntity, mjBizAppsCommonActivitySyncProviderTypeEntity, mjBizAppsCommonActivitySyncRuleSetEntity, mjBizAppsCommonActivitySyncRuleEntity, mjBizAppsCommonActivitySyncRunDetailEntity, mjBizAppsCommonActivitySyncRunEntity, mjBizAppsCommonActivityTypeEntity, mjBizAppsCommonAddressLinkEntity, mjBizAppsCommonAddressTypeEntity, mjBizAppsCommonAddressEntity, mjBizAppsCommonCompanySenderIdentityEntity, mjBizAppsCommonConsentPurposeEntity, mjBizAppsCommonContactMethodConsentHistoryEntity, mjBizAppsCommonContactMethodConsentEntity, mjBizAppsCommonContactMethodEntity, mjBizAppsCommonContactTypeEntity, mjBizAppsCommonJobFunctionEntity, mjBizAppsCommonOrganizationTypeEntity, mjBizAppsCommonOrganizationEntity, mjBizAppsCommonPersonEntity, mjBizAppsCommonPersonJobFunctionEntity, mjBizAppsCommonRelationshipTypeEntity, mjBizAppsCommonRelationshipEntity, mjBizAppsCommonSeniorityLevelEntity } from '@mj-biz-apps/common-entities';
     
 
 //****************************************************************************
@@ -4110,6 +4110,559 @@ export class mjBizAppsCommonCompanySenderIdentityResolver extends ResolverBase {
 }
 
 //****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Consent Purposes
+//****************************************************************************
+@ObjectType({ description: "What a consent is for. Common seeds the generic purposes, Marketing and Transactional; apps built on Common add their own. Consent is recorded per contact method and purpose, so one email can be opted in for transactional messages and opted out of marketing. Seeded by metadata; add rows rather than columns." })
+export class mjBizAppsCommonConsentPurpose_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true, description: "Display name of the purpose, unique within the installation."}) 
+    @MaxLength(100)
+    Name?: string;
+        
+    @Field({nullable: true, description: "What kinds of messages this purpose covers."}) 
+    Description?: string;
+        
+    @Field(() => Int, {nullable: true, description: "Sort order in dropdown lists. Lower values appear first."}) 
+    Sequence?: number;
+        
+    @Field(() => Boolean, {nullable: true, description: "Whether this purpose is offered for new consents. Inactive purposes are hidden from dropdowns but preserved for existing records."}) 
+    IsActive?: boolean;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Consent Purposes
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonConsentPurposeInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => Boolean, { nullable: true })
+    IsActive?: boolean;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Consent Purposes
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonConsentPurposeInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    Name?: string;
+
+    @Field({ nullable: true })
+    Description?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    Sequence?: number;
+
+    @Field(() => Boolean, { nullable: true })
+    IsActive?: boolean;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Consent Purposes
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonConsentPurposeViewResult {
+    @Field(() => [mjBizAppsCommonConsentPurpose_])
+    Results: mjBizAppsCommonConsentPurpose_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonConsentPurpose_)
+export class mjBizAppsCommonConsentPurposeResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonConsentPurposeViewResult)
+    async RunmjBizAppsCommonConsentPurposeViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonConsentPurposeViewResult)
+    async RunmjBizAppsCommonConsentPurposeViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonConsentPurposeViewResult)
+    async RunmjBizAppsCommonConsentPurposeDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Consent Purposes';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonConsentPurpose_, { nullable: true })
+    async mjBizAppsCommonConsentPurpose(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonConsentPurpose_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Consent Purposes', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwConsentPurposes')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Consent Purposes', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Consent Purposes', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonConsentPurpose_)
+    async CreatemjBizAppsCommonConsentPurpose(
+        @Arg('input', () => CreatemjBizAppsCommonConsentPurposeInput) input: CreatemjBizAppsCommonConsentPurposeInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Consent Purposes', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonConsentPurpose_)
+    async UpdatemjBizAppsCommonConsentPurpose(
+        @Arg('input', () => UpdatemjBizAppsCommonConsentPurposeInput) input: UpdatemjBizAppsCommonConsentPurposeInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Consent Purposes', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonConsentPurpose_)
+    async DeletemjBizAppsCommonConsentPurpose(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Consent Purposes', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Contact Method Consent Histories
+//****************************************************************************
+@ObjectType({ description: "One row per change on a ContactMethodConsent: the status it set, when it took effect in the real world, and where it came from. ContactMethodConsent.ConsentStatus mirrors the row with the latest ConsentStatusAt. A late-arriving change with an older date is kept here but does not change the current status. Deleting the consent deletes its history." })
+export class mjBizAppsCommonContactMethodConsentHistory_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ContactMethodConsentID?: string;
+        
+    @Field({nullable: true, description: "The consent status this change set: Not Specified, Opted In or Opted Out."}) 
+    @MaxLength(20)
+    NewConsentStatus?: string;
+        
+    @Field({nullable: true, description: "When the change took effect in the real world (the unsubscribe click, the form submission, the import's own date), not when this row was saved. The row with the latest value is the current status."}) 
+    ConsentStatusAt?: Date;
+        
+    @Field({nullable: true, description: "Where the change came from: Web Form, Unsubscribe Link, Import, Staff or Other. Defaults to Staff, for a change made by a person in the app. The specifics, such as which system an import came from or what Other was, go in ConsentDetails."}) 
+    @MaxLength(50)
+    ConsentSource?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    RecordedByUserID?: string;
+        
+    @Field({nullable: true, description: "The specifics of the change: which system an import came from, what an Other source was, or evidence such as a form ID or the unsubscribe email's message ID."}) 
+    ConsentDetails?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    RecordedByUser?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Contact Method Consent Histories
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonContactMethodConsentHistoryInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ContactMethodConsentID?: string;
+
+    @Field({ nullable: true })
+    NewConsentStatus?: string;
+
+    @Field({ nullable: true })
+    ConsentStatusAt?: Date;
+
+    @Field({ nullable: true })
+    ConsentSource?: string;
+
+    @Field({ nullable: true })
+    RecordedByUserID: string | null;
+
+    @Field({ nullable: true })
+    ConsentDetails: string | null;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Contact Method Consent Histories
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonContactMethodConsentHistoryInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ContactMethodConsentID?: string;
+
+    @Field({ nullable: true })
+    NewConsentStatus?: string;
+
+    @Field({ nullable: true })
+    ConsentStatusAt?: Date;
+
+    @Field({ nullable: true })
+    ConsentSource?: string;
+
+    @Field({ nullable: true })
+    RecordedByUserID?: string | null;
+
+    @Field({ nullable: true })
+    ConsentDetails?: string | null;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Contact Method Consent Histories
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonContactMethodConsentHistoryViewResult {
+    @Field(() => [mjBizAppsCommonContactMethodConsentHistory_])
+    Results: mjBizAppsCommonContactMethodConsentHistory_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonContactMethodConsentHistory_)
+export class mjBizAppsCommonContactMethodConsentHistoryResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonContactMethodConsentHistoryViewResult)
+    async RunmjBizAppsCommonContactMethodConsentHistoryViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonContactMethodConsentHistoryViewResult)
+    async RunmjBizAppsCommonContactMethodConsentHistoryViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonContactMethodConsentHistoryViewResult)
+    async RunmjBizAppsCommonContactMethodConsentHistoryDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Contact Method Consent Histories';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonContactMethodConsentHistory_, { nullable: true })
+    async mjBizAppsCommonContactMethodConsentHistory(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactMethodConsentHistory_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Method Consent Histories', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethodConsentHistories')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Method Consent Histories', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Method Consent Histories', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonContactMethodConsentHistory_)
+    async CreatemjBizAppsCommonContactMethodConsentHistory(
+        @Arg('input', () => CreatemjBizAppsCommonContactMethodConsentHistoryInput) input: CreatemjBizAppsCommonContactMethodConsentHistoryInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Contact Method Consent Histories', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonContactMethodConsentHistory_)
+    async UpdatemjBizAppsCommonContactMethodConsentHistory(
+        @Arg('input', () => UpdatemjBizAppsCommonContactMethodConsentHistoryInput) input: UpdatemjBizAppsCommonContactMethodConsentHistoryInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Contact Method Consent Histories', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonContactMethodConsentHistory_)
+    async DeletemjBizAppsCommonContactMethodConsentHistory(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Contact Method Consent Histories', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
+// ENTITY CLASS for MJ_BizApps_Common: Contact Method Consents
+//****************************************************************************
+@ObjectType({ description: "The current consent for one contact method (an email or phone): for one purpose or, when ConsentPurposeID is null, for anything; as asked by one organization or, when RequestingOrganizationID is null, by anyone on the installation. A contact method has many of these, the way a person has many contact methods, and the most specific row answers: purpose and organization, then purpose, then organization, then the general row. ConsentStatus always equals NewConsentStatus on the ContactMethodConsentHistory row with the latest ConsentStatusAt. Set it through ContactPreferenceEngine, which writes the history row with it. Deleting the contact method deletes its consents." })
+export class mjBizAppsCommonContactMethodConsent_ {
+    @Field() 
+    @MaxLength(36)
+    ID: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ContactMethodID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    ConsentPurposeID?: string;
+        
+    @Field({nullable: true, description: "The organization that asked for this consent, when the person answered differently for different organizations. Null means the answer applies to anyone on the installation. This is not the owner of the contact method; that is ContactMethod.PersonID or ContactMethod.OrganizationID."}) 
+    @MaxLength(36)
+    RequestingOrganizationID?: string;
+        
+    @Field({nullable: true, description: "The current consent: Not Specified, Opted In or Opted Out."}) 
+    @MaxLength(20)
+    ConsentStatus?: string;
+        
+    @Field() 
+    _mj__CreatedAt: Date;
+        
+    @Field() 
+    _mj__UpdatedAt: Date;
+        
+    @Field({nullable: true}) 
+    @MaxLength(500)
+    ContactMethod?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    ConsentPurpose?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    RequestingOrganization?: string;
+        
+    @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
+    ReadableFields___?: string[];
+        
+}
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Contact Method Consents
+//****************************************************************************
+@InputType()
+export class CreatemjBizAppsCommonContactMethodConsentInput {
+    @Field({ nullable: true })
+    ID?: string;
+
+    @Field({ nullable: true })
+    ContactMethodID?: string;
+
+    @Field({ nullable: true })
+    ConsentPurposeID: string | null;
+
+    @Field({ nullable: true })
+    RequestingOrganizationID: string | null;
+
+    @Field({ nullable: true })
+    ConsentStatus?: string;
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+
+//****************************************************************************
+// INPUT TYPE for MJ_BizApps_Common: Contact Method Consents
+//****************************************************************************
+@InputType()
+export class UpdatemjBizAppsCommonContactMethodConsentInput {
+    @Field()
+    ID: string;
+
+    @Field({ nullable: true })
+    ContactMethodID?: string;
+
+    @Field({ nullable: true })
+    ConsentPurposeID?: string | null;
+
+    @Field({ nullable: true })
+    RequestingOrganizationID?: string | null;
+
+    @Field({ nullable: true })
+    ConsentStatus?: string;
+
+    @Field(() => [KeyValuePairInput], { nullable: true })
+    OldValues___?: KeyValuePairInput[];
+
+    @Field(() => RestoreContextInput, { nullable: true })
+    RestoreContext___?: RestoreContextInput;
+}
+    
+//****************************************************************************
+// RESOLVER for MJ_BizApps_Common: Contact Method Consents
+//****************************************************************************
+@ObjectType()
+export class RunmjBizAppsCommonContactMethodConsentViewResult {
+    @Field(() => [mjBizAppsCommonContactMethodConsent_])
+    Results: mjBizAppsCommonContactMethodConsent_[];
+
+    @Field(() => String, {nullable: true})
+    UserViewRunID?: string;
+
+    @Field(() => Int, {nullable: true})
+    RowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    TotalRowCount: number;
+
+    @Field(() => Int, {nullable: true})
+    ExecutionTime: number;
+
+    @Field({nullable: true})
+    ErrorMessage?: string;
+
+    @Field(() => Boolean, {nullable: false})
+    Success: boolean;
+}
+
+@Resolver(mjBizAppsCommonContactMethodConsent_)
+export class mjBizAppsCommonContactMethodConsentResolver extends ResolverBase {
+    @Query(() => RunmjBizAppsCommonContactMethodConsentViewResult)
+    async RunmjBizAppsCommonContactMethodConsentViewByID(@Arg('input', () => RunViewByIDInput) input: RunViewByIDInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByIDGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonContactMethodConsentViewResult)
+    async RunmjBizAppsCommonContactMethodConsentViewByName(@Arg('input', () => RunViewByNameInput) input: RunViewByNameInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        return super.RunViewByNameGeneric(input, provider, userPayload, pubSub);
+    }
+
+    @Query(() => RunmjBizAppsCommonContactMethodConsentViewResult)
+    async RunmjBizAppsCommonContactMethodConsentDynamicView(@Arg('input', () => RunDynamicViewInput) input: RunDynamicViewInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        input.EntityName = 'MJ_BizApps_Common: Contact Method Consents';
+        return super.RunDynamicViewGeneric(input, provider, userPayload, pubSub);
+    }
+    @Query(() => mjBizAppsCommonContactMethodConsent_, { nullable: true })
+    async mjBizAppsCommonContactMethodConsent(@Arg('ID', () => String) ID: string, @Ctx() { userPayload, providers }: AppContext, @PubSub() pubSub: PubSubEngine): Promise<mjBizAppsCommonContactMethodConsent_ | null> {
+        this.CheckUserReadPermissions('MJ_BizApps_Common: Contact Method Consents', userPayload);
+        const provider = GetReadOnlyProvider(providers, { allowFallbackToReadWrite: true });
+        const sSQL = `SELECT * FROM ${provider.QuoteSchemaAndView('__mj_BizAppsCommon', 'vwContactMethodConsents')} WHERE ${provider.QuoteIdentifier('ID')}=${provider.BuildParameterPlaceholder(0)} ` + this.getRowLevelSecurityWhereClause(provider, 'MJ_BizApps_Common: Contact Method Consents', userPayload, EntityPermissionType.Read, 'AND');
+        const rows = await provider.ExecuteSQL(sSQL, [ID], undefined, this.GetUserFromPayload(userPayload));
+        const result = await this.MapFieldNamesToCodeNames('MJ_BizApps_Common: Contact Method Consents', rows && rows.length > 0 ? rows[0] : null, this.GetUserFromPayload(userPayload));
+        return result;
+    }
+    
+    @Mutation(() => mjBizAppsCommonContactMethodConsent_)
+    async CreatemjBizAppsCommonContactMethodConsent(
+        @Arg('input', () => CreatemjBizAppsCommonContactMethodConsentInput) input: CreatemjBizAppsCommonContactMethodConsentInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.CreateRecord('MJ_BizApps_Common: Contact Method Consents', input, provider, userPayload, pubSub)
+    }
+        
+    @Mutation(() => mjBizAppsCommonContactMethodConsent_)
+    async UpdatemjBizAppsCommonContactMethodConsent(
+        @Arg('input', () => UpdatemjBizAppsCommonContactMethodConsentInput) input: UpdatemjBizAppsCommonContactMethodConsentInput,
+        @Ctx() { providers, userPayload }: AppContext,
+        @PubSub() pubSub: PubSubEngine
+    ) {
+        const provider = GetReadWriteProvider(providers);
+        return this.UpdateRecord('MJ_BizApps_Common: Contact Method Consents', input, provider, userPayload, pubSub);
+    }
+    
+    @Mutation(() => mjBizAppsCommonContactMethodConsent_)
+    async DeletemjBizAppsCommonContactMethodConsent(@Arg('ID', () => String) ID: string, @Arg('options___', () => DeleteOptionsInput) options: DeleteOptionsInput, @Ctx() { providers, userPayload }: AppContext, @PubSub() pubSub: PubSubEngine) {
+        const provider = GetReadWriteProvider(providers);
+        const key = new CompositeKey([{FieldName: 'ID', Value: ID}]);
+        return this.DeleteRecord('MJ_BizApps_Common: Contact Method Consents', key, options, provider, userPayload, pubSub);
+    }
+    
+}
+
+//****************************************************************************
 // ENTITY CLASS for MJ_BizApps_Common: Contact Methods
 //****************************************************************************
 @ObjectType({ description: "Additional contact methods for people and organizations beyond the primary email and phone fields" })
@@ -4346,6 +4899,14 @@ export class mjBizAppsCommonContactType_ {
     @Field() 
     _mj__UpdatedAt: Date;
         
+    @Field({nullable: true}) 
+    @MaxLength(36)
+    CommunicationBaseMessageTypeID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(100)
+    CommunicationBaseMessageType?: string;
+        
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
     ReadableFields___?: string[];
         
@@ -4374,6 +4935,9 @@ export class CreatemjBizAppsCommonContactTypeInput {
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
 
+    @Field({ nullable: true })
+    CommunicationBaseMessageTypeID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -4401,6 +4965,9 @@ export class UpdatemjBizAppsCommonContactTypeInput {
 
     @Field(() => Boolean, { nullable: true })
     IsActive?: boolean;
+
+    @Field({ nullable: true })
+    CommunicationBaseMessageTypeID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
