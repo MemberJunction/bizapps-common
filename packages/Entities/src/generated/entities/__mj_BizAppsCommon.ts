@@ -1517,6 +1517,65 @@ export const mjBizAppsCommonAddressSchema = z.object({
 export type mjBizAppsCommonAddressEntityType = z.infer<typeof mjBizAppsCommonAddressSchema>;
 
 /**
+ * zod schema definition for the entity MJ_BizApps_Common: Company Sender Identities
+ */
+export const mjBizAppsCommonCompanySenderIdentitySchema = z.object({
+    ID: z.string().describe(`
+        * * Field Name: ID
+        * * Display Name: ID
+        * * SQL Data Type: uniqueidentifier
+        * * Default Value: newsequentialid()
+        * * Description: Unique identifier for the sender identity.`),
+    CompanyID: z.string().describe(`
+        * * Field Name: CompanyID
+        * * Display Name: Company ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Companies (vwCompanies.ID)
+        * * Description: The company that owns this sender identity.`),
+    Kind: z.union([z.literal('Domain'), z.literal('Mailbox')]).describe(`
+        * * Field Name: Kind
+        * * Display Name: Identity Kind
+        * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Domain
+    *   * Mailbox
+        * * Description: What Address holds: Mailbox is one full email address, Domain is a bare domain any address on which may be used.`),
+    Address: z.string().describe(`
+        * * Field Name: Address
+        * * Display Name: Address
+        * * SQL Data Type: nvarchar(320)
+        * * Description: The sender address, stored trimmed and lower-cased by the entity; a full mailbox when Kind = Mailbox, a bare domain when Kind = Domain. Unique per company.`),
+    DisplayName: z.string().nullable().describe(`
+        * * Field Name: DisplayName
+        * * Display Name: Display Name
+        * * SQL Data Type: nvarchar(200)
+        * * Description: Optional friendly name shown with the address in the From line.`),
+    IsDefault: z.boolean().describe(`
+        * * Field Name: IsDefault
+        * * Display Name: Is Default
+        * * SQL Data Type: bit
+        * * Default Value: 0
+        * * Description: Marks the company's default sender: at most one per company (UQ_CompanySenderIdentity_Default); only a Mailbox row is a usable default.`),
+    __mj_CreatedAt: z.date().describe(`
+        * * Field Name: __mj_CreatedAt
+        * * Display Name: Created At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    __mj_UpdatedAt: z.date().describe(`
+        * * Field Name: __mj_UpdatedAt
+        * * Display Name: Updated At
+        * * SQL Data Type: datetimeoffset
+        * * Default Value: getutcdate()`),
+    Company: z.string().describe(`
+        * * Field Name: Company
+        * * Display Name: Company Name
+        * * SQL Data Type: nvarchar(50)`),
+});
+
+export type mjBizAppsCommonCompanySenderIdentityEntityType = z.infer<typeof mjBizAppsCommonCompanySenderIdentitySchema>;
+
+/**
  * zod schema definition for the entity MJ_BizApps_Common: Consent Purposes
  */
 export const mjBizAppsCommonConsentPurposeSchema = z.object({
@@ -6842,6 +6901,152 @@ export class mjBizAppsCommonAddressEntity extends BaseEntity<mjBizAppsCommonAddr
     */
     get __mj_Longitude(): number | null {
         return this.Get('__mj_Longitude');
+    }
+}
+
+
+/**
+ * MJ_BizApps_Common: Company Sender Identities - strongly typed entity sub-class
+ * * Schema: __mj_BizAppsCommon
+ * * Base Table: CompanySenderIdentity
+ * * Base View: vwCompanySenderIdentities
+ * * @description An address or domain a company may send email as. One row per sender identity; a company can have several.
+ * * Primary Key: ID
+ * @extends {BaseEntity}
+ * @class
+ * @public
+ */
+@RegisterClass(BaseEntity, 'MJ_BizApps_Common: Company Sender Identities')
+export class mjBizAppsCommonCompanySenderIdentityEntity extends BaseEntity<mjBizAppsCommonCompanySenderIdentityEntityType> {
+    /**
+    * Loads the MJ_BizApps_Common: Company Sender Identities record from the database
+    * @param ID: string - primary key value to load the MJ_BizApps_Common: Company Sender Identities record.
+    * @param EntityRelationshipsToLoad - (optional) the relationships to load
+    * @returns {Promise<boolean>} - true if successful, false otherwise
+    * @public
+    * @async
+    * @memberof mjBizAppsCommonCompanySenderIdentityEntity
+    * @method
+    * @override
+    */
+    public async Load(ID: string, EntityRelationshipsToLoad?: string[]) : Promise<boolean> {
+        const compositeKey: CompositeKey = new CompositeKey();
+        compositeKey.KeyValuePairs.push({ FieldName: 'ID', Value: ID });
+        return await super.InnerLoad(compositeKey, EntityRelationshipsToLoad);
+    }
+
+    /**
+    * * Field Name: ID
+    * * Display Name: ID
+    * * SQL Data Type: uniqueidentifier
+    * * Default Value: newsequentialid()
+    * * Description: Unique identifier for the sender identity.
+    */
+    get ID(): string {
+        return this.Get('ID');
+    }
+    set ID(value: string) {
+        this.Set('ID', value);
+    }
+
+    /**
+    * * Field Name: CompanyID
+    * * Display Name: Company ID
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ: Companies (vwCompanies.ID)
+    * * Description: The company that owns this sender identity.
+    */
+    get CompanyID(): string {
+        return this.Get('CompanyID');
+    }
+    set CompanyID(value: string) {
+        this.Set('CompanyID', value);
+    }
+
+    /**
+    * * Field Name: Kind
+    * * Display Name: Identity Kind
+    * * SQL Data Type: nvarchar(20)
+    * * Value List Type: List
+    * * Possible Values 
+    *   * Domain
+    *   * Mailbox
+    * * Description: What Address holds: Mailbox is one full email address, Domain is a bare domain any address on which may be used.
+    */
+    get Kind(): 'Domain' | 'Mailbox' {
+        return this.Get('Kind');
+    }
+    set Kind(value: 'Domain' | 'Mailbox') {
+        this.Set('Kind', value);
+    }
+
+    /**
+    * * Field Name: Address
+    * * Display Name: Address
+    * * SQL Data Type: nvarchar(320)
+    * * Description: The sender address, stored trimmed and lower-cased by the entity; a full mailbox when Kind = Mailbox, a bare domain when Kind = Domain. Unique per company.
+    */
+    get Address(): string {
+        return this.Get('Address');
+    }
+    set Address(value: string) {
+        this.Set('Address', value);
+    }
+
+    /**
+    * * Field Name: DisplayName
+    * * Display Name: Display Name
+    * * SQL Data Type: nvarchar(200)
+    * * Description: Optional friendly name shown with the address in the From line.
+    */
+    get DisplayName(): string | null {
+        return this.Get('DisplayName');
+    }
+    set DisplayName(value: string | null) {
+        this.Set('DisplayName', value);
+    }
+
+    /**
+    * * Field Name: IsDefault
+    * * Display Name: Is Default
+    * * SQL Data Type: bit
+    * * Default Value: 0
+    * * Description: Marks the company's default sender: at most one per company (UQ_CompanySenderIdentity_Default); only a Mailbox row is a usable default.
+    */
+    get IsDefault(): boolean {
+        return this.Get('IsDefault');
+    }
+    set IsDefault(value: boolean) {
+        this.Set('IsDefault', value);
+    }
+
+    /**
+    * * Field Name: __mj_CreatedAt
+    * * Display Name: Created At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_CreatedAt(): Date {
+        return this.Get('__mj_CreatedAt');
+    }
+
+    /**
+    * * Field Name: __mj_UpdatedAt
+    * * Display Name: Updated At
+    * * SQL Data Type: datetimeoffset
+    * * Default Value: getutcdate()
+    */
+    get __mj_UpdatedAt(): Date {
+        return this.Get('__mj_UpdatedAt');
+    }
+
+    /**
+    * * Field Name: Company
+    * * Display Name: Company Name
+    * * SQL Data Type: nvarchar(50)
+    */
+    get Company(): string {
+        return this.Get('Company');
     }
 }
 

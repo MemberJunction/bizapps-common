@@ -28,6 +28,7 @@ const ALL_BUNDLES = [
     'relationships',
     'activities',
     'party-lookup',
+    'sender-identities',
 ];
 
 const args = process.argv.slice(2);

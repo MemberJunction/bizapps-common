@@ -10,6 +10,8 @@ export * from './party-signals.js';
 export * from './business-time-zone-engine.js';
 export * from './external-field-limits.js';
 export * from './person-user-link.js';
+export * from './sender-identity.js';
+export * from './CompanySenderIdentityEntity.js';
 export * from './contact-method-consent-entity.js';
 export * from './contact-preference-engine.js';
 

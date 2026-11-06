@@ -1,5 +1,39 @@
 # Change Log - mj_generatedentities
 
+## 5.60.0
+
+### Minor Changes
+
+- 9870cd5: The 5.60 Metadata_Sync ships the re-keyed "Job Function and Seniority Derivation" AI Prompt, its prompt model and the job-function Record Process, all under the prompt's new ID (#408). The re-key migration that runs before it has already moved those rows, so the seed re-asserts their metadata values and changes nothing on a host that ran it. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- 62413dc: Re-key the "Job Function and Seniority Derivation" AI Prompt from `7C46041F-0412-4C2E-9B9E-3ED61D32210C` to `19736B1D-923B-4BB7-AAE8-9A98D9B25C1E`, so a host with common installed on MJ 6.1.x can migrate MJ to 6.2.0 (#408, MemberJunction/MJ#4939).
+
+  - Migration `V202611041900` (SQL Server and PostgreSQL): when `7C46041F` is common's prompt (template `B8221E1A…` or prompt model `FE550867…`), copy it to the new ID, repoint every foreign key and the job-function Record Process `Configuration`, and delete the old row. On any other host it does nothing.
+  - Metadata: the prompt and its Record Process now use the fixed new ID.
+  - Host order: install this release while still on MJ 6.1.x, then migrate MJ to 6.2.0 with the 6.2.0 CLI.
+
+## 5.59.0
+
+### Minor Changes
+
+- 37aa16a: The 5.59 Metadata_Sync ships the UI role's create permission on Activities and Activity Links, finding each host's permission row by entity and role, so a host that upgrades by migration lets a UI-only user log an activity the same way as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- aa06aeb: The UI role can now create Activities and Activity Links, so a UI-only user can log an activity by
+  hand, such as a note on a deal. Before, the role could only read them and the save was refused.
+  Update and delete stay off for the UI role.
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+- 5336ee1: The release now ships the Company Sender Identities metadata in its Metadata_Sync migration, and adds the PostgreSQL versions of that migration and of the Company Sender Identity migration.
+
 ## 5.57.1
 
 ## 5.57.0

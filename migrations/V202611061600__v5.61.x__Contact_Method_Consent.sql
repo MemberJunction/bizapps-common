@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202611021900__v5.58.x__Contact_Method_Consent.sql
+-- Migration: V202611061600__v5.61.x__Contact_Method_Consent.sql
 -- Description: Consent per contact method, per purpose, optionally per organization
 --              (plans/contact-consent.md)
 --              - ConsentPurpose: what a consent is for (Marketing, Transactional, ...), a lookup

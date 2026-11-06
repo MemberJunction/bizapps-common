@@ -31,6 +31,7 @@ import { mjBizAppsCommonActivityTypeFormComponent } from "./Entities/mjBizAppsCo
 import { mjBizAppsCommonAddressFormComponent } from "./Entities/mjBizAppsCommonAddress/mjbizappscommonaddress.form.component";
 import { mjBizAppsCommonAddressLinkFormComponent } from "./Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component";
 import { mjBizAppsCommonAddressTypeFormComponent } from "./Entities/mjBizAppsCommonAddressType/mjbizappscommonaddresstype.form.component";
+import { mjBizAppsCommonCompanySenderIdentityFormComponent } from "./Entities/mjBizAppsCommonCompanySenderIdentity/mjbizappscommoncompanysenderidentity.form.component";
 import { mjBizAppsCommonConsentPurposeFormComponent } from "./Entities/mjBizAppsCommonConsentPurpose/mjbizappscommonconsentpurpose.form.component";
 import { mjBizAppsCommonContactMethodConsentFormComponent } from "./Entities/mjBizAppsCommonContactMethodConsent/mjbizappscommoncontactmethodconsent.form.component";
 import { mjBizAppsCommonContactMethodConsentHistoryFormComponent } from "./Entities/mjBizAppsCommonContactMethodConsentHistory/mjbizappscommoncontactmethodconsenthistory.form.component";
@@ -87,6 +88,7 @@ export class GeneratedForms_SubModule_1 { }
 @NgModule({
 declarations: [
     mjBizAppsCommonAddressFormComponent,
+    mjBizAppsCommonCompanySenderIdentityFormComponent,
     mjBizAppsCommonPersonJobFunctionFormComponent
 ],
 imports: [
