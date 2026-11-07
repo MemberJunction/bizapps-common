@@ -162,8 +162,10 @@ export interface RawBatch {
      * The read covered everything received up to this instant and stopped short of the present.
      *
      * Set by a transport that reads oldest-window-first and ran out of requests before catching up.
-     * The watermark moves to exactly this point, even when no item sits on it, so the next pass
-     * continues where this one stopped instead of re-reading the same page. Ignored when `Capped`.
+     * When the window was empty, the watermark moves to this point so the next pass continues where
+     * this one stopped; when items were ingested, the watermark is clamped to the smaller of
+     * `ReadThrough` and the newest item timestamp so a received-time window cannot step past the
+     * sent-time filter of a delayed message. Ignored when `Capped`.
      */
     ReadThrough?: Date;
 }

@@ -69,6 +69,15 @@ export abstract class BaseActivitySyncProvider {
             const items = this.Normalize(raw, query);
             await this.OnAfterNormalize(items, query);
 
+            const computedWatermark = this.ComputeHighWatermark(items, observedAt);
+            const highWatermark = raw.Capped
+                ? null
+                : raw.ReadThrough && computedWatermark
+                  ? raw.ReadThrough.getTime() <= computedWatermark.getTime()
+                      ? raw.ReadThrough
+                      : computedWatermark
+                  : (raw.ReadThrough ?? computedWatermark);
+
             return {
                 Items: items,
                 // A CAPPED read earns no advance. `NextWatermark` treats null as 'stay put', so the
@@ -76,9 +85,11 @@ export abstract class BaseActivitySyncProvider {
                 // The items in hand are still returned and still written — only the claim to have
                 // seen everything up to their newest is withheld, because it is not true.
                 //
-                // A read that stopped part of the way names how far it got (`ReadThrough`); that is
-                // the claim it can make, and the next pass starts there.
-                HighWatermark: raw.Capped ? null : (raw.ReadThrough ?? this.ComputeHighWatermark(items, observedAt)),
+                // A read that stopped part of the way names how far it got (`ReadThrough`). When
+                // items were also returned, the watermark is clamped to the smaller of `ReadThrough`
+                // and the newest ingested item's timestamp so a received-date window never advances
+                // past the sent-date filter of a delayed message still ahead of the window (#308).
+                HighWatermark: highWatermark,
                 Issues: raw.Issues,
             };
         } catch (error) {

@@ -879,4 +879,70 @@ describe('a backlog larger than one page drains over runs (#308)', () => {
         expect(batch.Issues.join(' ')).toMatch(/within one second/);
         expect((reader.GetMessages as ReturnType<typeof vi.fn>).mock.calls.length).toBeLessThan(16);
     });
+
+    it('does not advance a partial watermark past a delayed message whose sent time predates ReadThrough', async () => {
+        // Window bounds filter by `receivedDateTime` while `Normalize` filters by `StartedAt`
+        // (`sentDateTime ?? receivedDateTime`). When a partial run drains `[Aug 1, ReadThrough]`
+        // containing only an early message (`m-early`, sent Aug 2), `ReadThrough` sits days ahead of
+        // `m-early.sentDateTime`. A delayed message (`m-delayed`, sent Aug 5 <= ReadThrough, received
+        // Aug 20 > ReadThrough) is outside run 1's received-date window; if run 1 advanced the
+        // watermark to `ReadThrough` instead of clamping to `m-early.StartedAt`, run 2 would filter
+        // `m-delayed` out as already-seen and lose it permanently.
+        const delayedMailbox = [
+            msg('m-early', '2026-08-02T09:00:00Z'),
+            {
+                ...GRAPH_MESSAGE,
+                id: 'm-delayed',
+                sentDateTime: '2026-08-05T09:00:00Z',
+                receivedDateTime: '2026-08-20T09:00:00Z',
+            },
+            msg('m-late-1', '2026-08-25T09:00:00Z'),
+            msg('m-late-2', '2026-08-26T09:00:00Z'),
+        ];
+        const reader = mailbox(delayedMailbox);
+        // Budget of 2 requests: request 1 (`[Aug 1, Sep 4]`) overflows `Limit: 2`; request 2 drains
+        // the first half (`[Aug 1, Aug 18 06:00]`) with `m-early` and sets `ReadThrough = Aug 18 06:00`.
+        const run1Provider = new MSGraphActivitySyncProvider(
+            true,
+            new GraphCommunicationTransport(
+                { ResolveCredential: async () => CREDENTIAL, ResolveProvider: async () => reader },
+                2,
+                () => NOW,
+            ),
+        );
+        const run1 = await run1Provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(run1.Items.map((i) => i.ExternalID)).toEqual(['m-early']);
+        expect(run1.HighWatermark).toEqual(new Date('2026-08-02T09:00:00Z'));
+
+        // Run 2 starts at run 1's watermark and must read `m-delayed` rather than dropping it.
+        const run2Provider = new MSGraphActivitySyncProvider(true, drainingTransport(reader));
+        const run2 = await run2Provider.Fetch({ ...QUERY, Since: run1.HighWatermark, Limit: 10 });
+        expect(run2.Items.map((i) => i.ExternalID)).toContain('m-delayed');
+    });
+
+    it('clamps a partial watermark to ReadThrough when a message carries a future sentDateTime', async () => {
+        const skewedMailbox = [
+            {
+                ...GRAPH_MESSAGE,
+                id: 'm-skewed',
+                sentDateTime: '2026-08-28T09:00:00Z',
+                receivedDateTime: '2026-08-02T09:00:00Z',
+            },
+            msg('m-unread-1', '2026-08-20T09:00:00Z'),
+            msg('m-unread-2', '2026-08-21T09:00:00Z'),
+        ];
+        const reader = mailbox(skewedMailbox);
+        const provider = new MSGraphActivitySyncProvider(
+            true,
+            new GraphCommunicationTransport(
+                { ResolveCredential: async () => CREDENTIAL, ResolveProvider: async () => reader },
+                2,
+                () => NOW,
+            ),
+        );
+        const batch = await provider.Fetch({ ...QUERY, Since: SINCE, Limit: 2 });
+        expect(batch.Items.map((i) => i.ExternalID)).toEqual(['m-skewed']);
+        // Must not jump to `m-skewed.sentDateTime` (Aug 28), which would step over `m-unread-1` (Aug 20).
+        expect(batch.HighWatermark!.getTime()).toBeLessThan(Date.parse('2026-08-20T09:00:00Z'));
+    });
 });
