@@ -14,6 +14,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IMetadataProvider, Metadata, RunView } from '@memberjunction/core';
 import { UUIDsEqual } from '@memberjunction/global';
+import { EscapeFilterValue } from '../../data/directory-stats';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import {
     mjBizAppsCommonJobFunctionEntity,
@@ -101,7 +102,7 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
                 rv.RunView<mjBizAppsCommonPersonJobFunctionEntity>(
                     {
                         EntityName: 'MJ_BizApps_Common: Person Job Functions',
-                        ExtraFilter: `PersonID = '${this.PersonID}'`,
+                        ExtraFilter: `PersonID = '${EscapeFilterValue(this.PersonID)}'`,
                         OrderBy: 'Sequence ASC, __mj_CreatedAt ASC',
                         ResultType: 'entity_object',
                     },
