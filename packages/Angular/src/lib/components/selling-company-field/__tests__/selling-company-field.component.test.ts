@@ -1,5 +1,6 @@
 import '@angular/compiler';
-import { ChangeDetectorRef, Injector, runInInjectionContext } from '@angular/core';
+import { ChangeDetectorRef, ElementRef, Injector, SimpleChange, runInInjectionContext } from '@angular/core';
+import { MJEventType, MJGlobal } from '@memberjunction/global';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const H = vi.hoisted(() => ({
@@ -79,9 +80,15 @@ function record(isSaved: boolean, companyID: string | null = null): FakeRecord {
  * A one-provider injector gives it one without standing up TestBed — these are unit tests of the
  * default-and-confirm behaviour, not of rendering.
  */
+/** Stands in for the field's host element; a fake form element "contains" it. */
+const FIELD_HOST = { tag: 'bizapps-selling-company-field' };
+
 async function build(rec: FakeRecord): Promise<SellingCompanyFieldComponent> {
     const injector = Injector.create({
-        providers: [{ provide: ChangeDetectorRef, useValue: { markForCheck: () => undefined } }],
+        providers: [
+            { provide: ChangeDetectorRef, useValue: { markForCheck: () => undefined } },
+            { provide: ElementRef, useValue: new ElementRef(FIELD_HOST) },
+        ],
     });
     const component = runInInjectionContext(injector, () => new SellingCompanyFieldComponent());
     component.Record = rec as unknown as SellingCompanyFieldComponent['Record'];
@@ -244,6 +251,59 @@ describe('SellingCompanyFieldComponent', () => {
             expect(rec.values['CompanyID']).toBe('default-co');
             expect(component.AskName).toBeNull();
             expect(component.NotAppliedName).toBe('Other Co');
+        });
+
+        /** What BaseFormComponent.SaveRecord() raises before it saves, dirty record or not. */
+        function formSaving(containsField: boolean): void {
+            MJGlobal.Instance.RaiseEvent({
+                event: MJEventType.ComponentEvent,
+                component: {},
+                eventCode: 'BaseFormComponent_Event',
+                args: {
+                    subEventCode: 'EDITING_COMPLETE',
+                    elementRef: { nativeElement: { contains: (el: unknown) => containsField && el === FIELD_HOST } },
+                },
+            });
+        }
+
+        it('closes the question when the form saves a record left clean by the held pick', async () => {
+            // The pick was put back, so the record is clean and BaseEntity.Save() raises no save_started.
+            const { rec, component } = await pending();
+
+            formSaving(true);
+
+            expect(rec.values['CompanyID']).toBe('default-co');
+            expect(component.AskName).toBeNull();
+            expect(component.NotAppliedName).toBe('Other Co');
+            component.ngOnDestroy();
+        });
+
+        it('ignores a save on another form', async () => {
+            const { component } = await pending();
+
+            formSaving(false);
+
+            expect(component.AskName).toBe('Other Co');
+            component.ngOnDestroy();
+        });
+
+        it('moves its save handler to a rebound record and drops the old question', async () => {
+            const { rec, component } = await pending();
+            const next = record(true, 'employee-co');
+            component.Record = next as unknown as SellingCompanyFieldComponent['Record'];
+            component.ngOnChanges({ Record: new SimpleChange(rec, next, false) });
+            expect(component.AskName).toBeNull();
+
+            next.Set('CompanyID', 'other-co');
+            component.OnValueChange('other-co');
+            expect(next.values['CompanyID']).toBe('employee-co');
+
+            rec.raise('save_started');
+            expect(component.AskName).toBe('Other Co');
+            next.raise('save_started');
+            expect(component.AskName).toBeNull();
+            expect(component.KeptName).toBe('Employee Co');
+            component.ngOnDestroy();
         });
 
         it('says nothing when no question was open', async () => {
