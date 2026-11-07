@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IMetadataProvider, IRunViewProvider, LogError, Metadata, RunView, type RelatedRecordCollection } from '@memberjunction/core';
-import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
+import { EscapeSQLString, NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
     ContactConsentSource,
@@ -255,6 +255,7 @@ export class ContactMethodListComponent {
     ConsentHistoryLoading = false;
 
     /** History already read this session, by contact method ID; dropped for a row when it is saved. */
+    /** Keyed by `NormalizeUUID(contactMethodID)`. */
     private consentHistoryCache = new Map<string, ConsentHistoryLine[]>();
 
     /** Maps lowercase contact type names to CSS icon-color classes. */
@@ -481,7 +482,7 @@ export class ContactMethodListComponent {
      * @param typeID - The ContactType record ID to check
      */
     isConsentType(typeID: string): boolean {
-        const ct = this.ContactTypes.find(t => t.ID === typeID);
+        const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
         return !!ct?.CommunicationBaseMessageTypeID;
     }
 
@@ -555,7 +556,7 @@ export class ContactMethodListComponent {
      */
     async onShowConsentHistory(cm: mjBizAppsCommonContactMethodEntity): Promise<void> {
         this.ConsentHistoryFor = cm.ID;
-        const cached = this.consentHistoryCache.get(cm.ID);
+        const cached = this.consentHistoryCache.get(NormalizeUUID(cm.ID));
         if (cached) {
             this.ConsentHistory = cached;
             this.cdr.detectChanges();
@@ -565,8 +566,8 @@ export class ContactMethodListComponent {
         this.ConsentHistoryLoading = true;
         this.cdr.detectChanges();
         const lines = await this.loadConsentHistory(cm);
-        this.consentHistoryCache.set(cm.ID, lines);
-        if (this.ConsentHistoryFor === cm.ID) {
+        this.consentHistoryCache.set(NormalizeUUID(cm.ID), lines);
+        if (this.IsShowingConsentHistory(cm)) {
             this.ConsentHistory = lines;
         }
         this.ConsentHistoryLoading = false;
@@ -728,6 +729,11 @@ export class ContactMethodListComponent {
         }
     }
 
+    /** Whether this row's consent history is the one shown. IDs compare case-insensitively. */
+    IsShowingConsentHistory(cm: mjBizAppsCommonContactMethodEntity): boolean {
+        return this.ConsentHistoryFor !== null && UUIDsEqual(this.ConsentHistoryFor, cm.ID);
+    }
+
     /** Whether this row is the one being edited. IDs compare case-insensitively. */
     IsEditing(cm: mjBizAppsCommonContactMethodEntity): boolean {
         return this.EditingId !== null && UUIDsEqual(this.EditingId, cm.ID);
@@ -796,7 +802,7 @@ export class ContactMethodListComponent {
             cm.Label = this.EditForm.Label || null;
             cm.IsPrimary = this.EditForm.IsPrimary;
             await this.applyConsentsFromForm(cm, this.EditForm);
-            this.consentHistoryCache.delete(cm.ID);
+            this.consentHistoryCache.delete(NormalizeUUID(cm.ID));
 
             if (this._collection) {
                 this.ContactMethods = [...this._collection.Items];

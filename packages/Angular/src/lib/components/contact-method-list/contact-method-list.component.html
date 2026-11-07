@@ -112,7 +112,7 @@
                                     </span>
                                 }
                             </span>
-                            @if (ConsentHistoryFor === cm.ID) {
+                            @if (IsShowingConsentHistory(cm)) {
                                 <div class="consent-history" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
                                     <div class="consent-history-title">Consent history · {{ cm.Value }}</div>
                                     @if (ConsentHistoryLoading) {
