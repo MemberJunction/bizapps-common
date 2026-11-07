@@ -1,5 +1,99 @@
 # @mj-biz-apps/common-server
 
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+  - @mj-biz-apps/common-actions@5.60.0
+  - @mj-biz-apps/common-activity-sync@5.60.0
+  - @mj-biz-apps/common-core-entities-server@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+  - @mj-biz-apps/common-actions@5.59.0
+  - @mj-biz-apps/common-activity-sync@5.59.0
+  - @mj-biz-apps/common-core-entities-server@5.59.0
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+  - @mj-biz-apps/common-actions@5.58.0
+  - @mj-biz-apps/common-activity-sync@5.58.0
+  - @mj-biz-apps/common-core-entities-server@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-actions@5.57.1
+- @mj-biz-apps/common-activity-sync@5.57.1
+- @mj-biz-apps/common-core-entities-server@5.57.1
+- @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+  - @mj-biz-apps/common-actions@5.57.0
+  - @mj-biz-apps/common-activity-sync@5.57.0
+  - @mj-biz-apps/common-core-entities-server@5.57.0
+
+## 5.56.0
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+  - @mj-biz-apps/common-actions@5.56.0
+  - @mj-biz-apps/common-activity-sync@5.56.0
+  - @mj-biz-apps/common-core-entities-server@5.56.0
+
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+  - @mj-biz-apps/common-actions@5.55.0
+  - @mj-biz-apps/common-activity-sync@5.55.0
+  - @mj-biz-apps/common-core-entities-server@5.55.0
+
 ## 5.54.0
 
 ### Minor Changes

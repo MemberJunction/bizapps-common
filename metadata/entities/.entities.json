@@ -347,6 +347,21 @@
           }
         },
         {
+          "_comments": [
+            "Acronym is searched like Name and LegalName (starts-with, indexed by IX_Organization_Acronym),",
+            "so typing an organization's initials finds it in every organization lookup."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Acronym&EntityID=@parent:ID"
+          }
+        },
+        {
           "fields": {
             "IncludeInUserSearchAPI": true,
             "UserSearchPredicateAPI": "Exact",

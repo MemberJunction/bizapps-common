@@ -117,7 +117,7 @@ This clone is a member of an **`mj dev workspace`**: the parent folder (one leve
 
 ## MemberJunction version policy
 
-The pins are a **floor**, not a target. `^6.1.5` means "at least 6.1.5"; development happens on `next` through the workspace link above.
+The pins are a **floor**, not a target. `^6.1.6` means "at least 6.1.6"; development happens on `next` through the workspace link above.
 
 - **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range and never appears in `dependencies`: the host installs one copy, and a `~6.1.N` or exact peer makes every later host install a second tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor. `.github/scripts/check-dependency-model.mjs` enforces this in CI; it accepts a prerelease caret such as `^6.2.0-edge.3`. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
 - **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here.
@@ -177,14 +177,15 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 
 ## Database migrations
 
-- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Guarded DDL (`IF OBJECT_ID(...) IS NULL`), `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
+- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Plain DDL with no existence guards: Skyway runs each migration exactly once, in order, so no `IF OBJECT_ID(...) IS NULL`, `IF COL_LENGTH(...) IS NULL` or `IF NOT EXISTS` wrappers, around descriptions included. A guard turns a schema mismatch into silence and makes the PostgreSQL conversion harder. `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
 - The stamp (`V<YYYYMMDDHHMM>`, Central Time) must sort after every migration on `next` at merge time; `changes.yml` rejects one that doesn't. A shipped migration is immutable.
 - T-SQL only in a feature PR. The PostgreSQL twin is release work (`docs/postgresql.md`).
 - Full rules: [`.claude/mj/migrations/CLAUDE.md`](.claude/mj/migrations/CLAUDE.md); the release-seed runbook: [`migrations/README.md`](migrations/README.md).
+- The authoring rules MJ and every BizApps repo share, each with its reason (plain DDL, CHECK values written for people, a `primaryKey` on every metadata record): MJ's [Schema and Code Authoring Guide](https://github.com/MemberJunction/MJ/blob/next/guides/SCHEMA_AND_CODE_AUTHORING_GUIDE.md).
 
 ## Metadata
 
-Declarative JSON under `metadata/`, pushed by `mj sync push`. Primary keys come from `uuidgen`; references use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
+Declarative JSON under `metadata/`, pushed by `mj sync push`. Every record, nested `relatedEntities` children included, has a `primaryKey`: a `uuidgen` UUID for a row the file creates, or an `@lookup` for a row the migration stack or CodeGen already created (a record without one is inserted as a new row). References use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
 
 ---
 

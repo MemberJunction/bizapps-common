@@ -31,6 +31,13 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { StatTileComponent, type StatTileTone } from './lib/components/stat-tile/stat-tile.component';
 export { StatRowComponent } from './lib/components/stat-tile/stat-row.component';
+export { PartyFieldComponent, type PartyOption, type PartySearchError } from './lib/components/party-field/party-field.component';
+export {
+    PARTY_LOOKUP_QUERIES,
+    PartyLookupParamsFor,
+    type PartyKind,
+    type PartyLookupParams,
+} from './lib/components/party-field/party-lookup-term';
 export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
 export {
     FilterForRelatedLink,
@@ -48,6 +55,8 @@ export {
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
 export { PersonJobFunctionsComponent } from './lib/components/person-job-functions/person-job-functions.component';
 export { PersonJobFunctionsPanel } from './lib/custom/panels/person-job-functions.panel';
+export { CompanySenderIdentitiesComponent } from './lib/components/company-sender-identities/company-sender-identities.component';
+export { CompanySenderIdentitiesPanel } from './lib/custom/panels/company-sender-identities.panel';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';

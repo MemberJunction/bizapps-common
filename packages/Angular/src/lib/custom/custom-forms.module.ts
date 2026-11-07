@@ -20,6 +20,8 @@ import { PersonContactMethodsPanel } from './panels/person-contact-methods.panel
 import { PersonRelationshipsPanel } from './panels/person-relationships.panel';
 import { PersonJobFunctionsPanel } from './panels/person-job-functions.panel';
 import { PersonJobFunctionsComponent } from '../components/person-job-functions/person-job-functions.component';
+import { CompanySenderIdentitiesPanel } from './panels/company-sender-identities.panel';
+import { CompanySenderIdentitiesComponent } from '../components/company-sender-identities/company-sender-identities.component';
 import { OrganizationAddressesPanel } from './panels/organization-addresses.panel';
 import { OrganizationContactMethodsPanel } from './panels/organization-contact-methods.panel';
 import { OrganizationRelationshipsPanel } from './panels/organization-relationships.panel';
@@ -39,6 +41,7 @@ const PANELS = [
     PersonContactMethodsPanel,
     PersonRelationshipsPanel,
     PersonJobFunctionsPanel,
+    CompanySenderIdentitiesPanel,
     OrganizationAddressesPanel,
     OrganizationContactMethodsPanel,
     OrganizationRelationshipsPanel,
@@ -46,7 +49,7 @@ const PANELS = [
 ];
 
 /**
- * Registers People/Organization/Activity BaseFormPanel contributions.
+ * Registers People/Organization/Activity/Company BaseFormPanel contributions.
  */
 @NgModule({
     declarations: [...PANELS],
@@ -60,6 +63,7 @@ const PANELS = [
         CommonRelationshipGraphComponent,
         PersonIdentityComponent,
         PersonJobFunctionsComponent,
+        CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,
@@ -73,6 +77,7 @@ const PANELS = [
         ...PANELS,
         PersonIdentityComponent,
         PersonJobFunctionsComponent,
+        CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,
