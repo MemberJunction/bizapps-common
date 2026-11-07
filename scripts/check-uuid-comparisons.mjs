@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Refuse `===` / `!==` between record IDs in hand-written package code (#314).
+ * Refuse `===`, `!==`, `==` and `!=` between record IDs, and Map/Set/array lookups keyed by a raw
+ * record ID, in hand-written package code (#314).
  *
  * SQL Server returns UUIDs upper-cased and PostgreSQL lower-cased, and an ID from a route, an input
  * binding or another provider can be spelled either way. `a.ID === b.ID` is then false for the same
@@ -12,7 +13,15 @@
  * in `ID` or `Id` (`connection.ID`, `typeID`, `EditingId`). A bare lower-case `id` is left out: MJ
  * entity fields are PascalCase, and in this repo `id` names UI slugs (`chip.id`). A comparison
  * against a literal (`null`, `undefined`, a string, a number, a boolean) or a `typeof` test is not
- * an ID comparison and passes. A line that really does compare non-UUID values whose names end in ID carries
+ * an ID comparison and passes. A `.has(` / `.get(` / `.set(` / `.delete(` / `.includes(` call whose
+ * first argument is an ID field read straight off a row (`row.ID`, `consent.ContactMethodID`) is
+ * flagged too: wrap it in `NormalizeUUID(...)`. A bare local or a `this.` member is left alone,
+ * because those are usually keys normalized when they were built.
+ *
+ * Not covered: `switch` on an ID, hand-rolled `.toLowerCase()` comparisons, and IDs passed through a
+ * variable whose name does not end in ID. The scan catches the common shapes; it is not a proof.
+ *
+ * A line that really does compare non-UUID values whose names end in ID carries
  * `uuid-compare-ok: <reason>` on that line or the one above it.
  *
  * Plain Node, stdlib only, like the other gates in scripts/.
@@ -32,15 +41,24 @@ const EXCLUDED_SUFFIXES = Object.freeze(['.test.ts', '.spec.ts']);
 const SCANNED_SUFFIXES = Object.freeze(['.ts', '.html']);
 
 const MARKER = 'uuid-compare-ok:';
-const OPERATOR = /(===|!==)/g;
+const OPERATOR = /(===|!==|==|!=)/g;
 const OPERAND_CHAR = /[\w$.?!\[\]]/;
-const LITERAL = /^(null|undefined|true|false|-?\d|['"`])/;
+const LITERAL = /^((null|undefined|true|false)\b|-?\d|['"`])/;
+/** A keyed lookup and its first argument, up to the first `,` or `)`. */
+const KEYED_LOOKUP = /\.(has|get|set|delete|includes)\(\s*([^,()]+?)\s*[,)]/g;
 
 /** Pure. Is this operand text a record ID by its name? */
 export function looksLikeID(operand) {
     const cleaned = operand.replace(/[?!]+$/g, '').replace(/^[!(]+/, '');
     const last = cleaned.split(/[.?!]+/).filter(Boolean).pop() ?? '';
     return /(ID|Id)$/.test(last);
+}
+
+/** Pure. Is this lookup key an ID field read off a row, as opposed to a local or a `this.` member? */
+export function isRowIDField(key) {
+    if (!/^[\w$]+(\??\.[\w$]+)+!?$/.test(key)) return false;
+    if (key.startsWith('this.')) return false;
+    return looksLikeID(key);
 }
 
 function leftOperand(line, index) {
@@ -72,6 +90,10 @@ export function findIDComparisons(line, previousLine = '') {
         if (looksLikeID(left.text) || looksLikeID(right.text)) {
             found.push(`${left.text} ${match[0]} ${right.text}`);
         }
+    }
+    for (const match of line.matchAll(KEYED_LOOKUP)) {
+        const key = match[2];
+        if (isRowIDField(key)) found.push(`.${match[1]}(${key})`);
     }
     return found;
 }
@@ -123,10 +145,10 @@ export function runCheck(root = REPO_ROOT) {
 function main() {
     const violations = runCheck();
     if (violations.length === 0) {
-        console.log('No === / !== between record IDs in hand-written package code.');
+        console.log('No raw record-ID comparisons or lookups in hand-written package code.');
         return;
     }
-    console.error('Record IDs compared with === / !== (UUID casing differs between SQL Server and PostgreSQL, #314):');
+    console.error('Record IDs compared or looked up raw (UUID casing differs between SQL Server and PostgreSQL, #314):');
     for (const v of violations) console.error(`  ${v.file}:${v.line}  ${v.comparison}`);
     console.error(`Use UUIDsEqual / NormalizeUUID from @memberjunction/global, or mark the line "${MARKER} <reason>".`);
     process.exitCode = 1;

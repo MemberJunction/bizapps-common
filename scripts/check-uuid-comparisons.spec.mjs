@@ -30,6 +30,45 @@ test('two comparisons on one line are both reported', () => {
     assert.equal(findIDComparisons('rows.find(r => r.FromPersonID === this.PersonID || r.ToPersonID === this.PersonID)').length, 2);
 });
 
+test('loose equality between IDs is a violation', () => {
+    assert.equal(findIDComparisons('if (a.PersonID == b.PersonID) {').length, 1);
+    assert.equal(findIDComparisons('if (a.PersonID != b.PersonID) {').length, 1);
+});
+
+test('an identifier that only starts with null, undefined, true or false is not a literal', () => {
+    for (const line of [
+        'if (a.PersonID === nullableID) {',
+        'if (a.PersonID === undefinedOrID) {',
+        'if (a.PersonID === trueOwnerID) {',
+        'if (a.PersonID === falseMatchID) {',
+    ]) {
+        assert.equal(findIDComparisons(line).length, 1, line);
+    }
+});
+
+test('a Map, Set or array lookup keyed by a row ID field is a violation', () => {
+    for (const line of [
+        'const list = byMethod.get(consent.ContactMethodID) ?? [];',
+        'byMethod.set(row.ID, list);',
+        'if (seen.has(rel.ToPersonID)) continue;',
+        'cache.delete(cm.ID);',
+        'if (ids.includes(row?.LinkedUserID)) {',
+    ]) {
+        assert.equal(findIDComparisons(line).length, 1, line);
+    }
+});
+
+test('a lookup keyed by NormalizeUUID, a local or a this. member is not flagged', () => {
+    for (const line of [
+        'byMethod.get(NormalizeUUID(consent.ContactMethodID));',
+        'nodeMap.has(sourceId);',
+        'nodeMap.set(this.FocalNodeID!, node);',
+        "params.get('recordID');",
+    ]) {
+        assert.deepEqual(findIDComparisons(line), [], line);
+    }
+});
+
 // ── What the gate must let through ──────────────────────────────────────────────────────────────
 
 test('a comparison against a literal is not an ID comparison', () => {

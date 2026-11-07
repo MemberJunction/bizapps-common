@@ -206,7 +206,7 @@ export class ContactMethodListComponent {
     /** The form key of the general (any purpose) consent, for the template. */
     GeneralKey = GENERAL_CONSENT_KEY;
 
-    /** Each loaded method's consent rows (every purpose and organization), keyed by contact method ID. */
+    /** Each loaded method's consent rows (every purpose and organization), keyed by `NormalizeUUID(contactMethodID)`. */
     private consentsByMethod = new Map<string, mjBizAppsCommonContactMethodConsentEntity[]>();
 
     /**
@@ -381,9 +381,10 @@ export class ContactMethodListComponent {
             return;
         }
         for (const consent of result.Results) {
-            const list = this.consentsByMethod.get(consent.ContactMethodID) ?? [];
+            const key = NormalizeUUID(consent.ContactMethodID);
+            const list = this.consentsByMethod.get(key) ?? [];
             list.push(consent);
-            this.consentsByMethod.set(consent.ContactMethodID, list);
+            this.consentsByMethod.set(key, list);
         }
     }
 
@@ -505,7 +506,7 @@ export class ContactMethodListComponent {
         if (cm.Consents.IsLoaded || cm.Consents.Items.length > 0) {
             return cm.Consents.Items;
         }
-        return this.consentsByMethod.get(cm.ID) ?? [];
+        return this.consentsByMethod.get(NormalizeUUID(cm.ID)) ?? [];
     }
 
     /** Returns the Sequence for a consent purpose; the general row (no purpose) sorts first. */
