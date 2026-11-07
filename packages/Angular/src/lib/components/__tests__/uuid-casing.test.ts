@@ -42,7 +42,14 @@ describe('ContactMethodListComponent', () => {
     it('marks the row being edited and opens the form on the option ID spelling', () => {
         const component = create(ContactMethodListComponent);
         component.ContactTypes = [{ ID: UPPER } as unknown as ContactType];
-        const cm = { ID: UPPER, ContactTypeID: LOWER, Value: 'a@b.test', Label: null, IsPrimary: false } as unknown as ContactMethod;
+        const cm = {
+            ID: UPPER,
+            ContactTypeID: LOWER,
+            Value: 'a@b.test',
+            Label: null,
+            IsPrimary: false,
+            Consents: { IsLoaded: true, Items: [] },
+        } as unknown as ContactMethod;
 
         component.onEdit(cm);
         component.EditingId = LOWER;
