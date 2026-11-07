@@ -168,6 +168,32 @@ export function healthErrorFromResults(results: readonly SyncEngineResult[]): st
 }
 
 /**
+ * The connection row the fleet already loaded, when it is the one this run is for.
+ *
+ * SQL Server returns IDs upper-cased and PostgreSQL lower-cased, so the fleet's row and the caller's
+ * `connectionID` can name the same connection in different casings. A raw `!==` reloaded the row
+ * for no reason (#314).
+ */
+export function reusableConnection<T extends { ID: string }>(
+    loaded: T | undefined,
+    connectionID: string,
+): T | undefined {
+    return loaded && UUIDsEqual(loaded.ID, connectionID) ? loaded : undefined;
+}
+
+/**
+ * The rule that decided an item, matched case-insensitively. A raw `===` missed it when the
+ * verdict's ID and the loaded rule's ID came back in different casings, and the item lost that
+ * rule's attachment policy without saying so (#314).
+ */
+export function decidingRuleFor<T extends { ID: string }>(
+    rules: readonly T[],
+    ruleID: string | null | undefined,
+): T | null {
+    return ruleID ? (rules.find((r) => UUIDsEqual(r.ID, ruleID)) ?? null) : null;
+}
+
+/**
  * One Load+Save per extension row after the batch — not N items × M extensions.
  *
  * An error is sticky within the batch on purpose: a later success on a different item must
@@ -278,8 +304,8 @@ export class ActivitySyncEngine {
             Issues: [],
         };
 
-        let connection = surface?.connection;
-        if (!connection || !UUIDsEqual(connection.ID, connectionID)) {
+        let connection = reusableConnection(surface?.connection, connectionID);
+        if (!connection) {
             const loadedConnection = await this.loadConnection(connectionID, contextUser);
             if (loadedConnection.Failed) {
                 result.Issues.push(loadedConnection.Issue);
@@ -574,9 +600,7 @@ export class ActivitySyncEngine {
             // The BYTES are not moved yet — that needs a file sink, and this host has no
             // FileStorageAccount configured, so there is nowhere to put them. What changed is that
             // the request is now honoured or REPORTED, instead of silently discarded.
-            const decidingRule = verdict.ActivitySyncRuleID
-                ? rules.Rows.find((r) => UUIDsEqual(r.ID, verdict.ActivitySyncRuleID))
-                : null;
+            const decidingRule = decidingRuleFor(rules.Rows, verdict.ActivitySyncRuleID);
             const attachmentPolicy = AttachmentPolicyFor(decidingRule, item);
             if (attachmentPolicy.Fetch && !this.fileSink) {
                 result.Issues.push(
