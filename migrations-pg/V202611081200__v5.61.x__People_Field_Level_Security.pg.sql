@@ -21,8 +21,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- migrations-pg files are unaffected (the only quoted CREATE SCHEMAs there are the four pg_dump
 -- baselines, which this path does not produce), so this is an open-app / downstream concern, not
 -- one for this repo's Flyway history.
-CREATE SCHEMA IF NOT EXISTS __mj_BizAppsCommon;
-SET search_path TO __mj_BizAppsCommon, public;
+CREATE SCHEMA IF NOT EXISTS __mj_bizappscommon;
+SET search_path TO __mj_bizappscommon, public;
 
 -- Ensure backslashes in string literals are treated literally (not as escape sequences)
 SET standard_conforming_strings = on;
@@ -39,7 +39,7 @@ SET standard_conforming_strings = on;
 -- ===================== Data (INSERT/UPDATE/DELETE) =====================
 
 -- =============================================================================
--- Migration: V202610201800__v5.56.x__People_Field_Level_Security.sql
+-- Migration: V202611081200__v5.61.x__People_Field_Level_Security.sql
 -- Description: Turn on field-level security for MJ_BizApps_Common: People and
 --              give every role that can read People a permission row on each
 --              restrictable field, computed from this host's own permissions
