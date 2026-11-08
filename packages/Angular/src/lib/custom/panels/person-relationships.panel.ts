@@ -74,6 +74,7 @@ const VIEW_SWITCHER_STYLES = `
         slot: 'after-related', // its own rail tab — after-fields would fold it into Details (MJ #4311 slot default)
         sortKey: 70,
         contributionKey: 'relationships',
+        whenEmpty: 'more',
         relatedEntity: 'MJ_BizApps_Common: Relationships',
     },
 })

@@ -21,7 +21,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -255,7 +256,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -344,6 +346,21 @@
           "sync": {
             "lastModified": "2026-09-17T23:07:00.601Z",
             "checksum": "1cf753101d00f04addd41f794f0626ca45f75a62b67b8086d6e0381e2c710bd8"
+          }
+        },
+        {
+          "_comments": [
+            "Acronym is searched like Name and LegalName (starts-with, indexed by IX_Organization_Acronym),",
+            "so typing an organization's initials finds it in every organization lookup."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Acronym&EntityID=@parent:ID"
           }
         },
         {
@@ -448,7 +465,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       }
