@@ -19,6 +19,8 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         relatedEntity: 'MJ_BizApps_Common: Person Job Functions',
         relatedJoinField: 'PersonID',
         contributionKey: 'person-job-functions',
+        sectionKey: 'personJobFunctions',
+        whenEmpty: 'more',
     },
 })
 @Component({

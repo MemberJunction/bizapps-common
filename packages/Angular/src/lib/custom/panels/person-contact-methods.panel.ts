@@ -15,6 +15,7 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         sortKey: 80,
         relatedEntity: 'MJ_BizApps_Common: Contact Methods',
         relatedJoinField: 'PersonID',
+        whenEmpty: 'show',
     },
 })
 @Component({
