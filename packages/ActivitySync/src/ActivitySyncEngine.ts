@@ -487,7 +487,7 @@ export class ActivitySyncEngine {
 
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const extensionStamps: ExtensionStamp[] = [];
-        const identities = await this.resolver.Resolve(allParticipants, contextUser);
+        const identities = await this.resolver.Resolve(allParticipants, contextUser, provider);
         if (identities.LookupFailed) {
             result.Failed += batch.Items.length;
             result.Issues.push('ContactMethod lookup failed — watermark will not advance.');
@@ -579,7 +579,7 @@ export class ActivitySyncEngine {
                 continue;
             }
 
-            const itemIdentities = await this.resolver.Resolve(item.Participants, contextUser);
+            const itemIdentities = await this.resolver.Resolve(item.Participants, contextUser, provider);
             if (itemIdentities.LookupFailed) {
                 result.Failed++;
                 details.push({

@@ -22,7 +22,17 @@ import { tmpdir } from 'node:os';
 const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || '1433';
 const user = process.env.DB_USERNAME || 'sa';
-const password = process.env.DB_PASSWORD || 'KRiUffvIjuP5GoLtxYvVkWIQ1BxHQEEMO7j4T684oPR7';
+// No baked-in fallback: a committed credential is a leak even when it "only" matches a CI
+// container. Checked lazily (not at import time) so tests can import this module's helpers.
+const password = process.env.DB_PASSWORD;
+
+function requirePassword() {
+    if (!password) {
+        console.error('parse-migrations: DB_PASSWORD is not set. Refusing to run without an explicit credential.');
+        process.exit(1);
+    }
+    return password;
+}
 
 /**
  * gh-5: standard sqlcmd install locations to fall back to when `sqlcmd` isn't on PATH. Kept
@@ -49,14 +59,15 @@ function findExecutionMethod() {
                     const tempFile = join(tmpdir(), `parse_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`);
                     try {
                         writeFileSync(tempFile, sql, 'utf8');
+                        // Password travels via SQLCMDPASSWORD, not argv: argv is world-readable
+                        // through /proc on a shared runner.
                         execFileSync(c, [
                             '-S', `${host},${port}`,
                             '-U', user,
-                            '-P', password,
                             '-C',
                             '-b',
                             '-i', tempFile
-                        ], { stdio: 'pipe' });
+                        ], { stdio: 'pipe', env: { ...process.env, SQLCMDPASSWORD: requirePassword() } });
                     } finally {
                         try { unlinkSync(tempFile); } catch {}
                     }
