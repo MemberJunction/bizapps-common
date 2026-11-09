@@ -1,5 +1,30 @@
 # @mj-biz-apps/common-ng
 
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+
+## 5.61.0
+
+### Minor Changes
+
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+- bfabe2f: feat(forms): tailor Person / Organization / Activity forms with section counts and hide-when-empty (needs the MJ core `whenEmpty` / `showCount` support).
+
+  - Hub defaults: People, Organizations and Addresses set `UI.Form.RelatedWhenEmpty: 'more'`, so an empty related section from any installed app moves into More instead of taking a rail slot. An app that wants its section always visible sets `whenEmpty: 'show'` on its relationship.
+  - Contact Methods and Addresses are explicitly `'show'` — the first row is created there.
+  - Relationships (outgoing) and Child Organizations demote to More when empty; the inverse Relationships views and Address → Activities hide when empty.
+  - Contributions: Relationships, Job Functions and Activity Files demote to More when empty; hierarchy trees opt out of counting (`count: false`) because they show lineage, not just children. `sectionKey` added where a panel's section key differs from its contribution key.
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+
 ## 5.60.0
 
 ### Patch Changes
