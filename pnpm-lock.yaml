@@ -40,6 +40,9 @@ importers:
       mrmime:
         specifier: 2.0.1
         version: 2.0.1
+      pg:
+        specifier: ^8.23.0
+        version: 8.23.0
       rolldown:
         specifier: 1.0.0-beta.58
         version: 1.0.0-beta.58(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
