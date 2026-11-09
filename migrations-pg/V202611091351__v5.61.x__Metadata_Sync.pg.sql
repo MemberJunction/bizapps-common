@@ -41,7 +41,7 @@ BEGIN
   p_ID_8d6ff8b21659 := 'FB4D3737-8479-44E5-AF91-2DB63311D293';
   IF EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-     WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spUpdateContactType'
+     WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spUpdateContactType'
        AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
   ) THEN
     PERFORM __mj_BizAppsCommon."spUpdateContactType"(p_data := jsonb_build_object(
@@ -78,7 +78,7 @@ BEGIN
   p_ID_4abdc72b35b4 := '96421246-0F8F-4CDB-A5C5-BA6B190C1AFE';
   IF EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-     WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spUpdateContactType'
+     WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spUpdateContactType'
        AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
   ) THEN
     PERFORM __mj_BizAppsCommon."spUpdateContactType"(p_data := jsonb_build_object(
@@ -115,7 +115,7 @@ BEGIN
   p_ID_127d4af5ce17 := 'BCDA98AC-06A4-40FC-A1CC-E44BB783FBC9';
   IF EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-     WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spUpdateContactType'
+     WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spUpdateContactType'
        AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
   ) THEN
     PERFORM __mj_BizAppsCommon."spUpdateContactType"(p_data := jsonb_build_object(
@@ -152,7 +152,7 @@ BEGIN
   p_ID_929c97838cb6 := 'C3BA9432-8D05-4AFE-BF6D-61F976A466E6';
   IF EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-     WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spUpdateContactType'
+     WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spUpdateContactType'
        AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
   ) THEN
     PERFORM __mj_BizAppsCommon."spUpdateContactType"(p_data := jsonb_build_object(
@@ -188,7 +188,7 @@ BEGIN
                   OR "Name" = p_Name_bf6bc78334e5) THEN
     IF EXISTS (
       SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-       WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spCreateConsentPurpose'
+       WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spCreateConsentPurpose'
          AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
     ) THEN
       PERFORM __mj_BizAppsCommon."spCreateConsentPurpose"(p_data := jsonb_build_object(
@@ -223,7 +223,7 @@ BEGIN
                   OR "Name" = p_Name_7084f6d02bd4) THEN
     IF EXISTS (
       SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-       WHERE n.nspname = '__mj_bizappsLCommon' AND p.proname = 'spCreateConsentPurpose'
+       WHERE n.nspname = '__mj_bizappscommon' AND p.proname = 'spCreateConsentPurpose'
          AND p.pronargs = 1 AND p.proargtypes[0] = 'jsonb'::regtype
     ) THEN
       PERFORM __mj_BizAppsCommon."spCreateConsentPurpose"(p_data := jsonb_build_object(
