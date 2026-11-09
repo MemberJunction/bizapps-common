@@ -1,5 +1,18 @@
 # Change Log - mj_generatedentities
 
+## 5.62.0
+
+### Minor Changes
+
+- 432d122: The 5.61 Metadata_Sync's Postgres counterpart checks the function signature against the schema name as PostgreSQL stores it (`__mj_bizappscommon`). Before, the check never matched, so a host whose functions take only the jsonb signature failed at the first record.
+
+## 5.61.0
+
+### Minor Changes
+
+- 7837132: The 5.61 Metadata_Sync ships the Marketing and Transactional consent purposes, the contact types' message types, and Configuration on People, Organizations, Addresses and ten entity relationships, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Contact_Method_Consent migration have Postgres counterparts. Field-level security for People stays held back: the People update keeps the host's EnableFieldLevelSecurity.
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+
 ## 5.60.0
 
 ### Minor Changes
