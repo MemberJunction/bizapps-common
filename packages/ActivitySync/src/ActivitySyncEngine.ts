@@ -49,6 +49,7 @@ import {
 import {
     AsDryRunDecision,
     IsConnectionActive,
+    RunnableConnectionFilter,
     ResolveCapturePlan,
     ResolvePolicy,
     type SkippedContentPolicy,
@@ -90,6 +91,22 @@ export interface FleetRunResult {
     ConnectionsAttempted: number;
     Results: Array<{ ConnectionID: string; Surface: string; Result: SyncEngineResult }>;
     Issues: string[];
+}
+
+/**
+ * One issue per requested connection the fleet query did not return.
+ *
+ * Naming a connection and hearing nothing back reads as "it ran and found nothing", which is the
+ * wrong conclusion to draw during a go-live review. A requested id is missing because it does not
+ * exist, is Disabled, or is Paused on a live run.
+ */
+export function NotRunConnectionIssues(
+    options: Pick<SyncRunOptions, 'DryRun' | 'ConnectionIDs'>,
+    loaded: ReadonlyArray<{ ID: string }>,
+): string[] {
+    const missing = (options.ConnectionIDs ?? []).filter((id) => !loaded.some((row) => UUIDsEqual(row.ID, id)));
+    const why = options.DryRun ? 'it does not exist or is Disabled' : 'it does not exist, is Disabled, or is Paused';
+    return missing.map((id) => `Connection ${id} was not run: ${why}.`);
 }
 
 /** Hard cap on the fleet query. Unbounded RunView is how a tenant with a burst of mailboxes stalls the hourly job. */
@@ -324,6 +341,7 @@ export class ActivitySyncEngine {
                 connection.StartAt ? new Date(connection.StartAt) : null,
                 connection.EndAt ? new Date(connection.EndAt) : null,
                 now,
+                options.DryRun,
             )
         ) {
             result.Issues.push(`Connection ${connectionID} is not in its Active window.`);
@@ -749,12 +767,13 @@ export class ActivitySyncEngine {
         contextUser: UserInfo,
     ): Promise<FleetRunResult> {
         const fleet: FleetRunResult = { Success: true, ConnectionsAttempted: 0, Results: [], Issues: [] };
-        const loaded = await this.loadRunnableConnections(contextUser);
+        const loaded = await this.loadRunnableConnections(options, contextUser);
         if (loaded.Failed) {
             fleet.Success = false;
             fleet.Issues.push(loaded.Issue);
             return fleet;
         }
+        fleet.Issues.push(...NotRunConnectionIssues(options, loaded.Rows));
         if (loaded.Rows.length === 0) {
             return fleet;
         }
@@ -981,12 +1000,12 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
     }
 
-    private async loadRunnableConnections(user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
+    private async loadRunnableConnections(options: SyncRunOptions, user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
         const rv = new RunView();
         const res = await rv.RunView<ConnectionRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
-                ExtraFilter: `Status = 'Active' OR Status = 'Error'`,
+                ExtraFilter: RunnableConnectionFilter(options),
                 MaxRows: MAX_RUNNABLE_CONNECTIONS + 1,
                 ResultType: 'simple',
             },
