@@ -203,7 +203,10 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     /** The text being searched, kept so "create new" can prefill the new record's name with it. */
     private term = '';
     private readonly terms = new Subject<string>();
-    /** Counts searches, so a superseded one that fails or times out is not logged. */
+    /**
+     * Counts searches. A search whose number is no longer current when it settles was superseded (by a newer
+     * search, `ClearSearch()` or destroy): its results are not shown and its failure is not logged.
+     */
     private searchCount = 0;
     private subscription?: Subscription;
 
@@ -217,6 +220,10 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
                 switchMap((term) => from(this.optionsFor(term))),
             )
             .subscribe((options) => {
+                // A search that ClearSearch() or destroy superseded while it ran (#387).
+                if (options === null) {
+                    return;
+                }
                 this.SearchError = Array.isArray(options) ? null : options;
                 this.Options = this.withCreateOption(Array.isArray(options) ? options : []);
                 this.cdr.markForCheck();
@@ -236,6 +243,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     public ngOnDestroy(): void {
+        // Supersede a search still in flight, so its late failure or timeout is not logged (#387).
+        ++this.searchCount;
         this.subscription?.unsubscribe();
     }
 
@@ -368,6 +377,9 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * For a host that resets the field without it losing focus (a changed relationship type).
      */
     public ClearSearch(): void {
+        // The '' below waits out the debounce before switchMap drops the search in flight, so supersede it
+        // now: its results or failure must not land on the list this just reset (#387).
+        ++this.searchCount;
         this.term = '';
         this.terms.next('');
         this.Options = this.current;
@@ -411,19 +423,24 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         }
     }
 
-    /** The options to list, or why there are none (logged). */
-    private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
+    /**
+     * The options to list, or why there are none (logged), or `null` when a newer search, `ClearSearch()`
+     * or destroy superseded this one while it ran: its outcome is then neither shown nor logged.
+     */
+    private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError | null> {
         const search = ++this.searchCount;
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
             return term ? [] : this.current;
         }
         try {
-            return await this.withTimeout(this.runSearch(params));
+            const options = await this.withTimeout(this.runSearch(params));
+            return search === this.searchCount ? options : null;
         } catch (error) {
-            if (search === this.searchCount) {
-                LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
+            if (search !== this.searchCount) {
+                return null;
             }
+            LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
             return error instanceof PartySearchTimeoutError ? 'timeout' : 'failed';
         }
     }

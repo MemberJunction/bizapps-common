@@ -581,14 +581,21 @@ export class RelationshipListComponent {
         return true;
     }
 
-    /** Returns the display name of the "To" side entity. */
+    /**
+     * Returns the display name of the "To" side entity: the name that goes with whichever key is set, as
+     * {@link getToSideTarget} decides. A stale name for the other kind must not win (#387).
+     */
     private getToSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.ToPerson || rel.ToOrganization || 'Unknown';
+        if (rel.ToPersonID) return rel.ToPerson || 'Unknown';
+        if (rel.ToOrganizationID) return rel.ToOrganization || 'Unknown';
+        return 'Unknown';
     }
 
-    /** Returns the display name of the "From" side entity. */
+    /** Returns the display name of the "From" side entity, keyed off whichever key is set (#387). */
     private getFromSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.FromPerson || rel.FromOrganization || 'Unknown';
+        if (rel.FromPersonID) return rel.FromPerson || 'Unknown';
+        if (rel.FromOrganizationID) return rel.FromOrganization || 'Unknown';
+        return 'Unknown';
     }
 
     /** Returns the display name of whichever side is NOT the current entity. */
@@ -691,12 +698,16 @@ export class RelationshipListComponent {
 
     /**
      * Handles a change to the relationship type in the add form.
-     * Clears any selected target so the link field resets for the new category.
+     * Clears any selected target, key and name, so the link field resets for the new category.
      */
     onAddTypeChange(): void {
         if (this.DraftRelationship) {
             this.DraftRelationship.ToPersonID = null;
             this.DraftRelationship.ToOrganizationID = null;
+            // The picker wrote these virtual name fields with the key; a stale person name would otherwise
+            // label an organization target in collection mode (#387).
+            this.DraftRelationship.Set('ToPerson', null);
+            this.DraftRelationship.Set('ToOrganization', null);
         }
         // A picker that survives the type change (person to person) keeps its last search otherwise.
         this.partyFields?.forEach(field => field.ClearSearch());
