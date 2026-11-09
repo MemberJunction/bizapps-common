@@ -1,5 +1,5 @@
 -- =============================================================================================
--- PostgreSQL counterpart of V202611031200__v5.59.x__Activity_Sync_Run_Detail_And_Activity_Access.sql
+-- PostgreSQL counterpart of V202611091810__v5.63.x__Activity_Sync_Run_Detail_And_Activity_Access.sql
 -- =============================================================================================
 
 SET standard_conforming_strings = on;

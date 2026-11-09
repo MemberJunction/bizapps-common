@@ -7,7 +7,7 @@
       "DecidedByStage, Reason, Confidence), while EntityFieldPermission denies CapturedContent,",
       "EncryptionKeyID, and EncryptionKey to every role except Developer (DEAFCCEC-6A37-EF11-86D4-000D3A4E707E).",
       "Integration keeps CanCreate so a scheduled ingest can append audit rows; CanRead/Update/Delete stay 0.",
-      "Host-side EntityFieldPermission rows are seeded by V202611031200__v5.59.x__Activity_Sync_Run_Detail_And_Activity_Access.sql."
+      "Host-side EntityFieldPermission rows are seeded by V202611091810__v5.63.x__Activity_Sync_Run_Detail_And_Activity_Access.sql."
     ],
     "fields": {
       "Name": "MJ_BizApps_Common: Activity Sync Run Details",

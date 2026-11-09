@@ -119,7 +119,7 @@ jobs:
               exit 1
             fi
           else
-            echo "Applying PostgreSQL migration chain (pre-#274 baseline + v5.59.x migrations)..."
+            echo "Applying PostgreSQL migration chain (pre-#274 baseline + v5.63.x migrations)..."
             for f in \
               migrations-pg/B202602271452__v1.0.x_Schema_and_Tables.pg.sql \
               migrations-pg/V202605131500__v5.28.x__Tolerant_SP_Regen.pg.sql \
@@ -133,8 +133,8 @@ jobs:
               migrations-pg/V202609290300__v5.48.x__People_Organization_Lookup_Search_Performance.pg.sql \
               migrations-pg/V202610062305__v5.51.x__Business_Day_Of.pg.sql \
               migrations-pg/V202610141644__v5.53.x__Metadata_Sync.pg.sql \
-              migrations-pg/V202611031200__v5.59.x__Activity_Sync_Run_Detail_And_Activity_Access.pg.sql \
-              migrations-pg/V202611031215__v5.59.x__Relationships_Durable_LogActivity_Bindings.pg.sql
+              migrations-pg/V202611091810__v5.63.x__Activity_Sync_Run_Detail_And_Activity_Access.pg.sql \
+              migrations-pg/V202611091815__v5.63.x__Relationships_Durable_LogActivity_Bindings.pg.sql
             do
               if [ -f "$f" ]; then
                 echo "=== Applying $f ==="

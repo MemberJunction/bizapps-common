@@ -1,5 +1,38 @@
 # Change Log - mj_generatedentities
 
+## 5.62.0
+
+### Minor Changes
+
+- 432d122: The 5.61 Metadata_Sync's Postgres counterpart checks the function signature against the schema name as PostgreSQL stores it (`__mj_bizappscommon`). Before, the check never matched, so a host whose functions take only the jsonb signature failed at the first record.
+
+## 5.61.0
+
+### Minor Changes
+
+- 7837132: The 5.61 Metadata_Sync ships the Marketing and Transactional consent purposes, the contact types' message types, and Configuration on People, Organizations, Addresses and ten entity relationships, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Contact_Method_Consent migration have Postgres counterparts. Field-level security for People stays held back: the People update keeps the host's EnableFieldLevelSecurity.
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+
+## 5.60.0
+
+### Minor Changes
+
+- 9870cd5: The 5.60 Metadata_Sync ships the re-keyed "Job Function and Seniority Derivation" AI Prompt, its prompt model and the job-function Record Process, all under the prompt's new ID (#408). The re-key migration that runs before it has already moved those rows, so the seed re-asserts their metadata values and changes nothing on a host that ran it. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- 62413dc: Re-key the "Job Function and Seniority Derivation" AI Prompt from `7C46041F-0412-4C2E-9B9E-3ED61D32210C` to `19736B1D-923B-4BB7-AAE8-9A98D9B25C1E`, so a host with common installed on MJ 6.1.x can migrate MJ to 6.2.0 (#408, MemberJunction/MJ#4939).
+
+  - Migration `V202611041900` (SQL Server and PostgreSQL): when `7C46041F` is common's prompt (template `B8221E1A…` or prompt model `FE550867…`), copy it to the new ID, repoint every foreign key and the job-function Record Process `Configuration`, and delete the old row. On any other host it does nothing.
+  - Metadata: the prompt and its Record Process now use the fixed new ID.
+  - Host order: install this release while still on MJ 6.1.x, then migrate MJ to 6.2.0 with the 6.2.0 CLI.
+
+## 5.59.0
+
+### Minor Changes
+
+- 37aa16a: The 5.59 Metadata_Sync ships the UI role's create permission on Activities and Activity Links, finding each host's permission row by entity and role, so a host that upgrades by migration lets a UI-only user log an activity the same way as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- aa06aeb: The UI role can now create Activities and Activity Links, so a UI-only user can log an activity by
+  hand, such as a note on a deal. Before, the role could only read them and the save was refused.
+  Update and delete stay off for the UI role.
+
 ## 5.58.0
 
 ### Minor Changes

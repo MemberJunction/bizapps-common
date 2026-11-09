@@ -219,7 +219,8 @@ export class RelationshipListComponent {
      * {@link RecordNavigationEvent}) containing the target entity name,
      * composite key, and whether to open in a new tab.
      *
-     * @fires Navigate When the user clicks a target entity link
+     * @fires Navigate When the user clicks a target entity link, or asks a target picker to
+     *   create a new Person or Organization (a `create-related` event the host form handles)
      *
      * @example
      * ```html

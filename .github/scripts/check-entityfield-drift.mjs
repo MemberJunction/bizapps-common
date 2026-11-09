@@ -195,11 +195,13 @@ let SQLCMD;
 /** Run `sql` against `database` and return raw stdout. Throws with the server's message. */
 function exec(sql, database) {
     try {
+        // Password travels via SQLCMDPASSWORD, not argv: argv is world-readable through /proc
+        // on a shared runner.
         return execFileSync(
             SQLCMD,
-            ['-S', `${host},${port}`, '-U', user, '-P', password, '-d', database,
+            ['-S', `${host},${port}`, '-U', user, '-d', database,
              '-C', '-b', '-l', '30', '-h', '-1', '-W', '-s', '|', '-Q', sql],
-            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SQLCMDPASSWORD: password } },
         );
     } catch (err) {
         const detail = (err.stdout?.toString() || '') + (err.stderr?.toString() || '') || err.message;
