@@ -5,6 +5,7 @@ import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Presentational Person identity strip. Used by Common's header contribution
@@ -37,7 +38,7 @@ export class PersonIdentityComponent implements OnInit {
                 const result = await rv.RunView<{ JobFunction: string }>({
                     EntityName: 'MJ_BizApps_Common: Person Job Functions',
                     Fields: ['JobFunction'],
-                    ExtraFilter: `PersonID = '${this.Record.ID}'`,
+                    ExtraFilter: `PersonID = '${EscapeFilterValue(this.Record.ID)}'`,
                     OrderBy: 'Sequence ASC, JobFunction ASC',
                     ResultType: 'simple',
                 });
