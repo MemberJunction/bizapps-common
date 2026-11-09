@@ -265,6 +265,18 @@ export class ActivityWriter {
             return result;
         }
 
+        const unknownEntities = [
+            ...new Set(
+                (input.Links ?? [])
+                    .map((link) => link.EntityName)
+                    .filter((name): name is string => typeof name === 'string' && !provider.EntityByName(name)),
+            ),
+        ];
+        if (unknownEntities.length > 0) {
+            result.Issues.push(`Links reference unknown entity name(s): ${unknownEntities.join(', ')}.`);
+            return result;
+        }
+
         const dedupeKey =
             input.SourceSystem && input.ExternalID
                 ? { SourceSystem: input.SourceSystem, ExternalID: input.ExternalID }

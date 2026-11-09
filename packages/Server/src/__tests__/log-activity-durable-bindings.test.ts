@@ -29,6 +29,7 @@ const H = vi.hoisted(() => {
             { Name: 'MJ_BizApps_Common: People', ID: 'entity-people' },
             { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-organizations' },
         ],
+        EntityByName: (name: string) => ({ Name: name, ID: `entity-${name}` }),
         BeginEntityTransaction: async () => ({ Commit: async () => undefined, Rollback: async () => undefined }),
         GetEntityObject: async (entity: string) => {
             const row: Record<string, unknown> = {
