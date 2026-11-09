@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202611031215__v5.59.x__Relationships_Durable_LogActivity_Bindings.sql
+-- Migration: V202611091815__v5.63.x__Relationships_Durable_LogActivity_Bindings.sql
 -- Description: Move both MJ_BizApps_Common: Relationships Common.LogActivity
 --              bindings (ABF0B899-C4D8-4BF8-9AE8-4EAE7DD32346 and
 --              32D1707C-D9BE-48F7-BB46-701F8DB09110) from Inline to Durable,
