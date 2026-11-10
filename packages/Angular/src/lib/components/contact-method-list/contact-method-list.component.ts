@@ -254,8 +254,10 @@ export class ContactMethodListComponent {
     /** True while the history for {@link ConsentHistoryFor} is being read. */
     ConsentHistoryLoading = false;
 
-    /** History already read this session, by contact method ID; dropped for a row when it is saved. */
-    /** Keyed by `NormalizeUUID(contactMethodID)`. */
+    /**
+     * History already read this session, by contact method ID; dropped for a row when it is saved.
+     * Keyed by `NormalizeUUID(contactMethodID)`.
+     */
     private consentHistoryCache = new Map<string, ConsentHistoryLine[]>();
 
     /** Maps lowercase contact type names to CSS icon-color classes. */

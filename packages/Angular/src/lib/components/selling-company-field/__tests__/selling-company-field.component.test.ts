@@ -75,14 +75,14 @@ function record(isSaved: boolean, companyID: string | null = null): FakeRecord {
     };
 }
 
-/**
- * The component resolves ChangeDetectorRef with `inject()`, which needs an injection context.
- * A one-provider injector gives it one without standing up TestBed — these are unit tests of the
- * default-and-confirm behaviour, not of rendering.
- */
 /** Stands in for the field's host element; a fake form element "contains" it. */
 const FIELD_HOST = { tag: 'bizapps-selling-company-field' };
 
+/**
+ * The component resolves ChangeDetectorRef and ElementRef with `inject()`, which needs an injection
+ * context. A small injector gives it one without standing up TestBed — these are unit tests of the
+ * default-and-confirm behaviour, not of rendering.
+ */
 async function build(rec: FakeRecord): Promise<SellingCompanyFieldComponent> {
     const injector = Injector.create({
         providers: [
