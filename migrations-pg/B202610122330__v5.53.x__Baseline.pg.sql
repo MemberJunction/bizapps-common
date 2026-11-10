@@ -96818,3 +96818,14 @@ CREATE OR REPLACE FUNCTION __mj_bizappscommon."fnOrganizationParentID_GetHierarc
 RETURNS TABLE("RootID" uuid, "Depth" integer, "Path" text, "IsLeaf" boolean, "ChildCount" integer)
 LANGUAGE sql STABLE
 AS $$ SELECT * FROM __mj_bizappscommon.fn_organization_parent_id_get_hierarchy_meta(p_record_id, p_parent_id) $$;
+
+-- =============================================================================
+-- One SchemaInfo row for this app
+-- =============================================================================
+-- The shipped v5.32 backfill pre-creates the canonical-cased row CodeGen would add (870e2e72…) next
+-- to the original one (0a9f0fdd…, the SQL Server ID). metadata/ declares the original row with the
+-- canonical name, so pushing it collided with the extra row. Keep the original, under that name.
+DELETE FROM __mj."SchemaInfo" WHERE "ID" = '870e2e72-9916-479c-82e0-e4548a7a9d06';
+UPDATE __mj."SchemaInfo"
+   SET "SchemaName" = '__mj_BizAppsCommon', "CanonicalSchemaName" = '__mj_BizAppsCommon'
+ WHERE "ID" = '0a9f0fdd-cd4d-4892-ba45-85722b982032';
