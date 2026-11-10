@@ -266,6 +266,12 @@ every field that is not a primary key, soft primary key or `__mj_` column; `Upda
 otherwise `'No Access'`. That is exactly what MJ's reconcile writes, so access does not change until
 an administrator tightens a field.
 
+**PostgreSQL:** there is no second copy of this block. The migration's `migrations-pg/` twin comes
+from the converter like any other (`pnpm run mj:migrate:convert --file <migration>.sql`, then
+`node scripts/pg-finalize.mjs`; [`docs/postgresql.md`](../docs/postgresql.md)), and the block is
+written so that output runs unedited: the People ID is a literal, not a variable, and no
+`RoleAccess` column shares a name with a boolean column.
+
 Without the block the new column is invisible to every user on hosts, and dev databases hide the
 gap: `mj sync push` and CodeGen reconcile there, so the column works locally.
 
