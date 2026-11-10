@@ -257,10 +257,27 @@ function pgBase(file) {
     return file.replace(/\.pg\.sql$/, '').replace(/\.pg-?only\.sql$/, '');
 }
 
-/** SQL Server migrations with no committed PostgreSQL counterpart, excluding recorded debt. */
+/** The version stamp of a migration file name (`V202611091351__…` → `202611091351`). */
+function stamp(file) {
+    return file.match(/^[VB](\d+)__/)?.[1] ?? null;
+}
+
+/**
+ * SQL Server migrations with no committed PostgreSQL counterpart, excluding recorded debt.
+ * A PostgreSQL baseline (`B<stamp>__…__Baseline.pg.sql`) is the counterpart of every SQL Server
+ * migration stamped at or before it: a fresh PostgreSQL install starts from the highest baseline
+ * and skips the versioned files it covers.
+ */
 export function findUnported(mssqlFiles, pgFiles, allowed = new Set()) {
     const ported = new Set(pgFiles.map(pgBase));
-    return mssqlFiles.filter((f) => !allowed.has(f)).filter((f) => !ported.has(f.replace(/\.sql$/, '')));
+    const covered = pgFiles
+        .filter((f) => /^B\d+__.*Baseline\.pg\.sql$/.test(f))
+        .map(stamp)
+        .reduce((max, s) => (s > max ? s : max), '');
+    return mssqlFiles
+        .filter((f) => !allowed.has(f))
+        .filter((f) => !ported.has(f.replace(/\.sql$/, '')))
+        .filter((f) => !(covered && stamp(f) && stamp(f) <= covered));
 }
 
 /** Top-level `.sql` files only — `migrations/codegen/` is a capture directory, not migrations. */

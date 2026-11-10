@@ -102,7 +102,7 @@ jobs:
       - name: Apply this repo's PostgreSQL migration chain
         run: |
           set -euo pipefail
-          if compgen -G "migrations-pg/B202610*__Baseline.pg.sql" > /dev/null || compgen -G "migrations-pg/B202608*__Baseline.pg.sql" > /dev/null; then
+          if compgen -G "migrations-pg/B*__Baseline.pg.sql" > /dev/null; then
             pnpm exec mj migrate --schema __mj_BizAppsCommon --verbose
             npx mj sync push --dir ./metadata --ci
             COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -tA -v ON_ERROR_STOP=1 -c "
@@ -133,8 +133,8 @@ jobs:
               migrations-pg/V202609290300__v5.48.x__People_Organization_Lookup_Search_Performance.pg.sql \
               migrations-pg/V202610062305__v5.51.x__Business_Day_Of.pg.sql \
               migrations-pg/V202610141644__v5.53.x__Metadata_Sync.pg.sql \
-              migrations-pg/V202611091810__v5.63.x__Activity_Sync_Run_Detail_And_Activity_Access.pg.sql \
-              migrations-pg/V202611091815__v5.63.x__Relationships_Durable_LogActivity_Bindings.pg.sql
+              migrations-pg/V202611100510__v5.64.x__Activity_Sync_Run_Detail_And_Activity_Access.pg.sql \
+              migrations-pg/V202611100515__v5.64.x__Relationships_Durable_LogActivity_Bindings.pg.sql
             do
               if [ -f "$f" ]; then
                 echo "=== Applying $f ==="

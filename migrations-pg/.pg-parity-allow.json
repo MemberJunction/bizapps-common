@@ -1,36 +1,4 @@
 {
-  "reason": "Legacy pre-v5.53 SQL Server migrations pending hand-ported PostgreSQL counterparts. Do not add new entries; new migrations in migrations/ must ship with a matching migrations-pg/<stem>.pg.sql in the same PR.",
-  "unported": [
-    "V202608132239__v5.34.x__Layered_Base_Views_Metadata.sql",
-    "V202608132240__v5.34.x__Layered_Base_Views_People_Organizations.sql",
-    "V202608140700__v5.34.x__Layered_Base_Views_EntityFields.sql",
-    "V202608140800__v5.34.x__Metadata_Sync.sql",
-    "V202608171935__v5.35.x__Activities.sql",
-    "V202608241515__v5.36.x__Regen_Organization_People_SPs.sql",
-    "V202608251531__v5.36.x__Activity_CodeGen_Objects.sql",
-    "V202608252150__v5.36.x__CodeGen_Scoped_SQL_Objects.sql",
-    "V202608260845__v5.36.x__Organizations_CascadeDeletes_Off.sql",
-    "V202608260900__v5.36.x__ActivityType_Hierarchy_EntityFields.sql",
-    "V202608261015__v5.36.x__Activity_RelatedName_EntityFields.sql",
-    "V202608262255__v5.36.x__Metadata_Sync.sql",
-    "V202608291500__v5.37.x__ActivitySync_ProviderTypes_And_Extensions.sql",
-    "V202608301900__v5.37.x__ActivitySyncProviderType_CalendarDriverClass.sql",
-    "V202609020500__v5.38.x__Metadata_Sync.sql",
-    "V202609051800__v5.39.x__Widen_PhotoURL_LogoURL.sql",
-    "V202609071200__v5.39.x__Address_Geo_Source_And_Org_PrimaryAddress_Coords.sql",
-    "V202609092230__v5.41.x__ActivitySync_Describe_Exclusion_Window_And_IsActive.sql",
-    "V202609101800__v5.39.x__Heal_Missing_EntityFields.sql",
-    "V202609112330__v5.42.x__Activity_Remove_Phantom_ParentActivity_EntityField.sql",
-    "V202609181149__v5.44.x__ActivitySync_CapturedContent_Rotation_Note.sql",
-    "V202609211200__v5.45.x__Job_Function_Seniority.sql",
-    "V202609211500__v5.45.x__Activity_Sentiment_And_Tags.sql",
-    "V202609272330__v5.47.x__EntityAction_Remove_Durable_RecordData_Params.sql",
-    "V202609282100__v5.47.x__Metadata_Sync.sql",
-    "V202609301930__v5.48.x__Metadata_Sync.sql",
-    "V202610031602__v5.49.x__Address_Line1_City_Nullable.sql",
-    "V202610031700__v5.50.x__Repair_Relationship_Objects.sql",
-    "V202610062130__v5.51.x__Drop_Person_Organization_Virtual_Geo_Fields.sql",
-    "V202610062323__v5.51.x__Metadata_Sync.sql",
-    "V202610091200__v5.52.x__Restore_Person_PhotoURL_SP_Width.sql"
-  ]
+  "reason": "Do not add entries; new migrations in migrations/ must ship with a matching migrations-pg/<stem>.pg.sql in the same PR. Migrations at or before the PostgreSQL baseline are covered by it.",
+  "unported": []
 }

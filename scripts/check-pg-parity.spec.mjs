@@ -126,6 +126,26 @@ describe('findUnported & checkPgParity', () => {
     });
   });
 
+  it('treats SQL Server migrations stamped at or before a PostgreSQL baseline as covered by it', () => {
+    withTempWorkspace((root) => {
+      writeFileSync(
+        join(root, 'migrations', 'V202609010000__v5.38.x__Covered.sql'),
+        'ALTER TABLE [__mj_BizAppsCommon].[Person] ADD [OldCol] INT NULL;\n',
+      );
+      writeFileSync(
+        join(root, 'migrations', 'V202611100000__v5.63.x__After.sql'),
+        'ALTER TABLE [__mj_BizAppsCommon].[Person] ADD [NewCol] INT NULL;\n',
+      );
+      writeFileSync(
+        join(root, 'migrations-pg', 'B202611091200__v5.62.x__Baseline.pg.sql'),
+        'ALTER TABLE __mj_bizappscommon."Person" ADD COLUMN "OldCol" INTEGER NULL;\n',
+      );
+      const res = checkPgParity({ root, schema: '__mj_BizAppsCommon' });
+      assert.equal(res.problems.length, 1);
+      assert.equal(res.problems[0].file, 'migrations/V202611100000__v5.63.x__After.sql');
+    });
+  });
+
   it('passes against the repository migrations/ and migrations-pg/ directories', () => {
     const res = checkPgParity({ root: REPO_ROOT, schema: '__mj_BizAppsCommon' });
     assert.equal(res.ok, true, JSON.stringify(res.problems, null, 2));

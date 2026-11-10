@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V202611091810__v5.63.x__Activity_Sync_Run_Detail_And_Activity_Access.sql
+-- Migration: V202611100510__v5.64.x__Activity_Sync_Run_Detail_And_Activity_Access.sql
 -- Description: Enable Field-Level Security on MJ_BizApps_Common: Activity Sync Run Details
 --              (restoring UI read for non-sensitive diagnostic columns while restricting
 --              CapturedContent, EncryptionKeyID, and EncryptionKey to Developer) and
