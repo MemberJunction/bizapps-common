@@ -14,8 +14,9 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         entity: 'MJ_BizApps_Common: People',
         slot: 'after-related', // its own rail tab — after-fields would fold it into Details (MJ #4311 slot default)
         sortKey: 90,
-        replacesSectionKey: 'contactAddress',
+        replacesSectionKey: 'locationDetails',
         contributionKey: 'addresses',
+        whenEmpty: 'show',
     },
 })
 @Component({

@@ -1,5 +1,112 @@
 # @mj-biz-apps/common-ng
 
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+
+## 5.61.0
+
+### Minor Changes
+
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+- bfabe2f: feat(forms): tailor Person / Organization / Activity forms with section counts and hide-when-empty (needs the MJ core `whenEmpty` / `showCount` support).
+
+  - Hub defaults: People, Organizations and Addresses set `UI.Form.RelatedWhenEmpty: 'more'`, so an empty related section from any installed app moves into More instead of taking a rail slot. An app that wants its section always visible sets `whenEmpty: 'show'` on its relationship.
+  - Contact Methods and Addresses are explicitly `'show'` — the first row is created there.
+  - Relationships (outgoing) and Child Organizations demote to More when empty; the inverse Relationships views and Address → Activities hide when empty.
+  - Contributions: Relationships, Job Functions and Activity Files demote to More when empty; hierarchy trees opt out of counting (`count: false`) because they show lineage, not just children. `sectionKey` added where a panel's section key differs from its contribution key.
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- cd67bbf: `bizapps-party-field`: a search that runs past `SearchTimeoutMs` (default 20 s; zero or less waits indefinitely) now says "The search took too long" instead of leaving an empty list with no message. Its late answer is ignored and the next keystroke searches again. The new `SearchError` property says whether the last search failed or timed out; `SearchFailed` stays as a getter over it. (bc-aidp-next-golive#343)
+- af716fa: The relationship list's Add form searches the target person or organization with the fast party picker (nothing listed until two characters, prefix search on indexed columns) instead of the stock lookup. The party picker labels a field by its related name field ("Person"), as read mode does, instead of the key ("Person ID"). Picking a party now also writes the related name field (`ToPerson`, `ToOrganization`), as the stock field does, so a relationship just added shows its target's name instead of "Unknown". New `ClearSearch()` drops a pending search and its hint; the relationship list calls it when the type changes.
+  - @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+
+## 5.56.0
+
+### Minor Changes
+
+- d790620: Fast party lookup for Person and Organization foreign keys.
+
+  A migration adds two stored, indexed computed columns: `Person.EmailDomain` (the lower-cased text after the `@` of Email) and `Organization.WebsiteDomain` (the lower-cased host of Website, without scheme, `www.` or path). Two metadata queries, `Common: Party Lookup People` and `Common: Party Lookup Organizations`, prefix-match indexed base-table columns (TOP 20, no count). The new `bizapps-party-field` component (`PartyFieldComponent`) lists nothing until two characters are typed, then searches by last name, display name, email or email domain for people, and by name, legal name or website domain for organizations. Apps whose foreign key points at a subtype pass their own query with the same contract: columns `ID`, `Name`, `Detail`; parameters `Term` and `Domain`.
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+
+## 5.55.0
+
+### Patch Changes
+
+- 8393b95: Align PersonAddressesPanel and OrganizationAddressesPanel replacesSectionKey with generated form section keys (locationDetails and locationAndAddress).
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+
 ## 5.54.0
 
 ### Minor Changes

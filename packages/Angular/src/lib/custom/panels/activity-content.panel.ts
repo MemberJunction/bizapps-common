@@ -146,7 +146,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             justify-content: space-between;
             font-size: 12px;
             font-weight: 600;
-            color: var(--mj-text-secondary, #475569);
+            color: var(--mj-text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
@@ -155,7 +155,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             font-size: 11px;
             font-weight: 500;
             text-transform: none;
-            color: var(--mj-text-muted, #94a3b8);
+            color: var(--mj-text-muted);
         }
 
         .mja-content__textarea {
@@ -163,9 +163,9 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             min-height: 180px;
             padding: 12px 14px;
             border-radius: var(--mj-radius-md, 8px);
-            border: 1px solid var(--mj-border-default, #cbd5e1);
-            background: var(--mj-bg-surface, #ffffff);
-            color: var(--mj-text-primary, #0f172a);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
+            color: var(--mj-text-primary);
             font-family: inherit;
             font-size: 14px;
             line-height: 1.6;
@@ -176,17 +176,17 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
 
         .mja-content__textarea:focus {
             outline: none;
-            border-color: var(--mj-brand-primary, #0284c7);
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+            border-color: var(--mj-brand-primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--mj-brand-primary) 15%, transparent);
         }
 
         /* READ MODE STYLES */
         .mja-content__reader {
-            border: 1px solid var(--mj-border-default, #e2e8f0);
+            border: 1px solid var(--mj-border-default);
             border-radius: var(--mj-radius-md, 8px);
-            background: var(--mj-bg-surface, #ffffff);
+            background: var(--mj-bg-surface);
             overflow: hidden;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--mj-shadow-sm);
         }
 
         .mja-content__toolbar {
@@ -194,8 +194,8 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             align-items: center;
             justify-content: space-between;
             padding: 10px 14px;
-            background: var(--mj-bg-surface-subtle, #f8fafc);
-            border-bottom: 1px solid var(--mj-border-default, #e2e8f0);
+            background: var(--mj-bg-surface-card);
+            border-bottom: 1px solid var(--mj-border-default);
         }
 
         .mja-content__stats {
@@ -210,15 +210,15 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             gap: 5px;
             font-size: 11px;
             font-weight: 600;
-            color: var(--mj-text-secondary, #334155);
-            background: #e2e8f0;
+            color: var(--mj-text-secondary);
+            background: var(--mj-bg-surface-hover);
             padding: 2px 8px;
             border-radius: 9999px;
         }
 
         .mja-pill--muted {
             background: transparent;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-weight: 500;
         }
 
@@ -229,29 +229,29 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             padding: 4px 10px;
             font-size: 12px;
             font-weight: 500;
-            color: var(--mj-text-secondary, #475569);
+            color: var(--mj-text-secondary);
             background: transparent;
-            border: 1px solid var(--mj-border-default, #cbd5e1);
+            border: 1px solid var(--mj-border-default);
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.15s ease;
         }
 
         .mja-btn-subtle:hover {
-            background: var(--mj-bg-surface-hover, #f1f5f9);
-            color: var(--mj-text-primary, #0f172a);
-            border-color: var(--mj-brand-primary, #0284c7);
+            background: var(--mj-bg-surface-hover);
+            color: var(--mj-text-primary);
+            border-color: var(--mj-brand-primary);
         }
 
         .text-success {
-            color: #059669 !important;
+            color: var(--mj-status-success) !important;
         }
 
         .mja-content__body {
             padding: 16px 18px;
             font-size: 14px;
             line-height: 1.65;
-            color: var(--mj-text-primary, #1e293b);
+            color: var(--mj-text-primary);
             white-space: pre-wrap;
             word-break: break-word;
             font-family: inherit;
@@ -269,8 +269,8 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             display: flex;
             justify-content: center;
             padding: 8px 14px 12px;
-            border-top: 1px dashed var(--mj-border-default, #e2e8f0);
-            background: var(--mj-bg-surface-subtle, #f8fafc);
+            border-top: 1px dashed var(--mj-border-default);
+            background: var(--mj-bg-surface-card);
         }
 
         .mja-btn-expand {
@@ -279,7 +279,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             gap: 6px;
             font-size: 12px;
             font-weight: 600;
-            color: var(--mj-brand-primary, #0284c7);
+            color: var(--mj-brand-primary);
             background: transparent;
             border: none;
             cursor: pointer;
@@ -289,7 +289,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
         }
 
         .mja-btn-expand:hover {
-            background: rgba(2, 132, 199, 0.08);
+            background: color-mix(in srgb, var(--mj-brand-primary) 8%, transparent);
         }
 
         /* EMPTY STATE STYLES */
@@ -299,14 +299,14 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             align-items: center;
             text-align: center;
             padding: 32px 16px;
-            border: 1px dashed var(--mj-border-default, #cbd5e1);
+            border: 1px dashed var(--mj-border-default);
             border-radius: var(--mj-radius-md, 8px);
-            background: var(--mj-bg-surface-subtle, #f8fafc);
+            background: var(--mj-bg-surface-card);
         }
 
         .mja-content__empty-icon {
             font-size: 28px;
-            color: var(--mj-text-muted, #94a3b8);
+            color: var(--mj-text-muted);
             margin-bottom: 8px;
         }
 
@@ -314,13 +314,13 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             margin: 0 0 4px;
             font-size: 14px;
             font-weight: 600;
-            color: var(--mj-text-secondary, #334155);
+            color: var(--mj-text-secondary);
         }
 
         .mja-content__empty-copy p {
             margin: 0 0 16px;
             font-size: 12px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
         }
 
         .mja-btn-add {
@@ -331,8 +331,8 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             font-weight: 600;
             padding: 6px 14px;
             border-radius: 6px;
-            color: #ffffff;
-            background: var(--mj-brand-primary, #0284c7);
+            color: var(--mj-text-inverse);
+            background: var(--mj-brand-primary);
             border: none;
             cursor: pointer;
             transition: opacity 0.15s ease;

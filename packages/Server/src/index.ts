@@ -14,8 +14,10 @@ import '@mj-biz-apps/common-actions';
 // @RegisterClass auto-increment gives these higher priority
 import '@mj-biz-apps/common-core-entities-server';
 import { LoadActivitySyncEngine } from '@mj-biz-apps/common-activity-sync';
+import { LoadAttachAddressAction } from './custom/attach-address.action.js';
 import { LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 import { LoadLogActivityAction } from './custom/log-activity.action.js';
+import { LoadReadSkippedContentAction } from './custom/read-skipped-content.action.js';
 import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
@@ -47,8 +49,10 @@ export function LoadBizAppsCommonServer(): void {
     // Static imports above ensure all classes are registered.
     // This function exists as the startupExport entry point for DynamicPackageLoader.
     LoadActivitySyncEngine();
+    LoadAttachAddressAction();
     LoadSyncActivitiesAction();
     LoadLogActivityAction();
+    LoadReadSkippedContentAction();
     // The one server-side answer to "which organizations and people are our customers", unioned
     // from every query apps ship in the Party Signals category. Explorer uses the client store;
     // Skip, agents, MCP and reports come through here so the two definitions cannot drift.
@@ -67,8 +71,10 @@ export function LoadBizAppsCommonServer(): void {
     LoadActivityContentCipher();
 }
 
+export { AttachAddressAction, LoadAttachAddressAction } from './custom/attach-address.action.js';
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
+export { ReadSkippedContentAction, LoadReadSkippedContentAction } from './custom/read-skipped-content.action.js';
 export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';

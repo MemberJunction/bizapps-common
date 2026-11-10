@@ -22,10 +22,12 @@ People records with demographics and optional linkage to the MJ system user tabl
 | Gender | nvarchar | Optional |
 | Title | nvarchar | Denormalized professional info (e.g., "VP Engineering") |
 | Company | nvarchar | Denormalized professional info (e.g., "Acme Corp") |
-| LinkedUserID | uniqueidentifier | Optional FK to MJ core Users table |
+| LinkedUserID | uniqueidentifier | Optional 1:1 FK to `MJ: Users` (`__mj.User.ID`), enforced by filtered unique index `UQ_Person_LinkedUserID` (`WHERE LinkedUserID IS NOT NULL`) |
 | Bio | nvarchar(max) | Free-form biography |
 | Notes | nvarchar(max) | Internal notes |
 | IsActive | bit | Soft-delete flag |
+
+> **Security Principal Linkage (`LinkedUserID`):** `Person.LinkedUserID` optionally binds a business/CRM `Person` record to an authenticated MemberJunction `User` (`MJ: Users`). Saving or deleting a `Person` **never** auto-provisions, modifies, or deactivates `MJ: Users` records — security principals are managed strictly through administrative user management or explicit IS-A subtypes. Downstream apps (`bizapps-tasks`, `bizapps-issues`) and user-scoped AI agents (such as the Chief of Staff agent) query `LinkedUserID` to bridge `contextUser.ID` with the user's organizational identity, relationships, tasks, and issues.
 
 ### Organization
 

@@ -4,6 +4,7 @@ import { CompositeKey, RunView } from '@memberjunction/core';
 import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 interface ActivityFileRow {
     ID: string;
@@ -28,6 +29,8 @@ interface ActivityFileRow {
         slot: 'after-fields',
         sortKey: 70,
         contributionKey: 'files',
+        sectionKey: 'activityFiles',
+        whenEmpty: 'more',
         relatedEntity: 'MJ_BizApps_Common: Activity Files',
         relatedJoinField: 'ActivityID',
     },
@@ -83,14 +86,14 @@ interface ActivityFileRow {
         :host { display: block; width: 100%; margin-bottom: var(--mj-space-4, 16px); }
 
         .mja-files-empty {
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-size: 13px;
             margin: 0;
             padding: 8px 0;
         }
 
         .mja-files-loading {
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
             font-size: 13px;
             padding: 12px 0;
         }
@@ -108,15 +111,15 @@ interface ActivityFileRow {
             gap: 12px;
             padding: 10px 14px;
             border-radius: var(--mj-radius-md, 8px);
-            border: 1px solid var(--mj-border-default, #e2e8f0);
-            background: var(--mj-bg-surface, #ffffff);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
             cursor: pointer;
             transition: all 0.15s ease;
         }
 
         .mja-file-card:hover {
-            border-color: var(--mj-brand-primary, #0284c7);
-            background: var(--mj-bg-surface-hover, #f8fafc);
+            border-color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
         }
 
         .mja-file-card__icon {
@@ -128,13 +131,13 @@ interface ActivityFileRow {
             justify-content: center;
             font-size: 16px;
             flex-shrink: 0;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--mj-bg-surface-sunken);
+            color: var(--mj-text-secondary);
         }
 
-        .mja-file-card__icon[data-kind="body"] { background: #e0f2fe; color: #0284c7; }
-        .mja-file-card__icon[data-kind="attachment"] { background: #fef3c7; color: #d97706; }
-        .mja-file-card__icon[data-kind="ics"] { background: #ede9fe; color: #7c3aed; }
+        .mja-file-card__icon[data-kind="body"] { background: var(--mj-status-info-bg); color: var(--mj-brand-primary); }
+        .mja-file-card__icon[data-kind="attachment"] { background: var(--mj-status-warning-bg); color: var(--mj-status-warning); }
+        .mja-file-card__icon[data-kind="ics"] { background: color-mix(in srgb, var(--mj-brand-accent) 12%, var(--mj-bg-surface)); color: var(--mj-brand-accent); }
 
         .mja-file-card__meta {
             display: flex;
@@ -147,7 +150,7 @@ interface ActivityFileRow {
         .mja-file-card__name {
             font-size: 13px;
             font-weight: 600;
-            color: var(--mj-text-primary, #0f172a);
+            color: var(--mj-text-primary);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -158,7 +161,7 @@ interface ActivityFileRow {
             align-items: center;
             gap: 8px;
             font-size: 11px;
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
         }
 
         .mja-file-badge {
@@ -168,27 +171,27 @@ interface ActivityFileRow {
             letter-spacing: 0.04em;
             padding: 1px 5px;
             border-radius: 4px;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--mj-bg-surface-sunken);
+            color: var(--mj-text-secondary);
         }
 
-        .mja-file-badge[data-kind="body"] { background: #e0f2fe; color: #0369a1; }
-        .mja-file-badge[data-kind="attachment"] { background: #fef3c7; color: #92400e; }
-        .mja-file-badge[data-kind="ics"] { background: #ede9fe; color: #6b21a8; }
+        .mja-file-badge[data-kind="body"] { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+        .mja-file-badge[data-kind="attachment"] { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
+        .mja-file-badge[data-kind="ics"] { background: color-mix(in srgb, var(--mj-brand-accent) 14%, var(--mj-bg-surface)); color: var(--mj-brand-accent); }
 
         .mja-file-date {
-            color: var(--mj-text-muted, #64748b);
+            color: var(--mj-text-muted);
         }
 
         .mja-file-card__open {
             font-size: 12px;
-            color: var(--mj-text-muted, #94a3b8);
+            color: var(--mj-text-muted);
             opacity: 0.6;
         }
 
         .mja-file-card:hover .mja-file-card__open {
             opacity: 1;
-            color: var(--mj-brand-primary, #0284c7);
+            color: var(--mj-brand-primary);
         }
     `]
 })
@@ -216,7 +219,7 @@ export class ActivityFilesPanel extends BaseFormPanel<mjBizAppsCommonActivityEnt
             const rv = new RunView();
             const res = await rv.RunView<ActivityFileRow>({
                 EntityName: 'MJ_BizApps_Common: Activity Files',
-                ExtraFilter: `ActivityID = '${this.Record.ID}'`,
+                ExtraFilter: `ActivityID = '${EscapeFilterValue(this.Record.ID)}'`,
                 OrderBy: '__mj_CreatedAt DESC',
                 ResultType: 'simple',
             });

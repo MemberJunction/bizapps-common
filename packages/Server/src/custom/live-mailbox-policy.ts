@@ -13,6 +13,13 @@
  * it is reviewed and deployed rather than typed. This is the same reasoning the package already
  * applies to the transport itself — "a database row should not be able to reach in and swap it".
  *
+ * PREFER THE RESTRICTED GRANT. Deploy with an Exchange Application Access Policy and
+ * `ACTIVITY_SYNC_MAILBOX_POLICY_GROUP` (RestrictedToGroup) by default. Only Owner-type users may
+ * create a connection or change its `Mailbox`, `CredentialsRef` or owner (the server-side Activity
+ * Sync Connection subclass enforces it), but under the tenant-wide grant an administrator's typo,
+ * or a compromised administrator account, still reaches any mailbox in the organisation. The group
+ * is the only control that narrows the grant itself.
+ *
  * SET ALL THREE OR NONE. A partial configuration THROWS rather than quietly staying off. Silently
  * ignoring a half-filled opt-in is the failure this codebase keeps being written against: an
  * operator who set two of three variables would see refusals, believe the policy was wrong, and go

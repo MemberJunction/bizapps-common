@@ -1,0 +1,34 @@
+[
+  {
+    "fields": {
+      "Name": "Common: Party Lookup People",
+      "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
+      "UserQuestion": "Which people match what the user is typing into a person picker?",
+      "Description": "Up to 20 people whose first name, last name or display name matches the typed term (prefix matches ranked ahead of mid-name word and substring matches), whose email starts with the typed term, or whose email domain starts with the typed domain. Backs bizapps-party-field.",
+      "TechnicalDescription": "Grain: one row per Person, TOP 20 ordered by match rank, DisplayName, ID. Base table __mj_BizAppsCommon.Person, LIKE on FirstName, LastName, DisplayName, Email and EmailDomain; no view, no COUNT. Parameters: Term (required), Domain (optional, lower-cased, no leading @). Columns: ID, Name, Detail (Email).",
+      "SQL": "@file:SQL/party-lookup-people.sql",
+      "Status": "Approved",
+      "QualityRank": 9,
+      "ExecutionCostRank": 1,
+      "Reusable": true,
+      "UsesTemplate": true
+    },
+    "relatedEntities": {
+      "MJ: Query SQLs": [
+        {
+          "fields": {
+            "QueryID": "@parent:ID",
+            "SQLDialectID": "@lookup:MJ: SQL Dialects.PlatformKey=postgresql",
+            "SQL": "@file:SQL/party-lookup-people.pg.sql"
+          },
+          "primaryKey": {
+            "ID": "42438426-39E0-41A9-A40C-12BAE6487BFD"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "42438426-39E0-41A9-A40C-12BAE6487BFC"
+    }
+  }
+]

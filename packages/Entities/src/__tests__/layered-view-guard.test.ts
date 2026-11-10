@@ -121,8 +121,10 @@ const REQUIRED: Record<string, RegExp[]> = {
         // subsidiaries start counting as staff — a number that stays plausible.
         /'PersonToOrganization'/,
         // Both counts are of ACTIVE rows: without it, relationships ended years ago and
-        // organizations merged away years ago keep inflating them.
-        /'Active'/,
+        // organizations merged away years ago keep inflating them. Anchored to their aliases so
+        // dropping either filter while keeping the other fails the guard (#325).
+        /r\.\[Status\]\s*=\s*'Active'/i,
+        /child\.\[Status\]\s*=\s*'Active'/i,
     ],
 };
 

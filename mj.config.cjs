@@ -160,6 +160,13 @@ module.exports = {
   // },
 
   // ---------------------------------------------------------------------------
+  // Migrations (for `mj migrate`)
+  // ---------------------------------------------------------------------------
+  // Default location for SQL Server migrations; when DB_PLATFORM=postgresql and no
+  // explicit --dir is passed, @memberjunction/cli swaps ./migrations to ./migrations-pg.
+  migrationsLocation: 'filesystem:./migrations',
+
+  // ---------------------------------------------------------------------------
   // SQL Output (for migrations)
   // ---------------------------------------------------------------------------
   // Default v3.x: enabled: true, folderPath: './migrations/v3/'

@@ -1,6 +1,9 @@
 /**
  * `Common.SyncActivities` — the MJ Action a ScheduledJob fires hourly.
  *
+ * Run by hand with `DryRun = true` (and optionally `ConnectionIDs`) it previews what each connection
+ * would file, Paused ones included, writing only the run and its per-item decisions.
+ *
  * Downstream apps do not wrap this. They register a BaseActivitySyncExtension
  * (Sales.DealLinker) which the engine runs inside the write transaction.
  *
@@ -9,7 +12,7 @@
 import { BaseAction } from '@memberjunction/actions';
 import type { ActionParam, ActionResultSimple, RunActionParams } from '@memberjunction/actions-base';
 import { Metadata, type UserInfo } from '@memberjunction/core';
-import { RegisterClass } from '@memberjunction/global';
+import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
 import {
     ActionResultFromFleet,
     ActivitySyncEngine,
@@ -20,10 +23,47 @@ import {
 } from '@mj-biz-apps/common-activity-sync';
 
 const P_LIMIT = 'Limit';
+const P_DRY_RUN = 'DryRun';
+const P_CONNECTION_IDS = 'ConnectionIDs';
 const DEFAULT_LIMIT = 100;
+
+const SYSTEM_USER_ID = 'ECAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+const ROLE_DEVELOPER_ID = 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+const ROLE_INTEGRATION_ID = 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+
+function isAuthorizedSyncCaller(user: UserInfo): boolean {
+    if (user.Type?.trim() === 'Owner') {
+        return true;
+    }
+    if (UUIDsEqual(user.ID, SYSTEM_USER_ID)) {
+        return true;
+    }
+    return (
+        user.UserRoles?.some(
+            (r) =>
+                UUIDsEqual(r.RoleID, ROLE_DEVELOPER_ID) ||
+                UUIDsEqual(r.RoleID, ROLE_INTEGRATION_ID) ||
+                r.Role?.trim() === 'Developer' ||
+                r.Role?.trim() === 'Integration',
+        ) ?? false
+    );
+}
 
 function readParam(params: RunActionParams, name: string): unknown {
     return params.Params?.find((p) => p.Name?.toLowerCase() === name.toLowerCase())?.Value;
+}
+
+/** `true`, `'true'` or `'1'`. Anything else, absence included, is a live run. */
+export function ReadDryRun(raw: unknown): boolean {
+    if (typeof raw === 'boolean') return raw;
+    const text = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    return text === 'true' || text === '1';
+}
+
+/** A comma-separated string or an array; blanks dropped. The engine rejects anything that is not a UUID. */
+export function ReadConnectionIDs(raw: unknown): string[] {
+    const parts = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(',') : [];
+    return parts.map((p) => String(p).trim()).filter((p) => p.length > 0);
 }
 
 function setOutput(params: RunActionParams, name: string, value: unknown): void {
@@ -38,7 +78,24 @@ function setOutput(params: RunActionParams, name: string, value: unknown): void 
 
 @RegisterClass(BaseAction, 'Common.SyncActivities')
 export class SyncActivitiesAction extends BaseAction {
+    public static readonly AuthorizesCaller = true;
+
     protected async InternalRunAction(params: RunActionParams): Promise<ActionResultSimple> {
+        if (!params.ContextUser) {
+            return {
+                Success: false,
+                ResultCode: 'VALIDATION_ERROR',
+                Message: 'Common.SyncActivities requires a ContextUser.',
+            };
+        }
+        if (!isAuthorizedSyncCaller(params.ContextUser)) {
+            return {
+                Success: false,
+                ResultCode: 'PERMISSION_DENIED',
+                Message:
+                    'Common.SyncActivities requires an Owner user, the System user, or the Developer / Integration role.',
+            };
+        }
         try {
             return await this.sync(params);
         } catch (error) {
@@ -54,11 +111,17 @@ export class SyncActivitiesAction extends BaseAction {
         const raw = readParam(params, P_LIMIT);
         const parsed = raw === null || raw === undefined || raw === '' ? DEFAULT_LIMIT : Number(raw);
         const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_LIMIT;
-        const fleet = await this.runOnOwnProvider(
-            { DryRun: false, TriggerType: 'Scheduled', Limit: limit },
-            params.ContextUser,
-        );
+        const dryRun = ReadDryRun(readParam(params, P_DRY_RUN));
+        // A dry run is a person previewing a connection; the hourly job never passes one.
+        const options: SyncRunOptions = {
+            DryRun: dryRun,
+            TriggerType: dryRun ? 'Manual' : 'Scheduled',
+            Limit: limit,
+            ConnectionIDs: ReadConnectionIDs(readParam(params, P_CONNECTION_IDS)),
+        };
+        const fleet = await this.runOnOwnProvider(options, params.ContextUser);
         const totals = TotalsFromFleet(fleet);
+        setOutput(params, 'DryRun', dryRun);
         setOutput(params, 'ConnectionsAttempted', fleet.ConnectionsAttempted);
         setOutput(params, 'Fetched', totals.Fetched);
         setOutput(params, 'Written', totals.Written);

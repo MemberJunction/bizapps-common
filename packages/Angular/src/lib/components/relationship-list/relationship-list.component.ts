@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompositeKey, Metadata, RunView, RelatedRecordCollection } from '@memberjunction/core';
@@ -14,6 +14,7 @@ import {
     BusinessTimeZoneEngine
 } from '@mj-biz-apps/common-entities';
 import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
+import { PartyFieldComponent } from '../party-field/party-field.component';
 
 /**
  * View model for a single relationship row, enriched with display-friendly
@@ -198,13 +199,14 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; iconClass: 
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, FormsModule, BaseFormsModule],
+    imports: [CommonModule, FormsModule, BaseFormsModule, PartyFieldComponent],
     selector: 'bizapps-relationship-list',
     templateUrl: './relationship-list.component.html',
     styleUrls: ['./relationship-list.component.css']
 })
 export class RelationshipListComponent {
     private cdr = inject(ChangeDetectorRef);
+    @ViewChildren(PartyFieldComponent) private partyFields?: QueryList<PartyFieldComponent>;
 
     /** Active draft relationship object used for the Add form link fields. */
     public DraftRelationship: mjBizAppsCommonRelationshipEntity | null = null;
@@ -217,7 +219,8 @@ export class RelationshipListComponent {
      * {@link RecordNavigationEvent}) containing the target entity name,
      * composite key, and whether to open in a new tab.
      *
-     * @fires Navigate When the user clicks a target entity link
+     * @fires Navigate When the user clicks a target entity link, or asks a target picker to
+     *   create a new Person or Organization (a `create-related` event the host form handles)
      *
      * @example
      * ```html
@@ -580,12 +583,16 @@ export class RelationshipListComponent {
 
     /** Returns the display name of the "To" side entity. */
     private getToSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.ToPerson || rel.ToOrganization || 'Unknown';
+        if (rel.ToPersonID && rel.ToPerson) return rel.ToPerson;
+        if (rel.ToOrganizationID && rel.ToOrganization) return rel.ToOrganization;
+        return 'Unknown';
     }
 
     /** Returns the display name of the "From" side entity. */
     private getFromSideName(rel: mjBizAppsCommonRelationshipEntity): string {
-        return rel.FromPerson || rel.FromOrganization || 'Unknown';
+        if (rel.FromPersonID && rel.FromPerson) return rel.FromPerson;
+        if (rel.FromOrganizationID && rel.FromOrganization) return rel.FromOrganization;
+        return 'Unknown';
     }
 
     /** Returns the display name of whichever side is NOT the current entity. */
@@ -694,7 +701,17 @@ export class RelationshipListComponent {
         if (this.DraftRelationship) {
             this.DraftRelationship.ToPersonID = null;
             this.DraftRelationship.ToOrganizationID = null;
+            if (typeof this.DraftRelationship.Set === 'function') {
+                this.DraftRelationship.Set('ToPerson', null);
+                this.DraftRelationship.Set('ToOrganization', null);
+            } else {
+                const draft = this.DraftRelationship as unknown as Record<string, unknown>;
+                draft['ToPerson'] = null;
+                draft['ToOrganization'] = null;
+            }
         }
+        // A picker that survives the type change (person to person) keeps its last search otherwise.
+        this.partyFields?.forEach(field => field.ClearSearch());
         this.cdr.detectChanges();
     }
 

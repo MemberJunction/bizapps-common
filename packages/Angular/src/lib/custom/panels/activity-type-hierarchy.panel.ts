@@ -19,7 +19,10 @@ import { mjBizAppsCommonActivityTypeEntity } from '@mj-biz-apps/common-entities'
         slot: 'after-related',
         sortKey: 40,
         relatedEntity: 'MJ_BizApps_Common: Activity Types',
-        relatedJoinField: 'ParentID'
+        relatedJoinField: 'ParentID',
+        // The tree shows the whole lineage (ancestors + siblings), not just children,
+        // so a child-row count would mislead: no badge, never hidden.
+        count: false,
     }
 })
 @Component({
@@ -88,7 +91,7 @@ export class ActivityTypeHierarchyPanel extends BaseFormPanel<mjBizAppsCommonAct
                 ParentField: 'ParentID',
                 SubtitleField: 'Description',
                 DefaultIcon: 'fa-solid fa-chart-line',
-                DefaultColor: '#6366f1',
+                DefaultColor: 'var(--mj-brand-accent)',
                 ActiveRecordID: recId || undefined,
                 Height: '100%',
                 MinHeight: '640px',

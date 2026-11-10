@@ -16,15 +16,15 @@ describe('ActivityIdentityComponent and Panel Contributions', () => {
 
         comp.Record = { ActivityType: 'Email' } as mjBizAppsCommonActivityEntity;
         expect(comp.TypeIcon).toBe('fa-solid fa-envelope');
-        expect(comp.TypeStyle.color).toBe('#2563eb');
+        expect(comp.TypeStyle.color).toBe('var(--mj-brand-primary)');
 
         comp.Record = { ActivityType: 'Call' } as mjBizAppsCommonActivityEntity;
         expect(comp.TypeIcon).toBe('fa-solid fa-phone');
-        expect(comp.TypeStyle.color).toBe('#059669');
+        expect(comp.TypeStyle.color).toBe('var(--mj-status-success)');
 
         comp.Record = { ActivityType: 'Meeting' } as mjBizAppsCommonActivityEntity;
         expect(comp.TypeIcon).toBe('fa-solid fa-calendar-days');
-        expect(comp.TypeStyle.color).toBe('#4f46e5');
+        expect(comp.TypeStyle.color).toBe('var(--mj-brand-accent)');
 
         comp.Record = { ActivityType: 'Note' } as mjBizAppsCommonActivityEntity;
         expect(comp.TypeIcon).toBe('fa-solid fa-note-sticky');
@@ -177,4 +177,14 @@ describe('ActivityIdentityComponent and Panel Contributions', () => {
         expect(comp.SentimentTone).toBe('info');
         expect(comp.SentimentIcon).toBe('fa-solid fa-face-meh');
     });
+
+    it('aligns PersonAddressesPanel and OrganizationAddressesPanel replacesSectionKey with generated form sections', () => {
+        const regs = MJGlobal.Instance.ClassFactory.GetAllRegistrations(BaseFormPanel);
+        const personAddresses = regs.find(r => r.Key === 'form-panel:People:addresses');
+        const orgAddresses = regs.find(r => r.Key === 'form-panel:Organizations:addresses');
+
+        expect((personAddresses?.Metadata as Record<string, unknown> | undefined)?.['replacesSectionKey']).toBe('locationDetails');
+        expect((orgAddresses?.Metadata as Record<string, unknown> | undefined)?.['replacesSectionKey']).toBe('locationAndAddress');
+    });
 });
+

@@ -25,7 +25,8 @@ the release:  mj sync push against a clean DB  →  ONE consolidated Metadata_Sy
 ```
 
 **A feature PR carries no `Metadata_Sync` migration.** It carries the JSON: fields, `@lookup` /
-`@file` / `@parent` references, a `primaryKey` UUID from `uuidgen`, and no `sync` block. The release
+`@file` / `@parent` references, a `primaryKey` on every record (a `uuidgen` UUID for a new row, an
+`@lookup` for a row the migrations or CodeGen already created), and no `sync` block. The release
 push writes the `sync` block back. The build engineer takes everything merged on `next` and generates
 one consolidated seed for the release. This is MJ's model (`MJ/metadata/CLAUDE.md` §1b and §10). The
 reason for it is drift: per-PR sync migrations duplicate the release step, produce many small files
@@ -45,6 +46,9 @@ and runs anywhere.
   changed after the seed's last commit. This is what catches a seed generated before a later metadata
   PR merged. It matters most for the records keyed by `@lookup:` instead of a UUID (73 of the 251
   here), which coverage has no id to check.
+  A commit after the seed that only rewrites `sync` blocks (`lastModified`, `checksum`) also counts as
+  a change and fails this check, because it compares whole files. Commit the push's `sync`
+  write-back in the same commit as the seed.
 
 These see an **edited** record only by order: that a record moved after the last release and after
 the seed. None of them reads the seed's SQL to confirm it carries the edit, so a seed committed after

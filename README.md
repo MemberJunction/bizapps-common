@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-5.8.0-blue?style=flat-square" />
+  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-6.1.6%2B-blue?style=flat-square" />
   <img alt="Angular" src="https://img.shields.io/badge/Angular-21-DD0031?style=flat-square&logo=angular&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <a href="./LICENSE"><img alt="License: BUSL-1.1" src="https://img.shields.io/badge/License-BUSL--1.1-green?style=flat-square" /></a>
@@ -157,7 +157,24 @@ line is hidden while editing so it does not compete with the live fields.
      │    ┌──────────────────────┐│
      ├───►│   ContactMethod     │◄┘
      │    │  (PersonID or       │
-     │    │   OrganizationID)   │──────► ContactType
+     │    │   OrganizationID)   │──────► ContactType ──────► MJ: Communication
+     │    └─────────┬────────────┘                            Base Message Type
+     │              │ 1:M                                     (Email, Phone, SMS)
+     │    ┌─────────┴────────────┐
+     │    │ ContactMethodConsent│──────► ConsentPurpose
+     │    │  (purpose and       │         (Marketing,
+     │    │   requesting org,   │          Transactional, ...)
+     │    │   both optional)    │
+     │    │   ConsentStatus     │
+     │    └─────────┬────────────┘
+     │              │ 1:M
+     │    ┌─────────┴────────────┐
+     │    │ ContactMethodConsent │
+     │    │ History              │
+     │    │  NewConsentStatus,   │
+     │    │  ConsentStatusAt,    │
+     │    │  ConsentSource,      │
+     │    │  ConsentDetails      │
      │    └──────────────────────┘
      │
      │    ┌──────────────────────┐       ┌─────────────┐
@@ -180,6 +197,8 @@ line is hidden while editing so it does not compete with the live fields.
 **Directional Relationships** -- Each RelationshipType defines `ForwardLabel` and `ReverseLabel` (e.g., "is employee of" / "employs"). The UI automatically selects the correct label based on perspective.
 
 **Contact Method Flexibility** -- ContactMethods attach to either a Person or Organization via nullable FKs. Primary flags are scoped per ContactType, so a person can have a primary email AND a primary phone.
+
+**Per-Method Consent** -- Consent hangs off each ContactMethod the way contact methods hang off a person: a `ContactMethodConsent` row per purpose (`ConsentPurpose`: Marketing, Transactional, ...) or for anything, and per requesting organization or for anyone on the installation, holds the current `ConsentStatus` (Not Specified, Opted In or Opted Out). The most specific row answers, down to the general one, so one email can be opted in in general, out of marketing, and out for one organization. `RequestingOrganizationID` is the organization that asked, not the owner of the address. Every change is kept in `ContactMethodConsentHistory`: the new status, when it took effect (`ConsentStatusAt`), where it came from (`ConsentSource`: Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics (`ConsentDetails`) and who recorded it, and `ConsentStatus` always matches the row with the latest `ConsentStatusAt`. Each ContactType links to MJ's communication message types (Email, Phone, SMS), so code never matches on type names. Use `ContactPreferenceEngine` to read and set consent; it writes the history row and the current status together, and refuses a purpose name the installation does not have.
 
 See [Entity Model Reference](docs/entity-model.md) for the complete schema documentation.
 
@@ -245,6 +264,28 @@ if (result.Success) {
     [EditMode]="true"
     (Navigate)="onNavigate($event)">
 </bizapps-relationship-list>
+```
+
+### Attaching Addresses on the Server (`Common.AttachAddress`)
+
+Server-side workflows, actions, and agents can attach an address to a Person or Organization in a single transaction via the `Common.AttachAddress` action (which shares the pure normalization, deduplication, type-resolution, and primary-demotion rules exported from `@mj-biz-apps/common-entities`):
+
+```typescript
+import { ActionEngineServer } from '@memberjunction/actions';
+
+const result = await ActionEngineServer.Instance.RunAction({
+    ActionName: 'Common.AttachAddress',
+    ContextUser: contextUser,
+    Params: [
+        { Name: 'EntityName', Value: 'People', Type: 'Input' },
+        { Name: 'RecordID', Value: person.ID, Type: 'Input' },
+        { Name: 'Line1', Value: '100 Main St', Type: 'Input' },
+        { Name: 'City', Value: 'Austin', Type: 'Input' },
+        { Name: 'StateProvince', Value: 'TX', Type: 'Input' },
+        { Name: 'PostalCode', Value: '78701', Type: 'Input' },
+        { Name: 'AddressTypeID', Value: 'Work', Type: 'Input' },
+    ],
+});
 ```
 
 ---

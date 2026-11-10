@@ -27,7 +27,7 @@ vi.mock('@memberjunction/actions', () => ({ BaseAction: class {} }));
 import type { IMetadataProvider } from '@memberjunction/core';
 import type { ActionResultSimple, RunActionParams } from '@memberjunction/actions-base';
 import { ActivitySyncEngine, IsDatabaseProvider, type FleetRunResult } from '@mj-biz-apps/common-activity-sync';
-import { SyncActivitiesAction } from '../custom/sync-activities.action';
+import { ReadConnectionIDs, ReadDryRun, SyncActivitiesAction } from '../custom/sync-activities.action';
 
 class TestableAction extends SyncActivitiesAction {
     public Run(params: RunActionParams): Promise<ActionResultSimple> {
@@ -35,8 +35,14 @@ class TestableAction extends SyncActivitiesAction {
     }
 }
 
-function params(): RunActionParams {
-    return { Params: [], ContextUser: { ID: 'user-1' } } as unknown as RunActionParams;
+function params(
+    userOverrides: Record<string, unknown> = { Type: 'Owner' },
+    inputs: Array<{ Name: string; Value: unknown }> = [],
+): RunActionParams {
+    return {
+        Params: inputs,
+        ContextUser: { ID: 'user-1', ...userOverrides },
+    } as unknown as RunActionParams;
 }
 
 function emptyFleet(): FleetRunResult {
@@ -94,5 +100,109 @@ describe('SyncActivitiesAction', () => {
         expect(result.ResultCode).toBe('ERROR');
         expect(result.Message).toMatch(/server-only/);
         expect(run).not.toHaveBeenCalled();
+    });
+
+    it('declares AuthorizesCaller = true', () => {
+        expect(SyncActivitiesAction.AuthorizesCaller).toBe(true);
+    });
+
+    it('rejects missing ContextUser with VALIDATION_ERROR', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections');
+        const result = await new TestableAction().Run({ Params: [], ContextUser: undefined } as unknown as RunActionParams);
+        expect(result.Success).toBe(false);
+        expect(result.ResultCode).toBe('VALIDATION_ERROR');
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it('rejects a standard UI user with PERMISSION_DENIED', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections');
+        const result = await new TestableAction().Run(
+            params({
+                Type: 'User',
+                UserRoles: [{ RoleID: 'E0AFCCEC-6A37-EF11-86D4-000D3A4E707E', Role: 'UI' }],
+            }),
+        );
+        expect(result.Success).toBe(false);
+        expect(result.ResultCode).toBe('PERMISSION_DENIED');
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['Owner user', { Type: 'Owner', UserRoles: [] }],
+        ['System user by ID', { ID: 'ecafccec-6a37-ef11-86d4-000d3a4e707e', Type: 'User', UserRoles: [] }],
+        [
+            'Developer role by RoleID',
+            {
+                Type: 'User',
+                UserRoles: [{ RoleID: 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E', Role: 'Custom' }],
+            },
+        ],
+        [
+            'Integration role by RoleID',
+            {
+                Type: 'User',
+                UserRoles: [{ RoleID: 'dfafccec-6a37-ef11-86d4-000d3a4e707e', Role: 'Custom' }],
+            },
+        ],
+        [
+            'Developer role by Role name',
+            {
+                Type: 'User',
+                UserRoles: [{ RoleID: '00000000-0000-0000-0000-000000000001', Role: 'Developer' }],
+            },
+        ],
+        [
+            'Integration role by Role name',
+            {
+                Type: 'User',
+                UserRoles: [{ RoleID: '00000000-0000-0000-0000-000000000002', Role: 'Integration' }],
+            },
+        ],
+    ])('authorizes %s', async (_label, userOverrides) => {
+        vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockImplementation(writeOnHandedProvider);
+        const result = await new TestableAction().Run(params(userOverrides));
+        expect(result.Success).toBe(true);
+    });
+
+    it('runs live and Scheduled when no DryRun is passed, which is what the hourly job does', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockResolvedValue(emptyFleet());
+
+        await new TestableAction().Run(params());
+
+        expect(run.mock.calls[0][0]).toMatchObject({ DryRun: false, TriggerType: 'Scheduled', ConnectionIDs: [] });
+    });
+
+    it('passes a dry run and the named connections to the engine, and reports DryRun back', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockResolvedValue(emptyFleet());
+        const p = params(undefined, [
+            { Name: 'DryRun', Value: 'true' },
+            { Name: 'ConnectionIDs', Value: ' id-1 , id-2 ,' },
+        ]);
+
+        await new TestableAction().Run(p);
+
+        expect(run.mock.calls[0][0]).toMatchObject({
+            DryRun: true,
+            TriggerType: 'Manual',
+            ConnectionIDs: ['id-1', 'id-2'],
+        });
+        expect(p.Params?.find((x) => x.Name === 'DryRun')?.Value).toBe(true);
+    });
+});
+
+describe('reading the dry-run inputs', () => {
+    it('treats only true, "true" and "1" as a dry run', () => {
+        expect(ReadDryRun(true)).toBe(true);
+        expect(ReadDryRun(' TRUE ')).toBe(true);
+        expect(ReadDryRun('1')).toBe(true);
+        for (const live of [undefined, null, '', 'false', '0', 'yes', false]) {
+            expect(ReadDryRun(live)).toBe(false);
+        }
+    });
+
+    it('accepts an array or a comma-separated string and drops blanks', () => {
+        expect(ReadConnectionIDs(['a', ' b ', ''])).toEqual(['a', 'b']);
+        expect(ReadConnectionIDs('a,,b')).toEqual(['a', 'b']);
+        expect(ReadConnectionIDs(undefined)).toEqual([]);
     });
 });

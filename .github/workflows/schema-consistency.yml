@@ -1,0 +1,38 @@
+name: Schema Consistency
+
+# Verifies that every FOREIGN KEY declared across migrations/ has its corresponding
+# CodeGen-standard IDX_AUTO_MJ_FKEY_{Table}_{Column} index (MC4 schema consistency check),
+# and that migrationEntityField sequence & no-prune invariants hold.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [next, main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [next, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schema-consistency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fk-indexes:
+    name: Foreign Key Index Coverage (MC4)
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Foreign key index coverage self-test and migration check
+        run: |
+          node ./.github/scripts/check-fk-indexes.mjs --self-test
+          node ./.github/scripts/check-fk-indexes.mjs --dir ./migrations

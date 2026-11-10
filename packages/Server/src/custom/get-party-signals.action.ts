@@ -35,6 +35,8 @@ function setOutput(params: RunActionParams, name: string, value: unknown): void 
 
 @RegisterClass(BaseAction, 'Common.GetPartySignals')
 export class GetPartySignalsAction extends BaseAction {
+    public static readonly AuthorizesCaller = true;
+
     protected async InternalRunAction(params: RunActionParams): Promise<ActionResultSimple> {
         if (!params.ContextUser) {
             return { Success: false, ResultCode: 'VALIDATION_ERROR', Message: 'ContextUser is required.' };

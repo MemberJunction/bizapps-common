@@ -21,7 +21,14 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { findUnconsolidatedSeedDeltas, findUnshippedMetadataDrift, findStaleOrEmptySeeds, readReleaseState } from './check-release-seed-cadence.mjs';
+import {
+    findUnconsolidatedSeedDeltas,
+    findUnshippedMetadataDrift,
+    findStaleOrEmptySeeds,
+    readReleaseState,
+    hasSqlBody,
+    hasMjSyncDefaultsChanged,
+} from './check-release-seed-cadence.mjs';
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(SCRIPTS_DIR, 'check-release-seed-cadence.mjs');
@@ -372,6 +379,90 @@ withGitRepo(
     (root) => {
         const r = staleness(root);
         check('known limitation: a seed newer than the edit but missing it still passes', r.problems.length === 0, JSON.stringify(r.problems));
+    },
+);
+
+// 29. A seed that holds only session boilerplate (`SET NOCOUNT ON; GO`, `SET ANSI_NULLS ON`, `PRINT`)
+//     with no real SQL statements fails just like an empty seed.
+{
+    for (const text of [
+        'SET NOCOUNT ON;\nGO\n',
+        '-- header\nSET ANSI_NULLS ON;\nSET QUOTED_IDENTIFIER ON;\nSET XACT_ABORT ON;\nPRINT N\'done\';\nGO\n',
+        'SET NOCOUNT ON; GO\n',
+    ]) {
+        check(`hasSqlBody rejects boilerplate-only SQL (${JSON.stringify(text.slice(0, 18))})`, hasSqlBody(text) === false);
+        const r = findStaleOrEmptySeeds('/x', state('v0.10.0', [A], [A, B]), seeds({ [B]: { text, lastCommit: 'abc', changedSince: [] } }));
+        check(`boilerplate-only seed fails (${JSON.stringify(text.slice(0, 18))})`, r.ok === false && r.problems.length === 1 && r.problems[0].includes(B));
+    }
+    check('hasSqlBody accepts real SQL statements after boilerplate', hasSqlBody("SET NOCOUNT ON;\nGO\nINSERT INTO x VALUES (1);\n") === true);
+}
+
+// 30. A `.mj-sync.json` change to `defaults` counts as a record change (both for drift and for
+//     staleness), while changes limited to other keys (`directoryOrder`, `entity`) stay ignored.
+check(
+    'hasMjSyncDefaultsChanged ignores directoryOrder-only edits',
+    hasMjSyncDefaultsChanged(
+        JSON.stringify({ entity: 'Prompts', directoryOrder: 1, defaults: { CategoryID: 'cat-1' } }),
+        JSON.stringify({ entity: 'Prompts', directoryOrder: 2, defaults: { CategoryID: 'cat-1' } }),
+    ) === false,
+);
+check(
+    'hasMjSyncDefaultsChanged flags defaults edits',
+    hasMjSyncDefaultsChanged(
+        JSON.stringify({ entity: 'Prompts', defaults: { CategoryID: 'cat-1' } }),
+        JSON.stringify({ entity: 'Prompts', defaults: { CategoryID: 'cat-2' } }),
+    ) === true,
+);
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, 'metadata', 'entities', '.mj-sync.json'), JSON.stringify({ entity: 'Entities', directoryOrder: 1, defaults: { SchemaName: 'a' } }));
+        git('add', '-A'); git('commit', '-qm', 'sync config'); git('tag', '-f', 'v1.0.0');
+        // Edit only directoryOrder -> no seed owed
+        writeFileSync(join(root, 'metadata', 'entities', '.mj-sync.json'), JSON.stringify({ entity: 'Entities', directoryOrder: 2, defaults: { SchemaName: 'a' } }));
+        git('add', '-A'); git('commit', '-qm', 'reorder only');
+    },
+    (root) => {
+        const d1 = findUnshippedMetadataDrift(root);
+        check('real git: .mj-sync.json directoryOrder-only edit owes no seed', d1.ok === true && d1.problems.length === 0, JSON.stringify(d1.problems));
+        // Now edit defaults -> seed is owed!
+        writeFileSync(join(root, 'metadata', 'entities', '.mj-sync.json'), JSON.stringify({ entity: 'Entities', directoryOrder: 2, defaults: { SchemaName: 'b' } }));
+        const d2 = findUnshippedMetadataDrift(root);
+        check('real git: .mj-sync.json defaults edit owes a seed', d2.ok === false && d2.problems.length === 1 && d2.changed.includes('metadata/entities/.mj-sync.json'), JSON.stringify(d2));
+        // Commit a seed, then edit defaults again -> staleness flags the seed!
+        execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
+        execFileSync('git', ['commit', '-qm', 'defaults edit + seed'], { cwd: root, stdio: 'ignore' });
+        writeFileSync(join(root, 'migrations', B), "EXEC spUpdateEntity 'A','B';\n");
+        execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
+        execFileSync('git', ['commit', '-qm', 'seed'], { cwd: root, stdio: 'ignore' });
+        writeFileSync(join(root, 'metadata', 'entities', '.mj-sync.json'), JSON.stringify({ entity: 'Entities', directoryOrder: 2, defaults: { SchemaName: 'c' } }));
+        const st = staleness(root);
+        check('real git: .mj-sync.json defaults edit after seed flags staleness', st.ok === false && st.problems.length === 1 && st.problems[0].includes('metadata/entities/.mj-sync.json'), JSON.stringify(st.problems));
+    },
+);
+
+// 31. A shallow clone fails closed (`ok: false`) with an actionable message instead of passing silently.
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        writeFileSync(join(root, RECORD), record('B')); git('add', '-A'); git('commit', '-qm', 'PR 1');
+        writeFileSync(join(root, 'migrations', B), "EXEC spUpdateEntity 'A','B';\n"); git('add', '-A'); git('commit', '-qm', 'seed');
+        writeFileSync(join(root, RECORD), record('C')); git('add', '-A'); git('commit', '-qm', 'PR 2');
+    },
+    (originRoot) => {
+        const shallowRoot = mkdtempSync(join(tmpdir(), 'seed-cadence-shallow-'));
+        try {
+            execFileSync('git', ['clone', '-q', '--depth', '1', `file://${originRoot}`, shallowRoot], { stdio: 'ignore' });
+            execFileSync('git', ['fetch', '-q', '--tags', '--depth', '1'], { cwd: shallowRoot, stdio: 'ignore' });
+            const s = readReleaseState(shallowRoot);
+            check('shallow clone: readReleaseState marks shallow=true', s.shallow === true, JSON.stringify(s));
+            const st = findStaleOrEmptySeeds(shallowRoot);
+            check('shallow clone: findStaleOrEmptySeeds fails closed (ok: false)', st.ok === false && st.problems.length === 1 && /shallow clone|fetch-depth: 0|--unshallow/i.test(st.problems[0]), JSON.stringify(st));
+            const dr = findUnshippedMetadataDrift(shallowRoot);
+            check('shallow clone: findUnshippedMetadataDrift fails closed (ok: false)', dr.ok === false && dr.problems.length === 1, JSON.stringify(dr));
+        } finally {
+            rmSync(shallowRoot, { recursive: true, force: true });
+        }
     },
 );
 

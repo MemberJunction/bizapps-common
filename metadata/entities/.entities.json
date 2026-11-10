@@ -21,7 +21,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -202,6 +203,26 @@
             "lastModified": "2026-09-17T23:07:00.915Z",
             "checksum": "882b1c4b195c7cc964188965e4b057dc2624ed5517b4ddd7b2e2fb41bd664a8c"
           }
+        },
+        {
+          "_comments": [
+            "LinkedUserID is an active optional 1:1 foreign key linking a Person to an authenticated MJ User (__mj.User).",
+            "While automatic MJ User provisioning on Person save was removed in v5.33.0, LinkedUserID remains the",
+            "canonical optional link used by user-scoped agents (such as Chief of Staff), tasks, and issues to resolve",
+            "an MJ User's organizational Person record. Pin AutoUpdateDescription=false so CodeGen preserves this description."
+          ],
+          "fields": {
+            "Status": "Active",
+            "Description": "Optional foreign key to the MemberJunction core User record (__mj.User) when this person is also an authenticated platform user. Enforced 1:1 via UQ_Person_LinkedUserID where not null. Saving a Person never auto-provisions or modifies MJ Users.",
+            "AutoUpdateDescription": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=LinkedUserID&EntityID=@parent:ID"
+          },
+          "sync": {
+            "lastModified": "2026-10-17T17:21:49.518Z",
+            "checksum": "90880ae4c536f004e66c0ae4580fe7bf76e9135ff5f155992d57f9f04b16176c"
+          }
         }
       ]
     },
@@ -235,7 +256,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       },
@@ -327,6 +349,21 @@
           }
         },
         {
+          "_comments": [
+            "Acronym is searched like Name and LegalName (starts-with, indexed by IX_Organization_Acronym),",
+            "so typing an organization's initials finds it in every organization lookup."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=Acronym&EntityID=@parent:ID"
+          }
+        },
+        {
           "fields": {
             "IncludeInUserSearchAPI": true,
             "UserSearchPredicateAPI": "Exact",
@@ -358,12 +395,11 @@
         },
         {
           "_comments": [
-            "A domain is often the only thing that tells two same-named organizations apart, so the party",
-            "picker shows it on the second line. It is NOT searched, for now. Website is stored as entered:",
-            "on AIDP 77% of values carry a scheme (https://...), so BeginsWith 'acme' misses most of them,",
-            "and user search ORs every searched field, so one leg without an index turns each lookup into",
-            "a scan of Organization. Reaching the domain needs a normalized domain column to search",
-            "instead. Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+            "Website itself is NOT searched. It is stored as entered and most values carry a scheme",
+            "(https://...), so BeginsWith 'acme' misses most of them, and user search ORs every searched",
+            "field, so one leg without an index turns each lookup into a scan of Organization. The domain",
+            "is searched through WebsiteDomain (below) instead. Pin AutoUpdate=0 so CodeGen cannot flip",
+            "either setting back."
           ],
           "fields": {
             "IncludeInUserSearchAPI": false,
@@ -377,6 +413,23 @@
           "sync": {
             "lastModified": "2026-09-30T19:13:12.335Z",
             "checksum": "69bef234c91851279586c2e6ce0ce0a49e0579f18c924c53fd5b02ec97fcdb0f"
+          }
+        },
+        {
+          "_comments": [
+            "Organization search by website domain (#329). WebsiteDomain is Website lower-cased with the",
+            "scheme, a leading www. and any path removed, stored and indexed (IX_Organization_WebsiteDomain),",
+            "so BeginsWith 'acme' is an index seek and finds https://www.acme-widgets.example. Pin",
+            "AutoUpdate=0 so CodeGen cannot flip either setting back."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=WebsiteDomain&EntityID=@parent:ID"
           }
         },
         {
@@ -428,7 +481,8 @@
           "Form": {
             "Layout": "left-nav",
             "RelatedRolePolicy": "smart",
-            "PrimaryRelatedBudget": 6
+            "PrimaryRelatedBudget": 6,
+            "RelatedWhenEmpty": "more"
           }
         }
       }
@@ -579,11 +633,21 @@
             "ID": "@lookup:MJ: Entity Fields.Name=Location&EntityID=@parent:ID"
           }
         }
+      ],
+      "MJ: Entity Permissions": [
+        {
+          "_comments": [
+            "Row-Level Security on UI role reads: Private activities are visible only to their",
+            "creator (LoggedByUserID) or the owner of the ActivitySyncConnection that ingested them."
+          ],
+          "fields": {
+            "ReadRLSFilterID": "@lookup:MJ: Row Level Security Filters.Name=Common: Non-Private or Own Activities"
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activities&RoleID=@lookup:MJ: Roles.Name=UI"
+          }
+        }
       ]
-    },
-    "sync": {
-      "lastModified": "2026-08-24T20:06:03.051Z",
-      "checksum": "1db0b7d0ba262af59d8cff9d6e4eca10d35fb489db8f864df5993e25a46d4b65"
     }
   },
   {
@@ -675,8 +739,8 @@
       ]
     },
     "sync": {
-      "lastModified": "2026-09-17T23:07:00.419Z",
-      "checksum": "557b2f2d442156dd31b2ae55bcfb3080cb61cf2d094d43039aa4c5907568aba6"
+      "lastModified": "2026-10-17T17:21:49.480Z",
+      "checksum": "1e84ee6a55f414a7509bb36d66744f0f58200492094217e65798c3682348e81d"
     }
   },
   {

@@ -25,8 +25,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
  */
 const H = vi.hoisted(() => ({
     loadEngine: vi.fn(),
+    loadAttachAddress: vi.fn(),
     loadSync: vi.fn(),
     loadLog: vi.fn(),
+    loadReadSkipped: vi.fn(),
     loadFactory: vi.fn(),
     loadPolicy: vi.fn(() => false),
     loadCipher: vi.fn(),
@@ -36,6 +38,10 @@ vi.mock('@mj-biz-apps/common-entities', () => ({}));
 vi.mock('@mj-biz-apps/common-actions', () => ({}));
 vi.mock('@mj-biz-apps/common-core-entities-server', () => ({}));
 vi.mock('@mj-biz-apps/common-activity-sync', () => ({ LoadActivitySyncEngine: H.loadEngine }));
+vi.mock('../custom/attach-address.action.js', () => ({
+    AttachAddressAction: class {},
+    LoadAttachAddressAction: H.loadAttachAddress,
+}));
 vi.mock('../custom/sync-activities.action.js', () => ({
     SyncActivitiesAction: class {},
     LoadSyncActivitiesAction: H.loadSync,
@@ -43,6 +49,10 @@ vi.mock('../custom/sync-activities.action.js', () => ({
 vi.mock('../custom/log-activity.action.js', () => ({
     LogActivityAction: class {},
     LoadLogActivityAction: H.loadLog,
+}));
+vi.mock('../custom/read-skipped-content.action.js', () => ({
+    ReadSkippedContentAction: class {},
+    LoadReadSkippedContentAction: H.loadReadSkipped,
 }));
 vi.mock('../custom/graph-transport-factory.js', () => ({
     GraphTransportFactory: () => null,
@@ -98,8 +108,10 @@ describe('MJAPI startup wires the seams this package adds', () => {
         // the two new ones.
         LoadBizAppsCommonServer();
         expect(H.loadEngine).toHaveBeenCalled();
+        expect(H.loadAttachAddress).toHaveBeenCalled();
         expect(H.loadSync).toHaveBeenCalled();
         expect(H.loadLog).toHaveBeenCalled();
+        expect(H.loadReadSkipped).toHaveBeenCalled();
     });
 
     it('is idempotent enough to call twice', () => {

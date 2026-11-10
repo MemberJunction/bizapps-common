@@ -17,18 +17,14 @@ import { UserCache } from '@memberjunction/generic-database-provider';
  * (job applicants, CRM contacts, message senders) must not implicitly gain
  * platform access. See https://github.com/MemberJunction/bizapps-common/issues/36.
  *
- * As of v5.33.0, saving or deleting a Person has **no MJ User side effects**.
- * Platform layers that bind people to MJ Users (e.g., BCSaaS) do so through
- * their own IS-A subtype of this entity (BCSaaS `BC: People`), where
- * all provisioning/sync lifecycle behavior now lives. `Person.LinkedUserID`
- * is deprecated (EntityField Status='Deprecated') and no longer read or
- * written by bizapps-common.
- *
- * @deprecated This class is retained only so existing downstream subclasses
- * (e.g., BCSaaS ≤1.7 `BCSaaSPersonEntityServer`) continue to load against
- * BAC 5.33.x. It adds no behavior over the generated entity and will be
- * removed in the next major release — extend `mjBizAppsCommonPersonEntity`
- * directly instead.
+ * As of v5.33.0, saving or deleting a Person has **no automatic MJ User provisioning
+ * or lifecycle side effects**. However, `Person.LinkedUserID` remains an **active,
+ * supported optional 1:1 foreign key** (`UQ_Person_LinkedUserID` where not null)
+ * linking a `Person` record to an authenticated `MJ: Users` security principal.
+ * Downstream applications (Tasks, Issues) and user-scoped agents (such as Chief of Staff)
+ * use `LinkedUserID` to resolve a platform user's organizational `Person` identity,
+ * while platform layers that need custom user-provisioning rules (e.g., BCSaaS `BC: People`)
+ * can implement them in an IS-A subtype or explicit administrative workflow.
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
 export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
