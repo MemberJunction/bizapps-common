@@ -2,33 +2,28 @@
   {
     "_comments": [
       "ActivitySyncRunDetail can hold encrypted fragments of messages deliberately NOT ingested.",
-      "CodeGen emits UI read + Integration CRUD for every new entity; nobody chose that here.",
-      "Amith's ruling is about read: no role other than Developer may read this entity.",
-      "Developer keeps the CodeGen CRUD row. UI is all zeros.",
+      "Field-Level Security (EnableFieldLevelSecurity = true) is enabled on this entity:",
+      "UI role has CanRead = 1 so operators can inspect sync run decision metadata (Decision,",
+      "DecidedByStage, Reason, Confidence), while EntityFieldPermission denies CapturedContent,",
+      "EncryptionKeyID, and EncryptionKey to every role except Developer (DEAFCCEC-6A37-EF11-86D4-000D3A4E707E).",
       "Integration keeps CanCreate so a scheduled ingest can append audit rows; CanRead/Update/Delete stay 0.",
-      "The engine does not pick a role — ActivitySyncEngine.Run takes contextUser from the caller.",
-      "Roles with no EntityPermission row are already denied; UI and Integration are the ones CodeGen granted.",
-      "Field-level security on CapturedContent: MJ is implementing EntityFieldPermission. Assume it.",
-      "Until that table exists, the entity-level deny is the control. Do not split the table."
+      "Host-side EntityFieldPermission rows are seeded by V202611100510__v5.64.x__Activity_Sync_Run_Detail_And_Activity_Access.sql."
     ],
     "fields": {
-      "Name": "MJ_BizApps_Common: Activity Sync Run Details"
+      "Name": "MJ_BizApps_Common: Activity Sync Run Details",
+      "EnableFieldLevelSecurity": true
     },
     "relatedEntities": {
       "MJ: Entity Permissions": [
         {
           "fields": {
-            "CanRead": 0,
+            "CanRead": 1,
             "CanCreate": 0,
             "CanUpdate": 0,
             "CanDelete": 0
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=UI"
-          },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:09.771Z",
-            "checksum": "1b211d424684bf7180085dbc08d234f3f5420cd51e69837e0db4be0301704efa"
           }
         },
         {
@@ -40,10 +35,6 @@
           },
           "primaryKey": {
             "ID": "@lookup:MJ: Entity Permissions.EntityID=@lookup:MJ: Entities.Name=MJ_BizApps_Common: Activity Sync Run Details&RoleID=@lookup:MJ: Roles.Name=Integration"
-          },
-          "sync": {
-            "lastModified": "2026-09-02T04:04:09.787Z",
-            "checksum": "13a115c5585b0fe340e9833df4ce7b32c15150cfa70005a2db6d75f7469c2af0"
           }
         }
       ]

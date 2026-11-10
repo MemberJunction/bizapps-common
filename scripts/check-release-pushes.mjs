@@ -147,8 +147,13 @@ function protectedRefspec(args) {
     const positionals = args.filter((arg) => arg === null || !arg.startsWith('-'));
     for (const arg of positionals.slice(1)) {
         if (arg === null) continue;
-        if (RESOLVES_TO_PROTECTED.test(arg)) return arg;
-        const name = arg.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '');
+        const clean = arg.replace(/^\+/, '');
+        const dst = clean.includes(':') ? clean.slice(clean.indexOf(':') + 1) : clean;
+        // Pushing a tag (`refs/tags/...` or `HEAD:refs/tags/...`) never writes a branch, even when the
+        // tag name is built from `${{ github.ref_name }}` or `$GITHUB_REF_NAME`.
+        if (/^refs\/tags\//.test(dst)) continue;
+        if (RESOLVES_TO_PROTECTED.test(dst)) return arg;
+        const name = dst.replace(/^refs\/heads\//, '');
         if (PROTECTED_BRANCHES.includes(name)) return name;
     }
     return null;
@@ -156,17 +161,37 @@ function protectedRefspec(args) {
 
 /**
  * A refspec written as an expression that, in THIS repository's events, names a protected branch:
- * `base_ref` of a PR into next or main, the default branch (next), `ref_name` on a push to main. A
- * plain variable (`$BRANCH`) is unknowable to a static reader and is not matched — publish.yml
- * pushes `chore/backmerge-*` exactly that way.
+ * `base_ref` / `pull_request.base.ref` of a PR into next or main, the default branch (next), and
+ * `ref_name`, `github.ref`, `github.event.ref` or `$GITHUB_REF` on a push to main (the last three
+ * are `refs/heads/main`). A plain variable (`$BRANCH`) is unknowable to a static reader and is not
+ * matched — publish.yml pushes `release-back-merge/*` exactly that way.
  */
-const RESOLVES_TO_PROTECTED = /\bbase_ref\b|\bref_name\b|GITHUB_BASE_REF|GITHUB_REF_NAME|default_branch/i;
+const RESOLVES_TO_PROTECTED =
+    /\bbase_ref\b|\bref_name\b|\b(?:github|event|base)\.ref\b|GITHUB_BASE_REF|GITHUB_REF_NAME|\bGITHUB_REF\b|default_branch/i;
+
+/** Collapse whitespace inside `${{ ... }}` so shell word-splitting keeps each expression in one token. */
+function collapseWorkflowExpressions(text) {
+    return text.replace(/\$\{\{([\s\S]*?)\}\}/g, (_, inner) => `\${{${inner.replace(/\s+/g, '')}}}`);
+}
+
+/**
+ * If `raw` names a protected branch (`main`, `next`, `refs/heads/main`, or an expression matching
+ * `RESOLVES_TO_PROTECTED`), return that branch/expression; otherwise `null`.
+ */
+function protectedBranchTarget(raw) {
+    if (!raw) return null;
+    const unquoted = raw.trim().replace(/^['"`]+|['"`]+$/g, '');
+    const stripped = unquoted.replace(/^(?:refs\/)?heads\//, '');
+    if (PROTECTED_BRANCHES.includes(stripped)) return stripped;
+    if (RESOLVES_TO_PROTECTED.test(unquoted)) return unquoted;
+    return null;
+}
 
 /** The first push to a protected branch in one logical shell line, as `{ ref }`, or `null`. */
 function findShellPush(logicalLine) {
     // A `\n`/`\r` escape inside a string literal is a line break by the time a shell runs it, and a
     // `\t` is whitespace: `execSync('git push origin main\n')` pushes `main`, not `main\n`.
-    const line = logicalLine.replace(/\\[nr]/g, ' ; ').replace(/\\t/g, ' ');
+    const line = collapseWorkflowExpressions(logicalLine.replace(/\\[nr]/g, ' ; ').replace(/\\t/g, ' '));
     for (const start of line.matchAll(SHELL_PUSH_START)) {
         const rest = line.slice(start.index + start[0].length).split(COMMAND_END)[0];
         const words = rest
@@ -267,12 +292,14 @@ function pushArgsFromArgv(elements) {
 }
 
 /**
- * `gh api` given as an argv array: the `api` element and a `refs/heads/<protected>` element in the
- * same array. A formatted array spans lines, which the line-based `gh api` reader cannot join.
+ * `gh api` given as an argv array: the `api` element and either a `refs/heads/<protected>` ref
+ * update or a `repos/.../merges` call targeting a protected branch. A formatted array spans lines,
+ * which the line-based `gh api` reader cannot join.
  */
 function ghApiArrayTarget(elements) {
     if (!elements.some((element) => STRING_LITERAL.exec(element)?.[2] === 'api')) return null;
-    return GH_API_REF_TARGET.exec(elements.join(' '))?.[1] ?? null;
+    const joined = elements.join(' ');
+    return GH_API_REF_TARGET.exec(joined)?.[1] ?? findGhApiMergeTarget(joined);
 }
 
 /** simple-git's `.push(remote, refspec)`, or `.push([remote, refspec])`, however it is wrapped. */
@@ -283,16 +310,20 @@ function methodPushTarget(text, open) {
 }
 
 /**
- * octokit / actions/github-script ref writes: `git.updateRef`, `git.createRef`, `git.deleteRef`, or
- * `request('… /git/refs/…', { ref })`, with `ref` naming a protected branch. No `git` or `gh` word
- * appears in these at all.
+ * octokit / actions/github-script ref writes and REST merges: `git.updateRef`, `git.createRef`,
+ * `git.deleteRef`, `repos.merge`, or `request('… /git/refs/…' | 'POST /repos/…/merges', { … })`,
+ * targeting a protected branch. No `git` or `gh` word appears in these at all.
  */
-const OCTOKIT_REF_CALL = /\b(updateRef|createRef|deleteRef|request)\s*\(/g;
+const OCTOKIT_REF_CALL = /(?:(?:\b(updateRef|createRef|deleteRef|request))|(repos\.merge))\s*\(/g;
 const OCTOKIT_PROTECTED_REF = new RegExp(String.raw`\bref['"]?\s*:\s*['"\`](?:refs\/)?heads\/(${PROTECTED_ALTERNATION})['"\`]`);
 function octokitRefTarget(text, open, method) {
     const args = listElementsAt(text, open);
     if (!args) return null;
     const joined = args.join(', ');
+    if (method === 'repos.merge' || (method === 'request' && /\/repos\/[^'"`]+\/merges\b/i.test(joined))) {
+        const baseMatch = /\b['"]?base['"]?\s*:\s*([^,}\n]+)/.exec(joined);
+        return baseMatch ? protectedBranchTarget(baseMatch[1]) : 'main';
+    }
     if (method === 'request' && !/git\/refs/.test(joined)) return null;
     return OCTOKIT_PROTECTED_REF.exec(joined)?.[1] ?? null;
 }
@@ -319,7 +350,7 @@ function findStructuredPushes(text) {
         report(call.index, methodPushTarget(text, call.index + call[0].length - 1));
     }
     for (const call of text.matchAll(OCTOKIT_REF_CALL)) {
-        report(call.index, octokitRefTarget(text, call.index + call[0].length - 1, call[1]));
+        report(call.index, octokitRefTarget(text, call.index + call[0].length - 1, call[1] ?? call[2]));
     }
     return found;
 }
@@ -336,11 +367,28 @@ function findStructuredPushes(text) {
 const GH_API_REF_TARGET = new RegExp(String.raw`(?:git\/)?refs\/heads\/${PROTECTED_TARGET}`, 'i');
 
 /**
- * `gh api` calls that update a protected branch's ref directly — REST's equivalent of `git push`,
- * and invisible to the shell, argv and simple-git readers above because it is not a `git push` (or simple-git call)
- * at all. Whether a given ruleset's required-status-checks rule blocks a REST ref update the same
- * way it blocks a `git push` (this file's header) is not something this gate depends on either way:
- * a `gh api` PATCH/POST to `.../git/refs/heads/<branch>` writes a protected branch directly, without
+ * A `repos/.../merges` REST endpoint target in a `gh api` invocation. Extracts the `base` field
+ * (`-f base=...`, `--field base=...`, `--raw-field base=...`, or JSON `"base": "..."`). When `base`
+ * is omitted (e.g. `--input payload.json`), assumes a protected target unless explicitly a non-protected branch.
+ */
+const GH_API_MERGES_ENDPOINT = /(?:^|['"`\s/])repos\/[^'"`\s]+\/merges(?![\w/-])/i;
+function findGhApiMergeTarget(text) {
+    const norm = collapseWorkflowExpressions(text);
+    if (!GH_API_MERGES_ENDPOINT.test(norm)) return null;
+    const fieldMatch =
+        /(?:^|[\s'"`,])(?:-[fF]|--(?:raw-)?field)(?:=|\s+|['"`\s,]+)base=([^\s'"`,;\]]+)/.exec(norm) ??
+        /\b['"`]?base['"`]?\s*:\s*['"`]?([^\s'"`,}\]]+)/.exec(norm);
+    if (!fieldMatch) return 'main';
+    return protectedBranchTarget(fieldMatch[1]);
+}
+
+/**
+ * `gh api` calls that update a protected branch's ref directly or merge into it via `/merges` —
+ * REST's equivalents of `git push`, and invisible to the shell, argv and simple-git readers above
+ * because they are not `git push` (or simple-git calls) at all. Whether a given ruleset's
+ * required-status-checks rule blocks a REST ref update the same way it blocks a `git push` (this
+ * file's header) is not something this gate depends on either way: a `gh api` PATCH/POST to
+ * `.../git/refs/heads/<branch>` or POST to `.../merges` writes a protected branch directly, without
  * a pull request, and that is the thing CLAUDE.md's "Branching Model" and this gate both exist to
  * refuse — regardless of whether any particular ruleset also happens to catch it.
  *
@@ -357,7 +405,10 @@ function findGhApiRefUpdate(line) {
     if (!/\bgh\b/i.test(line) || !/\bapi\b/i.test(line)) {
         return null;
     }
-    return GH_API_REF_TARGET.exec(line);
+    const refMatch = GH_API_REF_TARGET.exec(line);
+    if (refMatch) return refMatch;
+    const mergeTarget = findGhApiMergeTarget(line);
+    return mergeTarget ? [line, mergeTarget] : null;
 }
 
 /** True when the line is commented out — history and prose, not an instruction. */

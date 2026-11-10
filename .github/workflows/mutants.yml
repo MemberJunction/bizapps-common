@@ -8,8 +8,9 @@ name: Mutation Harnesses
 # When it runs:
 #   - nightly on next, so a mutant that stopped being caught is found within a day, and a failure
 #     opens (or comments on) an issue instead of notifying only the last editor of this file;
-#   - on a PR that edits a harness or this workflow;
-#   - on a PR labelled `run-mutants`, the opt-in for a change to the source the mutants cover.
+#   - on a PR that edits ActivitySync or Server source, a mutation harness (including the shared
+#     `test-harnesses/mutation-suite.mjs` module), root dependencies, or this workflow;
+#   - on a PR labelled `run-mutants`.
 #
 # No `paths:` filter on the trigger: a workflow skipped that way creates no check run at all. The
 # `select` job decides instead, so a PR that does not qualify gets skipped jobs, not a missing check.
@@ -65,7 +66,7 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if gh api --paginate "repos/${{ github.repository }}/pulls/$PR/files" --jq '.[].filename' \
-              | grep -qE '^(packages/[^/]+/test-harnesses/|\.github/workflows/mutants\.yml$)'; then
+              | grep -qE '^(packages/(ActivitySync|Server)/src/|packages/[^/]+/test-harnesses/|test-harnesses/mutation-suite\.mjs$|\.github/workflows/mutants\.yml$|package\.json$|pnpm-lock\.yaml$)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -76,7 +77,8 @@ jobs:
     needs: select
     if: needs.select.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Measured full run duration is ~2m15s–7m24s; 25m fails a hung vitest process promptly while leaving headroom.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

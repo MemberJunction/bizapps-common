@@ -41,6 +41,31 @@ export interface BusinessTimeZoneSetting {
     Warning?: string;
 }
 
+export interface BusinessTimeZoneTestInput {
+    iana: string;
+    sql: string;
+}
+
+const IANA_TO_WINDOWS: Readonly<Record<string, string>> = {
+    UTC: 'UTC',
+    'Etc/UTC': 'UTC',
+    'America/Chicago': 'Central Standard Time',
+    'America/New_York': 'Eastern Standard Time',
+    'America/Denver': 'Mountain Standard Time',
+    'America/Phoenix': 'US Mountain Standard Time',
+    'America/Los_Angeles': 'Pacific Standard Time',
+    'America/Anchorage': 'Alaskan Standard Time',
+    'Pacific/Honolulu': 'Hawaiian Standard Time',
+    'America/Toronto': 'Eastern Standard Time',
+    'America/Vancouver': 'Pacific Standard Time',
+    'Europe/London': 'GMT Standard Time',
+    'Europe/Paris': 'Romance Standard Time',
+    'Europe/Berlin': 'W. Europe Standard Time',
+    'Asia/Tokyo': 'Tokyo Standard Time',
+    'Asia/Kolkata': 'India Standard Time',
+    'Australia/Sydney': 'AUS Eastern Standard Time',
+};
+
 const FALLBACK: BusinessTimeZoneSetting = { Iana: UTC_ZONE, Sql: UTC_ZONE, Source: 'fallback' };
 
 /** The UTC fallback, carrying why resolution landed there. */
@@ -91,10 +116,75 @@ export function ResolveBusinessTimeZoneSetting(rows: ReadonlyArray<InstanceConfi
 @RegisterForStartup()
 export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
     private _configurations: InstanceConfigurationRow[] = [];
+    private _ianaZone: string = UTC_ZONE;
+    private _sqlZoneName: string = UTC_ZONE;
     private warned = new Set<string>();
 
     public static get Instance(): BusinessTimeZoneEngine {
         return super.getInstance<BusinessTimeZoneEngine>();
+    }
+
+    /**
+     * Test-only helper that pins the business time zone without loading configuration from a database.
+     * Sets `_ianaZone`, `_sqlZoneName`, `_configurations`, and `_loaded = true`, and returns a restore
+     * callback that reverts the engine to its previous state.
+     */
+    public static SetZoneForTesting(zone: BusinessTimeZoneTestInput | string): () => void {
+        const instance = BusinessTimeZoneEngine.Instance;
+        const loadedTarget = instance as unknown as { _loaded: boolean };
+        const previousRows = instance._configurations.slice();
+        const previousLoaded = loadedTarget._loaded;
+        const previousIana = instance._ianaZone;
+        const previousSql = instance._sqlZoneName;
+        const previousWarned = new Set(instance.warned);
+
+        const resolved: BusinessTimeZoneTestInput =
+            typeof zone === 'string'
+                ? { iana: zone, sql: IANA_TO_WINDOWS[zone] ?? zone }
+                : { iana: zone.iana, sql: zone.sql };
+
+        instance._ianaZone = resolved.iana;
+        instance._sqlZoneName = resolved.sql;
+        instance._configurations = [
+            {
+                FeatureKey: 'BizApps.BusinessTimeZone',
+                Value: JSON.stringify({ iana: resolved.iana, sql: resolved.sql }),
+                DefaultValue: '{"iana":"UTC","sql":"UTC"}',
+            },
+        ];
+        loadedTarget._loaded = true;
+        instance.warned.clear();
+
+        return () => {
+            instance._configurations = previousRows;
+            loadedTarget._loaded = previousLoaded;
+            instance._ianaZone = previousIana;
+            instance._sqlZoneName = previousSql;
+            instance.warned = new Set(previousWarned);
+        };
+    }
+
+    /**
+     * Test-only helper that resets the engine to its unloaded initial state.
+     */
+    public static ResetForTesting(): void {
+        const instance = BusinessTimeZoneEngine.Instance;
+        const loadedTarget = instance as unknown as { _loaded: boolean };
+        instance._configurations = [];
+        instance._ianaZone = UTC_ZONE;
+        instance._sqlZoneName = UTC_ZONE;
+        loadedTarget._loaded = false;
+        instance.warned.clear();
+    }
+
+    /** Instance alias for {@link BusinessTimeZoneEngine.SetZoneForTesting}. */
+    public SetZoneForTesting(zone: BusinessTimeZoneTestInput | string): () => void {
+        return BusinessTimeZoneEngine.SetZoneForTesting(zone);
+    }
+
+    /** Instance alias for {@link BusinessTimeZoneEngine.ResetForTesting}. */
+    public ResetForTesting(): void {
+        BusinessTimeZoneEngine.ResetForTesting();
     }
 
     public async Config(forceRefresh?: boolean, contextUser?: UserInfo, provider?: IMetadataProvider): Promise<unknown> {

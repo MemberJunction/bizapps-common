@@ -192,6 +192,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     public Options: PartyOption[] = [];
     public SearchError: PartySearchError | null = null;
     public readonly CreateOptionID = PARTY_CREATE_OPTION_ID;
+    /** True while a search is debouncing or in flight. */
+    public Loading = false;
 
     /** True when the last search showed no rows because of an error: a failure or a timeout. */
     public get SearchFailed(): boolean {
@@ -216,9 +218,14 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
                 debounceTime(DEBOUNCE_MS),
                 switchMap((term) => from(this.optionsFor(term))),
             )
-            .subscribe((options) => {
-                this.SearchError = Array.isArray(options) ? null : options;
-                this.Options = this.withCreateOption(Array.isArray(options) ? options : []);
+            .subscribe(({ search, result }) => {
+                // A search superseded by a short term, ClearSearch or destroy leaves its answer unused.
+                if (search !== this.searchCount) {
+                    return;
+                }
+                this.Loading = false;
+                this.SearchError = Array.isArray(result) ? null : result;
+                this.Options = this.withCreateOption(Array.isArray(result) ? result : []);
                 this.cdr.markForCheck();
             });
     }
@@ -236,6 +243,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     public ngOnDestroy(): void {
+        ++this.searchCount;
         this.subscription?.unsubscribe();
     }
 
@@ -253,6 +261,17 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
 
     public OnFilterChange(text: string): void {
         this.term = text;
+        if (!PartyLookupParamsFor(this.Kind, text)) {
+            // Too short to search: drop any in-flight answer now, and replace a pending term so it never runs.
+            ++this.searchCount;
+            this.Loading = false;
+            this.SearchError = null;
+            this.Options = text.trim() ? this.withCreateOption([]) : this.current;
+            this.terms.next(text);
+            this.cdr.markForCheck();
+            return;
+        }
+        this.Loading = true;
         this.terms.next(text);
     }
 
@@ -368,6 +387,8 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * For a host that resets the field without it losing focus (a changed relationship type).
      */
     public ClearSearch(): void {
+        ++this.searchCount;
+        this.Loading = false;
         this.term = '';
         this.terms.next('');
         this.Options = this.current;
@@ -411,20 +432,20 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         }
     }
 
-    /** The options to list, or why there are none (logged). */
-    private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
+    /** The options to list, or why there are none (logged), tagged with the search they answer. */
+    private async optionsFor(term: string): Promise<{ search: number; result: PartyOption[] | PartySearchError }> {
         const search = ++this.searchCount;
         const params = PartyLookupParamsFor(this.Kind, term);
         if (!params) {
-            return term ? [] : this.current;
+            return { search, result: term ? [] : this.current };
         }
         try {
-            return await this.withTimeout(this.runSearch(params));
+            return { search, result: await this.withTimeout(this.runSearch(params)) };
         } catch (error) {
             if (search === this.searchCount) {
                 LogError(`bizapps-party-field: ${error instanceof Error ? error.message : String(error)}`);
             }
-            return error instanceof PartySearchTimeoutError ? 'timeout' : 'failed';
+            return { search, result: error instanceof PartySearchTimeoutError ? 'timeout' : 'failed' };
         }
     }
 

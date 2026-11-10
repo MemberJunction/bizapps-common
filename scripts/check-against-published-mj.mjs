@@ -36,8 +36,18 @@
  * generated tsconfig lives there too, and nothing in node_modules is relinked or mutated.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import {
+    existsSync,
+    lstatSync,
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    realpathSync,
+    rmSync,
+    symlinkSync,
+    writeFileSync,
+} from 'node:fs';
+import { dirname, join, parse as parsePath, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -195,15 +205,6 @@ function readLockfile() {
 }
 
 const LOCK = readLockfile();
-if (!LOCK.present || !LOCK.everywhere.size) {
-    console.log(
-        LOCK.present
-            ? 'WARNING: pnpm-lock.yaml carries no MemberJunction version this script could read.'
-            : 'WARNING: no pnpm-lock.yaml here.',
-    );
-    console.log('Versions will come from `npm view`, which answers "newest in range" - NOT the version');
-    console.log('CI installs. A pass from this run is unproven.');
-}
 
 /**
  * The version the lockfile pins for `name`, or null when it does not carry exactly one.
@@ -236,6 +237,88 @@ function npmNewest(name, range) {
     }
     newest.set(key, version);
     return version;
+}
+
+/**
+ * Populate `<cacheDir>/node_modules` with symlinks to third-party (non-`@memberjunction/*`)
+ * packages from `<ancestor>/node_modules/.pnpm/node_modules` and `<ancestor>/node_modules`.
+ *
+ * Unpacked tarballs live under `<cacheDir>/<pkg>/<version>/package`. When TypeScript resolves a
+ * transitive third-party import from a published `.d.ts` or source-typed package (such as
+ * `@memberjunction/server` whose `"types"` points at `./src/index.ts`), Node module resolution
+ * walks up to `<cacheDir>/node_modules`. Linking non-MJ packages there lets those imports resolve
+ * without exposing the workspace's local `@memberjunction/*` symlinks (#315).
+ */
+export function ensurePublishedTarballs(cacheDir = CACHE, searchRoots = [REPO]) {
+    const nmRoot = join(cacheDir, 'node_modules');
+    mkdirSync(nmRoot, { recursive: true });
+
+    const candidateNodeModules = [];
+    for (const start of searchRoots) {
+        let cur = resolve(start);
+        const { root } = parsePath(cur);
+        while (true) {
+            const pnpmVirtual = join(cur, 'node_modules', '.pnpm', 'node_modules');
+            const directNm = join(cur, 'node_modules');
+            if (existsSync(pnpmVirtual)) candidateNodeModules.push(pnpmVirtual);
+            if (existsSync(directNm)) candidateNodeModules.push(directNm);
+            if (cur === root) break;
+            const parent = dirname(cur);
+            if (parent === cur) break;
+            cur = parent;
+        }
+    }
+
+    const linkEntry = (srcDir, destPath) => {
+        try {
+            lstatSync(destPath);
+            return; // already linked or present
+        } catch {
+            // does not exist yet
+        }
+        try {
+            symlinkSync(srcDir, destPath, WIN ? 'junction' : 'dir');
+        } catch {
+            // ignore race or unsupported symlink error
+        }
+    };
+
+    for (const srcNm of candidateNodeModules) {
+        let entries = [];
+        try {
+            entries = readdirSync(srcNm);
+        } catch {
+            continue;
+        }
+        for (const entry of entries) {
+            if (
+                entry.startsWith('.') ||
+                entry === '@memberjunction' ||
+                entry === 'node_modules'
+            ) {
+                continue;
+            }
+            const srcEntry = join(srcNm, entry);
+            if (entry.startsWith('@')) {
+                let scopedEntries = [];
+                try {
+                    scopedEntries = readdirSync(srcEntry);
+                } catch {
+                    continue;
+                }
+                const destScope = join(nmRoot, entry);
+                mkdirSync(destScope, { recursive: true });
+                for (const child of scopedEntries) {
+                    if (child.startsWith('.')) continue;
+                    linkEntry(join(srcEntry, child), join(destScope, child));
+                }
+            } else {
+                linkEntry(srcEntry, join(nmRoot, entry));
+            }
+        }
+    }
+
+    return nmRoot;
 }
 
 /** Download and unpack one published package, cached by its concrete version. */
@@ -323,12 +406,87 @@ function collectPublished(entryDeps, report, importerKey) {
     return paths;
 }
 
+/**
+ * Filter raw `tsc` output down to diagnostics belonging to this package's own source, separating:
+ * - `mine`: all diagnostics in the package's own files (excluding `node_modules` and `.cache`)
+ * - `unbuilt`: `TS2307` diagnostics for sibling `@mj-biz-apps/*` packages whose `dist` is not built
+ * - `sourceTypedBroken`: diagnostics inside `.cache` for a `sourceTyped` dependency whose own `.ts`
+ *   source failed to resolve a third-party module (`TS2307`)
+ * - `ownErrors`: diagnostics in this package's own files that are NOT merely cascades from an
+ *   unresolved third-party module inside a `sourceTyped` dependency (#315)
+ */
+export function classifyDiagnostics(rawErrors, sourceTyped = []) {
+    const lines = String(rawErrors ?? '')
+        .split(/\r?\n/)
+        .filter((l) => /error TS\d+:/.test(l));
+
+    const cacheLines = lines.filter((l) => l.includes('node_modules') || l.includes('.cache'));
+    const mine = lines.filter((l) => !l.includes('node_modules') && !l.includes('.cache'));
+    const unbuilt = mine.filter((l) => /TS2307/.test(l) && /@mj-biz-apps\//.test(l));
+
+    // Identify which source-typed packages (e.g. `@memberjunction/server`) actually failed to
+    // resolve their own third-party imports inside `.cache`. If `<cacheDir>/node_modules` satisfied
+    // all of their imports, `brokenSourceTypedPkgs` is empty and no error in `mine` is excused.
+    const brokenSourceTypedPkgs = new Set();
+    for (const entry of sourceTyped) {
+        const pkgName = entry.replace(/\s*\(.*$/, '').trim();
+        const slug = pkgName.replace('/', '__');
+        const hasCacheMissingModule = cacheLines.some(
+            (l) => /TS2307/.test(l) && (l.includes(pkgName) || l.includes(slug)),
+        );
+        if (hasCacheMissingModule) brokenSourceTypedPkgs.add(pkgName);
+    }
+
+    const sourceTypedCascade = [];
+    const ownErrors = [];
+    for (const line of mine) {
+        const isCascadeFromBrokenSourceTyped =
+            brokenSourceTypedPkgs.size > 0 &&
+            /TS230[57]/.test(line) &&
+            [...brokenSourceTypedPkgs].some((pkgName) => line.includes(`"${pkgName}"`) || line.includes(`'${pkgName}'`));
+        if (isCascadeFromBrokenSourceTyped) {
+            sourceTypedCascade.push(line);
+        } else {
+            ownErrors.push(line);
+        }
+    }
+
+    return { mine, unbuilt, sourceTypedCascade, ownErrors };
+}
+
+/**
+ * Compute the package verdict from classified diagnostics and resolution report (#315).
+ *
+ * Crucially, `report.sourceTyped.length > 0` does NOT short-circuit to `'inconclusive'` when
+ * `ownErrors` is empty (the package compiled cleanly!) or when `ownErrors` contains genuine
+ * type errors in this repo's own files.
+ */
+export function judgePackage({ mine = [], unbuilt = [], sourceTypedCascade = [], ownErrors = [] }, report) {
+    if (!report.fetched?.length) {
+        return 'cannot-check';
+    }
+    if (mine.length && unbuilt.length) {
+        return 'inconclusive';
+    }
+    if (ownErrors.length > 0) {
+        return 'failed';
+    }
+    if (sourceTypedCascade.length > 0 && report.sourceTyped?.length) {
+        return 'inconclusive';
+    }
+    if (report.unresolvable?.length) {
+        return 'inconclusive';
+    }
+    return 'ok';
+}
+
 function checkPackage(dir) {
     const name = relative(REPO, dir).replace(/\\/g, '/');
     const pkg = readJSON(join(dir, 'package.json'));
     const report = { fetched: [], unresolvable: [], sourceTyped: [], fromLock: 0, fromNpm: [] };
 
     process.stdout.write(`\n${name}\n`);
+    ensurePublishedTarballs(CACHE, [dir, REPO]);
     // `name` doubles as the importer key: pnpm-lock.yaml names importers by workspace-relative path.
     const paths = collectPublished(allDeps(pkg), report, name);
 
@@ -348,19 +506,6 @@ function checkPackage(dir) {
         console.log('  CANNOT CHECK: not one MemberJunction dependency resolved.');
         console.log('  Reporting success here would be a lie: with no path overrides TypeScript falls');
         console.log('  back to the workspace links, which is exactly what this exists to look past.');
-        /**
-         * THIS RETURNED `false`, AND THE RUN EXITED 0.
-         *
-         * `false` is neither 'failed' nor 'inconclusive', so the tally at the bottom counted it as
-         * neither and `checked = dirs.length - inconclusive` counted it as a pass. A total
-         * resolution failure printed the three lines above and then "1 of 1 package(s) compile",
-         * and exited 0. The paragraph said reporting success would be a lie while the exit code went
-         * on to report success - the same defect this script exists to catch, in the script itself.
-         *
-         * It exits non-zero now. Not as 'failed' though: "your code uses an unpublished API" and
-         * "this guard could not run" are different messages for the reader, and the summary at the
-         * bottom used to print the first one for the second.
-         */
         return 'cannot-check';
     }
 
@@ -394,114 +539,86 @@ function checkPackage(dir) {
         errors = `${err.stdout ?? ''}${err.stderr ?? ''}`;
     }
 
-    // Errors inside the published packages themselves are noise; only this repo's source counts.
-    const mine = errors
-        .split(/\r?\n/)
-        .filter((l) => /error TS/.test(l))
-        .filter((l) => !l.includes('node_modules') && !l.includes('.cache'));
+    const classified = classifyDiagnostics(errors, report.sourceTyped);
+    const verdict = judgePackage(classified, report);
 
-    /**
-     * `Cannot find module '@mj-biz-apps/...'` is one of OUR packages, not MemberJunction's. It
-     * resolves through that package's own `dist`, so this means the workspace is not built - and
-     * printing it under a "MemberJunction API not published" header blames the wrong thing and sends
-     * the reader to npm to look for a package that was never going to be there.
-     */
-    const unbuilt = mine.filter((l) => /TS2307/.test(l) && /@mj-biz-apps\//.test(l));
-
-    /**
-     * Decided before anything is printed. Downgrading after the fact made the run print
-     * `OK - compiles against published MemberJunction` and then, three lines later, that it had
-     * not checked the package - two verdicts on one package, the reassuring one first.
-     */
-    let verdict;
-    if (mine.length && unbuilt.length) {
-        console.log(`  CANNOT CHECK: ${unbuilt.length} error(s) are missing WORKSPACE packages, not MemberJunction:`);
-        for (const line of unbuilt.slice(0, 3)) console.log(`      ${line.trim()}`);
+    if (verdict === 'inconclusive' && classified.unbuilt.length) {
+        console.log(`  CANNOT CHECK: ${classified.unbuilt.length} error(s) are missing WORKSPACE packages, not MemberJunction:`);
+        for (const line of classified.unbuilt.slice(0, 3)) console.log(`      ${line.trim()}`);
         console.log('  Those are this repo\'s own packages, read from their `dist`, so the tree is not');
         console.log('  built. Run `pnpm build` and re-run. Nothing downstream of those imports has been');
         console.log('  checked against MemberJunction at all.');
-        verdict = 'inconclusive';
-    } else if (mine.length && report.sourceTyped.length) {
+    } else if (verdict === 'inconclusive' && classified.sourceTypedCascade.length) {
         console.log('  INCONCLUSIVE - a dependency publishes TypeScript SOURCE as its types entry:');
         for (const st of report.sourceTyped) console.log(`      ${st}`);
         console.log('  Checking it means compiling ITS source, whose own third-party imports are not in');
         console.log('  the unpacked tarball, so the errors below are about that and not about this repo.');
         console.log('  Reported, not failed. CI installs the real dependency tree and does resolve them.');
-        for (const line of mine.slice(0, 5)) console.log(`      ${line.trim()}`);
-        verdict = 'inconclusive';
-    } else if (mine.length) {
-        process.stdout.write(`  ${mine.length} error(s) against PUBLISHED MemberJunction:\n`);
-        for (const line of mine.slice(0, 20)) process.stdout.write(`    ${line.trim()}\n`);
-        if (mine.length > 20) process.stdout.write(`    ... and ${mine.length - 20} more\n`);
-        verdict = 'failed';
-    } else if (report.unresolvable.length) {
-        /**
-         * ONE UNRESOLVED DEPENDENCY IS NOT A PASS WITH A FOOTNOTE.
-         *
-         * TypeScript has no path override for a name that did not resolve, so it resolves that one
-         * through the workspace link - the local `dist` this whole script exists to look past - and
-         * every import reached through it is checked against the wrong copy. The package compiles
-         * clean and used to print OK. It is not OK, it is unknown, and unknown outranks the pass.
-         */
+        for (const line of classified.sourceTypedCascade.slice(0, 5)) console.log(`      ${line.trim()}`);
+    } else if (verdict === 'failed') {
+        process.stdout.write(`  ${classified.ownErrors.length} error(s) against PUBLISHED MemberJunction:\n`);
+        for (const line of classified.ownErrors.slice(0, 20)) process.stdout.write(`    ${line.trim()}\n`);
+        if (classified.ownErrors.length > 20) process.stdout.write(`    ... and ${classified.ownErrors.length - 20} more\n`);
+    } else if (verdict === 'inconclusive' && report.unresolvable.length) {
         console.log('  INCONCLUSIVE - it compiles, but these resolved through the workspace link, not npm:');
         for (const miss of report.unresolvable) console.log(`      ${miss}`);
         console.log('  Whatever they declare is being read from the local build, so this run does not');
         console.log('  cover anything that goes through them.');
-        verdict = 'inconclusive';
     } else {
         process.stdout.write(`  OK - compiles against published MemberJunction\n`);
-        verdict = 'ok';
     }
     return verdict;
 }
 
+function main() {
+    if (!LOCK.present || !LOCK.everywhere.size) {
+        console.log(
+            LOCK.present
+                ? 'WARNING: pnpm-lock.yaml carries no MemberJunction version this script could read.'
+                : 'WARNING: no pnpm-lock.yaml here.',
+        );
+        console.log('Versions will come from `npm view`, which answers "newest in range" - NOT the version');
+        console.log('CI installs. A pass from this run is unproven.');
+    }
 
-const dirs = packagesToCheck();
-if (!dirs.length) {
-    console.log('No workspace package declares a MemberJunction dependency.');
-    process.exit(0);
+    const dirs = packagesToCheck();
+    if (!dirs.length) {
+        console.log('No workspace package declares a MemberJunction dependency.');
+        process.exit(0);
+    }
+
+    let failed = 0;
+    let unresolved = 0;
+    let inconclusive = 0;
+    for (const dir of dirs) {
+        const verdict = checkPackage(dir);
+        if (verdict === 'failed') failed++;
+        else if (verdict === 'cannot-check') unresolved++;
+        else if (verdict === 'inconclusive') inconclusive++;
+    }
+
+    console.log('');
+    if (unresolved) {
+        console.log(`${unresolved} package(s) COULD NOT BE CHECKED: no MemberJunction dependency resolved.`);
+        console.log('That is a verdict on this run, not on the code. Check access to the npm registry and re-run.');
+    }
+    if (failed) {
+        console.log(`${failed} package(s) use MemberJunction API that is not published yet.`);
+        console.log('CI installs the version pnpm-lock.yaml pins, so this is what CI will see regardless of how');
+        console.log('the local workspace is linked.');
+    }
+    if (failed || unresolved) process.exit(1);
+
+    const checked = dirs.length - inconclusive;
+    console.log(`${checked} of ${dirs.length} package(s) compile against published MemberJunction.`);
+    if (inconclusive) {
+        console.log(
+            `${inconclusive} INCONCLUSIVE - not checked at all, for the reason given above. This run`
+                + ` proves nothing about ${inconclusive === 1 ? 'that package' : 'those packages'}.`,
+        );
+    }
 }
 
-let failed = 0;
-let unresolved = 0;
-let inconclusive = 0;
-for (const dir of dirs) {
-    const verdict = checkPackage(dir);
-    if (verdict === 'failed') failed++;
-    else if (verdict === 'cannot-check') unresolved++;
-    else if (verdict === 'inconclusive') inconclusive++;
-}
-
-console.log('');
-/**
- * Two ways to exit non-zero, because they mean different things to whoever reads this. `failed` is
- * "your code uses an API CI will not have". `unresolved` is "this guard could not run", which is not
- * a verdict on the code at all - and the single message here used to report it as one.
- */
-if (unresolved) {
-    console.log(`${unresolved} package(s) COULD NOT BE CHECKED: no MemberJunction dependency resolved.`);
-    console.log('That is a verdict on this run, not on the code. Check access to the npm registry and re-run.');
-}
-if (failed) {
-    console.log(`${failed} package(s) use MemberJunction API that is not published yet.`);
-    console.log('CI installs the version pnpm-lock.yaml pins, so this is what CI will see regardless of how');
-    console.log('the local workspace is linked.');
-}
-if (failed || unresolved) process.exit(1);
-
-/**
- * COUNT WHAT WAS CHECKED, NOT WHAT WAS VISITED.
- *
- * This said `${dirs.length} package(s) compile`, which counted the INCONCLUSIVE ones too - and for
- * those this guard verified NOTHING, as the block above says in full. A summary line that reads
- * better than the run it summarises is the exact shape of defect this script exists to catch, so it
- * should not be the last thing the script prints about itself.
- */
-const checked = dirs.length - inconclusive;
-console.log(`${checked} of ${dirs.length} package(s) compile against published MemberJunction.`);
-if (inconclusive) {
-    console.log(
-        `${inconclusive} INCONCLUSIVE - not checked at all, for the reason given above. This run`
-            + ` proves nothing about ${inconclusive === 1 ? 'that package' : 'those packages'}.`,
-    );
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
+    main();
 }

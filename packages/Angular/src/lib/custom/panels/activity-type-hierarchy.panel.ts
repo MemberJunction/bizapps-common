@@ -91,7 +91,7 @@ export class ActivityTypeHierarchyPanel extends BaseFormPanel<mjBizAppsCommonAct
                 ParentField: 'ParentID',
                 SubtitleField: 'Description',
                 DefaultIcon: 'fa-solid fa-chart-line',
-                DefaultColor: '#6366f1',
+                DefaultColor: 'var(--mj-brand-accent)',
                 ActiveRecordID: recId || undefined,
                 Height: '100%',
                 MinHeight: '640px',

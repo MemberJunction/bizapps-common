@@ -10,3 +10,13 @@
  */
 
 export { PersonEntityServer } from './PersonEntityServer.js';
+export { ActivityEntityServer } from './ActivityEntityServer.js';
+export { ActivityLinkEntityServer, KeyMatchesPrimaryKeys } from './ActivityLinkEntityServer.js';
+export { ActivitySyncConnectionEntityServer } from './ActivitySyncConnectionEntityServer.js';
+export {
+    CALENDAR_WATERMARK_KEY,
+    CONNECTION_ROUTING_FIELDS,
+    ChangedRoutingFields,
+    SettingsWithoutWatermark,
+} from './activity-sync-connection-routing.js';
+export { IsOwnerUser, IsSystemUser, SYSTEM_USER_ID } from './entity-guards.js';

@@ -54,6 +54,14 @@ jobs:
       - name: Release-push gate
         run: node scripts/check-release-pushes.mjs
 
+      # Every var(--mj-*) in packages/Angular/src must be a token MemberJunction defines (#299),
+      # and no raw colour literals may bypass the theme (#306).
+      - name: MJ design tokens and colour literals gate
+        run: |
+          node scripts/check-mj-tokens.mjs
+          pnpm run check:colour-literals:test
+          pnpm run check:colour-literals
+
   release-seed:
     name: 'repo: release seed'
     if: github.event.pull_request.draft == false && github.base_ref == 'main'

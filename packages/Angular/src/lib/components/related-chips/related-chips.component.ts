@@ -13,7 +13,8 @@ import { Metadata, RunView, type IMetadataProvider } from '@memberjunction/core'
 import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     RelatedChipNavigation,
-    ResolveRelatedChip,
+    RelatedLinksGate,
+    ResolveRelatedChips,
     type BizAppsRelatedLink,
     type ResolvedRelatedChip,
 } from './related-links';
@@ -71,17 +72,27 @@ import {
         @if (Chips.length > 0) {
             <div class="bizapps-related" role="group" aria-label="Related records">
                 @for (chip of Chips; track chip.Key) {
-                    <button
-                        type="button"
-                        class="bizapps-related__chip"
-                        [attr.aria-label]="chip.AriaLabel"
-                        (click)="Open(chip, $event)">
-                        @if (chip.Icon) {
-                            <i [class]="chip.Icon" aria-hidden="true"></i>
-                        }
-                        <span class="bizapps-related__label">{{ chip.Label }}</span>
-                        <span class="bizapps-related__name">{{ chip.Name || 'Open' }}</span>
-                    </button>
+                    @if (IsClickable) {
+                        <button
+                            type="button"
+                            class="bizapps-related__chip bizapps-chip bizapps-chip--clickable"
+                            [attr.aria-label]="chip.AriaLabel"
+                            (click)="Open(chip, $event)">
+                            @if (chip.Icon) {
+                                <i [class]="chip.Icon" aria-hidden="true"></i>
+                            }
+                            <span class="bizapps-related__label">{{ chip.Label }}</span>
+                            <span class="bizapps-related__name">{{ chip.Name || 'Open' }}</span>
+                        </button>
+                    } @else {
+                        <span class="bizapps-related__chip bizapps-chip">
+                            @if (chip.Icon) {
+                                <i [class]="chip.Icon" aria-hidden="true"></i>
+                            }
+                            <span class="bizapps-related__label">{{ chip.Label }}</span>
+                            <span class="bizapps-related__name">{{ chip.Name || 'Open' }}</span>
+                        </span>
+                    }
                 }
             </div>
         }
@@ -113,30 +124,35 @@ import {
                 background: var(--mj-bg-surface-card);
                 border: 1px solid var(--mj-border-default);
                 border-radius: var(--mj-radius-full);
+            }
+            .bizapps-chip--clickable {
                 cursor: pointer;
                 transition: var(--mj-transition-colors);
             }
-            .bizapps-related__chip:hover {
+            .bizapps-chip--clickable:hover {
                 background: var(--mj-bg-surface-hover);
                 border-color: var(--mj-brand-primary);
             }
-            .bizapps-related__chip:focus-visible {
+            .bizapps-chip--clickable:focus-visible {
                 outline: var(--mj-ring-width) solid var(--mj-focus-ring-color);
                 outline-offset: var(--mj-ring-offset);
             }
             /* The relationship is the quiet half; the record's NAME is what the reader is looking
-               for, so it carries the link colour and the underline on hover. */
+               for, so it carries the link colour and the underline on hover when clickable. */
             .bizapps-related__label {
                 color: var(--mj-text-secondary);
                 white-space: nowrap;
             }
             .bizapps-related__name {
                 overflow: hidden;
-                color: var(--mj-text-link);
+                color: var(--mj-text-primary);
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            .bizapps-related__chip:hover .bizapps-related__name {
+            .bizapps-chip--clickable .bizapps-related__name {
+                color: var(--mj-text-link);
+            }
+            .bizapps-chip--clickable:hover .bizapps-related__name {
                 color: var(--mj-text-link-hover);
                 text-decoration: underline;
             }
@@ -154,19 +170,17 @@ export class RelatedChipsComponent implements OnDestroy {
     private provider: IMetadataProvider | null = null;
 
     /**
-     * Guards against a slower read for a PREVIOUS set of links landing after the caller moved on —
-     * a form navigating between records is the ordinary way that happens. Every resolve captures the
-     * generation it started in and discards itself if it no longer matches.
+     * Guards against a slower read for a PREVIOUS set of links landing after the caller moved on
+     * and against a read completing after the view has been destroyed (#303).
      */
-    private generation = 0;
+    private readonly gate = new RelatedLinksGate();
 
     /**
-     * The OTHER way a resolve becomes irrelevant, and the one the generation cannot see: the view it
-     * would publish into is gone. `detectChanges()` has no destroyed-view guard of its own, so a read
-     * still in flight when the user closes the tab would run change detection over a torn-down
-     * `LView`.
+     * Explicit override for whether chips render as interactive `<button>` elements (`true`)
+     * or static `<span>` badges (`false`). When `null` (default), interactivity is inferred
+     * from `Navigate.observed` (#318).
      */
-    private destroyed = false;
+    @Input() public Clickable: boolean | null = null;
 
     /**
      * The relationships to offer, in the order they should read.
@@ -186,18 +200,6 @@ export class RelatedChipsComponent implements OnDestroy {
 
     /**
      * Metadata provider to read through. Falls back to the ambient one when not supplied.
-     *
-     * A form panel should pass `FormComponent.ProviderToUse`, so the chips read from the same place
-     * the record they describe came from. In a host with more than one provider the fallback reads
-     * the wrong database and the failure is a wrong ANSWER rather than an error, which is why this
-     * is worth passing even when there is only one today.
-     *
-     * A SETTER, and re-resolving, for the same reason. Angular assigns bound inputs in template
-     * order, and the usage above binds `[Links]` first — so a plain field would be read as `null` by
-     * the resolve the `Links` setter kicks off, silently reading the ambient provider, and would
-     * never be re-read once the real one arrived. `FormComponent?.ProviderToUse` starting out `null`
-     * and resolving a tick later has the same shape. Both resolve against the wrong database, and a
-     * wrong database here is a wrong answer rather than an error.
      */
     @Input()
     public set Provider(value: IMetadataProvider | null | undefined) {
@@ -211,44 +213,43 @@ export class RelatedChipsComponent implements OnDestroy {
     /**
      * Emitted when a chip is clicked, with `OpenInNewTab` set for ctrl/cmd-click.
      *
-     * Wire it to the host form's `OnFormNavigate`. Nothing happens if it is left unbound — which is
-     * why the chip is drawn as a real `<button>` only because a click always has somewhere to go in
-     * practice; a host that binds nothing gets a row that looks live and is not.
+     * Wire it to the host form's `OnFormNavigate`. When left unbound (and `[Clickable]` is not
+     * explicitly `true`), chips render as non-interactive `<span>` badges rather than buttons (#318).
      */
     @Output() public Navigate = new EventEmitter<FormNavigationEvent>();
+
+    /** Whether chips should render as interactive buttons (`Clickable ?? Navigate.observed`). */
+    public get IsClickable(): boolean {
+        return this.Clickable ?? this.Navigate.observed;
+    }
 
     /** The provider actually used — the one passed in, or the ambient one. */
     public get ProviderToUse(): IMetadataProvider {
         return this.provider ?? Metadata.Provider;
     }
 
-    public Open(chip: ResolvedRelatedChip, event: MouseEvent): void {
-        event.preventDefault();
-        this.Navigate.emit(RelatedChipNavigation(chip, event));
+    public Open(chip: ResolvedRelatedChip, event?: MouseEvent): void {
+        event?.preventDefault();
+        if (!this.IsClickable) {
+            return;
+        }
+        this.Navigate.emit(
+            RelatedChipNavigation(chip, event ?? { ctrlKey: false, metaKey: false }),
+        );
     }
 
     public ngOnDestroy(): void {
-        this.destroyed = true;
+        this.gate.Cancel();
     }
 
     /**
      * Drop what is on screen and queue a fresh resolve for the next microtask.
-     *
-     * CLEARED FIRST because the chips on screen describe the record we just left. A form container
-     * reuses this instance across records, so a header moving from Deal A to Deal B that kept A's
-     * chips for the length of the reads would offer a click that navigates to A's related record —
-     * a wrong destination, not a slow one.
-     *
-     * QUEUED because every input that feeds a resolve is assigned in the same change-detection pass,
-     * one after another. Resolving inside the setter would read a half-applied set of inputs, and
-     * would read twice. The microtask runs once both have landed; the generation it was queued under
-     * makes each superseded one drop itself.
      */
     private scheduleResolve(): void {
-        const generation = ++this.generation;
+        const generation = this.gate.Begin();
         this.Chips = [];
         void Promise.resolve().then(() => {
-            if (this.generation !== generation || this.destroyed) {
+            if (!this.gate.IsCurrent(generation)) {
                 return;
             }
             return this.resolve(generation);
@@ -257,10 +258,6 @@ export class RelatedChipsComponent implements OnDestroy {
 
     /**
      * Resolve every link concurrently, then publish the survivors in the caller's order.
-     *
-     * Published in one assignment rather than chip by chip: a row that grows an item at a time
-     * reflows the header under the reader, and the links are few enough that the slowest read is the
-     * whole wait either way.
      */
     private async resolve(generation: number): Promise<void> {
         const links = this.links;
@@ -272,19 +269,15 @@ export class RelatedChipsComponent implements OnDestroy {
         const entities = provider?.Entities ?? [];
         const runView = RunView.FromMetadataProvider(provider);
 
-        const resolved = await Promise.all(
-            links.map((link) =>
-                ResolveRelatedChip(link, entities, (params) =>
-                    runView.RunView<Record<string, unknown>>({ ...params, ResultType: 'simple' }),
-                ),
-            ),
+        const resolved = await ResolveRelatedChips(links, entities, (params) =>
+            runView.RunView<Record<string, unknown>>({ ...params, ResultType: 'simple' }),
         );
 
-        if (this.generation !== generation || this.destroyed) {
+        if (!this.gate.IsCurrent(generation)) {
             return;
         }
 
-        this.Chips = resolved.filter((chip): chip is ResolvedRelatedChip => chip !== null);
+        this.Chips = resolved;
         this.cdr.detectChanges();
     }
 }
