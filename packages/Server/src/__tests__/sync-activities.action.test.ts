@@ -27,7 +27,7 @@ vi.mock('@memberjunction/actions', () => ({ BaseAction: class {} }));
 import type { IMetadataProvider } from '@memberjunction/core';
 import type { ActionResultSimple, RunActionParams } from '@memberjunction/actions-base';
 import { ActivitySyncEngine, IsDatabaseProvider, type FleetRunResult } from '@mj-biz-apps/common-activity-sync';
-import { SyncActivitiesAction } from '../custom/sync-activities.action';
+import { ReadConnectionIDs, ReadDryRun, SyncActivitiesAction } from '../custom/sync-activities.action';
 
 class TestableAction extends SyncActivitiesAction {
     public Run(params: RunActionParams): Promise<ActionResultSimple> {
@@ -35,9 +35,12 @@ class TestableAction extends SyncActivitiesAction {
     }
 }
 
-function params(userOverrides: Record<string, unknown> = { Type: 'Owner' }): RunActionParams {
+function params(
+    userOverrides: Record<string, unknown> = { Type: 'Owner' },
+    inputs: Array<{ Name: string; Value: unknown }> = [],
+): RunActionParams {
     return {
-        Params: [],
+        Params: inputs,
         ContextUser: { ID: 'user-1', ...userOverrides },
     } as unknown as RunActionParams;
 }
@@ -159,5 +162,47 @@ describe('SyncActivitiesAction', () => {
         vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockImplementation(writeOnHandedProvider);
         const result = await new TestableAction().Run(params(userOverrides));
         expect(result.Success).toBe(true);
+    });
+
+    it('runs live and Scheduled when no DryRun is passed, which is what the hourly job does', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockResolvedValue(emptyFleet());
+
+        await new TestableAction().Run(params());
+
+        expect(run.mock.calls[0][0]).toMatchObject({ DryRun: false, TriggerType: 'Scheduled', ConnectionIDs: [] });
+    });
+
+    it('passes a dry run and the named connections to the engine, and reports DryRun back', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockResolvedValue(emptyFleet());
+        const p = params(undefined, [
+            { Name: 'DryRun', Value: 'true' },
+            { Name: 'ConnectionIDs', Value: ' id-1 , id-2 ,' },
+        ]);
+
+        await new TestableAction().Run(p);
+
+        expect(run.mock.calls[0][0]).toMatchObject({
+            DryRun: true,
+            TriggerType: 'Manual',
+            ConnectionIDs: ['id-1', 'id-2'],
+        });
+        expect(p.Params?.find((x) => x.Name === 'DryRun')?.Value).toBe(true);
+    });
+});
+
+describe('reading the dry-run inputs', () => {
+    it('treats only true, "true" and "1" as a dry run', () => {
+        expect(ReadDryRun(true)).toBe(true);
+        expect(ReadDryRun(' TRUE ')).toBe(true);
+        expect(ReadDryRun('1')).toBe(true);
+        for (const live of [undefined, null, '', 'false', '0', 'yes', false]) {
+            expect(ReadDryRun(live)).toBe(false);
+        }
+    });
+
+    it('accepts an array or a comma-separated string and drops blanks', () => {
+        expect(ReadConnectionIDs(['a', ' b ', ''])).toEqual(['a', 'b']);
+        expect(ReadConnectionIDs('a,,b')).toEqual(['a', 'b']);
+        expect(ReadConnectionIDs(undefined)).toEqual([]);
     });
 });
