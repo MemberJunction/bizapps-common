@@ -1,0 +1,20 @@
+[
+  {
+    "fields": {
+      "Name": "Common: Directory People Per Day",
+      "CategoryID": "@lookup:MJ: Query Categories.Name=Common",
+      "UserQuestion": "How many people were added on each of the last seven business days?",
+      "Description": "The directory dashboard's \"people added\" bars: one row with a count for each of the last seven business days, today first.",
+      "TechnicalDescription": "Grain: one row. PeopleAddedD0 (today) to PeopleAddedD6: vwPeople rows whose __mj_CreatedAt falls on that business day, by fnBusinessDayOf against fnBusinessToday().Today (the BizApps business time zone). fnBusinessDayOf runs only on rows created in the last eight days. Separate from Common: Directory Dashboard Summary because fnBusinessDayOf cannot be inlined, which makes any statement that calls it single-threaded. No template parameters.",
+      "SQL": "@file:SQL/directory-people-per-day.sql",
+      "Status": "Approved",
+      "QualityRank": 9,
+      "ExecutionCostRank": 1,
+      "UsesTemplate": false
+    },
+    "relatedEntities": {},
+    "primaryKey": {
+      "ID": "6C0A1000-0001-4000-A000-000000000010"
+    }
+  }
+]
