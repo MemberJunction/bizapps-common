@@ -1,5 +1,17 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.63.0
+
+### Minor Changes
+
+- 1c1c754: `Common.SyncActivities` takes two optional inputs, `DryRun` and `ConnectionIDs`. A dry run previews what each connection would file without writing an Activity or moving a watermark, and it includes Paused connections. That lets a new mailbox be built Paused, reviewed, and only then set Active. `ConnectionIDs` narrows a run to the named connections and reports each one that did not run. The hourly job passes neither input, so it behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
 ## 5.62.0
 
 ### Patch Changes
