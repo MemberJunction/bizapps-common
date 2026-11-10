@@ -395,12 +395,11 @@
         },
         {
           "_comments": [
-            "A domain is often the only thing that tells two same-named organizations apart, so the party",
-            "picker shows it on the second line. It is NOT searched, for now. Website is stored as entered:",
-            "on AIDP 77% of values carry a scheme (https://...), so BeginsWith 'acme' misses most of them,",
-            "and user search ORs every searched field, so one leg without an index turns each lookup into",
-            "a scan of Organization. Reaching the domain needs a normalized domain column to search",
-            "instead. Pin AutoUpdate=0 so CodeGen cannot flip either setting back."
+            "Website itself is NOT searched. It is stored as entered and most values carry a scheme",
+            "(https://...), so BeginsWith 'acme' misses most of them, and user search ORs every searched",
+            "field, so one leg without an index turns each lookup into a scan of Organization. The domain",
+            "is searched through WebsiteDomain (below) instead. Pin AutoUpdate=0 so CodeGen cannot flip",
+            "either setting back."
           ],
           "fields": {
             "IncludeInUserSearchAPI": false,
@@ -414,6 +413,23 @@
           "sync": {
             "lastModified": "2026-09-30T19:13:12.335Z",
             "checksum": "69bef234c91851279586c2e6ce0ce0a49e0579f18c924c53fd5b02ec97fcdb0f"
+          }
+        },
+        {
+          "_comments": [
+            "Organization search by website domain (#329). WebsiteDomain is Website lower-cased with the",
+            "scheme, a leading www. and any path removed, stored and indexed (IX_Organization_WebsiteDomain),",
+            "so BeginsWith 'acme' is an index seek and finds https://www.acme-widgets.example. Pin",
+            "AutoUpdate=0 so CodeGen cannot flip either setting back."
+          ],
+          "fields": {
+            "IncludeInUserSearchAPI": true,
+            "UserSearchPredicateAPI": "BeginsWith",
+            "AutoUpdateIncludeInUserSearchAPI": false,
+            "AutoUpdateUserSearchPredicate": false
+          },
+          "primaryKey": {
+            "ID": "@lookup:MJ: Entity Fields.Name=WebsiteDomain&EntityID=@parent:ID"
           }
         },
         {
