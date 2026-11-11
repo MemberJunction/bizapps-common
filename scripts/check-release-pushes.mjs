@@ -156,11 +156,13 @@ function protectedRefspec(args) {
 
 /**
  * A refspec written as an expression that, in THIS repository's events, names a protected branch:
- * `base_ref` of a PR into next or main, the default branch (next), `ref_name` on a push to main. A
- * plain variable (`$BRANCH`) is unknowable to a static reader and is not matched — publish.yml
- * pushes `chore/backmerge-*` exactly that way.
+ * `base_ref` / `pull_request.base.ref` of a PR into next or main, the default branch (next), and
+ * `ref_name`, `github.ref`, `github.event.ref` or `$GITHUB_REF` on a push to main (the last three
+ * are `refs/heads/main`). A plain variable (`$BRANCH`) is unknowable to a static reader and is not
+ * matched — publish.yml pushes `release-back-merge/*` exactly that way.
  */
-const RESOLVES_TO_PROTECTED = /\bbase_ref\b|\bref_name\b|GITHUB_BASE_REF|GITHUB_REF_NAME|default_branch/i;
+const RESOLVES_TO_PROTECTED =
+    /\bbase_ref\b|\bref_name\b|\b(?:github|event|base)\.ref\b|GITHUB_BASE_REF|GITHUB_REF_NAME|\bGITHUB_REF\b|default_branch/i;
 
 /** The first push to a protected branch in one logical shell line, as `{ ref }`, or `null`. */
 function findShellPush(logicalLine) {
