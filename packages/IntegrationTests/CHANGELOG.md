@@ -1,5 +1,12 @@
 # @mj-biz-apps/common-integration-tests
 
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
 ## 5.63.0
 
 ### Patch Changes
