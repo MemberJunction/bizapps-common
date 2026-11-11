@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { EntityInfo } from '@memberjunction/core';
+import { LogError, type EntityInfo } from '@memberjunction/core';
 import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { NavigationService } from '@memberjunction/ng-shared';
 import { EntityViewerModule, type EntityViewerConfig, type RecordOpenedEvent } from '@memberjunction/ng-entity-viewer';
@@ -26,6 +26,10 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
  *
  * Headline counts come from MJ Query `Common: Directory Dashboard Summary`
  * (COUNT over the whole party file). RunView MaxRows must not feed these tiles.
+ *
+ * The page does not wait for the counts. On a large party file the summary takes seconds, so the
+ * page renders once the two grid views have loaded, and the count cards say "Counting…" until the
+ * summary arrives. Every load ends its loading state whether it succeeds, fails or throws.
  */
 @Component({
     selector: 'bizapps-common-dashboard-page',
@@ -56,126 +60,130 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
             @if (IsLoading) {
                 <div class="mjc-muted">Loading the directory…</div>
             } @else {
-                <bizapps-stat-row [Error]="Headline.Error">
-                    <bizapps-stat-tile
-                        Label="People"
-                        Icon="fa-solid fa-user"
-                        [Value]="Headline.ActivePeopleCount"
-                        [Detail]="Headline.PeopleDetail"
-                        [Clickable]="true"
-                        (Clicked)="OpenPeople()" />
-                    <bizapps-stat-tile
-                        Label="Organizations"
-                        Icon="fa-solid fa-building"
-                        [Value]="Headline.ActiveOrganizationCount"
-                        [Detail]="Headline.OrganizationDetail"
-                        [Clickable]="true"
-                        (Clicked)="OpenOrganizations()" />
-                    <bizapps-stat-tile
-                        Label="Relationships"
-                        Icon="fa-solid fa-link"
-                        [Value]="Headline.RelationshipCount"
-                        Detail="Who reports to whom, who works where"
-                        [Clickable]="false" />
-                    <bizapps-stat-tile
-                        Label="Gaps"
-                        Icon="fa-solid fa-clipboard-check"
-                        [Value]="Headline.GapCount"
-                        Detail="Missing email, org, type, or website"
-                        [Tone]="Headline.GapTone"
-                        [Clickable]="false" />
-                </bizapps-stat-row>
+                @if (SummaryLoading) {
+                    <div class="mjc-muted">Counting the directory…</div>
+                } @else {
+                    <bizapps-stat-row [Error]="Headline.Error">
+                        <bizapps-stat-tile
+                            Label="People"
+                            Icon="fa-solid fa-user"
+                            [Value]="Headline.ActivePeopleCount"
+                            [Detail]="Headline.PeopleDetail"
+                            [Clickable]="true"
+                            (Clicked)="OpenPeople()" />
+                        <bizapps-stat-tile
+                            Label="Organizations"
+                            Icon="fa-solid fa-building"
+                            [Value]="Headline.ActiveOrganizationCount"
+                            [Detail]="Headline.OrganizationDetail"
+                            [Clickable]="true"
+                            (Clicked)="OpenOrganizations()" />
+                        <bizapps-stat-tile
+                            Label="Relationships"
+                            Icon="fa-solid fa-link"
+                            [Value]="Headline.RelationshipCount"
+                            Detail="Who reports to whom, who works where"
+                            [Clickable]="false" />
+                        <bizapps-stat-tile
+                            Label="Gaps"
+                            Icon="fa-solid fa-clipboard-check"
+                            [Value]="Headline.GapCount"
+                            Detail="Missing email, org, type, or website"
+                            [Tone]="Headline.GapTone"
+                            [Clickable]="false" />
+                    </bizapps-stat-row>
 
-                <div class="mjc-split">
-                    <section class="mjc-card">
-                        <header class="mjc-card__head">
-                            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-                            <h2>Needs someone</h2>
-                        </header>
-                        <div class="mjc-card__body">
-                            @for (queue of Queues; track queue.Label) {
-                                <button type="button" class="mjc-queue" (click)="OpenPage(queue.PageId)">
-                                    <span class="mjc-queue__icon" [attr.data-tone]="queue.Tone">
-                                        <i [class]="queue.Icon" aria-hidden="true"></i>
-                                    </span>
-                                    <span class="mjc-queue__body">
-                                        <span class="mjc-queue__label">{{ queue.Label }}</span>
-                                        @if (queue.Note) {
-                                            <span class="mjc-queue__note">{{ queue.Note }}</span>
-                                        }
-                                    </span>
-                                    <b class="mjc-queue__count">{{ queue.Count }}</b>
-                                    <i class="fa-solid fa-chevron-right mjc-queue__chev" aria-hidden="true"></i>
-                                </button>
-                            } @empty {
-                                @if (Headline.ReadFailed) {
-                                    <mj-empty-state
-                                        Variant="warning"
-                                        Title="Could not be read"
-                                        Size="compact" />
-                                } @else {
-                                    <mj-empty-state
-                                        Icon="fa-solid fa-circle-check"
-                                        Title="Nothing is waiting"
-                                        Size="compact" />
-                                }
-                            }
-                        </div>
-                    </section>
-
-                    <section class="mjc-card">
-                        <header class="mjc-card__head">
-                            <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
-                            <h2>People added</h2>
-                            <span class="mjc-card__meta">last 7 days</span>
-                        </header>
-                        <div class="mjc-card__body">
-                            @if (Headline.ReadFailed) {
-                                <mj-empty-state
-                                    Variant="warning"
-                                    Title="Could not be read"
-                                    Size="compact" />
-                            } @else {
-                                <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
-                                    @for (bar of PeoplePerDay; track bar.Label) {
-                                        <div class="mjc-bars__col">
-                                            <span class="mjc-bars__value">{{ bar.Value }}</span>
-                                            <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
-                                            <span class="mjc-bars__label">{{ bar.Label }}</span>
-                                        </div>
+                    <div class="mjc-split">
+                        <section class="mjc-card">
+                            <header class="mjc-card__head">
+                                <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                                <h2>Needs someone</h2>
+                            </header>
+                            <div class="mjc-card__body">
+                                @for (queue of Queues; track queue.Label) {
+                                    <button type="button" class="mjc-queue" (click)="OpenPage(queue.PageId)">
+                                        <span class="mjc-queue__icon" [attr.data-tone]="queue.Tone">
+                                            <i [class]="queue.Icon" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="mjc-queue__body">
+                                            <span class="mjc-queue__label">{{ queue.Label }}</span>
+                                            @if (queue.Note) {
+                                                <span class="mjc-queue__note">{{ queue.Note }}</span>
+                                            }
+                                        </span>
+                                        <b class="mjc-queue__count">{{ queue.Count }}</b>
+                                        <i class="fa-solid fa-chevron-right mjc-queue__chev" aria-hidden="true"></i>
+                                    </button>
+                                } @empty {
+                                    @if (Headline.ReadFailed) {
+                                        <mj-empty-state
+                                            Variant="warning"
+                                            Title="Could not be read"
+                                            Size="compact" />
+                                    } @else {
+                                        <mj-empty-state
+                                            Icon="fa-solid fa-circle-check"
+                                            Title="Nothing is waiting"
+                                            Size="compact" />
                                     }
-                                </div>
-                            }
-                        </div>
-                    </section>
+                                }
+                            </div>
+                        </section>
 
-                    <section class="mjc-card">
-                        <header class="mjc-card__head">
-                            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
-                            <h2>Organization types</h2>
-                        </header>
-                        <div class="mjc-card__body">
-                            @for (row of OrganizationTypeMix; track row.Label) {
-                                <div class="mjc-mix">
-                                    <span class="mjc-mix__label">{{ row.Label }}</span>
-                                    <span class="mjc-mix__track">
-                                        <span class="mjc-mix__fill" [style.width.%]="mixWidth(row)"></span>
-                                    </span>
-                                    <span class="mjc-mix__value">{{ row.Value }}</span>
-                                </div>
-                            } @empty {
+                        <section class="mjc-card">
+                            <header class="mjc-card__head">
+                                <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+                                <h2>People added</h2>
+                                <span class="mjc-card__meta">last 7 days</span>
+                            </header>
+                            <div class="mjc-card__body">
                                 @if (Headline.ReadFailed) {
                                     <mj-empty-state
                                         Variant="warning"
                                         Title="Could not be read"
                                         Size="compact" />
                                 } @else {
-                                    <p class="mjc-muted">No organizations yet.</p>
+                                    <div class="mjc-bars" role="img" [attr.aria-label]="'People added per day, last 7 days'">
+                                        @for (bar of PeoplePerDay; track bar.Label) {
+                                            <div class="mjc-bars__col">
+                                                <span class="mjc-bars__value">{{ bar.Value }}</span>
+                                                <span class="mjc-bars__fill" [class.is-current]="bar.Current" [style.height.%]="barHeight(bar)"></span>
+                                                <span class="mjc-bars__label">{{ bar.Label }}</span>
+                                            </div>
+                                        }
+                                    </div>
                                 }
-                            }
-                        </div>
-                    </section>
-                </div>
+                            </div>
+                        </section>
+
+                        <section class="mjc-card">
+                            <header class="mjc-card__head">
+                                <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                                <h2>Organization types</h2>
+                            </header>
+                            <div class="mjc-card__body">
+                                @for (row of OrganizationTypeMix; track row.Label) {
+                                    <div class="mjc-mix">
+                                        <span class="mjc-mix__label">{{ row.Label }}</span>
+                                        <span class="mjc-mix__track">
+                                            <span class="mjc-mix__fill" [style.width.%]="mixWidth(row)"></span>
+                                        </span>
+                                        <span class="mjc-mix__value">{{ row.Value }}</span>
+                                    </div>
+                                } @empty {
+                                    @if (Headline.ReadFailed) {
+                                        <mj-empty-state
+                                            Variant="warning"
+                                            Title="Could not be read"
+                                            Size="compact" />
+                                    } @else {
+                                        <p class="mjc-muted">No organizations yet.</p>
+                                    }
+                                }
+                            </div>
+                        </section>
+                    </div>
+                }
 
                 <div class="mjc-split mjc-split--wide">
                     <section class="mjc-card">
@@ -205,23 +213,27 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
                             <h2>Worth a look</h2>
                         </header>
                         <div class="mjc-card__body">
-                            @for (item of WorthALook; track item.RecordID) {
-                                <mj-alert [Variant]="item.Tone" [Icon]="item.Icon" Role="note">
-                                    <strong>{{ item.Headline }}</strong>
-                                    {{ item.Detail }}
-                                    <button type="button" class="mjc-link" (click)="OpenAttention(item)">Work it →</button>
-                                </mj-alert>
-                            } @empty {
-                                @if (Headline.ReadFailed) {
-                                    <mj-empty-state
-                                        Variant="warning"
-                                        Title="Could not be read"
-                                        Size="compact" />
-                                } @else {
-                                    <mj-empty-state
-                                        Icon="fa-solid fa-circle-check"
-                                        Title="Nothing is asking for attention"
-                                        Size="compact" />
+                            @if (SummaryLoading) {
+                                <p class="mjc-muted">Counting…</p>
+                            } @else {
+                                @for (item of WorthALook; track item.RecordID) {
+                                    <mj-alert [Variant]="item.Tone" [Icon]="item.Icon" Role="note">
+                                        <strong>{{ item.Headline }}</strong>
+                                        {{ item.Detail }}
+                                        <button type="button" class="mjc-link" (click)="OpenAttention(item)">Work it →</button>
+                                    </mj-alert>
+                                } @empty {
+                                    @if (Headline.ReadFailed) {
+                                        <mj-empty-state
+                                            Variant="warning"
+                                            Title="Could not be read"
+                                            Size="compact" />
+                                    } @else {
+                                        <mj-empty-state
+                                            Icon="fa-solid fa-circle-check"
+                                            Title="Nothing is asking for attention"
+                                            Size="compact" />
+                                    }
                                 }
                             }
                         </div>
@@ -523,7 +535,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
         `,
     ],
 })
-export class CommonDashboardPageComponent implements OnInit {
+export class CommonDashboardPageComponent implements OnInit, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly navigation = inject(NavigationService, { optional: true });
 
@@ -535,7 +547,11 @@ export class CommonDashboardPageComponent implements OnInit {
         showViewModeToggle: false,
     };
 
+    /** The two grid views are loading; the page shows nothing else until they are done. */
     public IsLoading = true;
+    /** The summary counts are loading; the count cards say so until they are done. */
+    public SummaryLoading = true;
+    private destroyed = false;
     public Queues: DirectoryQueue[] = [];
     public PeoplePerDay: DirectoryDayBar[] = [];
     public OrganizationTypeMix: DirectoryBarRow[] = [];
@@ -552,24 +568,47 @@ export class CommonDashboardPageComponent implements OnInit {
     public Headline: DirectoryHeadline = BuildDirectoryHeadline(null);
 
     public async ngOnInit(): Promise<void> {
-        const [summary, peopleView, relView] = await Promise.all([
-            LoadDirectoryDashboardSummary(),
-            LoadLatestPeopleView(),
-            LoadLatestRelationshipsView(),
-        ]);
-        this.Headline = BuildDirectoryHeadline(summary);
-        if (summary) {
-            this.Queues = summary.Queues;
-            this.PeoplePerDay = summary.PeoplePerDay;
-            this.OrganizationTypeMix = summary.OrganizationTypeMix;
-            this.WorthALook = summary.WorthALook;
+        void this.loadSummary();
+        try {
+            const [peopleView, relView] = await Promise.all([LoadLatestPeopleView(), LoadLatestRelationshipsView()]);
+            this.PersonEntity = peopleView.entity;
+            this.LatestPeopleView = peopleView.view;
+            this.RelationshipEntity = relView.entity;
+            this.LatestRelationshipsView = relView.view;
+        } catch (e) {
+            LogError(`Common: directory dashboard views failed to load — ${e instanceof Error ? e.message : String(e)}`);
+        } finally {
+            this.IsLoading = false;
+            this.render();
         }
-        this.PersonEntity = peopleView.entity;
-        this.LatestPeopleView = peopleView.view;
-        this.RelationshipEntity = relView.entity;
-        this.LatestRelationshipsView = relView.view;
-        this.IsLoading = false;
-        this.cdr.detectChanges();
+    }
+
+    public ngOnDestroy(): void {
+        this.destroyed = true;
+    }
+
+    private async loadSummary(): Promise<void> {
+        try {
+            const summary = await LoadDirectoryDashboardSummary();
+            this.Headline = BuildDirectoryHeadline(summary);
+            if (summary) {
+                this.Queues = summary.Queues;
+                this.PeoplePerDay = summary.PeoplePerDay;
+                this.OrganizationTypeMix = summary.OrganizationTypeMix;
+                this.WorthALook = summary.WorthALook;
+            }
+        } catch (e) {
+            LogError(`Common: directory dashboard summary failed to load — ${e instanceof Error ? e.message : String(e)}`);
+            this.Headline = BuildDirectoryHeadline(null);
+        } finally {
+            this.SummaryLoading = false;
+            this.render();
+        }
+    }
+
+    /** The loads finish after the user may have left the page; a destroyed view cannot be checked. */
+    private render(): void {
+        if (!this.destroyed) this.cdr.detectChanges();
     }
 
     public barHeight(bar: DirectoryDayBar): number {
