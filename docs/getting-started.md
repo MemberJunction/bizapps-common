@@ -70,7 +70,8 @@ This creates the `__mj_BizAppsCommon` schema in your database with all 11 tables
 
 > **PostgreSQL / Aurora:** set `DB_PLATFORM=postgresql` (and `DB_PORT=5432`) in your `.env`. The same
 > `npm run mj:migrate` then runs the converted PostgreSQL migrations from `migrations-pg/`
-> automatically. See **[docs/postgresql.md](postgresql.md)** for the full PostgreSQL install flow and
+> automatically. The swap works only because the script passes no `--dir`; a hand-run
+> `mj migrate --dir ./migrations` runs the T‑SQL set. See **[docs/postgresql.md](postgresql.md)** for the full PostgreSQL install flow and
 > how `migrations-pg/` is kept in sync.
 
 ### 4. Sync Metadata
