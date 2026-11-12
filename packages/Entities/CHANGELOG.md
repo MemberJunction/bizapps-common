@@ -1,5 +1,18 @@
 # Change Log - mj_generatedentities
 
+## 5.64.0
+
+### Minor Changes
+
+- eb8654d: Release seed for the Directory dashboard fix: `V…__v5.64.x__Metadata_Sync` updates the `Common: Directory Dashboard Summary` query's SQL and adds its result fields, and creates the `Common: Directory People Per Day` query with its fields. The summary update is applied by ID; everything else is create-only, guarded on its ID or key. It has a Postgres counterpart.
+
+## 5.63.0
+
+### Minor Changes
+
+- 0a36764: The 5.63 Metadata_Sync ships the Sync Activities action's DryRun and ConnectionIDs inputs and its updated description, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back.
+- b32b175: Move to MemberJunction's 6.2 LTS line: every `@memberjunction/*` range and the core/global overrides are `^6.2.1` (exact `6.2.1` devDependency anchors), and `mjVersionRange` is `>=6.2.1 <7.0.0`. Hosts must run MJ 6.2.1 or later to install this release.
+
 ## 5.62.0
 
 ### Minor Changes

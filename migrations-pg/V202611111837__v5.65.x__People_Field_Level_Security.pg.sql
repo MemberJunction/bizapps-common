@@ -39,7 +39,7 @@ SET standard_conforming_strings = on;
 -- ===================== Data (INSERT/UPDATE/DELETE) =====================
 
 -- =============================================================================
--- Migration: V202611081200__v5.61.x__People_Field_Level_Security.sql
+-- Migration: V202611111837__v5.65.x__People_Field_Level_Security.sql
 -- Description: Turn on field-level security for MJ_BizApps_Common: People and
 --              give every role that can read People a permission row on each
 --              restrictable field, computed from this host's own permissions
