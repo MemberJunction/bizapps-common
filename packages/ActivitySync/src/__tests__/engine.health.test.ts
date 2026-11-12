@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
     collapseExtensionStamps,
+    decidingRuleFor,
     healthErrorFromResults,
+    reusableConnection,
     type SyncEngineResult,
 } from '../ActivitySyncEngine.js';
 
@@ -77,5 +79,37 @@ describe('collapseExtensionStamps', () => {
             { ID: 'a', LastError: 'matcher failed' },
             { ID: 'b', LastError: null },
         ]);
+    });
+
+    it('treats the same id in different casing as one extension row (#314)', () => {
+        const collapsed = collapseExtensionStamps([
+            { ID: 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890', LastError: null },
+            { ID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', LastError: 'matcher failed' },
+        ]);
+        expect(collapsed).toEqual([{ ID: 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890', LastError: 'matcher failed' }]);
+    });
+});
+
+describe('ID casing in the engine lookups (#314)', () => {
+    const UPPER = 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890';
+    const LOWER = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+    it('reuses the fleet-loaded connection when only the casing of its ID differs', () => {
+        const loaded = { ID: UPPER, Status: 'Active' };
+        expect(reusableConnection(loaded, LOWER)).toBe(loaded);
+    });
+
+    it('does not reuse a connection with a different ID, or none', () => {
+        expect(reusableConnection({ ID: UPPER }, '00000000-0000-0000-0000-000000000001')).toBeUndefined();
+        expect(reusableConnection(undefined, LOWER)).toBeUndefined();
+    });
+
+    it('finds the deciding rule when only the casing of its ID differs', () => {
+        const rule = { ID: UPPER, IncludeAttachments: true };
+        expect(decidingRuleFor([{ ID: '00000000-0000-0000-0000-000000000001' }, rule], LOWER)).toBe(rule);
+    });
+
+    it('returns no rule when the verdict names none', () => {
+        expect(decidingRuleFor([{ ID: UPPER }], null)).toBeNull();
     });
 });

@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BaseEntity, LogError, Metadata, RunQuery, RunView } from '@memberjunction/core';
-import { EscapeSQLString } from '@memberjunction/global';
+import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { MJComboboxComponent } from '@memberjunction/ng-ui-components';
 import { Subject, Subscription, debounceTime, from, switchMap } from 'rxjs';
@@ -80,7 +80,7 @@ class PartySearchTimeoutError extends Error {}
                     (ValueChange)="OnSelect($event)"
                 >
                     <ng-template #mjComboboxItem let-item>
-                        @if (item.ID === CreateOptionID) {
+                        @if (item.ID === CreateOptionID) { <!-- uuid-compare-ok: sentinel string, not a record ID -->
                             <div class="bizapps-party-option bizapps-party-option-create">
                                 <span><i class="fa-solid fa-plus" aria-hidden="true"></i> {{ item.Name }}</span>
                             </div>
@@ -330,14 +330,14 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * so a list built from an unsaved record shows the name rather than nothing.
      */
     public OnSelect(value: unknown): void {
-        if (value === PARTY_CREATE_OPTION_ID) {
+        if (value === PARTY_CREATE_OPTION_ID) { // uuid-compare-ok: sentinel string, not a record ID
             this.OnCreateNew();
             this.RefreshComboboxText();
             return;
         }
         const oldValue = this.Record.Get(this.FieldName);
         const newValue = value ? String(value) : null;
-        const picked = this.Options.find((option) => option.ID === newValue);
+        const picked = this.Options.find((option) => UUIDsEqual(option.ID, newValue));
         this.Record.Set(this.FieldName, newValue);
         const nameField = this.fieldInfo()?.RelatedEntityNameFieldMap;
         if (nameField && (picked || !newValue)) {
@@ -490,7 +490,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         if (!result.Success) {
             LogError(`bizapps-party-field: could not read the name of ${field.RelatedEntity} ${id}: ${result.ErrorMessage}`);
         }
-        if (name && this.CurrentID === id) {
+        if (name && UUIDsEqual(this.CurrentID, id)) {
             this.current = [{ ID: id, Name: String(name), Detail: null }];
             this.Options = this.current;
             this.RefreshComboboxText();

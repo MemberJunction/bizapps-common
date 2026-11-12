@@ -27,7 +27,7 @@
 
         @for (cm of ContactMethods; track cm.ID) {
             <!-- Edit mode for this row -->
-            @if (EditingId === cm.ID) {
+            @if (IsEditing(cm)) {
                 <div class="cm-flat-edit-row">
                     <div class="form-row">
                         <div class="form-field type-field">
@@ -112,7 +112,7 @@
                                     </span>
                                 }
                             </span>
-                            @if (ConsentHistoryFor === cm.ID) {
+                            @if (IsShowingConsentHistory(cm)) {
                                 <div class="consent-history" (mouseenter)="onShowConsentHistory(cm)" (mouseleave)="onHideConsentHistory()">
                                     <div class="consent-history-title">Consent history · {{ cm.Value }}</div>
                                     @if (ConsentHistoryLoading) {

@@ -79,11 +79,12 @@ jobs:
       # `--batch --yes` on the dearmor: the runner image already ships
       # /usr/share/keyrings/microsoft-prod.gpg but not sqlcmd, so this block runs and gpg then
       # asks to overwrite a file that is already there. With no tty it cannot ask and exits 2
-      # ("cannot open '/dev/tty'"). The sibling block in changes.yml survives the same failure
-      # only because it appends `|| true` to every line; that is not wanted here — a genuinely
-      # broken install must still fail this step rather than reach the check as a missing tool.
+      # ("cannot open '/dev/tty'"). No command is masked with `|| true`: a broken install must
+      # fail this step rather than reach the check as a missing tool. changes.yml runs the same
+      # install (scripts/workflows.spec.mjs keeps the two identical).
       - name: Install sqlcmd
         run: |
+          set -o pipefail
           if ! command -v sqlcmd &> /dev/null && [ ! -x /opt/mssql-tools18/bin/sqlcmd ]; then
             curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
             curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
