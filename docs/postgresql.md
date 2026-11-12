@@ -33,7 +33,7 @@ On SQL Server the flow is identical without `DB_PLATFORM` (defaults to `sqlserve
 
 ## How platform selection works (inherited from the MJ CLI — no custom code)
 
-The mechanism is entirely provided by `@memberjunction/cli` (declared at `^6.1.6`, the repo's MJ floor).
+The mechanism is entirely provided by `@memberjunction/cli` (declared at `^6.2.1`, the repo's MJ floor).
 BizApps Common does **not** reimplement any of it:
 
 - **`DB_PLATFORM`** (`sqlserver` | `postgresql`) is read by the CLI. There is no new config key to set
@@ -174,8 +174,8 @@ its own test rows) and exits non-zero on any failure. Requires a PG instance wit
 
 ## Version note — the MJ floor
 
-BizApps Common declares `@memberjunction/*` at **`^6.1.6`**, the MJ 6.1 LTS line (`mj-app.json`
-`mjVersionRange` is `>=6.1.6 <7.0.0`). PostgreSQL needs MJ 5.39.0 or later, which the floor covers:
+BizApps Common declares `@memberjunction/*` at **`^6.2.1`**, the MJ 6.2 LTS line (`mj-app.json`
+`mjVersionRange` is `>=6.2.1 <7.0.0`). PostgreSQL needs MJ 5.39.0 or later, which the floor covers:
 
 - **App-schema `mj sync push` works.** Seeding the reference tables (AddressTypes, etc.) calls the
   app-schema `spCreate*` functions. In MJ ≤ 5.37.0 the PostgreSQL data provider hardcoded the **core**
