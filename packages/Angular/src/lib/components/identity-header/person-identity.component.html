@@ -74,7 +74,13 @@
                     <div class="biz-hero__stat">
                         <span class="biz-hero__stat-label">Organization</span>
                         @if (Record.CurrentOrganizationID) {
-                            <button type="button" class="biz-hero__stat-val" (click)="OnOrgClick($event)">
+                            <button type="button" class="biz-hero__stat-val"
+                                    [mjRecordLink]="Record"
+                                    FieldName="CurrentOrganizationID"
+                                    EntityName="MJ_BizApps_Common: Organizations"
+                                    [HandleClick]="false"
+                                    (Navigate)="Navigate.emit($event)"
+                                    (click)="OnOrgClick($event)">
                                 {{ Record.CurrentOrganizationName }}
                             </button>
                         } @else {
