@@ -13,6 +13,7 @@
  *   contacts-addresses   CA1–CA3   address links, contact exclusivity, primary email
  *   relationships        R1–R4     employment, exclusivity, person-to-person, status
  *   activities           A1–A5     types, regarding/xor/unresolved links, ExternalID, sync
+ *   activity-sync        AS-*      Common.SyncActivities over GraphQL on a sandbox host (fixture mail + calendar)
  *   party-lookup         PL1–PL3   party lookup queries: prefix, email/website domain, literal wildcards
  *   sender-identities    SI1–SI3   company sender identities: normalisation, duplicates, single default
  */
@@ -30,6 +31,7 @@ export * from './checks/organizations.checks.js';
 export * from './checks/contacts-addresses.checks.js';
 export * from './checks/relationships.checks.js';
 export * from './checks/activities.checks.js';
+export * from './checks/activity-sync.checks.js';
 export * from './checks/party-lookup.checks.js';
 export * from './checks/sender-identities.checks.js';
 

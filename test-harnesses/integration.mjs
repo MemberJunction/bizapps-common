@@ -27,6 +27,7 @@ const ALL_BUNDLES = [
     'contacts-addresses',
     'relationships',
     'activities',
+    'activity-sync',
     'party-lookup',
     'sender-identities',
 ];
