@@ -47,6 +47,34 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `relationships` | R1–R4 |
 | `activities` | A1–A5 |
 | `party-lookup` | PL1–PL4 |
+| `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3 (needs a sandbox host, below) |
+
+## Activity Sync sandbox (`activity-sync`)
+
+These checks run the real `Common.SyncActivities` action over GraphQL against Microsoft365
+connections whose mail and calendar come from fixture files in [`sandbox/`](sandbox/), instead of
+Microsoft Graph. Like Stripe test mode: same front door, test data.
+
+- **The host must opt in.** Start MJAPI with `ACTIVITY_SYNC_SANDBOX_DIR` set to the absolute path of
+  `packages/IntegrationTests/sandbox`. On any other host a `sandbox:` connection is refused (never
+  looked up as a credential), and a host that also allows live mailbox fetch refuses to start.
+- **Use a private database and MJAPI** (one per agent). From the repo root, with an env file whose
+  `DB_DATABASE` is yours:
+  ```bash
+  GRAPHQL_PORT=4391 ACTIVITY_SYNC_SANDBOX_DIR=$PWD/packages/IntegrationTests/sandbox \
+    DOTENV_CONFIG_PATH=<your env file> \
+    node --experimental-specifier-resolution=node -r dotenv/config ../MJ/packages/MJAPI/dist/index.js
+  GRAPHQL_PORT=4391 node test-harnesses/integration.mjs common-world activity-sync
+  ```
+  (`test-harnesses/integration.mjs` from the root currently needs the workaround in bizapps-common#286.)
+- **A connection's ref is `sandbox:<scenario>:<tag>`.** The scenario picks `<scenario>.mail.json` and
+  `<scenario>.calendar.json`; the tag (each check's stamp) is appended to every item id, because the
+  engine dedupes on SourceSystem + ExternalID across all mailboxes and fixed fixture ids would
+  collide between runs.
+- **Rows written are `Source = 'System'`**, never `'Integration'`. Connections end Disabled.
+- **Fixtures are generated** by `node sandbox/build-fixtures.mjs` from the ActivitySync demo Graph
+  payloads; `src/__tests__/sandbox-fixtures.test.ts` checks the committed files match. Calendar
+  shapes were never compared with live Graph data; the files say so.
 
 ## Rules
 

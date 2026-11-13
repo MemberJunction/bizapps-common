@@ -30,6 +30,7 @@ const H = vi.hoisted(() => ({
     loadFactory: vi.fn(),
     loadPolicy: vi.fn(() => false),
     loadCipher: vi.fn(),
+    loadSandbox: vi.fn(() => null),
 }));
 
 vi.mock('@mj-biz-apps/common-entities', () => ({}));
@@ -59,6 +60,13 @@ vi.mock('../custom/activity-content-cipher.js', () => ({
     MJActivityContentCipher: class {},
     LoadActivityContentCipher: H.loadCipher,
 }));
+vi.mock('../custom/activity-sync-sandbox.js', () => ({
+    ENV_SANDBOX_DIR: 'ACTIVITY_SYNC_SANDBOX_DIR',
+    SANDBOX_REF_PREFIX: 'sandbox:',
+    SANDBOX_DISABLED_REFUSAL: 'refused',
+    SandboxAwareTransportFactory: () => () => null,
+    LoadActivitySyncSandboxFromEnv: H.loadSandbox,
+}));
 vi.mock('../generated/generated.js', () => ({}));
 vi.mock('../generated/class-registrations-manifest.js', () => ({ CLASS_REGISTRATIONS: [] }));
 
@@ -70,6 +78,18 @@ describe('MJAPI startup wires the seams this package adds', () => {
         H.loadPolicy.mockClear();
         H.loadEngine.mockClear();
         H.loadCipher.mockClear();
+        H.loadSandbox.mockClear();
+    });
+
+    it('wraps the factory for sandbox refs, after the factory and the live policy are loaded', () => {
+        // After the factory: it wraps whatever is registered. After the policy: it refuses to start on
+        // a host that also allows live fetch, which it can only see once the policy is loaded.
+        // Without the call at all, a `sandbox:x` ref is looked up as a credential named "sandbox:x".
+        LoadBizAppsCommonServer();
+        expect(H.loadSandbox).toHaveBeenCalledTimes(1);
+        const sandboxOrder = H.loadSandbox.mock.invocationCallOrder[0];
+        expect(sandboxOrder).toBeGreaterThan(H.loadFactory.mock.invocationCallOrder[0]);
+        expect(sandboxOrder).toBeGreaterThan(H.loadPolicy.mock.invocationCallOrder[0]);
     });
 
     it('registers the Graph transport factory', () => {
