@@ -88,7 +88,7 @@ export function ResolveBusinessTimeZoneSetting(rows: ReadonlyArray<InstanceConfi
     return fallback('no BizApps.BusinessTimeZone or Business.TimeZone row');
 }
 
-@RegisterForStartup()
+@RegisterForStartup({ deferred: typeof window !== 'undefined' })
 export class BusinessTimeZoneEngine extends BaseEngine<BusinessTimeZoneEngine> {
     private _configurations: InstanceConfigurationRow[] = [];
     private warned = new Set<string>();
