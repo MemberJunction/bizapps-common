@@ -32,9 +32,9 @@ import {
 } from '@mj-biz-apps/common-activity-sync';
 
 /** `ActivitySyncProviderType.DriverClass` — the mail surface. */
-const MICROSOFT_365 = 'Microsoft365';
+export const MICROSOFT_365 = 'Microsoft365';
 /** `ActivitySyncProviderType.CalendarDriverClass` — the calendar surface of the same connection. */
-const MICROSOFT_365_CALENDAR = 'Microsoft365.Calendar';
+export const MICROSOFT_365_CALENDAR = 'Microsoft365.Calendar';
 
 /**
  * Build a live Graph transport for one connection, or null when this factory cannot serve it.
