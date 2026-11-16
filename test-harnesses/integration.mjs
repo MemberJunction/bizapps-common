@@ -27,10 +27,17 @@ const ALL_BUNDLES = [
     'contacts-addresses',
     'relationships',
     'activities',
-    'activity-sync',
     'party-lookup',
     'sender-identities',
 ];
+
+/**
+ * Bundles that pass only on a specially started host, so a run with no arguments skips them with
+ * the reason instead of failing every check. Name one to run it.
+ */
+const OPT_IN_BUNDLES = {
+    'activity-sync': 'needs an MJAPI started with ACTIVITY_SYNC_SANDBOX_DIR (packages/IntegrationTests/README.md)',
+};
 
 const args = process.argv.slice(2);
 const only = args.filter((a) => !a.startsWith('-'));
@@ -64,6 +71,11 @@ const failures = [];
 
 console.log(`\n  Common integration (GraphQL → ${process.env.MJAPI_URL ?? `http://localhost:${process.env.GRAPHQL_PORT ?? 4000}`})`);
 console.log(`  user: ${user.Email ?? user.Name ?? user.ID}\n`);
+if (!only.length) {
+    for (const [bundle, reason] of Object.entries(OPT_IN_BUNDLES)) {
+        console.log(`  skip ${bundle.padEnd(32)} not in the default run: ${reason}; run it by name`);
+    }
+}
 
 for (const request of requested) {
     const [bundle, localId] = request.includes('.') ? request.split('.') : [request, null];

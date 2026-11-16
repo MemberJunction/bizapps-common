@@ -47,7 +47,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `relationships` | R1–R4 |
 | `activities` | A1–A5 |
 | `party-lookup` | PL1–PL4 |
-| `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3 (needs a sandbox host, below) |
+| `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3 (needs a sandbox host, below; not in the default run, so name it) |
 
 ## Activity Sync sandbox (`activity-sync`)
 
@@ -58,6 +58,8 @@ Microsoft Graph. Like Stripe test mode: same front door, test data.
 - **The host must opt in.** Start MJAPI with `ACTIVITY_SYNC_SANDBOX_DIR` set to the absolute path of
   `packages/IntegrationTests/sandbox`. On any other host a `sandbox:` connection is refused (never
   looked up as a credential), and a host that also allows live mailbox fetch refuses to start.
+  On such a host every check fails with that refusal, so a run with no arguments skips this bundle
+  and prints why; name it to run it.
 - **Use a private database and MJAPI** (one per agent). From the repo root, with an env file whose
   `DB_DATABASE` is yours:
   ```bash
