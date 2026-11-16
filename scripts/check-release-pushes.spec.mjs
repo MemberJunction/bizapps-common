@@ -461,6 +461,24 @@ test('a push whose target is base_ref, default_branch or ref_name is a violation
     assert.deepEqual(findProtectedPushes('git push app-push "HEAD:refs/heads/$BRANCH"\n'), []);
 });
 
+// On a push to main, `github.ref` and `$GITHUB_REF` are `refs/heads/main`; on a PR into next,
+// `pull_request.base.ref` is `next` (issue #333).
+test('a push whose target is github.ref, GITHUB_REF or pull_request.base.ref is a violation', () => {
+    for (const line of [
+        'git push origin "HEAD:${{ github.ref }}"',
+        'git push origin "HEAD:${{ github.event.ref }}"',
+        'git push origin HEAD:$GITHUB_REF',
+        'git push origin "HEAD:${GITHUB_REF}"',
+        'git push origin "HEAD:${{ github.event.pull_request.base.ref }}"',
+        "execFileSync('git', ['push', 'origin', `HEAD:${process.env.GITHUB_REF}`]);",
+    ]) {
+        assert.equal(findProtectedPushes(`${line}\n`).length, 1, line);
+    }
+    // The head side of a PR is the contributor's branch, never a protected one.
+    assert.deepEqual(findProtectedPushes('git push origin "HEAD:${{ github.head_ref }}"\n'), []);
+    assert.deepEqual(findProtectedPushes('git push origin "HEAD:${{ github.event.pull_request.head.ref }}"\n'), []);
+});
+
 // Prettier splits long calls across lines; a line-by-line reader never saw them whole.
 test('a simple-git push split across lines is a violation', () => {
     const text = ['await git.push(', "    'origin',", "    'HEAD:main',", ');', ''].join('\n');

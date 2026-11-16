@@ -1,5 +1,21 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, inject } from '@angular/core';
-import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    ElementRef,
+    EventEmitter,
+    Input,
+    OnChanges,
+    OnDestroy,
+    OnInit,
+    Output,
+    SimpleChanges,
+    ViewEncapsulation,
+    inject,
+} from '@angular/core';
+import { BaseEntity, BaseEntityEvent, Metadata, RunView } from '@memberjunction/core';
+import { MJEventType, MJGlobal, type MJEvent } from '@memberjunction/global';
+import type { Subscription } from 'rxjs';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 
 import { CommonSettings } from '../../data/common-settings';
@@ -8,6 +24,14 @@ import { SellingCompanyConfirm } from './selling-company-confirm';
 
 const COMPANIES_ENTITY = 'MJ: Companies';
 const EMPLOYEES_ENTITY = 'MJ: Employees';
+
+/**
+ * `BaseFormComponentEventCodes.BASE_CODE` and `.EDITING_COMPLETE` from `@memberjunction/ng-base-types`,
+ * which this package does not depend on. `BaseFormComponent.SaveRecord()` raises EDITING_COMPLETE
+ * before every save, including one that finds the record clean and never reaches `save_started`.
+ */
+const FORM_EVENT_CODE = 'BaseFormComponent_Event';
+const FORM_EDITING_COMPLETE = 'EDITING_COMPLETE';
 
 /**
  * `bizapps-selling-company-field` — the company foreign key on an order or a contract, with a
@@ -29,6 +53,13 @@ const EMPLOYEES_ENTITY = 'MJ: Employees';
  * otherwise. So anything other than the default is held, named back to the user against the
  * default, and written only when they confirm. The value is restored if they move on without
  * answering: an unanswered question must not decide where revenue lands.
+ *
+ * A save, or leaving edit mode, while the question is open closes it unanswered (#344). The record
+ * already holds the previous company, so that is what is saved; the question is replaced by a notice
+ * naming the company that was not applied, so the user is not left believing their pick was booked.
+ * A save is seen two ways: the record's `save_started` event, which BaseEntity raises only for a dirty
+ * record, and the enclosing form's EDITING_COMPLETE event, which covers Save on a form whose only
+ * edit was the held pick (the record is clean again by then, because the pick was put back).
  *
  * It wraps `mj-form-field` rather than replacing it, so the dropdown, keyboard behaviour and
  * link rendering stay the platform's. It owns only the default and the confirmation, which is why
@@ -65,6 +96,19 @@ const EMPLOYEES_ENTITY = 'MJ: Employees';
                 <button type="button" class="bizapps-selling-confirm-no" (click)="OnRevert()">Revert</button>
             </div>
         }
+        @if (NotAppliedName) {
+            <div class="bizapps-selling-confirm" role="status" aria-live="polite">
+                <span>
+                    <strong>{{ NotAppliedName }}</strong> was not confirmed, so it was not applied. This record
+                    @if (KeptName) {
+                        keeps {{ KeptName }}.
+                    } @else {
+                        has no selling company.
+                    }
+                </span>
+                <button type="button" class="bizapps-selling-confirm-dismiss" (click)="OnDismissNotice()">Dismiss</button>
+            </div>
+        }
     `,
     styles: [
         `
@@ -83,12 +127,23 @@ const EMPLOYEES_ENTITY = 'MJ: Employees';
         `,
     ],
 })
-export class SellingCompanyFieldComponent implements OnInit {
+export class SellingCompanyFieldComponent implements OnInit, OnChanges, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
+    private readonly host = inject(ElementRef);
 
     @Input({ required: true }) Record!: BaseEntity;
     @Input() FieldName = 'CompanyID';
-    @Input() EditMode = false;
+    @Input()
+    set EditMode(value: boolean) {
+        const leaving = this.editMode && !value;
+        this.editMode = value;
+        if (leaving) {
+            this.closeUnanswered();
+        }
+    }
+    get EditMode(): boolean {
+        return this.editMode;
+    }
     @Input() ShowLabel = true;
     @Input() FormContext?: FormContext;
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
@@ -97,12 +152,26 @@ export class SellingCompanyFieldComponent implements OnInit {
     public AskName: string | null = null;
     /** The resolved default's name, for the question. Empty when the instance configured none. */
     public DefaultName = '';
+    /** A company the user picked but never confirmed before a save or leaving edit mode, by name. */
+    public NotAppliedName: string | null = null;
+    /** The company the record kept when {@link NotAppliedName} was dropped. Empty for none. */
+    public KeptName = '';
 
     private confirm = new SellingCompanyConfirm(null);
     private previous: string | null = null;
     private readonly names = new Map<string, string>();
+    private editMode = false;
+    private recordEvents: ReturnType<BaseEntity['RegisterEventHandler']> | null = null;
+    private formEvents: Subscription | null = null;
 
     public async ngOnInit(): Promise<void> {
+        // Subscribed before the first await so a save that starts while settings load is still seen.
+        this.listenToRecord();
+        this.formEvents = MJGlobal.Instance.GetEventListener(false).subscribe((event) => {
+            if (this.isOwnFormSaving(event)) {
+                this.closeUnanswered();
+            }
+        });
         const metadata = new Metadata();
         await CommonSettings.Load(Metadata.Provider, metadata.CurrentUser);
         await this.loadCompanyNames();
@@ -115,7 +184,31 @@ export class SellingCompanyFieldComponent implements OnInit {
         this.cdr.markForCheck();
     }
 
+    /**
+     * A host that rebinds `[Record]` on the same instance gets the handler moved to the new record,
+     * and any question about the old one dropped: it was about a record no longer shown.
+     */
+    public ngOnChanges(changes: SimpleChanges): void {
+        const change = changes['Record'];
+        if (!change || change.firstChange || change.previousValue === change.currentValue) {
+            return;
+        }
+        this.listenToRecord();
+        this.AskName = null;
+        this.NotAppliedName = null;
+        this.previous = this.current();
+        this.cdr.markForCheck();
+    }
+
+    public ngOnDestroy(): void {
+        this.recordEvents?.unsubscribe();
+        this.recordEvents = null;
+        this.formEvents?.unsubscribe();
+        this.formEvents = null;
+    }
+
     public OnValueChange(newValue: unknown): void {
+        this.NotAppliedName = null;
         const proposed = newValue ? String(newValue) : null;
         const outcome = this.confirm.Propose(proposed);
         if (outcome.Ask) {
@@ -131,6 +224,9 @@ export class SellingCompanyFieldComponent implements OnInit {
     }
 
     public OnConfirm(): void {
+        if (!this.AskName) {
+            return; // The question was closed unanswered; a late click must not write anything.
+        }
         const confirmed = this.confirm.Confirm();
         this.Record.Set(this.FieldName, confirmed);
         this.previous = confirmed;
@@ -142,6 +238,49 @@ export class SellingCompanyFieldComponent implements OnInit {
         this.Record.Set(this.FieldName, this.confirm.Revert(this.previous));
         this.AskName = null;
         this.cdr.markForCheck();
+    }
+
+    public OnDismissNotice(): void {
+        this.NotAppliedName = null;
+        this.cdr.markForCheck();
+    }
+
+    /**
+     * Ends an open question without the user's answer. The record already holds the previous
+     * company (OnValueChange put it back), so nothing is written; the user is told what was dropped.
+     */
+    private closeUnanswered(): void {
+        if (!this.AskName) {
+            return;
+        }
+        this.confirm.Revert(this.previous);
+        this.NotAppliedName = this.AskName;
+        this.KeptName = this.previous ? this.nameOf(this.previous) : '';
+        this.AskName = null;
+        this.cdr.markForCheck();
+    }
+
+    private listenToRecord(): void {
+        this.recordEvents?.unsubscribe();
+        this.recordEvents = this.Record.RegisterEventHandler((event: BaseEntityEvent) => {
+            if (event.type === 'save_started') {
+                this.closeUnanswered();
+            }
+        });
+    }
+
+    /** EDITING_COMPLETE from the form this field sits in; other forms on the page are ignored. */
+    private isOwnFormSaving(event: MJEvent): boolean {
+        if (event.event !== MJEventType.ComponentEvent || event.eventCode !== FORM_EVENT_CODE) {
+            return false;
+        }
+        const args = event.args as { subEventCode?: string; elementRef?: ElementRef<HTMLElement> } | undefined;
+        if (args?.subEventCode !== FORM_EDITING_COMPLETE) {
+            return false;
+        }
+        const formElement = args.elementRef?.nativeElement;
+        const ownElement = this.host.nativeElement as HTMLElement | undefined;
+        return !!formElement && !!ownElement && typeof formElement.contains === 'function' && formElement.contains(ownElement);
     }
 
     /** Only on a new record with the field still empty; never overwrite what is already booked. */

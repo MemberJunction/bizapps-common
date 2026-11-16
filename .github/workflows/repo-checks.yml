@@ -54,6 +54,11 @@ jobs:
       - name: Release-push gate
         run: node scripts/check-release-pushes.mjs
 
+      # Record IDs compare with UUIDsEqual, not ===: SQL Server and PostgreSQL return UUIDs in
+      # different casing (#314).
+      - name: UUID comparisons
+        run: node scripts/check-uuid-comparisons.mjs
+
   release-seed:
     name: 'repo: release seed'
     if: github.event.pull_request.draft == false && github.base_ref == 'main'

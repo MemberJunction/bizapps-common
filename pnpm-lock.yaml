@@ -31,15 +31,27 @@ importers:
       '@memberjunction/cli':
         specifier: ^6.2.1
         version: 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@aws-sdk/credential-providers@3.1131.0)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(socks@2.8.10)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)
+      '@memberjunction/core':
+        specifier: ^6.2.1
+        version: 6.2.1
+      '@memberjunction/testing-integration':
+        specifier: ^6.2.1
+        version: 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@3.25.76)
       '@types/node':
         specifier: ^22.10.0
         version: 22.20.1
       beasties:
         specifier: 0.3.5
         version: 0.3.5
+      dotenv:
+        specifier: ^17.2.4
+        version: 17.4.2
       mrmime:
         specifier: 2.0.1
         version: 2.0.1
+      pg:
+        specifier: ^8.13.3
+        version: 8.23.0
       rolldown:
         specifier: 1.0.0-beta.58
         version: 1.0.0-beta.58(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
@@ -102,7 +114,7 @@ importers:
   packages/ActivitySync:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Entities
     devDependencies:
       '@memberjunction/communication-types':
@@ -127,7 +139,7 @@ importers:
   packages/Angular:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Entities
     devDependencies:
       '@angular/animations':
@@ -200,7 +212,7 @@ importers:
   packages/CoreEntitiesServer:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Entities
     devDependencies:
       '@memberjunction/core':
@@ -256,7 +268,7 @@ importers:
         specifier: ^6.2.1
         version: 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@4.6.7))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@4.6.7)
       '@mj-biz-apps/common-entities':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Entities
     devDependencies:
       '@types/node':
@@ -275,16 +287,16 @@ importers:
   packages/Server:
     dependencies:
       '@mj-biz-apps/common-actions':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Actions
       '@mj-biz-apps/common-activity-sync':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../ActivitySync
       '@mj-biz-apps/common-core-entities-server':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../CoreEntitiesServer
       '@mj-biz-apps/common-entities':
-        specifier: ^5.64.0
+        specifier: ^5.65.0
         version: link:../Entities
       class-validator:
         specifier: ^0.14.3
@@ -24139,6 +24151,55 @@ snapshots:
       '@memberjunction/global': 6.2.1
       '@memberjunction/graphql-dataprovider': 6.2.1(ws@8.22.2)
       '@memberjunction/server-bootstrap-lite': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(debug@4.4.3)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@3.25.76)
+      '@memberjunction/sqlserver-dataprovider': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76)
+      '@memberjunction/testing-engine': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)
+      '@memberjunction/testing-engine-base': 6.2.1
+      cosmiconfig: 9.0.0(typescript@5.9.3)
+      dotenv: 17.2.4
+      mssql: 12.7.2
+    optionalDependencies:
+      '@memberjunction/postgresql-dataprovider': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
+      - '@azure/msal-browser'
+      - '@cfworker/json-schema'
+      - '@fastify/websocket'
+      - '@modelcontextprotocol/sdk'
+      - '@noble/hashes'
+      - '@smithy/hash-node'
+      - '@smithy/signature-v4'
+      - '@types/node'
+      - axios
+      - bare-abort-controller
+      - bare-buffer
+      - buffer
+      - bufferutil
+      - canvas
+      - chokidar
+      - crossws
+      - debug
+      - encoding
+      - pg-native
+      - proxy-agent
+      - react-native-b4a
+      - stream-browserify
+      - supports-color
+      - typescript
+      - utf-8-validate
+      - vitest
+      - ws
+      - yauzl
+      - zod
+
+  '@memberjunction/testing-integration@6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@3.25.76)':
+    dependencies:
+      '@memberjunction/core': 6.2.1
+      '@memberjunction/core-entities': 6.2.1
+      '@memberjunction/dynamic-packages': 6.2.1(typescript@5.9.3)
+      '@memberjunction/generic-database-provider': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76)
+      '@memberjunction/global': 6.2.1
+      '@memberjunction/graphql-dataprovider': 6.2.1(ws@8.22.2)
+      '@memberjunction/server-bootstrap-lite': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@3.25.76)
       '@memberjunction/sqlserver-dataprovider': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76)
       '@memberjunction/testing-engine': 6.2.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)
       '@memberjunction/testing-engine-base': 6.2.1

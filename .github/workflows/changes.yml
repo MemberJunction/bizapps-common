@@ -254,16 +254,18 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-      - name: Install sqlcmd (if available)
+      # Same install as clean-room-gate.yml: `--batch --yes` lets gpg overwrite a keyring the runner
+      # image already has (without it gpg wants a tty and exits 2), and no command is masked, so a
+      # broken install fails here with its own error instead of as "sqlcmd was not found" later.
+      - name: Install sqlcmd
         run: |
+          set -o pipefail
           if ! command -v sqlcmd &> /dev/null && [ ! -x /opt/mssql-tools18/bin/sqlcmd ] && [ ! -x /opt/mssql-tools/bin/sqlcmd ]; then
-            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg 2>/dev/null || true
-            curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list 2>/dev/null || true
-            sudo apt-get update -qq 2>/dev/null || true
-            sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev 2>/dev/null || true
-            if [ -d "/opt/mssql-tools18/bin" ]; then
-              echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
-            fi
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+            curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            sudo apt-get update -qq
+            sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev
+            echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
           fi
 
       - name: Parse migrations with SQL Server

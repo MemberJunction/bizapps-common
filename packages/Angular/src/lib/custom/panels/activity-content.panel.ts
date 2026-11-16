@@ -194,7 +194,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             align-items: center;
             justify-content: space-between;
             padding: 10px 14px;
-            background: var(--mj-bg-surface-subtle, #f8fafc);
+            background: var(--mj-bg-surface-card);
             border-bottom: 1px solid var(--mj-border-default, #e2e8f0);
         }
 
@@ -270,7 +270,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             justify-content: center;
             padding: 8px 14px 12px;
             border-top: 1px dashed var(--mj-border-default, #e2e8f0);
-            background: var(--mj-bg-surface-subtle, #f8fafc);
+            background: var(--mj-bg-surface-card);
         }
 
         .mja-btn-expand {
@@ -301,7 +301,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             padding: 32px 16px;
             border: 1px dashed var(--mj-border-default, #cbd5e1);
             border-radius: var(--mj-radius-md, 8px);
-            background: var(--mj-bg-surface-subtle, #f8fafc);
+            background: var(--mj-bg-surface-card);
         }
 
         .mja-content__empty-icon {
