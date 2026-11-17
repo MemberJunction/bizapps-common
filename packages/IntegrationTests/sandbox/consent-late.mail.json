@@ -20,7 +20,8 @@
     "sbx-c13a-original: Included (the earlier message a tagged reply names (ancestor))",
     "sbx-c13b-tagged-reply: Included (the owner tagged the customer's reply)",
     "sbx-c14-bcc: Included (tagged; the blind copy is never recorded)",
-    "sbx-c15-tagged-late: Included (tagged six days after it arrived: found by the late-tag sweep)"
+    "sbx-c15-tagged-late: Included (tagged six days after it arrived: found by the late-tag sweep)",
+    "sbx-c17-reply-to-friend: Excluded (a reply to an untagged message, even one an earlier KnownContact run filed)"
   ],
   "mailbox": "rep@sandbox-internal.test",
   "capturedAt": "2026-11-12T00:00:00Z",
@@ -190,7 +191,7 @@
       "bodyPreview": "Dinner Saturday?.",
       "importance": "normal",
       "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAB",
-      "conversationId": "conv-sbx-c3-friend",
+      "conversationId": "conv-c3",
       "isDeliveryReceiptRequested": false,
       "isReadReceiptRequested": false,
       "isRead": true,
@@ -1233,6 +1234,85 @@
         {
           "id": "String 0x1a",
           "value": "IPM.Note"
+        }
+      ]
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zy\"",
+      "id": "sbx-c17-reply-to-friend",
+      "createdDateTime": "2026-11-10T08:00:00Z",
+      "lastModifiedDateTime": "2026-11-10T08:00:00Z",
+      "changeKey": "CQAAABYAAAA0xX9r7pQKSbGZ0mF9K1pQAAB1a2Zy",
+      "categories": [],
+      "receivedDateTime": "2026-11-10T08:00:00Z",
+      "sentDateTime": "2026-11-10T08:00:00Z",
+      "hasAttachments": true,
+      "internetMessageId": "<sbx-c17-reply-to-friend@sandbox.test>",
+      "subject": "Re: Dinner Saturday?",
+      "bodyPreview": "Re: Dinner Saturday?.",
+      "importance": "normal",
+      "parentFolderId": "AQMkADhhMmE0YzE5LWRmNzQAAAAB",
+      "conversationId": "conv-c3",
+      "isDeliveryReceiptRequested": false,
+      "isReadReceiptRequested": false,
+      "isRead": true,
+      "isDraft": false,
+      "webLink": "https://outlook.office365.com/owa/?ItemID=AAMkADhi&exvsurl=1&viewmodel=ReadMessageItem",
+      "inferenceClassification": "focused",
+      "body": {
+        "contentType": "text",
+        "content": "Re: Dinner Saturday?."
+      },
+      "sender": {
+        "emailAddress": {
+          "name": "Nora Calhoun",
+          "address": "nora.calhoun@com-world.test"
+        }
+      },
+      "from": {
+        "emailAddress": {
+          "name": "Nora Calhoun",
+          "address": "nora.calhoun@com-world.test"
+        }
+      },
+      "toRecipients": [
+        {
+          "emailAddress": {
+            "name": "Sam Rep",
+            "address": "rep@sandbox-internal.test"
+          }
+        }
+      ],
+      "ccRecipients": [],
+      "bccRecipients": [],
+      "replyTo": [
+        {
+          "emailAddress": {
+            "name": "Nora Calhoun",
+            "address": "nora.calhoun@com-world.test"
+          }
+        }
+      ],
+      "conversationIndex": "AdyBnQ5FMk0xQ0hRR0hRR0hRR0hRR0hRQQECAw==",
+      "flag": {
+        "flagStatus": "notFlagged"
+      },
+      "singleValueExtendedProperties": [
+        {
+          "id": "Integer 0x36",
+          "value": "0"
+        },
+        {
+          "id": "String 0x1a",
+          "value": "IPM.Note"
+        },
+        {
+          "id": "String 0x1042",
+          "value": "<sbx-c3-friend@sandbox.test>"
+        },
+        {
+          "id": "String 0x1039",
+          "value": "<sbx-c3-friend@sandbox.test>"
         }
       ]
     }

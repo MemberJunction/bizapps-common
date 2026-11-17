@@ -19,7 +19,9 @@ import {
     PROP_REFERENCES,
     PROP_SENSITIVITY,
     ReplyReferences,
+    PreferTaggedCopy,
     ResolveConsent,
+    StableItem,
     SameExtendedPropertyId,
     StableExternalId,
     ExtendedProperty,
@@ -200,6 +202,37 @@ describe('ResolveConsent', () => {
     it('calendar consent is the tag alone', () => {
         const event = { ...quote, Raw: { ...quote.Raw, categories: [] } };
         expect(ResolveConsent([event], new Map(), 'AIDP', 'Calendar').size).toBe(0);
+    });
+});
+
+describe('review fixes', () => {
+    it('one message, two copies: the tagged copy wins whichever is read first', () => {
+        const tagged = mail({ id: 'a', from: BOX, to: [CUSTOMER], tags: ['AIDP'] });
+        const plain = mail({ id: 'a', from: BOX, to: [CUSTOMER] });
+        expect(HasTag(PreferTaggedCopy(plain, tagged, 'AIDP').Raw, 'AIDP')).toBe(true);
+        expect(HasTag(PreferTaggedCopy(tagged, plain, 'AIDP').Raw, 'AIDP')).toBe(true);
+        expect(PreferTaggedCopy(undefined, plain, 'AIDP')).toBe(plain);
+    });
+
+    it('StableItem drops the blind copy from the participants AND from the raw payload stored as Details', () => {
+        const item = mail({ id: 'b', from: BOX, to: [CUSTOMER], extra: { bccRecipients: [{ emailAddress: { address: 'secret@internal.test' } }] } });
+        item.Participants.push(who('secret@internal.test', 'Bcc'));
+        const stable = StableItem(item, 'Message');
+        expect(stable.ExternalID).toBe('<b@x>');
+        expect(stable.Participants.some((p) => p.Role === 'Bcc')).toBe(false);
+        expect(JSON.stringify(stable.Raw)).not.toContain('secret@internal.test');
+    });
+
+    it('a tagged message cannot pull in a message from another conversation through References', () => {
+        const privateNote = { ...mail({ id: 'private', from: BOX, to: [CUSTOMER] }), ExternalThreadID: 'conv-private' };
+        const tagged = mail({ id: 't', from: CUSTOMER, to: [BOX], tags: ['AIDP'], references: ['<private@x>'] });
+        expect(ResolveConsent([privateNote, tagged], new Map(), 'AIDP', 'Message').has('<private@x>')).toBe(false);
+    });
+
+    it('nor a message in the same conversation that shares nobody with it', () => {
+        const other = mail({ id: 'o2', from: 'someone@else.test', to: ['another@else.test'] });
+        const tagged = mail({ id: 't2', from: CUSTOMER, to: ['x@customer.test'], tags: ['AIDP'], references: ['<o2@x>'] });
+        expect(ResolveConsent([other, tagged], new Map(), 'AIDP', 'Message').has('<o2@x>')).toBe(false);
     });
 });
 

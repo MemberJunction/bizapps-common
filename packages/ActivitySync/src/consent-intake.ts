@@ -30,7 +30,10 @@ import type { BaseActivitySyncProvider } from './BaseActivitySyncProvider.js';
 import {
     HasTag,
     InternetMessageId,
+    MAX_ANCESTOR_REFERENCES,
     MAX_WITHDRAW_CHECKS,
+    PreferTaggedCopy,
+    StableItem,
     ReplyReferences,
     StableExternalId,
     WITHDRAWN_PREFIX,
@@ -83,8 +86,8 @@ export class ConsentIntake {
         const items = new Map<string, NormalizedItem>();
         const add = (batch: readonly NormalizedItem[]): void => {
             for (const item of batch) {
-                const stable = toStable(item, plugin.Kind);
-                if (!items.has(stable.ExternalID)) items.set(stable.ExternalID, stable); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+                const stable = StableItem(item, plugin.Kind);
+                items.set(stable.ExternalID, PreferTaggedCopy(items.get(stable.ExternalID), stable, policy.Tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             }
         };
         add(windowItems);
@@ -157,7 +160,10 @@ export class ConsentIntake {
                 result.Issues.push(`Could not re-read tagged items, so none were withdrawn: ${reread.Issues.join(' | ')}`);
                 return result;
             }
-            for (const item of reread.Items) seen.set(toStable(item, plugin.Kind).ExternalID, item);
+            for (const item of reread.Items) {
+                const stable = StableItem(item, plugin.Kind);
+                seen.set(stable.ExternalID, PreferTaggedCopy(seen.get(stable.ExternalID), stable, policy.Tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+            }
         }
 
         const untagged = Tagged.filter((row) => {
@@ -188,17 +194,9 @@ export class ConsentIntake {
     }
 }
 
-function toStable(item: NormalizedItem, kind: BaseActivitySyncProvider['Kind']): NormalizedItem {
-    return {
-        ...item,
-        ExternalID: StableExternalId(item, kind),
-        Participants: item.Participants.filter((p) => p.Role !== 'Bcc'),
-    };
-}
-
 function missingAncestors(items: readonly NormalizedItem[], tag: string): string[] {
     const have = new Set(items.map((i) => InternetMessageId(i.Raw)).filter(Boolean));
-    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw));
+    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES));
     return [...new Set(wanted)].filter((id) => !have.has(id));
 }
 
@@ -212,7 +210,13 @@ function newestModified(items: readonly NormalizedItem[]): Date | null {
     return newest === null ? null : new Date(newest);
 }
 
-/** Messages consented on earlier runs of THIS connection, in the threads at hand. */
+/**
+ * Messages consented on earlier runs of THIS connection, in the threads at hand.
+ *
+ * ONLY CONSENTED CAPTURES COUNT. A connection switched from KnownContact to Tagged still holds the
+ * activities KnownContact filed; letting those prove replies would grant by inference what nobody
+ * tagged. So a prior activity proves a reply only when its own run detail says Consent included it.
+ */
 async function loadPrior(
     items: readonly NormalizedItem[],
     connectionID: string,
@@ -222,23 +226,53 @@ async function loadPrior(
     const threads = [...new Set(items.map((i) => i.ExternalThreadID).filter((t): t is string => !!t))];
     const prior = new Map<string, ConsentedMessage>();
     if (threads.length === 0) return { Map: prior };
-    const res = await RunView.FromMetadataProvider(provider).RunView<{ ExternalID: string; Details: string | null }>(
+    const res = await RunView.FromMetadataProvider(provider).RunView<{ ID: string; ExternalID: string; Details: string | null }>(
         {
             EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
             ExtraFilter:
                 `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}' ` +
                 `AND ExternalThreadID IN (${threads.map((t) => `'${EscapeText(t)}'`).join(', ')}) ` +
                 `AND ExternalID NOT LIKE '${WITHDRAWN_PREFIX}%'`,
-            Fields: ['ExternalID', 'Details'],
+            Fields: ['ID', 'ExternalID', 'Details'],
             ResultType: 'simple',
         },
         user,
     );
     if (!res.Success) return { Failure: `Consented-thread lookup failed: ${res.ErrorMessage}` };
-    for (const row of res.Results ?? []) {
+    const rows = res.Results ?? [];
+    const reasons = await consentReasons(rows.map((r) => r.ID), provider, user);
+    if ('Failure' in reasons) return reasons;
+    for (const row of rows) {
+        if (!isConsentReason(reasons.Map.Get(row.ID))) continue;
         prior.set(row.ExternalID, { MessageId: row.ExternalID, Participants: participantsFromDetails(row.Details) }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
     }
     return { Map: prior };
+}
+
+/** Why Consent included each activity (the run detail's Reason), for those it did include. */
+async function consentReasons(
+    activityIDs: readonly string[],
+    provider: IMetadataProvider,
+    user: UserInfo,
+): Promise<{ Map: UUIDMap<string> } | { Failure: string }> {
+    const map = new UUIDMap<string>();
+    if (activityIDs.length === 0) return { Map: map };
+    const details = await RunView.FromMetadataProvider(provider).RunView<{ ActivityID: string; Reason: string | null }>(
+        {
+            EntityName: ACTIVITY_SYNC_ENTITIES.RunDetails,
+            ExtraFilter: `DecidedByStage = 'Consent' AND Decision = 'Included' AND ActivityID IN (${UuidInList(activityIDs, 'ActivityID')})`,
+            Fields: ['ActivityID', 'Reason'],
+            ResultType: 'simple',
+        },
+        user,
+    );
+    if (!details.Success) return { Failure: `Consent lookup failed: ${details.ErrorMessage}` };
+    for (const d of details.Results ?? []) map.Set(d.ActivityID, d.Reason ?? '');
+    return { Map: map };
+}
+
+function isConsentReason(reason: string | undefined): boolean {
+    return !!reason && (reason.startsWith(REASON_TAGGED) || reason.startsWith(REASON_PROVEN));
 }
 
 /** `Activity.Details` is the Graph payload as written; the addresses come back out of it. */
@@ -290,19 +324,9 @@ async function loadCandidates(
     if (!activities.Success) return { Failure: `Withdrawal candidate lookup failed: ${activities.ErrorMessage}` };
     const rows = (activities.Results ?? []).slice(0, MAX_WITHDRAW_CHECKS);
     if (rows.length === 0) return { Tagged: [], Proven: [], Capped: false };
-    const details = await rv.RunView<{ ActivityID: string; Reason: string | null }>(
-        {
-            EntityName: ACTIVITY_SYNC_ENTITIES.RunDetails,
-            ExtraFilter: `DecidedByStage = 'Consent' AND Decision = 'Included' AND ActivityID IN (${UuidInList(rows.map((r) => r.ID), 'ActivityID')})`,
-            Fields: ['ActivityID', 'Reason'],
-            ResultType: 'simple',
-        },
-        user,
-    );
-    if (!details.Success) return { Failure: `Withdrawal consent lookup failed: ${details.ErrorMessage}` };
-    const how = new UUIDMap<string>();
-    for (const d of details.Results ?? []) how.Set(d.ActivityID, d.Reason ?? '');
-    const reasonOf = (r: CandidateRow): string => how.Get(r.ID) ?? '';
+    const reasons = await consentReasons(rows.map((r) => r.ID), provider, user);
+    if ('Failure' in reasons) return { Failure: `Withdrawal ${reasons.Failure}` };
+    const reasonOf = (r: CandidateRow): string => reasons.Map.Get(r.ID) ?? '';
     return {
         Tagged: rows.filter((r) => reasonOf(r).startsWith(REASON_TAGGED)),
         Proven: rows.filter((r) => reasonOf(r).startsWith(REASON_PROVEN)),
