@@ -73,7 +73,9 @@ const PARTICIPANT_ROLES: readonly ActivityLinkRole[] = ['Participant', 'From', '
  * Activity) can only be tied to its message by ExternalID, which on a Tagged connection is the stable
  * RFC Message-ID / iCalUId the Activity carries too.
  */
-const CONSENT_STAGE = `DecidedByStage = 'Consent'`;
+// Real decisions only. A dry run writes `WouldInclude` / `WouldExclude` under the same stage; it decided
+// nothing, so it must never be the "latest" decision that hides a mailbox's actual consent.
+const CONSENT_STAGE = `DecidedByStage = 'Consent' AND Decision IN ('Included', 'Duplicate', 'Excluded')`;
 const GRANTING: ReadonlySet<string> = new Set(['Included', 'Duplicate']);
 
 interface DetailRow {
