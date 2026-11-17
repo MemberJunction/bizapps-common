@@ -64,6 +64,28 @@ ids are not needed. BCC participants are never written.
   participant links are deleted, and its ExternalID becomes `withdrawn:<activity id>`, so a later re-tag
   files the item afresh. The re-check is capped at 500 items per run, and the run reports when the cap binds.
 
+## Consent is per connection (after review)
+`consent-store.ts` holds the reads and the one write.
+
+- **Where consent lives.** A mailbox's consent to a message is its **latest Consent-stage run detail** for
+  that message's ExternalID, on its own connection's runs: `Included` or `Duplicate` grant, and `Excluded`
+  ends it. The link is the ExternalID, because `CK_ActivitySyncRunDetail_ActivityOnlyWhenIncluded` keeps
+  ActivityID off duplicates. So two ADs on one email are one Activity with two independent consents.
+- **When a mailbox's consent ends**, the run records an `Excluded` Consent detail. The shared Activity is
+  withdrawn only when no other mailbox still consents.
+- **Every read is for one surface** (activity type `Email` or `Meeting`).
+- **Withdrawal** windows on consent time, not message time. It re-reads every candidate in batches of 10
+  and refuses a cut-off re-read. A proven capture follows its own `Via` chain and is kept if it is tagged now.
+- **Proof.** Only items no block, exclusion or Exclude rule stops (`ConsentEligible`) can prove a reply or
+  name an ancestor. A Private reply proves nothing further. `References` is read oldest first, so the
+  direct parent survives the 20-reference cap.
+- **The late-tag sweep** reads `[from, to)` windows and halves a window whose page came back full. It
+  moves its position only past windows read completely, starts 10 minutes before the recorded position
+  (our clock against Exchange's), and on a first run records the newest change it read. A late tag also
+  reads its conversation, so replies already behind the watermark can be proven.
+- **Retention.** A Tagged connection never retains the content of items it excluded, whatever
+  `SkippedContentPolicy` says.
+
 ## Transport
 `ActivitySourceQuery.Lookup` (`Tagged` | `MessageIds`) carries both reads through the existing fetch
 path. `GraphCommunicationTransport` sends them as `ContextData.Filter`, which MJ already forwards, and

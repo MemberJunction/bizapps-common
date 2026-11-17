@@ -291,6 +291,13 @@ export async function ReadActivityDetails(ctx: IntegrationCheckContext, connecti
     return (res.Results ?? []).map((r) => r.Details ?? '');
 }
 
+/** Point a connection at `sandbox:<scenario>:<tag>` — e.g. give two connections the same run tag. */
+export async function SetConnectionRef(ctx: IntegrationCheckContext, connectionId: string, scenario: string, tag: string): Promise<void> {
+    const connection = await loadConnection(ctx, connectionId);
+    connection.CredentialsRef = SandboxRef(scenario, tag);
+    await RequireSave(connection, `set connection ${connectionId} to ${connection.CredentialsRef}`);
+}
+
 /** Replace a connection's Settings JSON (the consent mode lives there). */
 export async function SetConnectionSettings(
     ctx: IntegrationCheckContext,

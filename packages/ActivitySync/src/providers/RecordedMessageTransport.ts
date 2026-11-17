@@ -136,8 +136,13 @@ function matchesLookup(payload: Record<string, unknown>, request: ActivityLookup
         const id = InternetMessageId(payload);
         return id !== null && request.MessageIds.includes(id);
     }
+    if (request.Kind === 'Conversations') {
+        return typeof payload['conversationId'] === 'string' && request.ConversationIds.includes(payload['conversationId']);
+    }
     if (!HasTag(payload, request.Tag)) return false;
-    if (!request.ModifiedSince) return true;
+    if (!request.ModifiedSince && !request.ModifiedBefore) return true;
     const modified = typeof payload['lastModifiedDateTime'] === 'string' ? Date.parse(payload['lastModifiedDateTime']) : NaN;
-    return !Number.isNaN(modified) && modified >= request.ModifiedSince.getTime();
+    if (Number.isNaN(modified)) return false;
+    if (request.ModifiedSince && modified < request.ModifiedSince.getTime()) return false;
+    return !request.ModifiedBefore || modified < request.ModifiedBefore.getTime();
 }

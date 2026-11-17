@@ -153,8 +153,11 @@ export interface ActivitySourceQuery {
 }
 
 export type ActivityLookup =
-    | { Kind: 'Tagged'; Tag: string; ModifiedSince: Date | null }
-    | { Kind: 'MessageIds'; MessageIds: string[] };
+    /** Tagged items with `ModifiedSince <= lastModifiedDateTime < ModifiedBefore` (either bound optional). */
+    | { Kind: 'Tagged'; Tag: string; ModifiedSince: Date | null; ModifiedBefore?: Date | null }
+    | { Kind: 'MessageIds'; MessageIds: string[] }
+    /** Every message in these conversations, so a late tag can find the replies already behind the watermark. */
+    | { Kind: 'Conversations'; ConversationIds: string[] };
 
 /** Whatever a provider's transport handed back, before normalization. */
 export interface RawBatch {
@@ -195,6 +198,11 @@ export interface ActivitySourceBatch {
      */
     HighWatermark: Date | null;
     Issues: string[];
+    /**
+     * The read hit its limit, so there may be more than `Items` holds. A lookup's caller must not treat a
+     * capped answer as complete (a missing copy is not a removed tag; an unread window is not swept).
+     */
+    Capped?: boolean;
     /**
      * True when the provider did not complete a look — a throw from FetchRaw / transport / auth —
      * not an empty mailbox and not a deliberate live-fetch refusal. The engine must not treat

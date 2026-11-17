@@ -127,9 +127,9 @@ describe('Graph signals', () => {
         expect(HasTag({}, 'AIDP')).toBe(false);
     });
 
-    it('ReplyReferences reads In-Reply-To and References, deduplicated', () => {
+    it('ReplyReferences reads References then In-Reply-To, oldest first and the direct parent last, deduplicated', () => {
         const raw = mail({ id: 'b', from: CUSTOMER, to: [BOX], replyTo: '<a@x>', references: ['<root@x>', '<a@x>'] }).Raw;
-        expect(ReplyReferences(raw)).toEqual(['<a@x>', '<root@x>']);
+        expect(ReplyReferences(raw)).toEqual(['<root@x>', '<a@x>']);
     });
 
     it.each([
