@@ -224,7 +224,8 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
         const isEnvelope = !!only && Array.isArray((only as { value?: unknown }).value);
         const mapped = MapGraphMessages(isEnvelope ? only : raw.Payloads, query.Mailbox);
         raw.Issues.push(...mapped.Issues);
-        const since = query.Since ? query.Since.getTime() : null;
+        // A lookup names its items; the received-time window does not apply to it (see `Lookup`).
+        const since = query.Since && !query.Lookup ? query.Since.getTime() : null;
         return since === null ? mapped.Items : mapped.Items.filter((i) => receivedTime(i) > since);
     }
 }
