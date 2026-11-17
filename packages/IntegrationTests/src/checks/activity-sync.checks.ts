@@ -28,7 +28,7 @@ import {
     SetConnectionScenario,
     SetConnectionStatus,
     SyncAndRead,
-    WaitPastTopOfHour,
+    SyncLive,
     WithCleanup,
     WithSandboxConnection,
     NewStamp,
@@ -69,20 +69,7 @@ function writtenIds(snapshot: SyncSnapshot): string[] {
     return snapshot.Activities.map((a) => a.ExternalID ?? '').sort();
 }
 
-/**
- * A live run needs the connection Active, and Active is the only state the hourly job also runs —
- * so this is the one place that waits out minute 0, and the connection goes back to Paused straight
- * after, pass or fail.
- */
-async function syncLive(ctx: IntegrationCheckContext, connectionId: string, limit?: number): ReturnType<typeof SyncAndRead> {
-    await WaitPastTopOfHour();
-    await SetConnectionStatus(ctx, connectionId, 'Active');
-    return WithCleanup(
-        () => SyncAndRead(ctx, connectionId, { DryRun: false, Limit: limit }),
-        () => SetConnectionStatus(ctx, connectionId, 'Paused'),
-        `pause sandbox connection ${connectionId}`,
-    );
-}
+const syncLive = SyncLive;
 
 /** The mail pass among a call's runs: the one whose details are mail fixture ids (`sbx-m…`). */
 function mailRunOf(run: Awaited<ReturnType<typeof SyncAndRead>>): RunRow {

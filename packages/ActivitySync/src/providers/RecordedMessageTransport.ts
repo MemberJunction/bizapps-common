@@ -23,7 +23,8 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
-import type { ActivitySourceQuery, RawBatch } from '../types.js';
+import { HasTag, InternetMessageId } from '../consent.js';
+import type { ActivityLookup, ActivitySourceQuery, RawBatch } from '../types.js';
 import type { ActivityMessageTransport } from './MessageTransport.js';
 
 /** A captured Graph response, keyed by the mailbox it was captured from. */
@@ -68,6 +69,9 @@ export class RecordedMessageTransport implements ActivityMessageTransport {
 
         // The window is applied downstream in Normalize, exactly as it is for the live transport, so
         // the two paths differ in nothing but where the bytes came from.
+        if (query.Lookup) {
+            return lookup(recording, query.Lookup, query.Limit);
+        }
         const payloads = recording.Payloads.slice(0, query.Limit);
 
         const issues = [
@@ -111,4 +115,29 @@ export class RecordedMessageTransport implements ActivityMessageTransport {
          */
         return { Payloads: payloads, Issues: issues, Capped: capped };
     }
+}
+
+/**
+ * A lookup, answered the way Graph answers the filter the live transport sends for it: tagged items
+ * modified at or after the instant, or messages by RFC Message-ID. A lookup that matches nothing is an
+ * empty batch, not an error: "that message is not here any more" is an answer the caller needs.
+ */
+function lookup(recording: RecordedMailbox, request: ActivityLookup, limit: number): RawBatch {
+    const matches = recording.Payloads.filter((p) => matchesLookup(p, request));
+    return {
+        Payloads: matches.slice(0, limit),
+        Issues: [`REPLAYED, NOT LIVE: ${request.Kind} lookup over ${recording.Provenance}.`],
+        Capped: matches.length > limit,
+    };
+}
+
+function matchesLookup(payload: Record<string, unknown>, request: ActivityLookup): boolean {
+    if (request.Kind === 'MessageIds') {
+        const id = InternetMessageId(payload);
+        return id !== null && request.MessageIds.includes(id);
+    }
+    if (!HasTag(payload, request.Tag)) return false;
+    if (!request.ModifiedSince) return true;
+    const modified = typeof payload['lastModifiedDateTime'] === 'string' ? Date.parse(payload['lastModifiedDateTime']) : NaN;
+    return !Number.isNaN(modified) && modified >= request.ModifiedSince.getTime();
 }

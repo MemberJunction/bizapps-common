@@ -108,6 +108,77 @@ export const CALENDAR_CASES = [
     { Expected: 'Skipped', Why: 'naive local time with a named zone is never guessed', item: event('evt-tz-5', { id: 'sbx-e5-naive-tz', organizer: REP, attendees: [NORA], subject: 'West coast call', start: { dateTime: '2026-11-04T09:00:00.0000000', timeZone: 'Pacific Standard Time' }, end: { dateTime: '2026-11-04T09:30:00.0000000', timeZone: 'Pacific Standard Time' } }) },
 ];
 
+// ── Consent (Tagged connections) ─────────────────────────────────────────────────────────────
+//
+// The same mailbox read by a connection whose Settings say {"Consent":{"Mode":"Tagged","Tag":"AIDP"}}.
+// Expected decisions are under the baseline rule set (AllInternal exclude, hr@ exclusion) PLUS consent.
+
+const TAG = 'AIDP';
+const PHONE = { name: 'Nora (phone)', address: 'nora.phone@stranger.test' };
+const RECRUITER = { name: 'A Recruiter', address: 'recruiter@stranger.test' };
+const msgId = (id) => `<${id}@sandbox.test>`;
+// The ids exactly as Graph RETURNS them (Exchange Online, 2026-11-17): asked for 0x0036 and 0x001A, it
+// answers 0x36 and 0x1a. Fixtures carry the returned form, so a reader that compares ids as text fails here.
+const PROP = { InReplyTo: 'String 0x1042', References: 'String 0x1039', Sensitivity: 'Integer 0x36', Class: 'String 0x1a' };
+
+/**
+ * A message as a Tagged connection sees it: categories, a Message-ID, reply headers and
+ * sensitivity/class as the extended properties a transport expands. `thread` defaults to the case's
+ * own conversation, so only cases that SHARE a conversation share one.
+ */
+function consentMessage({ id, from, to, cc = [], bcc = [], subject, at, tags = [], inReplyTo, references, thread, modified, sensitivity = '0', messageClass = 'IPM.Note', extra = {} }) {
+    const m = message({ id, from, to, cc, subject, at });
+    m.categories = tags;
+    m.internetMessageId = msgId(id);
+    m.conversationId = `conv-${thread ?? id}`;
+    m.bccRecipients = bcc.map(box);
+    m.lastModifiedDateTime = modified ?? at;
+    const props = [{ id: PROP.Sensitivity, value: sensitivity }, { id: PROP.Class, value: messageClass }];
+    if (inReplyTo) props.push({ id: PROP.InReplyTo, value: msgId(inReplyTo) });
+    if (references) props.push({ id: PROP.References, value: references.map(msgId).join(' ') });
+    m.singleValueExtendedProperties = props;
+    return Object.assign(m, extra);
+}
+
+const consentMail = (late) => [
+    { Expected: late ? 'Withdrawn' : 'Included', Why: 'the owner tagged it (tag removed in consent-late)', item: consentMessage({ id: 'sbx-c1-tagged-quote', from: REP, to: [NORA], subject: 'Renewal quote', at: '2026-11-02T09:00:00Z', tags: late ? [] : [TAG], thread: 'c1', modified: late ? '2026-11-10T09:00:00Z' : undefined }) },
+    { Expected: late ? 'Withdrawn' : 'Included', Why: 'proven reply to a tagged message', item: consentMessage({ id: 'sbx-c2-reply', from: NORA, to: [REP], subject: 'Re: Renewal quote', at: '2026-11-02T10:00:00Z', inReplyTo: 'sbx-c1-tagged-quote', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
+    { Expected: 'Excluded', Why: 'untagged, though a known contact is on it (the dinner case)', item: consentMessage({ id: 'sbx-c3-friend', from: REP, to: [NORA], subject: 'Dinner Saturday?', at: '2026-11-02T11:00:00Z' }) },
+    { Expected: late ? 'Withdrawn' : 'Included', Why: 'proven reply from the customer\'s personal address', item: consentMessage({ id: 'sbx-c4-phone-reply', from: PHONE, to: [REP], subject: 'Re: Renewal quote', at: '2026-11-02T12:00:00Z', inReplyTo: 'sbx-c1-tagged-quote', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
+    { Expected: 'Excluded', Why: 'a forward is never a continuation', item: consentMessage({ id: 'sbx-c5-forward', from: REP, to: [STRANGER], subject: 'FW: Renewal quote', at: '2026-11-02T13:00:00Z', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
+    { Expected: 'Excluded', Why: 'an outbound reply that adds a recipient needs its own tag', item: consentMessage({ id: 'sbx-c6-new-recipient', from: REP, to: [NORA, RECRUITER], subject: 'Re: Renewal quote', at: '2026-11-02T14:00:00Z', inReplyTo: 'sbx-c2-reply', references: ['sbx-c1-tagged-quote', 'sbx-c2-reply'], thread: 'c1' }) },
+    { Expected: 'Excluded', Why: 'same conversationId, no reply headers: not proof', item: consentMessage({ id: 'sbx-c7-same-conversation', from: NORA, to: [REP], subject: 'Re: Lunch', at: '2026-11-02T15:00:00Z', thread: 'c1' }) },
+    { Expected: 'Excluded', Why: 'a tagged draft was never sent', item: consentMessage({ id: 'sbx-c8-draft', from: REP, to: [NORA], subject: 'Draft terms', at: '2026-11-02T16:00:00Z', tags: [TAG], extra: { isDraft: true } }) },
+    { Expected: 'Excluded', Why: 'tagged, but internal-only (AllInternal rule wins)', item: consentMessage({ id: 'sbx-c9-internal-tagged', from: REP, to: [COLLEAGUE], subject: 'Pricing for Nora', at: '2026-11-02T17:00:00Z', tags: [TAG] }) },
+    { Expected: 'Excluded', Why: 'a reply in a tagged thread marked Private', item: consentMessage({ id: 'sbx-c10-private-reply', from: NORA, to: [REP], subject: 'Re: Renewal quote (personal)', at: '2026-11-03T08:00:00Z', inReplyTo: 'sbx-c1-tagged-quote', references: ['sbx-c1-tagged-quote'], thread: 'c1', sensitivity: '2' }) },
+    { Expected: 'Excluded', Why: 'an automatic reply is a machine talking', item: consentMessage({ id: 'sbx-c11-out-of-office', from: NORA, to: [REP], subject: 'Automatic reply: Renewal quote', at: '2026-11-03T08:30:00Z', inReplyTo: 'sbx-c1-tagged-quote', thread: 'c1', messageClass: 'IPM.Note.Rules.OofTemplate.Microsoft' }) },
+    { Expected: 'Excluded', Why: 'a meeting invitation is captured from the calendar, not as mail', item: consentMessage({ id: 'sbx-c12-invite', from: NORA, to: [REP], subject: 'Invitation: Renewal walkthrough', at: '2026-11-03T09:00:00Z', tags: [TAG], extra: { '@odata.type': '#microsoft.graph.eventMessageRequest', meetingMessageType: 'meetingRequest' } }) },
+    { Expected: 'Included', Why: 'the earlier message a tagged reply names (ancestor)', item: consentMessage({ id: 'sbx-c13a-original', from: REP, to: [ADA], subject: 'Editorial plan', at: '2026-11-03T10:00:00Z', thread: 'c13' }) },
+    { Expected: 'Included', Why: 'the owner tagged the customer\'s reply', item: consentMessage({ id: 'sbx-c13b-tagged-reply', from: ADA, to: [REP], subject: 'Re: Editorial plan', at: '2026-11-03T11:00:00Z', tags: [TAG], inReplyTo: 'sbx-c13a-original', references: ['sbx-c13a-original'], thread: 'c13' }) },
+    { Expected: 'Included', Why: 'tagged; the blind copy is never recorded', item: consentMessage({ id: 'sbx-c14-bcc', from: REP, to: [NORA], bcc: [COLLEAGUE], subject: 'Signed order form', at: '2026-11-03T12:00:00Z', tags: [TAG] }) },
+    { Expected: late ? 'Included' : 'Excluded', Why: 'tagged six days after it arrived: found by the late-tag sweep', item: consentMessage({ id: 'sbx-c15-tagged-late', from: REP, to: [ADA], subject: 'Editorial terms', at: '2026-11-03T13:00:00Z', tags: late ? [TAG] : [], modified: late ? '2026-11-09T13:00:00Z' : undefined }) },
+];
+
+export const CONSENT_MAIL_CASES = consentMail(false);
+export const CONSENT_LATE_MAIL_CASES = consentMail(true);
+
+function consentEvent(templateId, spec, { tags = [], sensitivity = 'normal' } = {}) {
+    const e = event(templateId, spec);
+    e.categories = tags;
+    e.sensitivity = sensitivity;
+    e.iCalUId = `ical-${spec.id}`;
+    return e;
+}
+
+const consentCalendar = (late) => [
+    { Expected: late ? 'Withdrawn' : 'Included', Why: 'a tagged meeting (tag removed in consent-late)', item: consentEvent('evt-ext-1', { id: 'sbx-ce1-tagged', organizer: REP, attendees: [NORA], subject: 'Renewal walkthrough', start: utc('2026-11-04T15:00:00'), end: utc('2026-11-04T16:00:00') }, { tags: late ? [] : [TAG] }) },
+    { Expected: 'Excluded', Why: 'an untagged lunch with a known contact', item: consentEvent('evt-ext-1', { id: 'sbx-ce2-lunch', organizer: REP, attendees: [NORA], subject: 'Lunch', start: utc('2026-11-05T12:00:00'), end: utc('2026-11-05T13:00:00') }) },
+    { Expected: 'Excluded', Why: 'a Private, untagged doctor appointment', item: consentEvent('evt-ext-1', { id: 'sbx-ce3-private', organizer: REP, attendees: [ADA], subject: 'Doctor', start: utc('2026-11-06T09:00:00'), end: utc('2026-11-06T10:00:00') }, { sensitivity: 'private' }) },
+];
+
+export const CONSENT_CALENDAR_CASES = consentCalendar(false);
+export const CONSENT_LATE_CALENDAR_CASES = consentCalendar(true);
+
 const MAIL_NOTE = [
     'GENERATED by build-fixtures.mjs from packages/ActivitySync/demo/graph-sample-messages.json.',
     'Message shapes were compared field-by-field with 25 live Graph payloads on 2026-09-04 (see that file).',
@@ -122,7 +193,7 @@ const CALENDAR_NOTE = [
 function scenario(name, surface, cases, note) {
     const table = cases.map((c) => `${c.item.id}: ${c.Expected} (${c.Why})`);
     const doc = {
-        $comment: [...note, '', 'EXPECTED UNDER THE BASELINE RULE SET:', ...table],
+        $comment: [...note, '', name.startsWith('consent') ? 'EXPECTED ON A TAGGED CONNECTION (baseline rules + consent):' : 'EXPECTED UNDER THE BASELINE RULE SET:', ...table],
         mailbox: name === 'mismatch' ? 'someone-else@sandbox-internal.test' : MAILBOX,
         capturedAt: '2026-11-12T00:00:00Z',
         value: cases.map((c) => c.item),
@@ -137,5 +208,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     scenario('newer', 'calendar', [], CALENDAR_NOTE);
     scenario('mismatch', 'mail', MAIL_CASES.slice(0, 1), MAIL_NOTE);
     scenario('mismatch', 'calendar', [], CALENDAR_NOTE);
-    console.log('wrote 6 sandbox fixture files to', HERE);
+    scenario('consent', 'mail', CONSENT_MAIL_CASES, MAIL_NOTE);
+    scenario('consent', 'calendar', CONSENT_CALENDAR_CASES, CALENDAR_NOTE);
+    scenario('consent-late', 'mail', CONSENT_LATE_MAIL_CASES, MAIL_NOTE);
+    scenario('consent-late', 'calendar', CONSENT_LATE_CALENDAR_CASES, CALENDAR_NOTE);
+    console.log('wrote 10 sandbox fixture files to', HERE);
 }

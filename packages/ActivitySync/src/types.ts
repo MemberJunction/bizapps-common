@@ -140,7 +140,21 @@ export interface ActivitySourceQuery {
      * `DEFAULT_MAX_CALENDAR_PAGES`), so a window holding more than `Limit` events is still read.
      */
     Limit: number;
+    /**
+     * Read specific items instead of the next window. When set, `Since` does not filter the result:
+     * a lookup asks for items by what they ARE, not by when they arrived.
+     *
+     * `Tagged` is the late-tag sweep: an owner who tags a six-week-old email today changes its
+     * `lastModifiedDateTime`, not its `receivedDateTime`, so the window read never sees it again.
+     * `MessageIds` re-reads known messages by RFC Message-ID, to find a tag that was removed and an
+     * ancestor that a tagged reply names.
+     */
+    Lookup?: ActivityLookup;
 }
+
+export type ActivityLookup =
+    | { Kind: 'Tagged'; Tag: string; ModifiedSince: Date | null }
+    | { Kind: 'MessageIds'; MessageIds: string[] };
 
 /** Whatever a provider's transport handed back, before normalization. */
 export interface RawBatch {

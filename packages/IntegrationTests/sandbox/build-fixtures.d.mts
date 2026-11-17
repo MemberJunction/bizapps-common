@@ -6,7 +6,7 @@ export interface SandboxGraphItem {
 
 export interface SandboxCase {
     /** The decision under the baseline rule set: Included, Excluded, or Skipped (never mapped). */
-    Expected: 'Included' | 'Excluded' | 'Skipped';
+    Expected: 'Included' | 'Excluded' | 'Skipped' | 'Withdrawn';
     Why: string;
     item: SandboxGraphItem;
 }
@@ -15,3 +15,7 @@ export const MAILBOX: string;
 export const MAIL_CASES: SandboxCase[];
 export const NEWER_MAIL_CASE: SandboxCase;
 export const CALENDAR_CASES: SandboxCase[];
+export const CONSENT_MAIL_CASES: SandboxCase[];
+export const CONSENT_LATE_MAIL_CASES: SandboxCase[];
+export const CONSENT_CALENDAR_CASES: SandboxCase[];
+export const CONSENT_LATE_CALENDAR_CASES: SandboxCase[];
