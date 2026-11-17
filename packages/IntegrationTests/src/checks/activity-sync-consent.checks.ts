@@ -204,7 +204,7 @@ const checks: NamedCheck[] = [
     },
     {
         Id: 'activity-sync.AS-C7',
-        Name: 'AS-C7 — two mailboxes tag one email: when one removes its tag, the shared activity is kept',
+        Name: 'AS-C7 — two mailboxes tag one email: when one removes its tag, the shared activity is kept (a dry run changes nothing)',
         RequiresMutation: true,
         Fn: async (ctx) => {
             await GetOrLoadWorld(ctx);
@@ -223,11 +223,16 @@ const checks: NamedCheck[] = [
                     Assert(second.Result.Success, `B failed: ${second.Result.Message}`);
                     AssertEqual(second.Decisions.get('sbx-c1-tagged-quote')?.Decision, 'Duplicate', 'B finds the quote A already filed');
                     AssertEqual(second.Decisions.get('sbx-c1-tagged-quote')?.DecidedByStage, 'Consent', "B's duplicate still records B's consent");
+                    // A later DRY RUN on B decides nothing: it must not read as B's latest consent decision.
+                    const preview = await SyncAndRead(ctx, b, { DryRun: true });
+                    Assert(preview.Result.Success, `B's dry run failed: ${preview.Result.Message}`);
 
                     await SetConnectionRef(ctx, a, 'consent-late', stamp);
                     const untagged = await SyncLive(ctx, a);
                     Assert(untagged.Result.Success, `A's second run failed: ${untagged.Result.Message}`);
                     Assert(live(untagged.Snapshot).includes('sbx-c1-tagged-quote'), `the quote is kept while B still consents: ${untagged.Result.Message}`);
+                    // The calendar re-reads its window on every run, so B's dry run DID decide the meeting again.
+                    Assert(live(untagged.Snapshot).includes('sbx-ce1-tagged'), `the meeting is kept while B still consents: ${untagged.Result.Message}`);
                     Assert((untagged.Result.Message ?? '').includes('another mailbox'), `the keep is reported: ${untagged.Result.Message}`);
                 });
             });
