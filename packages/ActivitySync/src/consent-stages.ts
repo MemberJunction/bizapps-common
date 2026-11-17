@@ -87,6 +87,26 @@ export class ConsentStage implements IQualificationStage {
     }
 }
 
+/**
+ * The ids of the items no block, exclusion or Exclude rule will stop. Run before `ResolveConsent`, so an
+ * item the cascade is going to exclude can never prove a reply or name an ancestor.
+ */
+export async function ConsentEligible(items: readonly NormalizedItem[], context: ConsentQualificationContext): Promise<Set<string>> {
+    const prefilter = [new ConsentBlockStage(), new ExclusionStage(), new ExcludeOnlyRulesStage()];
+    const eligible = new Set<string>();
+    for (const item of items) {
+        let excluded = false;
+        for (const stage of prefilter) {
+            if ((await stage.Evaluate(item, context)).Decision === 'Exclude') {
+                excluded = true;
+                break;
+            }
+        }
+        if (!excluded) eligible.add(item.ExternalID);
+    }
+    return eligible;
+}
+
 export function ConsentStages(): IQualificationStage[] {
     return [new ConsentBlockStage(), new ExclusionStage(), new ExcludeOnlyRulesStage(), new ConsentStage()];
 }

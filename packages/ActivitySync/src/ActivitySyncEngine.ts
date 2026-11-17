@@ -39,7 +39,8 @@ import {
 } from './stages.js';
 import { ConsentPolicyFromSettings, MergeConsentSweptThrough, ResolveConsent, type ConsentPolicy } from './consent.js';
 import { ConsentIntake } from './consent-intake.js';
-import { ConsentStages, type ConsentQualificationContext } from './consent-stages.js';
+import { DatabaseConsentStore } from './consent-store.js';
+import { ConsentEligible, ConsentStages, type ConsentQualificationContext } from './consent-stages.js';
 import { FixtureActivitySyncProvider } from './providers/FixtureActivitySyncProvider.js';
 import { MSGraphActivitySyncProvider } from './providers/MSGraphActivitySyncProvider.js';
 import { MSGraphCalendarSyncProvider } from './providers/MSGraphCalendarSyncProvider.js';
@@ -371,6 +372,17 @@ export class ActivitySyncEngine {
             result.Issues.push(`Provider type '${typeRow.Code}' is not active.`);
             return result;
         }
+        // CONSENT IS SETTLED BEFORE ANYTHING IS READ, for the reason retention is: a connection whose
+        // consent block cannot be read must not touch the mailbox, least of all by falling back to the
+        // broadest mode there is.
+        const consentRead = ConsentPolicyFromSettings(connection.Settings);
+        if (consentRead.Error !== undefined) {
+            result.Issues.push(consentRead.Error);
+            return result;
+        }
+        const consent: ConsentPolicy = consentRead.Policy;
+        const tagged = consent.Mode === 'Tagged' && consent.Tag ? { ...consent, Tag: consent.Tag } : null;
+
         /**
          * AUDIT RETENTION IS SETTLED BEFORE ANYTHING IS READ, not at persist time.
          *
@@ -397,6 +409,16 @@ export class ActivitySyncEngine {
             result.Issues.push(String(err instanceof Error ? err.message : err));
             return result;
         }
+        if (tagged && capture.Capture !== 'None') {
+            // A TAGGED CONNECTION RETAINS NOTHING IT WAS NOT GIVEN. Everything it excludes is excluded for
+            // want of the owner's consent, so keeping its subject or body, encrypted or not, is the very
+            // capture the mode exists to prevent. The policy is set aside and the run says so.
+            result.Issues.push(
+                'SkippedContentPolicy is ignored on a Tagged connection: content of items the owner did not ' +
+                    'tag is never retained.',
+            );
+            capture = { Capture: 'None', EncryptionKeyID: null };
+        }
         if (capture.Capture !== 'None' && !this.cipher) {
             // The ActivityFileSink lesson, applied. A host that asked for retention and cannot
             // encrypt must not quietly proceed: plaintext is forbidden outright, and writing nothing
@@ -413,16 +435,6 @@ export class ActivitySyncEngine {
         // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
 
-        // CONSENT IS SETTLED BEFORE ANYTHING IS READ, for the reason retention is: a connection whose
-        // consent block cannot be read must not touch the mailbox, least of all by falling back to the
-        // broadest mode there is.
-        const consentRead = ConsentPolicyFromSettings(connection.Settings);
-        if (consentRead.Error !== undefined) {
-            result.Issues.push(consentRead.Error);
-            return result;
-        }
-        const consent: ConsentPolicy = consentRead.Policy;
-        const tagged = consent.Mode === 'Tagged' && consent.Tag ? { ...consent, Tag: consent.Tag } : null;
 
         const plugin = (surface?.source ?? source) ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
         if (!plugin) {
@@ -482,8 +494,9 @@ export class ActivitySyncEngine {
         }
 
         const fetchQuery = { Mailbox: connection.Mailbox ?? '', Since: since, Limit: options.Limit };
+        const consentStore = new DatabaseConsentStore(provider, contextUser);
         const gathered = tagged
-            ? await this.consentIntake.Gather(plugin, fetchQuery, batch.Items, tagged, connection.ID, provider, contextUser)
+            ? await this.consentIntake.Gather(plugin, fetchQuery, batch.Items, tagged, connection.ID, consentStore)
             : null;
         if (gathered) {
             result.Issues.push(...gathered.Issues);
@@ -560,17 +573,27 @@ export class ActivitySyncEngine {
             ActivityID?: string | null;
         }> = [];
 
-        const grants = tagged && gathered ? ResolveConsent(batch.Items, gathered.Prior, tagged.Tag, plugin.Kind) : null;
+        const base: EngineQualificationContext = {
+            ConnectionID: connection.ID,
+            ProviderTypeCode: sourceSystem,
+            Exclusions: exclusions.Rows,
+            Rules: rules.Rows,
+            InternalDomains: internalDomains.Rows,
+            KnownAddresses: identities.Known,
+        };
+        // Only items the cascade will not block or exclude may grant consent to others (see ConsentEligible).
+        const grants =
+            tagged && gathered
+                ? ResolveConsent(
+                      batch.Items,
+                      gathered.Prior,
+                      tagged.Tag,
+                      plugin.Kind,
+                      await ConsentEligible(batch.Items, { ...base, Consent: new Map(), Kind: plugin.Kind, Tag: tagged.Tag }),
+                  )
+                : null;
         const stages = tagged ? ConsentStages() : this.stages;
         for (const item of batch.Items) {
-            const base: EngineQualificationContext = {
-                ConnectionID: connection.ID,
-                ProviderTypeCode: sourceSystem,
-                Exclusions: exclusions.Rows,
-                Rules: rules.Rows,
-                InternalDomains: internalDomains.Rows,
-                KnownAddresses: identities.Known,
-            };
             const ctx: EngineQualificationContext | ConsentQualificationContext =
                 tagged && grants ? { ...base, Consent: grants, Kind: plugin.Kind, Tag: tagged.Tag } : base;
             let verdict;
@@ -717,8 +740,11 @@ export class ActivitySyncEngine {
                 details.push({
                     Item: item,
                     Decision: 'Duplicate',
-                    Stage: 'Write',
-                    Reason: 'SourceSystem+ExternalID already present',
+                    // ON A TAGGED CONNECTION THE DUPLICATE IS STILL THIS MAILBOX'S CONSENT. One email in two
+                    // ADs' mailboxes is one Activity; the second owner's tag is recorded here, on their own
+                    // connection's run, or their consent would be invisible to proof and to withdrawal.
+                    Stage: tagged ? verdict.StageName : 'Write',
+                    Reason: tagged ? verdict.Reason : 'SourceSystem+ExternalID already present',
                     ActivityID: written.ActivityID,
                 });
                 continue;
@@ -740,9 +766,18 @@ export class ActivitySyncEngine {
 
         if (tagged) {
             const withdrawn = await this.consentIntake.Withdraw(
-                plugin, fetchQuery, batch.Items, tagged, connection.ID, options.DryRun, provider, contextUser,
+                plugin, fetchQuery, batch.Items, tagged, connection.ID, options.DryRun, consentStore,
             );
             result.Issues.push(...withdrawn.Issues);
+            // Record that THIS mailbox's consent ended, so it stops counting as consenting (see ConsentStore).
+            for (const item of withdrawn.Revoked) {
+                details.push({
+                    Item: item,
+                    Decision: options.DryRun ? 'WouldExclude' : 'Excluded',
+                    Stage: 'Consent',
+                    Reason: 'Consent withdrawn: the tag was removed',
+                });
+            }
             const sweptThrough = gathered?.SweptThrough ?? null;
             if (!options.DryRun && sweptThrough && result.Failed === 0) {
                 if (!(await this.stampConsentSweep(connectionID, sweptThrough, contextUser, provider))) {

@@ -216,8 +216,10 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
     ): Promise<RawBatch> {
         const filters =
             request.Kind === 'Tagged'
-                ? [TaggedFilter(request.Tag, request.ModifiedSince)]
-                : chunk(request.MessageIds, MESSAGE_ID_BATCH).map(MessageIdFilter);
+                ? [TaggedFilter(request.Tag, request.ModifiedSince, request.ModifiedBefore ?? null)]
+                : request.Kind === 'MessageIds'
+                  ? chunk(request.MessageIds, MESSAGE_ID_BATCH).map(MessageIdFilter)
+                  : chunk(request.ConversationIds, MESSAGE_ID_BATCH).map(ConversationFilter);
         const payloads: Record<string, unknown>[] = [];
         let capped = false;
         for (const filter of filters) {
@@ -423,10 +425,16 @@ export function MJGraphTransportDeps(args: {
 /** Message-IDs per lookup request. */
 export const MESSAGE_ID_BATCH = 10;
 
-/** OData for "carries the tag, modified at or after". `categories/any` is Graph's documented form. */
-export function TaggedFilter(tag: string, modifiedSince: Date | null): string {
-    const clause = `categories/any(c:c eq '${odataString(tag)}')`;
-    return modifiedSince ? `${clause} and lastModifiedDateTime ge ${modifiedSince.toISOString()}` : clause;
+/** OData for "carries the tag, modified in [since, before)". `categories/any` is Graph's documented form. */
+export function TaggedFilter(tag: string, modifiedSince: Date | null, modifiedBefore: Date | null = null): string {
+    const clauses = [`categories/any(c:c eq '${odataString(tag)}')`];
+    if (modifiedSince) clauses.push(`lastModifiedDateTime ge ${modifiedSince.toISOString()}`);
+    if (modifiedBefore) clauses.push(`lastModifiedDateTime lt ${modifiedBefore.toISOString()}`);
+    return clauses.join(' and ');
+}
+
+export function ConversationFilter(ids: string[]): string {
+    return ids.map((id) => `conversationId eq '${odataString(id)}'`).join(' or ');
 }
 
 export function MessageIdFilter(ids: string[]): string {

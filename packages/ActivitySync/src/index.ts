@@ -24,6 +24,7 @@ export * from './stages.js';
 export * from './consent.js';
 export * from './consent-stages.js';
 export * from './consent-intake.js';
+export * from './consent-store.js';
 export * from './ActivitySyncEngine.js';
 export * from './action-result.js';
 export * from './extensions.js';

@@ -3,29 +3,25 @@
  *
  * GATHER (before qualification)
  * - The window read only sees mail by RECEIVED time. A tag added later changes `lastModifiedDateTime`,
- *   so a second read, the late-tag sweep, asks for tagged items modified since the last sweep.
- * - Every item is re-keyed to its stable id (Message-ID / iCalUId) and loses its BCC participants:
- *   recording who was blind-copied would show it to everyone who can see the activity.
- * - A tagged reply names its ancestors in `References`. Those not in hand are read by Message-ID.
- * - Messages consented on earlier runs, in the same threads, are loaded so a reply arriving today
- *   can be proven against them.
+ *   so a second read, the late-tag sweep, asks for tagged items modified since the last sweep. It reads
+ *   in windows and only ever claims to have read a window that came back whole (a capped page means the
+ *   window is narrowed, never skipped).
+ * - Every item is re-keyed to its stable id (Message-ID / iCalUId) and loses its blind copy.
+ * - A tagged message names its ancestors in `References`; those not in hand are read by Message-ID.
+ *   A message tagged LATE may already have replies behind the watermark, so its conversation is read too.
+ * - What this connection consented to on earlier runs, among the messages the batch names, is loaded so a
+ *   reply arriving today can be proven against it.
  *
  * WITHDRAW (after the writes)
- * An item captured because it was tagged, whose tag is now GONE, is withdrawn — but only on POSITIVE
- * evidence: the item was read and has no tag. An item that cannot be found (archived, moved, mailbox
- * disabled) is "unknown" and kept; mass-withdrawing a departed AD's history because their mailbox
- * went away would be the worst failure this pass could have.
+ * A capture is withdrawn only on POSITIVE evidence that consent is gone: the item was read and carries no
+ * tag, or it was proven only by a message that is itself being withdrawn and is not tagged now. Anything
+ * that cannot be read, a re-read that came back cut off, or an item another mailbox still consents to, is
+ * KEPT and reported. Mass-withdrawing history because a read went wrong is the worst failure this pass has.
  *
- * A withdrawn activity is not deleted. Sales may have linked it to a deal and a rep may have written
- * notes on it; Common must not cascade into either. Its content and participant links are purged,
- * it is made Private, and its ExternalID is freed so a later re-tag files it afresh.
+ * Consent is per connection and per surface; see `consent-store.ts`.
  *
  * @module @mj-biz-apps/common-activity-sync
  */
-import { RunView, type IMetadataProvider, type UserInfo } from '@memberjunction/core';
-import { UUIDMap } from '@memberjunction/global';
-import type { mjBizAppsCommonActivityEntity, mjBizAppsCommonActivityLinkEntity } from '@mj-biz-apps/common-entities';
-
 import type { BaseActivitySyncProvider } from './BaseActivitySyncProvider.js';
 import {
     HasTag,
@@ -33,28 +29,38 @@ import {
     MAX_ANCESTOR_REFERENCES,
     MAX_WITHDRAW_CHECKS,
     PreferTaggedCopy,
-    StableItem,
     ReplyReferences,
-    StableExternalId,
-    WITHDRAWN_PREFIX,
-    WITHDRAWN_TITLE,
+    StableItem,
     type ConsentPolicy,
     type ConsentedMessage,
 } from './consent.js';
 import { REASON_PROVEN, REASON_TAGGED } from './consent-stages.js';
-import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
-import { EscapeText, RequireUUID, UuidInList } from './sql.js';
-import type { ActivityLinkRole, ActivitySourceQuery, NormalizedItem } from './types.js';
-import { IsDatabaseProvider } from './writer.js';
+import type { ConsentRecord, ConsentStore } from './consent-store.js';
+import type { ActivitySourceKind, ActivitySourceQuery, NormalizedItem } from './types.js';
 
-/** Common's own links, written from the message's participants. `Regarding`/`LoggedFor` belong to consumers. */
-const PARTICIPANT_ROLES: readonly ActivityLinkRole[] = ['Participant', 'From', 'To', 'Cc', 'Bcc', 'Organizer', 'Attendee'];
+/** The Activity type code each surface writes (GraphMessageMapper / MSGraphCalendarSyncProvider). */
+export const SURFACE_TYPE_CODE: Record<ActivitySourceKind, string> = {
+    Message: 'Email',
+    Calendar: 'Meeting',
+    Social: 'Social',
+    Chat: 'Chat',
+};
+/** Requests one sweep may make. Each either drains a window or halves it. */
+export const MAX_SWEEP_REQUESTS = 12;
+/**
+ * Each sweep starts this far before its recorded position. The position is our clock; the tag time is
+ * Exchange's. A server running ahead of Exchange would otherwise skip a tag made in the gap, for good.
+ * Items read twice are absorbed by de-duplication.
+ */
+export const SWEEP_OVERLAP_MS = 10 * 60_000;
+/** Message-IDs per re-read request, so a page holds every copy of every id it names. */
+export const REREAD_BATCH = 10;
 
 export interface GatherResult {
     Items: NormalizedItem[];
     Prior: Map<string, ConsentedMessage>;
     Issues: string[];
-    /** The newest `lastModifiedDateTime` the sweep saw; where the next sweep starts. */
+    /** How far the sweep has read COMPLETELY; where the next sweep starts. Null: no progress to record. */
     SweptThrough: Date | null;
     /** Set when a read failed: the run must fail closed rather than decide on half the picture. */
     Failure?: string;
@@ -64,23 +70,26 @@ export interface WithdrawResult {
     Withdrawn: number;
     Unknown: number;
     Issues: string[];
+    /**
+     * Items whose consent THIS mailbox no longer gives, whether or not the row was withdrawn (another
+     * mailbox may still hold it). The run records each as a Consent `Excluded` decision, so this mailbox
+     * stops counting as consenting the next time anyone asks.
+     */
+    Revoked: NormalizedItem[];
 }
 
-interface CandidateRow {
-    ID: string;
-    ExternalID: string;
-    ExternalThreadID: string | null;
-}
+type TaggedPolicy = ConsentPolicy & { Tag: string };
 
 export class ConsentIntake {
+    public constructor(private readonly Now: () => Date = () => new Date()) {}
+
     public async Gather(
         plugin: BaseActivitySyncProvider,
         query: ActivitySourceQuery,
         windowItems: readonly NormalizedItem[],
-        policy: ConsentPolicy & { Tag: string },
+        policy: TaggedPolicy,
         connectionID: string,
-        provider: IMetadataProvider,
-        user: UserInfo,
+        store: ConsentStore,
     ): Promise<GatherResult> {
         const issues: string[] = [];
         const items = new Map<string, NormalizedItem>();
@@ -94,14 +103,21 @@ export class ConsentIntake {
         if (plugin.Kind !== 'Message') {
             return { Items: [...items.values()], Prior: new Map(), Issues: issues, SweptThrough: null };
         }
+        const failed = (failure: string): GatherResult => ({ Items: [], Prior: new Map(), Issues: issues, SweptThrough: null, Failure: failure });
 
-        const sweep = await plugin.Fetch({
-            ...query,
-            Lookup: { Kind: 'Tagged', Tag: policy.Tag, ModifiedSince: policy.SweptThrough ?? query.Since },
-        });
-        if (sweep.Failed) return failed(`Late-tag sweep failed: ${sweep.Issues.join(' | ')}`);
-        add(sweep.Items);
+        const sweep = await this.sweep(plugin, query, policy, windowItems);
+        if (sweep.Failure) return failed(sweep.Failure);
         issues.push(...sweep.Issues);
+        add(sweep.Items);
+
+        const lateTagged = sweep.Items.filter((i) => HasTag(i.Raw, policy.Tag));
+        const threads = [...new Set(lateTagged.map((i) => i.ExternalThreadID).filter((t): t is string => !!t))];
+        if (threads.length > 0) {
+            const conversations = await plugin.Fetch({ ...query, Lookup: { Kind: 'Conversations', ConversationIds: threads } });
+            if (conversations.Failed) return failed(`Conversation lookup failed: ${conversations.Issues.join(' | ')}`);
+            if (conversations.Capped) issues.push('A late-tagged conversation held more messages than one read returns; later replies may be missing.');
+            add(conversations.Items);
+        }
 
         const missing = missingAncestors([...items.values()], policy.Tag);
         if (missing.length > 0) {
@@ -117,87 +133,179 @@ export class ConsentIntake {
                     'are captured. The MJ Graph provider must forward ContextData.Expand.',
             );
         }
-        const prior = await loadPrior(all, connectionID, provider, user);
-        if ('Failure' in prior) return failed(prior.Failure);
-        return { Items: all, Prior: prior.Map, Issues: issues, SweptThrough: newestModified(sweep.Items) };
-
-        function failed(failure: string): GatherResult {
-            return { Items: [], Prior: new Map(), Issues: issues, SweptThrough: null, Failure: failure };
-        }
+        const prior = await loadPrior(all, connectionID, SURFACE_TYPE_CODE[plugin.Kind], store);
+        if (prior.Failed) return failed(prior.Issue);
+        return { Items: all, Prior: prior.Value, Issues: issues, SweptThrough: sweep.SweptThrough };
     }
 
     /**
-     * Withdraw tagged captures whose tag is gone. `present` is what the run has already read: for the
-     * calendar it is the whole window, so no second read is needed; for mail, the tagged candidates
-     * are re-read by Message-ID.
+     * Tagged items modified since the last sweep, read window by window.
+     *
+     * Graph returns a lookup page in no order we can rely on, so a page that comes back FULL says only
+     * that the window holds too much: the window is halved and read again. A window that comes back short
+     * was read completely, and only then does the sweep position move past it.
+     */
+    private async sweep(
+        plugin: BaseActivitySyncProvider,
+        query: ActivitySourceQuery,
+        policy: TaggedPolicy,
+        windowItems: readonly NormalizedItem[],
+    ): Promise<{ Items: NormalizedItem[]; Issues: string[]; SweptThrough: Date | null; Failure?: string }> {
+        const now = this.Now();
+        // A FIRST RUN HAS NOTHING TO SWEEP: with no watermark the window read covers every message, tagged
+        // or not. Its position is the newest change it actually READ (Exchange's clock, not ours), so the
+        // next sweep catches every tag made after the read.
+        const recorded = policy.SweptThrough ?? query.Since;
+        if (recorded === null) return { Items: [], Issues: [], SweptThrough: newestModified(windowItems) };
+        const start = new Date(recorded.getTime() - SWEEP_OVERLAP_MS);
+        let from: Date | null = start;
+        let to = now;
+        const items: NormalizedItem[] = [];
+        for (let request = 0; request < MAX_SWEEP_REQUESTS; request++) {
+            const page = await plugin.Fetch({ ...query, Lookup: { Kind: 'Tagged', Tag: policy.Tag, ModifiedSince: from, ModifiedBefore: to } });
+            if (page.Failed) return { Items: [], Issues: [], SweptThrough: null, Failure: `Late-tag sweep failed: ${page.Issues.join(' | ')}` };
+            if (page.Capped) {
+                const lower = from?.getTime() ?? 0;
+                const half = Math.floor((to.getTime() - lower) / 2);
+                if (half < 1_000) break;
+                to = new Date(lower + half);
+                continue;
+            }
+            items.push(...page.Items);
+            from = to;
+            if (to.getTime() >= now.getTime()) return { Items: items, Issues: [], SweptThrough: now };
+            to = now;
+        }
+        const issues = [`The late-tag sweep did not reach the present in ${MAX_SWEEP_REQUESTS} reads; the next run continues from ${from?.toISOString() ?? 'the start'}.`];
+        const advanced = from !== null && from.getTime() > recorded.getTime();
+        return { Items: items, Issues: issues, SweptThrough: advanced ? from : null };
+    }
+
+    /**
+     * Withdraw captures whose consent is gone. `present` is what the run already read: for the calendar
+     * the whole window, so no second read is needed; for mail, every candidate is re-read by Message-ID.
      */
     public async Withdraw(
         plugin: BaseActivitySyncProvider,
         query: ActivitySourceQuery,
         present: readonly NormalizedItem[],
-        policy: ConsentPolicy & { Tag: string },
+        policy: TaggedPolicy,
         connectionID: string,
         dryRun: boolean,
-        provider: IMetadataProvider,
-        user: UserInfo,
+        store: ConsentStore,
     ): Promise<WithdrawResult> {
-        const result: WithdrawResult = { Withdrawn: 0, Unknown: 0, Issues: [] };
-        const candidates = await loadCandidates(connectionID, policy.WithdrawWindowDays, provider, user);
-        if ('Failure' in candidates) {
-            result.Issues.push(candidates.Failure);
+        const result: WithdrawResult = { Withdrawn: 0, Unknown: 0, Issues: [], Revoked: [] };
+        const since = new Date(this.Now().getTime() - policy.WithdrawWindowDays * 86_400_000);
+        const loaded = await store.ConsentedActivities({
+            ConnectionID: connectionID,
+            TypeCode: SURFACE_TYPE_CODE[plugin.Kind],
+            ConsentedSince: since,
+            MaxRows: MAX_WITHDRAW_CHECKS + 1,
+        });
+        if (loaded.Failed) {
+            result.Issues.push(`Withdrawal skipped: ${loaded.Issue}`);
             return result;
         }
-        if (candidates.Capped) {
-            result.Issues.push(`More than ${MAX_WITHDRAW_CHECKS} tagged items in the window; only the newest were checked for a removed tag.`);
+        if (loaded.Value.length > MAX_WITHDRAW_CHECKS) {
+            result.Issues.push(`More than ${MAX_WITHDRAW_CHECKS} consented items in the window; only the newest were checked for a removed tag.`);
         }
-        const { Tagged, Proven } = candidates;
-        if (Tagged.length === 0) return result;
+        const candidates = loaded.Value.slice(0, MAX_WITHDRAW_CHECKS);
+        if (candidates.length === 0) return result;
 
-        const seen = new Map(present.map((i) => [i.ExternalID, i] as const));
-        if (plugin.Kind === 'Message') {
-            const reread = await plugin.Fetch({ ...query, Lookup: { Kind: 'MessageIds', MessageIds: Tagged.map((t) => t.ExternalID) } });
-            if (reread.Failed) {
-                result.Issues.push(`Could not re-read tagged items, so none were withdrawn: ${reread.Issues.join(' | ')}`);
-                return result;
-            }
-            for (const item of reread.Items) {
-                const stable = StableItem(item, plugin.Kind);
-                seen.set(stable.ExternalID, PreferTaggedCopy(seen.get(stable.ExternalID), stable, policy.Tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-            }
+        const seen = await this.currentState(plugin, query, present, candidates, policy.Tag);
+        if ('Issue' in seen) {
+            result.Issues.push(seen.Issue);
+            return result;
         }
-
-        const untagged = Tagged.filter((row) => {
-            const item = seen.get(row.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-            if (!item) result.Unknown++;
-            return item !== undefined && !HasTag(item.Raw, policy.Tag);
+        const chosen = ChooseWithdrawals(candidates, seen.Items, policy.Tag);
+        result.Unknown = chosen.Unknown;
+        const elsewhere = await store.ConsentedElsewhere(chosen.Rows.map((r) => r.ExternalID), connectionID);
+        if (elsewhere.Failed) {
+            result.Issues.push(`Withdrawal skipped: ${elsewhere.Issue}`);
+            return result;
+        }
+        result.Revoked = chosen.Rows.flatMap((r) => {
+            const item = seen.Items.get(r.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+            return item ? [item] : [];
         });
-        const goneThreads = new Set(untagged.map((r) => r.ExternalThreadID).filter((t): t is string => !!t));
-        const stillTagged = new Set(Tagged.filter((r) => !untagged.includes(r)).map((r) => r.ExternalThreadID));
-        const orphaned = Proven.filter((r) => r.ExternalThreadID && goneThreads.has(r.ExternalThreadID) && !stillTagged.has(r.ExternalThreadID)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-
-        for (const row of [...untagged, ...orphaned]) {
-            if (dryRun) {
-                result.Withdrawn++;
-                continue;
-            }
-            const issue = await withdraw(row.ID, provider, user);
+        const kept = chosen.Rows.filter((r) => elsewhere.Value.has(r.ExternalID)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        for (const row of chosen.Rows.filter((r) => !elsewhere.Value.has(r.ExternalID))) { // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+            const issue = dryRun ? null : await store.Withdraw(row.ActivityID);
             if (issue) result.Issues.push(issue);
             else result.Withdrawn++;
         }
         if (result.Withdrawn > 0) {
             result.Issues.push(`${dryRun ? 'Would withdraw' : 'Withdrew'} ${result.Withdrawn} item(s) whose "${policy.Tag}" tag was removed.`);
         }
+        if (kept.length > 0) result.Issues.push(`${kept.length} untagged item(s) were kept because another mailbox also consented to them.`);
         if (result.Unknown > 0) {
             result.Issues.push(`${result.Unknown} tagged item(s) could not be found in the mailbox and were kept, not withdrawn.`);
         }
         return result;
     }
+
+    /** The candidates as they are now. A re-read that came back cut off proves nothing, so it is refused. */
+    private async currentState(
+        plugin: BaseActivitySyncProvider,
+        query: ActivitySourceQuery,
+        present: readonly NormalizedItem[],
+        candidates: readonly ConsentRecord[],
+        tag: string,
+    ): Promise<{ Items: Map<string, NormalizedItem> } | { Issue: string }> {
+        const seen = new Map<string, NormalizedItem>();
+        const keep = (item: NormalizedItem): void => {
+            const stable = StableItem(item, plugin.Kind);
+            seen.set(stable.ExternalID, PreferTaggedCopy(seen.get(stable.ExternalID), stable, tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        };
+        present.forEach(keep);
+        if (plugin.Kind !== 'Message') return { Items: seen };
+        const ids = candidates.map((c) => c.ExternalID);
+        for (let i = 0; i < ids.length; i += REREAD_BATCH) {
+            const reread = await plugin.Fetch({ ...query, Lookup: { Kind: 'MessageIds', MessageIds: ids.slice(i, i + REREAD_BATCH) } });
+            if (reread.Failed) return { Issue: `Could not re-read consented items, so none were withdrawn: ${reread.Issues.join(' | ')}` };
+            if (reread.Capped) return { Issue: 'A re-read of consented items came back cut off, so none were withdrawn this run.' };
+            reread.Items.forEach(keep);
+        }
+        return { Items: seen };
+    }
 }
 
-function missingAncestors(items: readonly NormalizedItem[], tag: string): string[] {
-    const have = new Set(items.map((i) => InternetMessageId(i.Raw)).filter(Boolean));
-    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES));
-    return [...new Set(wanted)].filter((id) => !have.has(id));
+/**
+ * Which consented captures lose their consent.
+ *
+ * A TAGGED capture whose item was read and carries no tag. A PROVEN capture whose proving message
+ * (`Via`, from its reason) is being withdrawn, unless the item is tagged now itself; this follows the
+ * actual reply chain, not the whole conversation, and settles chains of replies in rounds. A tagged
+ * capture that could not be read is counted Unknown and kept.
+ */
+export function ChooseWithdrawals(
+    candidates: readonly ConsentRecord[],
+    seen: ReadonlyMap<string, NormalizedItem>,
+    tag: string,
+): { Rows: ConsentRecord[]; Unknown: number } {
+    const taggedNow = (r: ConsentRecord): boolean => {
+        const item = seen.get(r.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        return item !== undefined && HasTag(item.Raw, tag);
+    };
+    let unknown = 0;
+    const gone = new Set<string>();
+    for (const r of candidates.filter((c) => c.Reason.startsWith(REASON_TAGGED))) {
+        if (!seen.has(r.ExternalID)) unknown++; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        else if (!taggedNow(r)) gone.add(r.ExternalID);
+    }
+    const proven = candidates.filter((c) => c.Reason.startsWith(REASON_PROVEN));
+    for (let round = 0; round < proven.length; round++) {
+        const next = proven.filter((r) => !gone.has(r.ExternalID) && !taggedNow(r) && gone.has(ViaOf(r.Reason) ?? '')); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        if (next.length === 0) break;
+        next.forEach((r) => gone.add(r.ExternalID));
+    }
+    return { Rows: candidates.filter((c) => gone.has(c.ExternalID)), Unknown: unknown }; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+}
+
+/** The Message-ID a proven capture was proven by: the last `<...>` in its reason. */
+export function ViaOf(reason: string): string | null {
+    const ids = reason.match(/<[^<>\s]+>/g);
+    return ids ? ids[ids.length - 1] : null;
 }
 
 function newestModified(items: readonly NormalizedItem[]): Date | null {
@@ -210,73 +318,39 @@ function newestModified(items: readonly NormalizedItem[]): Date | null {
     return newest === null ? null : new Date(newest);
 }
 
+function missingAncestors(items: readonly NormalizedItem[], tag: string): string[] {
+    const have = new Set(items.map((i) => InternetMessageId(i.Raw)).filter(Boolean));
+    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES));
+    return [...new Set(wanted)].filter((id) => !have.has(id));
+}
+
 /**
- * Messages consented on earlier runs of THIS connection, in the threads at hand.
- *
- * ONLY CONSENTED CAPTURES COUNT. A connection switched from KnownContact to Tagged still holds the
- * activities KnownContact filed; letting those prove replies would grant by inference what nobody
- * tagged. So a prior activity proves a reply only when its own run detail says Consent included it.
+ * What THIS connection consented to on earlier runs, among the messages the batch names in its reply
+ * headers. Looked up by Message-ID, not by conversation: proof is by headers, and a reply whose subject
+ * changed lands in a new conversation while still answering a consented message.
  */
 async function loadPrior(
     items: readonly NormalizedItem[],
     connectionID: string,
-    provider: IMetadataProvider,
-    user: UserInfo,
-): Promise<{ Map: Map<string, ConsentedMessage> } | { Failure: string }> {
-    const threads = [...new Set(items.map((i) => i.ExternalThreadID).filter((t): t is string => !!t))];
+    typeCode: string,
+    store: ConsentStore,
+): Promise<{ Failed: false; Value: Map<string, ConsentedMessage> } | { Failed: true; Issue: string }> {
     const prior = new Map<string, ConsentedMessage>();
-    if (threads.length === 0) return { Map: prior };
-    const res = await RunView.FromMetadataProvider(provider).RunView<{ ID: string; ExternalID: string; Details: string | null }>(
-        {
-            EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
-            ExtraFilter:
-                `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}' ` +
-                `AND ExternalThreadID IN (${threads.map((t) => `'${EscapeText(t)}'`).join(', ')}) ` +
-                `AND ExternalID NOT LIKE '${WITHDRAWN_PREFIX}%'`,
-            Fields: ['ID', 'ExternalID', 'Details'],
-            ResultType: 'simple',
-        },
-        user,
-    );
-    if (!res.Success) return { Failure: `Consented-thread lookup failed: ${res.ErrorMessage}` };
-    const rows = res.Results ?? [];
-    const reasons = await consentReasons(rows.map((r) => r.ID), provider, user);
-    if ('Failure' in reasons) return reasons;
-    for (const row of rows) {
-        if (!isConsentReason(reasons.Map.Get(row.ID))) continue;
-        prior.set(row.ExternalID, { MessageId: row.ExternalID, Participants: participantsFromDetails(row.Details) }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+    const named = [...new Set(items.flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES)))];
+    if (named.length === 0) return { Failed: false, Value: prior };
+    const res = await store.ConsentedActivities({ ConnectionID: connectionID, TypeCode: typeCode, ExternalIDs: named });
+    if (res.Failed) return { Failed: true, Issue: res.Issue };
+    for (const r of res.Value) {
+        prior.set(r.ExternalID, { MessageId: r.ExternalID, Participants: ParticipantsFromDetails(r.Details) }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
     }
-    return { Map: prior };
+    return { Failed: false, Value: prior };
 }
 
-/** Why Consent included each activity (the run detail's Reason), for those it did include. */
-async function consentReasons(
-    activityIDs: readonly string[],
-    provider: IMetadataProvider,
-    user: UserInfo,
-): Promise<{ Map: UUIDMap<string> } | { Failure: string }> {
-    const map = new UUIDMap<string>();
-    if (activityIDs.length === 0) return { Map: map };
-    const details = await RunView.FromMetadataProvider(provider).RunView<{ ActivityID: string; Reason: string | null }>(
-        {
-            EntityName: ACTIVITY_SYNC_ENTITIES.RunDetails,
-            ExtraFilter: `DecidedByStage = 'Consent' AND Decision = 'Included' AND ActivityID IN (${UuidInList(activityIDs, 'ActivityID')})`,
-            Fields: ['ActivityID', 'Reason'],
-            ResultType: 'simple',
-        },
-        user,
-    );
-    if (!details.Success) return { Failure: `Consent lookup failed: ${details.ErrorMessage}` };
-    for (const d of details.Results ?? []) map.Set(d.ActivityID, d.Reason ?? '');
-    return { Map: map };
-}
-
-function isConsentReason(reason: string | undefined): boolean {
-    return !!reason && (reason.startsWith(REASON_TAGGED) || reason.startsWith(REASON_PROVEN));
-}
-
-/** `Activity.Details` is the Graph payload as written; the addresses come back out of it. */
-function participantsFromDetails(details: string | null): string[] {
+/**
+ * The addresses on a stored Graph payload (`Activity.Details`), as the mapper reads them: `from`, or
+ * `sender` when `from` is absent, plus To and Cc. Never BCC.
+ */
+export function ParticipantsFromDetails(details: string | null): string[] {
     if (!details) return [];
     let raw: Record<string, unknown>;
     try {
@@ -291,79 +365,10 @@ function participantsFromDetails(details: string | null): string[] {
         const address = (r as { emailAddress?: { address?: unknown } })?.emailAddress?.address;
         if (typeof address === 'string' && address.trim()) out.push(address.trim().toLowerCase());
     };
-    grab(raw['from']);
+    grab(raw['from'] ?? raw['sender']);
     for (const key of ['toRecipients', 'ccRecipients']) {
         const list = raw[key];
         if (Array.isArray(list)) list.forEach(grab);
     }
     return out;
-}
-
-/** Captured activities in the window, split by how their consent was granted. */
-async function loadCandidates(
-    connectionID: string,
-    windowDays: number,
-    provider: IMetadataProvider,
-    user: UserInfo,
-): Promise<{ Tagged: CandidateRow[]; Proven: CandidateRow[]; Capped: boolean } | { Failure: string }> {
-    const since = new Date(Date.now() - windowDays * 86_400_000).toISOString();
-    const rv = RunView.FromMetadataProvider(provider);
-    const activities = await rv.RunView<CandidateRow>(
-        {
-            EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
-            ExtraFilter:
-                `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}' ` +
-                `AND StartedAt >= '${since}' AND ExternalID NOT LIKE '${WITHDRAWN_PREFIX}%'`,
-            Fields: ['ID', 'ExternalID', 'ExternalThreadID'],
-            OrderBy: 'StartedAt DESC',
-            MaxRows: MAX_WITHDRAW_CHECKS + 1,
-            ResultType: 'simple',
-        },
-        user,
-    );
-    if (!activities.Success) return { Failure: `Withdrawal candidate lookup failed: ${activities.ErrorMessage}` };
-    const rows = (activities.Results ?? []).slice(0, MAX_WITHDRAW_CHECKS);
-    if (rows.length === 0) return { Tagged: [], Proven: [], Capped: false };
-    const reasons = await consentReasons(rows.map((r) => r.ID), provider, user);
-    if ('Failure' in reasons) return { Failure: `Withdrawal ${reasons.Failure}` };
-    const reasonOf = (r: CandidateRow): string => reasons.Map.Get(r.ID) ?? '';
-    return {
-        Tagged: rows.filter((r) => reasonOf(r).startsWith(REASON_TAGGED)),
-        Proven: rows.filter((r) => reasonOf(r).startsWith(REASON_PROVEN)),
-        Capped: (activities.Results ?? []).length > MAX_WITHDRAW_CHECKS,
-    };
-}
-
-/** Purge one activity's content and participant links, in one transaction. Returns an issue, or null. */
-async function withdraw(activityID: string, provider: IMetadataProvider, user: UserInfo): Promise<string | null> {
-    if (!IsDatabaseProvider(provider)) return 'Withdrawal needs a database provider; nothing was withdrawn.';
-    const links = await RunView.FromMetadataProvider(provider).RunView<mjBizAppsCommonActivityLinkEntity>(
-        {
-            EntityName: ACTIVITY_SYNC_ENTITIES.ActivityLinks,
-            ExtraFilter: `ActivityID = '${RequireUUID(activityID, 'ActivityID')}' AND Role IN (${PARTICIPANT_ROLES.map((r) => `'${r}'`).join(', ')})`,
-            ResultType: 'entity_object',
-        },
-        user,
-    );
-    if (!links.Success) return `Withdraw ${activityID}: link lookup failed: ${links.ErrorMessage}`;
-    const scope = await provider.BeginEntityTransaction();
-    try {
-        for (const link of links.Results ?? []) {
-            if (!(await link.Delete())) throw new Error(`link ${link.ID}: ${link.LatestResult?.CompleteMessage ?? 'delete failed'}`);
-        }
-        const activity = await provider.GetEntityObject<mjBizAppsCommonActivityEntity>(ACTIVITY_SYNC_ENTITIES.Activities, user);
-        if (!(await activity.Load(activityID))) throw new Error('activity could not be loaded');
-        activity.ExternalID = `${WITHDRAWN_PREFIX}${activity.ID}`;
-        activity.ExternalThreadID = null;
-        activity.Title = WITHDRAWN_TITLE;
-        activity.Description = null;
-        activity.Details = null;
-        activity.Visibility = 'Private';
-        if (!(await activity.Save())) throw new Error(activity.LatestResult?.CompleteMessage ?? 'save failed');
-        await scope.Commit();
-        return null;
-    } catch (e) {
-        await scope.Rollback();
-        return `Withdraw ${activityID} failed and was rolled back: ${(e as Error).message}`;
-    }
 }

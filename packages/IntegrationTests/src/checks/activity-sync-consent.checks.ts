@@ -33,6 +33,7 @@ import {
     ReadActivityDetails,
     ReadConnectionSettings,
     SANDBOX_INTERNAL_DOMAIN,
+    SetConnectionRef,
     SetConnectionScenario,
     SetConnectionSettings,
     SyncAndRead,
@@ -130,6 +131,8 @@ const checks: NamedCheck[] = [
                 const details = await ReadActivityDetails(ctx, id);
                 Assert(details.length > 0 && details.every((d) => !d.includes('bccRecipients') && !d.includes('colleague@')), 'no blind copy in the stored payloads');
                 Assert(run.Snapshot.Activities.every((a) => a.Source === 'System' && a.Visibility === 'Private'), 'System and Private');
+                // Each surface checks only its own captures: no pass reports the other surface's items as missing.
+                Assert(!(run.Result.Message ?? '').includes('could not be found'), `no cross-surface Unknowns: ${run.Result.Message}`);
                 const settings = await ReadConnectionSettings(ctx, id);
                 Assert(typeof (settings['Consent'] as { SweptThrough?: unknown }).SweptThrough === 'string', 'the sweep position is recorded');
             }),
@@ -198,6 +201,37 @@ const checks: NamedCheck[] = [
                 },
                 {},
             ),
+    },
+    {
+        Id: 'activity-sync.AS-C7',
+        Name: 'AS-C7 — two mailboxes tag one email: when one removes its tag, the shared activity is kept',
+        RequiresMutation: true,
+        Fn: async (ctx) => {
+            await GetOrLoadWorld(ctx);
+            const stamp = NewStamp('as-c7');
+            const ruleSet = await rules(ctx, stamp);
+            await WithSandboxConnection(ctx, `${stamp}-a`, 'consent', [ruleSet.RuleSetID], async (a) => {
+                await WithSandboxConnection(ctx, `${stamp}-b`, 'consent', [ruleSet.RuleSetID], async (b) => {
+                    // One run tag for both, so both mailboxes hold the SAME messages (same Message-IDs).
+                    await SetConnectionRef(ctx, a, 'consent', stamp);
+                    await SetConnectionRef(ctx, b, 'consent', stamp);
+                    await SetConnectionSettings(ctx, a, TAGGED);
+                    await SetConnectionSettings(ctx, b, TAGGED);
+                    const first = await SyncLive(ctx, a);
+                    Assert(first.Result.Success, `A failed: ${first.Result.Message}`);
+                    const second = await SyncLive(ctx, b);
+                    Assert(second.Result.Success, `B failed: ${second.Result.Message}`);
+                    AssertEqual(second.Decisions.get('sbx-c1-tagged-quote')?.Decision, 'Duplicate', 'B finds the quote A already filed');
+                    AssertEqual(second.Decisions.get('sbx-c1-tagged-quote')?.DecidedByStage, 'Consent', "B's duplicate still records B's consent");
+
+                    await SetConnectionRef(ctx, a, 'consent-late', stamp);
+                    const untagged = await SyncLive(ctx, a);
+                    Assert(untagged.Result.Success, `A's second run failed: ${untagged.Result.Message}`);
+                    Assert(live(untagged.Snapshot).includes('sbx-c1-tagged-quote'), `the quote is kept while B still consents: ${untagged.Result.Message}`);
+                    Assert((untagged.Result.Message ?? '').includes('another mailbox'), `the keep is reported: ${untagged.Result.Message}`);
+                });
+            });
+        },
     },
     {
         Id: 'activity-sync.AS-C5',

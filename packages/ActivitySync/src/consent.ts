@@ -113,7 +113,11 @@ function policyFromBlock(block: Record<string, unknown>): ConsentPolicyResult {
 export function MergeConsentSweptThrough(settings: string | null | undefined, at: Date): string {
     const bag = ParseConnectionSettings(settings);
     const block = bag[CONSENT_SETTING];
-    const consent = block !== null && typeof block === 'object' && !Array.isArray(block) ? { ...(block as object) } : {};
+    const consent: Record<string, unknown> = block !== null && typeof block === 'object' && !Array.isArray(block) ? { ...(block as Record<string, unknown>) } : {};
+    // NEVER BACKWARDS. Two overlapping runs can finish out of order; the later save must not undo the
+    // further position the other one recorded.
+    const stored = typeof consent['SweptThrough'] === 'string' ? Date.parse(consent['SweptThrough']) : NaN;
+    if (!Number.isNaN(stored) && stored >= at.getTime()) return JSON.stringify(bag);
     bag[CONSENT_SETTING] = { ...consent, SweptThrough: at.toISOString() };
     return JSON.stringify(bag);
 }
@@ -190,7 +194,10 @@ export function InternetMessageId(raw: Record<string, unknown>): string | null {
 
 /** Every Message-ID this message says it answers: `In-Reply-To` plus the `References` chain. */
 export function ReplyReferences(raw: Record<string, unknown>): string[] {
-    const text = [ExtendedProperty(raw, PROP_IN_REPLY_TO), ExtendedProperty(raw, PROP_REFERENCES)].filter(Boolean).join(' ');
+    // OLDEST FIRST, the direct parent LAST: `References` is ordered oldest to newest (RFC 5322), and
+    // `In-Reply-To` goes after it. Callers that keep only the newest N (`slice(-N)`) then always keep
+    // the message this one answers.
+    const text = [ExtendedProperty(raw, PROP_REFERENCES), ExtendedProperty(raw, PROP_IN_REPLY_TO)].filter(Boolean).join(' ');
     return [...new Set(text.match(/<[^<>\s]+>/g) ?? [])];
 }
 
@@ -283,7 +290,12 @@ export function ResolveConsent(
     prior: ReadonlyMap<string, ConsentedMessage>,
     tag: string,
     kind: ActivitySourceKind,
+    eligible?: ReadonlySet<string>,
 ): Map<string, ConsentGrant> {
+    // ONLY ITEMS THE CASCADE WILL NOT BLOCK OR EXCLUDE TAKE PART. A tagged draft, a tagged thread with
+    // a never-log address on it, an internal-only tagged message: none of them is captured, so none of
+    // them may prove a reply or name an ancestor. `eligible` comes from `ConsentEligible`.
+    items = eligible ? items.filter((i) => eligible.has(i.ExternalID)) : items; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
     const grants = new Map<string, ConsentGrant>();
     for (const item of items) {
         if (HasTag(item.Raw, tag)) grants.set(item.ExternalID, { Kind: 'Tag' }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
@@ -333,7 +345,7 @@ function grantAncestors(
             if (!ancestor.ExternalThreadID || ancestor.ExternalThreadID !== tagged.ExternalThreadID) continue;
             if (!consentedFrom(ancestor).Participants.some((p) => people.has(p))) continue; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             grants.set(ancestor.ExternalID, { Kind: 'Ancestor', Via: messageIdOf(tagged) }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-            consented.set(ref, consentedFrom(ancestor));
+            if (!IsSensitive(ancestor.Raw, 'Message')) consented.set(ref, consentedFrom(ancestor));
         }
     }
 }
@@ -348,10 +360,15 @@ function grantReplies(
         let granted = false;
         for (const item of pending) {
             if (grants.has(item.ExternalID)) continue; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-            const parent = ReplyReferences(item.Raw).map((ref) => consented.get(ref)).find(Boolean);
-            if (!parent || !ContinuesThread(item, parent)) continue;
+            // Any consented message it answers will do, not just the first one named: a reply that adds
+            // a recipient may still continue a later message that already had them.
+            const parent = ReplyReferences(item.Raw)
+                .map((ref) => consented.get(ref))
+                .find((p): p is ConsentedMessage => p !== undefined && ContinuesThread(item, p));
+            if (!parent) continue;
             grants.set(item.ExternalID, { Kind: 'Reply', Via: parent.MessageId }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-            consented.set(messageIdOf(item), consentedFrom(item));
+            // A Private reply is excluded by the Consent stage, so it must not prove the next one either.
+            if (!IsSensitive(item.Raw, 'Message')) consented.set(messageIdOf(item), consentedFrom(item));
             granted = true;
         }
         if (!granted) return;
