@@ -17,6 +17,10 @@
  * - C4: the same mailbox on a KnownContact connection still captures the dinner — the behaviour the
  *   default keeps, shown side by side with the fix.
  * - C5: a mistyped consent mode fails the run before the mailbox is read.
+ * - C6: a connection switched from KnownContact to Tagged does not let what KnownContact filed prove a
+ *   reply. Today that also holds because KnownContact rows are keyed on Graph's per-mailbox id, which a
+ *   reply's headers never name; the run-detail check in `loadPrior` is the guard that keeps it true if
+ *   that ever changes, and this check pins the outcome either way.
  */
 import { Assert, AssertEqual, IntegrationCheckRegistry, type NamedCheck } from '@memberjunction/testing-integration/registry';
 import type { IntegrationCheckContext } from '@memberjunction/testing-integration/registry';
@@ -26,6 +30,7 @@ import {
     CreateSandboxRuleSet,
     HR_ADDRESS,
     NewStamp,
+    ReadActivityDetails,
     ReadConnectionSettings,
     SANDBOX_INTERNAL_DOMAIN,
     SetConnectionScenario,
@@ -114,7 +119,7 @@ const checks: NamedCheck[] = [
     },
     {
         Id: 'activity-sync.AS-C2',
-        Name: 'AS-C2 — Tagged live run writes only consented items, with no blind copy',
+        Name: 'AS-C2 — Tagged live run writes only consented items, with no blind copy (links or Details)',
         RequiresMutation: true,
         Fn: (ctx) =>
             withTagged(ctx, 'as-c2', async (id) => {
@@ -122,6 +127,8 @@ const checks: NamedCheck[] = [
                 Assert(run.Result.Success, `live run failed: ${run.Result.Message}`);
                 sameSet(live(run.Snapshot), [...MAIL_INCLUDED, ...CALENDAR_INCLUDED], 'written items');
                 Assert(run.Snapshot.Links.every((l) => l.Role !== 'Bcc'), 'no Bcc link is ever written');
+                const details = await ReadActivityDetails(ctx, id);
+                Assert(details.length > 0 && details.every((d) => !d.includes('bccRecipients') && !d.includes('colleague@')), 'no blind copy in the stored payloads');
                 Assert(run.Snapshot.Activities.every((a) => a.Source === 'System' && a.Visibility === 'Private'), 'System and Private');
                 const settings = await ReadConnectionSettings(ctx, id);
                 Assert(typeof (settings['Consent'] as { SweptThrough?: unknown }).SweptThrough === 'string', 'the sweep position is recorded');
@@ -166,6 +173,28 @@ const checks: NamedCheck[] = [
                     const run = await SyncAndRead(ctx, id, { DryRun: true });
                     AssertEqual(run.Decisions.get('sbx-c3-friend')?.Decision, 'WouldInclude', 'KnownContact files a personal note to a known contact');
                     AssertEqual(run.Decisions.get('sbx-c3-friend')?.DecidedByStage, 'KnownParticipant', 'decided by the known contact');
+                },
+                {},
+            ),
+    },
+    {
+        Id: 'activity-sync.AS-C6',
+        Name: 'AS-C6 — switched from KnownContact to Tagged: an old unconsented capture proves no reply',
+        RequiresMutation: true,
+        Fn: (ctx) =>
+            withTagged(
+                ctx,
+                'as-c6',
+                async (id) => {
+                    const known = await SyncLive(ctx, id);
+                    Assert(live(known.Snapshot).includes('sbx-c3-friend'), 'KnownContact filed the dinner email');
+                    await SetConnectionSettings(ctx, id, TAGGED);
+                    await SetConnectionScenario(ctx, id, 'consent-late');
+                    const tagged = await SyncLive(ctx, id);
+                    Assert(tagged.Result.Success, `tagged run failed: ${tagged.Result.Message}`);
+                    const reply = tagged.Decisions.get('sbx-c17-reply-to-friend');
+                    AssertEqual(reply?.Decision, 'Excluded', 'the friend\'s reply is not proven by an unconsented capture');
+                    AssertEqual(reply?.DecidedByStage, 'Consent', 'decided by Consent');
                 },
                 {},
             ),

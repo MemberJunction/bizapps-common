@@ -143,7 +143,7 @@ function consentMessage({ id, from, to, cc = [], bcc = [], subject, at, tags = [
 const consentMail = (late) => [
     { Expected: late ? 'Withdrawn' : 'Included', Why: 'the owner tagged it (tag removed in consent-late)', item: consentMessage({ id: 'sbx-c1-tagged-quote', from: REP, to: [NORA], subject: 'Renewal quote', at: '2026-11-02T09:00:00Z', tags: late ? [] : [TAG], thread: 'c1', modified: late ? '2026-11-10T09:00:00Z' : undefined }) },
     { Expected: late ? 'Withdrawn' : 'Included', Why: 'proven reply to a tagged message', item: consentMessage({ id: 'sbx-c2-reply', from: NORA, to: [REP], subject: 'Re: Renewal quote', at: '2026-11-02T10:00:00Z', inReplyTo: 'sbx-c1-tagged-quote', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
-    { Expected: 'Excluded', Why: 'untagged, though a known contact is on it (the dinner case)', item: consentMessage({ id: 'sbx-c3-friend', from: REP, to: [NORA], subject: 'Dinner Saturday?', at: '2026-11-02T11:00:00Z' }) },
+    { Expected: 'Excluded', Why: 'untagged, though a known contact is on it (the dinner case)', item: consentMessage({ id: 'sbx-c3-friend', from: REP, to: [NORA], subject: 'Dinner Saturday?', at: '2026-11-02T11:00:00Z', thread: 'c3' }) },
     { Expected: late ? 'Withdrawn' : 'Included', Why: 'proven reply from the customer\'s personal address', item: consentMessage({ id: 'sbx-c4-phone-reply', from: PHONE, to: [REP], subject: 'Re: Renewal quote', at: '2026-11-02T12:00:00Z', inReplyTo: 'sbx-c1-tagged-quote', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
     { Expected: 'Excluded', Why: 'a forward is never a continuation', item: consentMessage({ id: 'sbx-c5-forward', from: REP, to: [STRANGER], subject: 'FW: Renewal quote', at: '2026-11-02T13:00:00Z', references: ['sbx-c1-tagged-quote'], thread: 'c1' }) },
     { Expected: 'Excluded', Why: 'an outbound reply that adds a recipient needs its own tag', item: consentMessage({ id: 'sbx-c6-new-recipient', from: REP, to: [NORA, RECRUITER], subject: 'Re: Renewal quote', at: '2026-11-02T14:00:00Z', inReplyTo: 'sbx-c2-reply', references: ['sbx-c1-tagged-quote', 'sbx-c2-reply'], thread: 'c1' }) },
@@ -157,6 +157,9 @@ const consentMail = (late) => [
     { Expected: 'Included', Why: 'the owner tagged the customer\'s reply', item: consentMessage({ id: 'sbx-c13b-tagged-reply', from: ADA, to: [REP], subject: 'Re: Editorial plan', at: '2026-11-03T11:00:00Z', tags: [TAG], inReplyTo: 'sbx-c13a-original', references: ['sbx-c13a-original'], thread: 'c13' }) },
     { Expected: 'Included', Why: 'tagged; the blind copy is never recorded', item: consentMessage({ id: 'sbx-c14-bcc', from: REP, to: [NORA], bcc: [COLLEAGUE], subject: 'Signed order form', at: '2026-11-03T12:00:00Z', tags: [TAG] }) },
     { Expected: late ? 'Included' : 'Excluded', Why: 'tagged six days after it arrived: found by the late-tag sweep', item: consentMessage({ id: 'sbx-c15-tagged-late', from: REP, to: [ADA], subject: 'Editorial terms', at: '2026-11-03T13:00:00Z', tags: late ? [TAG] : [], modified: late ? '2026-11-09T13:00:00Z' : undefined }) },
+    // consent-late only: the friend answers the dinner email. A connection that filed the dinner under
+    // KnownContact and then switched to Tagged must not treat that old, unconsented capture as proof.
+    ...(late ? [{ Expected: 'Excluded', Why: 'a reply to an untagged message, even one an earlier KnownContact run filed', item: consentMessage({ id: 'sbx-c17-reply-to-friend', from: NORA, to: [REP], subject: 'Re: Dinner Saturday?', at: '2026-11-10T08:00:00Z', inReplyTo: 'sbx-c3-friend', references: ['sbx-c3-friend'], thread: 'c3' }) }] : []),
 ];
 
 export const CONSENT_MAIL_CASES = consentMail(false);

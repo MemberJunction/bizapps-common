@@ -276,6 +276,21 @@ export function Untag(id: string | null): string | null {
     return base.startsWith('ical-') ? base.slice('ical-'.length) : base;
 }
 
+/** The stored `Activity.Details` (the raw payload) of every activity on a connection. */
+export async function ReadActivityDetails(ctx: IntegrationCheckContext, connectionId: string): Promise<string[]> {
+    const res = await RunView.FromMetadataProvider(ctx.Provider as IMetadataProvider).RunView<{ Details: string | null }>(
+        {
+            EntityName: COMMON_ENTITIES.Activity,
+            ExtraFilter: `ActivitySyncConnectionID = '${EscapeSQLString(connectionId)}'`,
+            Fields: ['Details'],
+            ResultType: 'simple',
+        },
+        ctx.User,
+    );
+    Assert(res.Success, `Activity Details read failed: ${res.ErrorMessage}`);
+    return (res.Results ?? []).map((r) => r.Details ?? '');
+}
+
 /** Replace a connection's Settings JSON (the consent mode lives there). */
 export async function SetConnectionSettings(
     ctx: IntegrationCheckContext,

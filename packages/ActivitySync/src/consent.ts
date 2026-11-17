@@ -169,6 +169,19 @@ export function HasTag(raw: Record<string, unknown>, tag: string): boolean {
     return categories.some((c) => typeof c === 'string' && c.trim().toLowerCase() === wanted);
 }
 
+/**
+ * One message, two copies: the Inbox and Sent Items copies of an email share a Message-ID but carry their
+ * Outlook categories SEPARATELY (seen live: one copy tagged, the other not). Whichever copy is read first
+ * must not decide; the item counts as tagged when ANY copy carries the tag.
+ */
+export function PreferTaggedCopy(current: NormalizedItem | undefined, incoming: NormalizedItem, tag: string): NormalizedItem {
+    if (!current) return incoming;
+    return !HasTag(current.Raw, tag) && HasTag(incoming.Raw, tag) ? incoming : current;
+}
+
+/** How many Message-IDs of a tagged message's `References` are followed back. A real chain is short. */
+export const MAX_ANCESTOR_REFERENCES = 20;
+
 /** The RFC 5322 Message-ID, angle brackets kept, which is how `References` names it. */
 export function InternetMessageId(raw: Record<string, unknown>): string | null {
     const value = raw['internetMessageId'];
@@ -225,6 +238,20 @@ export function IsSensitive(raw: Record<string, unknown>, kind: ActivitySourceKi
 export function StableExternalId(item: NormalizedItem, kind: ActivitySourceKind): string {
     const stable = kind === 'Calendar' ? item.Raw['iCalUId'] : item.Raw['internetMessageId'];
     return typeof stable === 'string' && stable.trim() ? stable.trim() : item.ExternalID;
+}
+
+/**
+ * Re-key to the stable id and drop the blind copy everywhere it lives: from the participants (links)
+ * AND from the raw payload, which the writer stores verbatim as `Activity.Details`.
+ */
+export function StableItem(item: NormalizedItem, kind: ActivitySourceKind): NormalizedItem {
+    const { bccRecipients: _dropped, ...raw } = item.Raw;
+    return {
+        ...item,
+        ExternalID: StableExternalId(item, kind),
+        Participants: item.Participants.filter((p) => p.Role !== 'Bcc'),
+        Raw: raw,
+    };
 }
 
 // ── The consent chain ─────────────────────────────────────────────────────────────────────────
@@ -284,7 +311,14 @@ function consentedFrom(item: NormalizedItem): ConsentedMessage {
     };
 }
 
-/** The earlier messages a tagged message names, when they are in this mailbox's batch. */
+/**
+ * The earlier messages a tagged message names, when they are in this mailbox's batch.
+ *
+ * `References` is written by whoever sent the tagged message, so it is not trusted on its own: an
+ * outsider's email that the owner tags could name the Message-ID of a private message in the mailbox.
+ * An ancestor is granted only when it is in the SAME conversation as the tagged message and shares at
+ * least one participant with it, and only the last `MAX_ANCESTOR_REFERENCES` references are followed.
+ */
 function grantAncestors(
     items: readonly NormalizedItem[],
     grants: Map<string, ConsentGrant>,
@@ -292,9 +326,12 @@ function grantAncestors(
     byMessageId: ReadonlyMap<string, NormalizedItem>,
 ): void {
     for (const tagged of items.filter((i) => grants.get(i.ExternalID)?.Kind === 'Tag')) { // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-        for (const ref of ReplyReferences(tagged.Raw)) {
+        const people = new Set(consentedFrom(tagged).Participants);
+        for (const ref of ReplyReferences(tagged.Raw).slice(-MAX_ANCESTOR_REFERENCES)) {
             const ancestor = byMessageId.get(ref);
             if (!ancestor || grants.has(ancestor.ExternalID)) continue; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+            if (!ancestor.ExternalThreadID || ancestor.ExternalThreadID !== tagged.ExternalThreadID) continue;
+            if (!consentedFrom(ancestor).Participants.some((p) => people.has(p))) continue; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             grants.set(ancestor.ExternalID, { Kind: 'Ancestor', Via: messageIdOf(tagged) }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             consented.set(ref, consentedFrom(ancestor));
         }

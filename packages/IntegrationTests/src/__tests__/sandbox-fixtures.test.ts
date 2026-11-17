@@ -80,7 +80,8 @@ describe('sandbox fixture files', () => {
 
     it('consent-late is consent with only the tags (and their modified times) changed', () => {
         const strip = (c: FixtureCase) => ({ ...c.item, categories: undefined, lastModifiedDateTime: undefined });
-        expect(CONSENT_LATE_MAIL_CASES.map(strip)).toEqual(CONSENT_MAIL_CASES.map(strip));
+        const lateOnly = new Set(['sbx-c17-reply-to-friend']);
+        expect(CONSENT_LATE_MAIL_CASES.filter((c) => !lateOnly.has(c.item.id)).map(strip)).toEqual(CONSENT_MAIL_CASES.map(strip));
         expect(CONSENT_LATE_CALENDAR_CASES.map(strip)).toEqual(CONSENT_CALENDAR_CASES.map(strip));
     });
 
