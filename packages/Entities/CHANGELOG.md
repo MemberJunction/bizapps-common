@@ -1,5 +1,18 @@
 # Change Log - mj_generatedentities
 
+## 5.66.0
+
+### Minor Changes
+
+- 8bae1a8: Field-level security is now on for `MJ_BizApps_Common: People`. It lets an app such as Collaboration give guest and participant roles People's name and email fields without phone, birth date, gender or address. The migration also gives every role that can read People a permission row on each field, computed from the host's own People permissions with MemberJunction's snapshot rule, so no role's access changes until an administrator tightens a field. If a role ever loses People fields after this release, save any People Entity Permission in the UI: MemberJunction then reconciles People's field permissions for all roles. Entities that extend People, such as `MJ_BizApps_Sales: Sales Contacts`, apply the same People field rules. Applies on SQL Server and PostgreSQL hosts. Requires MemberJunction 6.2.1 or later (already the floor).
+- d888586: Adds a resolver between MemberJunction users and People, exported from `@mj-biz-apps/common-entities` (browser-safe, so Angular and server code can both use it). `People.LinkedUserID` has been deprecated since 5.33.0; a platform now binds a user to a Person through an IS-A subtype of People and records it on the user's `LinkedEntityID` / `LinkedEntityRecordID`. The resolver reads that link first and falls back to `LinkedUserID` for users without one.
+
+  - `ResolvePersonIDForUser` and `ResolvePersonIDsForUsers`: user to Person, with an optional `ActiveOnly` filter on Person status.
+  - `ResolveUserIDForPerson` and `ResolveUserIDsForPeople`: Person to user, active users first when several link one Person.
+  - `IsPeopleEntity` and `LinkedPersonRecordID`: the checks the resolvers use, for callers that already hold the user record.
+
+  Lookups throw on a failed read, so a caller can tell an error from a missing link. Apps that copied their own `person-user-link.ts` can switch to this export once they raise their common floor (#254).
+
 ## 5.65.0
 
 ### Minor Changes

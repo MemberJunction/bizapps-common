@@ -1,5 +1,7 @@
 # @mj-biz-apps/common-actions
 
+## 5.66.0
+
 ## 5.65.0
 
 ## 5.64.0
