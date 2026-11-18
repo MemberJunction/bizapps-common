@@ -1,5 +1,220 @@
 # @mj-biz-apps/common-core-entities-server
 
+## 5.65.0
+
+### Patch Changes
+
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-entities@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
+## 5.63.0
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+
+## 5.61.0
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+
+## 5.58.0
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+
+## 5.56.0
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+
+## 5.54.0
+
+### Patch Changes
+
+- Updated dependencies [70960e4]
+- Updated dependencies [a5cd21a]
+  - @mj-biz-apps/common-entities@5.54.0
+
+## 5.53.1
+
+### Patch Changes
+
+- e731cac: The packages' dependencies on each other are caret ranges (`^5.53.0`) instead of exact versions. A host that pins or overrides one common package at a later compatible version no longer forces an exact-match copy of its sibling: `common-server` 5.53.0 required `common-activity-sync` at exactly 5.53.0, so a host overriding it at any other version got a second copy or an unresolvable lockfile. Changesets keeps the caret and moves its floor on each release.
+  - @mj-biz-apps/common-entities@5.53.1
+
+## 5.53.0
+
+### Patch Changes
+
+- 7955abc: `@mj-biz-apps/common-core-entities-server` no longer re-exports `LoadActivitySyncEngine` and no
+  longer depends on `@mj-biz-apps/common-activity-sync`. Import `LoadActivitySyncEngine` from
+  `@mj-biz-apps/common-activity-sync`, as `@mj-biz-apps/common-server` now does. Startup behaviour is
+  unchanged.
+- Updated dependencies [1045bc7]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+- Updated dependencies [73019c2]
+- Updated dependencies [88eb6ae]
+  - @mj-biz-apps/common-activity-sync@5.52.0
+  - @mj-biz-apps/common-entities@5.52.0
+
+## 5.51.0
+
+### Patch Changes
+
+- Updated dependencies [c588769]
+- Updated dependencies [679bfe0]
+- Updated dependencies [f3588b3]
+- Updated dependencies [d325500]
+  - @mj-biz-apps/common-entities@5.51.0
+  - @mj-biz-apps/common-activity-sync@5.51.0
+
+## 5.50.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.50.2
+- @mj-biz-apps/common-entities@5.50.2
+
+## 5.50.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.50.1
+- @mj-biz-apps/common-entities@5.50.1
+
+## 5.50.0
+
+### Patch Changes
+
+- Updated dependencies [dde861a]
+  - @mj-biz-apps/common-entities@5.50.0
+  - @mj-biz-apps/common-activity-sync@5.50.0
+
+## 5.49.0
+
+### Patch Changes
+
+- Updated dependencies [ac184f2]
+  - @mj-biz-apps/common-entities@5.49.0
+  - @mj-biz-apps/common-activity-sync@5.49.0
+
+## 5.48.0
+
+### Patch Changes
+
+- Updated dependencies [680a2de]
+- Updated dependencies [4222b02]
+- Updated dependencies [e67224c]
+  - @mj-biz-apps/common-entities@5.48.0
+  - @mj-biz-apps/common-activity-sync@5.48.0
+
+## 5.47.0
+
+### Patch Changes
+
+- Updated dependencies [0d8364d]
+- Updated dependencies [b8584a5]
+- Updated dependencies [ec92d4a]
+  - @mj-biz-apps/common-entities@5.47.0
+  - @mj-biz-apps/common-activity-sync@5.47.0
+
+## 5.46.3
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.46.3
+- @mj-biz-apps/common-entities@5.46.3
+
+## 5.46.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-activity-sync@5.46.2
+- @mj-biz-apps/common-entities@5.46.2
+
+## 5.46.1
+
+### Patch Changes
+
+- Updated dependencies [a99d1b6]
+  - @mj-biz-apps/common-activity-sync@5.46.1
+  - @mj-biz-apps/common-entities@5.46.1
+
 ## 5.46.0
 
 ### Patch Changes

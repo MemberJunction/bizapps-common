@@ -10,6 +10,14 @@
     </span>
 </div>
 
+@if (ActionError) {
+    <div class="addr-table">
+        <div class="load-error-row action-error-row">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ ActionError }}
+        </div>
+    </div>
+}
+
 @if (LoadError) {
     <div class="addr-table">
         <div class="load-error-row">
@@ -38,8 +46,13 @@
                     <i [class]="getAddressTypeIcon(item.Link.AddressTypeID)"></i>
                 </div>
                 <div class="addr-table-content">
-                    <div class="addr-table-main">{{ formatAddressLine1(item.Address) }}</div>
-                    <div class="addr-table-sub">{{ formatAddressLine2(item.Address) }}</div>
+                    @if (formatAddressLine1(item.Address); as street) {
+                        <div class="addr-table-main">{{ street }}</div>
+                        <div class="addr-table-sub">{{ formatAddressLine2(item.Address) }}</div>
+                    } @else {
+                        <!-- Location-only address: the locality line becomes the headline -->
+                        <div class="addr-table-main">{{ formatAddressLine2(item.Address) }}</div>
+                    }
                 </div>
                 <div class="addr-table-badges">
                     <span class="badge badge-type">{{ item.Link.AddressType }}</span>

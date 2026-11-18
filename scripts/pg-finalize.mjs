@@ -36,7 +36,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PG_DIR = join(HERE, '..', 'migrations-pg');
+// PG_FINALIZE_DIR lets a test point this at a temp directory instead of the real, committed
+// migrations-pg/ -- this script rewrites files in place, so tests must never run on the real one.
+const PG_DIR = process.env.PG_FINALIZE_DIR || join(HERE, '..', 'migrations-pg');
 
 /**
  * Boolean-column map for the MJ-core `__mj` schema (generated from the 5.37.0 core schema via
@@ -289,7 +291,16 @@ const PATCHES = [
 ];
 
 function main() {
-  const files = readdirSync(PG_DIR).filter((f) => f.endsWith('.pg.sql'));
+  let entries;
+  try {
+    entries = readdirSync(PG_DIR);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    console.error(`pg-finalize: migrations-pg directory not found at ${PG_DIR}.`);
+    process.exitCode = 1;
+    return;
+  }
+  const files = entries.filter((f) => f.endsWith('.pg.sql'));
   let changed = 0;
   for (const f of files) {
     const p = join(PG_DIR, f);

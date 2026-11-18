@@ -2,7 +2,7 @@
   {
     "fields": {
       "Name": "Person Lifecycle Changed",
-      "Description": "The downstream reaction to a person's lifecycle status changing (Active / Inactive / Deceased). Dispatched durably by the People·AfterUpdate Entity Action binding through Execute Agent, with the person's data arriving as the Data payload (bound as 'Entity Object Data'). A deterministic Flow agent on purpose: it records the transition on the person's timeline via Common.LogActivity and finishes — it creates work and completes, it never holds a run open waiting for anyone. Hosts extend the reaction by adding steps here (notify, enrich, hand off) instead of touching the binding.",
+      "Description": "The downstream reaction to a person's lifecycle status changing (Active / Inactive / Deceased). Dispatched durably by the People·AfterUpdate Entity Action binding through Execute Agent, with the person's ID and Status arriving as the Data payload (bound as a Script returning only those fields, because durable dispatch strips whole-record values). A deterministic Flow agent on purpose: it records the transition on the person's timeline via Common.LogActivity and finishes — it creates work and completes, it never holds a run open waiting for anyone. Hosts extend the reaction by adding steps here (notify, enrich, hand off) instead of touching the binding.",
       "TypeID": "@lookup:MJ: AI Agent Types.Name=Flow",
       "Status": "Active",
       "ExposeAsAction": true,
@@ -53,8 +53,8 @@
       "ID": "C30BAF99-D85D-4020-ADD3-8C97773AC749"
     },
     "sync": {
-      "lastModified": "2026-09-02T04:04:10.134Z",
-      "checksum": "d689d3705a6f58d86c1accc345dfd30b619ecc1b4bd9c58139560afbede90354"
+      "lastModified": "2026-09-28T20:39:11.865Z",
+      "checksum": "33f566587d7c2d56938eab319377e1567f5ad62a33e3f5717a300617e40276ea"
     }
   }
 ]

@@ -1,7 +1,7 @@
 {
   "name": "@mj-biz-apps/common-integration-tests",
   "type": "module",
-  "version": "5.46.0",
+  "version": "5.65.0",
   "private": true,
   "description": "GraphQL-wire integration checks for BizApps Common. Private — never published.",
   "main": "dist/index.js",
@@ -19,10 +19,13 @@
     "url": "https://github.com/MemberJunction/bizapps-common"
   },
   "dependencies": {
-    "@mj-biz-apps/common-entities": "5.46.0",
-    "@memberjunction/core": "^6.2.0-edge.0",
-    "@memberjunction/global": "^6.2.0-edge.0",
-    "@memberjunction/testing-integration": "^6.2.0-edge.0"
+    "@mj-biz-apps/common-entities": "^5.65.0",
+    "@memberjunction/actions-base": "^6.2.1",
+    "@memberjunction/core": "^6.2.1",
+    "@memberjunction/core-entities": "^6.2.1",
+    "@memberjunction/global": "^6.2.1",
+    "@memberjunction/graphql-dataprovider": "^6.2.1",
+    "@memberjunction/testing-integration": "^6.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -1,7 +1,6 @@
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
-    DirectoryDayBar,
     DirectoryHeadline,
     DirectoryOrganizationRow,
     DirectoryPersonRow,
@@ -15,15 +14,6 @@ export function PersonEmail(person: DirectoryPersonRow): string | null {
 
 export function PersonPhone(person: DirectoryPersonRow): string | null {
     return person.PrimaryPhone || person.Phone || null;
-}
-
-export function LocalDayKey(value: Date | string): string {
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
 }
 
 export function ActivePeople(people: readonly DirectoryPersonRow[]): DirectoryPersonRow[] {
@@ -48,22 +38,6 @@ export function OrganizationsMissingType(orgs: readonly DirectoryOrganizationRow
 
 export function OrganizationsMissingWebsite(orgs: readonly DirectoryOrganizationRow[]): DirectoryOrganizationRow[] {
     return ActiveOrganizations(orgs).filter((org) => !org.Website);
-}
-
-export function CountByDay(rows: readonly { __mj_CreatedAt: Date | string }[], days = 7): DirectoryDayBar[] {
-    const today = new Date();
-    const bars: DirectoryDayBar[] = [];
-    for (let back = days - 1; back >= 0; back--) {
-        const day = new Date(today);
-        day.setDate(today.getDate() - back);
-        const key = LocalDayKey(day);
-        bars.push({
-            Label: day.toLocaleDateString('en-US', { weekday: 'short' }),
-            Value: rows.filter((row) => LocalDayKey(row.__mj_CreatedAt) === key).length,
-            Current: back === 0,
-        });
-    }
-    return bars;
 }
 
 export function CountByLabel(rows: readonly { Label: string }[]): DirectoryBarRow[] {

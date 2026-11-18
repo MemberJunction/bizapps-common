@@ -10,4 +10,3 @@
  */
 
 export { PersonEntityServer } from './PersonEntityServer.js';
-export { LoadActivitySyncEngine } from '@mj-biz-apps/common-activity-sync';

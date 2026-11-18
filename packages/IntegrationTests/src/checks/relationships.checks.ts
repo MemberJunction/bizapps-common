@@ -4,7 +4,7 @@ import {
     IntegrationCheckRegistry,
     type NamedCheck,
 } from '@memberjunction/testing-integration/registry';
-import { mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities';
+import { BusinessTimeZoneEngine, mjBizAppsCommonRelationshipEntity } from '@mj-biz-apps/common-entities';
 import { COMMON_ENTITIES, WORLD_EMAIL_DOMAIN } from '../entity-names.js';
 import { FindRows, Quote, RequireSave } from '../wire.js';
 import { GetOrLoadWorld } from '../world/load-world.js';
@@ -97,7 +97,8 @@ const checks: NamedCheck[] = [
             );
             Assert(await rel.Load(rows[0].ID), 'load Marcus employment');
             rel.Status = 'Ended';
-            rel.EndDate = new Date();
+            // EndDate is a DATE: today's business day, as the relationship list stores it (golive #168).
+            rel.EndDate = BusinessTimeZoneEngine.Instance.TodayAsDate();
             await RequireSave(rel, 'end Marcus employment');
             const again = await ctx.Provider.GetEntityObject<mjBizAppsCommonRelationshipEntity>(
                 COMMON_ENTITIES.Relationship,

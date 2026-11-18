@@ -1,7 +1,8 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Metadata, RunView } from '@memberjunction/core';
+import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
@@ -9,6 +10,8 @@ import {
     mjBizAppsCommonAddressLinkEntity,
     mjBizAppsCommonAddressTypeEntity
 } from '@mj-biz-apps/common-entities';
+import { otherAddressReferences } from './address-references';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Represents a single address row in the editor, pairing the physical
@@ -230,6 +233,12 @@ export class AddressEditorComponent {
      */
     LoadError: string | null = null;
 
+    /**
+     * Set when a delete is refused or fails. Rendered above the list, which stays visible,
+     * and cleared by the next delete attempt.
+     */
+    ActionError: string | null = null;
+
     /** Cached action ID for the Postal Code Lookup action. */
     private postalCodeLookupActionID: string | null = null;
 
@@ -364,7 +373,9 @@ export class AddressEditorComponent {
             const [linksResult, typesResult] = await rv.RunViews([
                 {
                     EntityName: 'MJ_BizApps_Common: Address Links',
-                    ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
+                    // RecordID is a caller-supplied @Input and may be a string primary key for any
+                    // entity, so it is escaped before reaching the filter rather than interpolated raw.
+                    ExtraFilter: `EntityID='${EscapeFilterValue(this.resolvedEntityID)}' AND RecordID='${EscapeFilterValue(this._recordID)}'`,
                     ResultType: 'entity_object'
                 },
                 {
@@ -390,15 +401,15 @@ export class AddressEditorComponent {
                 const addressMap = new Map<string, mjBizAppsCommonAddressEntity>();
                 if (addressResult.Success) {
                     for (const addr of addressResult.Results) {
-                        addressMap.set(addr.ID, addr);
+                        addressMap.set(NormalizeUUID(addr.ID), addr);
                     }
                 }
 
                 this.AddressItems = links
-                    .filter(link => addressMap.has(link.AddressID))
+                    .filter(link => addressMap.has(NormalizeUUID(link.AddressID)))
                     .map(link => ({
                         Link: link,
-                        Address: addressMap.get(link.AddressID)!
+                        Address: addressMap.get(NormalizeUUID(link.AddressID))!
                     }));
 
                 // Sort: primary first, then by rank/type
@@ -433,7 +444,7 @@ export class AddressEditorComponent {
      * @returns The CSS class string for the icon (e.g., `'fa-solid fa-home'`)
      */
     getAddressTypeIcon(typeID: string): string {
-        const addrType = this.AddressTypes.find(t => t.ID === typeID);
+        const addrType = this.AddressTypes.find(t => UUIDsEqual(t.ID, typeID));
         return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
     }
 
@@ -470,15 +481,14 @@ export class AddressEditorComponent {
     /**
      * Formats the first line of an address display string.
      *
-     * Combines Line1 and Line2 (if present) with a comma separator.
+     * Combines whichever of Line1 and Line2 are present with a comma separator.
      *
      * @param address - The Address entity to format
-     * @returns A formatted string such as `'123 Main St, Suite 200'`
+     * @returns A formatted string such as `'123 Main St, Suite 200'`, or `''` for a
+     * location-only address with no street lines
      */
     formatAddressLine1(address: mjBizAppsCommonAddressEntity): string {
-        const parts = [address.Line1];
-        if (address.Line2) parts.push(address.Line2);
-        return parts.join(', ');
+        return [address.Line1, address.Line2].filter(Boolean).join(', ');
     }
 
     /**
@@ -491,14 +501,7 @@ export class AddressEditorComponent {
      * @returns A formatted string such as `'San Francisco, CA, 94105, US'`
      */
     formatAddressLine2(address: mjBizAppsCommonAddressEntity): string {
-        const parts: string[] = [];
-        if (address.City) parts.push(address.City);
-        if (address.StateProvince) parts.push(address.StateProvince);
-        if (address.PostalCode) parts.push(address.PostalCode);
-
-        let line = parts.join(', ');
-        if (address.Country) line += ', ' + address.Country;
-        return line;
+        return [address.City, address.StateProvince, address.PostalCode, address.Country].filter(Boolean).join(', ');
     }
 
     /**
@@ -531,11 +534,12 @@ export class AddressEditorComponent {
     onEdit(index: number): void {
         const item = this.AddressItems[index];
         this.EditForm = {
-            TypeID: item.Link.AddressTypeID,
+            // The select matches options with ===, so use the option's own ID spelling.
+            TypeID: this.AddressTypes.find(t => UUIDsEqual(t.ID, item.Link.AddressTypeID))?.ID ?? item.Link.AddressTypeID,
             IsPrimary: item.Link.IsPrimary,
-            Line1: item.Address.Line1,
+            Line1: item.Address.Line1 || '',
             Line2: item.Address.Line2 || '',
-            City: item.Address.City,
+            City: item.Address.City || '',
             StateProvince: item.Address.StateProvince || '',
             PostalCode: item.Address.PostalCode || '',
             Country: item.Address.Country
@@ -660,7 +664,7 @@ export class AddressEditorComponent {
             : null;
 
         for (const item of this.AddressItems) {
-            if (item.Link.IsPrimary && item.Link.ID !== currentEditingLinkID) {
+            if (item.Link.IsPrimary && !UUIDsEqual(item.Link.ID, currentEditingLinkID)) {
                 item.Link.IsPrimary = false;
                 await item.Link.Save();
             }
@@ -703,33 +707,87 @@ export class AddressEditorComponent {
     }
 
     /**
-     * Deletes the address at the given index, removing both the AddressLink
-     * and the orphaned Address record.
+     * Removes the address at the given index from this record.
      *
-     * After deletion, the address list is reloaded.
+     * The AddressLink is always deleted. The Address row is deleted with it only when
+     * nothing else references it — another party's link, or a direct reference from
+     * another entity — and then both deletes run in one transaction so neither is left
+     * behind alone. If the references cannot be checked, only the link is deleted.
+     * A refused or failed delete is shown in {@link ActionError}.
      *
      * @param index - The zero-based index of the address item in {@link AddressItems}
      */
     async onDelete(index: number): Promise<void> {
         const item = this.AddressItems[index];
 
+        this.ActionError = null;
         this.Saving = true;
         this.cdr.detectChanges();
 
+        let error: string | null = null;
         try {
-            // Delete the link
-            await item.Link.Delete();
-
-            // Also delete the address record (it's orphaned now)
-            await item.Address.Delete();
-
-            await this.loadData();
-            this.DataChanged.emit();
+            error = await this.deleteItem(item);
         } catch (err) {
             console.error('AddressEditor: Error deleting address', err);
+            error = `Could not remove the address: ${err instanceof Error ? err.message : String(err)}`;
+        }
+
+        try {
+            // Reload either way: on failure the entity objects still hold the failed transaction
+            // group, and the list should show what the database actually has.
+            await this.loadData();
+            if (!error) this.DataChanged.emit();
         } finally {
+            this.ActionError = error;
             this.Saving = false;
             this.cdr.detectChanges();
         }
+    }
+
+    /**
+     * Deletes the link, and the Address too when nothing else references it.
+     * @returns `null` on success, otherwise the reason the delete was refused
+     */
+    private async deleteItem(item: AddressItem): Promise<string | null> {
+        const md = new Metadata();
+        if (!await this.isAddressUnreferenced(md, item)) {
+            return await item.Link.Delete() ? null : this.deleteFailure(item.Link);
+        }
+
+        // The link must go first: FK_AddressLink_Address refuses the Address delete while it exists.
+        const tg = await md.CreateTransactionGroup();
+        item.Link.TransactionGroup = tg;
+        item.Address.TransactionGroup = tg;
+        if (!await item.Link.Delete()) return this.deleteFailure(item.Link);
+        if (!await item.Address.Delete()) return this.deleteFailure(item.Address);
+        if (!await tg.Submit()) {
+            const failed = [item.Link, item.Address].find(e => e.LatestResult && !e.LatestResult.Success);
+            return this.deleteFailure(failed ?? item.Link);
+        }
+        return null;
+    }
+
+    /**
+     * Whether nothing but this item's link references its Address.
+     *
+     * Returns `false` when the check itself fails, so the caller keeps the Address row: an
+     * unused row left behind is harmless, a deleted row something still points at is not.
+     * The check fails on any host without a read-only database connection, because MJ's
+     * GetRecordDependencies resolver uses only that connection.
+     */
+    private async isAddressUnreferenced(md: Metadata, item: AddressItem): Promise<boolean> {
+        try {
+            const references = await md.GetRecordDependencies('MJ_BizApps_Common: Addresses', item.Address.PrimaryKey);
+            return otherAddressReferences(references, item.Link.ID).length === 0;
+        } catch (err) {
+            console.warn('AddressEditor: Could not check what references the address; keeping the Address row', err);
+            return false;
+        }
+    }
+
+    /** Builds the user-facing reason for a refused delete from the entity's latest result. */
+    private deleteFailure(entity: BaseEntity): string {
+        const reason = entity.LatestResult?.CompleteMessage;
+        return `Could not remove the address${reason ? `: ${reason}` : '.'}`;
     }
 }

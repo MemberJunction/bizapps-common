@@ -4,7 +4,8 @@
       "Name": "Email",
       "Description": "Email address",
       "IconClass": "fa-solid fa-envelope",
-      "DisplayRank": 10
+      "DisplayRank": 10,
+      "CommunicationBaseMessageTypeID": "@lookup:MJ: Communication Base Message Types.Type=Email"
     },
     "primaryKey": {
       "ID": "FB4D3737-8479-44E5-AF91-2DB63311D293"
@@ -19,7 +20,8 @@
       "Name": "Mobile Phone",
       "Description": "Mobile or cell phone number",
       "IconClass": "fa-solid fa-mobile-screen",
-      "DisplayRank": 20
+      "DisplayRank": 20,
+      "CommunicationBaseMessageTypeID": "@lookup:MJ: Communication Base Message Types.Type=Phone"
     },
     "primaryKey": {
       "ID": "96421246-0F8F-4CDB-A5C5-BA6B190C1AFE"
@@ -34,7 +36,8 @@
       "Name": "Work Phone",
       "Description": "Business or office phone number",
       "IconClass": "fa-solid fa-phone-office",
-      "DisplayRank": 30
+      "DisplayRank": 30,
+      "CommunicationBaseMessageTypeID": "@lookup:MJ: Communication Base Message Types.Type=Phone"
     },
     "primaryKey": {
       "ID": "BCDA98AC-06A4-40FC-A1CC-E44BB783FBC9"
@@ -49,7 +52,8 @@
       "Name": "Home Phone",
       "Description": "Residential phone number",
       "IconClass": "fa-solid fa-phone",
-      "DisplayRank": 40
+      "DisplayRank": 40,
+      "CommunicationBaseMessageTypeID": "@lookup:MJ: Communication Base Message Types.Type=Phone"
     },
     "primaryKey": {
       "ID": "C3BA9432-8D05-4AFE-BF6D-61F976A466E6"

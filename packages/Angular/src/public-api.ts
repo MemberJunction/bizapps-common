@@ -31,7 +31,65 @@ export { OrgHierarchyTreeComponent, OrgTreeNode } from './lib/components/org-hie
 export { CommonRelationshipGraphComponent } from './lib/components/relationship-graph/common-relationship-graph.component';
 export { StatTileComponent, type StatTileTone } from './lib/components/stat-tile/stat-tile.component';
 export { StatRowComponent } from './lib/components/stat-tile/stat-row.component';
+export { PartyFieldComponent, type PartyOption, type PartySearchError } from './lib/components/party-field/party-field.component';
+export {
+    PARTY_LOOKUP_QUERIES,
+    PartyLookupParamsFor,
+    type PartyKind,
+    type PartyLookupParams,
+} from './lib/components/party-field/party-lookup-term';
 export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
+
+// Dashboard filter bar: period + company, plus the pure period and ID-list rules it applies.
+export { DashboardFilterBarComponent } from './lib/components/dashboard-filter-bar/dashboard-filter-bar.component';
+export {
+    BusinessToday,
+    CALENDAR_YEAR_START,
+    DEFAULT_PERIOD,
+    DayLabel,
+    DescribeFiscalBasis,
+    FiscalQuarterOf,
+    FiscalYearOf,
+    FormatWindow,
+    IsoDay,
+    MonthDayLabel,
+    MonthDayText,
+    PENDING_FISCAL_BASIS,
+    PERIOD_OPTIONS,
+    PeriodKeyOf,
+    PeriodParameters,
+    PeriodPhrase,
+    PeriodSqlFilter,
+    ResolveFiscalYearStart,
+    ResolvePeriod,
+    WithinWindow,
+    type CustomRange,
+    type FiscalBasis,
+    type FiscalYearStart,
+    type FiscalYearStartResolution,
+    type PeriodKey,
+    type PeriodWindow,
+} from './lib/components/dashboard-filter-bar/dashboard-period';
+export {
+    DEFAULT_PERIOD_STATE,
+    NormalizePeriodState,
+    PERIOD_PARAM,
+    ParsePeriodParams,
+    ParsePeriodStateJSON,
+    PeriodStateParams,
+    PeriodWindowOf,
+    SamePeriodState,
+    type DashboardPeriodState,
+} from './lib/components/dashboard-filter-bar/dashboard-period-state';
+export {
+    CleanIDs,
+    HasID,
+    SameIDs,
+    SelectionLabel,
+    SortedOptions,
+    ToggleID,
+    type FilterOption,
+} from './lib/components/dashboard-filter-bar/dashboard-id-lists';
 export {
     FilterForRelatedLink,
     LabelForRelatedLink,
@@ -48,6 +106,8 @@ export {
 export { PersonIdentityComponent } from './lib/components/identity-header/person-identity.component';
 export { PersonJobFunctionsComponent } from './lib/components/person-job-functions/person-job-functions.component';
 export { PersonJobFunctionsPanel } from './lib/custom/panels/person-job-functions.panel';
+export { CompanySenderIdentitiesComponent } from './lib/components/company-sender-identities/company-sender-identities.component';
+export { CompanySenderIdentitiesPanel } from './lib/custom/panels/company-sender-identities.panel';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';
@@ -56,6 +116,21 @@ export { ActivityHeaderPanel } from './lib/custom/panels/activity-header.panel';
 export { ActivityLinksPanel } from './lib/custom/panels/activity-links.panel';
 export { ActivityFilesPanel } from './lib/custom/panels/activity-files.panel';
 export { ActivityContentPanel } from './lib/custom/panels/activity-content.panel';
+export { OrganizationStaffPanel } from './lib/custom/panels/organization-staff.panel';
+export {
+    OrganizationStaffContributor,
+    DiscoverOrganizationStaffContributors,
+    RunStaffContributors,
+    LoadOrganizationStaff,
+    CommonStaffFigures,
+    type OrganizationStaffMember,
+    type OrganizationStaffRequest,
+    type StaffFigure,
+    type StaffColumn,
+    type StaffCell,
+    type StaffContribution,
+    type StaffContributorResult,
+} from './lib/data/organization-staff';
 
 // Directory dashboard + People / Organizations lists / Graph / Activities (Explorer Custom nav)
 import './lib/sections/common-sections.component';

@@ -21,7 +21,7 @@
     "fields": {
       "Name": "Sync Activities",
       "CategoryID": "@lookup:MJ: Action Categories.Name=Common",
-      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new.",
+      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new. Run by hand with DryRun to preview what each connection would file, Paused connections included, without writing an Activity or moving a watermark.",
       "Type": "Custom",
       "DriverClass": "Common.SyncActivities",
       "IconClass": "fa-solid fa-inbox",
@@ -51,6 +51,35 @@
           "sync": {
             "lastModified": "2026-09-02T04:04:08.773Z",
             "checksum": "7cd06212929b132826bf7854137cb272566e4d0d4325da2eeade2b3e3a6ad389"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "DryRun",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "DefaultValue": "false",
+            "Description": "true previews instead of writing: every item is fetched, qualified and resolved, and only the run and its per-item decisions (WouldInclude / WouldExclude) are saved. No Activity is written and no watermark moves. Paused connections are included, so a new mailbox can be built Paused and reviewed before it goes live. The hourly job leaves this false."
+          },
+          "primaryKey": {
+            "ID": "1C1BE8C0-CE21-41CA-9E92-D5A8523603F2"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "ConnectionIDs",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional comma-separated ActivitySyncConnection IDs. When set, only these connections run; each requested one that does not run (missing, Disabled, or Paused on a live run) is reported in Issues. Empty means every runnable connection."
+          },
+          "primaryKey": {
+            "ID": "66E97A11-5560-4C69-BA40-E71005474573"
           }
         }
       ],
@@ -618,6 +647,10 @@
           },
           "primaryKey": {
             "ID": "F419F06F-A8A7-40E3-A3BC-D1207DA46ED9"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:10.968Z",
+            "checksum": "3996595f42ed5dfbfa5d801237806826135fb7185cfc39521eac362e88294455"
           }
         },
         {
@@ -632,6 +665,10 @@
           },
           "primaryKey": {
             "ID": "6ABC24B7-0F1E-42F2-B294-C9415301F820"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.007Z",
+            "checksum": "2b15d06d56df7ceab49149ea843e6824d239908aee01770c18d020a01b928e1c"
           }
         }
       ],
@@ -645,6 +682,10 @@
           },
           "primaryKey": {
             "ID": "DE9E7C39-0D50-4EFD-8F67-E5883D2A056A"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.027Z",
+            "checksum": "076a60f9ef583629bdbc211f4c2416f1e1bdae233d09e12ebcf4949af3130cf0"
           }
         },
         {
@@ -656,6 +697,10 @@
           },
           "primaryKey": {
             "ID": "749540CC-3050-483A-92C3-429B84DBC11A"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.043Z",
+            "checksum": "ad29c8beaaa9f43a4bee8bcd7ab4473d1e3b9f4a02739fdc1c3c6c4eefc7a5c6"
           }
         },
         {
@@ -667,12 +712,20 @@
           },
           "primaryKey": {
             "ID": "434C4CDB-9114-4FFD-8F3C-0F1473FEB900"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.061Z",
+            "checksum": "2a840c3f59afdd43772e574c6e40b8c5e3f4ea72d213bda1d7661aef54058631"
           }
         }
       ]
     },
     "primaryKey": {
       "ID": "16A3561D-A295-46DD-A3CA-8ADD0671D2FE"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:10.931Z",
+      "checksum": "75955b1a2915ba9f51a01aea65015ca6eaf7a795c37f1d3604e28c5bd3bc5b27"
     }
   }
 ]

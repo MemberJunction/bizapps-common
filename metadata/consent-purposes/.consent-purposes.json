@@ -1,0 +1,22 @@
+[
+  {
+    "fields": {
+      "Name": "Marketing",
+      "Description": "Promotional and informational messages: newsletters, offers, announcements.",
+      "Sequence": 10
+    },
+    "primaryKey": {
+      "ID": "960DC81B-D57E-4851-96AD-B534EBB6C426"
+    }
+  },
+  {
+    "fields": {
+      "Name": "Transactional",
+      "Description": "Messages about something the person did or owns: receipts, confirmations, reminders.",
+      "Sequence": 20
+    },
+    "primaryKey": {
+      "ID": "41C807B6-EB29-45A4-84EC-5796513768DC"
+    }
+  }
+]

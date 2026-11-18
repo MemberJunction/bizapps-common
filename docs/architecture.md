@@ -133,7 +133,8 @@ Every MJ Open App declares itself through an `mj-app.json` file at the repositor
         "name": "@mj-biz-apps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
-      }
+      },
+      { "name": "@mj-biz-apps/common-actions", "role": "actions" }
     ],
     "client": [
       {
@@ -143,8 +144,7 @@ Every MJ Open App declares itself through an `mj-app.json` file at the repositor
       }
     ],
     "shared": [
-      { "name": "@mj-biz-apps/common-entities", "role": "library" },
-      { "name": "@mj-biz-apps/common-actions", "role": "library" }
+      { "name": "@mj-biz-apps/common-entities", "role": "library" }
     ]
   }
 }

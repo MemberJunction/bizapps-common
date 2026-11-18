@@ -16,7 +16,7 @@
  * @module @mj-biz-apps/common-activity-sync
  */
 import type { UserInfo } from '@memberjunction/core';
-
+import { HostSlot } from '../host-slot.js';
 import type { ActivitySourceQuery, RawBatch } from '../types.js';
 
 /**
@@ -84,14 +84,14 @@ export type ActivityTransportFactory = (context: ActivityTransportContext) => Ac
  * plugins with no arguments. So through the engine, the only path that matters in production, no
  * factory could ever arrive. The seam was described, exported, and unreachable.
  *
- * A module-level registry is the shape that fits the constraint rather than fighting it: the host
- * owns the Communication and Credentials engines and registers once at bootstrap, and the provider
- * asks for one at Configure time.
+ * A process-wide registry (see `host-slot.ts`) is the shape that fits the constraint rather than
+ * fighting it: the host owns the Communication and Credentials engines and registers once at
+ * bootstrap, and the provider asks for one at Configure time.
  *
  * A transport or factory passed to the CONSTRUCTOR still wins. Tests and the demo supply their own,
  * and a process-wide registration must not be able to reach in and replace it.
  */
-let hostFactory: ActivityTransportFactory | null = null;
+const hostFactory = HostSlot<ActivityTransportFactory>('__mj_BizApps_ActivitySync_TransportFactory__');
 
 /**
  * Register the factory this host serves transports from. Pass null to clear it.
@@ -100,12 +100,12 @@ let hostFactory: ActivityTransportFactory | null = null;
  * reload) must not end up with two, and there is no sensible way to merge them.
  */
 export function RegisterActivityTransportFactory(factory: ActivityTransportFactory | null): void {
-    hostFactory = factory;
+    hostFactory.Set(factory);
 }
 
 /** The registered factory, or null when this host serves none. */
 export function HostActivityTransportFactory(): ActivityTransportFactory | null {
-    return hostFactory;
+    return hostFactory.Get();
 }
 
 /**
@@ -170,7 +170,7 @@ export interface TenantWideMailboxAttestation extends AttestationBase {
 
 export type LiveMailboxPolicyAttestation = ScopedMailboxAttestation | TenantWideMailboxAttestation;
 
-let hostLivePolicy: LiveMailboxPolicyAttestation | null = null;
+const hostLivePolicy = HostSlot<LiveMailboxPolicyAttestation>('__mj_BizApps_ActivitySync_LiveMailboxPolicy__');
 
 /**
  * Record that this host is scoped, and may therefore read real mailboxes. Pass null to revoke.
@@ -200,7 +200,7 @@ let hostLivePolicy: LiveMailboxPolicyAttestation | null = null;
  */
 export function AllowLiveMailboxFetch(attestation: LiveMailboxPolicyAttestation | null): void {
     if (attestation === null) {
-        hostLivePolicy = null;
+        hostLivePolicy.Set(null);
         return;
     }
     // `Confirmed: true` is a literal type, so TypeScript rejects `false` at a typed call site and
@@ -240,15 +240,15 @@ export function AllowLiveMailboxFetch(attestation: LiveMailboxPolicyAttestation 
             );
         }
     }
-    hostLivePolicy = attestation;
+    hostLivePolicy.Set(attestation);
 }
 
 /** The recorded attestation, or null when this host has not opted in. */
 export function HostLiveMailboxPolicy(): LiveMailboxPolicyAttestation | null {
-    return hostLivePolicy;
+    return hostLivePolicy.Get();
 }
 
 /** Whether this host has attested that its app registration is scoped. */
 export function HostAllowsLiveMailboxFetch(): boolean {
-    return hostLivePolicy !== null;
+    return hostLivePolicy.Get() !== null;
 }

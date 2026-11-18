@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
     BuildDirectoryQueues,
-    CountByDay,
     CountByLabel,
     EscapeFilterValue,
     EscapeLikeValue,
@@ -73,14 +72,6 @@ describe('directory-stats', () => {
             'Organizations without a website',
         ]);
         expect(PeopleMissingEmail(people)).toHaveLength(1);
-    });
-
-    it('counts rows per local day', () => {
-        const today = new Date();
-        const bars = CountByDay([{ __mj_CreatedAt: today }, { __mj_CreatedAt: today }]);
-        expect(bars).toHaveLength(7);
-        expect(bars[6].Current).toBe(true);
-        expect(bars[6].Value).toBe(2);
     });
 
     it('groups mix labels and sorts by count', () => {

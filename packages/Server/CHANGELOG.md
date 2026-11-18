@@ -1,5 +1,366 @@
 # @mj-biz-apps/common-server
 
+## 5.65.0
+
+### Patch Changes
+
+- Updated dependencies [16a34b2]
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-activity-sync@5.65.0
+  - @mj-biz-apps/common-entities@5.65.0
+  - @mj-biz-apps/common-actions@5.65.0
+  - @mj-biz-apps/common-core-entities-server@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+  - @mj-biz-apps/common-actions@5.64.0
+  - @mj-biz-apps/common-activity-sync@5.64.0
+  - @mj-biz-apps/common-core-entities-server@5.64.0
+
+## 5.63.0
+
+### Minor Changes
+
+- 1c1c754: `Common.SyncActivities` takes two optional inputs, `DryRun` and `ConnectionIDs`. A dry run previews what each connection would file without writing an Activity or moving a watermark, and it includes Paused connections. That lets a new mailbox be built Paused, reviewed, and only then set Active. `ConnectionIDs` narrows a run to the named connections and reports each one that did not run. The hourly job passes neither input, so it behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+- Updated dependencies [1c1c754]
+  - @mj-biz-apps/common-entities@5.63.0
+  - @mj-biz-apps/common-activity-sync@5.63.0
+  - @mj-biz-apps/common-actions@5.63.0
+  - @mj-biz-apps/common-core-entities-server@5.63.0
+
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+  - @mj-biz-apps/common-actions@5.62.0
+  - @mj-biz-apps/common-activity-sync@5.62.0
+  - @mj-biz-apps/common-core-entities-server@5.62.0
+
+## 5.61.0
+
+### Minor Changes
+
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+  - @mj-biz-apps/common-actions@5.61.0
+  - @mj-biz-apps/common-activity-sync@5.61.0
+  - @mj-biz-apps/common-core-entities-server@5.61.0
+
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+  - @mj-biz-apps/common-actions@5.60.0
+  - @mj-biz-apps/common-activity-sync@5.60.0
+  - @mj-biz-apps/common-core-entities-server@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+  - @mj-biz-apps/common-actions@5.59.0
+  - @mj-biz-apps/common-activity-sync@5.59.0
+  - @mj-biz-apps/common-core-entities-server@5.59.0
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+  - @mj-biz-apps/common-actions@5.58.0
+  - @mj-biz-apps/common-activity-sync@5.58.0
+  - @mj-biz-apps/common-core-entities-server@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-actions@5.57.1
+- @mj-biz-apps/common-activity-sync@5.57.1
+- @mj-biz-apps/common-core-entities-server@5.57.1
+- @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+  - @mj-biz-apps/common-actions@5.57.0
+  - @mj-biz-apps/common-activity-sync@5.57.0
+  - @mj-biz-apps/common-core-entities-server@5.57.0
+
+## 5.56.0
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+  - @mj-biz-apps/common-actions@5.56.0
+  - @mj-biz-apps/common-activity-sync@5.56.0
+  - @mj-biz-apps/common-core-entities-server@5.56.0
+
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+  - @mj-biz-apps/common-actions@5.55.0
+  - @mj-biz-apps/common-activity-sync@5.55.0
+  - @mj-biz-apps/common-core-entities-server@5.55.0
+
+## 5.54.0
+
+### Minor Changes
+
+- 70960e4: Readable record names for Addresses, Relationships, Address Links and People.
+
+  - **Addresses**: new stored, indexed `DisplayName` column, a one-line label in US order (`123 Main St, Springfield, IL 62701, United States`), with blank parts skipped. It replaces `Line1`, which can be empty, as the name field. `vwAddressLinks.Address` and `vwActivities.Address` now show this label.
+  - **Relationships**: `vwRelationships` becomes a layered view (`vwRelationshipsGenerated` plus a thin wrapper) that adds `DisplayName` = `From → To (Type)`, for example `Jane Smith → Acme (Employee)`. It replaces `Title` as the name field.
+  - **Address Links**: the name field is now `Address` (the linked address's label) instead of `AddressType`.
+  - **People**: `DisplayName` now skips blank name parts and includes `Suffix` (`John Smith Jr.`).
+  - **Geocoding**: Address's `Line1`, `City`, `StateProvince`, `PostalCode` and `Country` are now tagged `GeoAddress` / `GeoCity` / `GeoStateProvince` / `GeoPostalCode` / `GeoCountry`, so an Address saved without coordinates can be geocoded from its parts (the new `DisplayName` stays untagged). Activity's free-text `Location` is no longer tagged `GeoAddress`, so saving an Activity no longer calls the geocoder or writes a failed `RecordGeoCode` row; `vwActivities` drops the `vwRecordGeoCodes` join and Activities lose the `__mj_Latitude` / `__mj_Longitude` fields (`_mj__Latitude` / `_mj__Longitude` in GraphQL). Address Links are pinned as not geocoded.
+
+  Five migrations (`V202610151046`, `V202610151047`, `V202610151048`, `V202610151049`, `V202610151050`). The name-field settings and the Address geo tags reach hosts in the release metadata seed. PostgreSQL counterparts are left to the release build.
+
+### Patch Changes
+
+- Updated dependencies [70960e4]
+- Updated dependencies [a5cd21a]
+  - @mj-biz-apps/common-entities@5.54.0
+  - @mj-biz-apps/common-actions@5.54.0
+  - @mj-biz-apps/common-activity-sync@5.54.0
+  - @mj-biz-apps/common-core-entities-server@5.54.0
+
+## 5.53.1
+
+### Patch Changes
+
+- e731cac: The packages' dependencies on each other are caret ranges (`^5.53.0`) instead of exact versions. A host that pins or overrides one common package at a later compatible version no longer forces an exact-match copy of its sibling: `common-server` 5.53.0 required `common-activity-sync` at exactly 5.53.0, so a host overriding it at any other version got a second copy or an unresolvable lockfile. Changesets keeps the caret and moves its floor on each release.
+- Updated dependencies [e731cac]
+  - @mj-biz-apps/common-activity-sync@5.53.1
+  - @mj-biz-apps/common-core-entities-server@5.53.1
+  - @mj-biz-apps/common-actions@5.53.1
+  - @mj-biz-apps/common-entities@5.53.1
+
+## 5.53.0
+
+### Patch Changes
+
+- 7955abc: `@mj-biz-apps/common-core-entities-server` no longer re-exports `LoadActivitySyncEngine` and no
+  longer depends on `@mj-biz-apps/common-activity-sync`. Import `LoadActivitySyncEngine` from
+  `@mj-biz-apps/common-activity-sync`, as `@mj-biz-apps/common-server` now does. Startup behaviour is
+  unchanged.
+- Updated dependencies [1045bc7]
+- Updated dependencies [7955abc]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+  - @mj-biz-apps/common-core-entities-server@5.53.0
+  - @mj-biz-apps/common-activity-sync@5.53.0
+  - @mj-biz-apps/common-actions@5.53.0
+
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+- Updated dependencies [73019c2]
+- Updated dependencies [88eb6ae]
+  - @mj-biz-apps/common-actions@5.52.0
+  - @mj-biz-apps/common-activity-sync@5.52.0
+  - @mj-biz-apps/common-core-entities-server@5.52.0
+  - @mj-biz-apps/common-entities@5.52.0
+
+## 5.51.0
+
+### Patch Changes
+
+- Updated dependencies [c588769]
+- Updated dependencies [679bfe0]
+- Updated dependencies [f3588b3]
+- Updated dependencies [d325500]
+  - @mj-biz-apps/common-entities@5.51.0
+  - @mj-biz-apps/common-activity-sync@5.51.0
+  - @mj-biz-apps/common-core-entities-server@5.51.0
+  - @mj-biz-apps/common-actions@5.51.0
+
+## 5.50.2
+
+### Patch Changes
+
+- 1a89ba0: `Common.SyncActivities` now runs on an independent provider instance, released when the run ends,
+  instead of the process-global `Metadata.Provider`. The writer's per-item transaction, and any
+  registered `BaseActivitySyncExtension` running inside it, no longer capture queries from unrelated
+  callers such as the scheduler's lock and release bookkeeping.
+  - @mj-biz-apps/common-actions@5.50.2
+  - @mj-biz-apps/common-activity-sync@5.50.2
+  - @mj-biz-apps/common-core-entities-server@5.50.2
+  - @mj-biz-apps/common-entities@5.50.2
+
+## 5.50.1
+
+### Patch Changes
+
+- Updated dependencies [5f58fef]
+  - @mj-biz-apps/common-actions@5.50.1
+  - @mj-biz-apps/common-activity-sync@5.50.1
+  - @mj-biz-apps/common-core-entities-server@5.50.1
+  - @mj-biz-apps/common-entities@5.50.1
+
+## 5.50.0
+
+### Patch Changes
+
+- Updated dependencies [dde861a]
+  - @mj-biz-apps/common-entities@5.50.0
+  - @mj-biz-apps/common-activity-sync@5.50.0
+  - @mj-biz-apps/common-core-entities-server@5.50.0
+  - @mj-biz-apps/common-actions@5.50.0
+
+## 5.49.0
+
+### Minor Changes
+
+- ac184f2: `Address.Line1` and `Address.City` are now nullable, so an address row may record a location
+  (country, region, postal code) before a street line and city are known.
+
+  The migration alters both columns to `NULL` (types and lengths unchanged) and updates their column
+  descriptions. CodeGen regenerates `spCreateAddress` / `spUpdateAddress` with `@Line1_Clear` /
+  `@City_Clear` parameters, and the generated entity and GraphQL types for `Line1` and `City` become
+  `string | null`.
+
+### Patch Changes
+
+- Updated dependencies [ac184f2]
+  - @mj-biz-apps/common-entities@5.49.0
+  - @mj-biz-apps/common-activity-sync@5.49.0
+  - @mj-biz-apps/common-core-entities-server@5.49.0
+  - @mj-biz-apps/common-actions@5.49.0
+
+## 5.48.0
+
+### Patch Changes
+
+- 680a2de: Addresses open again. Every Address single-record load failed with `Cannot query field
+"_mj__Latitude" on type "mjBizAppsCommonAddress_"` (MemberJunction/bc-aidp-next-golive#295).
+  `vwAddresses` exposes the native coordinates as MJ's geo virtual fields `__mj_Latitude` and
+  `__mj_Longitude`, and migration V202609101800 registers both as EntityFields. The client asks for
+  every EntityField, but the Address GraphQL type was not regenerated after that migration, so it
+  lacked both. It now declares them as nullable floats, as Activities, Organizations and People
+  already do. The Address entity class also gains the matching read-only `__mj_Latitude` and
+  `__mj_Longitude` getters.
+- Updated dependencies [680a2de]
+- Updated dependencies [4222b02]
+- Updated dependencies [e67224c]
+  - @mj-biz-apps/common-entities@5.48.0
+  - @mj-biz-apps/common-activity-sync@5.48.0
+  - @mj-biz-apps/common-core-entities-server@5.48.0
+  - @mj-biz-apps/common-actions@5.48.0
+
+## 5.47.0
+
+### Minor Changes
+
+- ec92d4a: `Common.LogActivity` now writes on its own provider instance instead of the process-global one, so
+  its transaction no longer captures other callers' queries, such as scheduled jobs or form hooks
+  (#195). The People and Organizations bindings now pass `RecordID` in place of `RecordData`.
+  Durable dispatch always strips `RecordData` from the task payload, which left those bindings
+  unable to link the activity to its record (#197). The Relationships bindings now run `Inline`,
+  because they route links with `LinkFields`, which needs the whole record.
+  The People·AfterUpdate `Execute Agent` binding now passes the agent only the person's `ID` and
+  `Status`, as a Script marked `LogValue: true` on the binding (MJ declares `Data` unloggable, which
+  also strips it from a durable payload). Before this, durable runs delivered no data to the agent at
+  all. The Organizations·AfterUpdate binding's `Description` (the new status) is marked `LogValue: true`
+  for the same reason; durable runs used to write that activity without it.
+
+### Patch Changes
+
+- Updated dependencies [0d8364d]
+- Updated dependencies [b8584a5]
+- Updated dependencies [ec92d4a]
+  - @mj-biz-apps/common-entities@5.47.0
+  - @mj-biz-apps/common-activity-sync@5.47.0
+  - @mj-biz-apps/common-core-entities-server@5.47.0
+  - @mj-biz-apps/common-actions@5.47.0
+
+## 5.46.3
+
+### Patch Changes
+
+- @mj-biz-apps/common-actions@5.46.3
+- @mj-biz-apps/common-activity-sync@5.46.3
+- @mj-biz-apps/common-core-entities-server@5.46.3
+- @mj-biz-apps/common-entities@5.46.3
+
+## 5.46.2
+
+### Patch Changes
+
+- @mj-biz-apps/common-actions@5.46.2
+- @mj-biz-apps/common-activity-sync@5.46.2
+- @mj-biz-apps/common-core-entities-server@5.46.2
+- @mj-biz-apps/common-entities@5.46.2
+
+## 5.46.1
+
+### Patch Changes
+
+- Updated dependencies [a99d1b6]
+  - @mj-biz-apps/common-activity-sync@5.46.1
+  - @mj-biz-apps/common-core-entities-server@5.46.1
+  - @mj-biz-apps/common-actions@5.46.1
+  - @mj-biz-apps/common-entities@5.46.1
+
 ## 5.46.0
 
 ### Patch Changes

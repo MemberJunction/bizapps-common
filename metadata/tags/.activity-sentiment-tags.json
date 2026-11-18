@@ -2,67 +2,97 @@
   {
     "fields": {
       "Name": "Sentiment",
+      "DisplayName": "Sentiment",
       "Description": "Root taxonomy tag for customer activity sentiment classification.",
       "Status": "Active",
       "ParentID": null
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.740Z",
+      "checksum": "d8b099ec58fe6ec84832d736aa2d2d5d206b9a9a985809857eda6cfc824e0b2d"
     }
   },
   {
     "fields": {
       "Name": "Positive",
+      "DisplayName": "Positive",
       "Description": "Positive sentiment tone, commendations, enthusiasm, or successful outcomes.",
       "Status": "Active",
       "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C61"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.764Z",
+      "checksum": "0b7df7e17bd90d75fd799a195bab76f1c67c22e1dbf2d30bb1bbd0dc6660cb48"
     }
   },
   {
     "fields": {
       "Name": "Neutral",
+      "DisplayName": "Neutral",
       "Description": "Neutral sentiment tone, routine status checks, scheduling, or operational correspondence.",
       "Status": "Active",
       "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C62"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.788Z",
+      "checksum": "995ead6316c9484e2f6eab1314ca5d2277ccc1db504360910e46991f1da42fe9"
     }
   },
   {
     "fields": {
       "Name": "Negative",
+      "DisplayName": "Negative",
       "Description": "Negative sentiment tone, complaints, friction, or dissatisfaction.",
       "Status": "Active",
       "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C63"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.810Z",
+      "checksum": "9eaf58e42186d950902a02b8c4123b2adc888db1b72f720ec7e8ed024acf793f"
     }
   },
   {
     "fields": {
       "Name": "EscalationRisk",
+      "DisplayName": "EscalationRisk",
       "Description": "Communication signals potential customer churn, severe frustration, or escalation risk.",
       "Status": "Active",
       "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C64"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.836Z",
+      "checksum": "8e0d03c1ae253bf386c9b4d9e9edafab3729867eed12925d00cfbb82da6f69ba"
     }
   },
   {
     "fields": {
       "Name": "Urgent",
+      "DisplayName": "Urgent",
       "Description": "Communication indicates time-critical blockers requiring immediate action.",
       "Status": "Active",
       "ParentID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D"
     },
     "primaryKey": {
       "ID": "A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C65"
+    },
+    "sync": {
+      "lastModified": "2026-09-28T20:39:12.860Z",
+      "checksum": "6ad484949e586305c082994192d65792fbd6a81a6faf9957c69b1b4f2c3d314c"
     }
   }
 ]

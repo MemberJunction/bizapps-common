@@ -65,14 +65,14 @@
             "ActionParamID": "57509680-E992-49AE-ABD5-AFA7E5CC8E75",
             "ValueType": "Static",
             "Value": "MJ_BizApps_Common: People",
-            "Comments": "EntityName — with RecordData.ID it becomes the Regarding link that seeds the person's timeline."
+            "Comments": "EntityName — with RecordID it becomes the Regarding link that seeds the person's timeline."
           },
           "primaryKey": {
             "ID": "E7FBFC32-C480-4C5B-A0B3-526DB83B49DA"
           },
           "sync": {
-            "lastModified": "2026-09-02T04:04:10.413Z",
-            "checksum": "61f60b4ef7625dc304ad959fa4e15e2c17897ae01eee0ec315b1b41a5fab45a9"
+            "lastModified": "2026-09-28T20:39:11.900Z",
+            "checksum": "bb2e5469463e9bb7a316fa8a46ce3dd5ed3d97d956fb3bd5e8eff749e00734c4"
           }
         },
         {
@@ -80,14 +80,33 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data' (entity.GetAll()), NEVER 'Entity Object', which serializes to {} silently (plan §3.3)."
+            "Comments": "RecordData — removed (#197). A durable binding's params reach the task through MJ's redaction, which always strips whole-record ValueTypes, so the action never saw it. RecordID (Entity Field 'ID') replaces it."
           },
           "primaryKey": {
             "ID": "991FB3F3-8101-49BE-B27A-16AF3F77BF10"
           },
+          "deleteRecord": {
+            "delete": true
+          },
           "sync": {
             "lastModified": "2026-09-02T04:04:10.429Z",
             "checksum": "b1b731f9817498b8962c1b78e5117de59f99a8b6dc73742a0cd240d8c8380795"
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "522170BB-9FA4-447D-9458-9C134B0985FA",
+            "ValueType": "Entity Field",
+            "Value": "ID",
+            "Comments": "RecordID — a scalar, so it survives the redaction a durable binding's params go through (whole-record 'Entity Object Data' never does, #197). Feeds the Regarding link and the EventKey idempotency key."
+          },
+          "primaryKey": {
+            "ID": "80A66431-4438-49F3-9627-F45CC3BFB7DE"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.909Z",
+            "checksum": "e47016a549bf991b64ff76e3c3af0f3c2f6a0f73f59afee04f691d511a3ac109"
           }
         },
         {
@@ -197,15 +216,17 @@
           "fields": {
             "EntityActionID": "@parent:ID",
             "ActionParamID": "F12EF739-720B-4FD4-8B9F-0656A756502E",
-            "ValueType": "Entity Object Data",
-            "Comments": "Data — the person's fields reach the agent as a plain object. 'Entity Object Data', NEVER 'Entity Object' (plan §3.3)."
+            "ValueType": "Script",
+            "Value": "return { ID: EntityActionContext.entityObject.ID, Status: EntityActionContext.entityObject.Status };",
+            "LogValue": true,
+            "Comments": "Data — only the fields the Person Lifecycle Changed agent reads (data.ID, data.Status). A Script, not 'Entity Object Data': this binding is Durable, and redaction always strips whole-record values from the task payload, so the agent would get no data (#197). LogValue true because MJ declares Execute Agent's Data LogValue = false, which would strip it too; an id and a status are safe to persist. Add a field here only if it is equally safe to persist."
           },
           "primaryKey": {
             "ID": "D9FC0271-AA50-4B0C-A0D4-C29A0B4E1922"
           },
           "sync": {
-            "lastModified": "2026-09-02T04:04:10.603Z",
-            "checksum": "1e6fb51227f072a360d8f7d1b0a448135f6804ffc79dd39bebd58a118c84a79a"
+            "lastModified": "2026-09-28T20:39:11.931Z",
+            "checksum": "3e470c2cc020066003e0f4e737c0473cbbbf3831410c6ba35ba6eef06475d32f"
           }
         }
       ]
@@ -301,14 +322,15 @@
             "ActionParamID": "5A92E7F9-43F1-409E-93AB-B122C9A870D4",
             "ValueType": "Entity Field",
             "Value": "Status",
-            "Comments": "Description ← the organization's new Status value (Active / Inactive / Dissolved)."
+            "LogValue": true,
+            "Comments": "Description ← the organization's new Status value (Active / Inactive / Dissolved). LogValue true because this binding is Durable and Common.LogActivity declares Description LogValue = false (it can carry free text); redaction would otherwise strip it from the task payload and the activity would be written without its status. A status value is safe to persist."
           },
           "primaryKey": {
             "ID": "F4F23C56-C3E7-4244-BE84-26BED2006B71"
           },
           "sync": {
-            "lastModified": "2026-09-02T04:04:10.683Z",
-            "checksum": "707b75b3a76d8e27e745d786da048d1af10d24a17aeaa00c267bb8909825d9c1"
+            "lastModified": "2026-09-28T20:39:11.941Z",
+            "checksum": "8703bd2fd7e5f545b36fc7d962a82c8a1ac32f15838424fd777bc919c2d09ea3"
           }
         },
         {
@@ -332,14 +354,33 @@
             "EntityActionID": "@parent:ID",
             "ActionParamID": "D067FFE0-70B2-4A28-9C31-066BB536E637",
             "ValueType": "Entity Object Data",
-            "Comments": "RecordData — 'Entity Object Data', never 'Entity Object' (plan §3.3). No EventKey on purpose: a status can change repeatedly and every transition belongs on the timeline."
+            "Comments": "RecordData — removed (#197). A durable binding's params reach the task through MJ's redaction, which always strips whole-record ValueTypes, so the action never saw it. RecordID (Entity Field 'ID') replaces it."
           },
           "primaryKey": {
             "ID": "7376D962-3CC7-4F57-B3D5-17023621A405"
           },
+          "deleteRecord": {
+            "delete": true
+          },
           "sync": {
             "lastModified": "2026-09-02T04:04:10.714Z",
             "checksum": "c17b1786f0cb025dfd66bb214432668f50a4f0ce7f911bc28b751d8046c38389"
+          }
+        },
+        {
+          "fields": {
+            "EntityActionID": "@parent:ID",
+            "ActionParamID": "522170BB-9FA4-447D-9458-9C134B0985FA",
+            "ValueType": "Entity Field",
+            "Value": "ID",
+            "Comments": "RecordID — a scalar, so it survives the redaction a durable binding's params go through (whole-record 'Entity Object Data' never does, #197). Feeds the Regarding link. No EventKey on purpose: a status can change repeatedly and every transition belongs on the timeline."
+          },
+          "primaryKey": {
+            "ID": "F9DCDCCD-3ACD-4D05-971D-C9620ACA1725"
+          },
+          "sync": {
+            "lastModified": "2026-09-28T20:39:11.949Z",
+            "checksum": "a36d9b464239c5ef05804781b724bd864af6bb9a76efeb91674d5130048399ad"
           }
         },
         {
@@ -373,7 +414,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 10,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -513,8 +554,8 @@
       "ID": "ABF0B899-C4D8-4BF8-9AE8-4EAE7DD32346"
     },
     "sync": {
-      "lastModified": "2026-09-02T04:04:10.307Z",
-      "checksum": "fcd8f04415f00f6ba46152577846a76ccd6afc1e7d5ff50a09996368531aec6b"
+      "lastModified": "2026-09-28T20:39:11.880Z",
+      "checksum": "e7a0d40dee159fbb3cc911c11dc8cd918c518f1c61c6a3e1011046f7c98fb0ce"
     }
   },
   {
@@ -522,7 +563,7 @@
       "EntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationships",
       "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
       "Status": "Active",
-      "RunMode": "Durable",
+      "RunMode": "Inline",
       "Sequence": 20,
       "ScopeEntityID": "@lookup:MJ: Entities.Name=MJ_BizApps_Common: Relationship Types",
       "ScopeRecordID": "27CFD031-5663-4000-A7AB-8AC87DB88C1D"
@@ -663,8 +704,8 @@
       "ID": "32D1707C-D9BE-48F7-BB46-701F8DB09110"
     },
     "sync": {
-      "lastModified": "2026-09-02T04:04:10.321Z",
-      "checksum": "1e00958a3797db4318085346830dba1f75c17727b22dfa854928a60cedc5d789"
+      "lastModified": "2026-09-28T20:39:11.889Z",
+      "checksum": "592b5dbb7fb8cdd30d53b99c1a2a2b42ebbb8fcb25ce74e4ee53047b24c569c6"
     }
   }
 ]

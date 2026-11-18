@@ -130,7 +130,8 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
         "name": "@mj-biz-apps/common-server",
         "role": "bootstrap",
         "startupExport": "LoadBizAppsCommonServer"
-      }
+      },
+      { "name": "@mj-biz-apps/common-actions", "role": "actions" }
     ],
     "client": [
       {
@@ -140,8 +141,7 @@ The `mj-app.json` at the repository root declares everything about BizApps Commo
       }
     ],
     "shared": [
-      { "name": "@mj-biz-apps/common-entities", "role": "library" },
-      { "name": "@mj-biz-apps/common-actions", "role": "library" }
+      { "name": "@mj-biz-apps/common-entities", "role": "library" }
     ]
   },
 

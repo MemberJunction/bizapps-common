@@ -1,5 +1,72 @@
 # @mj-biz-apps/common-actions
 
+## 5.65.0
+
+## 5.64.0
+
+## 5.63.0
+
+## 5.62.0
+
+## 5.61.0
+
+## 5.60.0
+
+## 5.59.0
+
+## 5.58.0
+
+## 5.57.1
+
+## 5.57.0
+
+## 5.56.0
+
+## 5.55.0
+
+## 5.54.0
+
+## 5.53.1
+
+## 5.53.0
+
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+
+## 5.51.0
+
+## 5.50.2
+
+## 5.50.1
+
+### Patch Changes
+
+- 5f58fef: Declare `@mj-biz-apps/common-actions` as a server package in `mj-app.json`, not a shared one.
+
+  It imports `BaseAction` and `ActionEngineServer` from `@memberjunction/actions` and peers on `@memberjunction/core-entities-server` and `@memberjunction/aiengine`, so it cannot load in a browser. Listed under `shared`, `mj app install` also wrote it into the host's `dynamicPackages.client`, which the client bootstrap imports. It is now a `server` entry with the `actions` role. Server registration is unchanged: `@mj-biz-apps/common-server` already imports it.
+
+  On an existing host, `mj app upgrade` removes the stale `dynamicPackages.client` entry: since MJ 6.1.0 (this app's `mjVersionRange` floor) the upgrade prunes each array against what the manifest now declares for it, and the client keep-set is built from `client` and `shared` only.
+
+## 5.50.0
+
+## 5.49.0
+
+## 5.48.0
+
+## 5.47.0
+
+## 5.46.3
+
+## 5.46.2
+
+## 5.46.1
+
 ## 5.46.0
 
 ## 5.45.0

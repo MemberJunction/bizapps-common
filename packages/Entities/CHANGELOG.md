@@ -1,5 +1,241 @@
 # Change Log - mj_generatedentities
 
+## 5.65.0
+
+### Minor Changes
+
+- 9365ded: Release seed for the Job Function and Seniority scope filter: `V…__v5.65.x__Metadata_Sync` updates the "Job Function and Seniority Derivation" record process's ScopeFilter to the `ID NOT IN (SELECT PersonID …)` form, by ID and only when the record process exists. It has a Postgres counterpart.
+
+## 5.64.0
+
+### Minor Changes
+
+- eb8654d: Release seed for the Directory dashboard fix: `V…__v5.64.x__Metadata_Sync` updates the `Common: Directory Dashboard Summary` query's SQL and adds its result fields, and creates the `Common: Directory People Per Day` query with its fields. The summary update is applied by ID; everything else is create-only, guarded on its ID or key. It has a Postgres counterpart.
+
+## 5.63.0
+
+### Minor Changes
+
+- 0a36764: The 5.63 Metadata_Sync ships the Sync Activities action's DryRun and ConnectionIDs inputs and its updated description, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back.
+- b32b175: Move to MemberJunction's 6.2 LTS line: every `@memberjunction/*` range and the core/global overrides are `^6.2.1` (exact `6.2.1` devDependency anchors), and `mjVersionRange` is `>=6.2.1 <7.0.0`. Hosts must run MJ 6.2.1 or later to install this release.
+
+## 5.62.0
+
+### Minor Changes
+
+- 432d122: The 5.61 Metadata_Sync's Postgres counterpart checks the function signature against the schema name as PostgreSQL stores it (`__mj_bizappscommon`). Before, the check never matched, so a host whose functions take only the jsonb signature failed at the first record.
+
+## 5.61.0
+
+### Minor Changes
+
+- 7837132: The 5.61 Metadata_Sync ships the Marketing and Transactional consent purposes, the contact types' message types, and Configuration on People, Organizations, Addresses and ten entity relationships, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Contact_Method_Consent migration have Postgres counterparts. Field-level security for People stays held back: the People update keeps the host's EnableFieldLevelSecurity.
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+
+## 5.60.0
+
+### Minor Changes
+
+- 9870cd5: The 5.60 Metadata_Sync ships the re-keyed "Job Function and Seniority Derivation" AI Prompt, its prompt model and the job-function Record Process, all under the prompt's new ID (#408). The re-key migration that runs before it has already moved those rows, so the seed re-asserts their metadata values and changes nothing on a host that ran it. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- 62413dc: Re-key the "Job Function and Seniority Derivation" AI Prompt from `7C46041F-0412-4C2E-9B9E-3ED61D32210C` to `19736B1D-923B-4BB7-AAE8-9A98D9B25C1E`, so a host with common installed on MJ 6.1.x can migrate MJ to 6.2.0 (#408, MemberJunction/MJ#4939).
+
+  - Migration `V202611041900` (SQL Server and PostgreSQL): when `7C46041F` is common's prompt (template `B8221E1A…` or prompt model `FE550867…`), copy it to the new ID, repoint every foreign key and the job-function Record Process `Configuration`, and delete the old row. On any other host it does nothing.
+  - Metadata: the prompt and its Record Process now use the fixed new ID.
+  - Host order: install this release while still on MJ 6.1.x, then migrate MJ to 6.2.0 with the 6.2.0 CLI.
+
+## 5.59.0
+
+### Minor Changes
+
+- 37aa16a: The 5.59 Metadata_Sync ships the UI role's create permission on Activities and Activity Links, finding each host's permission row by entity and role, so a host that upgrades by migration lets a UI-only user log an activity the same way as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in every release since 5.48.
+- aa06aeb: The UI role can now create Activities and Activity Links, so a UI-only user can log an activity by
+  hand, such as a note on a deal. Before, the role could only read them and the save was refused.
+  Update and delete stay off for the UI role.
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+- 5336ee1: The release now ships the Company Sender Identities metadata in its Metadata_Sync migration, and adds the PostgreSQL versions of that migration and of the Company Sender Identity migration.
+
+## 5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- 692f407: The 5.57 Metadata_Sync ships the Party Lookup Organizations query change and the form and search settings for the new Organizations Acronym field, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It and the Organization_Acronym migration have Postgres counterparts. Field-level security for People stays held back, as in every release since 5.48.
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+## 5.56.0
+
+### Minor Changes
+
+- 8b8e5cd: Release seed for 5.56: `V202610222015__v5.56.x__Metadata_Sync.sql` and its PostgreSQL counterpart carry this release's metadata to hosts, which install by migration and never read `metadata/`. It ships the two party-lookup queries, the form placement of the new `Person.EmailDomain` and `Organization.WebsiteDomain` fields, and `EntityIDFieldName` on two polymorphic `RecordID` fields. People field-level security stays held back, as in every release since 5.48. Also adds the PostgreSQL counterpart of `V202610211654__v5.56.x__Party_Lookup_Domain_Columns`, with the two computed columns written as `GENERATED ALWAYS AS (...) STORED` (the converter cannot translate T-SQL computed columns).
+- d790620: Fast party lookup for Person and Organization foreign keys.
+
+  A migration adds two stored, indexed computed columns: `Person.EmailDomain` (the lower-cased text after the `@` of Email) and `Organization.WebsiteDomain` (the lower-cased host of Website, without scheme, `www.` or path). Two metadata queries, `Common: Party Lookup People` and `Common: Party Lookup Organizations`, prefix-match indexed base-table columns (TOP 20, no count). The new `bizapps-party-field` component (`PartyFieldComponent`) lists nothing until two characters are typed, then searches by last name, display name, email or email domain for people, and by name, legal name or website domain for organizations. Apps whose foreign key points at a subtype pass their own query with the same contract: columns `ID`, `Name`, `Detail`; parameters `Term` and `Domain`.
+
+- 01b4cc4: `metadata/entities/.polymorphic-fk-entity-fields.json` gives every `MJ: Entity Fields` entry a `primaryKey` lookup (`@lookup:MJ: Entity Fields.EntityID=@lookup:MJ: Entities.Name=<entity>&Name=<field>`). The entries had none, and `mj sync push` creates a new row for any record without a `primaryKey`, so on a fresh database it tried to insert a second field row with a NULL `EntityID` and the app's whole metadata push rolled back. With the lookup, push updates the field row CodeGen created and sets its `EntityIDFieldName`.
+
+## 5.55.0
+
+### Minor Changes
+
+- aa193b3: Add missing `IDX_AUTO_MJ_FKEY_*` foreign key indexes on `ActivityFile`, `ActivityLink`, `Person`, `PersonJobFunction`, and `Relationship`, and add CI schema consistency checks verifying FK index coverage.
+- 575a10c: Moves to MemberJunction 6.1.6 (`mjVersionRange` `>=6.1.6 <7.0.0`). The 5.55 Metadata_Sync ships People.LinkedUserID as an active, documented field (Status Active, new description, AutoUpdateDescription off), with its Postgres counterpart. SaveReturnMode `datestamps_only` on Activity Sync Runs and Activity Sync Run Details is withdrawn until an MJ release supports it. Field-level security for People stays held back, as in 5.48 through 5.54.
+
+## 5.54.0
+
+### Minor Changes
+
+- 70960e4: Readable record names for Addresses, Relationships, Address Links and People.
+
+  - **Addresses**: new stored, indexed `DisplayName` column, a one-line label in US order (`123 Main St, Springfield, IL 62701, United States`), with blank parts skipped. It replaces `Line1`, which can be empty, as the name field. `vwAddressLinks.Address` and `vwActivities.Address` now show this label.
+  - **Relationships**: `vwRelationships` becomes a layered view (`vwRelationshipsGenerated` plus a thin wrapper) that adds `DisplayName` = `From → To (Type)`, for example `Jane Smith → Acme (Employee)`. It replaces `Title` as the name field.
+  - **Address Links**: the name field is now `Address` (the linked address's label) instead of `AddressType`.
+  - **People**: `DisplayName` now skips blank name parts and includes `Suffix` (`John Smith Jr.`).
+  - **Geocoding**: Address's `Line1`, `City`, `StateProvince`, `PostalCode` and `Country` are now tagged `GeoAddress` / `GeoCity` / `GeoStateProvince` / `GeoPostalCode` / `GeoCountry`, so an Address saved without coordinates can be geocoded from its parts (the new `DisplayName` stays untagged). Activity's free-text `Location` is no longer tagged `GeoAddress`, so saving an Activity no longer calls the geocoder or writes a failed `RecordGeoCode` row; `vwActivities` drops the `vwRecordGeoCodes` join and Activities lose the `__mj_Latitude` / `__mj_Longitude` fields (`_mj__Latitude` / `_mj__Longitude` in GraphQL). Address Links are pinned as not geocoded.
+
+  Five migrations (`V202610151046`, `V202610151047`, `V202610151048`, `V202610151049`, `V202610151050`). The name-field settings and the Address geo tags reach hosts in the release metadata seed. PostgreSQL counterparts are left to the release build.
+
+- a5cd21a: The 5.54 Metadata_Sync ships the name-field settings for Addresses, Relationships, Address Links and People (6 Entity Fields) and pins Address Links as not geocoded, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. The five 5.54 schema migrations and the Metadata_Sync now have Postgres counterparts. Field-level security for People stays held back, as in 5.48, 5.51 and 5.53.
+
+## 5.53.1
+
+## 5.53.0
+
+### Minor Changes
+
+- 1045bc7: The 5.53 Metadata_Sync ships the 15 CHECK-constraint validators pinned in metadata/generated-codes since 5.52, so a host that upgrades by migration gets the same validator rows as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back, as in 5.48 and 5.51.
+- c842ff1: Pins the remaining 15 CHECK-constraint validators as `GeneratedCode` rows in `metadata/generated-codes/`, copied unchanged from the generated entity classes, so regenerating from migrations reuses every validator instead of asking the AI again. No generated code changes. The next release seed carries the rows to hosts.
+
+## 5.52.0
+
+### Minor Changes
+
+- 88eb6ae: Restores `spCreatePerson` / `spUpdatePerson` `@PhotoURL` to `NVARCHAR(MAX)`. The v5.45 job-function migration re-emitted both procs at the old 1000-character width, so SQL Server silently truncated every Person photo URL longer than that — inline data-URI avatars were stored cut off at exactly 1000 characters and never rendered. Truncated values must be re-saved by their source.
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+
+## 5.51.0
+
+### Minor Changes
+
+- c588769: New SQL function `[__mj_BizAppsCommon].[fnBusinessDayOf](@At DATETIMEOFFSET) RETURNS DATE`, with a
+  PostgreSQL twin `__mj_bizappscommon."fnBusinessDayOf"(at timestamptz) RETURNS date`
+  (migration `V202610062305__v5.51.x__Business_Day_Of`; MemberJunction/bc-aidp-next-golive#168). It
+  returns the calendar day an instant falls on in the business time zone, reading the zone from
+  `fnBusinessToday()` so the two always agree, and NULL for NULL. Queries use it instead of
+  `AT TIME ZONE bt.SqlZone`, which MJ's SQL parser cannot parse. A `DATETIME`/`DATETIME2` argument is
+  read as UTC; do not pass a `DATE` column (west of UTC it comes back a day early).
+- 679bfe0: The 5.51 Metadata_Sync ships what metadata/ added or changed since 5.48: the form layout (field categories, form sections and display names on 59 fields), the FieldCategoryInfo / FieldCategoryIcons entity settings, the three generated validators (ValidateEffectiveToAfterEffectiveFrom, ValidateCapturedContentAndEncryptionKeyCoexistence, ValidateExternalIdAndSourceSystemCoexistence) and the directory dashboard query's business-day people counts. Field-level security for People stays held back, as in 5.48. The seed is idempotent and safe on a host that already ran `mj sync push`.
+- f3588b3: People and Organizations no longer carry the virtual `__mj_Latitude` / `__mj_Longitude` fields
+  (migration `V202610062130__v5.51.x__Drop_Person_Organization_Virtual_Geo_Fields`; #215). MJ CodeGen
+  joins `vwRecordGeoCodes` only for geo-source entities, so once a host ran CodeGen these four
+  EntityField rows named columns `vwPeople` / `vwOrganizations` no longer produce: reads selected missing
+  columns and every later CodeGen run failed on `UQ_EntityField_EntityID_Sequence`. The migration
+  recreates `vwPeopleGenerated` / `vwOrganizationsGenerated` in CodeGen's shape, refreshes the two
+  wrappers, and deletes the four rows. Coordinates for both come from the primary Address
+  (`PrimaryAddressLatitude` / `PrimaryAddressLongitude`).
+
+### Patch Changes
+
+- d325500: Build, test and generate against MemberJunction's 6.1 LTS line, the version AIDP Next runs
+  (MemberJunction/bc-aidp-next-golive#298). Every `@memberjunction/*` range moves from
+  `^6.1.0-edge.6` to `~6.1.5`, `mj-app.json` declares `>=6.1.5 <7.0.0`, and the generated code is
+  regenerated on 6.1.5 from a database built from migrations. Nullable `__mj_` columns such as Address
+  `__mj_Latitude` / `__mj_Longitude` are now declared nullable in the GraphQL types
+  (MemberJunction/MJ#4603), so a record with no geocode loads.
+
+## 5.50.2
+
+## 5.50.1
+
+## 5.50.0
+
+### Minor Changes
+
+- dde861a: Repair `vwRelationships`, `spCreateRelationship` and `spUpdateRelationship` on hosts where bizapps-forms (up to 0.14.x) replaced them with stale copies (#219).
+
+  On those hosts every `MJ_BizApps_Common: Relationships` save failed with `@JobFunctionID is not a parameter for procedure spCreateRelationship`, and `vwRelationships` had no `JobFunction` or `SeniorityLevel` column. A new migration re-creates the three objects at their current definitions. On an undamaged host it replaces each with an identical copy.
+
+  The migration runs once. A host that later installs bizapps-forms 0.14.x or earlier is damaged again; install Forms 0.15.0 or later.
+
+## 5.49.0
+
+### Minor Changes
+
+- ac184f2: `Address.Line1` and `Address.City` are now nullable, so an address row may record a location
+  (country, region, postal code) before a street line and city are known.
+
+  The migration alters both columns to `NULL` (types and lengths unchanged) and updates their column
+  descriptions. CodeGen regenerates `spCreateAddress` / `spUpdateAddress` with `@Line1_Clear` /
+  `@City_Clear` parameters, and the generated entity and GraphQL types for `Line1` and `City` become
+  `string | null`.
+
+## 5.48.0
+
+### Minor Changes
+
+- 4222b02: The 5.48 Metadata_Sync takes People `PrimaryEmail` and Organization `Website` out of user search (#199), so the new lookup indexes can answer Bill To Person and Bill To Organization lookups in milliseconds. Two matches go away: a person's primary contact-method email that differs from `Person.Email`, and Organization website search. Field-level security for People (#186) is declared in metadata but not shipped yet. It needs an MJ 6.1.4 floor and host-side permission rows, so People access on hosts is unchanged.
+- e67224c: People and Organization pickers can now answer in milliseconds on large databases instead of timing out. Every column the curated user search uses now has an index, and the People and Organizations views join addresses in a way SQL Server can index. On a restored 1.2M-person AIDP database, a lookup for a rare name went from 15-19 seconds to 2-5 ms (People) and 2-4 ms (Organizations). On PostgreSQL, the prefix-searched columns are indexed with pattern operator classes, so `LIKE 'x%'` can use them under the default collation.
+
+  Two matches go away. People search no longer looks at the computed PrimaryEmail, so a person is no longer found by a primary contact-method email that differs from `Person.Email`. `Email` itself still matches exactly. Organization search no longer includes Website: most stored values carry a scheme (`https://...`), which `BeginsWith` never matched, and an unindexed field in the search would force a scan. Both search settings are metadata, and they ship in this release's Metadata_Sync (`V202609301930__v5.48.x__Metadata_Sync.sql`), so installing 5.48.0 applies the indexes and the search settings together.
+
+### Patch Changes
+
+- 680a2de: Addresses open again. Every Address single-record load failed with `Cannot query field
+"_mj__Latitude" on type "mjBizAppsCommonAddress_"` (MemberJunction/bc-aidp-next-golive#295).
+  `vwAddresses` exposes the native coordinates as MJ's geo virtual fields `__mj_Latitude` and
+  `__mj_Longitude`, and migration V202609101800 registers both as EntityFields. The client asks for
+  every EntityField, but the Address GraphQL type was not regenerated after that migration, so it
+  lacked both. It now declares them as nullable floats, as Activities, Organizations and People
+  already do. The Address entity class also gains the matching read-only `__mj_Latitude` and
+  `__mj_Longitude` getters.
+
+## 5.47.0
+
+### Minor Changes
+
+- 0d8364d: `Metadata_Sync` for 5.47: the metadata added or edited since the 5.38 seed now reaches hosts.
+
+  `V202609282100` creates the records no migration named until now (job functions, seniority levels,
+  the sentiment tags, the activity-history query, user views, prompts, record processes, the
+  `DefaultSellingCompanyID` setting, and six action rows) and carries the edits to records that
+  already ship: the search-API curation, the Address geo pin, the Image extended types, and the
+  LogActivity binding changes from #195 and #197.
+
+  It also applies the Activity Sync Run Details permissions: the 5.38 seed's update matched no row
+  on any host, and the Integration row was never seeded. The UI role loses read on that entity and Integration drops to create only, as `metadata/`
+  declares. The six sentiment tags gain the `DisplayName` MJ core requires.
+
+- b8584a5: Add `ExternalFieldLimitEngine`: reads the field lengths of external systems (Business Central, BILL and other connectors) from `MJ: Integration Object Fields`, returns the smallest limit across the fields a value feeds, and builds a rejection message naming the field and the limit. Apps use it to reject over-long values on save and before sending, instead of failing later at sync. A target with no recorded length is an error, not a pass.
+
+  Configure it with a user who can read `MJ: Integration Objects` and `MJ: Integration Object Fields`; on a server, use the system user. If a user without that access configures it, the next `Config` reloads instead of keeping the empty result, and until a reload succeeds each check says it could not run instead of throwing. Installed metadata changes reach a running server only when `LocalCacheManager` is initialized; otherwise they apply after a restart or `Config(true)`.
+
+## 5.46.3
+
+## 5.46.2
+
+## 5.46.1
+
 ## 5.46.0
 
 ### Minor Changes

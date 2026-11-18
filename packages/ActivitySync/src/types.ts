@@ -134,7 +134,11 @@ export interface ActivitySourceQuery {
      * already seen.
      */
     Since: Date | null;
-    /** Hard cap on items returned. */
+    /**
+     * Hard cap on items returned. The calendar surface, which re-reads a fixed window every run,
+     * uses it as the size of one page and pages through the window (bounded by
+     * `DEFAULT_MAX_CALENDAR_PAGES`), so a window holding more than `Limit` events is still read.
+     */
     Limit: number;
 }
 
@@ -154,6 +158,16 @@ export interface RawBatch {
      * costs are not comparable, which is the rule `watermark.ts` already states.
      */
     Capped?: boolean;
+    /**
+     * The read covered everything received up to this instant and stopped short of the present.
+     *
+     * Set by a transport that reads oldest-window-first and ran out of requests before catching up.
+     * When the window was empty, the watermark moves to this point so the next pass continues where
+     * this one stopped; when items were ingested, the watermark is clamped to the smaller of
+     * `ReadThrough` and the newest item timestamp so a received-time window cannot step past the
+     * sent-time filter of a delayed message. Ignored when `Capped`.
+     */
+    ReadThrough?: Date;
 }
 
 /** One provider pass. */

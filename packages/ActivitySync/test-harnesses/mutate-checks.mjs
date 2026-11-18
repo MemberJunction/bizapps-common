@@ -9,12 +9,18 @@
  *
  *   node test-harnesses/mutate-checks.mjs
  *   node test-harnesses/mutate-checks.mjs M-AC11
+ *   node test-harnesses/mutate-checks.mjs --check-anchors
+ *
+ * `--check-anchors` only asserts every anchor matches exactly once, without mutating or running
+ * vitest. It takes well under a second, so build.yml runs it on every PR: a stale anchor is how
+ * this harness has rotted before, and a SKIP should fail the change that caused it. The full run
+ * is in mutants.yml.
  */
-import { execSync } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createSuiteRunner, requireKnownMutants } from '../../../test-harnesses/mutation-suite.mjs';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -39,6 +45,7 @@ const ATTACH = 'src/attachments.ts';
 const CALPROVIDER = 'src/providers/MSGraphCalendarSyncProvider.ts';
 const MAPPER = 'src/providers/GraphMessageMapper.ts';
 const CAPTURE = 'src/content-capture.ts';
+const BASE = 'src/BaseActivitySyncProvider.ts';
 
 const PRODUCT = [
     /**
@@ -425,14 +432,14 @@ const PRODUCT = [
         id: 'M-CAL4',
         file: CALENDAR,
         expect: ['reads SourceData, not the normalized Events'],
-        from: '        const payloads = (result.SourceData ?? []) as Record<string, unknown>[];',
-        to: '        const payloads = (result.Events ?? []) as Record<string, unknown>[];',
+        from: '            Events: (result.SourceData ?? []) as Record<string, unknown>[],',
+        to: '            Events: (result.Events ?? []) as Record<string, unknown>[],',
     },
     {
         id: 'M-CAL5',
         file: CALENDAR,
         expect: ['warns when recurrence was not expanded despite a bounded window'],
-        from: '        if (result.RecurrenceExpanded === false) {',
+        from: '            if (read.RecurrenceExpanded === false && !collapsedReported) {',
         to: '        if (false) {',
     },
     {
@@ -445,9 +452,16 @@ const PRODUCT = [
     {
         id: 'M-CAL7',
         file: CALENDAR,
-        expect: ['flags a capped read, which may have left events behind'],
-        from: '        return { Payloads: payloads, Issues: issues, Capped: capped };',
-        to: '        return { Payloads: payloads, Issues: issues, Capped: false };',
+        expect: ['flags a read that cannot page past an instant, which may have left events behind'],
+        from: '                return { Payloads: payloads, Capped: true };',
+        to: '                return { Payloads: payloads, Capped: false };',
+    },
+    {
+        id: 'M-CAL9',
+        file: CALENDAR,
+        expect: ['stops at the page budget and says the window holds more'],
+        from: ['        );', '        return { Payloads: payloads, Capped: true };'].join('\n'),
+        to: ['        );', '        return { Payloads: payloads, Capped: false };'].join('\n'),
     },
     /** A replayed calendar run that claims to be live writes rows indistinguishable from real ones. */
     {
@@ -764,19 +778,53 @@ const PRODUCT = [
         from: '                                capture.EncryptionKeyID,\n                                user,\n',
         to: '                                capture.EncryptionKeyID,\n                                undefined as unknown as UserInfo,\n',
     },
+    /**
+     * The #308 pair. The transport bounds its windows by received time, so the post-filter must use
+     * the same unit: filtering on sent time drops a delayed message sent before the watermark but
+     * received after it. And a partial pass may only advance to the older of ReadThrough and the
+     * newest ingested item, or a future-dated sentDateTime carries the watermark past unread mail.
+     */
+    {
+        id: 'M-AC42',
+        file: GRAPH,
+        expect: ['keeps a delayed message sent before the watermark but received after it'],
+        from: '        return since === null ? mapped.Items : mapped.Items.filter((i) => receivedTime(i) > since);',
+        to: '        return since === null ? mapped.Items : mapped.Items.filter((i) => i.StartedAt.getTime() > since);',
+    },
+    {
+        id: 'M-AC43',
+        file: BASE,
+        expect: ['clamps a partial watermark to ReadThrough when a message carries a future sentDateTime'],
+        from: '                  ? raw.ReadThrough.getTime() <= computedWatermark.getTime()',
+        to: '                  ? raw.ReadThrough.getTime() >= computedWatermark.getTime()',
+    },
 ];
 
-function runVitest() {
-    return execSync('pnpm exec vitest run', {
-        cwd: PKG,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-    });
-}
+// Suite running, signal-safe restore and argument validation live in the shared module, which the
+// other package's harness uses too: test-harnesses/mutation-suite.mjs.
+const suite = createSuiteRunner(PKG);
+const wanted = requireKnownMutants(process.argv.slice(2), PRODUCT);
 
-const wanted = process.argv.slice(2).filter((a) => a !== '--list');
 if (process.argv.includes('--list')) {
     for (const m of PRODUCT) console.log(`${m.id}  ${m.file}  expect: ${m.expect.join(', ')}`);
+    process.exit(0);
+}
+if (process.argv.includes('--check-anchors')) {
+    let stale = 0;
+    for (const m of PRODUCT) {
+        // Normalised exactly as the mutation loop below does, so the two cannot disagree.
+        const text = readFileSync(join(PKG, m.file), 'utf8').split('\r\n').join('\n');
+        const count = text.split(m.from).length - 1;
+        if (count !== 1) {
+            console.error(`SKIP ${m.id}: anchor matched ${count} times in ${m.file}`);
+            stale++;
+        }
+    }
+    if (stale > 0) {
+        console.error(`\n${stale} of ${PRODUCT.length} anchor(s) do not match exactly once.`);
+        process.exit(1);
+    }
+    console.log(`${PRODUCT.length} anchor(s) match exactly once.`);
     process.exit(0);
 }
 
@@ -815,15 +863,14 @@ for (const m of selected) {
     }
     const mutated = original.replace(m.from, m.to);
     writeFileSync(full, eol === '\r\n' ? mutated.split('\n').join('\r\n') : mutated);
-    let output = '';
-    let threw = false;
-    try {
-        output = runVitest();
-    } catch (err) {
-        threw = true;
-        output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
-    }
-    copyFileSync(backup, full);
+    // Bundles both cleanups the signal handlers must also be able to run: restoring the source
+    // AND removing this mutant's mkdtemp backup dir -- previously only the restore happened on
+    // the signal path, leaking the temp dir every time a run was interrupted.
+    const result = await suite.runAgainstMutant(() => {
+        copyFileSync(backup, full);
+        rmSync(dir, { recursive: true, force: true });
+    });
+
     // `original` is normalised, so the comparison normalises too -- otherwise a CRLF working
     // tree reports a false restore failure on every mutant.
     const restored = readFileSync(full, 'utf8').split('\r\n').join('\n');
@@ -831,19 +878,21 @@ for (const m of selected) {
         writeFileSync(full, original);
         console.error(`FAIL ${m.id}: restore did not match the copy`);
         failed++;
-        rmSync(dir, { recursive: true, force: true });
         continue;
     }
-    rmSync(dir, { recursive: true, force: true });
 
-    if (!threw) {
+    if (!result.threw) {
         console.error(`FAIL ${m.id}: suite stayed green`);
         failed++;
         continue;
     }
-    const missing = m.expect.filter((name) => !output.includes(name));
+    const missing = m.expect.filter((name) => !result.output.includes(name));
     if (missing.length) {
         console.error(`FAIL ${m.id}: failed but did not name ${missing.join(', ')}`);
+        // Previously discarded: `result.output` is compared against `expect` above but was never
+        // itself printed, so a broken command (or a suite failing for an unrelated reason) read
+        // as an unhelpful "did not name X" with no clue why.
+        if (result.output.trim()) console.error(result.output.trim());
         failed++;
         continue;
     }
