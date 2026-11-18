@@ -2,6 +2,7 @@ import { RunView, type IMetadataProvider } from '@memberjunction/core';
 import { MJGlobal } from '@memberjunction/global';
 import type { StatTileTone } from '../components/stat-tile/stat-tile.component';
 import { COMMON_ENTITIES } from './entity-names';
+import { EscapeFilterValue } from './directory-stats';
 
 /**
  * The Organization form's **Staff** section: the people who work at an organization, rolled up.
@@ -166,7 +167,7 @@ function TodayLiteral(today: Date): string {
  */
 export async function LoadOrganizationStaff(organizationID: string, provider?: IMetadataProvider, today: Date = new Date()): Promise<OrganizationStaffMember[]> {
     const rv = provider ? RunView.FromMetadataProvider(provider) : new RunView();
-    const id = organizationID.replace(/'/g, "''");
+    const id = EscapeFilterValue(organizationID);
     const result = await rv.RunView<StaffRelationshipRow>({
         EntityName: COMMON_ENTITIES.Relationship,
         ExtraFilter: `ToOrganizationID='${id}' AND FromPersonID IS NOT NULL AND RelationshipType='Employee' AND Status='Active' AND (EndDate IS NULL OR EndDate >= '${TodayLiteral(today)}')`,

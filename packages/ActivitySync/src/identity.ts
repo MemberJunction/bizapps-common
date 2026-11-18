@@ -4,7 +4,7 @@
  * An unmatched address becomes an unresolved ActivityLink (IdentityKind + IdentityValue).
  * This file never creates a Person.
  */
-import { RunView, type UserInfo } from '@memberjunction/core';
+import { RunView, type IMetadataProvider, type UserInfo } from '@memberjunction/core';
 
 import type { ResolvedParty, UnresolvedParty } from './BaseActivitySyncExtension.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
@@ -39,6 +39,7 @@ export class IdentityResolver {
     public async Resolve(
         participants: readonly ItemParticipant[],
         contextUser: UserInfo,
+        provider?: IMetadataProvider,
     ): Promise<IdentityResolution> {
         const addresses = [
             ...new Set(participants.map((p) => p.Address.trim().toLowerCase()).filter(Boolean)),
@@ -47,7 +48,7 @@ export class IdentityResolver {
             return { Resolved: [], Unresolved: [], Known: new Map(), LookupFailed: false };
         }
 
-        const { known, failed } = await this.lookup(addresses, contextUser);
+        const { known, failed } = await this.lookup(addresses, contextUser, provider);
         const resolved: ResolvedParty[] = [];
         const unresolved: UnresolvedParty[] = [];
         const seen = new Set<string>();
@@ -84,8 +85,11 @@ export class IdentityResolver {
     private async lookup(
         addresses: string[],
         contextUser: UserInfo,
+        provider?: IMetadataProvider,
     ): Promise<{ known: Map<string, KnownAddress>; failed: boolean }> {
-        const rv = new RunView();
+        // The sync engine runs its reads/writes on an independent provider so they are never
+        // captured into a concurrent caller's transaction on the global one (#195/#200).
+        const rv = provider ? RunView.FromMetadataProvider(provider) : new RunView();
         const res = await rv.RunView<ContactMethodRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ContactMethods,

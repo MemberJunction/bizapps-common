@@ -196,12 +196,15 @@ describe('reporting what would otherwise pass silently', () => {
         expect(batch.Issues.join(' ')).not.toMatch(/did not expand/);
     });
 
-    it('flags a capped read, which may have left events behind', async () => {
+    it('flags a read that cannot page past an instant, which may have left events behind', async () => {
+        // Five events at the same start and a page of five: the next page starts at that same
+        // instant and brings back the same five, so the cursor cannot move.
         const many = Array.from({ length: 5 }, (_, i) => ({ ...EVENT, id: `evt-${i}` }));
         const reader = readerReturning({ Success: true, SourceData: many, RecurrenceExpanded: true });
         const batch = await transport(reader).Fetch({ ...QUERY, Limit: 5 });
         expect(batch.Capped).toBe(true);
-        expect(batch.Issues.join(' ')).toMatch(/hit its limit/);
+        expect(batch.Payloads).toHaveLength(5);
+        expect(batch.Issues.join(' ')).toMatch(/could not page past/);
     });
 
     /**
@@ -372,5 +375,81 @@ describe('which driver class a surface is told it is', () => {
     it('survives no type row at all', () => {
         expect(SurfaceDriverClass('Calendar', null, 'Fixture')).toBe('Fixture');
         expect(SurfaceDriverClass('Message', undefined, 'Fixture')).toBe('Fixture');
+    });
+});
+
+describe('a window holding more events than one page (#312)', () => {
+    /**
+     * THE DEFECT. The window is the same on every run, and it used to be read with ONE request of
+     * `Limit` events. A calendar holding more than that in the window had the same first page read
+     * on every run and nothing past it, on any run.
+     */
+    const day = (n: number) => new Date(Date.UTC(2026, 7, 10 + n, 9));
+    const at = (d: Date) => d.toISOString().replace('Z', '');
+    const CALENDAR = Array.from({ length: 12 }, (_, i) => ({
+        ...EVENT,
+        id: `evt-${i}`,
+        start: { dateTime: at(day(i)), timeZone: 'UTC' },
+        end: { dateTime: at(new Date(day(i).getTime() + 3_600_000)), timeZone: 'UTC' },
+    }));
+
+    /** Behaves like `/calendarView`: overlap with the window, ordered by start, `$top` honoured. */
+    function calendarReader(events: typeof CALENDAR) {
+        const GetEvents = vi.fn(async (params: { NumEvents: number; StartDateTime?: Date; EndDateTime?: Date }) => {
+            const from = params.StartDateTime!.getTime();
+            const to = params.EndDateTime!.getTime();
+            const inWindow = events.filter(
+                (e) => new Date(`${e.end.dateTime}Z`).getTime() > from && new Date(`${e.start.dateTime}Z`).getTime() < to,
+            );
+            return { Success: true, SourceData: inWindow.slice(0, params.NumEvents), RecurrenceExpanded: true };
+        });
+        return { GetEvents } as unknown as GraphEventReader;
+    }
+
+    function pagedTransport(reader: GraphEventReader, maxPages?: number) {
+        return new GraphCalendarTransport(
+            { ResolveCredential: async () => CREDENTIAL, ResolveProvider: async () => reader },
+            DEFAULT_FIRST_RUN_LOOKBACK_DAYS,
+            30,
+            () => NOW,
+            maxPages,
+        );
+    }
+
+    it('reads every event in the window, not only the first page', async () => {
+        const reader = calendarReader(CALENDAR);
+        const batch = await pagedTransport(reader).Fetch({ ...QUERY, Since: NOW, Limit: 5 });
+
+        expect(batch.Payloads.map((p) => p.id)).toEqual(CALENDAR.map((e) => e.id));
+        expect(batch.Capped).toBe(false);
+        expect(batch.Issues).toEqual([]);
+    });
+
+    it('starts each page at the last start it read, so the window advances', async () => {
+        const reader = calendarReader(CALENDAR);
+        await pagedTransport(reader).Fetch({ ...QUERY, Since: NOW, Limit: 5 });
+
+        const calls = (reader.GetEvents as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+        expect(calls).toHaveLength(3);
+        expect(calls[1].StartDateTime).toEqual(new Date(day(4).getTime() - 1));
+        expect(calls[2].StartDateTime).toEqual(new Date(day(8).getTime() - 1));
+        // The END of the window never moves; only the cursor does.
+        expect(new Set(calls.map((c) => c.EndDateTime.getTime())).size).toBe(1);
+    });
+
+    it('returns an event that overlaps two pages once, not twice', async () => {
+        const reader = calendarReader(CALENDAR);
+        const batch = await pagedTransport(reader).Fetch({ ...QUERY, Since: NOW, Limit: 5 });
+        const ids = batch.Payloads.map((p) => p.id);
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('stops at the page budget and says the window holds more', async () => {
+        const reader = calendarReader(CALENDAR);
+        const batch = await pagedTransport(reader, 2).Fetch({ ...QUERY, Since: NOW, Limit: 5 });
+
+        expect(reader.GetEvents).toHaveBeenCalledTimes(2);
+        expect(batch.Capped).toBe(true);
+        expect(batch.Issues.join(' ')).toMatch(/hit its limit of 2 page/);
     });
 });

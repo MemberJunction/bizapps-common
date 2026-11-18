@@ -45,6 +45,7 @@ const ATTACH = 'src/attachments.ts';
 const CALPROVIDER = 'src/providers/MSGraphCalendarSyncProvider.ts';
 const MAPPER = 'src/providers/GraphMessageMapper.ts';
 const CAPTURE = 'src/content-capture.ts';
+const BASE = 'src/BaseActivitySyncProvider.ts';
 
 const PRODUCT = [
     /**
@@ -431,14 +432,14 @@ const PRODUCT = [
         id: 'M-CAL4',
         file: CALENDAR,
         expect: ['reads SourceData, not the normalized Events'],
-        from: '        const payloads = (result.SourceData ?? []) as Record<string, unknown>[];',
-        to: '        const payloads = (result.Events ?? []) as Record<string, unknown>[];',
+        from: '            Events: (result.SourceData ?? []) as Record<string, unknown>[],',
+        to: '            Events: (result.Events ?? []) as Record<string, unknown>[],',
     },
     {
         id: 'M-CAL5',
         file: CALENDAR,
         expect: ['warns when recurrence was not expanded despite a bounded window'],
-        from: '        if (result.RecurrenceExpanded === false) {',
+        from: '            if (read.RecurrenceExpanded === false && !collapsedReported) {',
         to: '        if (false) {',
     },
     {
@@ -451,9 +452,16 @@ const PRODUCT = [
     {
         id: 'M-CAL7',
         file: CALENDAR,
-        expect: ['flags a capped read, which may have left events behind'],
-        from: '        return { Payloads: payloads, Issues: issues, Capped: capped };',
-        to: '        return { Payloads: payloads, Issues: issues, Capped: false };',
+        expect: ['flags a read that cannot page past an instant, which may have left events behind'],
+        from: '                return { Payloads: payloads, Capped: true };',
+        to: '                return { Payloads: payloads, Capped: false };',
+    },
+    {
+        id: 'M-CAL9',
+        file: CALENDAR,
+        expect: ['stops at the page budget and says the window holds more'],
+        from: ['        );', '        return { Payloads: payloads, Capped: true };'].join('\n'),
+        to: ['        );', '        return { Payloads: payloads, Capped: false };'].join('\n'),
     },
     /** A replayed calendar run that claims to be live writes rows indistinguishable from real ones. */
     {
@@ -769,6 +777,26 @@ const PRODUCT = [
         expect: ['hands the cipher the run user, because the key lookup runs as somebody'],
         from: '                                capture.EncryptionKeyID,\n                                user,\n',
         to: '                                capture.EncryptionKeyID,\n                                undefined as unknown as UserInfo,\n',
+    },
+    /**
+     * The #308 pair. The transport bounds its windows by received time, so the post-filter must use
+     * the same unit: filtering on sent time drops a delayed message sent before the watermark but
+     * received after it. And a partial pass may only advance to the older of ReadThrough and the
+     * newest ingested item, or a future-dated sentDateTime carries the watermark past unread mail.
+     */
+    {
+        id: 'M-AC42',
+        file: GRAPH,
+        expect: ['keeps a delayed message sent before the watermark but received after it'],
+        from: '        return since === null ? mapped.Items : mapped.Items.filter((i) => receivedTime(i) > since);',
+        to: '        return since === null ? mapped.Items : mapped.Items.filter((i) => i.StartedAt.getTime() > since);',
+    },
+    {
+        id: 'M-AC43',
+        file: BASE,
+        expect: ['clamps a partial watermark to ReadThrough when a message carries a future sentDateTime'],
+        from: '                  ? raw.ReadThrough.getTime() <= computedWatermark.getTime()',
+        to: '                  ? raw.ReadThrough.getTime() >= computedWatermark.getTime()',
     },
 ];
 

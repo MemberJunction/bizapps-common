@@ -333,7 +333,7 @@ button.biz-hero__stat-val:hover {
 
 .biz-hero__toggle:hover {
     color: var(--mj-text-primary);
-    background: var(--mj-bg-hover, rgba(255, 255, 255, 0.08));
+    background: var(--mj-bg-surface-hover);
     border-color: var(--mj-brand-primary);
 }
 
@@ -355,4 +355,8 @@ button.biz-hero__stat-val:hover {
 
 .biz-hero--collapsed .biz-hero__name {
     font-size: 1.15rem;
+}
+
+.biz-hero--collapsed .biz-hero__edit {
+    margin-top: var(--mj-space-3);
 }

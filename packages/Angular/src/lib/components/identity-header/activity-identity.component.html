@@ -94,12 +94,18 @@
                     </span>
                 </div>
             }
-            @if (Record.ParentActivity) {
+            @if (Record.ParentActivityID) {
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Thread / Parent</span>
-                    <button type="button" class="biz-hero__stat-val" (click)="OnParentActivityClick($event)">
+                    <button type="button" class="biz-hero__stat-val"
+                            [mjRecordLink]="Record"
+                            FieldName="ParentActivityID"
+                            EntityName="MJ_BizApps_Common: Activities"
+                            [HandleClick]="false"
+                            (Navigate)="Navigate.emit($event)"
+                            (click)="OnParentActivityClick($event)">
                         <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
-                        {{ Record.ParentActivity }}
+                        {{ ParentActivityLabel }}
                     </button>
                 </div>
             }
@@ -110,5 +116,45 @@
                 {{ Record.Description }}
             </div>
         }
+    }
+
+    <!--
+      EDIT MODE. This hero replaces the generated "Activity Details" section (`replacesSectionKey:
+      'activityDetails'` on ActivityHeaderPanel), so every field that section carried has to be
+      editable here or it is editable nowhere (bc-aidp-next-golive#430: the Type of a logged activity
+      could not be changed). Description is owned by the Notes panel (ActivityContentPanel) and is
+      left out so one field is not bound to two editors. Shown whether or not the hero is collapsed.
+    -->
+    @if (EditMode) {
+        <div class="biz-hero__edit">
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="ActivityTypeID"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext" LinkType="Record"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Title"
+                    Type="textbox" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Direction"
+                    Type="select" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Status"
+                    Type="select" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Outcome"
+                    Type="select" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="SentimentScore"
+                    Type="number" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+            <div class="biz-hero__field biz-hero__field--span">
+                <mj-form-field [Record]="Record" [ShowLabel]="true" FieldName="Details"
+                    Type="textarea" [EditMode]="EditMode" [FormContext]="FormContext"></mj-form-field>
+            </div>
+        </div>
     }
 </div>

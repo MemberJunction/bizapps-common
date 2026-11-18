@@ -21,7 +21,7 @@
     "fields": {
       "Name": "Sync Activities",
       "CategoryID": "@lookup:MJ: Action Categories.Name=Common",
-      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new.",
+      "Description": "Pull messages and calendar items for every Active-or-Error activity-sync connection and file the relevant ones as Activities. Downstream apps enrich in-stream via ActivitySyncExtension; they do not own this trigger. Idempotent: re-running over the same window writes nothing new. Run by hand with DryRun to preview what each connection would file, Paused connections included, without writing an Activity or moving a watermark.",
       "Type": "Custom",
       "DriverClass": "Common.SyncActivities",
       "IconClass": "fa-solid fa-inbox",
@@ -51,6 +51,35 @@
           "sync": {
             "lastModified": "2026-09-02T04:04:08.773Z",
             "checksum": "7cd06212929b132826bf7854137cb272566e4d0d4325da2eeade2b3e3a6ad389"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "DryRun",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "DefaultValue": "false",
+            "Description": "true previews instead of writing: every item is fetched, qualified and resolved, and only the run and its per-item decisions (WouldInclude / WouldExclude) are saved. No Activity is written and no watermark moves. Paused connections are included, so a new mailbox can be built Paused and reviewed before it goes live. The hourly job leaves this false."
+          },
+          "primaryKey": {
+            "ID": "1C1BE8C0-CE21-41CA-9E92-D5A8523603F2"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "ConnectionIDs",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional comma-separated ActivitySyncConnection IDs. When set, only these connections run; each requested one that does not run (missing, Disabled, or Paused on a live run) is reported in Issues. Empty means every runnable connection."
+          },
+          "primaryKey": {
+            "ID": "66E97A11-5560-4C69-BA40-E71005474573"
           }
         }
       ],

@@ -16,6 +16,7 @@ import { BizAppsFormPanel } from './bizapps-form-panel';
         sortKey: 90,
         replacesSectionKey: 'locationDetails',
         contributionKey: 'addresses',
+        whenEmpty: 'show',
     },
 })
 @Component({

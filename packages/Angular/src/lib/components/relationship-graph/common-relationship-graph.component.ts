@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RunView, CompositeKey } from '@memberjunction/core';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
@@ -28,6 +29,14 @@ import {
 } from '@memberjunction/ng-graph-view';
 import { COMMON_ENTITIES } from '../../data/entity-names';
 import type { DirectoryRelationshipRow } from '../../data/directory-types';
+
+/**
+ * Graph node key for a party. The ID is normalized so one record is one node whether its ID
+ * came from the input binding or from a row, in whatever casing the database returned.
+ */
+function partyNodeKey(prefix: 'person' | 'org', id: string): string {
+    return `${prefix}:${NormalizeUUID(id)}`;
+}
 
 /**
  * `<bizapps-relationship-graph>` — Entity-aware relationship graph viewer for BizApps Common.
@@ -170,7 +179,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     }
 
     public async LoadGraphData(): Promise<void> {
-        const cacheKey = this.PersonID ? `person:${this.PersonID}` : (this.OrganizationID ? `org:${this.OrganizationID}` : '');
+        const cacheKey = this.PersonID ? partyNodeKey('person', this.PersonID) : (this.OrganizationID ? partyNodeKey('org', this.OrganizationID) : '');
         if (cacheKey && CommonRelationshipGraphComponent.graphCache.has(cacheKey)) {
             const cached = CommonRelationshipGraphComponent.graphCache.get(cacheKey)!;
             this.Nodes = [...cached.nodes];
@@ -188,10 +197,10 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             let filter = '';
 
             if (this.PersonID) {
-                this.FocalNodeID = `person:${this.PersonID}`;
+                this.FocalNodeID = partyNodeKey('person', this.PersonID);
                 filter = `FromPersonID = '${this.PersonID}' OR ToPersonID = '${this.PersonID}'`;
             } else if (this.OrganizationID) {
-                this.FocalNodeID = `org:${this.OrganizationID}`;
+                this.FocalNodeID = partyNodeKey('org', this.OrganizationID);
                 filter = `FromOrganizationID = '${this.OrganizationID}' OR ToOrganizationID = '${this.OrganizationID}'`;
             }
 
@@ -228,14 +237,14 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
         // Determine focal label from rows if available
         let focalLabel = this.PersonID ? 'Person' : 'Organization';
         if (this.PersonID) {
-            const match = rows.find(r => r.FromPersonID === this.PersonID || r.ToPersonID === this.PersonID);
+            const match = rows.find(r => UUIDsEqual(r.FromPersonID, this.PersonID) || UUIDsEqual(r.ToPersonID, this.PersonID));
             if (match) {
-                focalLabel = (match.FromPersonID === this.PersonID ? match.FromPerson : match.ToPerson) || 'Person';
+                focalLabel = (UUIDsEqual(match.FromPersonID, this.PersonID) ? match.FromPerson : match.ToPerson) || 'Person';
             }
         } else if (this.OrganizationID) {
-            const match = rows.find(r => r.FromOrganizationID === this.OrganizationID || r.ToOrganizationID === this.OrganizationID);
+            const match = rows.find(r => UUIDsEqual(r.FromOrganizationID, this.OrganizationID) || UUIDsEqual(r.ToOrganizationID, this.OrganizationID));
             if (match) {
-                focalLabel = (match.FromOrganizationID === this.OrganizationID ? match.FromOrganization : match.ToOrganization) || 'Organization';
+                focalLabel = (UUIDsEqual(match.FromOrganizationID, this.OrganizationID) ? match.FromOrganization : match.ToOrganization) || 'Organization';
             }
         }
 
@@ -266,7 +275,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
 
             // From Entity
             if (r.FromPersonID) {
-                sourceId = `person:${r.FromPersonID}`;
+                sourceId = partyNodeKey('person', r.FromPersonID);
                 if (!nodeMap.has(sourceId)) {
                     nodeMap.set(sourceId, {
                         ID: sourceId,
@@ -276,7 +285,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                     });
                 }
             } else if (r.FromOrganizationID) {
-                sourceId = `org:${r.FromOrganizationID}`;
+                sourceId = partyNodeKey('org', r.FromOrganizationID);
                 if (!nodeMap.has(sourceId)) {
                     nodeMap.set(sourceId, {
                         ID: sourceId,
@@ -289,7 +298,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
 
             // To Entity
             if (r.ToPersonID) {
-                targetId = `person:${r.ToPersonID}`;
+                targetId = partyNodeKey('person', r.ToPersonID);
                 if (!nodeMap.has(targetId)) {
                     nodeMap.set(targetId, {
                         ID: targetId,
@@ -299,7 +308,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                     });
                 }
             } else if (r.ToOrganizationID) {
-                targetId = `org:${r.ToOrganizationID}`;
+                targetId = partyNodeKey('org', r.ToOrganizationID);
                 if (!nodeMap.has(targetId)) {
                     nodeMap.set(targetId, {
                         ID: targetId,
@@ -312,7 +321,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
 
             if (sourceId && targetId) {
                 edges.push({
-                    ID: r.ID,
+                    ID: NormalizeUUID(r.ID),
                     SourceID: sourceId,
                     TargetID: targetId,
                     Label: r.RelationshipType || r.Title || 'Related',
@@ -362,7 +371,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             let targetId = '';
 
             if (r.FromPersonID) {
-                sourceId = `person:${r.FromPersonID}`;
+                sourceId = partyNodeKey('person', r.FromPersonID);
                 if (!nodeMap.has(sourceId)) {
                     nodeMap.set(sourceId, {
                         ID: sourceId,
@@ -373,7 +382,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                     });
                 }
             } else if (r.FromOrganizationID) {
-                sourceId = `org:${r.FromOrganizationID}`;
+                sourceId = partyNodeKey('org', r.FromOrganizationID);
                 if (!nodeMap.has(sourceId)) {
                     nodeMap.set(sourceId, {
                         ID: sourceId,
@@ -386,7 +395,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             }
 
             if (r.ToPersonID) {
-                targetId = `person:${r.ToPersonID}`;
+                targetId = partyNodeKey('person', r.ToPersonID);
                 if (!nodeMap.has(targetId)) {
                     nodeMap.set(targetId, {
                         ID: targetId,
@@ -397,7 +406,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                     });
                 }
             } else if (r.ToOrganizationID) {
-                targetId = `org:${r.ToOrganizationID}`;
+                targetId = partyNodeKey('org', r.ToOrganizationID);
                 if (!nodeMap.has(targetId)) {
                     nodeMap.set(targetId, {
                         ID: targetId,
@@ -409,9 +418,10 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                 }
             }
 
-            if (sourceId && targetId && !edgeMap.has(r.ID)) {
-                edgeMap.set(r.ID, {
-                    ID: r.ID,
+            const edgeId = NormalizeUUID(r.ID);
+            if (sourceId && targetId && !edgeMap.has(edgeId)) {
+                edgeMap.set(edgeId, {
+                    ID: edgeId,
                     SourceID: sourceId,
                     TargetID: targetId,
                     Label: r.RelationshipType || r.Title || 'Related',
