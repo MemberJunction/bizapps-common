@@ -10,7 +10,7 @@ import {
     inject,
 } from '@angular/core';
 import { Metadata, RunView, type IMetadataProvider } from '@memberjunction/core';
-import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
+import { BaseFormsModule, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     RelatedChipNavigation,
     RelatedLinksGate,
@@ -66,6 +66,7 @@ import {
 @Component({
     selector: 'bizapps-related-chips',
     standalone: true,
+    imports: [BaseFormsModule],
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -76,6 +77,13 @@ import {
                         <button
                             type="button"
                             class="bizapps-related__chip bizapps-chip bizapps-chip--clickable"
+                            mjRecordLink
+                            [EntityName]="chip.EntityName"
+                            [RecordID]="chip.RecordID"
+                            [DisplayName]="chip.Name || chip.Label"
+                            [Provider]="Provider"
+                            [HandleClick]="false"
+                            (Navigate)="Navigate.emit($event)"
                             [attr.aria-label]="chip.AriaLabel"
                             (click)="Open(chip, $event)">
                             @if (chip.Icon) {

@@ -39,3 +39,25 @@ onlyBuiltDependencies:
 
 packages:
   - 'packages/*'
+
+# Dependency overrides. They live here, not under package.json `pnpm.overrides`: pnpm 10.33
+# warns that it no longer reads the `pnpm` field there (it still applies overrides from it today,
+# but the field is deprecated). npm reads neither location. Overrides are workspace-local and never
+# published. @memberjunction/core and @memberjunction/global carry the same caret floor as every
+# other MJ range so the graph resolves one copy of each (CLAUDE.md, "MemberJunction version policy").
+overrides:
+  '@angular/animations': '21.2.22'
+  '@angular/build': '21.2.23'
+  '@angular/cli': '21.2.23'
+  '@angular/common': '21.2.22'
+  '@angular/compiler': '21.2.22'
+  '@angular/compiler-cli': '21.2.22'
+  '@angular/core': '21.2.22'
+  '@angular/forms': '21.2.22'
+  '@angular/localize': '21.2.22'
+  '@angular/platform-browser': '21.2.22'
+  '@angular/platform-browser-dynamic': '21.2.22'
+  '@angular/router': '21.2.22'
+  '@angular-devkit/build-angular': '21.2.23'
+  '@memberjunction/core': '^6.2.1'
+  '@memberjunction/global': '^6.2.1'

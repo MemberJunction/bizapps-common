@@ -1,13 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey, LogError, RunView } from '@memberjunction/core';
-import { UUIDsEqual } from '@memberjunction/global';
+import { IsValidUUID, UUIDsEqual } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
 
-import { EscapeFilterValue } from '../../data/directory-stats';
 
 const ACTIVITIES_ENTITY = 'MJ_BizApps_Common: Activities';
 
@@ -220,10 +219,15 @@ export class ActivityIdentityComponent implements OnInit {
         if (!parentID) {
             return;
         }
+        if (!IsValidUUID(parentID)) {
+            // Checked before it goes into the filter; the link still renders with a generic label.
+            LogError(`ActivityIdentity: ParentActivityID '${parentID}' is not a UUID; not loading its title`);
+            return;
+        }
         const result = await new RunView(this.Record.RunViewProviderToUse).RunView<{ Title: string | null }>({
             EntityName: ACTIVITIES_ENTITY,
             Fields: ['Title'],
-            ExtraFilter: `ID = '${EscapeFilterValue(parentID)}'`,
+            ExtraFilter: `ID = '${parentID.trim()}'`,
             ResultType: 'simple',
             MaxRows: 1,
         });

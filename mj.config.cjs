@@ -160,10 +160,12 @@ module.exports = {
   // },
 
   // ---------------------------------------------------------------------------
-  // Migrations (for `mj migrate`)
+  // Migrations source
   // ---------------------------------------------------------------------------
-  // Default location for SQL Server migrations; when DB_PLATFORM=postgresql and no
-  // explicit --dir is passed, @memberjunction/cli swaps ./migrations to ./migrations-pg.
+  // `pnpm run mj:migrate` passes no --dir, so `mj migrate` reads this location and,
+  // with DB_PLATFORM=postgresql, swaps it to ./migrations-pg. An explicit --dir
+  // turns that swap off. Leave `mjRepoVersion` unset here: when it is set and no
+  // --dir is given, `mj migrate` fetches MJ core's migrations instead of this repo's.
   migrationsLocation: 'filesystem:./migrations',
 
   // ---------------------------------------------------------------------------

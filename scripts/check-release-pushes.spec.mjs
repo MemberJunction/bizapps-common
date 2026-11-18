@@ -462,7 +462,7 @@ test('a push whose target is base_ref, default_branch or ref_name is a violation
 });
 
 // On a push to main, `github.ref` and `$GITHUB_REF` are `refs/heads/main`; on a PR into next,
-// `pull_request.base.ref` is `next`.
+// `pull_request.base.ref` is `next` (issue #333).
 test('a push whose target is github.ref, GITHUB_REF or pull_request.base.ref is a violation', () => {
     for (const line of [
         'git push origin "HEAD:${{ github.ref }}"',

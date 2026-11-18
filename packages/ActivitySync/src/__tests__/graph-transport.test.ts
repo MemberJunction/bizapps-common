@@ -881,7 +881,7 @@ describe('a backlog larger than one page drains over runs (#308)', () => {
     });
 
     it('does not advance a partial watermark past a delayed message whose sent time predates ReadThrough', async () => {
-        // Window bounds filter by `receivedDateTime` while `Normalize` filters by `StartedAt`
+        // Window bounds filter by `receivedDateTime` while the watermark comes from `StartedAt`
         // (`sentDateTime ?? receivedDateTime`). When a partial run drains `[Aug 1, ReadThrough]`
         // containing only an early message (`m-early`, sent Aug 2), `ReadThrough` sits days ahead of
         // `m-early.sentDateTime`. A delayed message (`m-delayed`, sent Aug 5 <= ReadThrough, received
@@ -918,6 +918,31 @@ describe('a backlog larger than one page drains over runs (#308)', () => {
         const run2Provider = new MSGraphActivitySyncProvider(true, drainingTransport(reader));
         const run2 = await run2Provider.Fetch({ ...QUERY, Since: run1.HighWatermark, Limit: 10 });
         expect(run2.Items.map((i) => i.ExternalID)).toContain('m-delayed');
+    });
+
+    it('keeps a delayed message sent before the watermark but received after it', async () => {
+        // A pass that drained only empty windows moves the watermark to `ReadThrough` (a received
+        // time). A message sent before that point but received after it was outside the drained
+        // windows; the next run fetches it and must not discard it as already seen.
+        const readThrough = new Date('2026-08-18T06:00:00Z');
+        const reader = mailbox([
+            {
+                ...GRAPH_MESSAGE,
+                id: 'm-delayed',
+                sentDateTime: '2026-08-05T09:00:00Z',
+                receivedDateTime: '2026-08-20T09:00:00Z',
+            },
+        ]);
+        const provider = new MSGraphActivitySyncProvider(true, drainingTransport(reader));
+        const batch = await provider.Fetch({ ...QUERY, Since: readThrough, Limit: 10 });
+        expect(batch.Items.map((i) => i.ExternalID)).toEqual(['m-delayed']);
+    });
+
+    it('still drops a message received at or before the watermark', async () => {
+        const reader = mailbox([msg('m-old', '2026-08-02T09:00:00Z')], false);
+        const provider = new MSGraphActivitySyncProvider(true, drainingTransport(reader));
+        const batch = await provider.Fetch({ ...QUERY, Since: new Date('2026-08-10T00:00:00Z'), Limit: 10 });
+        expect(batch.Items).toEqual([]);
     });
 
     it('clamps a partial watermark to ReadThrough when a message carries a future sentDateTime', async () => {

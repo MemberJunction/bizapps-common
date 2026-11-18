@@ -792,6 +792,26 @@ const PRODUCT = [
         from: '                                capture.EncryptionKeyID,\n                                user,\n',
         to: '                                capture.EncryptionKeyID,\n                                undefined as unknown as UserInfo,\n',
     },
+    /**
+     * The #308 pair. The transport bounds its windows by received time, so the post-filter must use
+     * the same unit: filtering on sent time drops a delayed message sent before the watermark but
+     * received after it. And a partial pass may only advance to the older of ReadThrough and the
+     * newest ingested item, or a future-dated sentDateTime carries the watermark past unread mail.
+     */
+    {
+        id: 'M-AC42',
+        file: GRAPH,
+        expect: ['keeps a delayed message sent before the watermark but received after it'],
+        from: '        return since === null ? mapped.Items : mapped.Items.filter((i) => receivedTime(i) > since);',
+        to: '        return since === null ? mapped.Items : mapped.Items.filter((i) => i.StartedAt.getTime() > since);',
+    },
+    {
+        id: 'M-AC43',
+        file: BASE,
+        expect: ['clamps a partial watermark to ReadThrough when a message carries a future sentDateTime'],
+        from: '                  ? raw.ReadThrough.getTime() <= computedWatermark.getTime()',
+        to: '                  ? raw.ReadThrough.getTime() >= computedWatermark.getTime()',
+    },
 ];
 
 // Suite running, signal-safe restore and argument validation live in the shared module, which the

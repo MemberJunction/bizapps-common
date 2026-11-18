@@ -78,6 +78,11 @@ describe('ActivityIdentityComponent parent link (#311)', () => {
         expect(moved.ParentActivityLabel).toBe('Parent activity');
     });
 
+    it('queries nothing for a parent ID that is not a UUID', () => {
+        build("x' OR 1=1 --").ngOnInit();
+        expect(H.runView).not.toHaveBeenCalled();
+    });
+
     it('queries nothing for an activity with no parent', () => {
         build(null).ngOnInit();
         expect(H.runView).not.toHaveBeenCalled();

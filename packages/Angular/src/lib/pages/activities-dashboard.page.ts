@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RunView } from '@memberjunction/core';
+import { UUIDsEqual } from '@memberjunction/global';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 import { COMMON_ENTITIES } from '../data/entity-names';
@@ -119,7 +120,7 @@ export interface ActivityKPIs {
                 } @else {
                     <div class="mja-timeline">
                         @for (act of FilteredActivities; track act.ID) {
-                            <div class="mja-item" (click)="SelectActivity(act)" [class.mja-item--selected]="SelectedActivity?.ID === act.ID">
+                            <div class="mja-item" (click)="SelectActivity(act)" [class.mja-item--selected]="IsSelected(act)">
                                 <div class="mja-item__icon" [attr.data-dir]="act.Direction">
                                     <i [class]="getTypeIcon(act.ActivityType)"></i>
                                 </div>
@@ -289,7 +290,7 @@ export interface ActivityKPIs {
 
         .mja-kpi { display: flex; flex-direction: column; gap: 2px; }
         .mja-kpi__label { font-size: 11px; font-weight: 600; color: var(--mj-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-family-mono, monospace); color: var(--mj-text-primary); }
+        .mja-kpi__val { font-size: 16px; font-weight: 700; font-family: var(--mj-font-family-mono); color: var(--mj-text-primary); }
         .mja-val--green { color: var(--mj-status-success); }
         .mja-val--blue { color: var(--mj-brand-primary); }
         .mja-val--amber { color: var(--mj-status-warning); }
@@ -439,7 +440,7 @@ export interface ActivityKPIs {
         .mja-item__time {
             font-size: 12px;
             color: var(--mj-text-muted);
-            font-family: var(--mj-font-family-mono, monospace);
+            font-family: var(--mj-font-family-mono);
         }
 
         .mja-item__desc {
@@ -674,6 +675,11 @@ export class CommonActivitiesPageComponent implements OnInit {
 
     public OnSearchChanged(): void {
         this.cdr.markForCheck();
+    }
+
+    /** Whether this row is the open one. IDs compare case-insensitively. */
+    public IsSelected(act: ActivityDashboardRow): boolean {
+        return this.SelectedActivity !== null && UUIDsEqual(this.SelectedActivity.ID, act.ID);
     }
 
     public SelectActivity(act: ActivityDashboardRow): void {

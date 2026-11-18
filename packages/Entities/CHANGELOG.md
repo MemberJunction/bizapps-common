@@ -1,5 +1,17 @@
 # Change Log - mj_generatedentities
 
+## 5.65.0
+
+### Minor Changes
+
+- 9365ded: Release seed for the Job Function and Seniority scope filter: `V…__v5.65.x__Metadata_Sync` updates the "Job Function and Seniority Derivation" record process's ScopeFilter to the `ID NOT IN (SELECT PersonID …)` form, by ID and only when the record process exists. It has a Postgres counterpart.
+
+## 5.64.0
+
+### Minor Changes
+
+- eb8654d: Release seed for the Directory dashboard fix: `V…__v5.64.x__Metadata_Sync` updates the `Common: Directory Dashboard Summary` query's SQL and adds its result fields, and creates the `Common: Directory People Per Day` query with its fields. The summary update is applied by ID; everything else is create-only, guarded on its ID or key. It has a Postgres counterpart.
+
 ## 5.63.0
 
 ### Minor Changes
