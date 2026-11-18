@@ -397,6 +397,25 @@ describe('PartyFieldComponent', () => {
         expect(c.SearchError).toBeNull();
         expect(c.Options).toEqual([]);
     });
+
+    it('ignores a stale in-flight search that resolves or fails after ClearSearch or a 1-char filter change', async () => {
+        const c = build(record('o-old', 'Old Co'));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        expect(c.Calls).toHaveLength(1);
+
+        // User clears or types a 1-char term while Calls[0] is still in flight
+        c.OnFilterChange('d');
+        expect(c.Options).toEqual([]);
+        expect(c.Loading).toBe(false);
+
+        // Stale in-flight search rejects before the 250ms debounce window elapses
+        c.Calls[0].reject(new Error('late failure'));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.logError).not.toHaveBeenCalled();
+        expect(c.SearchError).toBeNull();
+        expect(c.Options).toEqual([]);
+    });
 });
 
 interface CreateRequest {

@@ -12,7 +12,7 @@
 import { BaseAction } from '@memberjunction/actions';
 import type { ActionParam, ActionResultSimple, RunActionParams } from '@memberjunction/actions-base';
 import { Metadata, type UserInfo } from '@memberjunction/core';
-import { RegisterClass } from '@memberjunction/global';
+import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
 import {
     ActionResultFromFleet,
     ActivitySyncEngine,
@@ -26,6 +26,28 @@ const P_LIMIT = 'Limit';
 const P_DRY_RUN = 'DryRun';
 const P_CONNECTION_IDS = 'ConnectionIDs';
 const DEFAULT_LIMIT = 100;
+
+const SYSTEM_USER_ID = 'ECAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+const ROLE_DEVELOPER_ID = 'DEAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+const ROLE_INTEGRATION_ID = 'DFAFCCEC-6A37-EF11-86D4-000D3A4E707E';
+
+function isAuthorizedSyncCaller(user: UserInfo): boolean {
+    if (user.Type?.trim() === 'Owner') {
+        return true;
+    }
+    if (UUIDsEqual(user.ID, SYSTEM_USER_ID)) {
+        return true;
+    }
+    return (
+        user.UserRoles?.some(
+            (r) =>
+                UUIDsEqual(r.RoleID, ROLE_DEVELOPER_ID) ||
+                UUIDsEqual(r.RoleID, ROLE_INTEGRATION_ID) ||
+                r.Role?.trim() === 'Developer' ||
+                r.Role?.trim() === 'Integration',
+        ) ?? false
+    );
+}
 
 function readParam(params: RunActionParams, name: string): unknown {
     return params.Params?.find((p) => p.Name?.toLowerCase() === name.toLowerCase())?.Value;
@@ -56,7 +78,24 @@ function setOutput(params: RunActionParams, name: string, value: unknown): void 
 
 @RegisterClass(BaseAction, 'Common.SyncActivities')
 export class SyncActivitiesAction extends BaseAction {
+    public static readonly AuthorizesCaller = true;
+
     protected async InternalRunAction(params: RunActionParams): Promise<ActionResultSimple> {
+        if (!params.ContextUser) {
+            return {
+                Success: false,
+                ResultCode: 'VALIDATION_ERROR',
+                Message: 'Common.SyncActivities requires a ContextUser.',
+            };
+        }
+        if (!isAuthorizedSyncCaller(params.ContextUser)) {
+            return {
+                Success: false,
+                ResultCode: 'PERMISSION_DENIED',
+                Message:
+                    'Common.SyncActivities requires an Owner user, the System user, or the Developer / Integration role.',
+            };
+        }
         try {
             return await this.sync(params);
         } catch (error) {

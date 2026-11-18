@@ -28,6 +28,7 @@ const H = vi.hoisted(() => {
         Entities: [
             { Name: 'MJ_BizApps_Common: People', ID: 'entity-people' },
             { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-organizations' },
+            { Name: 'MJ_BizApps_Common: Relationships', ID: 'entity-relationships' },
         ],
         BeginEntityTransaction: async () => ({ Commit: async () => undefined, Rollback: async () => undefined }),
         GetEntityObject: async (entity: string) => {
@@ -81,7 +82,17 @@ interface MetadataRecord {
 }
 
 const RECORD_ID = '11111111-2222-3333-4444-555555555555';
-const FAKE_RECORD: Record<string, string> = { ID: RECORD_ID, Status: 'Active' };
+const FROM_PERSON_ID = '22222222-2222-3333-4444-555555555555';
+const TO_ORG_ID = '33333333-2222-3333-4444-555555555555';
+const FAKE_RECORD: Record<string, string | null> = {
+    ID: RECORD_ID,
+    Status: 'Active',
+    FromPersonID: FROM_PERSON_ID,
+    ToPersonID: null,
+    FromOrganizationID: null,
+    ToOrganizationID: TO_ORG_ID,
+    ConfidentialNotes: 'must-not-be-serialized-in-durable-payload',
+};
 
 function loadMetadata(relativePath: string): MetadataRecord[] {
     const path = fileURLToPath(new URL(`../../../../metadata/${relativePath}`, import.meta.url));
@@ -130,6 +141,10 @@ function resolveValue(row: MJEntityActionParamEntity): unknown {
             return FAKE_RECORD[row.Value ?? ''];
         case 'Entity Object Data':
             return { ...FAKE_RECORD };
+        case 'Script': {
+            const fn = new Function('EntityActionContext', row.Value ?? '');
+            return fn({ entityObject: { ...FAKE_RECORD } });
+        }
         default:
             throw new Error(`Test does not model ValueType '${row.ValueType}'.`);
     }
@@ -154,8 +169,25 @@ const durableBindings = loadMetadata('entity-actions/.common-entity-actions.json
 );
 
 describe('durable Common.LogActivity bindings survive redaction (#197)', () => {
-    it('ships at least one durable LogActivity binding to check', () => {
-        expect(durableBindings.length).toBeGreaterThan(0);
+    it('ships all four LogActivity bindings (People, Organizations, Relationships Create/Update) as Durable (#201)', () => {
+        expect(durableBindings).toHaveLength(4);
+        const relationshipBindings = durableBindings.filter(
+            (b) => lookupName(b.fields.EntityID) === 'MJ_BizApps_Common: Relationships',
+        );
+        expect(relationshipBindings).toHaveLength(2);
+        for (const binding of relationshipBindings) {
+            const rows = bindingRows(binding);
+            const payload = durablePayload(rows, defs);
+            const recordData = payload.RecordData as Record<string, unknown>;
+            expect(Object.keys(recordData).sort()).toEqual([
+                'FromOrganizationID',
+                'FromPersonID',
+                'ID',
+                'ToOrganizationID',
+                'ToPersonID',
+            ]);
+            expect(recordData).not.toHaveProperty('ConfidentialNotes');
+        }
     });
 
     for (const binding of durableBindings) {

@@ -59,6 +59,8 @@ function describeTarget(params: RunActionParams): string {
 
 @RegisterClass(BaseAction, 'Common.LogActivity')
 export class LogActivityAction extends BaseAction {
+    public static readonly AuthorizesCaller = true;
+
     protected async InternalRunAction(params: RunActionParams): Promise<ActionResultSimple> {
         let result: ActionResultSimple;
         try {

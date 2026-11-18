@@ -1,0 +1,4 @@
+{
+  "reason": "Do not add entries; new migrations in migrations/ must ship with a matching migrations-pg/<stem>.pg.sql in the same PR. Migrations at or before the PostgreSQL baseline are covered by it.",
+  "unported": []
+}

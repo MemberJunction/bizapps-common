@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
 
 /**
@@ -56,19 +57,28 @@ export type StatTileTone = 'none' | 'warn' | 'error';
 @Component({
     selector: 'bizapps-stat-tile',
     standalone: true,
+    imports: [NgTemplateOutlet],
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div
-            class="bizapps-stat"
-            [class.bizapps-stat--warn]="Tone === 'warn'"
-            [class.bizapps-stat--error]="Tone === 'error'"
-            [class.bizapps-stat--clickable]="IsClickable"
-            [attr.role]="IsClickable ? 'button' : null"
-            [attr.tabindex]="IsClickable ? 0 : null"
-            (click)="OnActivate()"
-            (keydown.enter)="OnActivate()"
-            (keydown.space)="OnActivate($event)">
+        @if (IsClickable) {
+            <button
+                type="button"
+                class="bizapps-stat bizapps-stat--clickable"
+                [class.bizapps-stat--warn]="Tone === 'warn'"
+                [class.bizapps-stat--error]="Tone === 'error'"
+                (click)="OnActivate()">
+                <ng-container *ngTemplateOutlet="tileBody" />
+            </button>
+        } @else {
+            <div
+                class="bizapps-stat"
+                [class.bizapps-stat--warn]="Tone === 'warn'"
+                [class.bizapps-stat--error]="Tone === 'error'">
+                <ng-container *ngTemplateOutlet="tileBody" />
+            </div>
+        }
+        <ng-template #tileBody>
             <span class="bizapps-stat__label">
                 @if (Icon) {
                     <i [class]="Icon" aria-hidden="true"></i>
@@ -80,7 +90,7 @@ export type StatTileTone = 'none' | 'warn' | 'error';
                 <span class="bizapps-stat__detail">{{ Detail }}</span>
             }
             <ng-content />
-        </div>
+        </ng-template>
     `,
     styles: [
         `
@@ -100,6 +110,12 @@ export type StatTileTone = 'none' | 'warn' | 'error';
                 background: var(--mj-bg-surface);
                 border: 1px solid var(--mj-border-default);
                 border-radius: var(--mj-radius-md);
+            }
+            button.bizapps-stat {
+                font: inherit;
+                color: inherit;
+                text-align: left;
+                width: 100%;
             }
             .bizapps-stat__label {
                 display: flex;

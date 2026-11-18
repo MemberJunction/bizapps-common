@@ -279,12 +279,12 @@ span.rel-timeline-target {
 }
 
 .btn-primary {
-    background: var(--mj-brand-primary, #0284c7);
-    color: #fff;
+    background: var(--mj-brand-primary);
+    color: var(--mj-text-inverse);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: var(--mj-brand-primary-hover, #0369a1);
+    background: var(--mj-brand-primary-hover);
 }
 
 .btn-primary:disabled {
@@ -294,25 +294,25 @@ span.rel-timeline-target {
 
 .btn-outline {
     background: transparent;
-    border: 1px dashed var(--mj-border-strong, #334155);
-    color: var(--mj-text-secondary, #94a3b8);
+    border: 1px dashed var(--mj-border-strong);
+    color: var(--mj-text-secondary);
 }
 
 .btn-outline:hover {
-    border-color: var(--mj-brand-primary, #0284c7);
-    color: var(--mj-brand-primary, #38bdf8);
-    background: color-mix(in srgb, var(--mj-brand-primary, #0284c7) 8%, transparent);
+    border-color: var(--mj-brand-primary);
+    color: var(--mj-brand-primary);
+    background: color-mix(in srgb, var(--mj-brand-primary) 8%, transparent);
 }
 
 .btn-cancel {
-    background: var(--mj-bg-surface-card, #141f36);
-    color: var(--mj-text-secondary, #94a3b8);
-    border: 1px solid var(--mj-border-default, #223254);
+    background: var(--mj-bg-surface-card);
+    color: var(--mj-text-secondary);
+    border: 1px solid var(--mj-border-default);
 }
 
 .btn-cancel:hover {
-    background: var(--mj-border-subtle, #1e293b);
-    color: var(--mj-text-primary, #f1f5f9);
+    background: var(--mj-border-subtle);
+    color: var(--mj-text-primary);
 }
 
 /* ============================================
@@ -331,10 +331,10 @@ span.rel-timeline-target {
 
 .rel-form-card {
     width: 100%;
-    background: var(--mj-bg-surface-card, #141f36);
-    border: 1px solid var(--mj-border-default, #223254);
+    background: var(--mj-bg-surface-card);
+    border: 1px solid var(--mj-border-default);
     border-radius: var(--mj-radius-lg, 10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--mj-shadow-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -352,8 +352,8 @@ span.rel-timeline-target {
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--mj-border-default, #223254);
-    background: color-mix(in srgb, var(--mj-brand-primary, #0284c7) 8%, var(--mj-bg-surface-card, #141f36));
+    border-bottom: 1px solid var(--mj-border-default);
+    background: color-mix(in srgb, var(--mj-brand-primary) 8%, var(--mj-bg-surface-card));
 }
 
 .rel-form-header-title {
@@ -364,27 +364,27 @@ span.rel-timeline-target {
 
 .rel-form-header-title i {
     font-size: 20px;
-    color: var(--mj-brand-primary, #38bdf8);
+    color: var(--mj-brand-primary);
 }
 
 .rel-form-header-title h3 {
     margin: 0;
     font-size: 15px;
     font-weight: 600;
-    color: var(--mj-text-primary, #f1f5f9);
+    color: var(--mj-text-primary);
 }
 
 .rel-form-header-subtitle {
     margin: 2px 0 0;
     font-size: 12px;
-    color: var(--mj-text-secondary, #94a3b8);
+    color: var(--mj-text-secondary);
 }
 
 .rel-form-close-btn {
     background: transparent;
     border: none;
     font-size: 16px;
-    color: var(--mj-text-muted, #64748b);
+    color: var(--mj-text-muted);
     cursor: pointer;
     border-radius: var(--mj-radius-sm, 6px);
     width: 32px;
@@ -396,8 +396,8 @@ span.rel-timeline-target {
 }
 
 .rel-form-close-btn:hover {
-    color: var(--mj-text-primary, #f1f5f9);
-    background: var(--mj-bg-surface-sunken, #0b1220);
+    color: var(--mj-text-primary);
+    background: var(--mj-bg-surface-sunken);
 }
 
 .rel-form-body {
@@ -431,7 +431,7 @@ span.rel-timeline-target {
     display: block;
     font-size: 11px;
     font-weight: 600;
-    color: var(--mj-text-secondary, #94a3b8);
+    color: var(--mj-text-secondary);
     margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -441,25 +441,25 @@ span.rel-timeline-target {
 .form-field select {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid var(--mj-border-default, #223254);
+    border: 1px solid var(--mj-border-default);
     border-radius: var(--mj-radius-sm, 6px);
     font-size: 13px;
     font-family: inherit;
-    background: var(--mj-bg-surface-sunken, #0b1220);
-    color: var(--mj-text-primary, #f1f5f9);
+    background: var(--mj-bg-surface-sunken);
+    color: var(--mj-text-primary);
     box-sizing: border-box;
 }
 
 .form-field select option {
-    background: var(--mj-bg-surface-card, #141f36);
-    color: var(--mj-text-primary, #f1f5f9);
+    background: var(--mj-bg-surface-card);
+    color: var(--mj-text-primary);
 }
 
 .form-field input:focus,
 .form-field select:focus {
     outline: none;
-    border-color: var(--mj-brand-primary, #0284c7);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mj-brand-primary, #0284c7) 15%, transparent);
+    border-color: var(--mj-brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mj-brand-primary) 15%, transparent);
 }
 
 .form-field.type-field {
@@ -487,11 +487,11 @@ span.rel-timeline-target {
 /* Category auto-fill display */
 .category-display {
     padding: 9px 12px;
-    background: var(--mj-bg-surface-sunken, #0b1220);
-    border: 1px solid var(--mj-border-default, #223254);
+    background: var(--mj-bg-surface-sunken);
+    border: 1px solid var(--mj-border-default);
     border-radius: var(--mj-radius-sm, 6px);
     font-size: 13px;
-    color: var(--mj-text-secondary, #94a3b8);
+    color: var(--mj-text-secondary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -501,7 +501,7 @@ span.rel-timeline-target {
 
 .category-display i {
     font-size: 12px;
-    color: var(--mj-brand-primary, #38bdf8);
+    color: var(--mj-brand-primary);
 }
 
 /* Target Search Field Wrapper (Full Width) */
@@ -513,12 +513,12 @@ span.rel-timeline-target {
 .field-hint {
     display: block;
     font-size: 11px;
-    color: var(--mj-text-muted, #64748b);
+    color: var(--mj-text-muted);
     margin-top: 4px;
 }
 
 .required-star {
-    color: var(--mj-status-error, #ef4444);
+    color: var(--mj-status-error);
     font-weight: 700;
 }
 
@@ -527,8 +527,8 @@ span.rel-timeline-target {
     align-items: center;
     gap: 10px;
     padding: 14px 20px;
-    border-top: 1px solid var(--mj-border-default, #223254);
-    background: var(--mj-bg-surface-sunken, #0b1220);
+    border-top: 1px solid var(--mj-border-default);
+    background: var(--mj-bg-surface-sunken);
 }
 
 /* Empty state */

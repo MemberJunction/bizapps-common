@@ -20,8 +20,7 @@
 //   - lower-bound ranges, optionally capped: >=0.21.0, >=21.0.0 <22.0.0 (a caret on a 0.x version
 //     pins the minor, and some peers are stated as a major window);
 //   - protocols: workspace:, file:, link:, catalog:, portal:, patch:, git/URL specs, and npm:
-//     aliases whose own range is caret;
-//   - exact pins on packages defined in this same repo, which changesets versions in lockstep.
+//     aliases whose own range is caret.
 //
 // An intentional exception goes in .github/caret-pins-allow.json with a reason:
 //   [{ "name": "type-graphql", "section": "dependencies", "reason": "matches MJ's exact pin" }]
@@ -153,7 +152,7 @@ function check(root) {
   const violations = [];
   for (const e of entries) {
     const why = problem(e.spec);
-    if (!why || (why === 'exact' && local.has(e.name))) {
+    if (!why) {
       continue;
     }
     const hit = allow.findIndex((a) => matches(a, e));
@@ -248,7 +247,7 @@ function selfTest() {
     write('pnpm-workspace.yaml', "packages:\n  - 'packages/*'\noverrides:\n  '@angular/core': '21.1.3'\n  type-graphql: '2.0.0-beta.3'\n");
     write('packages/a/package.json', {
       name: '@x/a',
-      dependencies: { '@x/b': '1.0.0', lodash: '4.17.21', 'type-graphql': '2.0.0-beta.3', ok: '^1.0.0' },
+      dependencies: { '@x/b': '^1.0.0', lodash: '4.17.21', 'type-graphql': '2.0.0-beta.3', ok: '^1.0.0' },
       peerDependencies: { '@angular/core': '>=21.0.0 <22.0.0' },
       devDependencies: { typescript: '5.9.3' },
     });

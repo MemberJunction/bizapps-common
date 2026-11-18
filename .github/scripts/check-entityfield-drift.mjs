@@ -63,6 +63,8 @@ const APP_SCHEMA = argValue('--schema') || '__mj_BizAppsCommon';
 const CORE_SCHEMA = argValue('--core-schema') || '__mj';
 /** The placeholder band CodeGen writes on the generating database (MAX + 100000 + ordinal). */
 const SEQUENCE_BAND = 100000;
+/** Bookkeeping tables created in the app schema by migration tooling rather than MJ entities. */
+export const NON_ENTITY_TABLES = new Set(['flyway_schema_history']);
 /**
  * Self-test fixture database, CREATEd and DROPped by the self-test. Per-process by default, never
  * a fixed name: two runs against the same server would otherwise drop each other's fixture
@@ -145,6 +147,17 @@ SELECT e.BaseTable, ef.Name, CAST(ef.Sequence AS varchar(12))
   JOIN ${bracket(core)}.EntityField ef ON ef.EntityID = e.ID
  WHERE e.SchemaName = ${literal(app)} AND ef.Sequence >= ${SEQUENCE_BAND}
  ORDER BY e.BaseTable, ef.Name;`;
+}
+
+function unregisteredSQL(core, app) {
+    return `SET NOCOUNT ON;
+SELECT t.name
+  FROM sys.tables t
+  JOIN sys.schemas s ON s.schema_id = t.schema_id
+  LEFT JOIN ${bracket(core)}.Entity e
+    ON e.SchemaName = s.name AND e.BaseTable = t.name
+ WHERE s.name = ${literal(app)} AND t.is_ms_shipped = 0 AND e.ID IS NULL
+ ORDER BY t.name;`;
 }
 
 // ─── sqlcmd ───────────────────────────────────────────────────────────────────────────────────
@@ -250,6 +263,13 @@ function runChecks(database, core = CORE_SCHEMA, app = APP_SCHEMA) {
                 + `(>= ${SEQUENCE_BAND}, a CodeGen placeholder that is only valid on the database that emitted it)`,
         });
     }
+    for (const [table] of rows(unregisteredSQL(core, app), database)) {
+        if (NON_ENTITY_TABLES.has(table)) continue;
+        findings.push({
+            kind: 'UNREGISTERED', table, detail: table,
+            message: `${app}.${table}: physical table has no __mj.Entity row`,
+        });
+    }
 
     return findings;
 }
@@ -321,6 +341,11 @@ CREATE TABLE [${APP_SCHEMA}].[Doohickey] (ID int, Name nvarchar(50));
 GO
 CREATE VIEW [${APP_SCHEMA}].[vwDoohickeys] AS SELECT ID, Name FROM [${APP_SCHEMA}].[Doohickey];
 GO
+-- UNREGISTERED: a physical table in the app schema with no __mj.Entity row (#321), plus
+-- flyway_schema_history which is in NON_ENTITY_TABLES and must be ignored.
+CREATE TABLE [${APP_SCHEMA}].[OrphanTable] (ID int, Name nvarchar(50));
+CREATE TABLE [${APP_SCHEMA}].[flyway_schema_history] (installed_rank int NOT NULL PRIMARY KEY);
+GO
 INSERT INTO [__mj].[Entity] (ID, SchemaName, BaseTable, BaseView) VALUES
  ('11111111-1111-1111-1111-111111111111', N'${APP_SCHEMA}', N'Widget',    N'vwWidgets'),
  ('22222222-2222-2222-2222-222222222222', N'${APP_SCHEMA}', N'Gadget',    N'vwGadgets'),
@@ -347,6 +372,7 @@ INSERT INTO [__mj].[EntityField] (ID, EntityID, Name, Sequence)
 DELETE FROM [__mj].[EntityField] WHERE Name = N'GoneAway';
 UPDATE [__mj].[EntityField] SET Sequence = 3 WHERE ID = 'ccccccc1-0000-0000-0000-000000000003';
 UPDATE [__mj].[EntityField] SET Sequence = 2 WHERE ID = 'ddddddd1-0000-0000-0000-000000000002';
+DROP TABLE [${APP_SCHEMA}].[OrphanTable];
 GO
 `;
 
@@ -357,6 +383,7 @@ const EXPECTED_DIRTY = [
     'SEQUENCE Doohickey 2/1/100001/2',
     'SEQUENCE Sprocket 3/1/4/3',
     'BAND Doohickey Name',
+    'UNREGISTERED OrphanTable OrphanTable',
 ].sort();
 
 function dropSelfTestDb() {

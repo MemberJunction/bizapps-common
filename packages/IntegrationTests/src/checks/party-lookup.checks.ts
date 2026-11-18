@@ -95,20 +95,23 @@ const checks: NamedCheck[] = [
     },
     {
         Id: 'party-lookup.PL2',
-        Name: 'PL2 — organizations by name prefix (not contains) and website domain',
+        Name: 'PL2 — organizations by name prefix, mid-name word (ranked after prefix) and website domain',
         RequiresMutation: true,
         Fn: async (ctx) => {
             const stamp = Date.now();
-            const mark = await newOrganization(ctx, `Quillmark ${stamp} Ltd`, `https://www.quillmark${stamp}.com/x`);
+            const mark = await newOrganization(ctx, `Quillmark ${stamp} Ltd`, `https://www.quillmark${stamp}.com/x`, '');
             const acme = await newOrganization(ctx, `Acme Quillmark ${stamp}`, null);
             try {
                 const byName = await lookup(ctx, ORGANIZATIONS, `quillmark ${stamp}`);
-                Assert(has(byName, mark.ID), 'name prefix finds Quillmark');
-                Assert(!has(byName, acme.ID), 'a name that only contains the term is not a match');
+                const markIdx = byName.findIndex((row) => SameID(row.ID, mark.ID));
+                const acmeIdx = byName.findIndex((row) => SameID(row.ID, acme.ID));
+                Assert(markIdx >= 0, 'name prefix finds Quillmark');
+                Assert(acmeIdx >= 0, 'mid-name word finds Acme Quillmark');
+                Assert(markIdx < acmeIdx, 'prefix match ranks ahead of mid-name match');
 
                 const byDomain = await lookup(ctx, ORGANIZATIONS, `quillmark${stamp}.com`, `quillmark${stamp}.com`);
                 Assert(has(byDomain, mark.ID), 'website domain finds Quillmark');
-                Assert(byDomain.find((row) => SameID(row.ID, mark.ID))?.Detail === `quillmark${stamp}.com`, 'Detail is the domain');
+                Assert(byDomain.find((row) => SameID(row.ID, mark.ID))?.Detail === `quillmark${stamp}.com`, 'Detail is the domain without a stray separator when Acronym is blank');
             } finally {
                 Assert(await mark.Delete(), 'cleanup Quillmark');
                 Assert(await acme.Delete(), 'cleanup Acme');

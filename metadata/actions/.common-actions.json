@@ -727,5 +727,475 @@
       "lastModified": "2026-09-28T20:39:10.931Z",
       "checksum": "75955b1a2915ba9f51a01aea65015ca6eaf7a795c37f1d3604e28c5bd3bc5b27"
     }
+  },
+  {
+    "_comments": [
+      "Server-side action that attaches an Address and AddressLink to a Person or Organization",
+      "record in a single transaction, sharing the pure normalization, deduplication, type",
+      "resolution, and primary-demotion rules in @mj-biz-apps/common-entities."
+    ],
+    "fields": {
+      "Name": "Common.AttachAddress",
+      "Description": "Attaches a physical or mailing address to a Person or Organization record in a single transaction. Normalizes address fields, deduplicates against addresses already linked to the record, resolves AddressTypeID (falling back to the active AddressType with lowest DefaultRank), defaults IsPrimary to true only when the record has no existing links, and demotes any prior primary link when the attached link is primary.",
+      "DriverClass": "Common.AttachAddress",
+      "Type": "Custom",
+      "Status": "Active",
+      "IconClass": "fa-solid fa-location-dot"
+    },
+    "relatedEntities": {
+      "MJ: Action Params": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "EntityName",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": true,
+            "Description": "Target entity ('People', 'Organizations', 'MJ_BizApps_Common: People', or 'MJ_BizApps_Common: Organizations')."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000001"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "RecordID",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": true,
+            "Description": "UUID of the target Person or Organization record."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000002"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Line1",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Primary street address line. At least one of Line1, City, or PostalCode must be provided."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000003"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Line2",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Secondary street address line (suite, floor, building)."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000004"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Line3",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Tertiary address line."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000005"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "City",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "City or locality."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000006"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "StateProvince",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "State, province, or region."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000007"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "PostalCode",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "ZIP or postal code."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000008"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Country",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Country code or name (defaults to 'US' when omitted)."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000009"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Latitude",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional latitude (-90 to 90)."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000A"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Longitude",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional longitude (-180 to 180)."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000B"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "AddressTypeID",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional AddressType UUID or Name. Defaults to the active AddressType with lowest DefaultRank."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000C"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "IsPrimary",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional boolean. Defaults to true when the target record has no existing address links; when true, demotes any prior primary link on the record."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000D"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Rank",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional non-negative display rank on the AddressLink."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000E"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "AddressID",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "UUID of the created or matched Address record."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-00000000000F"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "AddressLinkID",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "UUID of the created or matched AddressLink record."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000010"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "CreatedNewAddress",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "True when a new Address row was inserted; false when an existing linked Address matched."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000011"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "CreatedNewLink",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "True when a new AddressLink row was inserted; false when an existing link for the same AddressType was updated."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B01-000000000012"
+          }
+        }
+      ],
+      "MJ: Action Result Codes": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "SUCCESS",
+            "IsSuccess": true,
+            "Description": "The address and link were attached."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B02-000000000001"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "VALIDATION_ERROR",
+            "IsSuccess": false,
+            "Description": "One or more input parameters were missing or invalid."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B02-000000000002"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "PERMISSION_DENIED",
+            "IsSuccess": false,
+            "Description": "The caller does not have update permission on the target entity."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B02-000000000003"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "NOT_FOUND",
+            "IsSuccess": false,
+            "Description": "The target Person or Organization record does not exist."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B02-000000000004"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "ERROR",
+            "IsSuccess": false,
+            "Description": "The database transaction failed and was rolled back."
+          },
+          "primaryKey": {
+            "ID": "8D74C301-4E11-4F2A-9B02-000000000005"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "8D74C301-4E11-4F2A-9B00-000000000001"
+    }
+  },
+  {
+    "_comments": [
+      "Audited break-glass action for reading and decrypting ActivitySyncRunDetail.CapturedContent.",
+      "CapturedContent and EncryptionKeyID are denied to the UI role via Field-Level Security so",
+      "routine grid queries cannot pull skipped-message ciphertext. Administrators (Owner or",
+      "Developer role) invoke this action when diagnosing a qualification rule; Reason is logged",
+      "in ActionExecutionLog while Plaintext has LogValue = false."
+    ],
+    "fields": {
+      "Name": "Common.ReadSkippedContent",
+      "Description": "Audited administrator break-glass action that loads an Activity Sync Run Detail row by RunDetailID and decrypts its CapturedContent ciphertext via EncryptionEngine. Restricted to Owner users and members of the Developer role. Records Reason in the action execution log while suppressing Plaintext (LogValue = false).",
+      "DriverClass": "Common.ReadSkippedContent",
+      "Type": "Custom",
+      "Status": "Active",
+      "IconClass": "fa-solid fa-key"
+    },
+    "relatedEntities": {
+      "MJ: Action Params": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "RunDetailID",
+            "Type": "Both",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": true,
+            "Description": "UUID of the Activity Sync Run Detail row to inspect (also echoed on output)."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C01-000000000001"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Reason",
+            "Type": "Input",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "LogValue": true,
+            "Description": "Audit justification for decrypting skipped content (logged in ActionExecutionLog)."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C01-000000000002"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "Plaintext",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "LogValue": false,
+            "Description": "Decrypted CapturedContent string (or null when no content was retained). Suppressed from ActionExecutionLog via LogValue = false."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C01-000000000003"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "Name": "SubjectPreview",
+            "Type": "Output",
+            "ValueType": "Scalar",
+            "IsArray": false,
+            "IsRequired": false,
+            "Description": "Optional subject preview associated with the run detail when present."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C01-000000000005"
+          }
+        }
+      ],
+      "MJ: Action Result Codes": [
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "SUCCESS",
+            "IsSuccess": true,
+            "Description": "The run detail was loaded and its CapturedContent (if any) was decrypted."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C02-000000000001"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "VALIDATION_ERROR",
+            "IsSuccess": false,
+            "Description": "ContextUser or RunDetailID was missing or invalid."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C02-000000000002"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "PERMISSION_DENIED",
+            "IsSuccess": false,
+            "Description": "Caller is neither an Owner user nor a member of the Developer role."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C02-000000000003"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "NOT_FOUND",
+            "IsSuccess": false,
+            "Description": "No Activity Sync Run Detail row exists with the given RunDetailID."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C02-000000000004"
+          }
+        },
+        {
+          "fields": {
+            "ActionID": "@parent:ID",
+            "ResultCode": "ERROR",
+            "IsSuccess": false,
+            "Description": "Loading or decrypting the captured content failed."
+          },
+          "primaryKey": {
+            "ID": "9E85D402-5F22-4A3B-8C02-000000000005"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "9E85D402-5F22-4A3B-8C00-000000000001"
+    }
   }
 ]

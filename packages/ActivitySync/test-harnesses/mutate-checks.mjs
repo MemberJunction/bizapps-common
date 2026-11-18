@@ -463,6 +463,20 @@ const PRODUCT = [
         from: ['        );', '        return { Payloads: payloads, Capped: true };'].join('\n'),
         to: ['        );', '        return { Payloads: payloads, Capped: false };'].join('\n'),
     },
+    {
+        id: 'M-WM1',
+        file: BASE,
+        expect: ['does not advance a partial watermark past a delayed message whose sent time predates ReadThrough'],
+        from: '                : raw.ReadThrough && computedWatermark',
+        to: '                : false && raw.ReadThrough && computedWatermark',
+    },
+    {
+        id: 'M-WM2',
+        file: BASE,
+        expect: ['clamps a partial watermark to ReadThrough when a message carries a future sentDateTime'],
+        from: '                  ? raw.ReadThrough.getTime() <= computedWatermark.getTime()',
+        to: '                  ? false',
+    },
     /** A replayed calendar run that claims to be live writes rows indistinguishable from real ones. */
     {
         id: 'M-CAL8',

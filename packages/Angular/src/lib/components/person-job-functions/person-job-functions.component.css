@@ -121,7 +121,7 @@
 
 .pjf-item-card:hover {
     border-color: var(--mj-border-default);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--mj-shadow-sm);
 }
 
 .pjf-item-card.is-primary {

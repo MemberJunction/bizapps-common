@@ -76,7 +76,8 @@ jobs:
     needs: select
     if: needs.select.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Measured full run duration is ~2m15s–7m24s; 25m fails a hung vitest process promptly while leaving headroom.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

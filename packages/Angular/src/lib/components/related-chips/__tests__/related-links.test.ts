@@ -3,7 +3,9 @@ import {
     FilterForRelatedLink,
     LabelForRelatedLink,
     RelatedChipNavigation,
+    RelatedLinksGate,
     ResolveRelatedChip,
+    ResolveRelatedChips,
     type BizAppsRelatedLink,
     type RelatedChipClick,
     type RelatedLinkEntity,
@@ -272,5 +274,44 @@ describe('navigation', () => {
         expect(event.Kind === 'record' && event.PrimaryKey.KeyValuePairs).toEqual([
             { FieldName: 'OrderKey', Value: 'O1' },
         ]);
+    });
+});
+
+describe('RelatedLinksGate and batch resolution (#303)', () => {
+    it('discards an older generation when a newer Begin() has been called', () => {
+        const gate = new RelatedLinksGate();
+        const first = gate.Begin();
+        expect(gate.IsCurrent(first)).toBe(true);
+
+        const second = gate.Begin();
+        expect(gate.IsCurrent(first)).toBe(false);
+        expect(gate.IsCurrent(second)).toBe(true);
+    });
+
+    it('discards all in-flight generations once Cancel() is called on destroy', () => {
+        const gate = new RelatedLinksGate();
+        const active = gate.Begin();
+        gate.Cancel();
+        expect(gate.IsCurrent(active)).toBe(false);
+    });
+
+    it('preserves caller ordering across concurrent links and filters out null results', async () => {
+        const links: BizAppsRelatedLink[] = [
+            { Key: 'deal', EntityName: DEALS.Name, RecordID: 'D-1' },
+            { Key: 'missing', EntityName: DEALS.Name, RecordID: 'D-MISSING' },
+            { Key: 'order', EntityName: ORDERS.Name, RecordID: 'O-1' },
+        ];
+        const chips = await ResolveRelatedChips(links, CATALOG, async ({ ExtraFilter }) => {
+            if (ExtraFilter.includes('D-1')) {
+                return { Success: true, Results: [{ ID: 'D-1', DealName: 'First Deal' }] };
+            }
+            if (ExtraFilter.includes('O-1')) {
+                return { Success: true, Results: [{ OrderKey: 'O-1', OrderNumber: 'ORD-100' }] };
+            }
+            return { Success: true, Results: [] };
+        });
+
+        expect(chips.map((c) => c.Key)).toEqual(['deal', 'order']);
+        expect(chips.map((c) => c.Name)).toEqual(['First Deal', 'ORD-100']);
     });
 });

@@ -18,7 +18,7 @@
 //   - their peerDependencies ranges are caret (^X.Y.Z), or `>=X.Y.Z` (optionally `<N.0.0`) for a
 //     0.x package, where a caret would pin the minor;
 //   - exact versions belong in devDependencies, which anchor local builds and never ship.
-// This repo's own packages may depend on each other with exact versions.
+// This repo's own packages may depend on each other in dependencies using caret (^X.Y.Z) or workspace: ranges.
 //
 // Usage:  node .github/scripts/check-dependency-model.mjs [repo-root]
 //         node .github/scripts/check-dependency-model.mjs --self-test
@@ -36,6 +36,7 @@ const APP_SCOPE = '@mj-biz-apps/';
  * so it is checked separately below.
  */
 const ACCEPTED_RANGE = /^(\^[1-9]\d*\.\d+\.\d+(-[0-9A-Za-z.-]+)?|>=\s*\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\s+<\s*\d+\.0\.0(-0)?)?)$/;
+const OWN_DEP_RANGE = /^(\^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?|workspace:\S+)$/;
 const ZERO_MAJOR_CARET = /^\^0\.\d+\.\d+/;
 const MAX_DEPTH = 3;
 
@@ -68,9 +69,13 @@ function isHostProvided(name, ownNames) {
 export function CheckManifest(manifest, ownNames) {
   const problems = [];
   for (const [name, spec] of Object.entries(manifest.dependencies ?? {})) {
+    const range = String(spec).trim();
     if (isHostProvided(name, ownNames)) {
       problems.push(`${name}@${spec} is in dependencies: move it to peerDependencies with a caret range, `
         + 'and keep an exact devDependencies entry for local builds.');
+    } else if ((ownNames.has(name) || name.startsWith(APP_SCOPE)) && !OWN_DEP_RANGE.test(range)) {
+      problems.push(`${name}@${spec} in dependencies must use a caret range (^X.Y.Z) or workspace: protocol; `
+        + 'exact, tilde, and non-caret ranges cause duplicate sibling copies on hosts.');
     }
   }
   for (const [name, spec] of Object.entries(manifest.peerDependencies ?? {})) {
@@ -138,8 +143,14 @@ const FIXTURES = [
     name: '@mj-biz-apps/demo-server', peerDependencies: { '@memberjunction/core': '6.1.5' } } },
   { name: "another app's package pinned in dependencies fails", expect: 1, pkg: {
     name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/common-entities': '5.34.0' } } },
-  { name: "this repo's own packages may pin each other", expect: 0, pkg: {
-    name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/demo-entities': '1.2.3' } } },
+  { name: "this repo's own packages may depend on each other with a caret range", expect: 0, pkg: {
+    name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/demo-entities': '^0.1.0' } } },
+  { name: "this repo's own packages may depend on each other with workspace:^", expect: 0, pkg: {
+    name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/demo-entities': 'workspace:^' } } },
+  { name: "this repo's own packages pinning each other with an exact version fails", expect: 1, pkg: {
+    name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/demo-entities': '0.1.0' } } },
+  { name: "this repo's own packages pinning each other with tilde fails", expect: 1, pkg: {
+    name: '@mj-biz-apps/demo-server', dependencies: { '@mj-biz-apps/demo-entities': '~0.5.0' } } },
   { name: 'private packages are skipped', expect: 0, pkg: {
     name: '@mj-biz-apps/demo-tests', private: true, dependencies: { '@memberjunction/core': '6.1.5' } } },
 ];

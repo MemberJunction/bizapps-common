@@ -4,17 +4,21 @@
  * Everything here takes PLAIN, SERIALIZABLE values, because the action's inputs may cross a queue,
  * a durable task or an agent boundary before they arrive. Two binding rules follow:
  *
- * - **Durable bindings pass only `Static` / `Entity Field` values.** Bind the record id as
- *   `RecordID` with ValueType `'Entity Field'`, Value `'ID'`. A durable binding's params reach the
- *   task through MJ's param redaction, and its rule 1 strips every whole-record ValueType
- *   (`'Entity Object'`, `'Entity Object Data'`) from `Task.InputPayload` unconditionally — so
- *   `RecordData` simply never arrives there (#197). Its rule 3 also strips any param whose
- *   definition has `LogValue = false` (`Description`, `Details`, `Links`, `LinkFields` here); a
- *   durable binding that needs one sets `LogValue: true` on its binding row, which only a value
- *   that is safe to persist may do.
- * - **`RecordData` is for `LinkFields` on inline bindings only.** Bind it with ValueType
- *   `'Entity Object Data'`, never `'Entity Object'`: a `BaseEntity` serializes to `{}` (its fields
- *   are getters, not enumerable own properties) — silently, with no error
+ * - **Durable bindings pass only `Static` / `Entity Field` / narrow `Script` values.** Bind the
+ *   record id as `RecordID` with ValueType `'Entity Field'`, Value `'ID'`. A durable binding's
+ *   params reach the task through MJ's param redaction, and its rule 1 strips every whole-record
+ *   ValueType (`'Entity Object'`, `'Entity Object Data'`) from `Task.InputPayload`
+ *   unconditionally — so a whole-record `RecordData` simply never arrives there (#197). Its rule 3
+ *   also strips any param whose definition has `LogValue = false` (`Description`, `Details`,
+ *   `Links`, `LinkFields` here); a durable binding that needs one sets `LogValue: true` on its
+ *   binding row, which only a value that is safe to persist may do. Durable `Relationships`
+ *   bindings (#201) pass `RecordData` with ValueType `'Script'` returning only the 5 relationship
+ *   ID fields (`ID`, `FromPersonID`, `ToPersonID`, `FromOrganizationID`, `ToOrganizationID`) and
+ *   `LogValue: true` so the queue worker can reconstruct the party links outside the original save
+ *   context or after a hard delete.
+ * - **Whole-record `RecordData` (`'Entity Object Data'`) is for inline bindings only.** Never bind
+ *   it with `'Entity Object'`: a `BaseEntity` serializes to `{}` (its fields are getters, not
+ *   enumerable own properties) — silently, with no error
  *   (plans/mj-entity-action-workflow-adoption.md §3.3).
  *
  * Pure functions, no I/O — the `Common.LogActivity` action in `@mj-biz-apps/common-server` is a

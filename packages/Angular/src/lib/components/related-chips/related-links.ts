@@ -288,3 +288,45 @@ export function RelatedChipNavigation(chip: ResolvedRelatedChip, event: RelatedC
     }
     return navigation;
 }
+
+/**
+ * Resolves a batch of {@link BizAppsRelatedLink} descriptors in caller order, dropping any link
+ * that resolves to `null`.
+ */
+export async function ResolveRelatedChips(
+    links: readonly BizAppsRelatedLink[],
+    entities: RelatedLinkEntity[],
+    read: RelatedLinkReader,
+): Promise<ResolvedRelatedChip[]> {
+    if (links.length === 0) {
+        return [];
+    }
+    const resolved = await Promise.all(links.map((link) => ResolveRelatedChip(link, entities, read)));
+    return resolved.filter((item): item is ResolvedRelatedChip => item !== null);
+}
+
+/**
+ * Monotonic generation / cancellation gate for asynchronous related-chip reads (#303).
+ *
+ * Calling {@link RelatedLinksGate.Begin} starts a new generation and invalidates any
+ * earlier in-flight read so a slower stale response cannot overwrite newer chips.
+ * Calling {@link RelatedLinksGate.Cancel} invalidates all in-flight reads when the
+ * host component is destroyed.
+ */
+export class RelatedLinksGate {
+    private generation = 0;
+    private destroyed = false;
+
+    public Begin(): number {
+        return ++this.generation;
+    }
+
+    public Cancel(): void {
+        this.destroyed = true;
+        ++this.generation;
+    }
+
+    public IsCurrent(token: number): boolean {
+        return !this.destroyed && token === this.generation;
+    }
+}
