@@ -1,5 +1,5 @@
 -- =============================================================================================
--- PostgreSQL counterpart of V202611100515__v5.64.x__Relationships_Durable_LogActivity_Bindings.sql
+-- PostgreSQL counterpart of V202611181205__v5.66.x__Relationships_Durable_LogActivity_Bindings.sql
 -- =============================================================================================
 
 SET standard_conforming_strings = on;
