@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BaseActivitySyncProvider } from '../BaseActivitySyncProvider.js';
 import { MergeConsentSweptThrough, PROP_IN_REPLY_TO, type ConsentPolicy } from '../consent.js';
-import { ChooseWithdrawals, ConsentIntake, ParticipantsFromDetails, SWEEP_OVERLAP_MS, ViaOf } from '../consent-intake.js';
+import { ChooseWithdrawals, ConsentIntake, MAX_SWEEP_REQUESTS, ParticipantsFromDetails, SWEEP_OVERLAP_MS, SWEEP_WIDE_PAGE, ViaOf } from '../consent-intake.js';
 import type { ConsentQuery, ConsentRecord, ConsentStore, StoreResult } from '../consent-store.js';
 import { RecordedMessageTransport } from '../providers/RecordedMessageTransport.js';
 import type { ActivitySourceKind, ActivitySourceQuery, NormalizedItem, RawBatch } from '../types.js';
@@ -251,6 +251,60 @@ describe('Gather', () => {
         const res = await intake.Gather(new Mailbox('Message', [msg('<t@x>', { tagged: true })], true), query, [], swept, CONN1, new MemoryStore([]));
         expect(res.SweptThrough).toBeNull();
         expect(res.Issues.join(' ')).toContain('did not reach the present');
+    });
+
+    /**
+     * rkihm-BC review, finding 2. More tagged items changed inside one second than one read returns, then
+     * one more tag half an hour later, over hourly runs. `SweptThrough` is carried between runs the way the
+     * engine stores it (it never moves backwards).
+     */
+    async function hourlyRuns(payloads: Payload[], runs: number): Promise<{ Captured: Set<string>; Issues: string[]; SweptThrough: Date; Requests: number[] }> {
+        const captured = new Set<string>();
+        const issues: string[] = [];
+        const requests: number[] = [];
+        let sweptThrough = new Date('2026-11-17T08:00:00Z');
+        for (let run = 1; run <= runs; run++) {
+            const now = new Date(sweptThrough.getTime() + 3_600_000);
+            const mailbox = new Mailbox('Message', payloads);
+            const res = await new ConsentIntake(() => now).Gather(mailbox, { ...query, Limit: 100 }, [], { ...policy, SweptThrough: sweptThrough }, CONN1, new MemoryStore([]));
+            expect(res.Failure).toBeUndefined();
+            res.Items.forEach((i) => captured.add(i.ExternalID));
+            issues.push(...res.Issues);
+            requests.push(mailbox.Calls.filter((c) => c.Lookup?.Kind === 'Tagged').length);
+            // A run that records no progress leaves the position where it was; so does every run after it.
+            if (!res.SweptThrough || res.SweptThrough.getTime() <= sweptThrough.getTime()) break;
+            sweptThrough = res.SweptThrough;
+        }
+        return { Captured: captured, Issues: issues, SweptThrough: sweptThrough, Requests: requests };
+    }
+    const burst = (count: number): Payload[] =>
+        Array.from({ length: count }, (_, i) => msg(`<b${i}@x>`, { tagged: true, thread: `B${i}`, modified: '2026-11-17T08:20:00Z' }));
+    const LATER = msg('<later@x>', { tagged: true, thread: 'L', modified: '2026-11-17T08:50:00Z' });
+
+    it('R2: more tags in one second than one read returns are all captured, and the sweep moves on', async () => {
+        const res = await hourlyRuns([...burst(150), LATER], 3);
+        expect(res.Captured.size).toBe(151);
+        expect(res.Captured.has('<later@x>')).toBe(true);
+        expect(res.SweptThrough.toISOString()).toBe('2026-11-17T11:00:00.000Z');
+        // The sweep itself has nothing to report. (The replay's conversation read is capped by 151 threads; not this finding.)
+        expect(res.Issues.filter((i) => /sweep|may have been missed/.test(i))).toEqual([]);
+    });
+
+    it('R2: an instant holding more than the largest read is stepped past and REPORTED, never left to block the sweep', async () => {
+        const res = await hourlyRuns([...burst(SWEEP_WIDE_PAGE + 100), LATER], 2);
+        expect(res.Captured.has('<later@x>')).toBe(true);
+        expect(res.SweptThrough.toISOString()).toBe('2026-11-17T10:00:00.000Z');
+        const missed = res.Issues.filter((i) => i.includes('may have been missed'));
+        expect(missed).toHaveLength(1);
+        const [from, to] = (missed[0].match(/\d{4}-\d\d-\d\dT[\d:.]+Z/g) ?? []).map((d) => Date.parse(d));
+        const instant = Date.parse('2026-11-17T08:20:00Z');
+        expect(from).toBeLessThanOrEqual(instant);
+        expect(to).toBeGreaterThan(instant);
+        expect(to - from).toBeLessThan(2_000);
+        expect(missed[0]).toContain(`${SWEEP_WIDE_PAGE}`);
+        // What the read did return is still captured: stepping past loses only what Graph withheld.
+        expect(res.Captured.size).toBe(SWEEP_WIDE_PAGE + 1);
+        expect(Math.max(...res.Requests)).toBeLessThanOrEqual(MAX_SWEEP_REQUESTS);
     });
 
     it('F2b: the stored sweep position never moves backwards', () => {

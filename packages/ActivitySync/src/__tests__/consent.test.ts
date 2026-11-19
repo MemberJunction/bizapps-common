@@ -28,6 +28,7 @@ import {
     type ConsentedMessage,
 } from '../consent.js';
 import { ConsentStages, REASON_UNTAGGED, REASON_UNTAGGED_KNOWN, type ConsentQualificationContext } from '../consent-stages.js';
+import { MapGraphMessage } from '../providers/GraphMessageMapper.js';
 import { RunQualificationCascade } from '../qualification.js';
 import type { ItemParticipant, NormalizedItem } from '../types.js';
 
@@ -157,6 +158,37 @@ describe('Graph signals', () => {
         expect(StableExternalId({ ...m, ExternalID: 'graph-a' }, 'Message')).toBe('<a@x>');
         expect(StableExternalId({ ...m, ExternalID: 'graph-e', Raw: { iCalUId: 'ical-1' } }, 'Calendar')).toBe('ical-1');
         expect(StableExternalId({ ...m, ExternalID: 'graph-e', Raw: {} }, 'Calendar')).toBe('graph-e');
+    });
+});
+
+/**
+ * KNOWN LIMIT, pinned so it cannot change unnoticed (rkihm-BC review, non-blocking finding; rollout note
+ * in the design doc, "Switching a connection from KnownContact to Tagged").
+ *
+ * A KnownContact run files an email under Graph's per-mailbox `id`. A Tagged run files the SAME email
+ * under its Message-ID. The writer de-duplicates on SourceSystem + ExternalID alone, so an email filed
+ * before the switch and tagged (or proven) after it gets a second Activity. If this test starts failing,
+ * the two modes share a key again: delete the rollout note with it.
+ */
+describe('one email, two keys across a KnownContact → Tagged switch', () => {
+    it('the key a KnownContact run writes is not the key a Tagged run writes for the same message', () => {
+        const payload = {
+            id: 'AAMkAGraphIdOfThisMailboxCopy=',
+            internetMessageId: '<quote-1@customer.test>',
+            subject: 'Quote',
+            sentDateTime: '2026-11-10T10:00:00Z',
+            from: { emailAddress: { address: CUSTOMER } },
+            toRecipients: [{ emailAddress: { address: BOX } }],
+            categories: ['AIDP'],
+        };
+        const issues: string[] = [];
+        const asKnownContactWrites = MapGraphMessage(payload, BOX, issues);
+        expect(issues).toEqual([]);
+        if (!asKnownContactWrites) throw new Error('the mapper skipped the fixture message');
+        const asTaggedWrites = StableItem(asKnownContactWrites, 'Message');
+
+        expect(asKnownContactWrites.ExternalID).toBe('AAMkAGraphIdOfThisMailboxCopy=');
+        expect(asTaggedWrites.ExternalID).toBe('<quote-1@customer.test>');
     });
 });
 

@@ -4,8 +4,9 @@
  * GATHER (before qualification)
  * - The window read only sees mail by RECEIVED time. A tag added later changes `lastModifiedDateTime`,
  *   so a second read, the late-tag sweep, asks for tagged items modified since the last sweep. It reads
- *   in windows and only ever claims to have read a window that came back whole (a capped page means the
- *   window is narrowed, never skipped).
+ *   in windows and only claims to have read a window that came back whole: a capped page means a wider
+ *   page, then a narrower window. The one exception is an instant too crowded for either, which is
+ *   stepped past and reported so it cannot block every later tag (see `sweep`).
  * - Every item is re-keyed to its stable id (Message-ID / iCalUId) and loses its blind copy.
  * - A tagged message names its ancestors in `References`; those not in hand are read by Message-ID.
  *   A message tagged LATE may already have replies behind the watermark, so its conversation is read too.
@@ -45,8 +46,20 @@ export const SURFACE_TYPE_CODE: Record<ActivitySourceKind, string> = {
     Social: 'Social',
     Chat: 'Chat',
 };
-/** Requests one sweep may make. Each either drains a window or halves it. */
-export const MAX_SWEEP_REQUESTS = 12;
+/**
+ * Requests one sweep may make. Each drains a window, widens the page, halves the window or steps past
+ * an instant. Narrowing an hour to one second takes 12 of them and a month takes 22, so the budget
+ * has to cover that descent and the way back out, or a crowded instant is never reached.
+ */
+export const MAX_SWEEP_REQUESTS = 48;
+/**
+ * The page a sweep asks for once a window has come back full: Graph's largest `$top` for messages.
+ * A burst of tags (a rep back-filling a customer, "mark all as read" over tagged mail) lands in one
+ * second of `lastModifiedDateTime`, and a window cannot be narrowed below that.
+ */
+export const SWEEP_WIDE_PAGE = 1000;
+/** `lastModifiedDateTime` filters resolve to the second, so a narrower window reads nothing new. */
+const MIN_SWEEP_WINDOW_MS = 1_000;
 /**
  * Each sweep starts this far before its recorded position. The position is our clock; the tag time is
  * Exchange's. A server running ahead of Exchange would otherwise skip a tag made in the gap, for good.
@@ -142,8 +155,15 @@ export class ConsentIntake {
      * Tagged items modified since the last sweep, read window by window.
      *
      * Graph returns a lookup page in no order we can rely on, so a page that comes back FULL says only
-     * that the window holds too much: the window is halved and read again. A window that comes back short
-     * was read completely, and only then does the sweep position move past it.
+     * that the window holds too much. It is read again with the widest page Graph allows, and if that is
+     * full too the window is halved; the upper half is remembered and read once the lower one is done. A
+     * window that comes back short was read completely, and only then does the sweep position move past it.
+     *
+     * THE ONE WINDOW THAT IS LEFT UNREAD. A window already one second wide that still fills the widest
+     * page cannot be narrowed. Waiting there would stop the sweep for good, and every later tag on the
+     * connection with it, so the sweep keeps what the page returned, says which instant may hold more,
+     * and moves on. Missing those items fails closed (they are not captured); missing everything after
+     * them would not be recoverable.
      */
     private async sweep(
         plugin: BaseActivitySyncProvider,
@@ -157,28 +177,32 @@ export class ConsentIntake {
         // next sweep catches every tag made after the read.
         const recorded = policy.SweptThrough ?? query.Since;
         if (recorded === null) return { Items: [], Issues: [], SweptThrough: newestModified(windowItems) };
-        const start = new Date(recorded.getTime() - SWEEP_OVERLAP_MS);
-        let from: Date | null = start;
+        let from = new Date(recorded.getTime() - SWEEP_OVERLAP_MS);
         let to = now;
+        let limit = query.Limit;
+        const later: Date[] = []; // upper bounds of the halves set aside, narrowest last
         const items: NormalizedItem[] = [];
+        const issues: string[] = [];
         for (let request = 0; request < MAX_SWEEP_REQUESTS; request++) {
-            const page = await plugin.Fetch({ ...query, Lookup: { Kind: 'Tagged', Tag: policy.Tag, ModifiedSince: from, ModifiedBefore: to } });
+            const page = await plugin.Fetch({ ...query, Limit: limit, Lookup: { Kind: 'Tagged', Tag: policy.Tag, ModifiedSince: from, ModifiedBefore: to } });
             if (page.Failed) return { Items: [], Issues: [], SweptThrough: null, Failure: `Late-tag sweep failed: ${page.Issues.join(' | ')}` };
-            if (page.Capped) {
-                const lower = from?.getTime() ?? 0;
-                const half = Math.floor((to.getTime() - lower) / 2);
-                if (half < 1_000) break;
-                to = new Date(lower + half);
+            if (page.Capped && limit < SWEEP_WIDE_PAGE) {
+                limit = SWEEP_WIDE_PAGE;
                 continue;
             }
+            const half = Math.floor((to.getTime() - from.getTime()) / 2);
+            if (page.Capped && half >= MIN_SWEEP_WINDOW_MS) {
+                later.push(to);
+                to = new Date(from.getTime() + half);
+                continue;
+            }
+            if (page.Capped) issues.push(crowdedInstantIssue(from, to, page.Items.length));
             items.push(...page.Items);
             from = to;
-            if (to.getTime() >= now.getTime()) return { Items: items, Issues: [], SweptThrough: now };
-            to = now;
+            if (to.getTime() >= now.getTime()) return { Items: items, Issues: issues, SweptThrough: now };
+            to = later.pop() ?? now;
         }
-        const issues = [`The late-tag sweep did not reach the present in ${MAX_SWEEP_REQUESTS} reads; the next run continues from ${from?.toISOString() ?? 'the start'}.`];
-        const advanced = from !== null && from.getTime() > recorded.getTime();
-        return { Items: items, Issues: issues, SweptThrough: advanced ? from : null };
+        return { Items: items, Issues: [...issues, sweepCutShortIssue(from, recorded)], SweptThrough: from.getTime() > recorded.getTime() ? from : null };
     }
 
     /**
@@ -306,6 +330,24 @@ export function ChooseWithdrawals(
 export function ViaOf(reason: string): string | null {
     const ids = reason.match(/<[^<>\s]+>/g);
     return ids ? ids[ids.length - 1] : null;
+}
+
+/** The sweep stepped past a window it could not read whole. Says where, so the owner can look. */
+function crowdedInstantIssue(from: Date, to: Date, read: number): string {
+    return (
+        `More tagged items changed between ${from.toISOString()} and ${to.toISOString()} than one read returns ` +
+        `(${SWEEP_WIDE_PAGE}). ${read} were read; the rest may have been missed and are not captured. ` +
+        'Changing such an item again (re-applying the tag) lets a later run read it.'
+    );
+}
+
+/** The request budget ran out before the present. Says whether the next run starts further on or not. */
+function sweepCutShortIssue(from: Date, recorded: Date): string {
+    const next =
+        from.getTime() > recorded.getTime()
+            ? `the next run continues from ${from.toISOString()}`
+            : `it read no further than its recorded position (${recorded.toISOString()}), so the next run starts from the same place`;
+    return `The late-tag sweep did not reach the present in ${MAX_SWEEP_REQUESTS} reads; ${next}.`;
 }
 
 function newestModified(items: readonly NormalizedItem[]): Date | null {
