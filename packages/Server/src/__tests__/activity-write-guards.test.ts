@@ -196,6 +196,27 @@ describe('Activity Sync Connection: only an administrator changes routing (#392)
         expect(await connection({ OwnerUserID: OTHER_ID }).entity.Save()).toBe(false);
     });
 
+    it('refuses a non-administrator changing Provider or the provider type', async () => {
+        storedRow(stored);
+        const provider = connection({ Provider: 'Google' });
+        expect(await provider.entity.Save()).toBe(false);
+        expect(provider.results[0].Message).toMatch(/change Provider/);
+
+        storedRow(stored);
+        const providerType = connection({ ActivitySyncProviderTypeID: OTHER_ID });
+        expect(await providerType.entity.Save()).toBe(false);
+        expect(providerType.results[0].Message).toMatch(/change ActivitySyncProviderTypeID/);
+    });
+
+    it('refuses a non-administrator changing a nested setting', async () => {
+        const nested = { ...stored, Settings: '{"Consent":{"Mode":"Tagged","Tag":"AIDP"}}' };
+        storedRow(nested);
+        const { entity, results } = connection({ Settings: '{"Consent":{"Mode":"KnownContact"}}' });
+        expect(await entity.Save()).toBe(false);
+        expect(results[0].Message).toMatch(/change Settings/);
+        expect(baseSave).not.toHaveBeenCalled();
+    });
+
     it('allows the sync engine status and watermark writes', async () => {
         storedRow(stored);
         const { entity } = connection({
@@ -220,6 +241,19 @@ describe('Activity Sync Connection: only an administrator changes routing (#392)
         expect(SettingsWithoutWatermark('{"CalendarLastSyncAt":"x"}')).toBeNull();
         expect(SettingsWithoutWatermark('{"b":1,"a":2}')).toBe(SettingsWithoutWatermark('{"a":2,"b":1}'));
         expect(SettingsWithoutWatermark('not json')).toBe('not json');
+    });
+
+    it('SettingsWithoutWatermark compares nested values and ignores nested key order', () => {
+        expect(SettingsWithoutWatermark('{"a":{"y":1,"x":[{"q":1,"p":2}]}}')).toBe(
+            SettingsWithoutWatermark('{"a":{"x":[{"p":2,"q":1}],"y":1}}'),
+        );
+        expect(SettingsWithoutWatermark('{"a":{"x":1}}')).not.toBe(SettingsWithoutWatermark('{"a":{"x":2}}'));
+        expect(SettingsWithoutWatermark('{"a":[{"x":1}]}')).not.toBe(SettingsWithoutWatermark('{"a":[{"x":2}]}'));
+        expect(SettingsWithoutWatermark('{"a":[1,2]}')).not.toBe(SettingsWithoutWatermark('{"a":[2,1]}'));
+        // A nested key that shares the watermark's name is not the watermark.
+        expect(SettingsWithoutWatermark('{"a":{"CalendarLastSyncAt":"x"}}')).not.toBe(
+            SettingsWithoutWatermark('{"a":{"CalendarLastSyncAt":"y"}}'),
+        );
     });
 
     it('uses the same watermark key the sync engine writes', () => {
