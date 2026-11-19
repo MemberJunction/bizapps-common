@@ -89,6 +89,12 @@ Form Components (NgModule-declared, @RegisterClass)
 | `ContactMethodListComponent` | `<bizapps-contact-method-list>` | Full CRUD for contact methods (email, phone, social, etc.) with icon-coded types, copy-to-clipboard, and primary designation |
 | `RelationshipListComponent` | `<bizapps-relationship-list>` | Grouped relationship viewer organized by category (Employment, Personal, Business) with directional label logic and navigation events |
 
+### Dashboard Widgets
+
+| Component | Selector | Description |
+|---|---|---|
+| `DashboardFilterBarComponent` | `<bizapps-dashboard-filter-bar>` | Period dropdown (this/last/next quarter, this/last year, all time, custom range) and a multi-select company picker. Holds no data: the app supplies the companies, the selection, the period and the fiscal basis, and applies what the bar emits to its own reads. App-specific filters are projected between the tags |
+
 ### Composed Detail Views
 
 | Component | Selector | Description |
@@ -213,6 +219,20 @@ Use atomic widgets independently when you only need part of the layout:
 | Input | Type | Description |
 |---|---|---|
 | `OrganizationID` | `string \| null` | Organization ID to build the tree around |
+
+### DashboardFilterBar Inputs and Outputs
+
+| Member | Type | Description |
+|---|---|---|
+| `CompanyOptions` | `FilterOption[]` | Companies the picker offers, shown sorted by name |
+| `[(SelectedCompanyIDs)]` | `string[]` | Selected company IDs; empty is every company |
+| `[(PeriodState)]` | `DashboardPeriodState` | Selected period and, for `custom`, its two dates |
+| `FiscalBasis` | `FiscalYearStartResolution` | Fiscal year start in force, from `ResolveFiscalYearStart`; shown in the period tooltip |
+| `CompanyLabel` | `string` | Picker name, default `Company` |
+| `ShowCompanies` | `boolean` | Hide the picker for figures that are not per company |
+| `Today` | `string \| null` | Day relative periods count from; null is the business day |
+
+Resolve the window the bar shows with `PeriodWindowOf(state, fiscalBasis.Start)`, and bound a DATE column with `PeriodSqlFilter(column, window)` (inclusive, ISO dates, null when unbounded).
 
 ### OrgHeader Outputs
 
