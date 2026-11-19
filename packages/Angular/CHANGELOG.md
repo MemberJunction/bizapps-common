@@ -1,5 +1,26 @@
 # @mj-biz-apps/common-ng
 
+## 5.67.0
+
+### Minor Changes
+
+- 2e80c8d: Add `DashboardFilterBarComponent` (`bizapps-dashboard-filter-bar`), a period and company filter bar for BizApps dashboards, with the pure period-window, period-state and ID-list helpers it applies. The period dropdown offers this, last and next quarter, this and last year, all time and a custom range; quarters and years follow a fiscal year start the app supplies through `ResolveFiscalYearStart`. App-specific filters are projected into the bar.
+
+### Patch Changes
+
+- 969e536: Make Activity Type, Title, Direction, Status, Outcome, Sentiment Score and Details editable in the Activity form header. The header replaces the generated Activity Details section, so these fields had no editor on an existing Activity.
+- b588ffa: The selling company dropdown on orders and contracts lists every company in name order. It used to stop at the first 20, so a company past that point could only be found by typing its name (golive #456).
+  - @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- 6fb9fcd: Adopt the declarative `[mjRecordLink]` directive from `@memberjunction/ng-base-forms` across identity headers (`PersonIdentityComponent`, `OrganizationIdentityComponent`, `ActivityIdentityComponent`), related record chips (`RelatedChipsComponent`), relationship timeline items (`RelationshipListComponent`), organization staff table links (`OrganizationStaffPanel`), activity participant link cards (`ActivityLinksPanel`), and organization hierarchy outline nodes (`OrgHierarchyTreeComponent`).
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+
 ## 5.65.0
 
 ### Minor Changes
