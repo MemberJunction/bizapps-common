@@ -14,8 +14,11 @@
  *   reply arriving today can be proven against it.
  *
  * WITHDRAW (after the writes)
- * A capture is withdrawn only on POSITIVE evidence that consent is gone: the item was read and carries no
- * tag, or it was proven only by a message that is itself being withdrawn and is not tagged now. Anything
+ * A capture is withdrawn only on POSITIVE evidence that consent is gone: the item was read and carries the
+ * skip tag; or it was captured for its tag, was read, and now has neither the tag nor standing consent; or
+ * it was proven only by a message that is itself being withdrawn and has no consent of its own now. A
+ * STANDING capture is never withdrawn because a source's list changed: an account changing hands does not
+ * unsay last month's correspondence. Anything
  * that cannot be read, a re-read that came back cut off, or an item another mailbox still consents to, is
  * KEPT and reported. Mass-withdrawing history because a read went wrong is the worst failure this pass has.
  *
@@ -32,8 +35,11 @@ import {
     PreferTaggedCopy,
     ReplyReferences,
     StableItem,
+    StandingMatch,
+    StandingRefusal,
     type ConsentPolicy,
     type ConsentedMessage,
+    type StandingDomains,
 } from './consent.js';
 import { REASON_PROVEN, REASON_TAGGED } from './consent-stages.js';
 import type { ConsentRecord, ConsentStore } from './consent-store.js';
@@ -109,7 +115,7 @@ export class ConsentIntake {
         const add = (batch: readonly NormalizedItem[]): void => {
             for (const item of batch) {
                 const stable = StableItem(item, plugin.Kind);
-                items.set(stable.ExternalID, PreferTaggedCopy(items.get(stable.ExternalID), stable, policy.Tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+                items.set(stable.ExternalID, PreferTaggedCopy(items.get(stable.ExternalID), stable, policy.Tag, policy.SkipTag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             }
         };
         add(windowItems);
@@ -208,6 +214,7 @@ export class ConsentIntake {
     /**
      * Withdraw captures whose consent is gone. `present` is what the run already read: for the calendar
      * the whole window, so no second read is needed; for mail, every candidate is re-read by Message-ID.
+     * `standing` is this run's cleaned standing domains: an item they cover is not withdrawn for losing its tag.
      */
     public async Withdraw(
         plugin: BaseActivitySyncProvider,
@@ -217,6 +224,7 @@ export class ConsentIntake {
         connectionID: string,
         dryRun: boolean,
         store: ConsentStore,
+        standing: StandingDomains = new Map(),
     ): Promise<WithdrawResult> {
         const result: WithdrawResult = { Withdrawn: 0, Unknown: 0, Issues: [], Revoked: [] };
         const since = new Date(this.Now().getTime() - policy.WithdrawWindowDays * 86_400_000);
@@ -236,12 +244,12 @@ export class ConsentIntake {
         const candidates = loaded.Value.slice(0, MAX_WITHDRAW_CHECKS);
         if (candidates.length === 0) return result;
 
-        const seen = await this.currentState(plugin, query, present, candidates, policy.Tag);
+        const seen = await this.currentState(plugin, query, present, candidates, policy);
         if ('Issue' in seen) {
             result.Issues.push(seen.Issue);
             return result;
         }
-        const chosen = ChooseWithdrawals(candidates, seen.Items, policy.Tag);
+        const chosen = ChooseWithdrawals(candidates, seen.Items, policy.Tag, { SkipTag: policy.SkipTag, Standing: standing, Kind: plugin.Kind });
         result.Unknown = chosen.Unknown;
         const elsewhere = await store.ConsentedElsewhere(chosen.Rows.map((r) => r.ExternalID), connectionID);
         if (elsewhere.Failed) {
@@ -259,7 +267,8 @@ export class ConsentIntake {
             else result.Withdrawn++;
         }
         if (result.Withdrawn > 0) {
-            result.Issues.push(`${dryRun ? 'Would withdraw' : 'Withdrew'} ${result.Withdrawn} item(s) whose "${policy.Tag}" tag was removed.`);
+            const why = policy.SkipTag ? `whose "${policy.Tag}" tag was removed or that now carry "${policy.SkipTag}"` : `whose "${policy.Tag}" tag was removed`;
+            result.Issues.push(`${dryRun ? 'Would withdraw' : 'Withdrew'} ${result.Withdrawn} item(s) ${why}.`);
         }
         if (kept.length > 0) result.Issues.push(`${kept.length} untagged item(s) were kept because another mailbox also consented to them.`);
         if (result.Unknown > 0) {
@@ -274,12 +283,12 @@ export class ConsentIntake {
         query: ActivitySourceQuery,
         present: readonly NormalizedItem[],
         candidates: readonly ConsentRecord[],
-        tag: string,
+        policy: TaggedPolicy,
     ): Promise<{ Items: Map<string, NormalizedItem> } | { Issue: string }> {
         const seen = new Map<string, NormalizedItem>();
         const keep = (item: NormalizedItem): void => {
             const stable = StableItem(item, plugin.Kind);
-            seen.set(stable.ExternalID, PreferTaggedCopy(seen.get(stable.ExternalID), stable, tag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+            seen.set(stable.ExternalID, PreferTaggedCopy(seen.get(stable.ExternalID), stable, policy.Tag, policy.SkipTag)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
         };
         present.forEach(keep);
         if (plugin.Kind !== 'Message') return { Items: seen };
@@ -294,32 +303,53 @@ export class ConsentIntake {
     }
 }
 
+/** What withdrawal needs beyond the tag. All optional: without them it decides as a tag-only connection. */
+export interface WithdrawalRules {
+    /** The "never log this" category. A capture read carrying it is withdrawn, however it was captured. */
+    SkipTag?: string | null;
+    /** This run's standing domains. An item they cover keeps its consent when its tag is removed. */
+    Standing?: StandingDomains;
+    Kind?: ActivitySourceKind;
+}
+
 /**
  * Which consented captures lose their consent.
  *
- * A TAGGED capture whose item was read and carries no tag. A PROVEN capture whose proving message
- * (`Via`, from its reason) is being withdrawn, unless the item is tagged now itself; this follows the
- * actual reply chain, not the whole conversation, and settles chains of replies in rounds. A tagged
- * capture that could not be read is counted Unknown and kept.
+ * ANY capture whose item was read and now carries the skip tag. A TAGGED capture whose item was read
+ * and has neither the tag nor standing consent now. A PROVEN capture whose proving message (`Via`, from
+ * its reason) is being withdrawn, unless the item has consent of its own now; this follows the actual
+ * reply chain, not the whole conversation, and settles chains of replies in rounds. A tagged capture
+ * that could not be read is counted Unknown and kept. A STANDING capture (its reason starts
+ * `Standing consent`) is touched by the skip tag only: nothing here re-asks whether its domain is
+ * still on a source's list.
  */
 export function ChooseWithdrawals(
     candidates: readonly ConsentRecord[],
     seen: ReadonlyMap<string, NormalizedItem>,
     tag: string,
+    rules: WithdrawalRules = {},
 ): { Rows: ConsentRecord[]; Unknown: number } {
-    const taggedNow = (r: ConsentRecord): boolean => {
-        const item = seen.get(r.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-        return item !== undefined && HasTag(item.Raw, tag);
+    const kind = rules.Kind ?? 'Message';
+    const read = (r: ConsentRecord): NormalizedItem | undefined => seen.get(r.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+    const consentedNow = (r: ConsentRecord): boolean => {
+        const item = read(r);
+        if (item === undefined) return false;
+        if (HasTag(item.Raw, tag)) return true;
+        return !!rules.Standing && StandingMatch(item, rules.Standing) !== null && StandingRefusal(item.Raw, kind) === null;
     };
     let unknown = 0;
     const gone = new Set<string>();
+    for (const r of candidates) {
+        const item = read(r);
+        if (item !== undefined && rules.SkipTag && HasTag(item.Raw, rules.SkipTag)) gone.add(r.ExternalID);
+    }
     for (const r of candidates.filter((c) => c.Reason.startsWith(REASON_TAGGED))) {
-        if (!seen.has(r.ExternalID)) unknown++; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
-        else if (!taggedNow(r)) gone.add(r.ExternalID);
+        if (read(r) === undefined) unknown++;
+        else if (!consentedNow(r)) gone.add(r.ExternalID);
     }
     const proven = candidates.filter((c) => c.Reason.startsWith(REASON_PROVEN));
     for (let round = 0; round < proven.length; round++) {
-        const next = proven.filter((r) => !gone.has(r.ExternalID) && !taggedNow(r) && gone.has(ViaOf(r.Reason) ?? '')); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        const next = proven.filter((r) => !gone.has(r.ExternalID) && !consentedNow(r) && gone.has(ViaOf(r.Reason) ?? '')); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
         if (next.length === 0) break;
         next.forEach((r) => gone.add(r.ExternalID));
     }
