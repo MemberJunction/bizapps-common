@@ -51,6 +51,19 @@ On a Tagged connection, the ExternalID is the RFC Message-ID (mail) or the iCalU
 stable across mailboxes and folder moves, so two ADs on one thread produce one Activity. Immutable Graph
 ids are not needed. BCC participants are never written.
 
+### Switching a connection from KnownContact to Tagged (rollout note)
+A KnownContact connection files mail under Graph's per-mailbox `id`. The writer de-duplicates on
+SourceSystem + ExternalID only. So an email the connection filed BEFORE the switch gets a second
+Activity if it is tagged afterwards, or brought in as a proven reply or an ancestor of a tagged message.
+The first row keeps its links and notes and is not withdrawn by a later untag (withdrawal follows the
+Tagged row). New mail is not affected, and a connection created as Tagged never has this.
+
+This is documented and not fixed here. A fix must find the old row by Message-ID inside the stored
+payload and then decide whether an unconsented capture may be adopted as a consented one; that is a
+consent decision and a data change to shipped rows, not a de-duplication detail. Before switching a
+connection that already has history, expect duplicates for re-tagged old threads, or start a new
+connection for the mailbox. Pinned by `consent.test.ts` ("one email, two keys").
+
 ## Late tags and withdrawal (`consent-intake.ts`)
 - **Sweep.** Each mail pass also reads `categories/any(c:c eq '<tag>') and lastModifiedDateTime ge
   <SweptThrough>`. `SweptThrough` is kept in Settings and moves to the newest `lastModifiedDateTime` seen.
@@ -79,10 +92,17 @@ ids are not needed. BCC participants are never written.
 - **Proof.** Only items no block, exclusion or Exclude rule stops (`ConsentEligible`) can prove a reply or
   name an ancestor. A Private reply proves nothing further. `References` is read oldest first, so the
   direct parent survives the 20-reference cap.
-- **The late-tag sweep** reads `[from, to)` windows and halves a window whose page came back full. It
-  moves its position only past windows read completely, starts 10 minutes before the recorded position
-  (our clock against Exchange's), and on a first run records the newest change it read. A late tag also
-  reads its conversation, so replies already behind the watermark can be proven.
+- **The late-tag sweep** reads `[from, to)` windows. A window whose page came back full is read again
+  with Graph's largest page (`$top` 1000), and halved if that is full too. It moves its position only
+  past windows read completely, starts 10 minutes before the recorded position (our clock against
+  Exchange's), and on a first run records the newest change it read. A late tag also reads its
+  conversation, so replies already behind the watermark can be proven.
+- **One exception: a crowded instant** (second review). A window already one second wide that still
+  fills the largest page cannot be narrowed. The first version stopped there, the position never moved,
+  and every later late tag on the connection was lost. The sweep now keeps what that page returned,
+  reports the instant and that the rest may have been missed, and continues. Those items are not
+  captured, which fails closed; tagging one again lets a later run read it. A sweep makes at most 48
+  requests, and says so when it stops short and whether its position moved.
 - **Retention.** A Tagged connection never retains the content of items it excluded, whatever
   `SkippedContentPolicy` says.
 
