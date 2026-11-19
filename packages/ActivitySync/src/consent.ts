@@ -355,10 +355,16 @@ export function StandingMatch(item: NormalizedItem, standing: StandingDomains): 
  * and an MJ Graph provider that does not forward `$expand` (6.2.1) returns none. "No properties" is then
  * not "not Private", and treating it so would file Private mail from every owned account. Message class
  * 0x001A is on every message, so a message read WITH the expand always has the list.
+ *
+ * The same holds for an event with no `sensitivity`. Graph sends it on every event, so its absence
+ * means the payload was trimmed somewhere, and `IsSensitive` reads an absent value as "normal".
  */
 export function StandingRefusal(raw: Record<string, unknown>, kind: ActivitySourceKind): string | null {
     if (kind === 'Message' && !Array.isArray(raw['singleValueExtendedProperties'])) {
         return 'its Private mark could not be read (the mail provider returned no extended properties)';
+    }
+    if (kind === 'Calendar' && typeof raw['sensitivity'] !== 'string') {
+        return 'its Private mark could not be read (the calendar provider returned no sensitivity)';
     }
     return IsSensitive(raw, kind) ? 'it is marked Personal/Private/Confidential' : null;
 }
