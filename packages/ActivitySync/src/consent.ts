@@ -19,10 +19,20 @@
  * (`In-Reply-To`, `References`, read as the MAPI properties below) that name a message already
  * consented, and never to an outbound forward or an outbound reply that adds a recipient.
  *
+ * ── STANDING CONSENT, ON A TAGGED CONNECTION ──────────────────────────────────────────────────
+ *
+ * A Tagged connection may also name sources (`Settings.Consent.Sources`, see
+ * `BaseActivityConsentSource.ts`) that list domains the owner has already agreed to have logged, e.g.
+ * the accounts they own. An item with a participant on such a domain is captured with no tag. It is an
+ * inference, like a reply, so it yields to a Personal/Private/Confidential mark, and on mail it is
+ * refused when that mark could not be read at all. `Settings.Consent.SkipTag` is the owner's "never log
+ * this": it blocks an item whatever else would capture it.
+ *
  * Everything here is pure, so each rule can be pinned without a database or a mailbox.
  *
  * @module @mj-biz-apps/common-activity-sync
  */
+import { DomainOf } from './participants.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import { ParseConnectionSettings } from './watermark.js';
 
@@ -36,6 +46,10 @@ export interface ConsentPolicy {
     SweptThrough: Date | null;
     /** Tagged items started within this many days are re-checked for a removed tag. */
     WithdrawWindowDays: number;
+    /** The Outlook category that means "never log this", whatever else would capture it. Null: none. */
+    SkipTag: string | null;
+    /** `BaseActivityConsentSource` keys that grant standing consent. Empty: the tag is the only consent. */
+    Sources: string[];
 }
 
 /** The key under `ActivitySyncConnection.Settings`. */
@@ -76,7 +90,7 @@ export function ConsentPolicyFromSettings(settings: string | null | undefined): 
     }
     const block = bag[CONSENT_SETTING];
     if (block === undefined) {
-        return { Policy: { Mode: 'KnownContact', Tag: null, SweptThrough: null, WithdrawWindowDays: DEFAULT_WITHDRAW_WINDOW_DAYS } };
+        return { Policy: { Mode: 'KnownContact', Tag: null, SweptThrough: null, WithdrawWindowDays: DEFAULT_WITHDRAW_WINDOW_DAYS, SkipTag: null, Sources: [] } };
     }
     if (block === null || typeof block !== 'object' || Array.isArray(block)) {
         return { Error: `Settings.${CONSENT_SETTING} must be an object like {"Mode":"Tagged","Tag":"AIDP"}.` };
@@ -98,6 +112,8 @@ function policyFromBlock(block: Record<string, unknown>): ConsentPolicyResult {
     if (typeof window !== 'number' || !Number.isInteger(window) || window < 0) {
         return { Error: `Settings.${CONSENT_SETTING}.WithdrawWindowDays must be a whole number of days.` };
     }
+    const extras = standingFromBlock(block, mode, tag);
+    if (extras.Error !== undefined) return { Error: extras.Error };
     const swept = typeof block['SweptThrough'] === 'string' ? new Date(block['SweptThrough']) : null;
     return {
         Policy: {
@@ -105,8 +121,46 @@ function policyFromBlock(block: Record<string, unknown>): ConsentPolicyResult {
             Tag: mode === 'Tagged' ? tag : null,
             SweptThrough: swept && !Number.isNaN(swept.getTime()) ? swept : null,
             WithdrawWindowDays: window,
+            SkipTag: extras.SkipTag,
+            Sources: extras.Sources,
         },
     };
+}
+
+/**
+ * `SkipTag` and `Sources`. Both belong to Tagged mode only, and a block that sets either on a
+ * KnownContact connection is refused: it reads as "automatic capture, with an opt-out" while the
+ * connection would go on capturing every known contact and honouring no skip tag.
+ */
+function standingFromBlock(
+    block: Record<string, unknown>,
+    mode: ConsentMode,
+    tag: string,
+): { SkipTag: string | null; Sources: string[]; Error?: undefined } | { Error: string } {
+    const rawSkip = block['SkipTag'];
+    const rawSources = block['Sources'];
+    if (mode !== 'Tagged') {
+        return rawSkip === undefined && rawSources === undefined
+            ? { SkipTag: null, Sources: [] }
+            : { Error: `Settings.${CONSENT_SETTING}.SkipTag and .Sources need "Mode":"Tagged".` };
+    }
+    const skip = typeof rawSkip === 'string' ? rawSkip.trim() : '';
+    if (rawSkip !== undefined && !skip) {
+        return { Error: `Settings.${CONSENT_SETTING}.SkipTag must be a category name, e.g. "No AIDP".` };
+    }
+    if (skip && skip.toLowerCase() === tag.toLowerCase()) {
+        return { Error: `Settings.${CONSENT_SETTING}.SkipTag is the same category as Tag ("${tag}"); one category cannot mean both.` };
+    }
+    if (rawSources !== undefined && !Array.isArray(rawSources)) {
+        return { Error: `Settings.${CONSENT_SETTING}.Sources must be a list of source keys, e.g. ["Sales.OwnedAccounts"].` };
+    }
+    const sources: string[] = [];
+    for (const entry of rawSources ?? []) {
+        const key = typeof entry === 'string' ? entry.trim() : '';
+        if (!key) return { Error: `Settings.${CONSENT_SETTING}.Sources holds ${JSON.stringify(entry)}; every entry must be a source key.` };
+        if (!sources.includes(key)) sources.push(key);
+    }
+    return { SkipTag: skip || null, Sources: sources };
 }
 
 /** Record how far the late-tag sweep read, keeping every other Settings key. */
@@ -178,8 +232,11 @@ export function HasTag(raw: Record<string, unknown>, tag: string): boolean {
  * Outlook categories SEPARATELY (seen live: one copy tagged, the other not). Whichever copy is read first
  * must not decide; the item counts as tagged when ANY copy carries the tag.
  */
-export function PreferTaggedCopy(current: NormalizedItem | undefined, incoming: NormalizedItem, tag: string): NormalizedItem {
+export function PreferTaggedCopy(current: NormalizedItem | undefined, incoming: NormalizedItem, tag: string, skipTag?: string | null): NormalizedItem {
     if (!current) return incoming;
+    // The skip tag is "never log this" and wins over the tag, so the copy carrying it is the one kept.
+    if (skipTag && HasTag(current.Raw, skipTag)) return current;
+    if (skipTag && HasTag(incoming.Raw, skipTag)) return incoming;
     return !HasTag(current.Raw, tag) && HasTag(incoming.Raw, tag) ? incoming : current;
 }
 
@@ -272,15 +329,47 @@ export interface ConsentedMessage {
 
 export type ConsentGrant =
     | { Kind: 'Tag' }
+    | { Kind: 'Standing'; Domain: string; Label: string }
     | { Kind: 'Reply'; Via: string }
     | { Kind: 'Ancestor'; Via: string };
+
+/** Domains with standing consent, each with the label that explains it (`StandingGrantDomains`). */
+export type StandingDomains = ReadonlyMap<string, string>;
+
+/** The first participant domain that has standing consent, or null. BCC never counts. */
+export function StandingMatch(item: NormalizedItem, standing: StandingDomains): { Domain: string; Label: string } | null {
+    for (const participant of item.Participants) {
+        if (participant.Role === 'Bcc') continue;
+        const domain = DomainOf(participant.Address);
+        const label = domain === null ? undefined : standing.get(domain);
+        if (domain !== null && label !== undefined) return { Domain: domain, Label: label };
+    }
+    return null;
+}
+
+/**
+ * Why a standing grant does NOT capture this item, or null when it does.
+ *
+ * Standing consent is an inference from a domain, so the owner's Personal/Private/Confidential mark
+ * overrides it. FAIL CLOSED WHEN THE MARK CANNOT BE READ: mail carries it only as an extended property,
+ * and an MJ Graph provider that does not forward `$expand` (6.2.1) returns none. "No properties" is then
+ * not "not Private", and treating it so would file Private mail from every owned account. Message class
+ * 0x001A is on every message, so a message read WITH the expand always has the list.
+ */
+export function StandingRefusal(raw: Record<string, unknown>, kind: ActivitySourceKind): string | null {
+    if (kind === 'Message' && !Array.isArray(raw['singleValueExtendedProperties'])) {
+        return 'its Private mark could not be read (the mail provider returned no extended properties)';
+    }
+    return IsSensitive(raw, kind) ? 'it is marked Personal/Private/Confidential' : null;
+}
 
 /**
  * Which items in a batch the owner consented to, and how.
  *
  * Items are keyed by `ExternalID`, which the caller has already made stable. `prior` holds what
- * earlier runs consented on this connection; the batch can extend it. Calendar consent is the tag
- * alone: a meeting has no reply chain to prove anything with.
+ * earlier runs consented on this connection; the batch can extend it. Calendar consent is the tag or a
+ * standing domain: a meeting has no reply chain to prove anything with. `standing` is the cleaned list
+ * (`StandingGrantDomains`), so every domain in it is external by construction.
  *
  * Replies settle in rounds — a reply to a reply is proven by the first reply — and each round grants
  * at least one item or ends the loop, so it finishes within `items.length` rounds.
@@ -291,6 +380,7 @@ export function ResolveConsent(
     tag: string,
     kind: ActivitySourceKind,
     eligible?: ReadonlySet<string>,
+    standing?: StandingDomains,
 ): Map<string, ConsentGrant> {
     // ONLY ITEMS THE CASCADE WILL NOT BLOCK OR EXCLUDE TAKE PART. A tagged draft, a tagged thread with
     // a never-log address on it, an internal-only tagged message: none of them is captured, so none of
@@ -298,14 +388,22 @@ export function ResolveConsent(
     items = eligible ? items.filter((i) => eligible.has(i.ExternalID)) : items; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
     const grants = new Map<string, ConsentGrant>();
     for (const item of items) {
+        // The tag first: it is the owner's explicit choice, and it is what overrides a Private mark.
+        const match = HasTag(item.Raw, tag) || !standing ? null : StandingMatch(item, standing);
         if (HasTag(item.Raw, tag)) grants.set(item.ExternalID, { Kind: 'Tag' }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        else if (match) grants.set(item.ExternalID, { Kind: 'Standing', ...match }); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
     }
     if (kind !== 'Message') return grants;
 
     const consented = new Map(prior);
     const byMessageId = new Map(items.map((i) => [InternetMessageId(i.Raw) ?? '', i] as const));
     byMessageId.delete('');
-    for (const item of items.filter((i) => grants.has(i.ExternalID))) consented.set(messageIdOf(item), consentedFrom(item)); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+    // A standing grant the Consent stage will refuse (Private, or unreadable) captures nothing, so it proves nothing.
+    const captured = (i: NormalizedItem): boolean => {
+        const grant = grants.get(i.ExternalID); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        return grant?.Kind === 'Tag' || (grant?.Kind === 'Standing' && StandingRefusal(i.Raw, kind) === null);
+    };
+    for (const item of items.filter(captured)) consented.set(messageIdOf(item), consentedFrom(item));
 
     grantAncestors(items, grants, consented, byMessageId);
     grantReplies(items, grants, consented);

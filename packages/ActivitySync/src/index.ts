@@ -16,6 +16,7 @@ export * from './content-capture.js';
 export * from './run.js';
 export * from './BaseActivitySyncProvider.js';
 export * from './BaseActivitySyncExtension.js';
+export * from './BaseActivityConsentSource.js';
 export * from './entity-names.js';
 export * from './identity.js';
 export * from './writer.js';

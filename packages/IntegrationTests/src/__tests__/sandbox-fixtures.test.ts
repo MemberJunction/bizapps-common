@@ -21,6 +21,13 @@ import {
     MAIL_CASES,
     MAILBOX,
     NEWER_MAIL_CASE,
+    NO_EMPLOYEE_SOURCE,
+    OWNED_ACCOUNTS_SOURCE,
+    STANDING_CALENDAR_CASES,
+    STANDING_LATE_CALENDAR_CASES,
+    STANDING_LATE_MAIL_CASES,
+    STANDING_MAIL_CASES,
+    STANDING_NOEXPAND_MAIL_CASES,
     type SandboxCase as FixtureCase,
     type SandboxGraphItem as GraphItem,
 } from '../../sandbox/build-fixtures.mjs';
@@ -33,7 +40,11 @@ interface ScenarioFile {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SANDBOX = join(HERE, '..', '..', 'sandbox');
 const DEMO = join(HERE, '..', '..', '..', 'ActivitySync', 'demo');
-const ALLOWED_DOMAINS = ['sandbox-internal.test', 'mail.sandbox-internal.test', 'com-world.test', 'stranger.test'];
+// gmail.com is the one real domain: the free-mail rule keys on the real name. Its fixture address is made up.
+const ALLOWED_DOMAINS = [
+    'sandbox-internal.test', 'mail.sandbox-internal.test', 'com-world.test', 'stranger.test',
+    'acme-owned.test', 'other-owner.test', 'school.test', 'gmail.com',
+];
 
 function load(name: string): ScenarioFile {
     return JSON.parse(readFileSync(join(SANDBOX, name), 'utf8')) as ScenarioFile;
@@ -55,7 +66,7 @@ function addressesIn(value: unknown, out: string[] = []): string[] {
     return out;
 }
 
-const FILES = ['baseline', 'newer', 'mismatch', 'consent', 'consent-late'].flatMap((s) => [`${s}.mail.json`, `${s}.calendar.json`]);
+const FILES = ['baseline', 'newer', 'mismatch', 'consent', 'consent-late', 'standing', 'standing-late', 'standing-noexpand'].flatMap((s) => [`${s}.mail.json`, `${s}.calendar.json`]);
 
 describe('sandbox fixture files', () => {
     it.each(FILES)('%s has the scenario envelope', (name) => {
@@ -76,6 +87,26 @@ describe('sandbox fixture files', () => {
         expect(load('consent.calendar.json').value).toEqual(ids(CONSENT_CALENDAR_CASES));
         expect(load('consent-late.mail.json').value).toEqual(ids(CONSENT_LATE_MAIL_CASES));
         expect(load('consent-late.calendar.json').value).toEqual(ids(CONSENT_LATE_CALENDAR_CASES));
+        expect(load('standing.mail.json').value).toEqual(ids(STANDING_MAIL_CASES));
+        expect(load('standing.calendar.json').value).toEqual(ids(STANDING_CALENDAR_CASES));
+        expect(load('standing-late.mail.json').value).toEqual(ids(STANDING_LATE_MAIL_CASES));
+        expect(load('standing-late.calendar.json').value).toEqual(ids(STANDING_LATE_CALENDAR_CASES));
+        expect(load('standing-noexpand.mail.json').value).toEqual(ids(STANDING_NOEXPAND_MAIL_CASES));
+        expect(load('standing-noexpand.calendar.json').value).toEqual(ids(STANDING_CALENDAR_CASES));
+        expect(JSON.parse(readFileSync(join(SANDBOX, 'owned-accounts.source.json'), 'utf8'))).toEqual(OWNED_ACCOUNTS_SOURCE);
+        expect(JSON.parse(readFileSync(join(SANDBOX, 'no-employee.source.json'), 'utf8'))).toEqual(NO_EMPLOYEE_SOURCE);
+    });
+
+    it('standing-noexpand is standing with every extended property removed, as MJ 6.2.1 returns mail', () => {
+        const strip = (c: FixtureCase) => ({ ...c.item, singleValueExtendedProperties: undefined });
+        expect(STANDING_NOEXPAND_MAIL_CASES.map((c) => c.item)).toEqual(STANDING_MAIL_CASES.map(strip).map((i) => JSON.parse(JSON.stringify(i))));
+        expect(STANDING_NOEXPAND_MAIL_CASES.every((c) => !('singleValueExtendedProperties' in c.item))).toBe(true);
+    });
+
+    it('standing-late is standing with only the skip tag (and its modified time) added', () => {
+        const strip = (c: FixtureCase) => ({ ...c.item, categories: undefined, lastModifiedDateTime: undefined });
+        expect(STANDING_LATE_MAIL_CASES.map(strip)).toEqual(STANDING_MAIL_CASES.map(strip));
+        expect(STANDING_LATE_CALENDAR_CASES.map(strip)).toEqual(STANDING_CALENDAR_CASES.map(strip));
     });
 
     it('consent-late is consent with only the tags (and their modified times) changed', () => {
@@ -88,7 +119,7 @@ describe('sandbox fixture files', () => {
     it('keep every field of the demo Graph payloads', () => {
         const messageKeys = demoKeys('graph-sample-messages.json');
         const eventKeys = demoKeys('graph-sample-events.json');
-        for (const c of [...MAIL_CASES, ...CONSENT_MAIL_CASES]) {
+        for (const c of [...MAIL_CASES, ...CONSENT_MAIL_CASES, ...STANDING_MAIL_CASES]) {
             for (const key of messageKeys) expect(c.item, `${c.item.id} lost ${key}`).toHaveProperty([key]);
         }
         for (const c of CALENDAR_CASES) {
@@ -101,7 +132,7 @@ describe('sandbox fixture files', () => {
     });
 
     it('have unique ids', () => {
-        const all = [...MAIL_CASES, NEWER_MAIL_CASE, ...CALENDAR_CASES, ...CONSENT_MAIL_CASES, ...CONSENT_CALENDAR_CASES].map((c) => c.item.id);
+        const all = [...MAIL_CASES, NEWER_MAIL_CASE, ...CALENDAR_CASES, ...CONSENT_MAIL_CASES, ...CONSENT_CALENDAR_CASES, ...STANDING_MAIL_CASES, ...STANDING_CALENDAR_CASES].map((c) => c.item.id);
         expect(new Set(all).size).toBe(all.length);
     });
 
