@@ -78,31 +78,32 @@ git checkout -b my-feature-branch
 
 Before every push: `git branch -vv`, confirm `origin/<same-branch-name>`, fix with `git branch --set-upstream-to` if not.
 
-### Branching model: `next` → `main` release flow
-BAC uses a two-tier branching model (matching BCSaaS and MJ):
+### Branching model: `next`, release lines, `main`
+bizapps-common follows MJ's release-line model ([guides/RELEASE_LINES.md](guides/RELEASE_LINES.md)):
 
-- **`next`** — integration branch. All feature work merges here.
-- **`main`** — release branch. Only updated by the **Version Packages** PR (`changeset-release/main` → `main`) that `version.yml` maintains. A merge to `main` triggers the publish workflow.
+- **`next`** — integration branch, built on MJ Edge. All work merges here first. It never publishes.
+- **`lts/<MJ major.minor>`** — a release line (listed in `release-lines.json`), built on that MJ version. It only receives backports from `next`.
+- **`main`** — release branch for the newest line. Only updated by that line's **Version Packages** PR (`changeset-release/main` → `main`). A merge to `main` triggers the publish workflow.
 
 **Feature work flow:**
 1. Cut a feature branch from `next`: `git checkout next && git pull && git checkout -b <feature-name>`
-2. Make changes, commit, push, open a PR → `next` (`/create-pr` targets `next`)
-3. `changes.yml` + `build.yml` run validation on the PR
-4. Merge to `next`
+2. Make changes, commit, push, open a PR → `next` (`/create-pr` targets `next`). Add a `backport lts/X.Y` label for each line it should reach; a PR that adds a migration needs one for every open line, or its files listed as edge-only in `release-lines.json`.
+3. `changes.yml`, `build.yml` and `release-lines-gates.yml` run on the PR.
+4. Merge to `next`. The bot opens one cherry-pick PR per labelled line.
 
-**Release flow: merge the Version Packages PR.**
-1. Every push to `next` runs `version.yml` (changesets/action, GitHub App token). While changesets are pending it opens or updates ONE **Version Packages** PR (`changeset-release/main` → `main`), built by `pnpm run version:prepare` (`changeset version`, then `ci/sync-mj-app-version.mjs` syncs `mj-app.json`, then the lockfile).
-2. That PR is the release. PRs into `main` run `release-readiness.yml` (the `rr:` checks: changesets, minor bump, metadata shipped, pg counterparts, release base current, migration immutability, packages on npm) and `build.yml`. Merge it.
-3. The push to `main` runs `publish.yml`: it publishes over npm OIDC, tags `vX.Y.Z` only if something shipped, then the App opens and merges a `release-back-merge/vX.Y.Z` → `next` PR.
+**Release flow: merge the line's Version Packages PR.**
+1. Every push to a line runs `version.yml` (changesets/action, GitHub App token). While changesets are pending it opens or updates that line's **Version Packages** PR (`changeset-release/main` → `main` for the newest line, `changeset-release/lts/X.Y` → `lts/X.Y` for an older one), built by `pnpm run version:prepare`.
+2. That PR is the release. It runs the `rr:` checks, `repo: release seed`, `lines: mj pin` and `build.yml`. Dispatch **Cut the Release** (`release.yml`) to merge it.
+3. The push runs `publish.yml`: it publishes over npm OIDC under the line's dist-tag (`latest` through `main`, `lts-X.Y` otherwise), tags `vX.Y.Z`, back-merges `main` into the line, and removes the released changesets from `next`.
 
-There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
+There is no hand-opened `next` → `main` PR and no PR straight into a line.
 
 **Rules:**
-- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/main`, `release-back-merge/*` and the `vX.Y.Z` tag.
+- **Nothing pushes to `main`, `next` or a line**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/*`, `release-back-merge/*`, `release-changesets/*` and the `vX.Y.Z` tag.
 - **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md).
 - **`mj-app.json` is checked on every PR** (`repo: guards` runs `scripts/sync-app-version.spec.mjs`): a PR that changes the `@memberjunction/core` pin must run `node scripts/sync-app-version.mjs` and commit `mj-app.json`. At release, `version:prepare` also syncs its `version` and range.
 - **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable. Changesets are written by the user, not by you.
-- **Hotfixes** still go through a PR — into `next`, with a changeset — and ship through the Version Packages PR like any other change.
+- **Hotfixes** still go through a PR — into `next`, with a changeset, labelled for the lines that need it — and ship through each line's Version Packages PR.
 
 ---
 
@@ -110,14 +111,14 @@ There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
 
 This clone is a member of an **`mj dev workspace`**: the parent folder (one level up) holds sibling clones of MJ and the Open App repos, and a generated pnpm workspace links every `@memberjunction/*` and `@mj-biz-apps/*` package to its source checkout. `@memberjunction/core` here resolves to `../MJ/packages/MJCore`. An edit in any repo is live in every other repo after a package build. Guide: [`../MJ/guides/DEV_WORKSPACE_QUICKSTART.md`](../MJ/guides/DEV_WORKSPACE_QUICKSTART.md).
 
-- **The MJ checkout stays on `next`.** New work here uses what MJ `next` has today. Do not design around the LTS line: no `backport lts/*` labels (the current line is `lts/6.2`), no fallbacks for features that `next` already ships. A fix this repo needs in MJ goes to MJ `next` as a normal PR; it reaches this repo through the workspace link immediately and reaches CI and hosts in the next edge release.
+- **The MJ checkout stays on `next`.** New work here uses what MJ `next` has today; don't add fallbacks for features `next` already ships. A change that needs MJ Edge and can't run on a line's MJ version is edge-only: don't label it for that line. A fix this repo needs in MJ goes to MJ `next` as a normal PR; it reaches this repo through the workspace link immediately and reaches CI and hosts in the next edge release.
 - **Never install inside a member.** `pnpm install` runs at the **parent** only. A `node_modules` created inside this repo or inside `../MJ` gives MJ a second package store and splits every singleton (`ClassFactory`, `type-graphql`). Never `pnpm link`, never symlink a package by hand, never copy another checkout's `dist/`. If something looks wrongly linked: `node ../MJ/packages/MJCLI/bin/run.js dev workspace status`, then `... dev workspace --force --clean-members` to recover.
 - **Build from the parent or from here.** `pnpm --filter @mj-biz-apps/common-entities run build` from the parent, or `pnpm run build` in a package directory here. Consumers see the new `dist/` at once. MJ packages you changed need their own build before this repo sees the change.
 - **Local host files never commit.** MJ's `mj.config.cjs`, `.env` and generated host folders are local artifacts of the MJ checkout. That is where this app is registered as an Open App for running MJAPI and MJExplorer (below).
 
 ## MemberJunction version policy
 
-The pins are a **floor**, not a target. `^6.2.1` means "at least 6.2.1"; development happens on `next` through the workspace link above.
+The pins are a **floor**, not a target. `^6.2.1` means "at least 6.2.1"; development happens on `next` through the workspace link above. On a release line the ranges are capped at the line's MJ minor instead (`>=6.2.1 <6.3.0`): the cut sets them and `lines: mj pin` keeps them there.
 
 Note that a host may lag this floor: `aidp-next/package.json` still pins MJ exactly at `6.1.6`, so a release published from here cannot be installed in AIDP Next until it moves to 6.2.
 

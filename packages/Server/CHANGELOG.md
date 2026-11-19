@@ -1,5 +1,26 @@
 # @mj-biz-apps/common-server
 
+## 5.67.0
+
+### Patch Changes
+
+- 2de3b6c: Adds an opt-in replay sandbox for Activity Sync, so developers can run the real `Common.SyncActivities` action end to end without a Microsoft 365 tenant. When MJAPI starts with `ACTIVITY_SYNC_SANDBOX_DIR` set to a fixture directory, a Microsoft365 connection whose `CredentialsRef` is `sandbox:<scenario>` (optionally `sandbox:<scenario>:<tag>`) reads its mail and calendar from `<scenario>.mail.json` and `<scenario>.calendar.json` in that directory instead of Microsoft Graph. Rows it writes are `Source = 'System'`, never `'Integration'`. MJAPI refuses to start if `ACTIVITY_SYNC_SANDBOX_DIR` is set while the live mailbox policy (`ACTIVITY_SYNC_MAILBOX_POLICY_*`) is also on. One change applies to every host, sandbox or not: a `CredentialsRef` that starts with `sandbox:` is no longer looked up as a credential, and a host without the sandbox refuses that connection with a message saying so. No host has to change anything; leave `ACTIVITY_SYNC_SANDBOX_DIR` unset in production.
+  - @mj-biz-apps/common-actions@5.67.0
+  - @mj-biz-apps/common-activity-sync@5.67.0
+  - @mj-biz-apps/common-core-entities-server@5.67.0
+  - @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+  - @mj-biz-apps/common-actions@5.66.0
+  - @mj-biz-apps/common-activity-sync@5.66.0
+  - @mj-biz-apps/common-core-entities-server@5.66.0
+
 ## 5.65.0
 
 ### Patch Changes

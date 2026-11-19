@@ -108,6 +108,27 @@ describe('SellingCompanyFieldComponent', () => {
         );
     });
 
+    describe('the unfiltered company list (golive #456)', () => {
+        /** The template Angular compiles, read from the decorator rather than rendered. */
+        function template(): string {
+            const annotations = (SellingCompanyFieldComponent as unknown as { __annotations__: { template: string }[] })
+                .__annotations__;
+            return annotations[0].template;
+        }
+
+        it('asks mj-form-field for the companies in name order', async () => {
+            const component = await build(record(false));
+            expect(template()).toContain('[FKOrderBy]="CompanyOrderBy"');
+            expect(component.CompanyOrderBy).toBe('Name');
+        });
+
+        it('asks for every company, not the first 20 the field returns by default', async () => {
+            const component = await build(record(false));
+            expect(template()).toContain('[FKMaxRows]="CompanyListLimit"');
+            expect(component.CompanyListLimit).toBeGreaterThanOrEqual(1000);
+        });
+    });
+
     it('defaults a new record to the configured company', async () => {
         const rec = record(false);
         await build(rec);
