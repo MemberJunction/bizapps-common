@@ -242,6 +242,22 @@ describe('The Consent stage with a standing grant', () => {
     });
 });
 
+describe('A meeting whose sensitivity was not returned', () => {
+    // Graph sends `sensitivity` on every event, so a payload without it is one where the mark could not
+    // be read (a transport that trimmed the fields, say). Same rule as mail: unreadable is not "normal".
+    it('is not captured by a standing grant', async () => {
+        const e = meeting('e1', BUYER, { sensitivity: undefined });
+        const verdict = await decide([e], e, 'Calendar');
+        expect(verdict.Decision).toBe('Exclude');
+        expect(verdict.Reason).toMatch(/acme\.test.*could not be read/);
+    });
+
+    it('is still captured when the owner tagged it', async () => {
+        const e = meeting('e1', BUYER, { sensitivity: undefined, categories: [TAG] });
+        expect((await decide([e], e, 'Calendar')).Decision).toBe('Include');
+    });
+});
+
 describe('SkipTag: the owner said never to log this', () => {
     it('blocks an item on an owned-account domain', async () => {
         const m = mail({ id: 'm1', from: BUYER, to: [BOX], tags: ['no aidp'] });
