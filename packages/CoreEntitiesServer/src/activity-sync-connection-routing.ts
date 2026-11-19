@@ -38,7 +38,23 @@ export const CONNECTION_ROUTING_FIELDS: readonly ConnectionField[] = [
  */
 export const CALENDAR_WATERMARK_KEY = 'CalendarLastSyncAt';
 
-/** `Settings` with the calendar watermark removed, as stable text for comparison. */
+/**
+ * A JSON value rebuilt with every object's keys sorted, at every depth, so two values that differ
+ * only in key order serialize to the same text and any nested difference shows up in it.
+ */
+function canonical(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value === null || typeof value !== 'object') return value;
+    const source = value as Record<string, unknown>;
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(source).sort()) sorted[key] = canonical(source[key]);
+    return sorted;
+}
+
+/**
+ * `Settings` with the top-level calendar watermark removed, as stable text for comparison. Nested
+ * objects and arrays are compared in full: only key order is ignored.
+ */
 export function SettingsWithoutWatermark(settings: unknown): string | null {
     const text = NormalizeStored(settings);
     if (text === null) return null;
@@ -52,8 +68,7 @@ export function SettingsWithoutWatermark(settings: unknown): string | null {
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return text;
     const bag: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
     delete bag[CALENDAR_WATERMARK_KEY];
-    const keys = Object.keys(bag).sort();
-    return keys.length === 0 ? null : JSON.stringify(bag, keys);
+    return Object.keys(bag).length === 0 ? null : JSON.stringify(canonical(bag));
 }
 
 function sameID(a: unknown, b: unknown): boolean {
