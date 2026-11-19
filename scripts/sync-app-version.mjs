@@ -30,9 +30,12 @@ const MJ_ANCHOR = '@memberjunction/core';
  * `mj-app.json`'s derived fields, from the entities package's own manifest.
  *
  * `mjVersionRange` is `>=<pin> <(major+1).0.0>`, the pinning model CLAUDE.md describes: an app
- * supports the MJ line it is built against, up to but not including the next major.
+ * supports the MJ line it is built against, up to but not including the next major. On a release
+ * line (`mj-app.json` has `"line": "X.Y"`) it is `>=<pin> <X.(Y+1).0>` instead, so a line's release
+ * refuses a host on a newer MJ minor (guides/RELEASE_LINES.md). The pin is the first version in
+ * the spec, so `^6.2.1` and `>=6.2.1 <6.3.0` both give 6.2.1.
  */
-export function deriveAppFields(entitiesPkg) {
+export function deriveAppFields(entitiesPkg, line) {
     const version = entitiesPkg?.version;
     if (!version) {
         throw new Error('packages/Entities/package.json has no version — cannot derive mj-app.json');
@@ -44,7 +47,17 @@ export function deriveAppFields(entitiesPkg) {
                 'mjVersionRange has no input to derive from',
         );
     }
-    const min = pin.replace(/^[^0-9]*/, '');
+    const min = /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/.exec(pin)?.[0];
+    if (!min) {
+        throw new Error(`${MJ_ANCHOR} "${pin}" in packages/Entities/package.json holds no version`);
+    }
+    if (line !== undefined) {
+        const m = /^(\d+)\.(\d+)$/.exec(String(line));
+        if (!m || !min.startsWith(`${m[1]}.${m[2]}.`)) {
+            throw new Error(`mj-app.json line "${line}" does not match the ${MJ_ANCHOR} pin "${pin}"`);
+        }
+        return { version, mjVersionRange: `>=${min} <${m[1]}.${Number(m[2]) + 1}.0` };
+    }
     const nextMajor = `${Number(min.split('.')[0]) + 1}.0.0`;
     return { version, mjVersionRange: `>=${min} <${nextMajor}` };
 }
@@ -59,6 +72,7 @@ export function syncAppVersion({ root = REPO_ROOT, check = false } = {}) {
     const app = JSON.parse(readFileSync(appPath, 'utf8'));
     const derived = deriveAppFields(
         JSON.parse(readFileSync(join(root, 'packages', 'Entities', 'package.json'), 'utf8')),
+        app.line,
     );
 
     const mismatches = Object.entries(derived)

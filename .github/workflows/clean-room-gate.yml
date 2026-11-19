@@ -18,9 +18,9 @@ name: Clean-Room Metadata Gate
 on:
   workflow_dispatch:
   push:
-    branches: [next, main]
+    branches: [next, main, 'lts/**']
   pull_request:
-    branches: [next, main]
+    branches: [next, main, 'lts/**']
 
 permissions:
   contents: read

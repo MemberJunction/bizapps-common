@@ -7,10 +7,10 @@ name: Schema Consistency
 on:
   workflow_dispatch:
   push:
-    branches: [next, main]
+    branches: [next, main, 'lts/**']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: [next, main]
+    branches: [next, main, 'lts/**']
 
 permissions:
   contents: read
