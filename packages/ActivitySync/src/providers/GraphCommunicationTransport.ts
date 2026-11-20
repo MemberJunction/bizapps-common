@@ -24,7 +24,8 @@
 import type { BaseCommunicationProvider } from '@memberjunction/communication-types';
 import type { UserInfo } from '@memberjunction/core';
 
-import type { ActivitySourceQuery, RawBatch } from '../types.js';
+import { CONSENT_MESSAGE_EXPAND } from '../consent.js';
+import type { ActivityLookup, ActivitySourceQuery, RawBatch } from '../types.js';
 import type { ActivityMessageTransport } from './MessageTransport.js';
 
 /**
@@ -137,6 +138,9 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
         }
 
         const provider = await this.Deps.ResolveProvider();
+        if (query.Lookup) {
+            return this.lookup(provider, credential, query, query.Lookup);
+        }
         const drain = await this.drain(provider, credential, query);
         return this.toBatch(drain, query, issues);
     }
@@ -197,6 +201,43 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
     }
 
     /**
+     * A lookup is one filtered read per request, not a drained window. Message-IDs go in groups of
+     * `MESSAGE_ID_BATCH` so the OData filter stays well inside Graph's restriction limits.
+     *
+     * `Expand` asks for the reply headers, sensitivity and message class (`CONSENT_MESSAGE_EXPAND`).
+     * An MJ build whose `GetMessages` does not forward it returns the messages without them; the
+     * consent pass reports that, and grants no continuation it cannot prove.
+     */
+    private async lookup(
+        provider: GraphMessageReader,
+        credential: GraphServicePrincipal,
+        query: ActivitySourceQuery,
+        request: ActivityLookup,
+    ): Promise<RawBatch> {
+        const filters =
+            request.Kind === 'Tagged'
+                ? [TaggedFilter(request.Tag, request.ModifiedSince, request.ModifiedBefore ?? null)]
+                : request.Kind === 'MessageIds'
+                  ? chunk(request.MessageIds, MESSAGE_ID_BATCH).map(MessageIdFilter)
+                  : chunk(request.ConversationIds, MESSAGE_ID_BATCH).map(ConversationFilter);
+        const payloads: Record<string, unknown>[] = [];
+        let capped = false;
+        for (const filter of filters) {
+            const result = await provider.GetMessages(
+                { Identifier: query.Mailbox, NumMessages: query.Limit, ContextData: { Filter: filter, Expand: CONSENT_MESSAGE_EXPAND } },
+                { ...credential, accountEmail: query.Mailbox, disableEnvironmentFallback: true },
+            );
+            if (!result?.Success) {
+                throw new Error(result?.ErrorMessage?.trim() || `Graph returned no result for the ${request.Kind} lookup on "${query.Mailbox}".`);
+            }
+            const page = (result.SourceData ?? []) as Record<string, unknown>[];
+            capped = capped || page.length >= query.Limit;
+            payloads.push(...page);
+        }
+        return { Payloads: payloads, Issues: [], Capped: capped };
+    }
+
+    /**
      * One `GetMessages` request, and whether Graph applied the bounds it was sent.
      *
      * `accountEmail` IS REQUIRED BY MJ. `MSGraphProvider.resolveCredentials` validates four fields —
@@ -220,7 +261,13 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
         before: Date | undefined,
     ): Promise<{ Payloads: Record<string, unknown>[]; Bounded: boolean }> {
         const result = await provider.GetMessages(
-            { Identifier: query.Mailbox, NumMessages: query.Limit, ReceivedAfter: after, ReceivedBefore: before },
+            {
+                Identifier: query.Mailbox,
+                NumMessages: query.Limit,
+                ReceivedAfter: after,
+                ReceivedBefore: before,
+                ContextData: { Expand: CONSENT_MESSAGE_EXPAND },
+            },
             { ...credential, accountEmail: query.Mailbox, disableEnvironmentFallback: true },
         );
         if (!result?.Success) {
@@ -373,4 +420,33 @@ export function MJGraphTransportDeps(args: {
             return provider;
         },
     };
+}
+
+/** Message-IDs per lookup request. */
+export const MESSAGE_ID_BATCH = 10;
+
+/** OData for "carries the tag, modified in [since, before)". `categories/any` is Graph's documented form. */
+export function TaggedFilter(tag: string, modifiedSince: Date | null, modifiedBefore: Date | null = null): string {
+    const clauses = [`categories/any(c:c eq '${odataString(tag)}')`];
+    if (modifiedSince) clauses.push(`lastModifiedDateTime ge ${modifiedSince.toISOString()}`);
+    if (modifiedBefore) clauses.push(`lastModifiedDateTime lt ${modifiedBefore.toISOString()}`);
+    return clauses.join(' and ');
+}
+
+export function ConversationFilter(ids: string[]): string {
+    return ids.map((id) => `conversationId eq '${odataString(id)}'`).join(' or ');
+}
+
+export function MessageIdFilter(ids: string[]): string {
+    return ids.map((id) => `internetMessageId eq '${odataString(id)}'`).join(' or ');
+}
+
+function odataString(value: string): string {
+    return value.replace(/'/g, "''");
+}
+
+function chunk<T>(values: readonly T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size));
+    return out;
 }

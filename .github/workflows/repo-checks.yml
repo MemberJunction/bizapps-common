@@ -6,7 +6,7 @@ name: Repo checks
 # release-pipeline port these ran inside common's own build.yml and publish.yml.
 on:
   pull_request:
-    branches: [next, main]
+    branches: [next, main, 'lts/**']
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
@@ -59,9 +59,23 @@ jobs:
       - name: UUID comparisons
         run: node scripts/check-uuid-comparisons.mjs
 
+      # The release-line model relies on `mj migrate` refusing an out-of-order migration. Through
+      # `mj app install` / `upgrade` that check is always on, but the CLI path passes
+      # mj.config.cjs `outOfOrder` straight to Skyway, and `true` switches it off. Keep it unset.
+      - name: mj.config.cjs does not turn on out-of-order migrations
+        run: |
+          if grep -nE '^\s*[^/]*outOfOrder\s*:\s*true' mj.config.cjs; then
+            echo "::error file=mj.config.cjs::outOfOrder: true lets 'mj migrate' apply a migration older than one the database already ran. Release lines depend on that refusal; remove the setting."
+            exit 1
+          fi
+          echo "outOfOrder is not enabled"
+
   release-seed:
     name: 'repo: release seed'
-    if: github.event.pull_request.draft == false && github.base_ref == 'main'
+    # A release PR: into `main`, or a line's own Version Packages PR (changeset-release/lts/X.Y).
+    if: >-
+      github.event.pull_request.draft == false
+      && (github.base_ref == 'main' || startsWith(github.head_ref, 'changeset-release/'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -19,6 +19,7 @@ import { LoadLogActivityAction } from './custom/log-activity.action.js';
 import { LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
+import { LoadActivitySyncSandboxFromEnv } from './custom/activity-sync-sandbox.js';
 import { LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 
 // Import generated GraphQL resolvers
@@ -60,6 +61,10 @@ export function LoadBizAppsCommonServer(): void {
     // And that attestation, when this deployment has one. Absent, every live read stays refused;
     // partially configured, this THROWS during bootstrap rather than leaving a misleading refusal.
     LoadLiveMailboxPolicyFromEnv();
+    // Wraps the factory above so a `sandbox:` CredentialsRef is never looked up as a credential, and
+    // is served from fixtures when ACTIVITY_SYNC_SANDBOX_DIR is set. Must follow both calls above: it
+    // wraps the registered factory and refuses to start on a host that also allows live fetch.
+    LoadActivitySyncSandboxFromEnv();
     // And the cipher that protects content captured from messages the engine declined to ingest.
     // Registering it turns nothing on: retention is off unless a policy asks for it. What it does is
     // make the engine's refusal, when a policy DOES ask, be about the policy rather than about this
@@ -71,6 +76,13 @@ export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-ac
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
 export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
+export {
+    ENV_SANDBOX_DIR,
+    LoadActivitySyncSandboxFromEnv,
+    SANDBOX_DISABLED_REFUSAL,
+    SANDBOX_REF_PREFIX,
+    SandboxAwareTransportFactory,
+} from './custom/activity-sync-sandbox.js';
 export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 export {
     LoadLiveMailboxPolicyFromEnv,

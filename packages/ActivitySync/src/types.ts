@@ -140,7 +140,24 @@ export interface ActivitySourceQuery {
      * `DEFAULT_MAX_CALENDAR_PAGES`), so a window holding more than `Limit` events is still read.
      */
     Limit: number;
+    /**
+     * Read specific items instead of the next window. When set, `Since` does not filter the result:
+     * a lookup asks for items by what they ARE, not by when they arrived.
+     *
+     * `Tagged` is the late-tag sweep: an owner who tags a six-week-old email today changes its
+     * `lastModifiedDateTime`, not its `receivedDateTime`, so the window read never sees it again.
+     * `MessageIds` re-reads known messages by RFC Message-ID, to find a tag that was removed and an
+     * ancestor that a tagged reply names.
+     */
+    Lookup?: ActivityLookup;
 }
+
+export type ActivityLookup =
+    /** Tagged items with `ModifiedSince <= lastModifiedDateTime < ModifiedBefore` (either bound optional). */
+    | { Kind: 'Tagged'; Tag: string; ModifiedSince: Date | null; ModifiedBefore?: Date | null }
+    | { Kind: 'MessageIds'; MessageIds: string[] }
+    /** Every message in these conversations, so a late tag can find the replies already behind the watermark. */
+    | { Kind: 'Conversations'; ConversationIds: string[] };
 
 /** Whatever a provider's transport handed back, before normalization. */
 export interface RawBatch {
@@ -181,6 +198,11 @@ export interface ActivitySourceBatch {
      */
     HighWatermark: Date | null;
     Issues: string[];
+    /**
+     * The read hit its limit, so there may be more than `Items` holds. A lookup's caller must not treat a
+     * capped answer as complete (a missing copy is not a removed tag; an unread window is not swept).
+     */
+    Capped?: boolean;
     /**
      * True when the provider did not complete a look — a throw from FetchRaw / transport / auth —
      * not an empty mailbox and not a deliberate live-fetch refusal. The engine must not treat
