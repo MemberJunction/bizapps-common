@@ -91,6 +91,7 @@ export abstract class BaseActivitySyncProvider {
                 // past the sent-date filter of a delayed message still ahead of the window (#308).
                 HighWatermark: highWatermark,
                 Issues: raw.Issues,
+                Capped: raw.Capped === true,
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

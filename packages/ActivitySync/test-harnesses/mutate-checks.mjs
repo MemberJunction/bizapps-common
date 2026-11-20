@@ -83,8 +83,8 @@ const PRODUCT = [
         id: 'M-ID1',
         file: ENGINE,
         expect: ['passes the rule set'],
-        from: '                InternalDomains: internalDomains.Rows,',
-        to: '                InternalDomains: [],',
+        from: '            InternalDomains: internalDomains.Rows,',
+        to: '            InternalDomains: [],',
     },
     {
         id: 'M-ID2',
@@ -580,8 +580,9 @@ const PRODUCT = [
         id: 'M-AC27',
         file: TRANSPORT,
         expect: ['THROWS when Graph reports failure, rather than returning an empty batch'],
-        from: '        if (!result?.Success) {',
-        to: '        if (false && !result?.Success) {',
+        // Anchored with its throw: the lookup path repeats the guard line (its mutant would be a different check).
+        from: '        if (!result?.Success) {\n            throw new Error(result?.ErrorMessage?.trim() || `Graph returned no result for mailbox ',
+        to: '        if (false && !result?.Success) {\n            throw new Error(result?.ErrorMessage?.trim() || `Graph returned no result for mailbox ',
     },
     {
         // Dropping the credential guard lets an empty secret reach MJ, which then silently falls

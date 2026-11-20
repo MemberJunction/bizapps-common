@@ -14,6 +14,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
     CALENDAR_CASES,
+    CONSENT_CALENDAR_CASES,
+    CONSENT_LATE_CALENDAR_CASES,
+    CONSENT_LATE_MAIL_CASES,
+    CONSENT_MAIL_CASES,
     MAIL_CASES,
     MAILBOX,
     NEWER_MAIL_CASE,
@@ -51,7 +55,7 @@ function addressesIn(value: unknown, out: string[] = []): string[] {
     return out;
 }
 
-const FILES = ['baseline', 'newer', 'mismatch'].flatMap((s) => [`${s}.mail.json`, `${s}.calendar.json`]);
+const FILES = ['baseline', 'newer', 'mismatch', 'consent', 'consent-late'].flatMap((s) => [`${s}.mail.json`, `${s}.calendar.json`]);
 
 describe('sandbox fixture files', () => {
     it.each(FILES)('%s has the scenario envelope', (name) => {
@@ -68,12 +72,23 @@ describe('sandbox fixture files', () => {
         expect(load('newer.mail.json').value).toEqual(ids([...MAIL_CASES, NEWER_MAIL_CASE]));
         expect(load('mismatch.mail.json').mailbox).not.toBe(MAILBOX);
         expect(load('baseline.mail.json').mailbox).toBe(MAILBOX);
+        expect(load('consent.mail.json').value).toEqual(ids(CONSENT_MAIL_CASES));
+        expect(load('consent.calendar.json').value).toEqual(ids(CONSENT_CALENDAR_CASES));
+        expect(load('consent-late.mail.json').value).toEqual(ids(CONSENT_LATE_MAIL_CASES));
+        expect(load('consent-late.calendar.json').value).toEqual(ids(CONSENT_LATE_CALENDAR_CASES));
+    });
+
+    it('consent-late is consent with only the tags (and their modified times) changed', () => {
+        const strip = (c: FixtureCase) => ({ ...c.item, categories: undefined, lastModifiedDateTime: undefined });
+        const lateOnly = new Set(['sbx-c17-reply-to-friend']);
+        expect(CONSENT_LATE_MAIL_CASES.filter((c) => !lateOnly.has(c.item.id)).map(strip)).toEqual(CONSENT_MAIL_CASES.map(strip));
+        expect(CONSENT_LATE_CALENDAR_CASES.map(strip)).toEqual(CONSENT_CALENDAR_CASES.map(strip));
     });
 
     it('keep every field of the demo Graph payloads', () => {
         const messageKeys = demoKeys('graph-sample-messages.json');
         const eventKeys = demoKeys('graph-sample-events.json');
-        for (const c of MAIL_CASES) {
+        for (const c of [...MAIL_CASES, ...CONSENT_MAIL_CASES]) {
             for (const key of messageKeys) expect(c.item, `${c.item.id} lost ${key}`).toHaveProperty([key]);
         }
         for (const c of CALENDAR_CASES) {
@@ -86,7 +101,7 @@ describe('sandbox fixture files', () => {
     });
 
     it('have unique ids', () => {
-        const all = [...MAIL_CASES, NEWER_MAIL_CASE, ...CALENDAR_CASES].map((c) => c.item.id);
+        const all = [...MAIL_CASES, NEWER_MAIL_CASE, ...CALENDAR_CASES, ...CONSENT_MAIL_CASES, ...CONSENT_CALENDAR_CASES].map((c) => c.item.id);
         expect(new Set(all).size).toBe(all.length);
     });
 

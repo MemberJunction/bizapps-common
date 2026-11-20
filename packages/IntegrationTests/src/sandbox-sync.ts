@@ -66,7 +66,7 @@ export type DetailRow = Pick<
 
 export type ActivityRow = Pick<
     mjBizAppsCommonActivityEntity,
-    'ID' | 'ExternalID' | 'ExternalThreadID' | 'Source' | 'Status'
+    'ID' | 'ExternalID' | 'ExternalThreadID' | 'Source' | 'Status' | 'Title' | 'Visibility'
 > & { StartedAt: string };
 
 export type LinkRow = Pick<mjBizAppsCommonActivityLinkEntity, 'ActivityID' | 'RecordID' | 'IdentityValue' | 'Role'>;
@@ -263,9 +263,71 @@ export function SandboxRef(scenario: string, tag: string): string {
     return `sandbox:${scenario}:${tag}`;
 }
 
-/** The fixture id behind a run-tagged one: everything before the first '.' (fixture ids have none). */
+/**
+ * The fixture id behind a run-tagged one. Graph-style ids: everything before the first '.' (fixture
+ * ids have none). A Tagged connection keys on the Message-ID (`<fixture-id@sandbox.test.tag>`) and the
+ * iCalUId (`ical-<fixture-id>.tag`), so those are unwrapped to the same fixture id.
+ */
 export function Untag(id: string | null): string | null {
-    return id === null ? null : id.split('.')[0];
+    if (id === null) return null;
+    const messageId = /^<([^@>]+)@/.exec(id);
+    if (messageId) return messageId[1];
+    const base = id.split('.')[0];
+    return base.startsWith('ical-') ? base.slice('ical-'.length) : base;
+}
+
+/** The stored `Activity.Details` (the raw payload) of every activity on a connection. */
+export async function ReadActivityDetails(ctx: IntegrationCheckContext, connectionId: string): Promise<string[]> {
+    const res = await RunView.FromMetadataProvider(ctx.Provider as IMetadataProvider).RunView<{ Details: string | null }>(
+        {
+            EntityName: COMMON_ENTITIES.Activity,
+            ExtraFilter: `ActivitySyncConnectionID = '${EscapeSQLString(connectionId)}'`,
+            Fields: ['Details'],
+            ResultType: 'simple',
+        },
+        ctx.User,
+    );
+    Assert(res.Success, `Activity Details read failed: ${res.ErrorMessage}`);
+    return (res.Results ?? []).map((r) => r.Details ?? '');
+}
+
+/** Point a connection at `sandbox:<scenario>:<tag>` — e.g. give two connections the same run tag. */
+export async function SetConnectionRef(ctx: IntegrationCheckContext, connectionId: string, scenario: string, tag: string): Promise<void> {
+    const connection = await loadConnection(ctx, connectionId);
+    connection.CredentialsRef = SandboxRef(scenario, tag);
+    await RequireSave(connection, `set connection ${connectionId} to ${connection.CredentialsRef}`);
+}
+
+/** Replace a connection's Settings JSON (the consent mode lives there). */
+export async function SetConnectionSettings(
+    ctx: IntegrationCheckContext,
+    connectionId: string,
+    settings: Record<string, unknown> | null,
+): Promise<void> {
+    const connection = await loadConnection(ctx, connectionId);
+    connection.Settings = settings === null ? null : JSON.stringify(settings);
+    await RequireSave(connection, `set connection ${connectionId} Settings`);
+}
+
+/** Read a connection's Settings back, parsed. */
+export async function ReadConnectionSettings(ctx: IntegrationCheckContext, connectionId: string): Promise<Record<string, unknown>> {
+    const connection = await loadConnection(ctx, connectionId);
+    return connection.Settings ? (JSON.parse(connection.Settings) as Record<string, unknown>) : {};
+}
+
+/**
+ * A live run needs the connection Active, and Active is the only state the hourly job also runs —
+ * so this is the one place that waits out minute 0, and the connection goes back to Paused straight
+ * after, pass or fail.
+ */
+export async function SyncLive(ctx: IntegrationCheckContext, connectionId: string, limit?: number): ReturnType<typeof SyncAndRead> {
+    await WaitPastTopOfHour();
+    await SetConnectionStatus(ctx, connectionId, 'Active');
+    return WithCleanup(
+        () => SyncAndRead(ctx, connectionId, { DryRun: false, Limit: limit }),
+        () => SetConnectionStatus(ctx, connectionId, 'Paused'),
+        `pause sandbox connection ${connectionId}`,
+    );
 }
 
 /** Point an existing connection at another scenario, keeping its run tag (the watermark check). */
@@ -325,7 +387,7 @@ export async function ReadSnapshot(ctx: IntegrationCheckContext, connectionId: s
             'ActivitySyncExclusionID', 'ActivityID',
         ]),
         simple(COMMON_ENTITIES.Activity, `ActivitySyncConnectionID = '${id}'`, [
-            'ID', 'ExternalID', 'ExternalThreadID', 'Source', 'Status', 'StartedAt',
+            'ID', 'ExternalID', 'ExternalThreadID', 'Source', 'Status', 'StartedAt', 'Title', 'Visibility',
         ]),
         simple(COMMON_ENTITIES.ActivityLink, activitiesOf, ['ActivityID', 'RecordID', 'IdentityValue', 'Role']),
     ];

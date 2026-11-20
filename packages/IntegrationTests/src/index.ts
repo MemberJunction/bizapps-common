@@ -32,6 +32,7 @@ export * from './checks/contacts-addresses.checks.js';
 export * from './checks/relationships.checks.js';
 export * from './checks/activities.checks.js';
 export * from './checks/activity-sync.checks.js';
+export * from './checks/activity-sync-consent.checks.js';
 export * from './checks/party-lookup.checks.js';
 export * from './checks/sender-identities.checks.js';
 
