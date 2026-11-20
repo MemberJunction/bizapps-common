@@ -22,6 +22,7 @@ import { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifes
 export { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
 export { GeneratedFormsModule } from './lib/generated/generated-forms.module';
 export { CustomFormsModule } from './lib/custom/custom-forms.module';
+export { mjBizAppsCommonAddressLinkFormComponent } from './lib/generated/Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component';
 
 // Reusable UI components
 export { AddressEditorComponent } from './lib/components/address-editor/address-editor.component';
