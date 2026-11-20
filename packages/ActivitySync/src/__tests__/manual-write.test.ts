@@ -50,11 +50,13 @@ function fakeProvider() {
         links: [] as FakeRow[],
     };
     let nextID = 0;
+    const entities = [
+        { Name: PEOPLE, ID: 'entity-people' },
+        { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-orgs' },
+    ];
     const provider = {
-        Entities: [
-            { Name: PEOPLE, ID: 'entity-people' },
-            { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-orgs' },
-        ],
+        Entities: entities,
+        EntityByName: (name: string) => entities.find((e) => e.Name.toLowerCase() === name.trim().toLowerCase()),
         BeginEntityTransaction: async () => ({
             Commit: async () => {
                 state.committed = true;
@@ -157,7 +159,7 @@ describe('ActivityWriter.WriteManual', () => {
         expect(state.activities).toHaveLength(0);
     });
 
-    it('rolls back when a link targets an entity the provider does not know', async () => {
+    it('refuses before opening a transaction when a link targets an entity the provider does not know', async () => {
         const { provider, state } = fakeProvider();
         const result = await new ActivityWriter().WriteManual(
             input({ Links: [{ Role: 'Regarding', EntityName: 'No Such Entity', RecordID: OTHER_UUID }] }),
@@ -165,8 +167,8 @@ describe('ActivityWriter.WriteManual', () => {
             USER,
         );
         expect(result.Success).toBe(false);
-        expect(result.Issues.join(' ')).toMatch(/Link could not be written/);
-        expect(state.rolledBack).toBe(true);
+        expect(result.Issues.join(' ')).toMatch(/Links reference unknown entity name\(s\): No Such Entity/);
+        expect(state.activities).toHaveLength(0);
         expect(state.committed).toBe(false);
     });
 

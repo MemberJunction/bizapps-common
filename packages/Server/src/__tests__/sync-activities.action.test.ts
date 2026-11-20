@@ -61,6 +61,19 @@ describe('SyncActivitiesAction', () => {
         H.own.ReleaseIndependentInstance.mockClear();
     });
 
+    it('refuses with VALIDATION_ERROR when ContextUser is missing', async () => {
+        const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections');
+        const noUser = { Params: [], ContextUser: undefined } as unknown as RunActionParams;
+
+        const result = await new TestableAction().Run(noUser);
+
+        expect(result.Success).toBe(false);
+        expect(result.ResultCode).toBe('VALIDATION_ERROR');
+        expect(result.Message).toMatch(/ContextUser/i);
+        expect(run).not.toHaveBeenCalled();
+        expect(H.shared.CreateIndependentInstance).not.toHaveBeenCalled();
+    });
+
     it('runs on its own independent instance and releases it (never the process-global provider)', async () => {
         const run = vi.spyOn(ActivitySyncEngine.prototype, 'RunConnections').mockImplementation(writeOnHandedProvider);
 
