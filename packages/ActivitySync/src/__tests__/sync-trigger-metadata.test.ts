@@ -48,6 +48,17 @@ describe('Common.SyncActivities trigger metadata (AC15)', () => {
         expect(limit?.fields?.DefaultValue).toBe('100');
     });
 
+    it('seeds optional DryRun and ConnectionIDs inputs, DryRun off by default', () => {
+        const params = action?.relatedEntities?.['MJ: Action Params'] ?? [];
+        const dryRun = params.find((p) => p.fields?.Name === 'DryRun');
+        const ids = params.find((p) => p.fields?.Name === 'ConnectionIDs');
+        expect(dryRun?.fields?.Type).toBe('Input');
+        expect(dryRun?.fields?.IsRequired).toBe(false);
+        expect(dryRun?.fields?.DefaultValue).toBe('false');
+        expect(ids?.fields?.Type).toBe('Input');
+        expect(ids?.fields?.IsRequired).toBe(false);
+    });
+
     it('seeds result codes the Action actually returns', () => {
         const codes = (action?.relatedEntities?.['MJ: Action Result Codes'] ?? []).map(
             (r) => r.fields?.ResultCode,

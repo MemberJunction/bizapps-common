@@ -78,31 +78,32 @@ git checkout -b my-feature-branch
 
 Before every push: `git branch -vv`, confirm `origin/<same-branch-name>`, fix with `git branch --set-upstream-to` if not.
 
-### Branching model: `next` → `main` release flow
-BAC uses a two-tier branching model (matching BCSaaS and MJ):
+### Branching model: `next`, release lines, `main`
+bizapps-common follows MJ's release-line model ([guides/RELEASE_LINES.md](guides/RELEASE_LINES.md)):
 
-- **`next`** — integration branch. All feature work merges here.
-- **`main`** — release branch. Only updated by the **Version Packages** PR (`changeset-release/main` → `main`) that `version.yml` maintains. A merge to `main` triggers the publish workflow.
+- **`next`** — integration branch, built on MJ Edge. All work merges here first. It never publishes.
+- **`lts/<MJ major.minor>`** — a release line (listed in `release-lines.json`), built on that MJ version. It only receives backports from `next`.
+- **`main`** — release branch for the newest line. Only updated by that line's **Version Packages** PR (`changeset-release/main` → `main`). A merge to `main` triggers the publish workflow.
 
 **Feature work flow:**
 1. Cut a feature branch from `next`: `git checkout next && git pull && git checkout -b <feature-name>`
-2. Make changes, commit, push, open a PR → `next` (`/create-pr` targets `next`)
-3. `changes.yml` + `build.yml` run validation on the PR
-4. Merge to `next`
+2. Make changes, commit, push, open a PR → `next` (`/create-pr` targets `next`). Add a `backport lts/X.Y` label for each line it should reach; a PR that adds a migration needs one for every open line, or its files listed as edge-only in `release-lines.json`.
+3. `changes.yml`, `build.yml` and `release-lines-gates.yml` run on the PR.
+4. Merge to `next`. The bot opens one cherry-pick PR per labelled line.
 
-**Release flow: merge the Version Packages PR.**
-1. Every push to `next` runs `version.yml` (changesets/action, GitHub App token). While changesets are pending it opens or updates ONE **Version Packages** PR (`changeset-release/main` → `main`), built by `pnpm run version:prepare` (`changeset version`, then `ci/sync-mj-app-version.mjs` syncs `mj-app.json`, then the lockfile).
-2. That PR is the release. PRs into `main` run `release-readiness.yml` (the `rr:` checks: changesets, minor bump, metadata shipped, pg counterparts, release base current, migration immutability, packages on npm) and `build.yml`. Merge it.
-3. The push to `main` runs `publish.yml`: it publishes over npm OIDC, tags `vX.Y.Z` only if something shipped, then the App opens and merges a `release-back-merge/vX.Y.Z` → `next` PR.
+**Release flow: merge the line's Version Packages PR.**
+1. Every push to a line runs `version.yml` (changesets/action, GitHub App token). While changesets are pending it opens or updates that line's **Version Packages** PR (`changeset-release/main` → `main` for the newest line, `changeset-release/lts/X.Y` → `lts/X.Y` for an older one), built by `pnpm run version:prepare`.
+2. That PR is the release. It runs the `rr:` checks, `repo: release seed`, `lines: mj pin` and `build.yml`. Dispatch **Cut the Release** (`release.yml`) to merge it.
+3. The push runs `publish.yml`: it publishes over npm OIDC under the line's dist-tag (`latest` through `main`, `lts-X.Y` otherwise), tags `vX.Y.Z`, back-merges `main` into the line, and removes the released changesets from `next`.
 
-There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
+There is no hand-opened `next` → `main` PR and no PR straight into a line.
 
 **Rules:**
-- **Nothing pushes to `main` or `next`**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/main`, `release-back-merge/*` and the `vX.Y.Z` tag.
+- **Nothing pushes to `main`, `next` or a line**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/*`, `release-back-merge/*`, `release-changesets/*` and the `vX.Y.Z` tag.
 - **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md).
 - **`mj-app.json` is checked on every PR** (`repo: guards` runs `scripts/sync-app-version.spec.mjs`): a PR that changes the `@memberjunction/core` pin must run `node scripts/sync-app-version.mjs` and commit `mj-app.json`. At release, `version:prepare` also syncs its `version` and range.
 - **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable. Changesets are written by the user, not by you.
-- **Hotfixes** still go through a PR — into `next`, with a changeset — and ship through the Version Packages PR like any other change.
+- **Hotfixes** still go through a PR — into `next`, with a changeset, labelled for the lines that need it — and ship through each line's Version Packages PR.
 
 ---
 
@@ -110,17 +111,17 @@ There is no hand-opened `next` → `main` PR and no dispatch-driven publish.
 
 This clone is a member of an **`mj dev workspace`**: the parent folder (one level up) holds sibling clones of MJ and the Open App repos, and a generated pnpm workspace links every `@memberjunction/*` and `@mj-biz-apps/*` package to its source checkout. `@memberjunction/core` here resolves to `../MJ/packages/MJCore`. An edit in any repo is live in every other repo after a package build. Guide: [`../MJ/guides/DEV_WORKSPACE_QUICKSTART.md`](../MJ/guides/DEV_WORKSPACE_QUICKSTART.md).
 
-- **The MJ checkout stays on `next`.** New work here uses what MJ `next` has today. Do not design around the LTS line: no `backport lts/6.1` labels, no fallbacks for features that `next` already ships. A fix this repo needs in MJ goes to MJ `next` as a normal PR; it reaches this repo through the workspace link immediately and reaches CI and hosts in the next edge release.
+- **The MJ checkout stays on `next`.** New work here uses what MJ `next` has today; don't add fallbacks for features `next` already ships. A change that needs MJ Edge and can't run on a line's MJ version is edge-only: don't label it for that line. A fix this repo needs in MJ goes to MJ `next` as a normal PR; it reaches this repo through the workspace link immediately and reaches CI and hosts in the next edge release.
 - **Never install inside a member.** `pnpm install` runs at the **parent** only. A `node_modules` created inside this repo or inside `../MJ` gives MJ a second package store and splits every singleton (`ClassFactory`, `type-graphql`). Never `pnpm link`, never symlink a package by hand, never copy another checkout's `dist/`. If something looks wrongly linked: `node ../MJ/packages/MJCLI/bin/run.js dev workspace status`, then `... dev workspace --force --clean-members` to recover.
 - **Build from the parent or from here.** `pnpm --filter @mj-biz-apps/common-entities run build` from the parent, or `pnpm run build` in a package directory here. Consumers see the new `dist/` at once. MJ packages you changed need their own build before this repo sees the change.
 - **Local host files never commit.** MJ's `mj.config.cjs`, `.env` and generated host folders are local artifacts of the MJ checkout. That is where this app is registered as an Open App for running MJAPI and MJExplorer (below).
 
 ## MemberJunction version policy
 
-The pins are a **floor**, not a target. `^6.1.6` means "at least 6.1.6"; development happens on `next` through the workspace link above.
+The pins are a **floor**, not a target. `^6.2.1` means "at least 6.2.1"; development happens on `next` through the workspace link above. On a release line the ranges are capped at the line's MJ minor instead (`>=6.2.1 <6.3.0`): the cut sets them and `lines: mj pin` keeps them there.
 
-- **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range and never appears in `dependencies`: the host installs one copy, and a `~6.1.N` or exact peer makes every later host install a second tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor. `.github/scripts/check-dependency-model.mjs` enforces this in CI; it accepts a prerelease caret such as `^6.2.0-edge.3`. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
-- **`pnpm.overrides`.** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Do not exact-pin sibling `@mj-biz-apps/*` packages here.
+- **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range and never appears in `dependencies`: the host installs one copy, and a `~6.2.N` or exact peer makes every later host install a second tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor. `.github/scripts/check-dependency-model.mjs` enforces this in CI; it accepts a prerelease caret such as `^6.3.0-edge.1`. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
+- **Overrides (`overrides:` in `pnpm-workspace.yaml`).** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Keep them here rather than under `package.json`'s `pnpm` field so there is one place to look — not because that field is ignored: pnpm 10.33 does read `pnpm.overrides` from `package.json` and applies it, with no warning (bizapps-contracts keeps its MJ overrides there and its committed lockfile shows both applied). Do not exact-pin sibling `@mj-biz-apps/*` packages here.
 - **One copy of each.** After any install at the parent, `pnpm why @memberjunction/core` must show a single version. A sibling app package that exact-pins an old MJ build brings a second copy in; fix it by raising that package's floor, not with more overrides.
 - **Raising the floor.** Do it when this repo's code or migrations start to need something newer than the current floor, and raise it to the first **published** MJ build that carries it: CI's `clean-room-gate.yml` installs MJ core at the floor of `mj-app.json`'s `mjVersionRange` and replays this repo's migrations on it, so a floor below what the code needs fails there, not on your machine. Raise every `^` floor in peers, devDependencies and both overrides; `pnpm install` at the parent; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json`; rebuild the database from migrations and regenerate; run the full test suite; the user adds a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
 - **Never patch MemberJunction.** No `pnpm patch`, `patchedDependencies`, patch-package or `sed` against `@memberjunction/*` `dist/`. Fix it on MJ `next`.
@@ -177,14 +178,15 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 
 ## Database migrations
 
-- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Guarded DDL (`IF OBJECT_ID(...) IS NULL`), `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
+- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Plain DDL with no existence guards: Skyway runs each migration exactly once, in order, so no `IF OBJECT_ID(...) IS NULL`, `IF COL_LENGTH(...) IS NULL` or `IF NOT EXISTS` wrappers, around descriptions included. A guard turns a schema mismatch into silence and makes the PostgreSQL conversion harder. `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
 - The stamp (`V<YYYYMMDDHHMM>`, Central Time) must sort after every migration on `next` at merge time; `changes.yml` rejects one that doesn't. A shipped migration is immutable.
 - T-SQL only in a feature PR. The PostgreSQL twin is release work (`docs/postgresql.md`).
 - Full rules: [`.claude/mj/migrations/CLAUDE.md`](.claude/mj/migrations/CLAUDE.md); the release-seed runbook: [`migrations/README.md`](migrations/README.md).
+- The authoring rules MJ and every BizApps repo share, each with its reason (plain DDL, CHECK values written for people, a `primaryKey` on every metadata record): MJ's [Schema and Code Authoring Guide](https://github.com/MemberJunction/MJ/blob/next/guides/SCHEMA_AND_CODE_AUTHORING_GUIDE.md).
 
 ## Metadata
 
-Declarative JSON under `metadata/`, pushed by `mj sync push`. Primary keys come from `uuidgen`; references use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
+Declarative JSON under `metadata/`, pushed by `mj sync push`. Every record, nested `relatedEntities` children included, has a `primaryKey`: a `uuidgen` UUID for a row the file creates, or an `@lookup` for a row the migration stack or CodeGen already created (a record without one is inserted as a new row). References use `@lookup:`, `@parent:` and `@file:`; JSON-typed fields are native objects. No `sync` blocks in a PR. New directories go into `metadata/.mj-sync.json` `directoryOrder` after what they look up. Full rules: [`.claude/mj/metadata/CLAUDE.md`](.claude/mj/metadata/CLAUDE.md).
 
 ---
 

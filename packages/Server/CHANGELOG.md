@@ -1,5 +1,171 @@
 # @mj-biz-apps/common-server
 
+## 5.67.0
+
+### Patch Changes
+
+- 2de3b6c: Adds an opt-in replay sandbox for Activity Sync, so developers can run the real `Common.SyncActivities` action end to end without a Microsoft 365 tenant. When MJAPI starts with `ACTIVITY_SYNC_SANDBOX_DIR` set to a fixture directory, a Microsoft365 connection whose `CredentialsRef` is `sandbox:<scenario>` (optionally `sandbox:<scenario>:<tag>`) reads its mail and calendar from `<scenario>.mail.json` and `<scenario>.calendar.json` in that directory instead of Microsoft Graph. Rows it writes are `Source = 'System'`, never `'Integration'`. MJAPI refuses to start if `ACTIVITY_SYNC_SANDBOX_DIR` is set while the live mailbox policy (`ACTIVITY_SYNC_MAILBOX_POLICY_*`) is also on. One change applies to every host, sandbox or not: a `CredentialsRef` that starts with `sandbox:` is no longer looked up as a credential, and a host without the sandbox refuses that connection with a message saying so. No host has to change anything; leave `ACTIVITY_SYNC_SANDBOX_DIR` unset in production.
+  - @mj-biz-apps/common-actions@5.67.0
+  - @mj-biz-apps/common-activity-sync@5.67.0
+  - @mj-biz-apps/common-core-entities-server@5.67.0
+  - @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+  - @mj-biz-apps/common-actions@5.66.0
+  - @mj-biz-apps/common-activity-sync@5.66.0
+  - @mj-biz-apps/common-core-entities-server@5.66.0
+
+## 5.65.0
+
+### Patch Changes
+
+- Updated dependencies [16a34b2]
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-activity-sync@5.65.0
+  - @mj-biz-apps/common-entities@5.65.0
+  - @mj-biz-apps/common-actions@5.65.0
+  - @mj-biz-apps/common-core-entities-server@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+  - @mj-biz-apps/common-actions@5.64.0
+  - @mj-biz-apps/common-activity-sync@5.64.0
+  - @mj-biz-apps/common-core-entities-server@5.64.0
+
+## 5.63.0
+
+### Minor Changes
+
+- 1c1c754: `Common.SyncActivities` takes two optional inputs, `DryRun` and `ConnectionIDs`. A dry run previews what each connection would file without writing an Activity or moving a watermark, and it includes Paused connections. That lets a new mailbox be built Paused, reviewed, and only then set Active. `ConnectionIDs` narrows a run to the named connections and reports each one that did not run. The hourly job passes neither input, so it behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+- Updated dependencies [1c1c754]
+  - @mj-biz-apps/common-entities@5.63.0
+  - @mj-biz-apps/common-activity-sync@5.63.0
+  - @mj-biz-apps/common-actions@5.63.0
+  - @mj-biz-apps/common-core-entities-server@5.63.0
+
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+  - @mj-biz-apps/common-actions@5.62.0
+  - @mj-biz-apps/common-activity-sync@5.62.0
+  - @mj-biz-apps/common-core-entities-server@5.62.0
+
+## 5.61.0
+
+### Minor Changes
+
+- cbf55ed: Consent per contact method, per purpose, optionally per requesting organization. A new `ConsentPurpose` lookup, ordered by `Sequence`, says what a consent is for, seeded with the generic Marketing and Transactional (apps add their own). `ContactMethodConsent` holds one current status (Not Specified, Opted In, Opted Out) per contact method, optional purpose and optional `RequestingOrganizationID`, so one email can say yes in general, no to newsletters, or yes to one organization and no to another. `ContactMethodConsentHistory` keeps one row per change: the status it set, when it took effect, its source (Web Form, Unsubscribe Link, Import, Staff or Other, default Staff), the specifics in `ConsentDetails`, and who recorded it. `ContactType` links to MJ's Communication Base Message Types so each type is known to be Email, Phone or SMS. `ContactMethodConsentEntity.Save` writes the history row with a direct status change, and `ContactPreferenceEngine` provides `CanContact`, `SetConsent` and `OptOutByValue`, each scoped by purpose and requesting organization, for Comms' send-time hook; an unknown purpose is refused. The contact method list shows a badge per consent with the history on hover and a General dropdown plus one per purpose on add and edit.
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+  - @mj-biz-apps/common-actions@5.61.0
+  - @mj-biz-apps/common-activity-sync@5.61.0
+  - @mj-biz-apps/common-core-entities-server@5.61.0
+
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+  - @mj-biz-apps/common-actions@5.60.0
+  - @mj-biz-apps/common-activity-sync@5.60.0
+  - @mj-biz-apps/common-core-entities-server@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+  - @mj-biz-apps/common-actions@5.59.0
+  - @mj-biz-apps/common-activity-sync@5.59.0
+  - @mj-biz-apps/common-core-entities-server@5.59.0
+
+## 5.58.0
+
+### Minor Changes
+
+- 77b78e7: Companies can now keep a register of approved sender addresses. A new `Company Sender Identities`
+  entity stores, per MJ Company, the mailboxes and domains the company may send email from, with at
+  most one default mailbox. `@mj-biz-apps/common-entities` exports `IsSenderAllowedForCompany`,
+  `DefaultSenderForCompany` and `SenderDomain`, pure functions that consuming apps call before they
+  write a `From:` header. A company with no rows is refused, never given a deployment-wide default.
+  Addresses are stored trimmed and lower-cased, and malformed addresses are refused on save in the
+  browser and on the server alike. The Company record in Explorer gains an "Email senders" panel to
+  add a mailbox or domain, set the default and remove a row. This release adds a migration.
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+  - @mj-biz-apps/common-actions@5.58.0
+  - @mj-biz-apps/common-activity-sync@5.58.0
+  - @mj-biz-apps/common-core-entities-server@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-actions@5.57.1
+- @mj-biz-apps/common-activity-sync@5.57.1
+- @mj-biz-apps/common-core-entities-server@5.57.1
+- @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Minor Changes
+
+- eacf9d3: Organizations have an Acronym (up to 20 characters), shown in the Organization Identity section of
+  the form. The organization pickers find an organization by its acronym as a starts-with match, and
+  show the acronym next to the website domain under the name ("NAR · nar.realtor"). The built-in
+  organization search matches it the same way.
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+  - @mj-biz-apps/common-actions@5.57.0
+  - @mj-biz-apps/common-activity-sync@5.57.0
+  - @mj-biz-apps/common-core-entities-server@5.57.0
+
+## 5.56.0
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+  - @mj-biz-apps/common-actions@5.56.0
+  - @mj-biz-apps/common-activity-sync@5.56.0
+  - @mj-biz-apps/common-core-entities-server@5.56.0
+
 ## 5.55.0
 
 ### Patch Changes
