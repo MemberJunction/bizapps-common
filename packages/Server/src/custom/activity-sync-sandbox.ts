@@ -31,6 +31,9 @@ import { LogStatus } from '@memberjunction/core';
 import {
     HostActivityTransportFactory,
     HostAllowsLiveMailboxFetch,
+    PROP_IN_REPLY_TO,
+    PROP_REFERENCES,
+    SameExtendedPropertyId,
     RecordedMessageTransport,
     RegisterActivityTransportFactory,
     type ActivityMessageTransport,
@@ -140,8 +143,15 @@ function splitRef(rest: string): [string, string | null] {
  * The fields that carry a Graph item's identity. A run tag suffixes each, so the engine's dedupe key
  * (SourceSystem + ExternalID, the same for every mailbox) never matches another connection's replay
  * of the same fixture. Real Graph ids are unique per mailbox, so this has no live counterpart.
+ *
+ * A Tagged connection keys on the RFC Message-ID and the iCalendar UID instead, and proves replies
+ * through the reply headers, so those are suffixed too, consistently: `<a@x>` becomes `<a@x.tag>`
+ * everywhere it appears, or a tagged replay would prove its replies against another run's messages.
  */
-const IDENTITY_FIELDS = ['id', 'seriesMasterId', 'conversationId'] as const;
+const IDENTITY_FIELDS = ['id', 'seriesMasterId', 'conversationId', 'iCalUId'] as const;
+const MESSAGE_ID_FIELDS = ['internetMessageId'] as const;
+/** In-Reply-To and References, as `singleValueExtendedProperties` ids. */
+const REPLY_HEADER_PROPS = [PROP_IN_REPLY_TO, PROP_REFERENCES];
 
 function tagPayload(payload: Record<string, unknown>, tag: string): Record<string, unknown> {
     const tagged = { ...payload };
@@ -149,7 +159,24 @@ function tagPayload(payload: Record<string, unknown>, tag: string): Record<strin
         const value = tagged[field];
         if (typeof value === 'string' && value.length > 0) tagged[field] = `${value}.${tag}`;
     }
+    for (const field of MESSAGE_ID_FIELDS) {
+        const value = tagged[field];
+        if (typeof value === 'string' && value.length > 0) tagged[field] = tagMessageIds(value, tag);
+    }
+    const props = tagged['singleValueExtendedProperties'];
+    if (Array.isArray(props)) {
+        tagged['singleValueExtendedProperties'] = props.map((p: { id?: unknown; value?: unknown }) =>
+            typeof p?.id === 'string' && REPLY_HEADER_PROPS.some((id) => SameExtendedPropertyId(p.id as string, id)) && typeof p.value === 'string'
+                ? { ...p, value: tagMessageIds(p.value, tag) }
+                : p,
+        );
+    }
     return tagged;
+}
+
+/** Every `<...>` Message-ID in `value` gets the tag inside its brackets; a bare value gets it appended. */
+function tagMessageIds(value: string, tag: string): string {
+    return /<[^<>\s]+>/.test(value) ? value.replace(/<([^<>\s]+)>/g, `<$1.${tag}>`) : `${value}.${tag}`;
 }
 
 function requireName(kind: 'scenario' | 'run tag', value: string): void {
