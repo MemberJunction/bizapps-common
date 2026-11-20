@@ -382,6 +382,7 @@ Entities ──► Actions ──► Server ──► MJAPI
 | [Getting Started (Contributors)](docs/getting-started.md) | Full local dev setup with prerequisites and troubleshooting |
 | [Architecture](docs/architecture.md) | System architecture, Open App pattern, data flow, and design decisions |
 | [Entity Model](docs/entity-model.md) | Complete schema reference, ER diagram, relationships, and access patterns |
+| [Company → Organization Mirroring](docs/company-organization-mirroring.md) | Canonical `Organization.LinkedCompanyID` bridge, server auto-mirroring, and `BizAppsCommon.SyncCompaniesToOrganizations` Remotable Operation |
 | [Angular Components](docs/angular-components.md) | Component API reference, usage examples, and styling guide |
 | [Development Guide](docs/development.md) | Build system, code generation, TypeScript conventions, and Git workflow |
 | [API & Server](docs/api-server.md) | GraphQL API, server bootstrap, actions system, and deployment |
