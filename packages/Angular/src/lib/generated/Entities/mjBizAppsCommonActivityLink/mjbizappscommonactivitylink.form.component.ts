@@ -15,7 +15,10 @@ export class mjBizAppsCommonActivityLinkFormComponent extends BaseFormComponent 
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true }
+            { sectionKey: 'activityLinkDetails', sectionName: 'Activity Link Details', isExpanded: true },
+            { sectionKey: 'resolvedRecord', sectionName: 'Resolved Record', isExpanded: true },
+            { sectionKey: 'unresolvedIdentity', sectionName: 'Unresolved Identity', isExpanded: true },
+            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
 }

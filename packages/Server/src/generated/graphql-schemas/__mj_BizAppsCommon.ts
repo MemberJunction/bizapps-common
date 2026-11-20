@@ -5483,6 +5483,10 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(20)
     Acronym?: string;
         
+    @Field({nullable: true, description: "Optional 1:1 foreign key to the MJ: Companies record mirrored by this Organization (enforced unique when non-null via UQ_Organization_LinkedCompanyID). Enables internal legal entities and external client/partner organizations to share Organization as the single canonical entity across BizApps."}) 
+    @MaxLength(36)
+    LinkedCompanyID?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     OrganizationType?: string;
@@ -5490,6 +5494,10 @@ export class mjBizAppsCommonOrganization_ {
     @Field({nullable: true}) 
     @MaxLength(255)
     Parent?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(50)
+    LinkedCompany?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -5607,6 +5615,9 @@ export class CreatemjBizAppsCommonOrganizationInput {
     @Field({ nullable: true })
     Acronym: string | null;
 
+    @Field({ nullable: true })
+    LinkedCompanyID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -5658,6 +5669,9 @@ export class UpdatemjBizAppsCommonOrganizationInput {
 
     @Field({ nullable: true })
     Acronym?: string | null;
+
+    @Field({ nullable: true })
+    LinkedCompanyID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];

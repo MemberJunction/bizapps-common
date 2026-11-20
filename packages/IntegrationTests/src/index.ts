@@ -16,6 +16,7 @@
  *   activity-sync        AS-*      Common.SyncActivities over GraphQL on a sandbox host (fixture mail + calendar)
  *   party-lookup         PL1–PL3   party lookup queries: prefix, email/website domain, literal wildcards
  *   sender-identities    SI1–SI3   company sender identities: normalisation, duplicates, single default
+ *   company-org-mirror   CM1–CM4   MJ: Companies -> Organization mirroring, LinkedCompanyID uniqueness, Sync RPC
  */
 import { LoadGeneratedEntities } from '@mj-biz-apps/common-entities';
 
@@ -36,6 +37,7 @@ export * from './checks/activity-sync-consent.checks.js';
 export * from './checks/activity-sync-standing.checks.js';
 export * from './checks/party-lookup.checks.js';
 export * from './checks/sender-identities.checks.js';
+export * from './checks/company-org-mirror.checks.js';
 
 export function LoadCommonIntegrationTests(): void {
     // side-effect import is the registration

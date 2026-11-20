@@ -10,11 +10,11 @@
     <!-- ========================================
          FIELD PANELS
          ======================================== -->
-    <!-- Details Section -->
+    <!-- Activity Link Details Section -->
     <mj-collapsible-panel
-        SectionKey="details"
-        SectionName="Details"
-        Icon="fa fa-align-left"
+        SectionKey="activityLinkDetails"
+        SectionName="Activity Link Details"
+        Icon="fa fa-tasks"
         [Form]="this"
         [FormContext]="formContext">
         <mj-form-field 
@@ -37,6 +37,24 @@
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
+            FieldName="Sequence"
+            Type="number"
+            [EditMode]="EditMode"
+            [FormContext]="formContext"
+        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Resolved Record Section -->
+    <mj-collapsible-panel
+        SectionKey="resolvedRecord"
+        SectionName="Resolved Record"
+        Icon="fa fa-database"
+        [Form]="this"
+        [FormContext]="formContext">
+        <mj-form-field 
+            [Record]="record"
+            [ShowLabel]="true"
             FieldName="EntityID"
             Type="textbox"
             [EditMode]="EditMode"
@@ -51,6 +69,16 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- Unresolved Identity Section -->
+    <mj-collapsible-panel
+        SectionKey="unresolvedIdentity"
+        SectionName="Unresolved Identity"
+        Icon="fa fa-user-clock"
+        [Form]="this"
+        [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"
@@ -67,14 +95,16 @@
             [EditMode]="EditMode"
             [FormContext]="formContext"
         ></mj-form-field>
-        <mj-form-field 
-            [Record]="record"
-            [ShowLabel]="true"
-            FieldName="Sequence"
-            Type="number"
-            [EditMode]="EditMode"
-            [FormContext]="formContext"
-        ></mj-form-field>
+
+    </mj-collapsible-panel>
+
+    <!-- System Metadata Section -->
+    <mj-collapsible-panel
+        SectionKey="systemMetadata"
+        SectionName="System Metadata"
+        Icon="fa fa-cog"
+        [Form]="this"
+        [FormContext]="formContext">
         <mj-form-field 
             [Record]="record"
             [ShowLabel]="true"

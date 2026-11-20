@@ -15,7 +15,9 @@ export class mjBizAppsCommonActivityFileFormComponent extends BaseFormComponent 
     override async ngOnInit() {
         await super.ngOnInit();
         this.initSections([
-            { sectionKey: 'details', sectionName: 'Details', isExpanded: true }
+            { sectionKey: 'fileAssociations', sectionName: 'File Associations', isExpanded: true },
+            { sectionKey: 'fileDetails', sectionName: 'File Details', isExpanded: true },
+            { sectionKey: 'systemMetadata', sectionName: 'System Metadata', isExpanded: false }
         ]);
     }
 }
