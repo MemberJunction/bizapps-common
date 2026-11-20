@@ -19,7 +19,7 @@ const BOX = 'rep@internal.test';
 const CONN1 = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 const CONN2 = '3f2504e0-4f89-41d3-9a0c-0305e82c3302';
 const NOW = new Date('2026-11-17T12:00:00Z');
-const policy: ConsentPolicy & { Tag: string } = { Mode: 'Tagged', Tag: TAG, SweptThrough: null, WithdrawWindowDays: 30 };
+const policy: ConsentPolicy & { Tag: string } = { Mode: 'Tagged', Tag: TAG, SweptThrough: null, WithdrawWindowDays: 30, SkipTag: null, Sources: [] };
 const query: ActivitySourceQuery = { Mailbox: BOX, Since: null, Limit: 50 };
 const daysAgo = (n: number): Date => new Date(NOW.getTime() - n * 86_400_000);
 
