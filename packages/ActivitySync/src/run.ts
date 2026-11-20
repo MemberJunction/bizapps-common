@@ -7,6 +7,7 @@
  *
  * @module @mj-biz-apps/common-activity-sync
  */
+import { UuidInList } from './sql.js';
 
 /** Mirrors `CK_ActivitySyncConnection_Status`. */
 export type ConnectionStatus = 'Active' | 'Paused' | 'Error' | 'Disabled';
@@ -41,6 +42,40 @@ export interface SyncRunOptions {
     TriggerType: SyncTriggerType;
     /** Hard cap on items fetched this pass. */
     Limit: number;
+    /**
+     * Narrow a fleet run to these connections. Absent or empty means every runnable connection.
+     *
+     * The dry-run counterpart of pointing a rule set at one mailbox: before go-live an operator
+     * previews each new connection on its own and reviews what it would have filed.
+     */
+    ConnectionIDs?: readonly string[];
+}
+
+/**
+ * The statuses a run may touch.
+ *
+ * `Error` retries: it is a record of the last run and says nothing about whether the next one will
+ * work, so refusing it latches a throttle into a permanent stop. `Disabled` is never run.
+ *
+ * `Paused` is a person deciding the mailbox must not be WRITTEN from, so a live run honours it. A
+ * dry run writes no Activity and moves no watermark, so it may preview a Paused connection. That is
+ * the go-live path: build the connection Paused, so the hourly job leaves it alone, dry-run it until
+ * the would-include list is right, then set it Active.
+ */
+export function RunnableStatuses(dryRun: boolean): ConnectionStatus[] {
+    return dryRun ? ['Active', 'Error', 'Paused'] : ['Active', 'Error'];
+}
+
+/** The fleet query's ExtraFilter. Throws `InvalidFilterInputError` on an id that is not a UUID. */
+export function RunnableConnectionFilter(options: Pick<SyncRunOptions, 'DryRun' | 'ConnectionIDs'>): string {
+    const statuses = RunnableStatuses(options.DryRun)
+        .map((s) => `'${s}'`)
+        .join(', ');
+    const byStatus = `Status IN (${statuses})`;
+    if (!options.ConnectionIDs?.length) {
+        return byStatus;
+    }
+    return `${byStatus} AND ID IN (${UuidInList(options.ConnectionIDs, 'ConnectionIDs')})`;
 }
 
 /**
@@ -55,14 +90,9 @@ export function IsConnectionActive(
     startAt: Date | null,
     endAt: Date | null,
     now: Date,
+    dryRun = false,
 ): boolean {
-    /**
-     * `Error` retries. `Paused` and `Disabled` are a person deciding the mailbox
-     * is off and must be honoured. `Error` is a record of the last run and says
-     * nothing about whether the next one will work — refusing it latches a
-     * throttle into a permanent stop.
-     */
-    if (status !== 'Active' && status !== 'Error') {
+    if (!RunnableStatuses(dryRun).includes(status)) {
         return false;
     }
     if (startAt !== null && now.getTime() < startAt.getTime()) {

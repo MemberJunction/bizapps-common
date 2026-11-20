@@ -244,3 +244,10 @@ test('main() still runs when the script is invoked through a symlink', () => {
         rmSync(fixture, { recursive: true, force: true });
     }
 });
+
+test('on a release line, the range stops at the next MJ minor', () => {
+    const pkg = { version: '5.68.0', peerDependencies: { '@memberjunction/core': '>=6.2.1 <6.3.0' } };
+    assert.equal(deriveAppFields(pkg, '6.2').mjVersionRange, '>=6.2.1 <6.3.0');
+    assert.equal(deriveAppFields(pkg).mjVersionRange, '>=6.2.1 <7.0.0');
+    assert.throws(() => deriveAppFields(pkg, '6.3'), /line "6.3"/);
+});

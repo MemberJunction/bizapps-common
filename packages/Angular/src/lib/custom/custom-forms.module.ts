@@ -20,6 +20,8 @@ import { PersonContactMethodsPanel } from './panels/person-contact-methods.panel
 import { PersonRelationshipsPanel } from './panels/person-relationships.panel';
 import { PersonJobFunctionsPanel } from './panels/person-job-functions.panel';
 import { PersonJobFunctionsComponent } from '../components/person-job-functions/person-job-functions.component';
+import { CompanySenderIdentitiesPanel } from './panels/company-sender-identities.panel';
+import { CompanySenderIdentitiesComponent } from '../components/company-sender-identities/company-sender-identities.component';
 import { OrganizationAddressesPanel } from './panels/organization-addresses.panel';
 import { OrganizationContactMethodsPanel } from './panels/organization-contact-methods.panel';
 import { OrganizationRelationshipsPanel } from './panels/organization-relationships.panel';
@@ -28,6 +30,7 @@ import { ActivityTypeHierarchyPanel } from './panels/activity-type-hierarchy.pan
 import { ActivityHierarchyPanel } from './panels/activity-hierarchy.panel';
 import { ActivityLinksPanel } from './panels/activity-links.panel';
 import { ActivityFilesPanel } from './panels/activity-files.panel';
+import { OrganizationStaffPanel } from './panels/organization-staff.panel';
 import { ActivityContentPanel } from './panels/activity-content.panel';
 
 const PANELS = [
@@ -38,6 +41,7 @@ const PANELS = [
     PersonContactMethodsPanel,
     PersonRelationshipsPanel,
     PersonJobFunctionsPanel,
+    CompanySenderIdentitiesPanel,
     OrganizationAddressesPanel,
     OrganizationContactMethodsPanel,
     OrganizationRelationshipsPanel,
@@ -45,7 +49,7 @@ const PANELS = [
 ];
 
 /**
- * Registers People/Organization/Activity BaseFormPanel contributions.
+ * Registers People/Organization/Activity/Company BaseFormPanel contributions.
  */
 @NgModule({
     declarations: [...PANELS],
@@ -59,6 +63,7 @@ const PANELS = [
         CommonRelationshipGraphComponent,
         PersonIdentityComponent,
         PersonJobFunctionsComponent,
+        CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,
@@ -66,11 +71,13 @@ const PANELS = [
         ActivityLinksPanel,
         ActivityFilesPanel,
         ActivityContentPanel,
+        OrganizationStaffPanel,
     ],
     exports: [
         ...PANELS,
         PersonIdentityComponent,
         PersonJobFunctionsComponent,
+        CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
         ActivityTypeHierarchyPanel,
@@ -78,6 +85,7 @@ const PANELS = [
         ActivityLinksPanel,
         ActivityFilesPanel,
         ActivityContentPanel,
+        OrganizationStaffPanel,
     ],
 })
 export class CustomFormsModule {}

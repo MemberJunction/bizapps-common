@@ -1,5 +1,154 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.67.0
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+
+## 5.65.0
+
+### Minor Changes
+
+- 16a34b2: Fix filed common bugs: record IDs compare case-insensitively (#314); calendar sync pages its whole window and Graph mail sync drains a backlog larger than one page (#312, #308); the Job Function and Seniority pipeline scopes to unclassified people (#324); the Organization and Person heroes render every field of the sections they claim (#343); saving with the selling-company question open says the change was not applied (#344); the Activity header shows the parent link from ParentActivityID (#311); undefined `--mj-*` token names are replaced (#299).
+
+### Patch Changes
+
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-entities@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
+## 5.63.0
+
+### Minor Changes
+
+- 1c1c754: `Common.SyncActivities` takes two optional inputs, `DryRun` and `ConnectionIDs`. A dry run previews what each connection would file without writing an Activity or moving a watermark, and it includes Paused connections. That lets a new mailbox be built Paused, reviewed, and only then set Active. `ConnectionIDs` narrows a run to the named connections and reports each one that did not run. The hourly job passes neither input, so it behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
+## 5.62.0
+
+### Patch Changes
+
+- Updated dependencies [432d122]
+  - @mj-biz-apps/common-entities@5.62.0
+
+## 5.61.0
+
+### Patch Changes
+
+- Updated dependencies [7837132]
+- Updated dependencies [cbf55ed]
+  - @mj-biz-apps/common-entities@5.61.0
+
+## 5.60.0
+
+### Patch Changes
+
+- Updated dependencies [9870cd5]
+- Updated dependencies [62413dc]
+  - @mj-biz-apps/common-entities@5.60.0
+
+## 5.59.0
+
+### Patch Changes
+
+- Updated dependencies [37aa16a]
+- Updated dependencies [aa06aeb]
+  - @mj-biz-apps/common-entities@5.59.0
+
+## 5.58.0
+
+### Patch Changes
+
+- Updated dependencies [77b78e7]
+- Updated dependencies [5336ee1]
+  - @mj-biz-apps/common-entities@5.58.0
+
+## 5.57.1
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.57.1
+
+## 5.57.0
+
+### Patch Changes
+
+- Updated dependencies [692f407]
+- Updated dependencies [eacf9d3]
+  - @mj-biz-apps/common-entities@5.57.0
+
+## 5.56.0
+
+### Patch Changes
+
+- Updated dependencies [8b8e5cd]
+- Updated dependencies [d790620]
+- Updated dependencies [01b4cc4]
+  - @mj-biz-apps/common-entities@5.56.0
+
+## 5.55.0
+
+### Patch Changes
+
+- Updated dependencies [aa193b3]
+- Updated dependencies [575a10c]
+  - @mj-biz-apps/common-entities@5.55.0
+
+## 5.54.0
+
+### Patch Changes
+
+- Updated dependencies [70960e4]
+- Updated dependencies [a5cd21a]
+  - @mj-biz-apps/common-entities@5.54.0
+
+## 5.53.1
+
+### Patch Changes
+
+- e731cac: The packages' dependencies on each other are caret ranges (`^5.53.0`) instead of exact versions. A host that pins or overrides one common package at a later compatible version no longer forces an exact-match copy of its sibling: `common-server` 5.53.0 required `common-activity-sync` at exactly 5.53.0, so a host overriding it at any other version got a second copy or an unresolvable lockfile. Changesets keeps the caret and moves its floor on each release.
+  - @mj-biz-apps/common-entities@5.53.1
+
+## 5.53.0
+
+### Patch Changes
+
+- Updated dependencies [1045bc7]
+- Updated dependencies [c842ff1]
+  - @mj-biz-apps/common-entities@5.53.0
+
+## 5.52.0
+
+### Patch Changes
+
+- 73019c2: MemberJunction packages are peer dependencies with caret ranges (`^6.1.5`, no `~`, nothing in
+  `dependencies`), so a 6.2 host keeps one copy of MemberJunction instead of installing a second 6.1
+  tree. devDependencies and the root `pnpm.overrides` use the same `^6.1.5` floor. Adds
+  `check-dependency-model` to CI.
+- Updated dependencies [73019c2]
+- Updated dependencies [88eb6ae]
+  - @mj-biz-apps/common-entities@5.52.0
+
 ## 5.51.0
 
 ### Patch Changes

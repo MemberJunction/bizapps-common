@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
@@ -10,6 +11,7 @@ import {
     mjBizAppsCommonAddressTypeEntity
 } from '@mj-biz-apps/common-entities';
 import { otherAddressReferences } from './address-references';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Represents a single address row in the editor, pairing the physical
@@ -371,7 +373,9 @@ export class AddressEditorComponent {
             const [linksResult, typesResult] = await rv.RunViews([
                 {
                     EntityName: 'MJ_BizApps_Common: Address Links',
-                    ExtraFilter: `EntityID='${this.resolvedEntityID}' AND RecordID='${this._recordID}'`,
+                    // RecordID is a caller-supplied @Input and may be a string primary key for any
+                    // entity, so it is escaped before reaching the filter rather than interpolated raw.
+                    ExtraFilter: `EntityID='${EscapeFilterValue(this.resolvedEntityID)}' AND RecordID='${EscapeFilterValue(this._recordID)}'`,
                     ResultType: 'entity_object'
                 },
                 {
@@ -397,15 +401,15 @@ export class AddressEditorComponent {
                 const addressMap = new Map<string, mjBizAppsCommonAddressEntity>();
                 if (addressResult.Success) {
                     for (const addr of addressResult.Results) {
-                        addressMap.set(addr.ID, addr);
+                        addressMap.set(NormalizeUUID(addr.ID), addr);
                     }
                 }
 
                 this.AddressItems = links
-                    .filter(link => addressMap.has(link.AddressID))
+                    .filter(link => addressMap.has(NormalizeUUID(link.AddressID)))
                     .map(link => ({
                         Link: link,
-                        Address: addressMap.get(link.AddressID)!
+                        Address: addressMap.get(NormalizeUUID(link.AddressID))!
                     }));
 
                 // Sort: primary first, then by rank/type
@@ -440,7 +444,7 @@ export class AddressEditorComponent {
      * @returns The CSS class string for the icon (e.g., `'fa-solid fa-home'`)
      */
     getAddressTypeIcon(typeID: string): string {
-        const addrType = this.AddressTypes.find(t => t.ID === typeID);
+        const addrType = this.AddressTypes.find(t => UUIDsEqual(t.ID, typeID));
         return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
     }
 
@@ -530,7 +534,8 @@ export class AddressEditorComponent {
     onEdit(index: number): void {
         const item = this.AddressItems[index];
         this.EditForm = {
-            TypeID: item.Link.AddressTypeID,
+            // The select matches options with ===, so use the option's own ID spelling.
+            TypeID: this.AddressTypes.find(t => UUIDsEqual(t.ID, item.Link.AddressTypeID))?.ID ?? item.Link.AddressTypeID,
             IsPrimary: item.Link.IsPrimary,
             Line1: item.Address.Line1 || '',
             Line2: item.Address.Line2 || '',
@@ -659,7 +664,7 @@ export class AddressEditorComponent {
             : null;
 
         for (const item of this.AddressItems) {
-            if (item.Link.IsPrimary && item.Link.ID !== currentEditingLinkID) {
+            if (item.Link.IsPrimary && !UUIDsEqual(item.Link.ID, currentEditingLinkID)) {
                 item.Link.IsPrimary = false;
                 await item.Link.Save();
             }

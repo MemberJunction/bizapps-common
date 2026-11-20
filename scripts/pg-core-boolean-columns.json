@@ -286,6 +286,7 @@
     "CascadeDeletes",
     "CustomResolverAPI",
     "DetectExternalChanges",
+    "EnableFieldLevelSecurity",
     "FullTextCatalogGenerated",
     "FullTextIndexGenerated",
     "FullTextSearchEnabled",

@@ -1,4 +1,5 @@
 export const COMMON_ENTITIES = {
+    Company: 'MJ: Companies',
     Person: 'MJ_BizApps_Common: People',
     Organization: 'MJ_BizApps_Common: Organizations',
     OrganizationType: 'MJ_BizApps_Common: Organization Types',
@@ -15,6 +16,13 @@ export const COMMON_ENTITIES = {
     ActivityFile: 'MJ_BizApps_Common: Activity Files',
     ActivitySyncConnection: 'MJ_BizApps_Common: Activity Sync Connections',
     ActivitySyncRule: 'MJ_BizApps_Common: Activity Sync Rules',
+    ActivitySyncRuleSet: 'MJ_BizApps_Common: Activity Sync Rule Sets',
+    ActivitySyncConnectionRuleSet: 'MJ_BizApps_Common: Activity Sync Connection Rule Sets',
+    ActivitySyncExclusion: 'MJ_BizApps_Common: Activity Sync Exclusions',
+    ActivitySyncProviderType: 'MJ_BizApps_Common: Activity Sync Provider Types',
+    ActivitySyncRun: 'MJ_BizApps_Common: Activity Sync Runs',
+    ActivitySyncRunDetail: 'MJ_BizApps_Common: Activity Sync Run Details',
+    CompanySenderIdentity: 'MJ_BizApps_Common: Company Sender Identities',
 } as const;
 
 /** Email / name suffix that identifies COM-WORLD rows for cleanup. */

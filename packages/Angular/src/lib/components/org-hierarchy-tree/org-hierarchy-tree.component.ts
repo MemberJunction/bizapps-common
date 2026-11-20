@@ -1,10 +1,11 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CompositeKey, RunView } from '@memberjunction/core';
-import { FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
+import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities';
+import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
  * Represents a single node in the organization hierarchy tree outline.
@@ -30,7 +31,7 @@ export interface OrgTreeNode {
  */
 @Component({
     standalone: true,
-    imports: [CommonModule, HierarchyTreeComponent],
+    imports: [CommonModule, BaseFormsModule, HierarchyTreeComponent],
     selector: 'bizapps-org-hierarchy-tree',
     templateUrl: './org-hierarchy-tree.component.html',
     styleUrls: ['./org-hierarchy-tree.component.css']
@@ -105,7 +106,7 @@ export class OrgHierarchyTreeComponent implements OnInit {
 
             const currentResult = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${this._organizationID}'`,
+                ExtraFilter: `ID='${EscapeFilterValue(this._organizationID)}'`,
                 ResultType: 'entity_object'
             });
 
@@ -138,14 +139,14 @@ export class OrgHierarchyTreeComponent implements OnInit {
         if (parentID) {
             queries.push({
                 EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${parentID}'`,
+                ExtraFilter: `ID='${EscapeFilterValue(parentID)}'`,
                 ResultType: 'entity_object'
             });
         }
 
         queries.push({
             EntityName: 'MJ_BizApps_Common: Organizations',
-            ExtraFilter: `ParentID='${this._organizationID}'`,
+            ExtraFilter: `ParentID='${EscapeFilterValue(this._organizationID)}'`,
             OrderBy: 'Name ASC',
             ResultType: 'entity_object'
         });

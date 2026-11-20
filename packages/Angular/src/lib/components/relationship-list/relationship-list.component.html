@@ -58,6 +58,12 @@
                                         <span class="rel-timeline-label">{{ item.DirectionLabel }}</span>
                                         @if (item.TargetEntityName && item.TargetID) {
                                             <a class="rel-timeline-target" href="javascript:void(0)"
+                                               mjRecordLink
+                                               [EntityName]="item.TargetEntityName"
+                                               [RecordID]="item.TargetID"
+                                               [DisplayName]="item.TargetName"
+                                               [HandleClick]="false"
+                                               (Navigate)="Navigate.emit($event)"
                                                (click)="onNavigateToTarget(item, $event)">{{ item.TargetName }}</a>
                                         } @else {
                                             <span class="rel-timeline-target">{{ item.TargetName }}</span>
@@ -157,32 +163,32 @@
                             <div class="form-field form-field--target">
                                 <label>Target Person <span class="required-star">*</span></label>
                                 <div class="target-field-wrapper">
-                                    <mj-form-field
+                                    <bizapps-party-field
                                         [Record]="DraftRelationship"
                                         FieldName="ToPersonID"
-                                        Type="textbox"
-                                        LinkType="Record"
+                                        Kind="Person"
                                         [EditMode]="true"
-                                        [ShowLabel]="false">
-                                    </mj-form-field>
+                                        [ShowLabel]="false"
+                                        (Navigate)="Navigate.emit($event)">
+                                    </bizapps-party-field>
                                 </div>
-                                <span class="field-hint">Search person by name, job title, or email</span>
+                                <span class="field-hint">Type 2+ characters: last name, full name or email</span>
                             </div>
                         }
                         @if (IsOrgTarget) {
                             <div class="form-field form-field--target">
                                 <label>Target Organization <span class="required-star">*</span></label>
                                 <div class="target-field-wrapper">
-                                    <mj-form-field
+                                    <bizapps-party-field
                                         [Record]="DraftRelationship"
                                         FieldName="ToOrganizationID"
-                                        Type="textbox"
-                                        LinkType="Record"
+                                        Kind="Organization"
                                         [EditMode]="true"
-                                        [ShowLabel]="false">
-                                    </mj-form-field>
+                                        [ShowLabel]="false"
+                                        (Navigate)="Navigate.emit($event)">
+                                    </bizapps-party-field>
                                 </div>
-                                <span class="field-hint">Search organization or company name</span>
+                                <span class="field-hint">Type 2+ characters: name or website</span>
                             </div>
                         }
                     </div>

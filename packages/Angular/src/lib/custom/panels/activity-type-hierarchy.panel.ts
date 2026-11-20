@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RegisterClassEx } from '@memberjunction/global';
+import { RegisterClassEx, UUIDsEqual } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
 import { UserInfoEngine } from '@memberjunction/core-entities';
@@ -19,7 +19,10 @@ import { mjBizAppsCommonActivityTypeEntity } from '@mj-biz-apps/common-entities'
         slot: 'after-related',
         sortKey: 40,
         relatedEntity: 'MJ_BizApps_Common: Activity Types',
-        relatedJoinField: 'ParentID'
+        relatedJoinField: 'ParentID',
+        // The tree shows the whole lineage (ancestors + siblings), not just children,
+        // so a child-row count would mislead: no badge, never hidden.
+        count: false,
     }
 })
 @Component({
@@ -81,7 +84,7 @@ export class ActivityTypeHierarchyPanel extends BaseFormPanel<mjBizAppsCommonAct
 
     public get treeConfig(): HierarchyTreeConfig {
         const recId = this.Record?.ID || null;
-        if (!this._treeConfig || this._cachedRecordId !== recId) {
+        if (!this._treeConfig || !UUIDsEqual(this._cachedRecordId, recId)) {
             this._cachedRecordId = recId;
             this._treeConfig = {
                 EntityName: 'MJ_BizApps_Common: Activity Types',

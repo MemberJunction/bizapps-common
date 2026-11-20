@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { join, dirname, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listMigrationFiles, prepareMigrationSql, SQLCMD_CANDIDATES, annotationFile } from '../parse-migrations.mjs';
-import { SQLCMD_CANDIDATES as DRIFT_SQLCMD_CANDIDATES } from '../check-entityfield-drift.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -41,29 +40,9 @@ test('a leading UTF-8 BOM is stripped before the SQL is wrapped for sqlcmd', () 
     assert.match(wrapped, /^SET PARSEONLY ON;\nGO\nSELECT 1 AS \[Test\];\n\nGO\n$/);
 });
 
-// gh-5, hardened in review round 2. A hardcoded `SQLCMD_CANDIDATES.includes('/opt/homebrew/bin/
-// sqlcmd')` check only proves this file has that one entry -- it can't catch the two lists
-// drifting apart again in the future (e.g. a THIRD candidate added to one file and not the
-// other). This compares the two exported arrays directly, so any future divergence -- in either
-// direction -- fails here rather than silently reappearing.
-//
-// Fails today (before check-entityfield-drift.mjs exports its own list) with an import error;
-// once both files export their candidate lists, this documents the two as intentionally identical
-// rather than merely "the drift file's entries are a subset."
-test("the sqlcmd candidate list is identical to check-entityfield-drift.mjs's -- not just a superset check", () => {
-    assert.deepEqual(
-        SQLCMD_CANDIDATES,
-        DRIFT_SQLCMD_CANDIDATES,
-        'parse-migrations.mjs and check-entityfield-drift.mjs have the identical stated purpose ' +
-        '(locate sqlcmd) and must agree on every candidate location, not just share one entry',
-    );
-});
+// The sqlcmd-list parity test against check-entityfield-drift.mjs lives in bizapps-common,
+// the only repo that has that script. This shared copy keeps every other test.
 
-// gh-6. Fails today: annotationFile hardcodes a 'migrations/' prefix regardless of the --dir the
-// caller actually passed, so a customized --dir produces a GitHub ::error:: annotation whose
-// `file=` path doesn't exist (CI always uses the default --dir, so this never fires in the shipped
-// workflows today -- but the annotation is wrong for anyone who runs a custom --dir, e.g. locally
-// against a fixture directory).
 test('the annotation file path uses the actual --dir, not a hardcoded migrations/ prefix', () => {
     assert.equal(annotationFile('./migrations', 'V202609281200__test.sql'), 'migrations/V202609281200__test.sql');
 });

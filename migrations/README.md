@@ -25,7 +25,8 @@ the release:  mj sync push against a clean DB  →  ONE consolidated Metadata_Sy
 ```
 
 **A feature PR carries no `Metadata_Sync` migration.** It carries the JSON: fields, `@lookup` /
-`@file` / `@parent` references, a `primaryKey` UUID from `uuidgen`, and no `sync` block. The release
+`@file` / `@parent` references, a `primaryKey` on every record (a `uuidgen` UUID for a new row, an
+`@lookup` for a row the migrations or CodeGen already created), and no `sync` block. The release
 push writes the `sync` block back. The build engineer takes everything merged on `next` and generates
 one consolidated seed for the release. This is MJ's model (`MJ/metadata/CLAUDE.md` §1b and §10). The
 reason for it is drift: per-PR sync migrations duplicate the release step, produce many small files
@@ -45,16 +46,19 @@ and runs anywhere.
   changed after the seed's last commit. This is what catches a seed generated before a later metadata
   PR merged. It matters most for the records keyed by `@lookup:` instead of a UUID (73 of the 251
   here), which coverage has no id to check.
+  A commit after the seed that only rewrites `sync` blocks (`lastModified`, `checksum`) also counts as
+  a change and fails this check, because it compares whole files. Commit the push's `sync`
+  write-back in the same commit as the seed.
 
 These see an **edited** record only by order: that a record moved after the last release and after
 the seed. None of them reads the seed's SQL to confirm it carries the edit, so a seed committed after
 an edit but generated without it still passes (`check-release-seed-cadence.spec.mjs` pins that
 limitation). Step 5 below, replaying the chain on a clean database, is what proves content.
 
-Both run in `release-prep.mjs` (so `pnpm run release:plan` shows them and **Prepare a release**
-refuses on red) and again in `publish.yml` before anything is published or tagged. Neither runs on
-feature PRs, because no feature PR can answer a question about a seed generated after it merges.
-The release runbook is [`docs/release.md`](../docs/release.md).
+Both run on the Version Packages PR (`repo: release seed` in `.github/workflows/repo-checks.yml`), so a
+missing or per-PR seed fails the release before the merge; run them locally with
+`pnpm run check:release-seed` and `pnpm run check:seed-cadence`. Neither runs on feature PRs, because no
+feature PR can answer a question about a seed generated after it merges.
 
 **Add a NEW seed migration; never edit a shipped one.** Migrations are append-only history. A seed in
 a release tag has been applied on hosts, and rewriting it changes what a database that already ran it
@@ -81,7 +85,7 @@ As of `v5.46.3` (2026-09-28), that loop shows every seed here is shipped history
 | `V202609020500__v5.38.x__Metadata_Sync.sql` | **yes**, `v5.38.0` through `v5.46.3` | append-only history. The last seed generated. |
 
 There is no unreleased seed, and `metadata/` has moved since `v5.46.3`, so both gates are red today
-and the next release owes one. `pnpm run release:plan` lists the uncovered ids and the edited files.
+and the next release owes one. `pnpm run check:release-seed` and `pnpm run check:seed-cadence` list the uncovered ids and the edited files.
 
 **The `__v<ver>__` in a filename is descriptive, never a claim about which release ships the file.**
 Flyway orders on the `V<timestamp>` prefix, and nothing reads the label. The file ships in whatever
@@ -99,7 +103,7 @@ release version from a migration filename.
 the shipped chain and ship what comes out as one new delta file. The push logs only what changed:
 `spCreate*` for records added since the last release, and `spUpdate*` for records edited.
 
-Start by asking what the seed owes: `pnpm run release:plan`, or the two checks directly. An empty
+Start by asking what the seed owes: run the two checks directly. An empty
 coverage list does not mean there is nothing to generate. A record whose id already ships but whose
 *body* changed (a `@file:` template, a reworded description) passes coverage silently. That is what
 `check:seed-cadence` catches.
@@ -169,7 +173,7 @@ node scripts/pg-finalize.mjs
 ```
 
 Ship it as an ordinary PR into `next` with a `minor` changeset (`changes.yml` requires one for any
-migration). Then dispatch **Prepare a release** ([`docs/release.md`](../docs/release.md)).
+migration). It then ships in the next **Version Packages** PR that `version.yml` opens into `main`.
 
 **"From an empty database", "from the shipped chain" and "at the last released metadata level" are
 three requirements, not one.** Provenance is what makes the delta replayable; the released metadata
@@ -203,3 +207,81 @@ itself (`check:seed-cadence`), both run at the release rather than on every PR. 
 bizapps-caliber all used to document their release seed step with no automated detection at all, and
 common's 5.37.0 is what that costs. Here the release step is checked automatically, before the
 release PR is even opened and again before anything is published or tagged.
+
+## People columns ship their field permissions
+
+People has field-level security on (`V202611120618__v5.66.x__People_Field_Level_Security.sql`,
+#216). On such an entity, a field with no `MJ: Entity Field Permissions` row is denied to every
+user, the system user included. MJ writes those rows only when an Entity or EntityPermission is
+saved through its entity layer, or in CodeGen. Hosts upgrade by migration and run neither.
+
+**Every migration that adds a People column must append this block after its CodeGen output**, so
+the new field's EntityField row exists when it runs. It applies MJ's snapshot rule
+(`fieldPermissionDelta.ts` in MJCoreEntitiesServer) to the host's own People permissions and skips
+any `(field, role)` row that already exists, so the fields that already have rows are untouched.
+Copy it unchanged:
+
+```sql
+-- ---- People field permissions: MJ snapshot rule on this host's permissions ----
+-- 7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F is MJ_BizApps_Common: People. The ID is a literal,
+-- not a variable, and RoleAccess's columns are not named after boolean columns, so
+-- mj migrate convert turns this block into PostgreSQL without hand edits.
+;WITH RoleVerbs AS (
+    SELECT ep.RoleID,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanRead   = 1 THEN 1 ELSE 0 END) AS AllowRead,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanUpdate = 1 THEN 1 ELSE 0 END) AS AllowUpdate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') <> N'Deny' AND ep.CanCreate = 1 THEN 1 ELSE 0 END) AS AllowCreate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanRead   = 1 THEN 1 ELSE 0 END) AS DenyRead,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanUpdate = 1 THEN 1 ELSE 0 END) AS DenyUpdate,
+           MAX(CASE WHEN ISNULL(LTRIM(RTRIM(ep.[Type])), N'Allow') =  N'Deny' AND ep.CanCreate = 1 THEN 1 ELSE 0 END) AS DenyCreate
+    FROM [${mjSchema}].[EntityPermission] ep
+    WHERE ep.EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
+    GROUP BY ep.RoleID
+),
+RoleAccess AS (
+    SELECT RoleID,
+           CASE WHEN AllowUpdate = 1 AND DenyUpdate = 0 THEN 1 ELSE 0 END AS RoleCanUpdate,
+           CASE WHEN AllowCreate = 1 AND DenyCreate = 0 THEN 1 ELSE 0 END AS RoleCanCreate
+    FROM RoleVerbs
+    WHERE AllowRead = 1 AND DenyRead = 0
+)
+INSERT INTO [${mjSchema}].[EntityFieldPermission] (EntityFieldID, RoleID, ReadAccess, UpdateAccess, CreateAccess)
+SELECT ef.ID,
+       ra.RoleID,
+       N'Allow',
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.RoleCanUpdate = 1 THEN N'Allow' ELSE N'No Access' END,
+       CASE WHEN ef.AllowUpdateAPI = 1 AND ra.RoleCanCreate = 1 THEN N'Allow' ELSE N'No Access' END
+FROM [${mjSchema}].[EntityField] ef
+CROSS JOIN RoleAccess ra
+WHERE ef.EntityID = '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F'
+  AND ef.IsPrimaryKey = 0
+  AND ef.IsSoftPrimaryKey = 0
+  AND LEFT(ef.Name, 5) <> N'__mj_'
+  AND NOT EXISTS (
+      SELECT 1 FROM [${mjSchema}].[EntityFieldPermission] x
+      WHERE x.EntityFieldID = ef.ID AND x.RoleID = ra.RoleID
+  );
+-- ---- end block ----
+```
+
+What it writes, per role that can read People after Allow minus Deny: `ReadAccess = 'Allow'` on
+every field that is not a primary key, soft primary key or `__mj_` column; `UpdateAccess` and
+`CreateAccess = 'Allow'` only when the field has `AllowUpdateAPI = 1` and the role has that verb,
+otherwise `'No Access'`. That is exactly what MJ's reconcile writes, so access does not change until
+an administrator tightens a field.
+
+**PostgreSQL:** there is no second copy of this block. The migration's `migrations-pg/` twin comes
+from the converter like any other (`pnpm run mj:migrate:convert --file <migration>.sql`, then
+`node scripts/pg-finalize.mjs`; [`docs/postgresql.md`](../docs/postgresql.md)), and the block is
+written so that output runs unedited: the People ID is a literal, not a variable, and no
+`RoleAccess` column shares a name with a boolean column.
+
+Without the block the new column is invisible to every user on hosts, and dev databases hide the
+gap: `mj sync push` and CodeGen reconcile there, so the column works locally.
+
+**Recovery on a host:** saving any People Entity Permission through the UI makes MJ reconcile
+People for all roles, writing whatever rows are missing.
+
+**Release seeds:** `metadata/` and every host already have the flag on, so the release push sees no
+change on People and captures no build-database rows. If a seed ever shows `EntityFieldPermission`
+creates for People, the generation database is wrong; do not ship them.

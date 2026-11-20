@@ -1,0 +1,97 @@
+<div class="csi-container">
+    @if (Error) {
+        <div class="csi-alert csi-alert-error" role="alert">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>{{ Error }}</span>
+        </div>
+    }
+    @if (Notice) {
+        <div class="csi-alert csi-alert-info" role="status">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ Notice }}</span>
+        </div>
+    }
+
+    @if (Loading) {
+        <div class="csi-loading">
+            <mj-loading text="Loading email senders..."></mj-loading>
+        </div>
+    } @else {
+        @if (Rows.length === 0) {
+            <div class="csi-empty">No email senders yet.</div>
+        } @else {
+            <ul class="csi-list">
+                @for (row of Rows; track row.ID) {
+                    <li class="csi-row">
+                        <i class="csi-kind-icon fa-solid"
+                           [class.fa-envelope]="row.Kind === 'Mailbox'"
+                           [class.fa-globe]="row.Kind === 'Domain'"
+                           [title]="row.Kind"></i>
+                        <div class="csi-text">
+                            <span class="csi-address">{{ row.Address }}</span>
+                            @if (row.DisplayName) {
+                                <span class="csi-display-name">{{ row.DisplayName }}</span>
+                            }
+                        </div>
+                        @if (row.IsDefault) {
+                            <span class="csi-default-badge">Default</span>
+                        }
+                        @if (EditMode) {
+                            <div class="csi-row-actions">
+                                @if (canSetDefault(row)) {
+                                    <button mjButton size="sm" variant="flat" [disabled]="Saving" (click)="setDefault(row)">
+                                        <i class="fa-solid fa-star"></i> Set default
+                                    </button>
+                                }
+                                <button mjButton size="sm" variant="flat" [disabled]="Saving" (click)="removeRow(row)">
+                                    <i class="fa-solid fa-trash"></i> Remove
+                                </button>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (EditMode) {
+            @if (ShowAddForm) {
+                <div class="csi-add-card">
+                    <div class="csi-kind-toggle" role="group" aria-label="Sender kind">
+                        <button mjButton size="sm" [variant]="NewKind === 'Mailbox' ? 'primary' : 'secondary'"
+                                [disabled]="Saving" (click)="NewKind = 'Mailbox'">
+                            <i class="fa-solid fa-envelope"></i> Mailbox
+                        </button>
+                        <button mjButton size="sm" [variant]="NewKind === 'Domain' ? 'primary' : 'secondary'"
+                                [disabled]="Saving" (click)="NewKind = 'Domain'">
+                            <i class="fa-solid fa-globe"></i> Domain
+                        </button>
+                    </div>
+                    <input class="csi-input" type="text" [(ngModel)]="NewAddress" [disabled]="Saving"
+                           [placeholder]="NewKind === 'Mailbox' ? 'name@example.com' : 'example.com'"
+                           aria-label="Address">
+                    @if (NewKind === 'Mailbox') {
+                        <input class="csi-input" type="text" [(ngModel)]="NewDisplayName" [disabled]="Saving"
+                               placeholder="Display name (optional)" aria-label="Display name">
+                    }
+                    <div class="csi-add-actions">
+                        <button mjButton size="sm" variant="primary" [disabled]="Saving || !NewAddress.trim()" (click)="onAdd()">
+                            <i class="fa-solid fa-check"></i> Add
+                        </button>
+                        <button mjButton size="sm" variant="secondary" [disabled]="Saving" (click)="cancelAdd()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            } @else {
+                <div class="csi-add-buttons">
+                    <button mjButton size="sm" variant="secondary" [disabled]="Saving" (click)="openAddForm('Mailbox')">
+                        <i class="fa-solid fa-plus"></i> Add mailbox
+                    </button>
+                    <button mjButton size="sm" variant="secondary" [disabled]="Saving" (click)="openAddForm('Domain')">
+                        <i class="fa-solid fa-plus"></i> Add domain
+                    </button>
+                </div>
+            }
+        }
+    }
+</div>
