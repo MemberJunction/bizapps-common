@@ -29,6 +29,7 @@
  */
 import { Assert, AssertEqual, IntegrationCheckRegistry, type NamedCheck } from '@memberjunction/testing-integration/registry';
 import type { IntegrationCheckContext } from '@memberjunction/testing-integration/registry';
+import { UUIDMap, UUIDSet } from '@memberjunction/global';
 
 import { GetOrLoadWorld } from '../world/load-world.js';
 import {
@@ -149,11 +150,11 @@ const checks: NamedCheck[] = [
                 Assert(second.Result.Success, `second run failed: ${second.Result.Message}`);
                 sameSet(live(second.Snapshot), KEPT_AFTER_LATE, 'items still filed');
                 const withdrawn = second.Snapshot.Activities.filter((a) => (a.ExternalID ?? '').startsWith(WITHDRAWN_PREFIX));
-                const firstIds = new Map(first.Snapshot.Activities.map((a) => [a.ID.toLowerCase(), Untag(a.ExternalID) ?? '']));
-                sameSet(withdrawn.map((a) => firstIds.get(a.ID.toLowerCase()) ?? '?'), WITHDRAWN, `which rows were withdrawn: ${second.Result.Message}`);
+                const firstIds = new UUIDMap<string>(first.Snapshot.Activities.map((a) => [a.ID, Untag(a.ExternalID) ?? '']));
+                sameSet(withdrawn.map((a) => firstIds.Get(a.ID) ?? '?'), WITHDRAWN, `which rows were withdrawn: ${second.Result.Message}`);
                 Assert(withdrawn.every((a) => a.Visibility === 'Private'), 'withdrawn rows are Private');
-                const withdrawnIds = new Set(withdrawn.map((a) => a.ID.toLowerCase()));
-                Assert(!second.Snapshot.Links.some((l) => withdrawnIds.has(l.ActivityID.toLowerCase())), 'withdrawn rows keep no participant link');
+                const withdrawnIds = new UUIDSet(withdrawn.map((a) => a.ID));
+                Assert(!second.Snapshot.Links.some((l) => withdrawnIds.Has(l.ActivityID)), 'withdrawn rows keep no participant link');
                 Assert((second.Decisions.get('sbx-s8-auto-then-skip')?.Reason ?? '').includes('"No AIDP"'), 'the withdrawal says the skip tag caused it');
 
                 const third = await SyncLive(ctx, id);
