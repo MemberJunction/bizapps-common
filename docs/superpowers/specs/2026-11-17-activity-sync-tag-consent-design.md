@@ -106,6 +106,82 @@ connection for the mailbox. Pinned by `consent.test.ts` ("one email, two keys").
 - **Retention.** A Tagged connection never retains the content of items it excluded, whatever
   `SkippedContentPolicy` says.
 
+## Standing consent from a named source (2026-11-19)
+
+Sales leadership rejected tag-only capture: logging that depends on a person remembering a click gives
+incomplete data. Their rule: log an item when an in-scope salesperson is on it AND an external
+participant's domain belongs to an account that same salesperson owns. The tag stays, as the path for
+everything that rule cannot know (a person who owns no account, another person's account, a customer
+on a personal address). A school or a doctor's office is never an owned account, so it never matches.
+
+Account ownership lives in a consuming app, and Common must not name one. So Common asks a question
+and the app answers it (`BaseActivityConsentSource.ts`):
+
+```ts
+abstract class BaseActivityConsentSource {
+    abstract StandingConsent(request: StandingConsentRequest): Promise<StandingConsent>; // { Domains: [{ Domain, Label }], Issues }
+}
+```
+
+A source is registered by key and named per connection. Only a Tagged connection may name one:
+
+```json
+{ "Consent": { "Mode": "Tagged", "Tag": "AIDP", "SkipTag": "No AIDP", "Sources": ["Sales.OwnedAccounts"] } }
+```
+
+A connection without `Sources` behaves exactly as before.
+
+**A source returns data and never sees an item.** Every rule about what the list may capture is
+Common's. This is the same refusal `BaseActivitySyncExtension` makes ("enrich, never veto"): a source
+that could look at an item would make capture depend on which apps a host installed.
+
+**The grant.** `ResolveConsent` gives a `Standing` grant to an item with a non-BCC participant on a
+listed domain. The tag is checked first, because it is the owner's explicit choice and the only thing
+that overrides a Private mark. A standing grant goes through the existing Consent stage and store, so
+a reply to a standing-captured message is proven the same way as a reply to a tagged one.
+
+**What Common removes from a source's list** (`StandingGrantDomains`), each with a reported issue:
+free-mail domains, the deployment's internal domains, the mailbox's own domain (even when no rule set
+lists it), and anything that is not a bare domain. Matching is exact: `mail.acme.com` is not `acme.com`.
+
+**Standing consent is an inference, so it yields to the owner's mark.** A Personal, Private or
+Confidential item is not captured by a standing grant. On mail the mark is an extended property, and a
+Graph provider that does not forward `$expand` returns none. "No properties" is not "not Private", so
+a standing grant on a message without the property list is refused (`StandingRefusal`). Calendar items
+carry `sensitivity` directly and are not affected. The effect on a host whose MJ lacks the `$expand`
+fix (MJ #6728): standing consent captures meetings, and mail is captured by tag only.
+
+**The skip tag.** `SkipTag` is the owner's "never log this". It blocks an item in the `ConsentBlock`
+stage whatever else would capture it, so a skip-tagged item can neither be captured nor prove a reply.
+Withdrawal treats it as positive evidence: a captured item later found with the skip tag is withdrawn.
+It is per message.
+
+**Failure is closed, and "nothing owned" is not a failure.**
+
+| Condition | What happens |
+|---|---|
+| `Sources` names a key nobody registered | The run stops before the mailbox is read, with an issue |
+| A source throws | That connection's run fails, nothing is decided, the watermark stays |
+| The connection has no `OwnerUserID` | Nothing is granted, an issue says so, tags still work |
+| The source returns an empty list | Nothing is granted, tags still work |
+| `SkipTag` or `Sources` on a KnownContact connection | The settings are refused |
+
+A source that failed must throw, never return an empty list: the two would otherwise look the same,
+and only one of them is true.
+
+**A change in ownership never withdraws.** Only the skip tag, or a removed tag on an item with no
+other grant, withdraws a capture. An account that changes owner keeps the history it already has.
+
+**Alternatives rejected.** (a) The consuming app copies domain lists into Common data or connection
+settings: stale after an ownership change, which is the wrong failure for a privacy rule, and it adds
+a second writer to a JSON column the engine already writes. (b) Widening `BaseActivitySyncExtension`
+so an extension can include items: it breaks "never veto" and shows the extension mail that has not
+qualified.
+
+**Not built here.** Reading the Private mark of mail on a host without the `$expand` fix; back-fill
+when an account gains an owner later; a timeout on a source. A source is asked once per surface, so
+twice per connection per run.
+
 ## Transport
 `ActivitySourceQuery.Lookup` (`Tagged` | `MessageIds`) carries both reads through the existing fetch
 path. `GraphCommunicationTransport` sends them as `ContextData.Filter`, which MJ already forwards, and

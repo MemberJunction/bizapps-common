@@ -19,6 +19,13 @@ import type {
     mjBizAppsCommonActivitySyncRunEntity,
 } from '@mj-biz-apps/common-entities';
 
+import {
+    AskConsentSources,
+    BaseActivityConsentSource,
+    StandingGrantDomains,
+    type KeyedConsentSource,
+    type StandingConsent,
+} from './BaseActivityConsentSource.js';
 import { BaseActivitySyncExtension } from './BaseActivitySyncExtension.js';
 import { BaseActivitySyncProvider } from './BaseActivitySyncProvider.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
@@ -29,7 +36,7 @@ import {
     type ExtensionStamp,
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
-import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
+import { DomainOf, ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
 import { AttachmentPolicyFor, HostActivityFileSink, type ActivityFileSink } from './attachments.js';
 import {
     DefaultDeterministicStages,
@@ -37,7 +44,7 @@ import {
     type ExclusionRow,
     type RuleRow,
 } from './stages.js';
-import { ConsentPolicyFromSettings, MergeConsentSweptThrough, ResolveConsent, type ConsentPolicy } from './consent.js';
+import { ConsentPolicyFromSettings, HasTag, MergeConsentSweptThrough, ResolveConsent, type ConsentPolicy, type StandingDomains } from './consent.js';
 import { ConsentIntake } from './consent-intake.js';
 import { DatabaseConsentStore } from './consent-store.js';
 import { ConsentEligible, ConsentStages, type ConsentQualificationContext } from './consent-stages.js';
@@ -132,6 +139,8 @@ interface ConnectionRow {
     /** Overrides the provider type's default key. Null means "use the type's". */
     EncryptionKeyID: string | null;
     Settings: string | null;
+    /** Whose mailbox this is. Standing consent is asked about this user; null means it cannot be asked. */
+    OwnerUserID: string | null;
 }
 
 interface ProviderTypeRow {
@@ -382,6 +391,14 @@ export class ActivitySyncEngine {
         }
         const consent: ConsentPolicy = consentRead.Policy;
         const tagged = consent.Mode === 'Tagged' && consent.Tag ? { ...consent, Tag: consent.Tag } : null;
+        // A SOURCE KEY NOBODY REGISTERED IS A BAD SETTING, and is treated as one: the run stops here,
+        // before the mailbox is read. Carrying on tag-only would look like automatic capture that
+        // happens to find nothing.
+        const consentSources = this.resolveConsentSources(consent.Sources);
+        if ('Issue' in consentSources) {
+            result.Issues.push(consentSources.Issue);
+            return result;
+        }
 
         /**
          * AUDIT RETENTION IS SETTLED BEFORE ANYTHING IS READ, not at persist time.
@@ -473,6 +490,16 @@ export class ActivitySyncEngine {
         if (extensions.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue, stampHealth);
         }
+        // STANDING CONSENT IS ASKED BEFORE THE MAILBOX IS READ. A source that cannot answer leaves the run
+        // not knowing what the owner agreed to, so the run fails whole: no item is decided, no tag is
+        // processed, the watermark stays, and the next run starts from the same place.
+        let standingAsked: StandingConsent;
+        try {
+            standingAsked = await this.askStandingConsent(consentSources.Sources, connection, provider, contextUser);
+        } catch (err) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, err instanceof Error ? err.message : String(err), stampHealth);
+        }
+        result.Issues.push(...standingAsked.Issues);
         const batch = await plugin.Fetch({
             Mailbox: connection.Mailbox ?? '',
             Since: since,
@@ -544,6 +571,13 @@ export class ActivitySyncEngine {
             result.Issues.push(scopeWarning);
         }
 
+        // The mailbox's own domain counts as ours even when no rule set lists it: a deployment that kept
+        // itself as an account and configured no InternalDomains must still not capture its internal mail.
+        const ownDomain = DomainOf(connection.Mailbox ?? '');
+        const standingClean = StandingGrantDomains(standingAsked.Domains, ownDomain ? [...internalDomains.Rows, ownDomain] : internalDomains.Rows);
+        result.Issues.push(...standingClean.Issues);
+        const standing: StandingDomains = standingClean.Granting;
+
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const extensionStamps: ExtensionStamp[] = [];
         const identities = await this.resolver.Resolve(allParticipants, contextUser, provider);
@@ -589,13 +623,14 @@ export class ActivitySyncEngine {
                       gathered.Prior,
                       tagged.Tag,
                       plugin.Kind,
-                      await ConsentEligible(batch.Items, { ...base, Consent: new Map(), Kind: plugin.Kind, Tag: tagged.Tag }),
+                      await ConsentEligible(batch.Items, { ...base, Consent: new Map(), Kind: plugin.Kind, Tag: tagged.Tag, SkipTag: tagged.SkipTag }),
+                      standing,
                   )
                 : null;
         const stages = tagged ? ConsentStages() : this.stages;
         for (const item of batch.Items) {
             const ctx: EngineQualificationContext | ConsentQualificationContext =
-                tagged && grants ? { ...base, Consent: grants, Kind: plugin.Kind, Tag: tagged.Tag } : base;
+                tagged && grants ? { ...base, Consent: grants, Kind: plugin.Kind, Tag: tagged.Tag, SkipTag: tagged.SkipTag } : base;
             let verdict;
             try {
                 verdict = await RunQualificationCascade(
@@ -766,7 +801,7 @@ export class ActivitySyncEngine {
 
         if (tagged) {
             const withdrawn = await this.consentIntake.Withdraw(
-                plugin, fetchQuery, batch.Items, tagged, connection.ID, options.DryRun, consentStore,
+                plugin, fetchQuery, batch.Items, tagged, connection.ID, options.DryRun, consentStore, standing,
             );
             result.Issues.push(...withdrawn.Issues);
             // Record that THIS mailbox's consent ended, so it stops counting as consenting (see ConsentStore).
@@ -775,7 +810,10 @@ export class ActivitySyncEngine {
                     Item: item,
                     Decision: options.DryRun ? 'WouldExclude' : 'Excluded',
                     Stage: 'Consent',
-                    Reason: 'Consent withdrawn: the tag was removed',
+                    Reason:
+                        tagged.SkipTag && HasTag(item.Raw, tagged.SkipTag)
+                            ? `Consent withdrawn: the owner tagged it "${tagged.SkipTag}"`
+                            : 'Consent withdrawn: the tag was removed',
                 });
             }
             const sweptThrough = gathered?.SweptThrough ?? null;
@@ -982,6 +1020,51 @@ export class ActivitySyncEngine {
             await this.stampConnectionHealth(connection.ID, false, issue, contextUser, provider);
         }
         return result;
+    }
+
+    /** Every `Settings.Consent.Sources` key as a registered source, or the first key that is not one. */
+    private resolveConsentSources(keys: readonly string[]): { Sources: KeyedConsentSource[] } | { Issue: string } {
+        const sources: KeyedConsentSource[] = [];
+        for (const key of keys) {
+            const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivityConsentSource>(BaseActivityConsentSource, key);
+            if (!created.Resolved || !created.Instance) {
+                return {
+                    Issue:
+                        `Settings.Consent.Sources names "${key}", but no BaseActivityConsentSource is registered under that key ` +
+                        'in this host. Fix the key or install the app that provides it; the mailbox was not read.',
+                };
+            }
+            sources.push({ Key: key, Source: created.Instance });
+        }
+        return { Sources: sources };
+    }
+
+    /**
+     * What the connection's sources grant its owner. Throws when a source does (see `AskConsentSources`).
+     *
+     * A connection with no owner is not an error: there is nobody to ask about, so nothing is granted,
+     * the run says so, and the tag goes on working.
+     */
+    private async askStandingConsent(
+        sources: readonly KeyedConsentSource[],
+        connection: ConnectionRow,
+        provider: IMetadataProvider,
+        contextUser: UserInfo,
+    ): Promise<StandingConsent> {
+        if (sources.length === 0) return { Domains: [], Issues: [] };
+        if (!connection.OwnerUserID) {
+            return {
+                Domains: [],
+                Issues: [`Connection ${connection.ID} has no OwnerUserID, so its consent sources were not asked; only tagged items are captured.`],
+            };
+        }
+        return AskConsentSources(sources, {
+            ConnectionID: connection.ID,
+            OwnerUserID: connection.OwnerUserID,
+            Mailbox: connection.Mailbox ?? '',
+            ContextUser: contextUser,
+            Provider: provider,
+        });
     }
 
     private resolveExtension(driverClass: string): BaseActivitySyncExtension | null {
@@ -1414,6 +1497,7 @@ export class ActivitySyncEngine {
 export function LoadActivitySyncEngine(): void {
     void ActivitySyncEngine;
     void BaseActivitySyncExtension;
+    void BaseActivityConsentSource;
     void FixtureActivitySyncProvider;
     void MSGraphActivitySyncProvider;
     void MSGraphCalendarSyncProvider;
