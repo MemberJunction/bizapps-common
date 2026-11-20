@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DistTag, MainLine, MjRange, ResolveBranch, ValidateRecord, ValidateTransition } from '../release-lines.mjs';
-import { CheckAppManifest, CheckLockfile, CheckManifest, InLine } from '../check-mj-line.mjs';
+import { CheckAppManifest, CheckLockfile, CheckManifest, CheckPackageOverrides, CheckWorkspaceOverrides, InLine } from '../check-mj-line.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..', '..');
@@ -98,6 +98,21 @@ test('MJ line pin: the lockfile and mj-app.json', () => {
   assert.equal(problems.length, 2);
   assert.deepEqual(CheckAppManifest(text, l).problems, []);
   assert.equal(JSON.parse(text).line, '6.2');
+});
+
+test('MJ line pin: overrides in pnpm-workspace.yaml and package.json', () => {
+  const l = { key: '6.2', mjVersion: '6.2.1' };
+  const yaml = "packages:\n  - packages/*\noverrides:\n  '@angular/core': '21.1.3'\n  '@memberjunction/core': '^6.2.1'\n  \"@memberjunction/global\": 6.2.4\n  '@memberjunction/server': '>=6.2.1 <6.3.0' # capped\nother:\n  '@memberjunction/core': '^9.0.0'\n";
+  const { problems, text } = CheckWorkspaceOverrides(yaml, l, true);
+  assert.equal(problems.length, 1, 'only the caret inside overrides:, not the block after it');
+  assert.ok(text.includes("'@memberjunction/core': '>=6.2.1 <6.3.0'"));
+  assert.ok(text.includes("'@memberjunction/server': '>=6.2.1 <6.3.0' # capped"));
+  assert.deepEqual(CheckWorkspaceOverrides(text, l).problems, []);
+  const pkg = { pnpm: { overrides: { '@memberjunction/core': '^6.2.1', lodash: '^4' } }, overrides: { '@memberjunction/global': '6.3.0' } };
+  assert.equal(CheckPackageOverrides(pkg, l, true).length, 2);
+  assert.equal(pkg.pnpm.overrides['@memberjunction/core'], '>=6.2.1 <6.3.0');
+  assert.equal(pkg.overrides['@memberjunction/global'], '>=6.2.1 <6.3.0');
+  assert.equal(pkg.pnpm.overrides.lodash, '^4');
 });
 
 for (const script of ['check-line-migrations.mjs', 'check-backport.mjs', 'check-dependency-model.mjs']) {
