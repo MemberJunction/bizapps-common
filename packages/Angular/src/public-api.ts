@@ -141,12 +141,28 @@ export {
     CommonPeopleResource,
     CommonOrganizationsResource,
     CommonRelationshipGraphResource,
-    CommonActivitiesResource
+    CommonActivitiesResource,
+    CommonOffboardingResource
 } from './lib/sections/common-sections.component';
 export { CommonDashboardPageComponent } from './lib/pages/common-dashboard.page';
 export { CommonPeoplePageComponent } from './lib/pages/people-list.page';
 export { CommonOrganizationsPageComponent } from './lib/pages/organizations-list.page';
 export { CommonActivitiesPageComponent } from './lib/pages/activities-dashboard.page';
+export { CommonOffboardingPageComponent } from './lib/pages/offboarding.page';
+export {
+    FilterOffboardingPeople,
+    LeaverOf,
+    LoadOffboardingSetup,
+    MergeOffboardingPeople,
+    OutputParamValue,
+    RunOffboardingList,
+    RunOffboardingReassign,
+    type OffboardingEmployeeRow,
+    type OffboardingListResult,
+    type OffboardingPerson,
+    type OffboardingReassignResult,
+    type OffboardingUserRow,
+} from './lib/data/offboarding-data';
 
 // Party pickers. The Party Signals contract itself lives in @mj-biz-apps/common-entities; these are
 // the client-side reader, the per-instance settings, and the selling-company field.

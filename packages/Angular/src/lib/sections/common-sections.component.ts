@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseResourceComponent, NavigationService } from '@memberjunction/ng-shared';
 import type { ResourceData } from '@memberjunction/core-entities';
@@ -8,6 +8,7 @@ import { CommonPeoplePageComponent } from '../pages/people-list.page';
 import { CommonOrganizationsPageComponent } from '../pages/organizations-list.page';
 import { CommonRelationshipGraphComponent } from '../components/relationship-graph/common-relationship-graph.component';
 import { CommonActivitiesPageComponent } from '../pages/activities-dashboard.page';
+import { CommonOffboardingPageComponent } from '../pages/offboarding.page';
 
 @Component({
     selector: 'bizapps-common-directory-resource',
@@ -142,6 +143,48 @@ export class CommonActivitiesResource extends BaseResourceComponent {
     }
 }
 
+/**
+ * Offboarding: a departed person's open items across every app, and bulk reassignment. The picked
+ * leaver round-trips through the tab's query params (`leaver=user:<id>` or `leaver=employee:<id>`),
+ * so a refreshed or shared tab reopens on the same person.
+ */
+@Component({
+    selector: 'bizapps-common-offboarding-resource',
+    standalone: true,
+    imports: [CommonOffboardingPageComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `<bizapps-common-offboarding-page [LeaverKey]="LeaverKey" (LeaverKeyChange)="OnLeaverChanged($event)"></bizapps-common-offboarding-page>`,
+    styles: [`:host { display: block; width: 100%; height: 100%; }`],
+})
+@RegisterClass(BaseResourceComponent, 'CommonOffboardingResource')
+export class CommonOffboardingResource extends BaseResourceComponent {
+    private readonly cdr = inject(ChangeDetectorRef);
+    public LeaverKey: string | null = null;
+
+    override ngOnInit(): void {
+        super.ngOnInit();
+        this.NotifyLoadComplete();
+    }
+
+    protected override OnQueryParamsChanged(params: Record<string, string>, _source: 'popstate' | 'deeplink'): void {
+        this.LeaverKey = params['leaver'] ?? null;
+        this.cdr.markForCheck();
+    }
+
+    public OnLeaverChanged(key: string | null): void {
+        this.LeaverKey = key;
+        this.UpdateQueryParams({ leaver: key });
+    }
+
+    async GetResourceDisplayName(_data: ResourceData): Promise<string> {
+        return 'Offboarding';
+    }
+
+    async GetResourceIconClass(_data: ResourceData): Promise<string> {
+        return 'fa-solid fa-user-minus';
+    }
+}
+
 export function LoadCommonSectionResources(): void {
     // Referencing the classes keeps @RegisterClass visible to the bundler.
     void CommonDirectoryResource;
@@ -149,4 +192,5 @@ export function LoadCommonSectionResources(): void {
     void CommonOrganizationsResource;
     void CommonRelationshipGraphResource;
     void CommonActivitiesResource;
+    void CommonOffboardingResource;
 }

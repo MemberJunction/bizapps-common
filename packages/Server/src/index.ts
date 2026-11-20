@@ -21,6 +21,7 @@ import { LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 import { LoadLiveMailboxPolicyFromEnv } from './custom/live-mailbox-policy.js';
 import { LoadActivitySyncSandboxFromEnv } from './custom/activity-sync-sandbox.js';
 import { LoadActivityContentCipher } from './custom/activity-content-cipher.js';
+import { LoadOffboardingDeactivationWarning } from './custom/offboarding-deactivation-warning.js';
 
 // Import generated GraphQL resolvers
 import './generated/generated.js';
@@ -70,11 +71,23 @@ export function LoadBizAppsCommonServer(): void {
     // make the engine's refusal, when a policy DOES ask, be about the policy rather than about this
     // host being half-wired.
     LoadActivityContentCipher();
+    // Warns a leaver's supervisor and the CFO approvers when a User or Employee is deactivated while
+    // still holding open items. Listens to entity save events; it never blocks or alters the save.
+    LoadOffboardingDeactivationWarning();
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
 export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
+export {
+    ACCOUNTING_COMPANY_PROFILES_ENTITY,
+    BuildOffboardingWarning,
+    DetectOffboardingDeactivation,
+    LoadOffboardingDeactivationWarning,
+    OffboardingDeactivationWarning,
+    OffboardingWarningRecipients,
+    type OffboardingDeactivation,
+} from './custom/offboarding-deactivation-warning.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';
 export {
     ENV_SANDBOX_DIR,

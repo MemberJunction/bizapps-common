@@ -8,6 +8,9 @@
       "2. People",
       "3. Organizations",
       "4. Relationship Graph (interactive network graph visualization)",
+      "5. Activities",
+      "6. Offboarding (what a departed user or employee still holds, and bulk reassignment to a",
+      "   successor; runs every action in the Offboarding Holdings action category)",
       "",
       "Each item is ResourceType 'Custom' pointing at a DriverClass registered with",
       "@RegisterClass(BaseResourceComponent, '<DriverClass>') in @mj-biz-apps/common-ng."
@@ -51,6 +54,13 @@
           "Icon": "fa-solid fa-bolt",
           "ResourceType": "Custom",
           "DriverClass": "CommonActivitiesResource",
+          "isDefault": false
+        },
+        {
+          "Label": "Offboarding",
+          "Icon": "fa-solid fa-user-minus",
+          "ResourceType": "Custom",
+          "DriverClass": "CommonOffboardingResource",
           "isDefault": false
         }
       ]
