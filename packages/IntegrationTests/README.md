@@ -47,7 +47,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `relationships` | R1–R4 |
 | `activities` | A1–A5 |
 | `party-lookup` | PL1–PL4 |
-| `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3 (needs a sandbox host, below; not in the default run, so name it) |
+| `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3, AS-C1–C5 (needs a sandbox host, below; not in the default run, so name it) |
 
 ## Activity Sync sandbox (`activity-sync`)
 
@@ -74,6 +74,12 @@ Microsoft Graph. Like Stripe test mode: same front door, test data.
   engine dedupes on SourceSystem + ExternalID across all mailboxes and fixed fixture ids would
   collide between runs.
 - **Rows written are `Source = 'System'`**, never `'Integration'`. Connections end Disabled.
+- **Tagged (consent) connections** (`AS-C1–C5`, `consent` and `consent-late` scenarios): a connection
+  whose `Settings` holds `{"Consent":{"Mode":"Tagged","Tag":"AIDP"}}` captures only what the mailbox
+  owner tagged, proven replies to it and the earlier messages it names. `consent-late` is the same
+  mailbox after the owner tagged one old email and untagged one email and one meeting, so the checks
+  cover the late-tag sweep and the withdrawal. The fixtures carry the reply headers and sensitivity as
+  the `singleValueExtendedProperties` a live read expands.
 - **Fixtures are generated** by `node sandbox/build-fixtures.mjs` from the ActivitySync demo Graph
   payloads; `src/__tests__/sandbox-fixtures.test.ts` checks the committed files match. Calendar
   shapes were never compared with live Graph data; the files say so.

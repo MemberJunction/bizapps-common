@@ -138,6 +138,31 @@ describe('a sandbox ref', () => {
         expect(batch.Payloads[0]).toMatchObject({ id: 'm1.t1', conversationId: 'c1.t1' });
     });
 
+    it('a run tag keeps Message-IDs and reply headers consistent, so a tagged replay proves its own replies', async () => {
+        writeFileSync(
+            join(dir, 'baseline.mail.json'),
+            JSON.stringify({
+                mailbox: MAILBOX,
+                value: [{
+                    id: 'm2',
+                    internetMessageId: '<r@x>',
+                    singleValueExtendedProperties: [
+                        { id: 'String 0x1042', value: '<q@x>' },
+                        { id: 'String 0x1039', value: '<root@x> <q@x>' },
+                        { id: 'Integer 0x0036', value: '0' },
+                    ],
+                }],
+            }),
+        );
+        const [p] = (await build('sandbox:baseline:t9').Fetch(QUERY)).Payloads;
+        expect(p.internetMessageId).toBe('<r@x.t9>');
+        expect(p.singleValueExtendedProperties).toEqual([
+            { id: 'String 0x1042', value: '<q@x.t9>' },
+            { id: 'String 0x1039', value: '<root@x.t9> <q@x.t9>' },
+            { id: 'Integer 0x0036', value: '0' },
+        ]);
+    });
+
     it.each(['UPPER', 'a.b', '../x', ''])('rejects the run tag "%s"', async (tag) => {
         writeScenario('baseline', 'mail', ['m1']);
         await expect(build(`sandbox:baseline:${tag}`).Fetch(QUERY)).rejects.toThrow(`"${tag}"`);
