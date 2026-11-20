@@ -18,6 +18,12 @@
  * connections in the call do not run. A `Fetch` that throws is recorded as a failed run on that one
  * connection. A misconfigured sandbox connection should look exactly like that.
  *
+ * CONSENT SOURCES. A Tagged connection can name standing-consent sources (`Settings.Consent.Sources`).
+ * The real ones belong to consumer apps a sandbox host need not have installed, so this module registers
+ * three of its own (`SANDBOX_CONSENT_SOURCES`), each answering from `<name>.source.json` in the fixture
+ * directory. Like the `sandbox:` ref, the keys exist on every host and only a sandbox host serves them:
+ * anywhere else they throw, which fails that connection's run before its mailbox is read.
+ *
  * WHY SANDBOX AND LIVE ARE EXCLUSIVE. A host that can serve fixtures AND read real mailboxes is one
  * mistyped ref away from mixing the two. Bootstrap refuses that combination outright.
  *
@@ -28,7 +34,9 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 import { LogStatus } from '@memberjunction/core';
+import { RegisterClass } from '@memberjunction/global';
 import {
+    BaseActivityConsentSource,
     HostActivityTransportFactory,
     HostAllowsLiveMailboxFetch,
     PROP_IN_REPLY_TO,
@@ -41,6 +49,7 @@ import {
     type ActivityTransportContext,
     type ActivityTransportFactory,
     type RawBatch,
+    type StandingConsent,
 } from '@mj-biz-apps/common-activity-sync';
 
 import { MICROSOFT_365, MICROSOFT_365_CALENDAR } from './graph-transport-factory.js';
@@ -101,6 +110,7 @@ export function LoadActivitySyncSandboxFromEnv(env: NodeJS.ProcessEnv = process.
     // host's own factory keeps serving every non-sandbox ref.
     const inner: ActivityTransportFactory = HostActivityTransportFactory() ?? NO_FACTORY;
     const raw = (env[ENV_SANDBOX_DIR] ?? '').trim();
+    consentSourceDir = null;
     if (!raw) {
         RegisterActivityTransportFactory(SandboxAwareTransportFactory(inner, null));
         return null;
@@ -114,6 +124,7 @@ export function LoadActivitySyncSandboxFromEnv(env: NodeJS.ProcessEnv = process.
         );
     }
     RegisterActivityTransportFactory(SandboxAwareTransportFactory(inner, dir));
+    consentSourceDir = dir;
     LogStatus(`Activity Sync sandbox ON: sandbox: connections replay fixtures from ${dir}`);
     return dir;
 }
@@ -239,4 +250,57 @@ async function readScenarioFile(path: string): Promise<ScenarioFile> {
         throw new Error(`Sandbox fixture ${path} needs a "mailbox" string and a "value" array.`);
     }
     return { mailbox: parsed.mailbox, capturedAt: parsed.capturedAt, value: parsed.value };
+}
+
+/** The `Settings.Consent.Sources` keys a sandbox host serves, and the file stem each answers from. */
+export const SANDBOX_CONSENT_SOURCES = {
+    'Sandbox.OwnedAccounts': 'owned-accounts',
+    'Sandbox.NoEmployee': 'no-employee',
+    /** No fixture ships under this name, on purpose: it is the source whose read fails. */
+    'Sandbox.Unreadable': 'unreadable',
+} as const;
+
+/** Set by `LoadActivitySyncSandboxFromEnv`. ClassFactory builds sources with no arguments, so it cannot be injected. */
+let consentSourceDir: string | null = null;
+
+abstract class SandboxConsentSource extends BaseActivityConsentSource {
+    protected abstract readonly FileStem: string;
+
+    public async StandingConsent(): Promise<StandingConsent> {
+        if (consentSourceDir === null) {
+            throw new Error(`This host has no ${ENV_SANDBOX_DIR}, so it serves no sandbox consent sources.`);
+        }
+        const path = join(consentSourceDir, `${this.FileStem}.source.json`);
+        let text: string;
+        try {
+            text = await readFile(path, 'utf8');
+        } catch (e) {
+            throw new Error(`Sandbox consent source file ${path} cannot be read: ${(e as Error).message}`);
+        }
+        let parsed: Partial<StandingConsent>;
+        try {
+            parsed = JSON.parse(text) as Partial<StandingConsent>;
+        } catch (e) {
+            throw new Error(`Sandbox consent source file ${path} is not valid JSON: ${(e as Error).message}`);
+        }
+        if (!Array.isArray(parsed.Domains) || !Array.isArray(parsed.Issues)) {
+            throw new Error(`Sandbox consent source file ${path} needs a "Domains" list and an "Issues" list.`);
+        }
+        return { Domains: parsed.Domains, Issues: parsed.Issues };
+    }
+}
+
+@RegisterClass(BaseActivityConsentSource, 'Sandbox.OwnedAccounts')
+export class SandboxOwnedAccountsSource extends SandboxConsentSource {
+    protected readonly FileStem = SANDBOX_CONSENT_SOURCES['Sandbox.OwnedAccounts'];
+}
+
+@RegisterClass(BaseActivityConsentSource, 'Sandbox.NoEmployee')
+export class SandboxNoEmployeeSource extends SandboxConsentSource {
+    protected readonly FileStem = SANDBOX_CONSENT_SOURCES['Sandbox.NoEmployee'];
+}
+
+@RegisterClass(BaseActivityConsentSource, 'Sandbox.Unreadable')
+export class SandboxUnreadableSource extends SandboxConsentSource {
+    protected readonly FileStem = SANDBOX_CONSENT_SOURCES['Sandbox.Unreadable'];
 }

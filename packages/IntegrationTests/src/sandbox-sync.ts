@@ -61,7 +61,7 @@ export type RunRow = Pick<
 
 export type DetailRow = Pick<
     mjBizAppsCommonActivitySyncRunDetailEntity,
-    'ExternalID' | 'Decision' | 'DecidedByStage' | 'ActivitySyncRuleID' | 'ActivitySyncExclusionID' | 'ActivityID'
+    'ExternalID' | 'Decision' | 'DecidedByStage' | 'Reason' | 'ActivitySyncRuleID' | 'ActivitySyncExclusionID' | 'ActivityID'
 > & { ActivitySyncRunID: string };
 
 export type ActivityRow = Pick<
@@ -383,7 +383,7 @@ export async function ReadSnapshot(ctx: IntegrationCheckContext, connectionId: s
             'StartedAt', 'WatermarkAfter',
         ], 'StartedAt DESC'),
         simple(COMMON_ENTITIES.ActivitySyncRunDetail, runsOf, [
-            'ActivitySyncRunID', 'ExternalID', 'Decision', 'DecidedByStage', 'ActivitySyncRuleID',
+            'ActivitySyncRunID', 'ExternalID', 'Decision', 'DecidedByStage', 'Reason', 'ActivitySyncRuleID',
             'ActivitySyncExclusionID', 'ActivityID',
         ]),
         simple(COMMON_ENTITIES.Activity, `ActivitySyncConnectionID = '${id}'`, [
