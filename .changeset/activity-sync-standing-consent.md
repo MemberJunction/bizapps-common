@@ -1,6 +1,0 @@
----
-"@mj-biz-apps/common-activity-sync": patch
-"@mj-biz-apps/common-server": patch
----
-
-Adds standing consent to Activity Sync. A `Tagged` connection whose `Settings.Consent` lists `Sources` (for example `["Sales.OwnedAccounts"]`) captures an email or meeting with no tag when a participant's domain is one a named source grants for the mailbox owner. A source is a class registered on the new `BaseActivityConsentSource`; it returns domains with a label and never sees an item. Common drops free-mail, internal and the mailbox's own domain from the list and reports each one. An item marked Personal, Private or Confidential is not captured automatically, and neither is one whose mark could not be read; the tag still captures it. A new `SkipTag` (for example `"No AIDP"`) blocks an item and withdraws one already captured, with the replies it proved. A source key nobody registered, or a source that throws, fails the run before the mailbox is read. A later change of account ownership does not withdraw what was captured. Connections without `Sources` or `SkipTag` behave exactly as before. Automatic capture of email needs `@memberjunction/communication-ms-graph` with `ContextData.Expand`; without it meetings are captured automatically and email by tag only.
