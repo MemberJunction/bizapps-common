@@ -62,9 +62,9 @@ export class SyncCompaniesToOrganizationsOperation extends BaseRemotableOperatio
     SyncCompaniesToOrganizationsOutput
 > {
     public readonly OperationKey = COMPANY_ORG_SYNC_OP_KEY;
-    public override readonly AuthorizedWriteEntities = ['MJ_BizApps_Common: Organizations'] as const;
-    public override readonly ExposeAsAgentTool = true;
-    public override readonly ExposeAsMCPTool = true;
-    public override readonly ToolDescription =
+    public readonly AuthorizedWriteEntities = ['MJ_BizApps_Common: Organizations'] as const;
+    public readonly ExposeAsAgentTool = true;
+    public readonly ExposeAsMCPTool = true;
+    public readonly ToolDescription =
         'Mirror MJ: Companies records into MJ_BizApps_Common: Organizations (linked via Organization.LinkedCompanyID).';
 }

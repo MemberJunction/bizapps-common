@@ -154,9 +154,13 @@ GO
 
 GO
 
-IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityUniqueKey] WHERE [EntityID] = 'C70448F9-9792-41D7-A82C-784B66429D54' AND [Name] = 'UQ_Organization_LinkedCompanyID')
+IF OBJECT_ID('[${mjSchema}].[EntityUniqueKey]', 'U') IS NOT NULL
 BEGIN
-  INSERT INTO [${mjSchema}].[EntityUniqueKey] ([ID], [EntityID], [Name], [FieldNames], [FilterDefinition]) VALUES ('fb65ca12-a867-400a-9b19-9a2eb1b594dc', 'C70448F9-9792-41D7-A82C-784B66429D54', 'UQ_Organization_LinkedCompanyID', 'LinkedCompanyID', '([LinkedCompanyID] IS NOT NULL)');
+  EXEC sp_executesql N'
+    IF NOT EXISTS (SELECT 1 FROM [${mjSchema}].[EntityUniqueKey] WHERE [EntityID] = ''C70448F9-9792-41D7-A82C-784B66429D54'' AND [Name] = ''UQ_Organization_LinkedCompanyID'')
+    BEGIN
+      INSERT INTO [${mjSchema}].[EntityUniqueKey] ([ID], [EntityID], [Name], [FieldNames], [FilterDefinition]) VALUES (''fb65ca12-a867-400a-9b19-9a2eb1b594dc'', ''C70448F9-9792-41D7-A82C-784B66429D54'', ''UQ_Organization_LinkedCompanyID'', ''LinkedCompanyID'', ''([LinkedCompanyID] IS NOT NULL)'');
+    END;';
 END;
 GO
 
