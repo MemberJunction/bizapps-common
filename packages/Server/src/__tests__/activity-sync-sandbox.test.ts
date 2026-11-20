@@ -15,14 +15,18 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MJGlobal } from '@memberjunction/global';
+import type { IMetadataProvider, UserInfo } from '@memberjunction/core';
 import {
     AllowLiveMailboxFetch,
+    BaseActivityConsentSource,
     HostActivityTransportFactory,
     RegisterActivityTransportFactory,
     type ActivityMessageTransport,
     type ActivitySourceQuery,
     type ActivityTransportContext,
     type ActivityTransportFactory,
+    type StandingConsentRequest,
 } from '@mj-biz-apps/common-activity-sync';
 
 import {
@@ -245,5 +249,45 @@ describe('LoadActivitySyncSandboxFromEnv', () => {
         expect(() => LoadActivitySyncSandboxFromEnv({ [ENV_SANDBOX_DIR]: join(dir, 'fixtures') })).toThrow(
             /live/i,
         );
+    });
+});
+
+describe('sandbox consent sources', () => {
+    const request: StandingConsentRequest = {
+        ConnectionID: 'conn-1',
+        OwnerUserID: 'user-1',
+        Mailbox: MAILBOX,
+        ContextUser: { ID: 'user-1' } as UserInfo,
+        Provider: {} as IMetadataProvider,
+    };
+    const source = (key: string): BaseActivityConsentSource => {
+        const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivityConsentSource>(BaseActivityConsentSource, key);
+        if (!created.Resolved || !created.Instance) throw new Error(`${key} is not registered`);
+        return created.Instance;
+    };
+
+    it('answers from <name>.source.json in the fixture directory', async () => {
+        writeFileSync(join(dir, 'owned-accounts.source.json'), JSON.stringify({ Domains: [{ Domain: 'acme-owned.test', Label: 'Acme' }], Issues: ['one thing'] }));
+        LoadActivitySyncSandboxFromEnv({ [ENV_SANDBOX_DIR]: dir });
+        expect(await source('Sandbox.OwnedAccounts').StandingConsent(request)).toEqual({
+            Domains: [{ Domain: 'acme-owned.test', Label: 'Acme' }],
+            Issues: ['one thing'],
+        });
+    });
+
+    it('a source whose file is missing throws, naming the path: it is the broken source', async () => {
+        LoadActivitySyncSandboxFromEnv({ [ENV_SANDBOX_DIR]: dir });
+        await expect(source('Sandbox.Unreadable').StandingConsent(request)).rejects.toThrow(join(dir, 'unreadable.source.json'));
+    });
+
+    it('a file without Domains and Issues lists is refused, not read as "owns nothing"', async () => {
+        writeFileSync(join(dir, 'no-employee.source.json'), JSON.stringify({ Domains: [] }));
+        LoadActivitySyncSandboxFromEnv({ [ENV_SANDBOX_DIR]: dir });
+        await expect(source('Sandbox.NoEmployee').StandingConsent(request)).rejects.toThrow('Issues');
+    });
+
+    it('on a host that is not a sandbox every sandbox source refuses', async () => {
+        LoadActivitySyncSandboxFromEnv({});
+        await expect(source('Sandbox.OwnedAccounts').StandingConsent(request)).rejects.toThrow(ENV_SANDBOX_DIR);
     });
 });
