@@ -5920,6 +5920,14 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(100)
     PrimaryJobFunction?: string;
         
+    @Field({nullable: true, description: "Optional self-referential foreign key to the Person record who directly supervises this person."}) 
+    @MaxLength(36)
+    SupervisorPersonID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(250)
+    SupervisorPerson?: string;
+        
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
     ReadableFields___?: string[];
         
@@ -5981,6 +5989,9 @@ export class CreatemjBizAppsCommonPersonInput {
     @Field({ nullable: true })
     SeniorityLevelID: string | null;
 
+    @Field({ nullable: true })
+    SupervisorPersonID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -6041,6 +6052,9 @@ export class UpdatemjBizAppsCommonPersonInput {
 
     @Field({ nullable: true })
     SeniorityLevelID?: string | null;
+
+    @Field({ nullable: true })
+    SupervisorPersonID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
