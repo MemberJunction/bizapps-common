@@ -97,6 +97,8 @@ interface TestProvider extends IEntityDataProvider, IRunViewProvider {
     ProviderType: ProviderType;
     CurrentUser?: UserInfo;
     BeginEntityTransaction?: () => Promise<EntityTransactionScope>;
+    ExecuteInTransaction?: <T>(work: () => Promise<T>) => Promise<T>;
+    CreateTransactionGroup?: () => Promise<TransactionGroupBase>;
     GetEntityObject<T>(entityName: string, contextUser?: UserInfo): Promise<T>;
     SaveEntityRecord(entity: EntityRecordLike): Promise<boolean>;
     DeleteEntityRecord(entity: EntityRecordLike): Promise<boolean>;
@@ -114,6 +116,7 @@ vi.mock('@memberjunction/core', async (importOriginal) => {
         public EntityInfo: EntityInfo;
         public Fields: FakeEntityField[] = [];
         public IsSaved = false;
+        public TransactionGroup: InstanceType<typeof actual.TransactionGroupBase> | null = null;
         public readonly ResultHistory: InstanceType<typeof actual.BaseEntityResult>[] = [];
         public ProviderToUse: TestProvider | null = null;
         public RunViewProviderToUse: IRunViewProvider | null = null;
@@ -220,6 +223,20 @@ vi.mock('@memberjunction/core', async (importOriginal) => {
                     }
                 }
             }
+            if (this.TransactionGroup) {
+                const tg = this.TransactionGroup;
+                if ('EnqueueEntitySave' in tg && typeof tg.EnqueueEntitySave === 'function') {
+                    tg.EnqueueEntitySave(this, (success: boolean) => {
+                        if (success) {
+                            this.IsSaved = true;
+                            for (const f of this.Fields) {
+                                f.OldValue = f.Value;
+                            }
+                        }
+                    });
+                }
+                return true;
+            }
             if (!this.ProviderToUse) {
                 return true;
             }
@@ -265,10 +282,75 @@ vi.mock('@memberjunction/core', async (importOriginal) => {
     };
 });
 
-import { BaseEntity, ProviderType } from '@memberjunction/core';
+import { BaseEntity, ProviderType, TransactionGroupBase, TransactionItem, TransactionResult } from '@memberjunction/core';
 import { PersonEntity } from '../PersonEntity.js';
 import { mjBizAppsCommonRelationshipEntity } from '../generated/entity_subclasses.js';
 import { LoadGeneratedEntities } from '../index.js';
+
+interface QueuedSaveEntry {
+    entity: EntityRecordLike & { ID?: string };
+    onSuccess: (success: boolean) => void;
+}
+
+class InMemoryTransactionGroup extends TransactionGroupBase {
+    private readonly store: InMemoryHierarchyStore;
+    private readonly provider: TestProvider;
+    private readonly queuedSaves: QueuedSaveEntry[] = [];
+
+    constructor(store: InMemoryHierarchyStore, provider: TestProvider) {
+        super();
+        this.store = store;
+        this.provider = provider;
+    }
+
+    public EnqueueEntitySave(
+        entity: EntityRecordLike & { ID?: string },
+        onSuccess: (success: boolean) => void,
+    ): void {
+        this.queuedSaves.push({ entity, onSuccess });
+    }
+
+    public override async Submit(): Promise<boolean> {
+        try {
+            await this.HandleSubmit();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    protected override async HandleSubmit(): Promise<TransactionResult[]> {
+        const snapshot = this.store.CaptureSnapshot();
+        const results: TransactionResult[] = [];
+        try {
+            for (const entry of this.queuedSaves) {
+                const entity = entry.entity;
+                if (!entity.ID && this.Variables.length > 0) {
+                    for (const v of this.Variables) {
+                        if (v.Type === 'Use' && v.EntityObject === entity) {
+                            const definer = this.Variables.find((d) => d.Type === 'Define' && d.Name === v.Name);
+                            if (definer && v.FieldName === 'FromPersonID' && definer.FieldName === 'ID') {
+                                const rel = entity as mjBizAppsCommonRelationshipEntity;
+                                rel.FromPersonID = (definer.EntityObject as PersonEntity).ID;
+                            }
+                        }
+                    }
+                }
+                const ok = await this.provider.SaveEntityRecord(entity);
+                if (!ok) {
+                    throw new Error(`TransactionGroup item failed for ${entity.EntityInfo?.Name ?? 'unknown'}`);
+                }
+                entry.onSuccess(true);
+            }
+            this.store.CommitCount++;
+            return results;
+        } catch (err) {
+            this.store.RestoreSnapshot(snapshot);
+            this.store.RollbackCount++;
+            throw err;
+        }
+    }
+}
 
 @RegisterClass(BaseEntity, RELATIONSHIPS_ENTITY_NAME)
 class TestRelationshipEntity extends mjBizAppsCommonRelationshipEntity {}
@@ -328,9 +410,13 @@ class InMemoryHierarchyStore {
 
     public CreateProvider(options: {
         transactional?: boolean;
+        executeInTransaction?: boolean;
+        transactionGroup?: boolean;
         network?: boolean;
     } = {}): TestProvider {
         const transactional = options.transactional ?? true;
+        const executeInTransaction = options.executeInTransaction ?? false;
+        const transactionGroup = options.transactionGroup ?? false;
         const network = options.network ?? false;
         const store = this;
 
@@ -380,6 +466,29 @@ class InMemoryHierarchyStore {
                               },
                           };
                       },
+                  }
+                : {}),
+            ...(executeInTransaction && !network
+                ? {
+                      ExecuteInTransaction: async <T>(work: () => Promise<T>): Promise<T> => {
+                          store.BeginTxCalls.push(1);
+                          const snap = store.cloneSnapshot();
+                          try {
+                              const out = await work();
+                              store.CommitCount++;
+                              return out;
+                          } catch (err) {
+                              store.restoreSnapshot(snap);
+                              store.RollbackCount++;
+                              throw err;
+                          }
+                      },
+                  }
+                : {}),
+            ...(transactionGroup && !network
+                ? {
+                      CreateTransactionGroup: async (): Promise<TransactionGroupBase> =>
+                          new InMemoryTransactionGroup(store, provider),
                   }
                 : {}),
             GetEntityObject: async <T>(entityName: string): Promise<T> => {
@@ -555,6 +664,14 @@ class InMemoryHierarchyStore {
         return provider;
     }
 
+    public CaptureSnapshot(): StoreSnapshot {
+        return this.cloneSnapshot();
+    }
+
+    public RestoreSnapshot(snap: StoreSnapshot): void {
+        this.restoreSnapshot(snap);
+    }
+
     private cloneSnapshot(): StoreSnapshot {
         const people = new Map<string, StoredPersonRow>();
         for (const [k, v] of this.People) people.set(k, { ...v });
@@ -720,6 +837,57 @@ describe('PersonEntity supervisor hierarchy, cycle detection, and atomic Reports
             const saved = await alice.Save();
             expect(saved).toBe(false);
             expect(store.PersonSaveCalls).toHaveLength(0);
+        });
+
+        it('fails closed when RunView returns Success: true with empty Results ([]) for a non-null ancestor (missing or RLS-hidden)', async () => {
+            store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: null });
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: UUID_C });
+            // UUID_C is deliberately missing / hidden by RLS: RunView for UUID_C returns Success: true, Results: []
+
+            const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, provider);
+            alice.SupervisorPersonID = UUID_B;
+
+            const asyncResult = await alice.ValidateAsync();
+            expect(asyncResult.Success).toBe(false);
+            expect(asyncResult.Errors.some((e) => e.Source === 'SupervisorPersonID' && /not found|accessible/i.test(e.Message))).toBe(true);
+
+            const saved = await alice.Save();
+            expect(saved).toBe(false);
+            expect(store.PersonSaveCalls).toHaveLength(0);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBeNull();
+        });
+
+        it('rejects 2-node and multi-hop cycles synchronously in Validate() when hierarchy state is loaded or cached', async () => {
+            store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: null });
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: UUID_A });
+            store.SeedPerson({ ID: UUID_C, FirstName: 'Carol', LastName: 'C', SupervisorPersonID: UUID_B });
+            store.SeedPerson({ ID: UUID_D, FirstName: 'Dan', LastName: 'D', SupervisorPersonID: UUID_C });
+
+            // Loading entities populates the synchronous per-provider hierarchy snapshot
+            const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, provider);
+            await makeSavedPerson(store.GetPerson(UUID_B)!, provider);
+            await makeSavedPerson(store.GetPerson(UUID_C)!, provider);
+            await makeSavedPerson(store.GetPerson(UUID_D)!, provider);
+
+            // 2-node cycle A -> B -> A rejected synchronously in Validate()
+            alice.SupervisorPersonID = UUID_B;
+            const twoNodeSync = alice.Validate();
+            expect(twoNodeSync.Success).toBe(false);
+            expect(twoNodeSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /cycle/i.test(e.Message))).toBe(true);
+
+            // Multi-hop 4-node cycle A -> D -> C -> B -> A rejected synchronously in Validate()
+            alice.SupervisorPersonID = UUID_D;
+            const multiHopSync = alice.Validate();
+            expect(multiHopSync.Success).toBe(false);
+            expect(multiHopSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /cycle/i.test(e.Message))).toBe(true);
+
+            // ValidateAsync()-populated cache also powers synchronous Validate() without instantiating ancestor entities
+            PersonEntity.ClearHierarchyCache(provider);
+            expect(alice.Validate().Success).toBe(true);
+            await alice.ValidateAsync();
+            const postAsyncSync = alice.Validate();
+            expect(postAsyncSync.Success).toBe(false);
+            expect(postAsyncSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /cycle/i.test(e.Message))).toBe(true);
         });
     });
 
@@ -907,8 +1075,12 @@ describe('PersonEntity supervisor hierarchy, cycle detection, and atomic Reports
             expect(store.GetActiveReportsToFor(UUID_A)).toHaveLength(1);
         });
 
-        it('compensates cleanly on non-transactional providers when relationship creation fails so Person and Relationships never diverge', async () => {
-            const nonTxProvider = store.CreateProvider({ transactional: false });
+        it('aborts cleanly before any DB write on non-transactional providers lacking BeginEntityTransaction, ExecuteInTransaction, and TransactionGroup', async () => {
+            const nonTxProvider = store.CreateProvider({
+                transactional: false,
+                executeInTransaction: false,
+                transactionGroup: false,
+            });
             store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: UUID_B });
             store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: null });
             store.SeedPerson({ ID: UUID_C, FirstName: 'Carol', LastName: 'C', SupervisorPersonID: null });
@@ -924,18 +1096,101 @@ describe('PersonEntity supervisor hierarchy, cycle detection, and atomic Reports
                 Status: 'Active',
                 Notes: null,
             });
-            store.Faults.throwOnRelationshipCreateSave = true;
 
             const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, nonTxProvider);
             alice.SupervisorPersonID = UUID_C;
 
             const saved = await alice.Save();
             expect(saved).toBe(false);
+            // Fail closed BEFORE writing Person or Relationships
+            expect(store.PersonSaveCalls).toHaveLength(0);
             expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_B);
             const active = store.GetActiveReportsToFor(UUID_A);
             expect(active).toHaveLength(1);
             expect(active[0].ToPersonID).toBe(UUID_B);
             expect(active[0].EndDate).toBeNull();
+            expect(alice.LatestResult?.Success).toBe(false);
+            expect(alice.LatestResult?.Message).toMatch(/transactional provider/i);
+        });
+
+        it('commits and rolls back atomically when provider uses ExecuteInTransaction', async () => {
+            const execProvider = store.CreateProvider({
+                transactional: false,
+                executeInTransaction: true,
+            });
+            store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: UUID_B });
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: null });
+            store.SeedPerson({ ID: UUID_C, FirstName: 'Carol', LastName: 'C', SupervisorPersonID: null });
+            store.SeedRelationship({
+                ID: '20000000-0000-4000-8000-000000000001',
+                RelationshipTypeID: REPORTS_TO_RELATIONSHIP_TYPE_ID,
+                FromPersonID: UUID_A,
+                FromOrganizationID: null,
+                ToPersonID: UUID_B,
+                ToOrganizationID: null,
+                StartDate: new Date('2026-01-01T00:00:00.000Z'),
+                EndDate: null,
+                Status: 'Active',
+                Notes: null,
+            });
+
+            const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, execProvider);
+            store.Faults.failRelationshipCreateSave = true;
+            alice.SupervisorPersonID = UUID_C;
+
+            expect(await alice.Save()).toBe(false);
+            expect(store.RollbackCount).toBe(1);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_B);
+            expect(store.GetActiveReportsToFor(UUID_A)[0].ToPersonID).toBe(UUID_B);
+
+            store.Faults.failRelationshipCreateSave = false;
+            alice.SupervisorPersonID = UUID_C;
+            expect(await alice.Save()).toBe(true);
+            expect(store.CommitCount).toBe(1);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_C);
+            expect(store.GetActiveReportsToFor(UUID_A)[0].ToPersonID).toBe(UUID_C);
+        });
+
+        it('commits and rolls back atomically when provider uses TransactionGroup', async () => {
+            const tgProvider = store.CreateProvider({
+                transactional: false,
+                transactionGroup: true,
+            });
+            store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: UUID_B });
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: null });
+            store.SeedPerson({ ID: UUID_C, FirstName: 'Carol', LastName: 'C', SupervisorPersonID: null });
+            store.SeedRelationship({
+                ID: '20000000-0000-4000-8000-000000000001',
+                RelationshipTypeID: REPORTS_TO_RELATIONSHIP_TYPE_ID,
+                FromPersonID: UUID_A,
+                FromOrganizationID: null,
+                ToPersonID: UUID_B,
+                ToOrganizationID: null,
+                StartDate: new Date('2026-01-01T00:00:00.000Z'),
+                EndDate: null,
+                Status: 'Active',
+                Notes: null,
+            });
+
+            const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, tgProvider);
+            store.Faults.throwOnRelationshipCreateSave = true;
+            alice.SupervisorPersonID = UUID_C;
+
+            expect(await alice.Save()).toBe(false);
+            expect(store.RollbackCount).toBe(1);
+            expect(store.CommitCount).toBe(0);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_B);
+            expect(store.GetActiveReportsToFor(UUID_A)).toHaveLength(1);
+            expect(store.GetActiveReportsToFor(UUID_A)[0].ToPersonID).toBe(UUID_B);
+            expect(alice.GetFieldByName('SupervisorPersonID')?.OldValue).toBe(UUID_B);
+
+            store.Faults.throwOnRelationshipCreateSave = false;
+            alice.SupervisorPersonID = UUID_C;
+            expect(await alice.Save()).toBe(true);
+            expect(store.CommitCount).toBe(1);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_C);
+            expect(store.GetActiveReportsToFor(UUID_A)).toHaveLength(1);
+            expect(store.GetActiveReportsToFor(UUID_A)[0].ToPersonID).toBe(UUID_C);
         });
 
         it('runs pre-flight cycle checks on network client providers while delegating atomic sync to server-side PersonEntityServer', async () => {
@@ -952,6 +1207,7 @@ describe('PersonEntity supervisor hierarchy, cycle detection, and atomic Reports
 
             // Valid change sends only the Person save over the network (server handles atomic Relationship sync)
             store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: null });
+            PersonEntity.CacheHierarchyLinks(networkProvider, [{ ID: UUID_B, SupervisorPersonID: null }]);
             alice.SupervisorPersonID = UUID_B;
             expect(await alice.Save()).toBe(true);
             expect(store.PersonSaveCalls).toHaveLength(1);
