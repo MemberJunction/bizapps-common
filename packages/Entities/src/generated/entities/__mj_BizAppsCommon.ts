@@ -6527,6 +6527,29 @@ export class mjBizAppsCommonPersonEntity extends BaseEntity<mjBizAppsCommonPerso
     get PrimaryJobFunction(): string | null {
         return this.Get('PrimaryJobFunction');
     }
+
+    /**
+    * * Field Name: SupervisorPersonID
+    * * Display Name: Supervisor
+    * * SQL Data Type: uniqueidentifier
+    * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
+    * * Description: Optional self-referential foreign key to the Person record who directly supervises this person.
+    */
+    get SupervisorPersonID(): string | null {
+        return this.Get('SupervisorPersonID');
+    }
+    set SupervisorPersonID(value: string | null) {
+        this.Set('SupervisorPersonID', value);
+    }
+
+    /**
+    * * Field Name: SupervisorPerson
+    * * Display Name: Supervisor Name
+    * * SQL Data Type: nvarchar(250)
+    */
+    get SupervisorPerson(): string | null {
+        return this.Get('SupervisorPerson');
+    }
 }
 
 

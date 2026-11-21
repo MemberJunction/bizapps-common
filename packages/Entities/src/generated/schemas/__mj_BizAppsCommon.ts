@@ -2351,6 +2351,16 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Field Name: PrimaryJobFunction
         * * Display Name: Primary Job Function Name
         * * SQL Data Type: nvarchar(100)`),
+    SupervisorPersonID: z.string().nullable().describe(`
+        * * Field Name: SupervisorPersonID
+        * * Display Name: Supervisor
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
+        * * Description: Optional self-referential foreign key to the Person record who directly supervises this person.`),
+    SupervisorPerson: z.string().nullable().describe(`
+        * * Field Name: SupervisorPerson
+        * * Display Name: Supervisor Name
+        * * SQL Data Type: nvarchar(250)`),
 });
 
 export type mjBizAppsCommonPersonEntityType = z.infer<typeof mjBizAppsCommonPersonSchema>;

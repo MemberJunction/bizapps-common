@@ -15,6 +15,7 @@ export * from './CompanySenderIdentityEntity.js';
 export * from './contact-method-consent-entity.js';
 export * from './contact-preference-engine.js';
 export * from './company-organization-sync.operation.js';
+export * from './reporting-chain.js';
 
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.
