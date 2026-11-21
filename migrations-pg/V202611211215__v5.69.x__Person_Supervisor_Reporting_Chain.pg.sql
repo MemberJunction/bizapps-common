@@ -594,13 +594,12 @@ DECLARE
     v_target_schema CONSTANT TEXT := '__mj_bizappscommon';
     v_gen_name CONSTANT TEXT := 'vwPeopleGenerated';
     v_has_seniority BOOLEAN;
+    v_has_job_function BOOLEAN;
     v_gen_sql TEXT;
     v_gen_oid OID;
     v_gen_acl TEXT;
     v_people_oid OID;
     v_people_acl TEXT;
-    v_people_def TEXT;
-    v_people_is_layered BOOLEAN := FALSE;
     v_dep RECORD;
     v_acl RECORD;
     v_views JSONB[] := ARRAY[]::JSONB[];
@@ -615,6 +614,11 @@ BEGIN
           AND table_name = 'Person'
           AND column_name = 'SeniorityLevelID'
     ) INTO v_has_seniority;
+
+    SELECT (
+        to_regclass('__mj_bizappscommon."PersonJobFunction"') IS NOT NULL
+        AND to_regclass('__mj_bizappscommon."JobFunction"') IS NOT NULL
+    ) INTO v_has_job_function;
 
     IF v_has_seniority THEN
         v_gen_sql := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"
@@ -662,11 +666,6 @@ LEFT OUTER JOIN
     SELECT c.oid, c.relacl::text INTO v_people_oid, v_people_acl
     FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
     WHERE n.nspname = v_target_schema AND c.relname = 'vwPeople' AND c.relkind = 'v';
-
-    IF v_people_oid IS NOT NULL THEN
-        v_people_def := pg_catalog.pg_get_viewdef(v_people_oid, true);
-        v_people_is_layered := v_people_def ILIKE '%vwPeopleGenerated%';
-    END IF;
 
     -- Capture all views transitively depending on vwPeopleGenerated or vwPeople
     IF v_gen_oid IS NOT NULL OR v_people_oid IS NOT NULL THEN
@@ -768,29 +767,181 @@ LEFT OUTER JOIN
         END LOOP;
     END IF;
 
-    -- Explicitly rebuild vwPeople over vwPeopleGenerated so SupervisorPersonID and SupervisorPerson are exposed
-    IF v_people_is_layered AND v_people_def IS NOT NULL THEN
-        IF v_people_def ILIKE '%"SupervisorPersonID"%' AND v_people_def ILIKE '%"SupervisorPerson"%' THEN
-            v_rebuilt_people_sql := format('CREATE OR REPLACE VIEW %I.%I AS %s', v_target_schema, 'vwPeople', v_people_def);
-        ELSE
-            v_rebuilt_people_sql := format(
-                'CREATE OR REPLACE VIEW %I.%I AS %s',
-                v_target_schema,
-                'vwPeople',
-                regexp_replace(
-                    v_people_def,
-                    '(\s+FROM\s+__mj_bizappscommon\."vwPeopleGenerated")',
-                    E',\n    g."SupervisorPersonID",\n    g."SupervisorPerson"\\1',
-                    'i'
-                )
-            );
-        END IF;
+    -- Explicitly rebuild layered vwPeople over vwPeopleGenerated without string-rewriting pg_get_viewdef
+    -- so all layered columns plus SupervisorPersonID and SupervisorPerson are deterministically exposed.
+    IF v_has_job_function THEN
+        v_rebuilt_people_sql := $vp$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeople"
+AS SELECT
+    g.*,
+    addr."Line1"          AS "PrimaryAddressLine1",
+    addr."Line2"          AS "PrimaryAddressLine2",
+    addr."City"           AS "PrimaryAddressCity",
+    addr."StateProvince"  AS "PrimaryAddressState",
+    addr."PostalCode"     AS "PrimaryAddressPostalCode",
+    addr."Country"        AS "PrimaryAddressCountry",
+    addr."Latitude"       AS "PrimaryAddressLatitude",
+    addr."Longitude"      AS "PrimaryAddressLongitude",
+    addrType."Name"       AS "PrimaryAddressType",
+    COALESCE(cm_email."Value", g."Email") AS "PrimaryEmail",
+    COALESCE(cm_phone."Value", g."Phone") AS "PrimaryPhone",
+    emp_org."ID"          AS "CurrentOrganizationID",
+    emp_org."Name"        AS "CurrentOrganizationName",
+    emp_rel."Title"       AS "CurrentJobTitle",
+    primary_jf."JobFunctionID"   AS "PrimaryJobFunctionID",
+    primary_jf."JobFunctionName" AS "PrimaryJobFunction"
+FROM
+    __mj_bizappscommon."vwPeopleGenerated" AS g
+LEFT OUTER JOIN
+    __mj_bizappscommon."AddressLink" AS al
+  ON
+    al."RecordID" = g."ID"::varchar(700)
+    AND al."EntityID" = (
+        SELECT "ID" FROM ${mjSchema}."Entity"
+        WHERE "Name" = 'MJ_BizApps_Common: People'
+    )
+    AND al."IsPrimary" = TRUE
+LEFT OUTER JOIN
+    __mj_bizappscommon."Address" AS addr
+  ON
+    addr."ID" = al."AddressID"
+LEFT OUTER JOIN
+    __mj_bizappscommon."AddressType" AS addrType
+  ON
+    addrType."ID" = al."AddressTypeID"
+LEFT OUTER JOIN
+    __mj_bizappscommon."ContactMethod" AS cm_email
+  ON
+    cm_email."PersonID" = g."ID"
+    AND cm_email."IsPrimary" = TRUE
+    AND cm_email."ContactTypeID" = (
+        SELECT "ID" FROM __mj_bizappscommon."ContactType"
+        WHERE "Name" = 'Email'
+    )
+LEFT OUTER JOIN
+    __mj_bizappscommon."ContactMethod" AS cm_phone
+  ON
+    cm_phone."PersonID" = g."ID"
+    AND cm_phone."IsPrimary" = TRUE
+    AND cm_phone."ContactTypeID" = (
+        SELECT "ID" FROM __mj_bizappscommon."ContactType"
+        WHERE "Name" = 'Mobile Phone'
+    )
+LEFT JOIN LATERAL (
+    SELECT
+        r."Title",
+        r."ToOrganizationID"
+    FROM
+        __mj_bizappscommon."Relationship" AS r
+    INNER JOIN
+        __mj_bizappscommon."RelationshipType" AS rt
+      ON
+        rt."ID" = r."RelationshipTypeID"
+    WHERE
+        rt."Name" = 'Employee'
+        AND r."FromPersonID" = g."ID"
+        AND r."Status" = 'Active'
+    ORDER BY
+        r."StartDate" DESC
+    LIMIT 1
+) AS emp_rel ON TRUE
+LEFT OUTER JOIN
+    __mj_bizappscommon."Organization" AS emp_org
+  ON
+    emp_org."ID" = emp_rel."ToOrganizationID"
+LEFT JOIN LATERAL (
+    SELECT
+        pjf."JobFunctionID",
+        jf."Name" AS "JobFunctionName"
+    FROM
+        __mj_bizappscommon."PersonJobFunction" AS pjf
+    INNER JOIN
+        __mj_bizappscommon."JobFunction" AS jf
+      ON
+        jf."ID" = pjf."JobFunctionID"
+    WHERE
+        pjf."PersonID" = g."ID"
+    ORDER BY
+        pjf."Sequence" ASC,
+        jf."Name" ASC
+    LIMIT 1
+) AS primary_jf ON TRUE$vp$;
     ELSE
         v_rebuilt_people_sql := $vp$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeople"
 AS SELECT
-    g.*
+    g.*,
+    addr."Line1"          AS "PrimaryAddressLine1",
+    addr."Line2"          AS "PrimaryAddressLine2",
+    addr."City"           AS "PrimaryAddressCity",
+    addr."StateProvince"  AS "PrimaryAddressState",
+    addr."PostalCode"     AS "PrimaryAddressPostalCode",
+    addr."Country"        AS "PrimaryAddressCountry",
+    addr."Latitude"       AS "PrimaryAddressLatitude",
+    addr."Longitude"      AS "PrimaryAddressLongitude",
+    addrType."Name"       AS "PrimaryAddressType",
+    COALESCE(cm_email."Value", g."Email") AS "PrimaryEmail",
+    COALESCE(cm_phone."Value", g."Phone") AS "PrimaryPhone",
+    emp_org."ID"          AS "CurrentOrganizationID",
+    emp_org."Name"        AS "CurrentOrganizationName",
+    emp_rel."Title"       AS "CurrentJobTitle"
 FROM
-    __mj_bizappscommon."vwPeopleGenerated" AS g$vp$;
+    __mj_bizappscommon."vwPeopleGenerated" AS g
+LEFT OUTER JOIN
+    __mj_bizappscommon."AddressLink" AS al
+  ON
+    al."RecordID" = g."ID"::varchar(700)
+    AND al."EntityID" = (
+        SELECT "ID" FROM ${mjSchema}."Entity"
+        WHERE "Name" = 'MJ_BizApps_Common: People'
+    )
+    AND al."IsPrimary" = TRUE
+LEFT OUTER JOIN
+    __mj_bizappscommon."Address" AS addr
+  ON
+    addr."ID" = al."AddressID"
+LEFT OUTER JOIN
+    __mj_bizappscommon."AddressType" AS addrType
+  ON
+    addrType."ID" = al."AddressTypeID"
+LEFT OUTER JOIN
+    __mj_bizappscommon."ContactMethod" AS cm_email
+  ON
+    cm_email."PersonID" = g."ID"
+    AND cm_email."IsPrimary" = TRUE
+    AND cm_email."ContactTypeID" = (
+        SELECT "ID" FROM __mj_bizappscommon."ContactType"
+        WHERE "Name" = 'Email'
+    )
+LEFT OUTER JOIN
+    __mj_bizappscommon."ContactMethod" AS cm_phone
+  ON
+    cm_phone."PersonID" = g."ID"
+    AND cm_phone."IsPrimary" = TRUE
+    AND cm_phone."ContactTypeID" = (
+        SELECT "ID" FROM __mj_bizappscommon."ContactType"
+        WHERE "Name" = 'Mobile Phone'
+    )
+LEFT JOIN LATERAL (
+    SELECT
+        r."Title",
+        r."ToOrganizationID"
+    FROM
+        __mj_bizappscommon."Relationship" AS r
+    INNER JOIN
+        __mj_bizappscommon."RelationshipType" AS rt
+      ON
+        rt."ID" = r."RelationshipTypeID"
+    WHERE
+        rt."Name" = 'Employee'
+        AND r."FromPersonID" = g."ID"
+        AND r."Status" = 'Active'
+    ORDER BY
+        r."StartDate" DESC
+    LIMIT 1
+) AS emp_rel ON TRUE
+LEFT OUTER JOIN
+    __mj_bizappscommon."Organization" AS emp_org
+  ON
+    emp_org."ID" = emp_rel."ToOrganizationID"$vp$;
     END IF;
 
     EXECUTE v_rebuilt_people_sql;
