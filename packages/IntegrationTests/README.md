@@ -47,6 +47,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `relationships` | R1–R4 |
 | `activities` | A1–A5 |
 | `party-lookup` | PL1–PL4 |
+| `company-org-mirror` | CM1–CM4 (`MJ: Companies` → `Organization` auto-mirroring, update sync, `SyncCompaniesToOrganizations` RPC, `UQ_Organization_LinkedCompanyID` uniqueness) |
 | `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3, AS-C1–C5 (needs a sandbox host, below; not in the default run, so name it) |
 
 ## Activity Sync sandbox (`activity-sync`)
