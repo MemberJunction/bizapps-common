@@ -881,13 +881,55 @@ describe('PersonEntity supervisor hierarchy, cycle detection, and atomic Reports
             expect(multiHopSync.Success).toBe(false);
             expect(multiHopSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /cycle/i.test(e.Message))).toBe(true);
 
-            // ValidateAsync()-populated cache also powers synchronous Validate() without instantiating ancestor entities
+            // On a cold cache, synchronous Validate() must fail closed for unverified 2-node and multi-hop chains
             PersonEntity.ClearHierarchyCache(provider);
-            expect(alice.Validate().Success).toBe(true);
+            alice.SupervisorPersonID = UUID_B;
+            const coldTwoNodeSync = alice.Validate();
+            expect(coldTwoNodeSync.Success).toBe(false);
+            expect(coldTwoNodeSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /not cached|ValidateAsync/i.test(e.Message))).toBe(true);
+
+            alice.SupervisorPersonID = UUID_D;
+            const coldMultiHopSync = alice.Validate();
+            expect(coldMultiHopSync.Success).toBe(false);
+            expect(coldMultiHopSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /not cached|ValidateAsync/i.test(e.Message))).toBe(true);
+
+            // ValidateAsync()-populated cache powers synchronous Validate() with explicit cycle rejection
             await alice.ValidateAsync();
             const postAsyncSync = alice.Validate();
             expect(postAsyncSync.Success).toBe(false);
             expect(postAsyncSync.Errors.some((e) => e.Source === 'SupervisorPersonID' && /cycle/i.test(e.Message))).toBe(true);
+        });
+
+        it('refreshes stale cached cycle edges from live BypassCache lookup during ValidateAsync() and Save() (CR-6)', async () => {
+            store.SeedPerson({ ID: UUID_A, FirstName: 'Alice', LastName: 'A', SupervisorPersonID: null });
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: UUID_A });
+
+            // Loading Bob seeds providerHierarchyCache with stale edge B -> A
+            const alice = await makeSavedPerson(store.GetPerson(UUID_A)!, provider);
+            await makeSavedPerson(store.GetPerson(UUID_B)!, provider);
+
+            // Another client/process clears Bob's supervisor directly in the underlying store
+            store.SeedPerson({ ID: UUID_B, FirstName: 'Bob', LastName: 'B', SupervisorPersonID: null });
+
+            alice.SupervisorPersonID = UUID_B;
+            // Synchronous Validate() still sees stale cached B -> A and rejects synchronously
+            expect(alice.Validate().Success).toBe(false);
+
+            // ValidateAsync() queries live storage with BypassCache: true, refreshes B -> null in cache, and passes
+            const asyncResult = await alice.ValidateAsync();
+            expect(asyncResult.Success).toBe(true);
+            expect(alice.Validate().Success).toBe(true);
+
+            // Re-seed stale cache B -> A without calling CacheHierarchyLinks and verify Save() refreshes live state and succeeds
+            PersonEntity.CacheHierarchyLinks(provider, [{ ID: UUID_B, SupervisorPersonID: UUID_A }]);
+            expect(alice.Validate().Success).toBe(false);
+
+            const saved = await alice.Save();
+            expect(saved).toBe(true);
+            expect(store.GetPerson(UUID_A)?.SupervisorPersonID).toBe(UUID_B);
+            expect(store.GetActiveReportsToFor(UUID_A)).toHaveLength(1);
+            expect(store.GetActiveReportsToFor(UUID_A)[0].ToPersonID).toBe(UUID_B);
+            expect(alice.Validate().Success).toBe(true);
         });
     });
 

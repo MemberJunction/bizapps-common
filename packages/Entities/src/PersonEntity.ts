@@ -96,6 +96,27 @@ function sameNullableId(a: string | null, b: string | null): boolean {
     return UUIDsEqual(a, b);
 }
 
+function tryGetProviderCachedSupervisor(
+    provider: IEntityDataProvider | SynchronousHierarchyLookupProvider | null | undefined,
+    personId: string,
+): { found: boolean; supervisorId: string | null } {
+    if (
+        provider != null &&
+        'GetCachedPersonSupervisor' in provider &&
+        typeof provider.GetCachedPersonSupervisor === 'function'
+    ) {
+        const result = provider.GetCachedPersonSupervisor(personId);
+        if (result !== undefined) {
+            return { found: true, supervisorId: normalizeId(result) };
+        }
+    }
+    return { found: false, supervisorId: null };
+}
+
+interface SynchronousHierarchyLookupProvider {
+    GetCachedPersonSupervisor?(personId: string): string | null | undefined;
+}
+
 interface ProviderWithRuntimeInfo {
     readonly ProviderType?: ProviderType;
     readonly CurrentUser?: UserInfo;
@@ -367,8 +388,14 @@ export class PersonEntity extends mjBizAppsCommonPersonEntity {
 
             const key = NormalizeUUID(currentId);
             if (!cache.has(key)) {
-                // Ancestor edge is not yet cached synchronously; ValidateAsync()/Save() will verify via RunView.
-                return null;
+                const providerLookup = tryGetProviderCachedSupervisor(this.ProviderToUse, currentId);
+                if (providerLookup.found) {
+                    const sup = providerLookup.supervisorId;
+                    cache.set(key, sup ? NormalizeUUID(sup) : null);
+                } else {
+                    // Fail closed on unverified/uncached ancestor chains in synchronous Validate().
+                    return `Cannot verify supervisor reporting chain synchronously: ancestor Person '${currentId}' is not cached; verify via ValidateAsync()/Save() or pre-cache hierarchy links.`;
+                }
             }
             currentId = cache.get(key) ?? null;
             depth++;
@@ -415,12 +442,22 @@ export class PersonEntity extends mjBizAppsCommonPersonEntity {
     }
 
     private async runPreflightValidation(): Promise<ValidationResult> {
+        const result = new ValidationResult();
+        result.Success = true;
+
+        // Run live BypassCache ancestor traversal BEFORE synchronous Validate() so stale
+        // cached cycles cleared by another writer are refreshed in providerHierarchyCache
+        // prior to synchronous validation (CR-6).
+        await this.appendHierarchyCycleError(result, true);
+        if (!result.Success) {
+            return result;
+        }
+
         const syncResult = this.Validate();
         if (!syncResult.Success) {
             return syncResult;
         }
-        await this.appendHierarchyCycleError(syncResult, false);
-        return syncResult;
+        return result;
     }
 
     private async detectTransitiveCycle(initialSupervisorId: string): Promise<string | null> {
