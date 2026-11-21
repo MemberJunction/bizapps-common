@@ -7,6 +7,7 @@
  *  - Strongly-typed Person entity/schema properties & reporting-chain metadata
  */
 import { readdirSync, readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
@@ -153,7 +154,7 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
             expect(pgFlat).toContain('SELECT "PersonID", "SupervisorPersonID", "Depth" FROM "ReportingChain"');
         });
 
-        it('defines SyncEmployeesToPeople procedure in PostgreSQL synchronizing SupervisorPersonID and dated Reports To relationships', () => {
+        it('defines SyncEmployeesToPeople procedure, rebuilds vwPeopleGenerated + vwPeople with grants, and updates spCreatePerson + spUpdatePerson in PostgreSQL', () => {
             expect(pgFlat).toContain('CREATE OR REPLACE PROCEDURE __mj_bizappscommon."SyncEmployeesToPeople"()');
             expect(pgFlat).toContain('FROM ${mjSchema}."Employee" AS emp');
             expect(pgFlat).toContain('SET "SupervisorPersonID" = s."TargetSupervisorPersonID"');
@@ -162,6 +163,380 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
             expect(pgFlat).toContain('\'Active\'');
             expect(pgFlat).toContain('"StartDate"');
             expect(pgFlat).toContain('INSERT INTO ${mjSchema}."EntityFieldPermission"');
+
+            // CR-3: Rebuilds both vwPeopleGenerated and vwPeople, restores grants, and never swallows dependent view errors
+            expect(pgFlat).toContain('CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"');
+            expect(pgFlat).toContain('GRANT SELECT ON __mj_bizappscommon."vwPeopleGenerated" TO "cdp_UI", "cdp_Developer", "cdp_Integration"');
+            expect(pgFlat).toContain('GRANT SELECT ON __mj_bizappscommon."vwPeople" TO "cdp_UI", "cdp_Developer", "cdp_Integration"');
+            expect(pgFlat).not.toMatch(/RAISE WARNING 'Could not recreate dependent view/i);
+
+            // CR-2: Drops obsolete overloads and recreates spCreatePerson & spUpdatePerson with SupervisorPersonID
+            expect(pgFlat).toContain('CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreatePerson"(');
+            expect(pgFlat).toContain('CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdatePerson"(');
+            expect(pgFlat).toContain('p_supervisorpersonid_clear boolean DEFAULT false');
+            expect(pgFlat).toContain('p_supervisorpersonid uuid DEFAULT NULL::uuid');
+            expect(pgFlat).toContain('RETURNS SETOF __mj_bizappscommon."vwPeople"');
+            expect(pgFlat).toContain('GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration"');
+            expect(pgFlat).toContain('GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration"');
+        });
+    });
+
+    describe('Executable SQL verification (node:sqlite relational engine)', () => {
+        function createExecutableReportingDb(): DatabaseSync {
+            const db = new DatabaseSync(':memory:');
+            db.exec(`
+                PRAGMA foreign_keys = ON;
+                CREATE TABLE Employee (
+                    ID TEXT PRIMARY KEY,
+                    FirstName TEXT NOT NULL,
+                    LastName TEXT NOT NULL,
+                    Title TEXT,
+                    Email TEXT,
+                    Phone TEXT,
+                    Active INTEGER NOT NULL,
+                    SupervisorID TEXT REFERENCES Employee(ID)
+                );
+                CREATE TABLE User (
+                    ID TEXT PRIMARY KEY,
+                    EmployeeID TEXT,
+                    LinkedEntityID TEXT,
+                    LinkedEntityRecordID TEXT,
+                    IsActive INTEGER NOT NULL DEFAULT 1,
+                    CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                );
+                CREATE TABLE Person (
+                    ID TEXT PRIMARY KEY,
+                    FirstName TEXT NOT NULL,
+                    LastName TEXT NOT NULL,
+                    Title TEXT,
+                    Email TEXT,
+                    Phone TEXT,
+                    LinkedUserID TEXT UNIQUE,
+                    Status TEXT NOT NULL DEFAULT 'Active' CHECK (Status IN ('Active', 'Inactive', 'Deceased')),
+                    SupervisorPersonID TEXT NULL REFERENCES Person(ID),
+                    CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                );
+                CREATE TABLE RelationshipType (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL,
+                    Category TEXT NOT NULL,
+                    IsDirectional INTEGER NOT NULL,
+                    ForwardLabel TEXT,
+                    ReverseLabel TEXT,
+                    IsActive INTEGER NOT NULL DEFAULT 1
+                );
+                CREATE TABLE Relationship (
+                    ID TEXT PRIMARY KEY,
+                    RelationshipTypeID TEXT NOT NULL REFERENCES RelationshipType(ID),
+                    FromPersonID TEXT REFERENCES Person(ID),
+                    FromOrganizationID TEXT,
+                    ToPersonID TEXT REFERENCES Person(ID),
+                    ToOrganizationID TEXT,
+                    StartDate TEXT,
+                    EndDate TEXT,
+                    Status TEXT NOT NULL CHECK (Status IN ('Active', 'Ended', 'Inactive')),
+                    Notes TEXT
+                );
+                CREATE VIEW vwPersonReportingChain AS
+                WITH RECURSIVE ReportingChain (PersonID, SupervisorPersonID, Depth, VisitedPath) AS (
+                    SELECT
+                        p.ID AS PersonID,
+                        p.SupervisorPersonID AS SupervisorPersonID,
+                        1 AS Depth,
+                        ',' || p.ID || ',' || p.SupervisorPersonID || ',' AS VisitedPath
+                    FROM Person p
+                    WHERE p.SupervisorPersonID IS NOT NULL
+                      AND p.SupervisorPersonID <> p.ID
+                    UNION ALL
+                    SELECT
+                        rc.PersonID AS PersonID,
+                        sup.SupervisorPersonID AS SupervisorPersonID,
+                        rc.Depth + 1 AS Depth,
+                        rc.VisitedPath || sup.SupervisorPersonID || ',' AS VisitedPath
+                    FROM ReportingChain rc
+                    INNER JOIN Person sup ON sup.ID = rc.SupervisorPersonID
+                    WHERE sup.SupervisorPersonID IS NOT NULL
+                      AND instr(rc.VisitedPath, ',' || sup.SupervisorPersonID || ',') = 0
+                      AND rc.Depth < 100
+                )
+                SELECT PersonID, SupervisorPersonID, Depth FROM ReportingChain;
+            `);
+            return db;
+        }
+
+        function runSyncEmployeesToPeopleSql(db: DatabaseSync, syncDate: string): void {
+            const reportsToTypeId = REPORTS_TO_RELATIONSHIP_TYPE_ID;
+            db.exec('BEGIN IMMEDIATE;');
+            try {
+                db.prepare(`
+                    INSERT OR IGNORE INTO RelationshipType (ID, Name, Category, IsDirectional, ForwardLabel, ReverseLabel, IsActive)
+                    VALUES (?, 'Reports To', 'PersonToPerson', 1, 'reports to', 'supervises', 1);
+                `).run(reportsToTypeId);
+
+                db.exec(`
+                    CREATE TEMP TABLE IF NOT EXISTS _tmp_emp_map (
+                        EmployeeID TEXT PRIMARY KEY,
+                        SupervisorEmployeeID TEXT,
+                        FirstName TEXT NOT NULL,
+                        LastName TEXT NOT NULL,
+                        Title TEXT,
+                        Email TEXT,
+                        Phone TEXT,
+                        Active INTEGER NOT NULL,
+                        PersonID TEXT,
+                        LinkedUserID TEXT
+                    );
+                    DELETE FROM _tmp_emp_map;
+                `);
+
+                db.exec(`
+                    INSERT INTO _tmp_emp_map (EmployeeID, SupervisorEmployeeID, FirstName, LastName, Title, Email, Phone, Active, PersonID, LinkedUserID)
+                    SELECT
+                        emp.ID,
+                        emp.SupervisorID,
+                        emp.FirstName,
+                        emp.LastName,
+                        emp.Title,
+                        NULLIF(TRIM(emp.Email), ''),
+                        NULLIF(TRIM(emp.Phone), ''),
+                        emp.Active,
+                        COALESCE(
+                            (SELECT p.ID FROM User u JOIN Person p ON p.ID = u.LinkedEntityRecordID WHERE u.EmployeeID = emp.ID LIMIT 1),
+                            (SELECT p.ID FROM User u JOIN Person p ON p.LinkedUserID = u.ID WHERE u.EmployeeID = emp.ID LIMIT 1),
+                            (SELECT p.ID FROM Person p WHERE NULLIF(TRIM(emp.Email), '') IS NOT NULL AND LOWER(TRIM(p.Email)) = LOWER(TRIM(emp.Email)) LIMIT 1)
+                        ),
+                        (SELECT u.ID FROM User u WHERE u.EmployeeID = emp.ID ORDER BY u.IsActive DESC, u.CreatedAt ASC LIMIT 1)
+                    FROM Employee emp;
+                `);
+
+                // Create Person rows for active unmatched employees
+                const unmatched = db.prepare(`
+                    SELECT EmployeeID, FirstName, LastName, Title, Email, Phone, LinkedUserID
+                    FROM _tmp_emp_map
+                    WHERE PersonID IS NULL AND Active = 1
+                `).all() as Array<{
+                    EmployeeID: string;
+                    FirstName: string;
+                    LastName: string;
+                    Title: string | null;
+                    Email: string | null;
+                    Phone: string | null;
+                    LinkedUserID: string | null;
+                }>;
+
+                const insertPerson = db.prepare(`
+                    INSERT INTO Person (ID, FirstName, LastName, Title, Email, Phone, LinkedUserID, Status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
+                `);
+                const updateMap = db.prepare(`UPDATE _tmp_emp_map SET PersonID = ? WHERE EmployeeID = ?`);
+                for (const row of unmatched) {
+                    const personId = `person-${row.EmployeeID}`;
+                    const userTaken = row.LinkedUserID
+                        ? db.prepare(`SELECT 1 FROM Person WHERE LinkedUserID = ?`).get(row.LinkedUserID)
+                        : null;
+                    insertPerson.run(
+                        personId,
+                        row.FirstName,
+                        row.LastName,
+                        row.Title,
+                        row.Email,
+                        row.Phone,
+                        userTaken ? null : row.LinkedUserID,
+                    );
+                    updateMap.run(personId, row.EmployeeID);
+                }
+
+                db.exec(`
+                    CREATE TEMP TABLE IF NOT EXISTS _tmp_sup_sync (
+                        PersonID TEXT PRIMARY KEY,
+                        TargetSupervisorPersonID TEXT NULL
+                    );
+                    DELETE FROM _tmp_sup_sync;
+                    INSERT INTO _tmp_sup_sync (PersonID, TargetSupervisorPersonID)
+                    SELECT
+                        m.PersonID,
+                        CASE WHEN sup.PersonID IS NOT NULL AND sup.PersonID <> m.PersonID THEN sup.PersonID ELSE NULL END
+                    FROM _tmp_emp_map m
+                    LEFT JOIN _tmp_emp_map sup ON sup.EmployeeID = m.SupervisorEmployeeID
+                    WHERE m.PersonID IS NOT NULL;
+                `);
+
+                db.exec(`
+                    UPDATE Person
+                    SET SupervisorPersonID = (
+                        SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Person.ID
+                    )
+                    WHERE ID IN (SELECT PersonID FROM _tmp_sup_sync)
+                      AND COALESCE(SupervisorPersonID, '') <> COALESCE((SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Person.ID), '');
+                `);
+
+                db.prepare(`
+                    UPDATE Relationship
+                    SET Status = 'Ended',
+                        EndDate = COALESCE(EndDate, ?)
+                    WHERE RelationshipTypeID = ?
+                      AND Status = 'Active'
+                      AND FromPersonID IN (SELECT PersonID FROM _tmp_sup_sync)
+                      AND (
+                          (SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Relationship.FromPersonID) IS NULL
+                          OR ToPersonID IS NULL
+                          OR ToPersonID <> (SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Relationship.FromPersonID)
+                      );
+                `).run(syncDate, reportsToTypeId);
+
+                const toInsert = db.prepare(`
+                    SELECT s.PersonID, s.TargetSupervisorPersonID
+                    FROM _tmp_sup_sync s
+                    WHERE s.TargetSupervisorPersonID IS NOT NULL
+                      AND NOT EXISTS (
+                          SELECT 1 FROM Relationship r
+                          WHERE r.RelationshipTypeID = ?
+                            AND r.FromPersonID = s.PersonID
+                            AND r.ToPersonID = s.TargetSupervisorPersonID
+                            AND r.Status = 'Active'
+                      )
+                `).all(reportsToTypeId) as Array<{ PersonID: string; TargetSupervisorPersonID: string }>;
+
+                const insertRel = db.prepare(`
+                    INSERT INTO Relationship (ID, RelationshipTypeID, FromPersonID, ToPersonID, StartDate, EndDate, Status, Notes)
+                    VALUES (?, ?, ?, ?, ?, NULL, 'Active', 'Synced from MJ: Employees supervisor hierarchy')
+                `);
+                let seq = 1;
+                for (const r of toInsert) {
+                    insertRel.run(`rel-${syncDate}-${seq++}-${r.PersonID}`, reportsToTypeId, r.PersonID, r.TargetSupervisorPersonID, syncDate);
+                }
+
+                db.exec('COMMIT;');
+            } catch (err) {
+                db.exec('ROLLBACK;');
+                throw err;
+            }
+        }
+
+        it('executes vwPersonReportingChain recursive CTE for 4-level hierarchy and terminates safely on cyclic data', () => {
+            const db = createExecutableReportingDb();
+            try {
+                // 4-level chain: p4 -> p3 -> p2 -> p1 -> NULL
+                db.exec(`
+                    INSERT INTO Person (ID, FirstName, LastName, SupervisorPersonID) VALUES
+                        ('p1', 'CEO', 'One', NULL),
+                        ('p2', 'VP', 'Two', 'p1'),
+                        ('p3', 'Dir', 'Three', 'p2'),
+                        ('p4', 'Eng', 'Four', 'p3');
+                `);
+
+                const p4Chain: PersonReportingChainRow[] = db.prepare(`
+                    SELECT PersonID, SupervisorPersonID, Depth
+                    FROM vwPersonReportingChain
+                    WHERE PersonID = 'p4'
+                    ORDER BY Depth ASC
+                `).all().map((r) => ({
+                    PersonID: String(r.PersonID),
+                    SupervisorPersonID: String(r.SupervisorPersonID),
+                    Depth: Number(r.Depth),
+                }));
+
+                expect(p4Chain).toEqual([
+                    { PersonID: 'p4', SupervisorPersonID: 'p3', Depth: 1 },
+                    { PersonID: 'p4', SupervisorPersonID: 'p2', Depth: 2 },
+                    { PersonID: 'p4', SupervisorPersonID: 'p1', Depth: 3 },
+                ]);
+
+                // Cyclic data (c1 -> c2 -> c3 -> c1) must terminate without infinite recursion
+                db.exec(`
+                    INSERT INTO Person (ID, FirstName, LastName, SupervisorPersonID) VALUES
+                        ('c1', 'Cyc', 'One', NULL),
+                        ('c2', 'Cyc', 'Two', 'c1'),
+                        ('c3', 'Cyc', 'Three', 'c2');
+                    UPDATE Person SET SupervisorPersonID = 'c3' WHERE ID = 'c1';
+                `);
+
+                const cycRows: PersonReportingChainRow[] = db.prepare(`
+                    SELECT PersonID, SupervisorPersonID, Depth
+                    FROM vwPersonReportingChain
+                    WHERE PersonID = 'c1'
+                    ORDER BY Depth ASC
+                `).all().map((r) => ({
+                    PersonID: String(r.PersonID),
+                    SupervisorPersonID: String(r.SupervisorPersonID),
+                    Depth: Number(r.Depth),
+                }));
+
+                expect(cycRows).toEqual([
+                    { PersonID: 'c1', SupervisorPersonID: 'c3', Depth: 1 },
+                    { PersonID: 'c1', SupervisorPersonID: 'c2', Depth: 2 },
+                ]);
+            } finally {
+                db.close();
+            }
+        });
+
+        it('executes SyncEmployeesToPeople atomically across initial sync, idempotent repeat, supervisor change, and clear', () => {
+            const db = createExecutableReportingDb();
+            try {
+                db.exec(`
+                    INSERT INTO Employee (ID, FirstName, LastName, Title, Email, Active, SupervisorID) VALUES
+                        ('e1', 'Alice', 'CEO', 'CEO', 'alice@example.com', 1, NULL),
+                        ('e2', 'Bob', 'VP', 'VP Eng', 'bob@example.com', 1, 'e1'),
+                        ('e3', 'Carol', 'Dev', 'Engineer', 'carol@example.com', 1, 'e2');
+                `);
+
+                // Run 1: populates People, SupervisorPersonID, and dated Active 'Reports To' rows
+                runSyncEmployeesToPeopleSql(db, '2026-11-21');
+
+                const bob = db.prepare(`SELECT ID, SupervisorPersonID FROM Person WHERE Email = 'bob@example.com'`).get() as {
+                    ID: string;
+                    SupervisorPersonID: string | null;
+                };
+                const alice = db.prepare(`SELECT ID FROM Person WHERE Email = 'alice@example.com'`).get() as { ID: string };
+                const carol = db.prepare(`SELECT ID, SupervisorPersonID FROM Person WHERE Email = 'carol@example.com'`).get() as {
+                    ID: string;
+                    SupervisorPersonID: string | null;
+                };
+
+                expect(bob.SupervisorPersonID).toBe(alice.ID);
+                expect(carol.SupervisorPersonID).toBe(bob.ID);
+
+                const activeAfterRun1 = db.prepare(`SELECT FromPersonID, ToPersonID, StartDate, EndDate, Status FROM Relationship WHERE Status = 'Active'`).all() as Array<{
+                    FromPersonID: string;
+                    ToPersonID: string;
+                    StartDate: string;
+                    EndDate: string | null;
+                    Status: string;
+                }>;
+                expect(activeAfterRun1).toHaveLength(2);
+                expect(activeAfterRun1.every((r) => r.StartDate === '2026-11-21' && r.EndDate === null)).toBe(true);
+
+                // Run 2 (idempotent repeat): must not duplicate active 'Reports To' rows
+                runSyncEmployeesToPeopleSql(db, '2026-11-21');
+                const countAfterRepeat = db.prepare(`SELECT COUNT(*) AS cnt FROM Relationship`).get() as { cnt: number };
+                expect(countAfterRepeat.cnt).toBe(2);
+
+                // Reassign Carol from Bob to Alice, and clear Bob's supervisor
+                db.exec(`
+                    UPDATE Employee SET SupervisorID = 'e1' WHERE ID = 'e3';
+                    UPDATE Employee SET SupervisorID = NULL WHERE ID = 'e2';
+                `);
+                runSyncEmployeesToPeopleSql(db, '2026-11-22');
+
+                const carolAfter = db.prepare(`SELECT SupervisorPersonID FROM Person WHERE ID = ?`).get(carol.ID) as { SupervisorPersonID: string | null };
+                const bobAfter = db.prepare(`SELECT SupervisorPersonID FROM Person WHERE ID = ?`).get(bob.ID) as { SupervisorPersonID: string | null };
+                expect(carolAfter.SupervisorPersonID).toBe(alice.ID);
+                expect(bobAfter.SupervisorPersonID).toBeNull();
+
+                const carolRels = db.prepare(`
+                    SELECT ToPersonID, StartDate, EndDate, Status FROM Relationship WHERE FromPersonID = ? ORDER BY StartDate ASC
+                `).all(carol.ID) as Array<{ ToPersonID: string; StartDate: string; EndDate: string | null; Status: string }>;
+                expect(carolRels).toEqual([
+                    { ToPersonID: bob.ID, StartDate: '2026-11-21', EndDate: '2026-11-22', Status: 'Ended' },
+                    { ToPersonID: alice.ID, StartDate: '2026-11-22', EndDate: null, Status: 'Active' },
+                ]);
+
+                const bobActiveRels = db.prepare(`SELECT COUNT(*) AS cnt FROM Relationship WHERE FromPersonID = ? AND Status = 'Active'`).get(bob.ID) as { cnt: number };
+                expect(bobActiveRels.cnt).toBe(0);
+            } finally {
+                db.close();
+            }
         });
     });
 

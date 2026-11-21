@@ -587,12 +587,37 @@ WHERE NOT EXISTS (
            AND "RelatedEntityJoinField" = 'SupervisorPersonID')
 );
 
--- Rebuild vwPeopleGenerated cleanly and restore any dependent views (vwPeople)
+-- Rebuild vwPeopleGenerated, vwPeople, dependent views, and spCreatePerson / spUpdatePerson cleanly.
+-- Fails loudly if any dependent view or function cannot be recreated; never downgrades errors to warnings.
 DO $do$
 DECLARE
     v_target_schema CONSTANT TEXT := '__mj_bizappscommon';
-    v_target_name CONSTANT TEXT := 'vwPeopleGenerated';
-    vsql CONSTANT TEXT := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"
+    v_gen_name CONSTANT TEXT := 'vwPeopleGenerated';
+    v_has_seniority BOOLEAN;
+    v_gen_sql TEXT;
+    v_gen_oid OID;
+    v_gen_acl TEXT;
+    v_people_oid OID;
+    v_people_acl TEXT;
+    v_people_def TEXT;
+    v_people_is_layered BOOLEAN := FALSE;
+    v_dep RECORD;
+    v_acl RECORD;
+    v_views JSONB[] := ARRAY[]::JSONB[];
+    v_fns JSONB[] := ARRAY[]::JSONB[];
+    v_n INTEGER;
+    v_rebuilt_people_sql TEXT;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = v_target_schema
+          AND table_name = 'Person'
+          AND column_name = 'SeniorityLevelID'
+    ) INTO v_has_seniority;
+
+    IF v_has_seniority THEN
+        v_gen_sql := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"
 AS SELECT
     p.*,
     "MJUser_LinkedUserID"."Name" AS "LinkedUser",
@@ -612,59 +637,591 @@ LEFT OUTER JOIN
     __mj_bizappscommon."Person" AS "mjBizAppsCommonPerson_SupervisorPersonID"
   ON
     p."SupervisorPersonID" = "mjBizAppsCommonPerson_SupervisorPersonID"."ID"$vsql$;
-    v_target_oid OID;
-    v_dep RECORD;
-    v_captured JSONB[] := ARRAY[]::JSONB[];
-    v_n INTEGER;
-BEGIN
-    EXECUTE vsql;
-EXCEPTION WHEN invalid_table_definition THEN
-    SELECT c.oid INTO v_target_oid
+    ELSE
+        v_gen_sql := $vsql$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"
+AS SELECT
+    p.*,
+    "MJUser_LinkedUserID"."Name" AS "LinkedUser",
+    "mjBizAppsCommonPerson_SupervisorPersonID"."DisplayName" AS "SupervisorPerson"
+FROM
+    __mj_bizappscommon."Person" AS p
+LEFT OUTER JOIN
+    ${mjSchema}."User" AS "MJUser_LinkedUserID"
+  ON
+    p."LinkedUserID" = "MJUser_LinkedUserID"."ID"
+LEFT OUTER JOIN
+    __mj_bizappscommon."Person" AS "mjBizAppsCommonPerson_SupervisorPersonID"
+  ON
+    p."SupervisorPersonID" = "mjBizAppsCommonPerson_SupervisorPersonID"."ID"$vsql$;
+    END IF;
+
+    SELECT c.oid, c.relacl::text INTO v_gen_oid, v_gen_acl
     FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-    WHERE n.nspname = v_target_schema AND c.relname = v_target_name AND c.relkind = 'v';
-    IF v_target_oid IS NOT NULL THEN
+    WHERE n.nspname = v_target_schema AND c.relname = v_gen_name AND c.relkind = 'v';
+
+    SELECT c.oid, c.relacl::text INTO v_people_oid, v_people_acl
+    FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE n.nspname = v_target_schema AND c.relname = 'vwPeople' AND c.relkind = 'v';
+
+    IF v_people_oid IS NOT NULL THEN
+        v_people_def := pg_catalog.pg_get_viewdef(v_people_oid, true);
+        v_people_is_layered := v_people_def ILIKE '%vwPeopleGenerated%';
+    END IF;
+
+    -- Capture all views transitively depending on vwPeopleGenerated or vwPeople
+    IF v_gen_oid IS NOT NULL OR v_people_oid IS NOT NULL THEN
         FOR v_dep IN
             WITH RECURSIVE deps AS (
-                SELECT c.oid, c.relname AS name, n.nspname AS schema, 1 AS depth
-                FROM pg_rewrite r
-                JOIN pg_depend d ON d.objid = r.oid
+                SELECT c.oid, 1 AS depth
+                FROM pg_depend d
+                JOIN pg_rewrite r ON r.oid = d.objid
                 JOIN pg_class c ON c.oid = r.ev_class
-                JOIN pg_namespace n ON c.relnamespace = n.oid
-                WHERE d.refobjid = v_target_oid AND d.deptype = 'n'
-                  AND c.oid <> v_target_oid AND c.relkind = 'v'
+                WHERE d.refobjid IN (v_gen_oid, v_people_oid)
+                  AND d.deptype = 'n'
+                  AND c.relkind = 'v'
+                  AND c.oid NOT IN (COALESCE(v_gen_oid, 0), COALESCE(v_people_oid, 0))
                 UNION
-                SELECT c.oid, c.relname, n.nspname, p.depth + 1
+                SELECT c.oid, p.depth + 1
                 FROM deps p
-                JOIN pg_rewrite r ON TRUE
-                JOIN pg_depend d ON d.objid = r.oid AND d.refobjid = p.oid
+                JOIN pg_depend d ON d.refobjid = p.oid
+                JOIN pg_rewrite r ON r.oid = d.objid
                 JOIN pg_class c ON c.oid = r.ev_class
-                JOIN pg_namespace n ON c.relnamespace = n.oid
-                WHERE c.relkind = 'v' AND c.oid <> p.oid
+                WHERE c.relkind = 'v'
+                  AND c.oid <> p.oid
             )
-            SELECT oid, name, schema, MAX(depth) AS max_depth,
-                   pg_catalog.pg_get_viewdef(oid, true) AS viewdef
-            FROM deps GROUP BY oid, name, schema
-            ORDER BY MAX(depth) ASC
+            SELECT c.oid, n.nspname AS schema, c.relname AS name, MAX(deps.depth) AS depth,
+                   pg_catalog.pg_get_viewdef(c.oid, true) AS viewdef, c.relacl::text AS acl
+            FROM deps
+            JOIN pg_class c ON c.oid = deps.oid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            GROUP BY c.oid, n.nspname, c.relname, c.relacl
+            ORDER BY MAX(deps.depth) ASC
         LOOP
-            v_captured := v_captured || jsonb_build_object(
-                'schema', v_dep.schema, 'name', v_dep.name, 'def', v_dep.viewdef
+            v_views := v_views || jsonb_build_object(
+                'oid', v_dep.oid,
+                'schema', v_dep.schema,
+                'name', v_dep.name,
+                'def', v_dep.viewdef,
+                'acl', v_dep.acl
             );
         END LOOP;
+
+        -- Capture dependent functions referencing vwPeopleGenerated, vwPeople, or dependent views
+        -- (spCreatePerson and spUpdatePerson are explicitly recreated below with SupervisorPersonID)
+        FOR v_dep IN
+            SELECT DISTINCT pr.oid, pg_catalog.pg_get_functiondef(pr.oid) AS def, pr.proacl::text AS acl,
+                   pr.oid::regprocedure::text AS sig, pr.proname
+            FROM pg_depend d
+            JOIN pg_proc pr ON pr.oid = d.objid AND d.classid = 'pg_proc'::regclass
+            JOIN pg_class c ON c.reltype = d.refobjid
+            WHERE (c.oid = v_gen_oid OR c.oid = v_people_oid
+                   OR c.oid IN (SELECT (x->>'oid')::oid FROM unnest(v_views) x))
+              AND NOT (pr.pronamespace = v_target_schema::regnamespace
+                       AND pr.proname IN ('spCreatePerson', 'spUpdatePerson'))
+        LOOP
+            v_fns := v_fns || jsonb_build_object('def', v_dep.def, 'acl', v_dep.acl, 'sig', v_dep.sig);
+        END LOOP;
     END IF;
-    EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', v_target_schema, v_target_name);
-    EXECUTE vsql;
-    IF v_captured IS NOT NULL AND array_length(v_captured, 1) > 0 THEN
-        FOR v_n IN 1..array_length(v_captured, 1) LOOP
-            BEGIN
-                EXECUTE format('CREATE VIEW %I.%I AS %s',
-                    v_captured[v_n]->>'schema', v_captured[v_n]->>'name', v_captured[v_n]->>'def');
-            EXCEPTION WHEN others THEN
-                RAISE WARNING 'Could not recreate dependent view %.%: %',
-                    v_captured[v_n]->>'schema', v_captured[v_n]->>'name', SQLERRM;
-            END;
+
+    -- Drop dependent functions (plus obsolete spCreatePerson/spUpdatePerson overloads) before views
+    IF array_length(v_fns, 1) > 0 THEN
+        FOR v_n IN 1..array_length(v_fns, 1) LOOP
+            EXECUTE 'DROP FUNCTION ' || (v_fns[v_n]->>'sig');
+        END LOOP;
+    END IF;
+    FOR v_dep IN
+        SELECT oid::regprocedure::text AS sig
+        FROM pg_proc
+        WHERE pronamespace = v_target_schema::regnamespace
+          AND proname IN ('spCreatePerson', 'spUpdatePerson')
+    LOOP
+        EXECUTE 'DROP FUNCTION ' || v_dep.sig;
+    END LOOP;
+
+    -- Drop dependent views deepest-first, then vwPeople, then vwPeopleGenerated (no CASCADE)
+    IF array_length(v_views, 1) > 0 THEN
+        FOR v_n IN REVERSE array_length(v_views, 1)..1 LOOP
+            EXECUTE format('DROP VIEW IF EXISTS %I.%I', v_views[v_n]->>'schema', v_views[v_n]->>'name');
+        END LOOP;
+    END IF;
+    IF v_people_oid IS NOT NULL THEN
+        EXECUTE format('DROP VIEW IF EXISTS %I.%I', v_target_schema, 'vwPeople');
+    END IF;
+    IF v_gen_oid IS NOT NULL THEN
+        EXECUTE format('DROP VIEW IF EXISTS %I.%I', v_target_schema, v_gen_name);
+    END IF;
+
+    -- Rebuild vwPeopleGenerated with SupervisorPersonID + SupervisorPerson
+    EXECUTE v_gen_sql;
+    BEGIN
+        GRANT SELECT ON __mj_bizappscommon."vwPeopleGenerated" TO "cdp_UI", "cdp_Developer", "cdp_Integration";
+    EXCEPTION WHEN undefined_object THEN NULL;
+    END;
+    IF v_gen_acl IS NOT NULL THEN
+        FOR v_acl IN
+            SELECT a.privilege_type,
+                   CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END AS grantee
+            FROM aclexplode(v_gen_acl::aclitem[]) a
+            WHERE a.grantee <> a.grantor
+        LOOP
+            EXECUTE format('GRANT %s ON %I.%I TO %s', v_acl.privilege_type, v_target_schema, v_gen_name, v_acl.grantee);
+        END LOOP;
+    END IF;
+
+    -- Explicitly rebuild vwPeople over vwPeopleGenerated so SupervisorPersonID and SupervisorPerson are exposed
+    IF v_people_is_layered AND v_people_def IS NOT NULL THEN
+        IF v_people_def ILIKE '%"SupervisorPersonID"%' AND v_people_def ILIKE '%"SupervisorPerson"%' THEN
+            v_rebuilt_people_sql := format('CREATE OR REPLACE VIEW %I.%I AS %s', v_target_schema, 'vwPeople', v_people_def);
+        ELSE
+            v_rebuilt_people_sql := format(
+                'CREATE OR REPLACE VIEW %I.%I AS %s',
+                v_target_schema,
+                'vwPeople',
+                regexp_replace(
+                    v_people_def,
+                    '(\s+FROM\s+__mj_bizappscommon\."vwPeopleGenerated")',
+                    E',\n    g."SupervisorPersonID",\n    g."SupervisorPerson"\\1',
+                    'i'
+                )
+            );
+        END IF;
+    ELSE
+        v_rebuilt_people_sql := $vp$CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeople"
+AS SELECT
+    g.*
+FROM
+    __mj_bizappscommon."vwPeopleGenerated" AS g$vp$;
+    END IF;
+
+    EXECUTE v_rebuilt_people_sql;
+    BEGIN
+        GRANT SELECT ON __mj_bizappscommon."vwPeople" TO "cdp_UI", "cdp_Developer", "cdp_Integration";
+    EXCEPTION WHEN undefined_object THEN NULL;
+    END;
+    IF v_people_acl IS NOT NULL THEN
+        FOR v_acl IN
+            SELECT a.privilege_type,
+                   CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END AS grantee
+            FROM aclexplode(v_people_acl::aclitem[]) a
+            WHERE a.grantee <> a.grantor
+        LOOP
+            EXECUTE format('GRANT %s ON %I.%I TO %s', v_acl.privilege_type, v_target_schema, 'vwPeople', v_acl.grantee);
+        END LOOP;
+    END IF;
+
+    -- Recreate all other dependent views and their grants (errors propagate, never downgraded to warnings)
+    IF array_length(v_views, 1) > 0 THEN
+        FOR v_n IN 1..array_length(v_views, 1) LOOP
+            EXECUTE format('CREATE VIEW %I.%I AS %s',
+                v_views[v_n]->>'schema', v_views[v_n]->>'name', v_views[v_n]->>'def');
+            IF v_views[v_n]->>'acl' IS NOT NULL THEN
+                FOR v_acl IN
+                    SELECT a.privilege_type,
+                           CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END AS grantee
+                    FROM aclexplode((v_views[v_n]->>'acl')::aclitem[]) a
+                    WHERE a.grantee <> a.grantor
+                LOOP
+                    EXECUTE format('GRANT %s ON %I.%I TO %s',
+                        v_acl.privilege_type, v_views[v_n]->>'schema', v_views[v_n]->>'name', v_acl.grantee);
+                END LOOP;
+            END IF;
+        END LOOP;
+    END IF;
+
+    -- Recreate other dependent functions and their grants (errors propagate)
+    IF array_length(v_fns, 1) > 0 THEN
+        FOR v_n IN 1..array_length(v_fns, 1) LOOP
+            EXECUTE v_fns[v_n]->>'def';
+            IF v_fns[v_n]->>'acl' IS NOT NULL THEN
+                FOR v_acl IN
+                    SELECT a.privilege_type,
+                           CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END AS grantee
+                    FROM aclexplode((v_fns[v_n]->>'acl')::aclitem[]) a
+                    WHERE a.grantee <> a.grantor
+                LOOP
+                    EXECUTE format('GRANT %s ON FUNCTION %s TO %s',
+                        v_acl.privilege_type, v_fns[v_n]->>'sig', v_acl.grantee);
+                END LOOP;
+            END IF;
         END LOOP;
     END IF;
 END $do$;
+
+-- =============================================================================
+-- Native PostgreSQL CodeGen CRUD functions: spCreatePerson and spUpdatePerson
+-- Drops any obsolete overloads and recreates both functions with SupervisorPersonID
+-- (including _clear boolean semantics) and restores EXECUTE grants.
+-- =============================================================================
+DO $install_person_crud$
+DECLARE
+    v_has_seniority BOOLEAN;
+    r RECORD;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = '__mj_bizappscommon'
+          AND table_name = 'Person'
+          AND column_name = 'SeniorityLevelID'
+    ) INTO v_has_seniority;
+
+    FOR r IN
+        SELECT oid::regprocedure AS sig
+        FROM pg_proc
+        WHERE pronamespace = '__mj_bizappscommon'::regnamespace
+          AND proname IN ('spCreatePerson', 'spUpdatePerson')
+    LOOP
+        EXECUTE 'DROP FUNCTION ' || r.sig::text;
+    END LOOP;
+
+    IF v_has_seniority THEN
+        EXECUTE $fn$
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreatePerson"(
+    p_id uuid DEFAULT NULL::uuid,
+    p_firstname character varying DEFAULT NULL::character varying,
+    p_lastname character varying DEFAULT NULL::character varying,
+    p_middlename_clear boolean DEFAULT false,
+    p_middlename character varying DEFAULT NULL::character varying,
+    p_prefix_clear boolean DEFAULT false,
+    p_prefix character varying DEFAULT NULL::character varying,
+    p_suffix_clear boolean DEFAULT false,
+    p_suffix character varying DEFAULT NULL::character varying,
+    p_preferredname_clear boolean DEFAULT false,
+    p_preferredname character varying DEFAULT NULL::character varying,
+    p_title_clear boolean DEFAULT false,
+    p_title character varying DEFAULT NULL::character varying,
+    p_email_clear boolean DEFAULT false,
+    p_email character varying DEFAULT NULL::character varying,
+    p_phone_clear boolean DEFAULT false,
+    p_phone character varying DEFAULT NULL::character varying,
+    p_dateofbirth_clear boolean DEFAULT false,
+    p_dateofbirth date DEFAULT NULL::date,
+    p_gender_clear boolean DEFAULT false,
+    p_gender character varying DEFAULT NULL::character varying,
+    p_photourl_clear boolean DEFAULT false,
+    p_photourl character varying DEFAULT NULL::character varying,
+    p_bio_clear boolean DEFAULT false,
+    p_bio text DEFAULT NULL::text,
+    p_linkeduserid_clear boolean DEFAULT false,
+    p_linkeduserid uuid DEFAULT NULL::uuid,
+    p_status character varying DEFAULT NULL::character varying,
+    p_senioritylevelid_clear boolean DEFAULT false,
+    p_senioritylevelid uuid DEFAULT NULL::uuid,
+    p_supervisorpersonid_clear boolean DEFAULT false,
+    p_supervisorpersonid uuid DEFAULT NULL::uuid
+)
+ RETURNS SETOF __mj_bizappscommon."vwPeople"
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_new_id UUID;
+BEGIN
+    v_new_id := COALESCE(p_id, gen_random_uuid());
+    INSERT INTO __mj_bizappscommon."Person"
+        (
+            "ID",
+            "FirstName",
+            "LastName",
+            "MiddleName",
+            "Prefix",
+            "Suffix",
+            "PreferredName",
+            "Title",
+            "Email",
+            "Phone",
+            "DateOfBirth",
+            "Gender",
+            "PhotoURL",
+            "Bio",
+            "LinkedUserID",
+            "Status",
+            "SeniorityLevelID",
+            "SupervisorPersonID"
+        )
+    VALUES
+        (
+            v_new_id,
+            p_firstname,
+            p_lastname,
+            CASE WHEN p_middlename_clear = true THEN NULL ELSE COALESCE(p_middlename, NULL) END,
+            CASE WHEN p_prefix_clear = true THEN NULL ELSE COALESCE(p_prefix, NULL) END,
+            CASE WHEN p_suffix_clear = true THEN NULL ELSE COALESCE(p_suffix, NULL) END,
+            CASE WHEN p_preferredname_clear = true THEN NULL ELSE COALESCE(p_preferredname, NULL) END,
+            CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, NULL) END,
+            CASE WHEN p_email_clear = true THEN NULL ELSE COALESCE(p_email, NULL) END,
+            CASE WHEN p_phone_clear = true THEN NULL ELSE COALESCE(p_phone, NULL) END,
+            CASE WHEN p_dateofbirth_clear = true THEN NULL ELSE COALESCE(p_dateofbirth, NULL) END,
+            CASE WHEN p_gender_clear = true THEN NULL ELSE COALESCE(p_gender, NULL) END,
+            CASE WHEN p_photourl_clear = true THEN NULL ELSE COALESCE(p_photourl, NULL) END,
+            CASE WHEN p_bio_clear = true THEN NULL ELSE COALESCE(p_bio, NULL) END,
+            CASE WHEN p_linkeduserid_clear = true THEN NULL ELSE COALESCE(p_linkeduserid, NULL) END,
+            COALESCE(p_status, 'Active'),
+            CASE WHEN p_senioritylevelid_clear = true THEN NULL ELSE COALESCE(p_senioritylevelid, NULL) END,
+            CASE WHEN p_supervisorpersonid_clear = true THEN NULL ELSE COALESCE(p_supervisorpersonid, NULL) END
+        );
+
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwPeople"
+    WHERE "ID" = v_new_id;
+END;
+$function$;
+$fn$;
+
+        EXECUTE $fn$
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdatePerson"(
+    p_id uuid,
+    p_firstname character varying DEFAULT NULL::character varying,
+    p_lastname character varying DEFAULT NULL::character varying,
+    p_middlename_clear boolean DEFAULT false,
+    p_middlename character varying DEFAULT NULL::character varying,
+    p_prefix_clear boolean DEFAULT false,
+    p_prefix character varying DEFAULT NULL::character varying,
+    p_suffix_clear boolean DEFAULT false,
+    p_suffix character varying DEFAULT NULL::character varying,
+    p_preferredname_clear boolean DEFAULT false,
+    p_preferredname character varying DEFAULT NULL::character varying,
+    p_title_clear boolean DEFAULT false,
+    p_title character varying DEFAULT NULL::character varying,
+    p_email_clear boolean DEFAULT false,
+    p_email character varying DEFAULT NULL::character varying,
+    p_phone_clear boolean DEFAULT false,
+    p_phone character varying DEFAULT NULL::character varying,
+    p_dateofbirth_clear boolean DEFAULT false,
+    p_dateofbirth date DEFAULT NULL::date,
+    p_gender_clear boolean DEFAULT false,
+    p_gender character varying DEFAULT NULL::character varying,
+    p_photourl_clear boolean DEFAULT false,
+    p_photourl character varying DEFAULT NULL::character varying,
+    p_bio_clear boolean DEFAULT false,
+    p_bio text DEFAULT NULL::text,
+    p_linkeduserid_clear boolean DEFAULT false,
+    p_linkeduserid uuid DEFAULT NULL::uuid,
+    p_status character varying DEFAULT NULL::character varying,
+    p_senioritylevelid_clear boolean DEFAULT false,
+    p_senioritylevelid uuid DEFAULT NULL::uuid,
+    p_supervisorpersonid_clear boolean DEFAULT false,
+    p_supervisorpersonid uuid DEFAULT NULL::uuid
+)
+ RETURNS SETOF __mj_bizappscommon."vwPeople"
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_updated_count INTEGER;
+BEGIN
+    UPDATE __mj_bizappscommon."Person"
+    SET
+        "FirstName" = COALESCE(p_firstname, "FirstName"),
+        "LastName" = COALESCE(p_lastname, "LastName"),
+        "MiddleName" = CASE WHEN p_middlename_clear = true THEN NULL ELSE COALESCE(p_middlename, "MiddleName") END,
+        "Prefix" = CASE WHEN p_prefix_clear = true THEN NULL ELSE COALESCE(p_prefix, "Prefix") END,
+        "Suffix" = CASE WHEN p_suffix_clear = true THEN NULL ELSE COALESCE(p_suffix, "Suffix") END,
+        "PreferredName" = CASE WHEN p_preferredname_clear = true THEN NULL ELSE COALESCE(p_preferredname, "PreferredName") END,
+        "Title" = CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, "Title") END,
+        "Email" = CASE WHEN p_email_clear = true THEN NULL ELSE COALESCE(p_email, "Email") END,
+        "Phone" = CASE WHEN p_phone_clear = true THEN NULL ELSE COALESCE(p_phone, "Phone") END,
+        "DateOfBirth" = CASE WHEN p_dateofbirth_clear = true THEN NULL ELSE COALESCE(p_dateofbirth, "DateOfBirth") END,
+        "Gender" = CASE WHEN p_gender_clear = true THEN NULL ELSE COALESCE(p_gender, "Gender") END,
+        "PhotoURL" = CASE WHEN p_photourl_clear = true THEN NULL ELSE COALESCE(p_photourl, "PhotoURL") END,
+        "Bio" = CASE WHEN p_bio_clear = true THEN NULL ELSE COALESCE(p_bio, "Bio") END,
+        "LinkedUserID" = CASE WHEN p_linkeduserid_clear = true THEN NULL ELSE COALESCE(p_linkeduserid, "LinkedUserID") END,
+        "Status" = COALESCE(p_status, "Status"),
+        "SeniorityLevelID" = CASE WHEN p_senioritylevelid_clear = true THEN NULL ELSE COALESCE(p_senioritylevelid, "SeniorityLevelID") END,
+        "SupervisorPersonID" = CASE WHEN p_supervisorpersonid_clear = true THEN NULL ELSE COALESCE(p_supervisorpersonid, "SupervisorPersonID") END,
+        "__mj_UpdatedAt" = NOW() AT TIME ZONE 'UTC'
+    WHERE
+        "ID" = p_id;
+
+    GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+    IF v_updated_count = 0 THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwPeople"
+    WHERE "ID" = p_id;
+END;
+$function$;
+$fn$;
+    ELSE
+        EXECUTE $fn$
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spCreatePerson"(
+    p_id uuid DEFAULT NULL::uuid,
+    p_firstname character varying DEFAULT NULL::character varying,
+    p_lastname character varying DEFAULT NULL::character varying,
+    p_middlename_clear boolean DEFAULT false,
+    p_middlename character varying DEFAULT NULL::character varying,
+    p_prefix_clear boolean DEFAULT false,
+    p_prefix character varying DEFAULT NULL::character varying,
+    p_suffix_clear boolean DEFAULT false,
+    p_suffix character varying DEFAULT NULL::character varying,
+    p_preferredname_clear boolean DEFAULT false,
+    p_preferredname character varying DEFAULT NULL::character varying,
+    p_title_clear boolean DEFAULT false,
+    p_title character varying DEFAULT NULL::character varying,
+    p_email_clear boolean DEFAULT false,
+    p_email character varying DEFAULT NULL::character varying,
+    p_phone_clear boolean DEFAULT false,
+    p_phone character varying DEFAULT NULL::character varying,
+    p_dateofbirth_clear boolean DEFAULT false,
+    p_dateofbirth date DEFAULT NULL::date,
+    p_gender_clear boolean DEFAULT false,
+    p_gender character varying DEFAULT NULL::character varying,
+    p_photourl_clear boolean DEFAULT false,
+    p_photourl character varying DEFAULT NULL::character varying,
+    p_bio_clear boolean DEFAULT false,
+    p_bio text DEFAULT NULL::text,
+    p_linkeduserid_clear boolean DEFAULT false,
+    p_linkeduserid uuid DEFAULT NULL::uuid,
+    p_status character varying DEFAULT NULL::character varying,
+    p_supervisorpersonid_clear boolean DEFAULT false,
+    p_supervisorpersonid uuid DEFAULT NULL::uuid
+)
+ RETURNS SETOF __mj_bizappscommon."vwPeople"
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_new_id UUID;
+BEGIN
+    v_new_id := COALESCE(p_id, gen_random_uuid());
+    INSERT INTO __mj_bizappscommon."Person"
+        (
+            "ID",
+            "FirstName",
+            "LastName",
+            "MiddleName",
+            "Prefix",
+            "Suffix",
+            "PreferredName",
+            "Title",
+            "Email",
+            "Phone",
+            "DateOfBirth",
+            "Gender",
+            "PhotoURL",
+            "Bio",
+            "LinkedUserID",
+            "Status",
+            "SupervisorPersonID"
+        )
+    VALUES
+        (
+            v_new_id,
+            p_firstname,
+            p_lastname,
+            CASE WHEN p_middlename_clear = true THEN NULL ELSE COALESCE(p_middlename, NULL) END,
+            CASE WHEN p_prefix_clear = true THEN NULL ELSE COALESCE(p_prefix, NULL) END,
+            CASE WHEN p_suffix_clear = true THEN NULL ELSE COALESCE(p_suffix, NULL) END,
+            CASE WHEN p_preferredname_clear = true THEN NULL ELSE COALESCE(p_preferredname, NULL) END,
+            CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, NULL) END,
+            CASE WHEN p_email_clear = true THEN NULL ELSE COALESCE(p_email, NULL) END,
+            CASE WHEN p_phone_clear = true THEN NULL ELSE COALESCE(p_phone, NULL) END,
+            CASE WHEN p_dateofbirth_clear = true THEN NULL ELSE COALESCE(p_dateofbirth, NULL) END,
+            CASE WHEN p_gender_clear = true THEN NULL ELSE COALESCE(p_gender, NULL) END,
+            CASE WHEN p_photourl_clear = true THEN NULL ELSE COALESCE(p_photourl, NULL) END,
+            CASE WHEN p_bio_clear = true THEN NULL ELSE COALESCE(p_bio, NULL) END,
+            CASE WHEN p_linkeduserid_clear = true THEN NULL ELSE COALESCE(p_linkeduserid, NULL) END,
+            COALESCE(p_status, 'Active'),
+            CASE WHEN p_supervisorpersonid_clear = true THEN NULL ELSE COALESCE(p_supervisorpersonid, NULL) END
+        );
+
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwPeople"
+    WHERE "ID" = v_new_id;
+END;
+$function$;
+$fn$;
+
+        EXECUTE $fn$
+CREATE OR REPLACE FUNCTION __mj_bizappscommon."spUpdatePerson"(
+    p_id uuid,
+    p_firstname character varying DEFAULT NULL::character varying,
+    p_lastname character varying DEFAULT NULL::character varying,
+    p_middlename_clear boolean DEFAULT false,
+    p_middlename character varying DEFAULT NULL::character varying,
+    p_prefix_clear boolean DEFAULT false,
+    p_prefix character varying DEFAULT NULL::character varying,
+    p_suffix_clear boolean DEFAULT false,
+    p_suffix character varying DEFAULT NULL::character varying,
+    p_preferredname_clear boolean DEFAULT false,
+    p_preferredname character varying DEFAULT NULL::character varying,
+    p_title_clear boolean DEFAULT false,
+    p_title character varying DEFAULT NULL::character varying,
+    p_email_clear boolean DEFAULT false,
+    p_email character varying DEFAULT NULL::character varying,
+    p_phone_clear boolean DEFAULT false,
+    p_phone character varying DEFAULT NULL::character varying,
+    p_dateofbirth_clear boolean DEFAULT false,
+    p_dateofbirth date DEFAULT NULL::date,
+    p_gender_clear boolean DEFAULT false,
+    p_gender character varying DEFAULT NULL::character varying,
+    p_photourl_clear boolean DEFAULT false,
+    p_photourl character varying DEFAULT NULL::character varying,
+    p_bio_clear boolean DEFAULT false,
+    p_bio text DEFAULT NULL::text,
+    p_linkeduserid_clear boolean DEFAULT false,
+    p_linkeduserid uuid DEFAULT NULL::uuid,
+    p_status character varying DEFAULT NULL::character varying,
+    p_supervisorpersonid_clear boolean DEFAULT false,
+    p_supervisorpersonid uuid DEFAULT NULL::uuid
+)
+ RETURNS SETOF __mj_bizappscommon."vwPeople"
+ LANGUAGE plpgsql
+AS $function$
+#variable_conflict use_column
+DECLARE
+    v_updated_count INTEGER;
+BEGIN
+    UPDATE __mj_bizappscommon."Person"
+    SET
+        "FirstName" = COALESCE(p_firstname, "FirstName"),
+        "LastName" = COALESCE(p_lastname, "LastName"),
+        "MiddleName" = CASE WHEN p_middlename_clear = true THEN NULL ELSE COALESCE(p_middlename, "MiddleName") END,
+        "Prefix" = CASE WHEN p_prefix_clear = true THEN NULL ELSE COALESCE(p_prefix, "Prefix") END,
+        "Suffix" = CASE WHEN p_suffix_clear = true THEN NULL ELSE COALESCE(p_suffix, "Suffix") END,
+        "PreferredName" = CASE WHEN p_preferredname_clear = true THEN NULL ELSE COALESCE(p_preferredname, "PreferredName") END,
+        "Title" = CASE WHEN p_title_clear = true THEN NULL ELSE COALESCE(p_title, "Title") END,
+        "Email" = CASE WHEN p_email_clear = true THEN NULL ELSE COALESCE(p_email, "Email") END,
+        "Phone" = CASE WHEN p_phone_clear = true THEN NULL ELSE COALESCE(p_phone, "Phone") END,
+        "DateOfBirth" = CASE WHEN p_dateofbirth_clear = true THEN NULL ELSE COALESCE(p_dateofbirth, "DateOfBirth") END,
+        "Gender" = CASE WHEN p_gender_clear = true THEN NULL ELSE COALESCE(p_gender, "Gender") END,
+        "PhotoURL" = CASE WHEN p_photourl_clear = true THEN NULL ELSE COALESCE(p_photourl, "PhotoURL") END,
+        "Bio" = CASE WHEN p_bio_clear = true THEN NULL ELSE COALESCE(p_bio, "Bio") END,
+        "LinkedUserID" = CASE WHEN p_linkeduserid_clear = true THEN NULL ELSE COALESCE(p_linkeduserid, "LinkedUserID") END,
+        "Status" = COALESCE(p_status, "Status"),
+        "SupervisorPersonID" = CASE WHEN p_supervisorpersonid_clear = true THEN NULL ELSE COALESCE(p_supervisorpersonid, "SupervisorPersonID") END,
+        "__mj_UpdatedAt" = NOW() AT TIME ZONE 'UTC'
+    WHERE
+        "ID" = p_id;
+
+    GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+    IF v_updated_count = 0 THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT * FROM __mj_bizappscommon."vwPeople"
+    WHERE "ID" = p_id;
+END;
+$function$;
+$fn$;
+    END IF;
+
+    BEGIN
+        REVOKE EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" FROM "cdp_Developer";
+        REVOKE EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" FROM "cdp_Integration";
+        GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spCreatePerson" TO "cdp_Developer", "cdp_Integration";
+        REVOKE EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" FROM "cdp_Developer";
+        REVOKE EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" FROM "cdp_Integration";
+        GRANT EXECUTE ON FUNCTION __mj_bizappscommon."spUpdatePerson" TO "cdp_Developer", "cdp_Integration";
+    EXCEPTION WHEN undefined_object THEN NULL;
+    END;
+END
+$install_person_crud$;
 
 -- ---- People field permissions: MJ snapshot rule on this host's permissions ----
 WITH "RoleVerbs" AS (
