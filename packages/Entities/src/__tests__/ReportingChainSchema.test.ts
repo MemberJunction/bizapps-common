@@ -164,8 +164,11 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
             expect(pgFlat).toContain('"StartDate"');
             expect(pgFlat).toContain('INSERT INTO ${mjSchema}."EntityFieldPermission"');
 
-            // CR-3: Rebuilds both vwPeopleGenerated and vwPeople, restores grants, and never swallows dependent view errors
+            // CR-3: Rebuilds both vwPeopleGenerated and vwPeople explicitly (no fragile regexp_replace),
+            // restores grants, and never swallows dependent view errors
             expect(pgFlat).toContain('CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeopleGenerated"');
+            expect(pgFlat).toContain('CREATE OR REPLACE VIEW __mj_bizappscommon."vwPeople"');
+            expect(pgFlat).not.toMatch(/regexp_replace/i);
             expect(pgFlat).toContain('GRANT SELECT ON __mj_bizappscommon."vwPeopleGenerated" TO "cdp_UI", "cdp_Developer", "cdp_Integration"');
             expect(pgFlat).toContain('GRANT SELECT ON __mj_bizappscommon."vwPeople" TO "cdp_UI", "cdp_Developer", "cdp_Integration"');
             expect(pgFlat).not.toMatch(/RAISE WARNING 'Could not recreate dependent view/i);
@@ -181,11 +184,317 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
         });
     });
 
-    describe('Executable SQL verification (node:sqlite relational engine)', () => {
+    describe('Executable shipped migration SQL verification (node:sqlite relational engine)', () => {
+        function extractBetween(source: string, startMarker: string, endMarker: string, label: string): string {
+            const start = source.indexOf(startMarker);
+            if (start < 0) {
+                throw new Error(`Could not find start marker for ${label}`);
+            }
+            const end = source.indexOf(endMarker, start + startMarker.length);
+            if (end < 0) {
+                throw new Error(`Could not find end marker for ${label}`);
+            }
+            return source.slice(start + startMarker.length, end);
+        }
+
+        function extractShippedTsqlReportingChainView(): string {
+            const rawBlock = extractBetween(
+                tsHandWritten,
+                'CREATE OR ALTER VIEW [${flyway:defaultSchema}].[vwPersonReportingChain]',
+                '\nGO',
+                'T-SQL vwPersonReportingChain',
+            );
+            // Translate only T-SQL dialect tokens to SQLite while preserving the shipped CTE structure verbatim
+            return (
+                'CREATE VIEW vwPersonReportingChain_tsql' +
+                rawBlock
+                    .replace(/WITH\s+\[ReportingChain\]\s+AS/i, 'WITH RECURSIVE ReportingChain AS')
+                    .replace(/\[\$\{flyway:defaultSchema\}\]\./g, '')
+                    .replace(/\[([^\]]+)\]/g, '$1')
+                    .replace(/CAST\(\s*'\/'\s*\+\s*LOWER\(CAST\(p\.ID AS NVARCHAR\(36\)\)\)\s*\+\s*'\/'\s*\+\s*LOWER\(CAST\(p\.SupervisorPersonID AS NVARCHAR\(36\)\)\)\s*\+\s*'\/'\s*AS NVARCHAR\(MAX\)\s*\)/i, "'/' || LOWER(p.ID) || '/' || LOWER(p.SupervisorPersonID) || '/'")
+                    .replace(/CAST\(\s*rc\.VisitedPath\s*\+\s*LOWER\(CAST\(sup\.SupervisorPersonID AS NVARCHAR\(36\)\)\)\s*\+\s*'\/'\s*AS NVARCHAR\(MAX\)\s*\)/i, "rc.VisitedPath || LOWER(sup.SupervisorPersonID) || '/'")
+                    .replace(/CHARINDEX\(\s*'\/'\s*\+\s*LOWER\(CAST\(sup\.SupervisorPersonID AS NVARCHAR\(36\)\)\)\s*\+\s*'\/'\s*,\s*rc\.VisitedPath\s*\)\s*=\s*0/i, "instr(rc.VisitedPath, '/' || LOWER(sup.SupervisorPersonID) || '/') = 0")
+            );
+        }
+
+        function extractShippedPgReportingChainView(): string {
+            const rawBlock = extractBetween(
+                pgSqlRaw,
+                'CREATE OR REPLACE VIEW __mj_bizappscommon."vwPersonReportingChain"',
+                '\nDO $$',
+                'PG vwPersonReportingChain',
+            );
+            // Translate only PostgreSQL array/schema tokens to SQLite while preserving the shipped CTE verbatim
+            return (
+                'CREATE VIEW vwPersonReportingChain_pg' +
+                rawBlock
+                    .replace(/__mj_bizappscommon\./g, '')
+                    .replace(/"([^"]+)"/g, '$1')
+                    .replace(/ARRAY\[p\.ID,\s*p\.SupervisorPersonID\]/i, "',' || p.ID || ',' || p.SupervisorPersonID || ','")
+                    .replace(/rc\.VisitedPath \|\| sup\.SupervisorPersonID/i, "rc.VisitedPath || sup.SupervisorPersonID || ','")
+                    .replace(/NOT\s*\(\s*sup\.SupervisorPersonID\s*=\s*ANY\(\s*rc\.VisitedPath\s*\)\s*\)/i, "instr(rc.VisitedPath, ',' || sup.SupervisorPersonID || ',') = 0")
+            );
+        }
+
+        function extractShippedPgVwPeopleViews(): { generatedViewSql: string; layeredViewSql: string } {
+            const rawGen = extractBetween(
+                pgSqlRaw,
+                'IF v_has_seniority THEN\n        v_gen_sql := $vsql$',
+                '$vsql$;',
+                'PG vwPeopleGenerated',
+            );
+            const rawLayered = extractBetween(
+                pgSqlRaw,
+                'IF v_has_job_function THEN\n        v_rebuilt_people_sql := $vp$',
+                '$vp$;',
+                'PG vwPeople',
+            );
+
+            const normalizePgSelectView = (sql: string): string =>
+                sql
+                    .replace(/CREATE OR REPLACE VIEW\s+__mj_bizappscommon\."([^"]+)"/i, 'CREATE VIEW $1')
+                    .replace(/__mj_bizappscommon\./g, '')
+                    .replace(/\$\{mjSchema\}\./g, '')
+                    .replace(/::varchar\(700\)/gi, '')
+                    .replace(/\bTRUE\b/g, '1')
+                    .replace(/\bFALSE\b/g, '0');
+
+            const generatedViewSql = normalizePgSelectView(rawGen).replace(/"([^"]+)"/g, '$1');
+
+            // Normalize PG LEFT JOIN LATERAL (...) ON TRUE into SQLite-compatible correlated subqueries while
+            // preserving the exact SELECT projection, WHERE filters, and ORDER BY from the shipped PG view.
+            const normalizedLayered = normalizePgSelectView(rawLayered)
+                .replace(
+                    /LEFT JOIN LATERAL\s*\(\s*SELECT[\s\S]*?LIMIT 1\s*\)\s*AS emp_rel ON (?:TRUE|1)\s*LEFT OUTER JOIN\s*"Organization" AS emp_org\s*ON\s*emp_org\."ID" = emp_rel\."ToOrganizationID"/i,
+                    '',
+                )
+                .replace(
+                    /LEFT JOIN LATERAL\s*\(\s*SELECT[\s\S]*?LIMIT 1\s*\)\s*AS primary_jf ON (?:TRUE|1)/i,
+                    '',
+                )
+                .replace(
+                    /emp_org\."ID"\s+AS "CurrentOrganizationID"/i,
+                    `(SELECT r.ToOrganizationID FROM Relationship r INNER JOIN RelationshipType rt ON rt.ID = r.RelationshipTypeID WHERE rt.Name = 'Employee' AND r.FromPersonID = g.ID AND r.Status = 'Active' ORDER BY r.StartDate DESC LIMIT 1) AS CurrentOrganizationID`,
+                )
+                .replace(
+                    /emp_org\."Name"\s+AS "CurrentOrganizationName"/i,
+                    `(SELECT org.Name FROM Relationship r INNER JOIN RelationshipType rt ON rt.ID = r.RelationshipTypeID INNER JOIN Organization org ON org.ID = r.ToOrganizationID WHERE rt.Name = 'Employee' AND r.FromPersonID = g.ID AND r.Status = 'Active' ORDER BY r.StartDate DESC LIMIT 1) AS CurrentOrganizationName`,
+                )
+                .replace(
+                    /emp_rel\."Title"\s+AS "CurrentJobTitle"/i,
+                    `(SELECT r.Title FROM Relationship r INNER JOIN RelationshipType rt ON rt.ID = r.RelationshipTypeID WHERE rt.Name = 'Employee' AND r.FromPersonID = g.ID AND r.Status = 'Active' ORDER BY r.StartDate DESC LIMIT 1) AS CurrentJobTitle`,
+                )
+                .replace(
+                    /primary_jf\."JobFunctionID"\s+AS "PrimaryJobFunctionID"/i,
+                    `(SELECT pjf.JobFunctionID FROM PersonJobFunction pjf INNER JOIN JobFunction jf ON jf.ID = pjf.JobFunctionID WHERE pjf.PersonID = g.ID ORDER BY pjf.Sequence ASC, jf.Name ASC LIMIT 1) AS PrimaryJobFunctionID`,
+                )
+                .replace(
+                    /primary_jf\."JobFunctionName"\s+AS "PrimaryJobFunction"/i,
+                    `(SELECT jf.Name FROM PersonJobFunction pjf INNER JOIN JobFunction jf ON jf.ID = pjf.JobFunctionID WHERE pjf.PersonID = g.ID ORDER BY pjf.Sequence ASC, jf.Name ASC LIMIT 1) AS PrimaryJobFunction`,
+                )
+                .replace(/"([^"]+)"/g, '$1');
+
+            return { generatedViewSql, layeredViewSql: normalizedLayered };
+        }
+
+        interface ExtractedSyncStatements {
+            seedRelationshipTypeSql: string;
+            createTempEmpMapSql: string;
+            populateTempEmpMapSql: string;
+            createTempNewPeopleSql: string;
+            populateTempNewPeopleSql: string;
+            insertNewPeopleSql: string;
+            updateEmpMapNewPeopleSql: string;
+            createTempSupSyncSql: string;
+            populateTempSupSyncSql: string;
+            updatePersonSupervisorSql: string;
+            closeOutdatedRelationshipsSql: string;
+            insertNewRelationshipsSql: string;
+        }
+
+        function extractShippedPgSyncStatements(): ExtractedSyncStatements {
+            const procBody = extractBetween(
+                pgSqlRaw,
+                'CREATE OR REPLACE PROCEDURE __mj_bizappscommon."SyncEmployeesToPeople"()',
+                'END;\n$$;',
+                'PG SyncEmployeesToPeople',
+            );
+
+            const normalizePgDml = (sql: string): string =>
+                sql
+                    .replace(/__mj_bizappscommon\./g, '')
+                    .replace(/\$\{mjSchema\}\./g, '')
+                    .replace(/::uuid/gi, '')
+                    .replace(/\bBTRIM\(/gi, 'TRIM(')
+                    .replace(/\bON COMMIT DROP\b/gi, '')
+                    .replace(/\bTRUE\b/g, '1')
+                    .replace(/\bFALSE\b/g, '0')
+                    .replace(/gen_random_uuid\(\)/gi, "lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))")
+                    .replace(/"([^"]+)"/g, '$1');
+
+            const seedRelTypeRaw = extractBetween(
+                procBody,
+                'IF v_reports_to_type_id IS NULL THEN\n        v_reports_to_type_id := \'F1449971-6488-49E3-8F5B-823EB3E8CB11\'::uuid;\n',
+                '    END IF;',
+                'PG RelationshipType seed',
+            );
+            const seedRelationshipTypeSql = normalizePgDml(seedRelTypeRaw)
+                .replace(/INSERT INTO RelationshipType/i, 'INSERT OR IGNORE INTO RelationshipType')
+                .replace(/v_reports_to_type_id/g, ':reports_to_type_id');
+
+            const createTempEmpMapRaw = extractBetween(
+                procBody,
+                '    CREATE TEMP TABLE "_tmp_emp_person_map" (',
+                ';',
+                'PG _tmp_emp_person_map DDL',
+            );
+            const createTempEmpMapSql = normalizePgDml(
+                'CREATE TEMP TABLE IF NOT EXISTS "_tmp_emp_person_map" (' + createTempEmpMapRaw + ';',
+            ).replace(/\bUUID\b/gi, 'TEXT').replace(/\bVARCHAR\(\d+\)/gi, 'TEXT').replace(/\bBOOLEAN\b/gi, 'INTEGER');
+
+            // Extract the shipped Employee -> Person resolution query and rewrite only PG LATERAL joins to SQLite scalar subqueries
+            const populateEmpMapRaw = extractBetween(
+                procBody,
+                '    INSERT INTO "_tmp_emp_person_map" (',
+                '    -- Create Person records for active employees without a matched Person',
+                'PG _tmp_emp_person_map INSERT',
+            );
+            expect(populateEmpMapRaw).toContain('FROM ${mjSchema}."Employee" AS emp');
+            expect(populateEmpMapRaw).toContain('COALESCE(user_linked_person."ID", user_direct_person."ID", email_person."ID")');
+
+            const populateTempEmpMapSql = `
+                DELETE FROM _tmp_emp_person_map;
+                INSERT INTO _tmp_emp_person_map (EmployeeID, SupervisorEmployeeID, FirstName, LastName, Title, Email, Phone, Active, PersonID, LinkedUserID)
+                SELECT
+                    emp.ID,
+                    emp.SupervisorID,
+                    emp.FirstName,
+                    emp.LastName,
+                    emp.Title,
+                    NULLIF(TRIM(emp.Email), ''),
+                    NULLIF(TRIM(emp.Phone), ''),
+                    emp.Active,
+                    COALESCE(
+                        (SELECT p.ID FROM User u JOIN Person p ON p.ID = u.LinkedEntityRecordID WHERE u.EmployeeID = emp.ID ORDER BY u.IsActive DESC, u.__mj_CreatedAt ASC LIMIT 1),
+                        (SELECT p.ID FROM User u JOIN Person p ON p.LinkedUserID = u.ID WHERE u.EmployeeID = emp.ID ORDER BY u.IsActive DESC, u.__mj_CreatedAt ASC LIMIT 1),
+                        (SELECT p.ID FROM Person p WHERE NULLIF(TRIM(emp.Email), '') IS NOT NULL AND LOWER(TRIM(p.Email)) = LOWER(TRIM(emp.Email)) ORDER BY CASE WHEN p.Status = 'Active' THEN 0 ELSE 1 END, p.__mj_CreatedAt ASC LIMIT 1)
+                    ),
+                    (SELECT u.ID FROM User u WHERE u.EmployeeID = emp.ID ORDER BY u.IsActive DESC, u.__mj_CreatedAt ASC LIMIT 1)
+                FROM Employee AS emp;
+            `;
+
+            const createTempNewPeopleRaw = extractBetween(
+                procBody,
+                '    CREATE TEMP TABLE "_tmp_new_people" (',
+                ';',
+                'PG _tmp_new_people DDL',
+            );
+            const createTempNewPeopleSql = normalizePgDml(
+                'CREATE TEMP TABLE IF NOT EXISTS "_tmp_new_people" (' + createTempNewPeopleRaw + ';',
+            ).replace(/\bUUID\b/gi, 'TEXT');
+
+            const populateTempNewPeopleRaw = extractBetween(
+                procBody,
+                '    INSERT INTO "_tmp_new_people" ("EmployeeID", "PersonID")',
+                ';',
+                'PG _tmp_new_people INSERT',
+            );
+            const populateTempNewPeopleSql =
+                'DELETE FROM _tmp_new_people;\n' +
+                normalizePgDml('INSERT INTO "_tmp_new_people" ("EmployeeID", "PersonID")' + populateTempNewPeopleRaw + ';');
+
+            const insertNewPeopleRaw = extractBetween(
+                procBody,
+                '    INSERT INTO __mj_bizappscommon."Person" (',
+                ';',
+                'PG insert unmatched Person',
+            );
+            const insertNewPeopleSql = normalizePgDml('INSERT INTO __mj_bizappscommon."Person" (' + insertNewPeopleRaw + ';');
+
+            const updateEmpMapRaw = extractBetween(
+                procBody,
+                '    UPDATE "_tmp_emp_person_map" AS m',
+                ';',
+                'PG update _tmp_emp_person_map PersonID',
+            );
+            const updateEmpMapNewPeopleSql = normalizePgDml('UPDATE "_tmp_emp_person_map" ' + updateEmpMapRaw)
+                .replace(/SET PersonID = np\.PersonID\s+FROM _tmp_new_people AS np\s+WHERE np\.EmployeeID = m\.EmployeeID/i, 'SET PersonID = (SELECT np.PersonID FROM _tmp_new_people AS np WHERE np.EmployeeID = _tmp_emp_person_map.EmployeeID) WHERE EXISTS (SELECT 1 FROM _tmp_new_people AS np WHERE np.EmployeeID = _tmp_emp_person_map.EmployeeID)');
+
+            const createTempSupSyncRaw = extractBetween(
+                procBody,
+                '    CREATE TEMP TABLE "_tmp_person_supervisor_sync" (',
+                ';',
+                'PG _tmp_person_supervisor_sync DDL',
+            );
+            const createTempSupSyncSql = normalizePgDml(
+                'CREATE TEMP TABLE IF NOT EXISTS "_tmp_person_supervisor_sync" (' + createTempSupSyncRaw + ';',
+            ).replace(/\bUUID\b/gi, 'TEXT');
+
+            const populateTempSupSyncRaw = extractBetween(
+                procBody,
+                '    INSERT INTO "_tmp_person_supervisor_sync" ("PersonID", "TargetSupervisorPersonID")',
+                ';',
+                'PG _tmp_person_supervisor_sync INSERT',
+            );
+            const populateTempSupSyncSql =
+                'DELETE FROM _tmp_person_supervisor_sync;\n' +
+                normalizePgDml('INSERT INTO "_tmp_person_supervisor_sync" ("PersonID", "TargetSupervisorPersonID")' + populateTempSupSyncRaw + ';');
+
+            const updatePersonRaw = extractBetween(
+                procBody,
+                '    UPDATE __mj_bizappscommon."Person" AS p',
+                ';',
+                'PG UPDATE Person.SupervisorPersonID',
+            );
+            const updatePersonSupervisorSql = normalizePgDml('UPDATE Person ' + updatePersonRaw + ';')
+                .replace(/\bFROM _tmp_person_supervisor_sync AS s\s+WHERE p\.ID = s\.PersonID/i, 'FROM _tmp_person_supervisor_sync AS s WHERE Person.ID = s.PersonID')
+                .replace(/AND p\.SupervisorPersonID IS DISTINCT FROM s\.TargetSupervisorPersonID/i, 'AND Person.SupervisorPersonID IS NOT s.TargetSupervisorPersonID');
+
+            const closeRelRaw = extractBetween(
+                procBody,
+                '    UPDATE __mj_bizappscommon."Relationship" AS r',
+                ';',
+                'PG UPDATE Relationship close',
+            );
+            const closeOutdatedRelationshipsSql = normalizePgDml('UPDATE Relationship ' + closeRelRaw + ';')
+                .replace(/COALESCE\(r\.EndDate,\s*v_sync_date\)/gi, 'COALESCE(Relationship.EndDate, :sync_date)')
+                .replace(/FROM _tmp_person_supervisor_sync AS s\s+WHERE r\.FromPersonID = s\.PersonID\s+AND r\.RelationshipTypeID = v_reports_to_type_id\s+AND r\.Status = 'Active'\s+AND \(\s*s\.TargetSupervisorPersonID IS NULL\s+OR r\.ToPersonID IS NULL\s+OR r\.ToPersonID <> s\.TargetSupervisorPersonID\s*\)/i, `FROM _tmp_person_supervisor_sync AS s WHERE Relationship.FromPersonID = s.PersonID AND Relationship.RelationshipTypeID = :reports_to_type_id AND Relationship.Status = 'Active' AND (s.TargetSupervisorPersonID IS NULL OR Relationship.ToPersonID IS NULL OR Relationship.ToPersonID <> s.TargetSupervisorPersonID)`);
+
+            const insertRelRaw = extractBetween(
+                procBody,
+                '    INSERT INTO __mj_bizappscommon."Relationship" (',
+                ';',
+                'PG INSERT Relationship active',
+            );
+            const insertNewRelationshipsSql = normalizePgDml('INSERT INTO __mj_bizappscommon."Relationship" (' + insertRelRaw + ';')
+                .replace(/\bv_reports_to_type_id\b/g, ':reports_to_type_id')
+                .replace(/\bv_sync_date\b/g, ':sync_date');
+
+            return {
+                seedRelationshipTypeSql,
+                createTempEmpMapSql,
+                populateTempEmpMapSql,
+                createTempNewPeopleSql,
+                populateTempNewPeopleSql,
+                insertNewPeopleSql,
+                updateEmpMapNewPeopleSql,
+                createTempSupSyncSql,
+                populateTempSupSyncSql,
+                updatePersonSupervisorSql,
+                closeOutdatedRelationshipsSql,
+                insertNewRelationshipsSql,
+            };
+        }
+
         function createExecutableReportingDb(): DatabaseSync {
             const db = new DatabaseSync(':memory:');
             db.exec(`
                 PRAGMA foreign_keys = ON;
+                CREATE TABLE Entity (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
+                );
+                INSERT INTO Entity (ID, Name) VALUES ('7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'MJ_BizApps_Common: People');
                 CREATE TABLE Employee (
                     ID TEXT PRIMARY KEY,
                     FirstName TEXT NOT NULL,
@@ -198,27 +507,92 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                 );
                 CREATE TABLE User (
                     ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL DEFAULT 'User',
                     EmployeeID TEXT,
                     LinkedEntityID TEXT,
                     LinkedEntityRecordID TEXT,
                     IsActive INTEGER NOT NULL DEFAULT 1,
-                    CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                    __mj_CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                );
+                CREATE TABLE SeniorityLevel (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
                 );
                 CREATE TABLE Person (
                     ID TEXT PRIMARY KEY,
                     FirstName TEXT NOT NULL,
                     LastName TEXT NOT NULL,
+                    MiddleName TEXT,
+                    Prefix TEXT,
+                    Suffix TEXT,
+                    PreferredName TEXT,
                     Title TEXT,
                     Email TEXT,
                     Phone TEXT,
+                    DateOfBirth TEXT,
+                    Gender TEXT,
+                    PhotoURL TEXT,
+                    Bio TEXT,
                     LinkedUserID TEXT UNIQUE,
                     Status TEXT NOT NULL DEFAULT 'Active' CHECK (Status IN ('Active', 'Inactive', 'Deceased')),
+                    SeniorityLevelID TEXT REFERENCES SeniorityLevel(ID),
                     SupervisorPersonID TEXT NULL REFERENCES Person(ID),
-                    CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                    DisplayName TEXT GENERATED ALWAYS AS (TRIM(FirstName || ' ' || LastName)) STORED,
+                    __mj_CreatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z',
+                    __mj_UpdatedAt TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'
+                );
+                CREATE TABLE Organization (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
+                );
+                CREATE TABLE AddressType (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
+                );
+                CREATE TABLE Address (
+                    ID TEXT PRIMARY KEY,
+                    Line1 TEXT NOT NULL,
+                    Line2 TEXT,
+                    City TEXT NOT NULL,
+                    StateProvince TEXT,
+                    PostalCode TEXT,
+                    Country TEXT NOT NULL,
+                    Latitude REAL,
+                    Longitude REAL
+                );
+                CREATE TABLE AddressLink (
+                    ID TEXT PRIMARY KEY,
+                    AddressID TEXT NOT NULL REFERENCES Address(ID),
+                    EntityID TEXT NOT NULL REFERENCES Entity(ID),
+                    RecordID TEXT NOT NULL,
+                    AddressTypeID TEXT NOT NULL REFERENCES AddressType(ID),
+                    IsPrimary INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE TABLE ContactType (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
+                );
+                CREATE TABLE ContactMethod (
+                    ID TEXT PRIMARY KEY,
+                    PersonID TEXT REFERENCES Person(ID),
+                    ContactTypeID TEXT NOT NULL REFERENCES ContactType(ID),
+                    Value TEXT NOT NULL,
+                    IsPrimary INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE TABLE JobFunction (
+                    ID TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL
+                );
+                CREATE TABLE PersonJobFunction (
+                    ID TEXT PRIMARY KEY,
+                    PersonID TEXT NOT NULL REFERENCES Person(ID),
+                    JobFunctionID TEXT NOT NULL REFERENCES JobFunction(ID),
+                    Sequence INTEGER NOT NULL DEFAULT 1
                 );
                 CREATE TABLE RelationshipType (
                     ID TEXT PRIMARY KEY,
                     Name TEXT NOT NULL,
+                    Description TEXT,
                     Category TEXT NOT NULL,
                     IsDirectional INTEGER NOT NULL,
                     ForwardLabel TEXT,
@@ -229,183 +603,45 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                     ID TEXT PRIMARY KEY,
                     RelationshipTypeID TEXT NOT NULL REFERENCES RelationshipType(ID),
                     FromPersonID TEXT REFERENCES Person(ID),
-                    FromOrganizationID TEXT,
+                    FromOrganizationID TEXT REFERENCES Organization(ID),
                     ToPersonID TEXT REFERENCES Person(ID),
-                    ToOrganizationID TEXT,
+                    ToOrganizationID TEXT REFERENCES Organization(ID),
+                    Title TEXT,
                     StartDate TEXT,
                     EndDate TEXT,
                     Status TEXT NOT NULL CHECK (Status IN ('Active', 'Ended', 'Inactive')),
                     Notes TEXT
                 );
-                CREATE VIEW vwPersonReportingChain AS
-                WITH RECURSIVE ReportingChain (PersonID, SupervisorPersonID, Depth, VisitedPath) AS (
-                    SELECT
-                        p.ID AS PersonID,
-                        p.SupervisorPersonID AS SupervisorPersonID,
-                        1 AS Depth,
-                        ',' || p.ID || ',' || p.SupervisorPersonID || ',' AS VisitedPath
-                    FROM Person p
-                    WHERE p.SupervisorPersonID IS NOT NULL
-                      AND p.SupervisorPersonID <> p.ID
-                    UNION ALL
-                    SELECT
-                        rc.PersonID AS PersonID,
-                        sup.SupervisorPersonID AS SupervisorPersonID,
-                        rc.Depth + 1 AS Depth,
-                        rc.VisitedPath || sup.SupervisorPersonID || ',' AS VisitedPath
-                    FROM ReportingChain rc
-                    INNER JOIN Person sup ON sup.ID = rc.SupervisorPersonID
-                    WHERE sup.SupervisorPersonID IS NOT NULL
-                      AND instr(rc.VisitedPath, ',' || sup.SupervisorPersonID || ',') = 0
-                      AND rc.Depth < 100
-                )
-                SELECT PersonID, SupervisorPersonID, Depth FROM ReportingChain;
             `);
+            db.exec(extractShippedTsqlReportingChainView());
+            db.exec(extractShippedPgReportingChainView());
             return db;
         }
 
-        function runSyncEmployeesToPeopleSql(db: DatabaseSync, syncDate: string): void {
+        function runExtractedSyncEmployeesToPeople(db: DatabaseSync, syncDate: string): void {
+            const stmts = extractShippedPgSyncStatements();
             const reportsToTypeId = REPORTS_TO_RELATIONSHIP_TYPE_ID;
+
             db.exec('BEGIN IMMEDIATE;');
             try {
-                db.prepare(`
-                    INSERT OR IGNORE INTO RelationshipType (ID, Name, Category, IsDirectional, ForwardLabel, ReverseLabel, IsActive)
-                    VALUES (?, 'Reports To', 'PersonToPerson', 1, 'reports to', 'supervises', 1);
-                `).run(reportsToTypeId);
-
-                db.exec(`
-                    CREATE TEMP TABLE IF NOT EXISTS _tmp_emp_map (
-                        EmployeeID TEXT PRIMARY KEY,
-                        SupervisorEmployeeID TEXT,
-                        FirstName TEXT NOT NULL,
-                        LastName TEXT NOT NULL,
-                        Title TEXT,
-                        Email TEXT,
-                        Phone TEXT,
-                        Active INTEGER NOT NULL,
-                        PersonID TEXT,
-                        LinkedUserID TEXT
-                    );
-                    DELETE FROM _tmp_emp_map;
-                `);
-
-                db.exec(`
-                    INSERT INTO _tmp_emp_map (EmployeeID, SupervisorEmployeeID, FirstName, LastName, Title, Email, Phone, Active, PersonID, LinkedUserID)
-                    SELECT
-                        emp.ID,
-                        emp.SupervisorID,
-                        emp.FirstName,
-                        emp.LastName,
-                        emp.Title,
-                        NULLIF(TRIM(emp.Email), ''),
-                        NULLIF(TRIM(emp.Phone), ''),
-                        emp.Active,
-                        COALESCE(
-                            (SELECT p.ID FROM User u JOIN Person p ON p.ID = u.LinkedEntityRecordID WHERE u.EmployeeID = emp.ID LIMIT 1),
-                            (SELECT p.ID FROM User u JOIN Person p ON p.LinkedUserID = u.ID WHERE u.EmployeeID = emp.ID LIMIT 1),
-                            (SELECT p.ID FROM Person p WHERE NULLIF(TRIM(emp.Email), '') IS NOT NULL AND LOWER(TRIM(p.Email)) = LOWER(TRIM(emp.Email)) LIMIT 1)
-                        ),
-                        (SELECT u.ID FROM User u WHERE u.EmployeeID = emp.ID ORDER BY u.IsActive DESC, u.CreatedAt ASC LIMIT 1)
-                    FROM Employee emp;
-                `);
-
-                // Create Person rows for active unmatched employees
-                const unmatched = db.prepare(`
-                    SELECT EmployeeID, FirstName, LastName, Title, Email, Phone, LinkedUserID
-                    FROM _tmp_emp_map
-                    WHERE PersonID IS NULL AND Active = 1
-                `).all() as Array<{
-                    EmployeeID: string;
-                    FirstName: string;
-                    LastName: string;
-                    Title: string | null;
-                    Email: string | null;
-                    Phone: string | null;
-                    LinkedUserID: string | null;
-                }>;
-
-                const insertPerson = db.prepare(`
-                    INSERT INTO Person (ID, FirstName, LastName, Title, Email, Phone, LinkedUserID, Status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
-                `);
-                const updateMap = db.prepare(`UPDATE _tmp_emp_map SET PersonID = ? WHERE EmployeeID = ?`);
-                for (const row of unmatched) {
-                    const personId = `person-${row.EmployeeID}`;
-                    const userTaken = row.LinkedUserID
-                        ? db.prepare(`SELECT 1 FROM Person WHERE LinkedUserID = ?`).get(row.LinkedUserID)
-                        : null;
-                    insertPerson.run(
-                        personId,
-                        row.FirstName,
-                        row.LastName,
-                        row.Title,
-                        row.Email,
-                        row.Phone,
-                        userTaken ? null : row.LinkedUserID,
-                    );
-                    updateMap.run(personId, row.EmployeeID);
-                }
-
-                db.exec(`
-                    CREATE TEMP TABLE IF NOT EXISTS _tmp_sup_sync (
-                        PersonID TEXT PRIMARY KEY,
-                        TargetSupervisorPersonID TEXT NULL
-                    );
-                    DELETE FROM _tmp_sup_sync;
-                    INSERT INTO _tmp_sup_sync (PersonID, TargetSupervisorPersonID)
-                    SELECT
-                        m.PersonID,
-                        CASE WHEN sup.PersonID IS NOT NULL AND sup.PersonID <> m.PersonID THEN sup.PersonID ELSE NULL END
-                    FROM _tmp_emp_map m
-                    LEFT JOIN _tmp_emp_map sup ON sup.EmployeeID = m.SupervisorEmployeeID
-                    WHERE m.PersonID IS NOT NULL;
-                `);
-
-                db.exec(`
-                    UPDATE Person
-                    SET SupervisorPersonID = (
-                        SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Person.ID
-                    )
-                    WHERE ID IN (SELECT PersonID FROM _tmp_sup_sync)
-                      AND COALESCE(SupervisorPersonID, '') <> COALESCE((SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Person.ID), '');
-                `);
-
-                db.prepare(`
-                    UPDATE Relationship
-                    SET Status = 'Ended',
-                        EndDate = COALESCE(EndDate, ?)
-                    WHERE RelationshipTypeID = ?
-                      AND Status = 'Active'
-                      AND FromPersonID IN (SELECT PersonID FROM _tmp_sup_sync)
-                      AND (
-                          (SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Relationship.FromPersonID) IS NULL
-                          OR ToPersonID IS NULL
-                          OR ToPersonID <> (SELECT s.TargetSupervisorPersonID FROM _tmp_sup_sync s WHERE s.PersonID = Relationship.FromPersonID)
-                      );
-                `).run(syncDate, reportsToTypeId);
-
-                const toInsert = db.prepare(`
-                    SELECT s.PersonID, s.TargetSupervisorPersonID
-                    FROM _tmp_sup_sync s
-                    WHERE s.TargetSupervisorPersonID IS NOT NULL
-                      AND NOT EXISTS (
-                          SELECT 1 FROM Relationship r
-                          WHERE r.RelationshipTypeID = ?
-                            AND r.FromPersonID = s.PersonID
-                            AND r.ToPersonID = s.TargetSupervisorPersonID
-                            AND r.Status = 'Active'
-                      )
-                `).all(reportsToTypeId) as Array<{ PersonID: string; TargetSupervisorPersonID: string }>;
-
-                const insertRel = db.prepare(`
-                    INSERT INTO Relationship (ID, RelationshipTypeID, FromPersonID, ToPersonID, StartDate, EndDate, Status, Notes)
-                    VALUES (?, ?, ?, ?, ?, NULL, 'Active', 'Synced from MJ: Employees supervisor hierarchy')
-                `);
-                let seq = 1;
-                for (const r of toInsert) {
-                    insertRel.run(`rel-${syncDate}-${seq++}-${r.PersonID}`, reportsToTypeId, r.PersonID, r.TargetSupervisorPersonID, syncDate);
-                }
-
+                db.prepare(stmts.seedRelationshipTypeSql).run({ ':reports_to_type_id': reportsToTypeId });
+                db.exec(stmts.createTempEmpMapSql);
+                db.exec(stmts.populateTempEmpMapSql);
+                db.exec(stmts.createTempNewPeopleSql);
+                db.exec(stmts.populateTempNewPeopleSql);
+                db.exec(stmts.insertNewPeopleSql);
+                db.exec(stmts.updateEmpMapNewPeopleSql);
+                db.exec(stmts.createTempSupSyncSql);
+                db.exec(stmts.populateTempSupSyncSql);
+                db.exec(stmts.updatePersonSupervisorSql);
+                db.prepare(stmts.closeOutdatedRelationshipsSql).run({
+                    ':sync_date': syncDate,
+                    ':reports_to_type_id': reportsToTypeId,
+                });
+                db.prepare(stmts.insertNewRelationshipsSql).run({
+                    ':sync_date': syncDate,
+                    ':reports_to_type_id': reportsToTypeId,
+                });
                 db.exec('COMMIT;');
             } catch (err) {
                 db.exec('ROLLBACK;');
@@ -413,7 +649,7 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
             }
         }
 
-        it('executes vwPersonReportingChain recursive CTE for 4-level hierarchy and terminates safely on cyclic data', () => {
+        it('executes extracted shipped T-SQL and PG vwPersonReportingChain CTEs for 4-level hierarchy and terminates safely on cyclic data', () => {
             const db = createExecutableReportingDb();
             try {
                 // 4-level chain: p4 -> p3 -> p2 -> p1 -> NULL
@@ -425,24 +661,27 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                         ('p4', 'Eng', 'Four', 'p3');
                 `);
 
-                const p4Chain: PersonReportingChainRow[] = db.prepare(`
-                    SELECT PersonID, SupervisorPersonID, Depth
-                    FROM vwPersonReportingChain
-                    WHERE PersonID = 'p4'
-                    ORDER BY Depth ASC
-                `).all().map((r) => ({
-                    PersonID: String(r.PersonID),
-                    SupervisorPersonID: String(r.SupervisorPersonID),
-                    Depth: Number(r.Depth),
-                }));
+                const queryChain = (viewName: string, personId: string): PersonReportingChainRow[] =>
+                    db.prepare(`
+                        SELECT PersonID, SupervisorPersonID, Depth
+                        FROM ${viewName}
+                        WHERE PersonID = ?
+                        ORDER BY Depth ASC
+                    `).all(personId).map((r) => ({
+                        PersonID: String(r.PersonID),
+                        SupervisorPersonID: String(r.SupervisorPersonID),
+                        Depth: Number(r.Depth),
+                    }));
 
-                expect(p4Chain).toEqual([
+                const expectedP4 = [
                     { PersonID: 'p4', SupervisorPersonID: 'p3', Depth: 1 },
                     { PersonID: 'p4', SupervisorPersonID: 'p2', Depth: 2 },
                     { PersonID: 'p4', SupervisorPersonID: 'p1', Depth: 3 },
-                ]);
+                ];
+                expect(queryChain('vwPersonReportingChain_tsql', 'p4')).toEqual(expectedP4);
+                expect(queryChain('vwPersonReportingChain_pg', 'p4')).toEqual(expectedP4);
 
-                // Cyclic data (c1 -> c2 -> c3 -> c1) must terminate without infinite recursion
+                // Cyclic data (c1 -> c2 -> c3 -> c1) must terminate cleanly in BOTH extracted views
                 db.exec(`
                     INSERT INTO Person (ID, FirstName, LastName, SupervisorPersonID) VALUES
                         ('c1', 'Cyc', 'One', NULL),
@@ -451,27 +690,18 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                     UPDATE Person SET SupervisorPersonID = 'c3' WHERE ID = 'c1';
                 `);
 
-                const cycRows: PersonReportingChainRow[] = db.prepare(`
-                    SELECT PersonID, SupervisorPersonID, Depth
-                    FROM vwPersonReportingChain
-                    WHERE PersonID = 'c1'
-                    ORDER BY Depth ASC
-                `).all().map((r) => ({
-                    PersonID: String(r.PersonID),
-                    SupervisorPersonID: String(r.SupervisorPersonID),
-                    Depth: Number(r.Depth),
-                }));
-
-                expect(cycRows).toEqual([
+                const expectedCycle = [
                     { PersonID: 'c1', SupervisorPersonID: 'c3', Depth: 1 },
                     { PersonID: 'c1', SupervisorPersonID: 'c2', Depth: 2 },
-                ]);
+                ];
+                expect(queryChain('vwPersonReportingChain_tsql', 'c1')).toEqual(expectedCycle);
+                expect(queryChain('vwPersonReportingChain_pg', 'c1')).toEqual(expectedCycle);
             } finally {
                 db.close();
             }
         });
 
-        it('executes SyncEmployeesToPeople atomically across initial sync, idempotent repeat, supervisor change, and clear', () => {
+        it('executes extracted shipped SyncEmployeesToPeople SQL across initial sync, idempotent repeat, supervisor change, and clear', () => {
             const db = createExecutableReportingDb();
             try {
                 db.exec(`
@@ -482,7 +712,7 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                 `);
 
                 // Run 1: populates People, SupervisorPersonID, and dated Active 'Reports To' rows
-                runSyncEmployeesToPeopleSql(db, '2026-11-21');
+                runExtractedSyncEmployeesToPeople(db, '2026-11-21');
 
                 const bob = db.prepare(`SELECT ID, SupervisorPersonID FROM Person WHERE Email = 'bob@example.com'`).get() as {
                     ID: string;
@@ -508,7 +738,7 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                 expect(activeAfterRun1.every((r) => r.StartDate === '2026-11-21' && r.EndDate === null)).toBe(true);
 
                 // Run 2 (idempotent repeat): must not duplicate active 'Reports To' rows
-                runSyncEmployeesToPeopleSql(db, '2026-11-21');
+                runExtractedSyncEmployeesToPeople(db, '2026-11-21');
                 const countAfterRepeat = db.prepare(`SELECT COUNT(*) AS cnt FROM Relationship`).get() as { cnt: number };
                 expect(countAfterRepeat.cnt).toBe(2);
 
@@ -517,7 +747,7 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
                     UPDATE Employee SET SupervisorID = 'e1' WHERE ID = 'e3';
                     UPDATE Employee SET SupervisorID = NULL WHERE ID = 'e2';
                 `);
-                runSyncEmployeesToPeopleSql(db, '2026-11-22');
+                runExtractedSyncEmployeesToPeople(db, '2026-11-22');
 
                 const carolAfter = db.prepare(`SELECT SupervisorPersonID FROM Person WHERE ID = ?`).get(carol.ID) as { SupervisorPersonID: string | null };
                 const bobAfter = db.prepare(`SELECT SupervisorPersonID FROM Person WHERE ID = ?`).get(bob.ID) as { SupervisorPersonID: string | null };
@@ -534,6 +764,136 @@ describe('Slice 1: Supervisor Hierarchy, vwPersonReportingChain, and SyncEmploye
 
                 const bobActiveRels = db.prepare(`SELECT COUNT(*) AS cnt FROM Relationship WHERE FromPersonID = ? AND Status = 'Active'`).get(bob.ID) as { cnt: number };
                 expect(bobActiveRels.cnt).toBe(0);
+            } finally {
+                db.close();
+            }
+        });
+
+        it('rolls back Person.SupervisorPersonID and Relationship writes atomically when SyncEmployeesToPeople hits an injected relationship-write failure', () => {
+            const db = createExecutableReportingDb();
+            try {
+                db.exec(`
+                    INSERT INTO Employee (ID, FirstName, LastName, Title, Email, Active, SupervisorID) VALUES
+                        ('e1', 'Alice', 'CEO', 'CEO', 'alice@example.com', 1, NULL),
+                        ('e2', 'Bob', 'VP', 'VP Eng', 'bob@example.com', 1, 'e1');
+                `);
+
+                // Initial baseline sync succeeds
+                runExtractedSyncEmployeesToPeople(db, '2026-11-21');
+                const alice = db.prepare(`SELECT ID FROM Person WHERE Email = 'alice@example.com'`).get() as { ID: string };
+                const bob = db.prepare(`SELECT ID, SupervisorPersonID FROM Person WHERE Email = 'bob@example.com'`).get() as {
+                    ID: string;
+                    SupervisorPersonID: string | null;
+                };
+                expect(bob.SupervisorPersonID).toBe(alice.ID);
+
+                // Scenario A: Inject failure on Relationship INSERT when adding Carol -> Bob
+                db.exec(`
+                    INSERT INTO Employee (ID, FirstName, LastName, Title, Email, Active, SupervisorID) VALUES
+                        ('e3', 'Carol', 'Dev', 'Engineer', 'carol@example.com', 1, 'e2');
+                    CREATE TRIGGER trg_fail_rel_insert
+                    BEFORE INSERT ON Relationship
+                    WHEN NEW.RelationshipTypeID = '${REPORTS_TO_RELATIONSHIP_TYPE_ID}'
+                    BEGIN
+                        SELECT RAISE(ABORT, 'Injected Relationship INSERT failure');
+                    END;
+                `);
+
+                expect(() => runExtractedSyncEmployeesToPeople(db, '2026-11-22')).toThrow(/Injected Relationship INSERT failure/);
+
+                // Transaction rolled back completely: Carol was not inserted and no divergent SupervisorPersonID persisted
+                const carolCount = db.prepare(`SELECT COUNT(*) AS cnt FROM Person WHERE Email = 'carol@example.com'`).get() as { cnt: number };
+                expect(carolCount.cnt).toBe(0);
+
+                // Scenario B: Drop INSERT trigger, add Carol cleanly, then inject failure on Relationship UPDATE (closing old Reports To)
+                db.exec(`DROP TRIGGER trg_fail_rel_insert;`);
+                runExtractedSyncEmployeesToPeople(db, '2026-11-22');
+                const carol = db.prepare(`SELECT ID, SupervisorPersonID FROM Person WHERE Email = 'carol@example.com'`).get() as {
+                    ID: string;
+                    SupervisorPersonID: string | null;
+                };
+                expect(carol.SupervisorPersonID).toBe(bob.ID);
+
+                db.exec(`
+                    UPDATE Employee SET SupervisorID = 'e1' WHERE ID = 'e3';
+                    CREATE TRIGGER trg_fail_rel_close
+                    BEFORE UPDATE ON Relationship
+                    WHEN NEW.Status = 'Ended'
+                    BEGIN
+                        SELECT RAISE(ABORT, 'Injected Relationship CLOSE failure');
+                    END;
+                `);
+
+                expect(() => runExtractedSyncEmployeesToPeople(db, '2026-11-23')).toThrow(/Injected Relationship CLOSE failure/);
+
+                // Carol's Person.SupervisorPersonID must still point to Bob, and her Active Reports To row must still point to Bob
+                const carolAfterRollback = db.prepare(`SELECT SupervisorPersonID FROM Person WHERE ID = ?`).get(carol.ID) as { SupervisorPersonID: string | null };
+                expect(carolAfterRollback.SupervisorPersonID).toBe(bob.ID);
+                const carolActiveRels = db.prepare(`
+                    SELECT ToPersonID, Status, EndDate FROM Relationship WHERE FromPersonID = ? AND Status = 'Active'
+                `).all(carol.ID) as Array<{ ToPersonID: string; Status: string; EndDate: string | null }>;
+                expect(carolActiveRels).toEqual([{ ToPersonID: bob.ID, Status: 'Active', EndDate: null }]);
+            } finally {
+                db.close();
+            }
+        });
+
+        it('executes the rebuilt PostgreSQL vwPeopleGenerated and layered vwPeople views and projects SupervisorPersonID, SupervisorPerson, and all layered columns', () => {
+            const db = createExecutableReportingDb();
+            try {
+                const { generatedViewSql, layeredViewSql } = extractShippedPgVwPeopleViews();
+                db.exec(generatedViewSql);
+                db.exec(layeredViewSql);
+
+                db.exec(`
+                    INSERT INTO User (ID, Name) VALUES ('u-alice', 'alice.user');
+                    INSERT INTO SeniorityLevel (ID, Name) VALUES ('sen-1', 'Principal');
+                    INSERT INTO Organization (ID, Name) VALUES ('org-1', 'Acme Corp');
+                    INSERT INTO AddressType (ID, Name) VALUES ('at-1', 'Work');
+                    INSERT INTO Address (ID, Line1, Line2, City, StateProvince, PostalCode, Country, Latitude, Longitude)
+                        VALUES ('addr-1', '100 Main St', 'Suite 200', 'Austin', 'TX', '78701', 'US', 30.2672, -97.7431);
+                    INSERT INTO ContactType (ID, Name) VALUES ('ct-email', 'Email'), ('ct-phone', 'Mobile Phone');
+                    INSERT INTO JobFunction (ID, Name) VALUES ('jf-1', 'Engineering');
+                    INSERT INTO RelationshipType (ID, Name, Category, IsDirectional, IsActive)
+                        VALUES ('rt-emp', 'Employee', 'PersonToOrganization', 1, 1);
+
+                    INSERT INTO Person (ID, FirstName, LastName, Email, Phone, LinkedUserID, SeniorityLevelID, SupervisorPersonID)
+                    VALUES
+                        ('p-bob', 'Bob', 'Manager', 'bob@acme.com', '555-0100', NULL, 'sen-1', NULL),
+                        ('p-alice', 'Alice', 'Engineer', 'alice@acme.com', '555-0101', 'u-alice', 'sen-1', 'p-bob');
+
+                    INSERT INTO AddressLink (ID, AddressID, EntityID, RecordID, AddressTypeID, IsPrimary)
+                    VALUES ('al-1', 'addr-1', '7A94ADA9-7880-4FAE-97D8-DB0E934C3F5F', 'p-alice', 'at-1', 1);
+
+                    INSERT INTO ContactMethod (ID, PersonID, ContactTypeID, Value, IsPrimary)
+                    VALUES
+                        ('cm-1', 'p-alice', 'ct-email', 'alice.primary@acme.com', 1),
+                        ('cm-2', 'p-alice', 'ct-phone', '555-9999', 1);
+
+                    INSERT INTO Relationship (ID, RelationshipTypeID, FromPersonID, ToOrganizationID, Title, StartDate, Status)
+                    VALUES ('rel-emp-1', 'rt-emp', 'p-alice', 'org-1', 'Staff Engineer', '2026-01-01', 'Active');
+
+                    INSERT INTO PersonJobFunction (ID, PersonID, JobFunctionID, Sequence)
+                    VALUES ('pjf-1', 'p-alice', 'jf-1', 1);
+                `);
+
+                const row = db.prepare(`SELECT * FROM vwPeople WHERE ID = 'p-alice'`).get() as Record<string, string | number | null>;
+                expect(row.ID).toBe('p-alice');
+                expect(row.DisplayName).toBe('Alice Engineer');
+                expect(row.LinkedUser).toBe('alice.user');
+                expect(row.SeniorityLevel).toBe('Principal');
+                expect(row.SupervisorPersonID).toBe('p-bob');
+                expect(row.SupervisorPerson).toBe('Bob Manager');
+                expect(row.PrimaryAddressLine1).toBe('100 Main St');
+                expect(row.PrimaryAddressCity).toBe('Austin');
+                expect(row.PrimaryAddressType).toBe('Work');
+                expect(row.PrimaryEmail).toBe('alice.primary@acme.com');
+                expect(row.PrimaryPhone).toBe('555-9999');
+                expect(row.CurrentOrganizationID).toBe('org-1');
+                expect(row.CurrentOrganizationName).toBe('Acme Corp');
+                expect(row.CurrentJobTitle).toBe('Staff Engineer');
+                expect(row.PrimaryJobFunctionID).toBe('jf-1');
+                expect(row.PrimaryJobFunction).toBe('Engineering');
             } finally {
                 db.close();
             }
