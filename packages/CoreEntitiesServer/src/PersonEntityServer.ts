@@ -1,6 +1,6 @@
 import { BaseEntity, UserInfo } from '@memberjunction/core';
 import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
-import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
+import { PersonEntity } from '@mj-biz-apps/common-entities';
 import { UserCache } from '@memberjunction/generic-database-provider';
 
 /**
@@ -27,7 +27,7 @@ import { UserCache } from '@memberjunction/generic-database-provider';
  * can implement them in an IS-A subtype or explicit administrative workflow.
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
-export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
+export class PersonEntityServer extends PersonEntity {
 
     /**
      * Find an existing MJ User by email using the cached UserCache.
