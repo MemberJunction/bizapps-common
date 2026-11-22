@@ -1,5 +1,8 @@
 ---
 "@mj-biz-apps/common-ng": patch
+"@mj-biz-apps/common-activity-sync": patch
+"@mj-biz-apps/common-entities": patch
+"@mj-biz-apps/common-server": patch
 ---
 
-Add Epic 1b mechanical numeric literal sweep inventory (`.mj/specs/epic-1b-limits-sweep-bizapps-common.csv` and `.md`), CI static/build workflow (`.github/workflows/ci.yml`), and Vitest integrity spec (`limits-sweep-report.spec.ts`).
+Complete Epic 1b limits sweep, typed limits configuration resolvers (`limits.config.ts`) across Angular, ActivitySync, Entities, and Server, inline `ProtocolLimit` rationale annotations, CI static gate updates, and unit + Playwright verification.

@@ -43,7 +43,10 @@ jobs:
                 if (entry.isDirectory()) {
                   walk(full);
                 } else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts") && !entry.name.endsWith(".spec.ts")) {
-                  const lines = fs.readFileSync(full, "utf8").split(/\r?\n/);
+                  const stripped = fs.readFileSync(full, "utf8")
+                    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+                    .replace(/\/\/.*$/gm, "");
+                  const lines = stripped.split(/\r?\n/);
                   lines.forEach((line, idx) => {
                     if (anyPattern.test(line)) hits.push(`${full}:${idx + 1}: ${line.trim()}`);
                   });
