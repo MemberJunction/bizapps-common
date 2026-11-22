@@ -38,7 +38,7 @@ packages/Angular/src/lib/pages/common-dashboard.page.ts,526,760,@media (max-widt
 packages/Angular/src/lib/pages/common-dashboard.page.ts,616,6,barHeight minimum percentage Math.max(6),UX,NoChange,Minimum bar chart height percent ensuring non-zero bars remain visible
 packages/ActivitySync/src/limits.config.ts,78,500,DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxRunnableConnections,ResourceGuard,ResolvedInResolver,Hard cap on runnable connections queried per fleet sync pass (wired to ActivitySyncEngine.ts)
 packages/ActivitySync/src/ActivitySyncEngine.ts,1160,1,loadConnectionById RunView MaxRows,Tuning,NoChange,Single-record primary-key lookup cap
-packages/ActivitySync/src/ActivitySyncEngine.ts,1203,1,loadProviderType RunView MaxRows,Tuning,NoChange,Single-record primary-key lookup cap
+packages/ActivitySync/src/ActivitySyncEngine.ts,1207,1,loadProviderType RunView MaxRows,Tuning,NoChange,Single-record primary-key lookup cap
 packages/ActivitySync/src/limits.config.ts,80,48,DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxSweepRequests,ResourceGuard,ResolvedInResolver,Maximum HTTP requests per late-tag consent sweep (wired to consent-intake.ts)
 packages/ActivitySync/src/consent-intake.ts,69,1000,SWEEP_WIDE_PAGE,ProtocolLimit,AnnotatedProtocolLimit,Microsoft Graph maximum $top page size for messages endpoint (// ProtocolLimit:)
 packages/ActivitySync/src/consent-intake.ts,72,1_000,MIN_SWEEP_WINDOW_MS,ProtocolLimit,AnnotatedProtocolLimit,Minimum time-window width (1s) matching Graph lastModifiedDateTime precision (// ProtocolLimit:)
@@ -51,14 +51,14 @@ packages/ActivitySync/src/limits.config.ts,98,30,DEFAULT_ACTIVITY_SYNC_LIMITS.Tu
 packages/ActivitySync/src/limits.config.ts,100,30,DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.ForwardHorizonDays,Tuning,ResolvedInResolver,Default calendar forward horizon in days for scheduled meetings (wired to GraphCalendarTransport.ts)
 packages/ActivitySync/src/limits.config.ts,86,10,DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxCalendarPages,ResourceGuard,ResolvedInResolver,Maximum paged calendar requests per sync pass (wired to GraphCalendarTransport.ts)
 packages/ActivitySync/src/limits.config.ts,88,16,DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxMailRequests,ResourceGuard,ResolvedInResolver,Maximum windowed mail requests per pass when bisecting dense ranges (wired to GraphCommunicationTransport.ts)
-packages/ActivitySync/src/providers/GraphCommunicationTransport.ts,61,1_000,MIN_MAIL_WINDOW_MS,ProtocolLimit,AnnotatedProtocolLimit,Minimum bisection window width (1s) matching Graph timestamp precision (// ProtocolLimit:)
+packages/ActivitySync/src/providers/GraphCommunicationTransport.ts,60,1_000,MIN_MAIL_WINDOW_MS,ProtocolLimit,AnnotatedProtocolLimit,Minimum bisection window width (1s) matching Graph timestamp precision (// ProtocolLimit:)
 packages/ActivitySync/src/limits.config.ts,102,10,DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.MessageIdBatchSize,Tuning,ResolvedInResolver,Maximum Message-IDs combined in a single OData filter batch (wired to GraphCommunicationTransport.ts)
 packages/ActivitySync/src/providers/GraphMessageMapper.ts,83,24,MapGraphMessage context id.slice(0 24),UX,NoChange,Diagnostic message ID truncation length for error reporting
 packages/ActivitySync/src/limits.config.ts,104,500,DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.BodySnippetChars,Tuning,ResolvedInResolver,Maximum characters persisted when StoreBody policy is Snippet (wired to writer.ts)
-packages/ActivitySync/src/writer.ts,392,200,fillSyncFields Activity.Title slice(0 200),ProtocolLimit,AnnotatedProtocolLimit,Truncates synced email subject to fit Activity.Title field constraint (// ProtocolLimit:)
-packages/ActivitySync/src/writer.ts,417,500,fillManualFields Activity.Title slice(0 500),ProtocolLimit,AnnotatedProtocolLimit,Truncates manual activity title to fit Activity.Title nvarchar(500) schema width (// ProtocolLimit:)
-packages/ActivitySync/src/writer.ts,566,1,findExistingActivity RunView MaxRows,Tuning,NoChange,Single-record dedupe key lookup cap
-packages/ActivitySync/src/writer.ts,587,1,findExistingManualActivity RunView MaxRows,Tuning,NoChange,Single-record lookup cap
+packages/ActivitySync/src/writer.ts,391,200,fillSyncFields Activity.Title slice(0 200),ProtocolLimit,AnnotatedProtocolLimit,Truncates synced email subject to fit Activity.Title field constraint (// ProtocolLimit:)
+packages/ActivitySync/src/writer.ts,416,500,fillManualFields Activity.Title slice(0 500),ProtocolLimit,AnnotatedProtocolLimit,Truncates manual activity title to fit Activity.Title nvarchar(500) schema width (// ProtocolLimit:)
+packages/ActivitySync/src/writer.ts,565,1,findExistingActivity RunView MaxRows,Tuning,NoChange,Single-record dedupe key lookup cap
+packages/ActivitySync/src/writer.ts,586,1,findExistingManualActivity RunView MaxRows,Tuning,NoChange,Single-record lookup cap
 packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts,76,1,findMirroredOrganization RunView MaxRows,Tuning,NoChange,Single-record lookup cap by LinkedCompanyID
 packages/CoreEntitiesServer/src/entity-guards.ts,87,1,findSingleRecord RunView MaxRows,Tuning,NoChange,Single-record existence lookup cap
 packages/Entities/src/limits.config.ts,51,100,DEFAULT_COMMON_ENTITIES_LIMITS.ResourceGuards.MaxReportingChainDepth,ResourceGuard,ResolvedInResolver,Traversal depth cap preventing infinite recursion/cycles in supervisor reporting chain (wired to PersonEntity.ts)

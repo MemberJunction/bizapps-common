@@ -167,6 +167,76 @@ describe('Epic 1b limits sweep report integrity', () => {
         }
         expect(md).toContain('`RunawayGuard` (`0` hits repo-wide)');
         expect(md).toContain('`ProtocolLimit` (`0` hits in `packages/Angular`, `5` hits in `packages/ActivitySync`)');
+
+        // Pin exact per-bucket & per-category CSV counts so CSV and Markdown summary cannot drift.
+        const countByCategory = (subset: SweepRow[]) => {
+            const counts: Record<string, number> = {
+                RunawayGuard: 0,
+                ResourceGuard: 0,
+                ProtocolLimit: 0,
+                UX: 0,
+                Tuning: 0,
+            };
+            for (const row of subset) {
+                counts[row.Category] = (counts[row.Category] ?? 0) + 1;
+            }
+            return counts;
+        };
+
+        const otherRows = rows.filter((row) => !row.File.startsWith('packages/Angular/'));
+        const angularCounts = countByCategory(angularRows);
+        const otherCounts = countByCategory(otherRows);
+        const totalCounts = countByCategory(rows);
+
+        expect(angularRows.length).toBe(37);
+        expect(angularCounts).toEqual({
+            RunawayGuard: 0,
+            ResourceGuard: 5,
+            ProtocolLimit: 0,
+            UX: 27,
+            Tuning: 5,
+        });
+
+        expect(otherRows.length).toBe(33);
+        expect(otherCounts).toEqual({
+            RunawayGuard: 0,
+            ResourceGuard: 11,
+            ProtocolLimit: 5,
+            UX: 1,
+            Tuning: 16,
+        });
+
+        expect(rows.length).toBe(70);
+        expect(totalCounts).toEqual({
+            RunawayGuard: 0,
+            ResourceGuard: 16,
+            ProtocolLimit: 5,
+            UX: 28,
+            Tuning: 21,
+        });
+
+        // Verify the Markdown Section 3 summary table matches the exact CSV counts.
+        const stripMd = (cell: string) => cell.replace(/\*\*/g, '').replace(/`/g, '').trim();
+        const tableRows = md
+            .split(/\r?\n/)
+            .filter((line) => line.startsWith('|'))
+            .map((line) => line.split('|').slice(1, -1).map(stripMd));
+
+        const expectedTableRows: Array<[string, number, number, number]> = [
+            ['RunawayGuard', angularCounts.RunawayGuard, otherCounts.RunawayGuard, totalCounts.RunawayGuard],
+            ['ResourceGuard', angularCounts.ResourceGuard, otherCounts.ResourceGuard, totalCounts.ResourceGuard],
+            ['ProtocolLimit', angularCounts.ProtocolLimit, otherCounts.ProtocolLimit, totalCounts.ProtocolLimit],
+            ['UX', angularCounts.UX, otherCounts.UX, totalCounts.UX],
+            ['Tuning', angularCounts.Tuning, otherCounts.Tuning, totalCounts.Tuning],
+            ['Total', angularRows.length, otherRows.length, rows.length],
+        ];
+        for (const [label, ang, oth, tot] of expectedTableRows) {
+            const matched = tableRows.find((cols) => cols[0] === label);
+            expect(matched, `Missing Markdown Section 3 table row for "${label}"`).toBeDefined();
+            expect(Number(matched![1])).toBe(ang);
+            expect(Number(matched![2])).toBe(oth);
+            expect(Number(matched![3])).toBe(tot);
+        }
     });
 
     it('verifies an active GitHub Actions CI workflow targeting branch next exists', () => {

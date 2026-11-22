@@ -34,7 +34,7 @@ jobs:
             const fs = require("node:fs");
             const path = require("node:path");
             const skipDirs = new Set(["node_modules", "dist", "generated", "__tests__"]);
-            const anyPattern = /:\s*any\b|\bas\s+any\b|<any>/;
+            const anyPattern = /:\s*any\b|\bas\s+any\b|<any\b/;
             const hits = [];
             function walk(dir) {
               for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -86,9 +86,36 @@ jobs:
               process.exit(1);
             }
             const validCategories = new Set(["RunawayGuard", "ResourceGuard", "ProtocolLimit", "UX", "Tuning"]);
+            function parseCsvRow(line) {
+              const cols = [];
+              let field = "";
+              let inQuotes = false;
+              for (let j = 0; j < line.length; j++) {
+                const ch = line[j];
+                if (inQuotes) {
+                  if (ch === "\"" && line[j + 1] === "\"") {
+                    field += "\"";
+                    j++;
+                  } else if (ch === "\"") {
+                    inQuotes = false;
+                  } else {
+                    field += ch;
+                  }
+                } else if (ch === "\"") {
+                  inQuotes = true;
+                } else if (ch === ",") {
+                  cols.push(field);
+                  field = "";
+                } else {
+                  field += ch;
+                }
+              }
+              cols.push(field);
+              return cols;
+            }
             for (let i = 1; i < lines.length; i++) {
-              const cols = lines[i].split(",");
-              if (cols.length < 7) {
+              const cols = parseCsvRow(lines[i]);
+              if (cols.length !== 7) {
                 console.error(`Malformed CSV row ${i + 1}: ${lines[i]}`);
                 process.exit(1);
               }

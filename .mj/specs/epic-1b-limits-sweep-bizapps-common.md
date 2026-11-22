@@ -41,13 +41,13 @@ Every discovered bounding numeric literal is classified into one of the five can
 | Category | `packages/Angular` Hits | Other Packages & `scripts/` Hits | Total Hits | Slice 2 Resolution Status |
 |---|---:|---:|---:|---|
 | **`RunawayGuard`** | **0** | **0** | **0** | **Zero hits repository-wide.** Explicit `RunawayGuards` schema anchors (`ZeroHitsConfirmed: true`) exposed & unit-tested across all 4 resolver modules. |
-| **`ResourceGuard`** | 5 | 9 | 14 | 5 Angular + 7 Entities/ActivitySync guards routed through typed resolvers with finite bounds & upper-ceiling clamping; 1 test wait guard annotated `// ResourceGuard:`; 3 script/buffer bounds retained (`NoChange`). |
+| **`ResourceGuard`** | 5 | 11 | 16 | 5 Angular + 7 Entities/ActivitySync guards routed through typed resolvers with finite bounds & upper-ceiling clamping; 1 test wait guard annotated `// ResourceGuard:`; 3 script/buffer bounds retained (`NoChange`). |
 | **`ProtocolLimit`** | **0** | 5 | 5 | **Zero hits in `packages/Angular`.** All 5 sites in `packages/ActivitySync` (`SWEEP_WIDE_PAGE`, `MIN_SWEEP_WINDOW_MS`, `MIN_MAIL_WINDOW_MS`, `writer.ts` `Activity.Title` slices) annotated with inline `// ProtocolLimit:` comments. |
-| **`UX`** | 29 | 1 | 30 | 3 configurable Angular UX bounds (`PartySearchDebounceMs`, `PartyLookupMinTermLength`, `DirectoryLatestTakeCount`) routed through `ResolveCommonAngularLimits()`; 10 local thresholds annotated `// UX:`; 17 CSS/layout/single-row sites retained (`NoChange`). |
+| **`UX`** | 27 | 1 | 28 | 3 configurable Angular UX bounds (`PartySearchDebounceMs`, `PartyLookupMinTermLength`, `DirectoryLatestTakeCount`) routed through `ResolveCommonAngularLimits()`; 10 local thresholds annotated `// UX:`; 14 CSS/layout/single-row sites in Angular + 1 ActivitySync diagnostic slice retained (`NoChange`). |
 | **`Tuning`** | 5 | 16 | 21 | 5 Angular + 7 ActivitySync + 1 Server tuning constants routed through typed resolvers; 8 single-row `MaxRows: 1` lookup caps retained (`NoChange`). |
-| **Total** | **39** | **31** | **70** | **All 70 classified bounding literals accounted for and verified.** |
+| **Total** | **37** | **33** | **70** | **All 70 classified bounding literals accounted for and verified.** |
 
-*(Note: In Slice 2, `LoadDirectorySnapshot` has 3 `MaxRows: 1000` `ResourceGuard` bounds — People, Organizations, Relationships — and 5 `Tuning` bounds in `packages/Angular`, plus 2 `UX` `LatestByCreated`/`PartyLookupMinTermLength`/`DEBOUNCE_MS` bounds routed to `limits.config.ts`.)*
+*(Note: In Slice 2, `LoadDirectorySnapshot` has 3 `MaxRows: 1000` `ResourceGuard` bounds — People, Organizations, Relationships — and 5 `Tuning` bounds in `packages/Angular`, plus 3 `UX` `LatestByCreated`/`PartyLookupMinTermLength`/`DEBOUNCE_MS` bounds routed to `limits.config.ts`.)*
 
 ### Explicit Zero-Hit Category Documentation
 - **`RunawayGuard` (`0` hits repo-wide)**: `bizapps-common` is a business-entity, activity-sync, and Angular UI library; it does not host agent prompt loops, channel turn guards, or task-graph executors. Every typed limits resolver (`@mj-biz-apps/common-ng`, `@mj-biz-apps/common-activity-sync`, `@mj-biz-apps/common-entities`, `@mj-biz-apps/common-server`) exposes explicit `RunawayGuards` schema fields (`ZeroHitsConfirmed: true`, `ActiveGuardCount: 0` in Angular) and unit tests confirming 0 unapproved `RunawayGuard` literals.
