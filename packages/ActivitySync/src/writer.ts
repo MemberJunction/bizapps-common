@@ -27,6 +27,7 @@ import type {
 
 import type { ResolvedParty, UnresolvedParty, ActivityWriteContext } from './BaseActivitySyncExtension.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 import { EscapeText, RequireUUID } from './sql.js';
 import type { ActivityDirection, ActivityIdentityKind, ActivityLinkRole, NormalizedItem } from './types.js';
 
@@ -57,8 +58,6 @@ export type ActivityVisibilityValue = 'Internal' | 'Private';
 
 /** How much of an included body to persist. Default Snippet — Full is a per-connection opt-in. */
 export type StoreBodyPolicy = 'None' | 'Snippet' | 'Full';
-
-import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 
 export const BODY_SNIPPET_CHARS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.BodySnippetChars;
 

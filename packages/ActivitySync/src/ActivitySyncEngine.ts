@@ -82,6 +82,7 @@ import {
     type RunOutcome,
 } from './watermark.js';
 import { ExclusionsExtraFilter, FromRunView, RulesExtraFilter, type ViewLoad } from './load.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 import { ActivityWriter, StoreBodyFromSettings } from './writer.js';
 
 export interface SyncEngineResult {
@@ -119,8 +120,6 @@ export function NotRunConnectionIssues(
     const why = options.DryRun ? 'it does not exist or is Disabled' : 'it does not exist, is Disabled, or is Paused';
     return missing.map((id) => `Connection ${id} was not run: ${why}.`);
 }
-
-import { DEFAULT_ACTIVITY_SYNC_LIMITS } from './limits.config.js';
 
 /** Hard cap on the fleet query. Unbounded RunView is how a tenant with a burst of mailboxes stalls the hourly job. */
 export const MAX_RUNNABLE_CONNECTIONS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxRunnableConnections;
@@ -886,8 +885,9 @@ export class ActivitySyncEngine {
         provider: IMetadataProvider,
         contextUser: UserInfo,
     ): Promise<FleetRunResult> {
+        const MAX_RUNNABLE_CONNECTIONS = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections;
         const fleet: FleetRunResult = { Success: true, ConnectionsAttempted: 0, Results: [], Issues: [] };
-        const loaded = await this.loadRunnableConnections(options, contextUser);
+        const loaded = await this.loadRunnableConnections(options, contextUser, MAX_RUNNABLE_CONNECTIONS);
         if (loaded.Failed) {
             fleet.Success = false;
             fleet.Issues.push(loaded.Issue);
@@ -1165,7 +1165,11 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
     }
 
-    private async loadRunnableConnections(options: SyncRunOptions, user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
+    private async loadRunnableConnections(
+        options: SyncRunOptions,
+        user: UserInfo,
+        MAX_RUNNABLE_CONNECTIONS: number = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections,
+    ): Promise<ViewLoad<ConnectionRow>> {
         const rv = new RunView();
         const res = await rv.RunView<ConnectionRow>(
             {

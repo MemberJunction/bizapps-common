@@ -25,6 +25,7 @@ import type { BaseCommunicationProvider } from '@memberjunction/communication-ty
 import type { UserInfo } from '@memberjunction/core';
 
 import { CONSENT_MESSAGE_EXPAND } from '../consent.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from '../limits.config.js';
 import type { ActivityLookup, ActivitySourceQuery, RawBatch } from '../types.js';
 import type { ActivityMessageTransport } from './MessageTransport.js';
 
@@ -44,8 +45,6 @@ export interface GraphServicePrincipal {
     clientId: string;
     clientSecret: string;
 }
-
-import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from '../limits.config.js';
 
 /**
  * How many requests one mail pass may make while it looks for a date window that fits `Limit`.

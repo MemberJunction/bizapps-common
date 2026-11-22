@@ -43,6 +43,7 @@ import {
 } from './consent.js';
 import { REASON_PROVEN, REASON_TAGGED } from './consent-stages.js';
 import type { ConsentRecord, ConsentStore } from './consent-store.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 import type { ActivitySourceKind, ActivitySourceQuery, NormalizedItem } from './types.js';
 
 /** The Activity type code each surface writes (GraphMessageMapper / MSGraphCalendarSyncProvider). */
@@ -52,7 +53,6 @@ export const SURFACE_TYPE_CODE: Record<ActivitySourceKind, string> = {
     Social: 'Social',
     Chat: 'Chat',
 };
-import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 
 /**
  * Requests one sweep may make. Each drains a window, widens the page, halves the window or steps past

@@ -33,6 +33,7 @@
  * @module @mj-biz-apps/common-activity-sync
  */
 import { DomainOf } from './participants.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 import type { ActivitySourceKind, NormalizedItem } from './types.js';
 import { ParseConnectionSettings } from './watermark.js';
 
@@ -51,8 +52,6 @@ export interface ConsentPolicy {
     /** `BaseActivityConsentSource` keys that grant standing consent. Empty: the tag is the only consent. */
     Sources: string[];
 }
-
-import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 
 /** The key under `ActivitySyncConnection.Settings`. */
 export const CONSENT_SETTING = 'Consent';
