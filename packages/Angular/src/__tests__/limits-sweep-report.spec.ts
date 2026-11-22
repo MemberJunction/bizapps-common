@@ -142,25 +142,31 @@ describe('Epic 1b limits sweep report integrity', () => {
         }
     });
 
-    it('covers all key Angular bounding literals and documents zero-hit categories in the companion spec', () => {
+    it('covers all key Angular bounding literals, resolver wiring, and zero-hit category documentation', () => {
         const { rows } = loadSweepRows();
-        const angularFiles = new Set(
-            rows.filter((row) => row.File.startsWith('packages/Angular/')).map((row) => row.File),
-        );
+        const angularRows = rows.filter((row) => row.File.startsWith('packages/Angular/'));
+        const angularFiles = new Set(angularRows.map((row) => row.File));
 
+        expect(angularFiles.has('packages/Angular/src/lib/config/limits.config.ts')).toBe(true);
         expect(angularFiles.has('packages/Angular/src/lib/components/party-field/party-field.component.ts')).toBe(true);
-        expect(angularFiles.has('packages/Angular/src/lib/components/party-field/party-lookup-term.ts')).toBe(true);
         expect(angularFiles.has('packages/Angular/src/lib/components/selling-company-field/selling-company-field.component.ts')).toBe(true);
         expect(angularFiles.has('packages/Angular/src/lib/components/relationship-graph/common-relationship-graph.component.ts')).toBe(true);
         expect(angularFiles.has('packages/Angular/src/lib/data/directory-queries.ts')).toBe(true);
-        expect(angularFiles.has('packages/Angular/src/lib/data/directory-stats.ts')).toBe(true);
-        expect(angularFiles.has('packages/Angular/src/lib/pages/activities-dashboard.page.ts')).toBe(true);
+
+        const resolvedInAngular = angularRows.filter((row) => row.ActionRequired === 'ResolvedInResolver');
+        expect(resolvedInAngular.length).toBe(13);
+        expect(resolvedInAngular.every((row) => row.File === 'packages/Angular/src/lib/config/limits.config.ts')).toBe(true);
+
+        const protocolLimits = rows.filter((row) => row.Category === 'ProtocolLimit');
+        expect(protocolLimits.length).toBe(5);
+        expect(protocolLimits.every((row) => row.ActionRequired === 'AnnotatedProtocolLimit')).toBe(true);
 
         const md = readFileSync(SWEEP_MD_PATH, 'utf8');
         for (const category of VALID_CATEGORIES) {
             expect(md).toContain(category);
         }
         expect(md).toContain('`RunawayGuard` (`0` hits repo-wide)');
+        expect(md).toContain('`ProtocolLimit` (`0` hits in `packages/Angular`, `5` hits in `packages/ActivitySync`)');
     });
 
     it('verifies an active GitHub Actions CI workflow targeting branch next exists', () => {
