@@ -78,16 +78,17 @@ async function main() {
 <title>BizApps Common — Angular Limits Configuration Verification</title>
 <style>
   :root {
-    --mj-bg-page: #0b1220;
-    --mj-bg-surface: #111c33;
-    --mj-bg-surface-card: #16223d;
-    --mj-border-default: #24365c;
-    --mj-text-primary: #f1f5f9;
-    --mj-text-secondary: #94a3b8;
-    --mj-brand-primary: #38bdf8;
-    --mj-status-success: #22c55e;
-    --mj-status-warning: #f59e0b;
-    --mj-status-info: #60a5fa;
+    color-scheme: light;
+    --mj-bg-page: Canvas;
+    --mj-bg-surface: Field;
+    --mj-bg-surface-card: ButtonFace;
+    --mj-border-default: ButtonBorder;
+    --mj-text-primary: CanvasText;
+    --mj-text-secondary: GrayText;
+    --mj-brand-primary: LinkText;
+    --mj-status-success: Highlight;
+    --mj-status-warning: MarkText;
+    --mj-status-info-text: LinkText;
     --mj-radius-md: 10px;
   }
   * { box-sizing: border-box; }
@@ -183,7 +184,7 @@ async function main() {
     font-size: 11px;
     font-weight: 600;
     border: 1px solid var(--mj-border-default);
-    color: var(--mj-status-info);
+    color: var(--mj-status-info-text);
   }
   .clamped {
     color: var(--mj-status-warning);
