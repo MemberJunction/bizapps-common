@@ -19,45 +19,45 @@ export interface ActivityTypeStyle {
 const ACTIVITY_TYPE_STYLES: Record<string, ActivityTypeStyle> = {
     email: {
         icon: 'fa-solid fa-envelope',
-        color: '#2563eb',
-        bgGradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+        color: 'var(--mj-brand-primary)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-brand-primary) 0%, var(--mj-brand-primary-hover) 100%)',
     },
     call: {
         icon: 'fa-solid fa-phone',
-        color: '#059669',
-        bgGradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+        color: 'var(--mj-status-success)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-status-success) 0%, var(--mj-color-success-500) 100%)',
     },
     meeting: {
         icon: 'fa-solid fa-calendar-days',
-        color: '#4f46e5',
-        bgGradient: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+        color: 'var(--mj-color-indigo-600)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-color-indigo-600) 0%, var(--mj-color-indigo-500) 100%)',
     },
     note: {
         icon: 'fa-solid fa-note-sticky',
-        color: '#d97706',
-        bgGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+        color: 'var(--mj-status-warning)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-status-warning) 0%, var(--mj-color-warning-500) 100%)',
     },
     sms: {
         icon: 'fa-solid fa-comment-sms',
-        color: '#7c3aed',
-        bgGradient: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+        color: 'var(--mj-color-violet-600)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-color-violet-600) 0%, var(--mj-color-violet-500) 100%)',
     },
     chat: {
         icon: 'fa-solid fa-comments',
-        color: '#0d9488',
-        bgGradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+        color: 'var(--mj-brand-accent)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-brand-accent) 0%, var(--mj-brand-accent-hover) 100%)',
     },
     task: {
         icon: 'fa-solid fa-square-check',
-        color: '#0284c7',
-        bgGradient: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+        color: 'var(--mj-status-info)',
+        bgGradient: 'linear-gradient(135deg, var(--mj-status-info) 0%, var(--mj-color-info-400) 100%)',
     },
 };
 
 const DEFAULT_STYLE: ActivityTypeStyle = {
     icon: 'fa-solid fa-bolt',
-    color: '#0284c7',
-    bgGradient: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)',
+    color: 'var(--mj-status-info)',
+    bgGradient: 'linear-gradient(135deg, var(--mj-status-info) 0%, var(--mj-brand-primary) 100%)',
 };
 
 /**
@@ -154,6 +154,7 @@ export class ActivityIdentityComponent implements OnInit {
 
     public get SentimentTone(): 'success' | 'danger' | 'info' {
         const score = Number(this.Record.SentimentScore ?? 0);
+        // UX: Sentiment badge classification thresholds (+0.25 positive, -0.25 negative).
         if (score >= 0.25) return 'success';
         if (score <= -0.25) return 'danger';
         return 'info';
@@ -161,6 +162,7 @@ export class ActivityIdentityComponent implements OnInit {
 
     public get SentimentIcon(): string {
         const score = Number(this.Record.SentimentScore ?? 0);
+        // UX: Sentiment icon classification thresholds (+0.25 smile, -0.25 frown).
         if (score >= 0.25) return 'fa-solid fa-face-smile';
         if (score <= -0.25) return 'fa-solid fa-face-frown';
         return 'fa-solid fa-face-meh';

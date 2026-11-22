@@ -73,6 +73,19 @@ export function LoadBizAppsCommonServer(): void {
 }
 
 export { SyncActivitiesAction, LoadSyncActivitiesAction } from './custom/sync-activities.action.js';
+export {
+    DEFAULT_SERVER_LIMITS,
+    SERVER_LIMITS_BOUNDS,
+    ResolveServerLimits,
+    RegisterServerLimits,
+    ResetServerLimits,
+    GetRegisteredServerLimits,
+    type ServerLimitBounds,
+    type ServerRunawayGuardsConfig,
+    type ServerTuningConfig,
+    type ServerLimitsConfig,
+    type ServerLimitsOverride,
+} from './custom/limits.config.js';
 export { LogActivityAction, LoadLogActivityAction } from './custom/log-activity.action.js';
 export { GetPartySignalsAction, LoadGetPartySignalsAction } from './custom/get-party-signals.action.js';
 export { GraphTransportFactory, LoadGraphTransportFactory } from './custom/graph-transport-factory.js';

@@ -22,10 +22,11 @@ import {
     type SyncRunOptions,
 } from '@mj-biz-apps/common-activity-sync';
 
+import { ResolveServerLimits } from './limits.config.js';
+
 const P_LIMIT = 'Limit';
 const P_DRY_RUN = 'DryRun';
 const P_CONNECTION_IDS = 'ConnectionIDs';
-const DEFAULT_LIMIT = 100;
 
 function readParam(params: RunActionParams, name: string): unknown {
     return params.Params?.find((p) => p.Name?.toLowerCase() === name.toLowerCase())?.Value;
@@ -72,9 +73,10 @@ export class SyncActivitiesAction extends BaseAction {
         if (!params.ContextUser) {
             return { Success: false, ResultCode: 'VALIDATION_ERROR', Message: 'ContextUser is required.' };
         }
+        const defaultLimit = ResolveServerLimits().Tuning.SyncActivitiesDefaultLimit;
         const raw = readParam(params, P_LIMIT);
-        const parsed = raw === null || raw === undefined || raw === '' ? DEFAULT_LIMIT : Number(raw);
-        const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_LIMIT;
+        const parsed = raw === null || raw === undefined || raw === '' ? defaultLimit : Number(raw);
+        const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : defaultLimit;
         const dryRun = ReadDryRun(readParam(params, P_DRY_RUN));
         // A dry run is a person previewing a connection; the hourly job never passes one.
         const options: SyncRunOptions = {

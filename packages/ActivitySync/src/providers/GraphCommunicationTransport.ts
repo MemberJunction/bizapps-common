@@ -25,6 +25,7 @@ import type { BaseCommunicationProvider } from '@memberjunction/communication-ty
 import type { UserInfo } from '@memberjunction/core';
 
 import { CONSENT_MESSAGE_EXPAND } from '../consent.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from '../limits.config.js';
 import type { ActivityLookup, ActivitySourceQuery, RawBatch } from '../types.js';
 import type { ActivityMessageTransport } from './MessageTransport.js';
 
@@ -52,9 +53,10 @@ export interface GraphServicePrincipal {
  * too much converges in about log2(span / fitting width) requests, so this covers a span of decades
  * down to a window of minutes; a pass that runs out says so rather than looping.
  */
-export const DEFAULT_MAX_MAIL_REQUESTS = 16;
+export const DEFAULT_MAX_MAIL_REQUESTS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxMailRequests;
 
 /** A window narrower than this that still overflows a page is reported, not narrowed further. */
+// ProtocolLimit: Microsoft Graph receivedDateTime OData filter resolves to 1-second (1000 ms) precision.
 const MIN_MAIL_WINDOW_MS = 1_000;
 
 /** The slice of MJ's communication provider this uses. Structural, to avoid a hard runtime import. */
@@ -116,7 +118,7 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
 
     public constructor(
         private readonly Deps: GraphTransportDeps,
-        private readonly MaxRequests: number = DEFAULT_MAX_MAIL_REQUESTS,
+        private readonly MaxRequests: number = ResolveActivitySyncLimits().ResourceGuards.MaxMailRequests,
         /** Injectable so a test can pin the end of the window without freezing global time. */
         private readonly Now: () => Date = () => new Date(),
     ) {}
@@ -214,12 +216,13 @@ export class GraphCommunicationTransport implements ActivityMessageTransport {
         query: ActivitySourceQuery,
         request: ActivityLookup,
     ): Promise<RawBatch> {
+        const batchSize = ResolveActivitySyncLimits().Tuning.MessageIdBatchSize;
         const filters =
             request.Kind === 'Tagged'
                 ? [TaggedFilter(request.Tag, request.ModifiedSince, request.ModifiedBefore ?? null)]
                 : request.Kind === 'MessageIds'
-                  ? chunk(request.MessageIds, MESSAGE_ID_BATCH).map(MessageIdFilter)
-                  : chunk(request.ConversationIds, MESSAGE_ID_BATCH).map(ConversationFilter);
+                  ? chunk(request.MessageIds, batchSize).map(MessageIdFilter)
+                  : chunk(request.ConversationIds, batchSize).map(ConversationFilter);
         const payloads: Record<string, unknown>[] = [];
         let capped = false;
         for (const filter of filters) {
@@ -423,7 +426,7 @@ export function MJGraphTransportDeps(args: {
 }
 
 /** Message-IDs per lookup request. */
-export const MESSAGE_ID_BATCH = 10;
+export const MESSAGE_ID_BATCH = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.MessageIdBatchSize;
 
 /** OData for "carries the tag, modified in [since, before)". `categories/any` is Graph's documented form. */
 export function TaggedFilter(tag: string, modifiedSince: Date | null, modifiedBefore: Date | null = null): string {

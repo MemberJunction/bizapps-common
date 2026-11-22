@@ -26,9 +26,9 @@ const SKIP_DIR = new Set(['generated', 'node_modules', 'dist']);
 const SOURCE_FILE = /\.(ts|css|scss|html)$/;
 const TOKEN_USE = /var\(\s*(--mj-[a-z0-9-]+)/g;
 
-/** The MJ floor a caret range names: `^6.1.5` → `6.1.5`. */
+/** The MJ floor a caret range names: `^6.1.5` or `^6.3.0-edge.1` → `6.1.5` / `6.3.0`. */
 export function mjFloor(range) {
-    const match = /^\^?(\d+\.\d+\.\d+)$/.exec(range ?? '');
+    const match = /^\^?(\d+\.\d+\.\d+)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(range ?? '');
     if (!match) {
         throw new Error(`packages/Angular has no caret @memberjunction/core floor (found "${range}")`);
     }

@@ -1,5 +1,6 @@
 import { LogError, RunQuery, RunView } from '@memberjunction/core';
 import { AddDays, BusinessTimeZoneEngine, FromCalendarDay, type CalendarDay } from '@mj-biz-apps/common-entities';
+import { ResolveCommonAngularLimits, type CommonAngularLimitsOverride } from '../config/limits.config';
 import { COMMON_ENTITIES } from './entity-names';
 import type {
     DirectoryAttentionItem,
@@ -238,32 +239,33 @@ const RELATIONSHIP_FIELDS = [
 ] as const;
 
 /** Cheap directory load — one round trip, no aggregates. */
-export async function LoadDirectorySnapshot(): Promise<{
+export async function LoadDirectorySnapshot(limitsOverride?: CommonAngularLimitsOverride | null): Promise<{
     People: DirectoryPersonRow[];
     Organizations: DirectoryOrganizationRow[];
     Relationships: DirectoryRelationshipRow[];
 }> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const [people, orgs, relationships] = await rv.RunViews([
         {
             EntityName: COMMON_ENTITIES.Person,
             Fields: [...PERSON_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotPeopleMaxRows,
             ResultType: 'simple',
         },
         {
             EntityName: COMMON_ENTITIES.Organization,
             Fields: [...ORGANIZATION_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotOrganizationsMaxRows,
             ResultType: 'simple',
         },
         {
             EntityName: COMMON_ENTITIES.Relationship,
             Fields: [...RELATIONSHIP_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotRelationshipsMaxRows,
             ResultType: 'simple',
         },
     ]);
@@ -281,14 +283,18 @@ export async function LoadDirectorySnapshot(): Promise<{
  * `./directory-stats` (e.g. `` `FirstName LIKE '%${EscapeLikeValue(term)}%'` ``); quote characters
  * in unescaped input break the query, and the server evaluates whatever arrives here.
  */
-export async function SearchPeople(filter: string | undefined): Promise<DirectoryPersonRow[]> {
+export async function SearchPeople(
+    filter: string | undefined,
+    limitsOverride?: CommonAngularLimitsOverride | null,
+): Promise<DirectoryPersonRow[]> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const result = await rv.RunView<DirectoryPersonRow>({
         EntityName: COMMON_ENTITIES.Person,
         Fields: [...PERSON_FIELDS],
         ExtraFilter: filter,
         OrderBy: 'LastName, FirstName',
-        MaxRows: 200,
+        MaxRows: limits.Tuning.DirectorySearchPeopleMaxRows,
         ResultType: 'simple',
     });
     return result.Success ? result.Results : [];
@@ -298,14 +304,18 @@ export async function SearchPeople(filter: string | undefined): Promise<Director
  * @param filter A trusted, pre-escaped SQL fragment passed verbatim as `ExtraFilter` — NEVER raw
  * user text. See {@link SearchPeople} for the escaping contract.
  */
-export async function SearchOrganizations(filter: string | undefined): Promise<DirectoryOrganizationRow[]> {
+export async function SearchOrganizations(
+    filter: string | undefined,
+    limitsOverride?: CommonAngularLimitsOverride | null,
+): Promise<DirectoryOrganizationRow[]> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const result = await rv.RunView<DirectoryOrganizationRow>({
         EntityName: COMMON_ENTITIES.Organization,
         Fields: [...ORGANIZATION_FIELDS],
         ExtraFilter: filter,
         OrderBy: 'Name',
-        MaxRows: 200,
+        MaxRows: limits.Tuning.DirectorySearchOrganizationsMaxRows,
         ResultType: 'simple',
     });
     return result.Success ? result.Results : [];

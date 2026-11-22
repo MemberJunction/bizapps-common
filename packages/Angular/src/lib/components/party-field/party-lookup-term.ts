@@ -1,3 +1,5 @@
+import { ResolveCommonAngularLimits } from '../../config/limits.config';
+
 export type PartyKind = 'Person' | 'Organization';
 
 /** Template parameters of every party lookup query. `Domain` is omitted from the call when null. */
@@ -16,24 +18,27 @@ export const PARTY_LOOKUP_QUERIES: Record<PartyKind, { QueryName: string; Catego
     Organization: { QueryName: 'Common: Party Lookup Organizations', CategoryPath: 'Common' },
 };
 
-const MIN_TERM_LENGTH = 2;
-
 /**
- * What to search for, or null under two non-blank characters (the picker then shows nothing and
- * sends nothing). No escaping here: the query's `sqlLikeBegins` filter escapes.
+ * What to search for, or null under the configured minimum non-blank character count
+ * (the picker then shows nothing and sends nothing). No escaping here: the query's
+ * `sqlLikeBegins` filter escapes.
  */
-export function PartyLookupParamsFor(kind: PartyKind, raw: string): PartyLookupParams | null {
+export function PartyLookupParamsFor(
+    kind: PartyKind,
+    raw: string,
+    minTermLength: number = ResolveCommonAngularLimits().Ux.PartyLookupMinTermLength,
+): PartyLookupParams | null {
     const term = raw.trim();
-    if (!longEnough(term)) {
+    if (!longEnough(term, minTermLength)) {
         return null;
     }
     const domain = kind === 'Person' ? emailDomainOf(term) : websiteDomainOf(term);
-    return { Term: term, Domain: domain && longEnough(domain) ? domain : null };
+    return { Term: term, Domain: domain && longEnough(domain, minTermLength) ? domain : null };
 }
 
 /** `%` does not count: sqlLikeBegins strips boundary wildcards, so "%%" would match every row. */
-function longEnough(text: string): boolean {
-    return text.replace(/%/g, '').length >= MIN_TERM_LENGTH;
+function longEnough(text: string, minTermLength: number): boolean {
+    return text.replace(/%/g, '').length >= minTermLength;
 }
 
 /** `@aqha.com` → `aqha.com`. Only a term that looks like part of an address gets a domain. */

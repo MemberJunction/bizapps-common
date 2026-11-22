@@ -16,6 +16,7 @@ export * from './contact-method-consent-entity.js';
 export * from './contact-preference-engine.js';
 export * from './company-organization-sync.operation.js';
 export * from './reporting-chain.js';
+export * from './limits.config.js';
 export * from './PersonEntity.js';
 
 /**

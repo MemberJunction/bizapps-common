@@ -27,6 +27,10 @@ import {
     type LayoutChangedEventArgs,
     type ViewportTransformEventArgs
 } from '@memberjunction/ng-graph-view';
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../../config/limits.config';
 import { COMMON_ENTITIES } from '../../data/entity-names';
 import type { DirectoryRelationshipRow } from '../../data/directory-types';
 
@@ -53,12 +57,12 @@ function partyNodeKey(prefix: 'person' | 'org', id: string): string {
         <div class="bizapps-rel-graph-container" [style.height]="Height">
             @if (IsLoading) {
                 <div class="bizapps-rel-graph-loading">
-                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--mj-brand-primary, #38bdf8);"></i>
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--mj-brand-primary);"></i>
                     <span>Loading relationship graph...</span>
                 </div>
             } @else if (Nodes.length === 0) {
                 <div class="bizapps-rel-graph-empty">
-                    <i class="fa-solid fa-circle-nodes" style="font-size: 32px; color: var(--mj-text-muted, #64748b);"></i>
+                    <i class="fa-solid fa-circle-nodes" style="font-size: 32px; color: var(--mj-text-muted);"></i>
                     <p>No mapped relationships found for this record.</p>
                 </div>
             } @else {
@@ -100,16 +104,19 @@ function partyNodeKey(prefix: 'person' | 'org', id: string): string {
             gap: 12px;
             height: 100%;
             min-height: 360px;
-            background: var(--mj-bg-surface-sunken, #0b1220);
+            background: var(--mj-bg-surface-sunken);
             border-radius: 12px;
-            border: 1px solid var(--mj-border-default, #223254);
-            color: var(--mj-text-secondary, #94a3b8);
+            border: 1px solid var(--mj-border-default);
+            color: var(--mj-text-secondary);
             font-size: 13px;
         }
     `]
 })
 export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     private cdr = inject(ChangeDetectorRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     @Input() public PersonID?: string;
     @Input() public OrganizationID?: string;
@@ -124,8 +131,8 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     public IsLoading = false;
 
     public readonly GraphCategories: GraphCategoryConfig[] = [
-        { Category: 'person', Label: 'Person', Color: '#10b981', IconClass: 'fa-solid fa-user' },
-        { Category: 'organization', Label: 'Organization', Color: '#38bdf8', IconClass: 'fa-solid fa-building' }
+        { Category: 'person', Label: 'Person', Color: 'var(--mj-status-success)', IconClass: 'fa-solid fa-user' },
+        { Category: 'organization', Label: 'Organization', Color: 'var(--mj-brand-primary)', IconClass: 'fa-solid fa-building' }
     ];
 
     private static graphCache = new Map<string, { nodes: GraphNode[]; edges: GraphEdge[] }>();
@@ -209,7 +216,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                 ExtraFilter: filter || undefined,
                 Fields: ['ID', 'FromPersonID', 'ToPersonID', 'FromOrganizationID', 'ToOrganizationID', 'FromPerson', 'ToPerson', 'FromOrganization', 'ToOrganization', 'RelationshipType', 'Title'],
                 OrderBy: '__mj_CreatedAt DESC',
-                MaxRows: 60,
+                MaxRows: this.limits.Tuning.RelationshipGraphInitialMaxRows,
                 ResultType: 'simple'
             });
 
@@ -350,7 +357,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                 EntityName: COMMON_ENTITIES.Relationship,
                 ExtraFilter: filter,
                 OrderBy: '__mj_CreatedAt DESC',
-                MaxRows: 30,
+                MaxRows: this.limits.Tuning.RelationshipGraphHopMaxRows,
                 ResultType: 'simple'
             });
 

@@ -1,3 +1,4 @@
+import { ResolveCommonAngularLimits } from '../config/limits.config';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
@@ -51,7 +52,10 @@ export function CountByLabel(rows: readonly { Label: string }[]): DirectoryBarRo
         .sort((a, b) => b.Value - a.Value);
 }
 
-export function LatestByCreated<T extends { __mj_CreatedAt: Date | string }>(rows: readonly T[], take = 7): T[] {
+export function LatestByCreated<T extends { __mj_CreatedAt: Date | string }>(
+    rows: readonly T[],
+    take: number = ResolveCommonAngularLimits().Ux.DirectoryLatestTakeCount,
+): T[] {
     return [...rows]
         .sort((a, b) => String(b.__mj_CreatedAt).localeCompare(String(a.__mj_CreatedAt)))
         .slice(0, take);

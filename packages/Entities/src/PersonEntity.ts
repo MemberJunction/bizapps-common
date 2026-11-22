@@ -27,11 +27,11 @@ import {
     mjBizAppsCommonPersonEntity,
     mjBizAppsCommonRelationshipEntity,
 } from './generated/entity_subclasses';
+import { ResolveCommonEntitiesLimits } from './limits.config.js';
 import { REPORTS_TO_RELATIONSHIP_TYPE_ID } from './reporting-chain.js';
 
 const PEOPLE_ENTITY_NAME = 'MJ_BizApps_Common: People' as const;
 const RELATIONSHIPS_ENTITY_NAME = 'MJ_BizApps_Common: Relationships' as const;
-const MAX_REPORTING_CHAIN_DEPTH = 100;
 const DEFAULT_PROVIDER_CACHE_KEY: object = {};
 
 /**
@@ -373,10 +373,11 @@ export class PersonEntity extends mjBizAppsCommonPersonEntity {
 
         let currentId: string | null = initialSupervisorId;
         let depth = 0;
+        const maxReportingChainDepth = ResolveCommonEntitiesLimits().ResourceGuards.MaxReportingChainDepth;
 
         while (currentId) {
-            if (depth >= MAX_REPORTING_CHAIN_DEPTH) {
-                return `Supervisor reporting chain exceeds the maximum supported depth of ${MAX_REPORTING_CHAIN_DEPTH}.`;
+            if (depth >= maxReportingChainDepth) {
+                return `Supervisor reporting chain exceeds the maximum supported depth of ${maxReportingChainDepth}.`;
             }
             if (visited.Has(currentId)) {
                 if (selfId && UUIDsEqual(currentId, selfId)) {
@@ -469,12 +470,13 @@ export class PersonEntity extends mjBizAppsCommonPersonEntity {
 
         let currentId: string | null = initialSupervisorId;
         let depth = 0;
+        const maxReportingChainDepth = ResolveCommonEntitiesLimits().ResourceGuards.MaxReportingChainDepth;
         const rv = this.createRunView();
         const user = this.activeUserOrUndefined();
 
         while (currentId) {
-            if (depth >= MAX_REPORTING_CHAIN_DEPTH) {
-                return `Supervisor reporting chain exceeds the maximum supported depth of ${MAX_REPORTING_CHAIN_DEPTH}.`;
+            if (depth >= maxReportingChainDepth) {
+                return `Supervisor reporting chain exceeds the maximum supported depth of ${maxReportingChainDepth}.`;
             }
             if (visited.Has(currentId)) {
                 if (selfId && UUIDsEqual(currentId, selfId)) {

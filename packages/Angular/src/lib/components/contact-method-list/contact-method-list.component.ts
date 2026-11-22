@@ -401,6 +401,7 @@ export class ContactMethodListComponent {
     /** Returns the DisplayRank for a contact type, defaulting to 999 if not found. */
     private getTypeRank(typeID: string): number {
         const ct = this.ContactTypes.find(t => UUIDsEqual(t.ID, typeID));
+        // UX: Default sort rank sentinel placing unranked contact types last in display order.
         return ct?.DisplayRank ?? 999;
     }
 
@@ -515,6 +516,7 @@ export class ContactMethodListComponent {
     private getPurposeRank(purposeID: string | null): number {
         if (!purposeID) return -1;
         const p = this.ConsentPurposes.find(x => UUIDsEqual(x.ID, purposeID));
+        // UX: Default sort sequence sentinel placing unranked consent purposes last in display order.
         return p?.Sequence ?? 999;
     }
 
