@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RunView, type IMetadataProvider, type UserInfo } from '@memberjunction/core';
+import { Metadata, RunView, UserInfo } from '@memberjunction/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     ACTIVITY_SYNC_LIMITS_BOUNDS,
@@ -162,12 +162,11 @@ describe('ActivitySync Limits Configuration Resolver', () => {
         });
 
         const engine = new ActivitySyncEngine(undefined, undefined, undefined, null, null);
-        const provider = {
-            GetEntityObject: async () => {
-                throw new Error('Not needed in DryRun');
-            },
-        } as unknown as IMetadataProvider;
-        const user = { ID: 'user-1', Name: 'Test', Email: 'test@example.test' } as unknown as UserInfo;
+        const provider = Metadata.Provider;
+        const user = new UserInfo();
+        user.ID = 'user-1';
+        user.Name = 'Test';
+        user.Email = 'test@example.test';
 
         const fleet = await engine.RunConnections({ DryRun: true, Limit: 10, TriggerType: 'Manual' }, provider, user);
         expect(observedMaxRows).toEqual([3]);
