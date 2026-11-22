@@ -1,0 +1,127 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [next]
+  pull_request:
+    branches: [next]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-gates:
+    name: 'ci: static-gates'
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Enforce zero explicit any in hand-written package source
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const skipDirs = new Set(["node_modules", "dist", "generated", "__tests__"]);
+            const anyPattern = /:\s*any\b|\bas\s+any\b|<any>/;
+            const hits = [];
+            function walk(dir) {
+              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                if (skipDirs.has(entry.name)) continue;
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  walk(full);
+                } else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts") && !entry.name.endsWith(".spec.ts")) {
+                  const lines = fs.readFileSync(full, "utf8").split(/\r?\n/);
+                  lines.forEach((line, idx) => {
+                    if (anyPattern.test(line)) hits.push(`${full}:${idx + 1}: ${line.trim()}`);
+                  });
+                }
+              }
+            }
+            for (const pkg of fs.readdirSync("packages")) {
+              const srcDir = path.join("packages", pkg, "src");
+              if (fs.existsSync(srcDir)) walk(srcDir);
+            }
+            if (hits.length > 0) {
+              console.error("Explicit any types found:\n" + hits.join("\n"));
+              process.exit(1);
+            }
+            console.log("Static gate passed: 0 explicit any types in packages/*/src");
+          '
+
+      - name: UUID comparisons gate
+        run: |
+          node --test scripts/check-uuid-comparisons.spec.mjs
+          node scripts/check-uuid-comparisons.mjs
+
+      - name: Validate Epic 1b limits sweep artifacts
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const csvPath = ".mj/specs/epic-1b-limits-sweep-bizapps-common.csv";
+            const mdPath = ".mj/specs/epic-1b-limits-sweep-bizapps-common.md";
+            if (!fs.existsSync(csvPath) || !fs.existsSync(mdPath)) {
+              console.error("Missing Epic 1b sweep spec files");
+              process.exit(1);
+            }
+            const lines = fs.readFileSync(csvPath, "utf8").trim().split(/\r?\n/);
+            const expectedHeader = "File,Line,Literal,SymbolOrContext,Category,ActionRequired,Notes";
+            if (lines[0] !== expectedHeader) {
+              console.error(`Unexpected CSV header: ${lines[0]}`);
+              process.exit(1);
+            }
+            const validCategories = new Set(["RunawayGuard", "ResourceGuard", "ProtocolLimit", "UX", "Tuning"]);
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split(",");
+              if (cols.length < 7) {
+                console.error(`Malformed CSV row ${i + 1}: ${lines[i]}`);
+                process.exit(1);
+              }
+              if (!validCategories.has(cols[4])) {
+                console.error(`Invalid category "${cols[4]}" at row ${i + 1}`);
+                process.exit(1);
+              }
+              if (!fs.existsSync(cols[0])) {
+                console.error(`Missing referenced file "${cols[0]}" at row ${i + 1}`);
+                process.exit(1);
+              }
+            }
+            console.log(`Limits sweep CSV validated: ${lines.length - 1} rows`);
+          '
+
+  build-and-test:
+    name: 'ci: build-and-test'
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install dependencies
+        uses: ./.github/actions/ci-install
+
+      - name: Build all packages
+        run: pnpm run build:packages
+
+      - name: Run unit tests
+        run: pnpm run test
