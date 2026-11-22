@@ -154,6 +154,7 @@ export class ActivityIdentityComponent implements OnInit {
 
     public get SentimentTone(): 'success' | 'danger' | 'info' {
         const score = Number(this.Record.SentimentScore ?? 0);
+        // UX: Sentiment badge classification thresholds (+0.25 positive, -0.25 negative).
         if (score >= 0.25) return 'success';
         if (score <= -0.25) return 'danger';
         return 'info';
@@ -161,6 +162,7 @@ export class ActivityIdentityComponent implements OnInit {
 
     public get SentimentIcon(): string {
         const score = Number(this.Record.SentimentScore ?? 0);
+        // UX: Sentiment icon classification thresholds (+0.25 smile, -0.25 frown).
         if (score >= 0.25) return 'fa-solid fa-face-smile';
         if (score <= -0.25) return 'fa-solid fa-face-frown';
         return 'fa-solid fa-face-meh';

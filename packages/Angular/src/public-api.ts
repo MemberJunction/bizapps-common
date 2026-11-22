@@ -155,6 +155,27 @@ export { PartySignalStore } from './lib/data/party-signal-store';
 export { CommonSettings, COMMON_SETTING } from './lib/data/common-settings';
 export { SellingCompanyFieldComponent } from './lib/components/selling-company-field/selling-company-field.component';
 export { SellingCompanyConfirm } from './lib/components/selling-company-field/selling-company-confirm';
+export {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    COMMON_ANGULAR_LIMITS_BOUNDS,
+    DEFAULT_COMMON_ANGULAR_LIMITS,
+    RegisterCommonAngularLimits,
+    ResetCommonAngularLimits,
+    GetRegisteredCommonAngularLimits,
+    ResolveCommonAngularLimits,
+    ResolveCommonAngularLimitsWithProvenance,
+    type CommonAngularLimitBounds,
+    type CommonAngularRunawayGuardsConfig,
+    type CommonAngularResourceGuardsConfig,
+    type CommonAngularTuningConfig,
+    type CommonAngularUxConfig,
+    type CommonAngularLimitsConfig,
+    type CommonAngularLimitsOverride,
+    type CommonAngularLimitKeyPath,
+    type CommonAngularLimitsSourceTier,
+    type CommonAngularLimitProvenance,
+    type CommonAngularLimitsResolutionResult,
+} from './lib/config/limits.config';
 
 /**
  * Bootstrap function called during MJExplorer initialization.

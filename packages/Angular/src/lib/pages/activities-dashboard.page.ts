@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { RunView } from '@memberjunction/core';
 import { UUIDsEqual } from '@memberjunction/global';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../config/limits.config';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 import { COMMON_ENTITIES } from '../data/entity-names';
 
@@ -574,6 +578,9 @@ export interface ActivityKPIs {
 })
 export class CommonActivitiesPageComponent implements OnInit {
     private cdr = inject(ChangeDetectorRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     public Activities: ActivityDashboardRow[] = [];
     public IsLoading = false;
@@ -609,7 +616,7 @@ export class CommonActivitiesPageComponent implements OnInit {
             const res = await rv.RunView<ActivityDashboardRow>({
                 EntityName: COMMON_ENTITIES.Activity,
                 OrderBy: 'StartedAt DESC',
-                MaxRows: 250,
+                MaxRows: this.limits.Tuning.ActivitiesDashboardMaxRows,
                 ResultType: 'simple',
             });
 

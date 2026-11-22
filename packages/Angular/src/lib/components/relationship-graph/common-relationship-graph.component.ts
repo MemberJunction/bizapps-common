@@ -27,6 +27,10 @@ import {
     type LayoutChangedEventArgs,
     type ViewportTransformEventArgs
 } from '@memberjunction/ng-graph-view';
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../../config/limits.config';
 import { COMMON_ENTITIES } from '../../data/entity-names';
 import type { DirectoryRelationshipRow } from '../../data/directory-types';
 
@@ -110,6 +114,9 @@ function partyNodeKey(prefix: 'person' | 'org', id: string): string {
 })
 export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
     private cdr = inject(ChangeDetectorRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     @Input() public PersonID?: string;
     @Input() public OrganizationID?: string;
@@ -209,7 +216,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                 ExtraFilter: filter || undefined,
                 Fields: ['ID', 'FromPersonID', 'ToPersonID', 'FromOrganizationID', 'ToOrganizationID', 'FromPerson', 'ToPerson', 'FromOrganization', 'ToOrganization', 'RelationshipType', 'Title'],
                 OrderBy: '__mj_CreatedAt DESC',
-                MaxRows: 60,
+                MaxRows: this.limits.Tuning.RelationshipGraphInitialMaxRows,
                 ResultType: 'simple'
             });
 
@@ -350,7 +357,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
                 EntityName: COMMON_ENTITIES.Relationship,
                 ExtraFilter: filter,
                 OrderBy: '__mj_CreatedAt DESC',
-                MaxRows: 30,
+                MaxRows: this.limits.Tuning.RelationshipGraphHopMaxRows,
                 ResultType: 'simple'
             });
 

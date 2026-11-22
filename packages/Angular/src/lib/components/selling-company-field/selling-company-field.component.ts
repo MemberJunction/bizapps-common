@@ -18,21 +18,15 @@ import { MJEventType, MJGlobal, type MJEvent } from '@memberjunction/global';
 import type { Subscription } from 'rxjs';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../../config/limits.config';
 import { CommonSettings } from '../../data/common-settings';
 import { EscapeFilterValue } from '../../data/directory-stats';
 import { SellingCompanyConfirm } from './selling-company-confirm';
 
 const COMPANIES_ENTITY = 'MJ: Companies';
-
-/**
- * Rows the company dropdown asks for (golive #456). `mj-form-field` returns 20 by default, so on an
- * instance with more companies than that, scrolling the unfiltered list never reaches the ones past
- * the twentieth: "Sidecar" could only be found by typing, while "Sidecar Sandbox" showed. Companies
- * are the legal entities an instance books revenue to, so there are tens of them, not thousands, and
- * reading every row on open is cheap. The ceiling stays finite because the same number caps a typed
- * search, where zero would return nothing.
- */
-const COMPANY_LIST_LIMIT = 1000;
 const EMPLOYEES_ENTITY = 'MJ: Employees';
 
 /**
@@ -142,6 +136,9 @@ const FORM_EDITING_COMPLETE = 'EDITING_COMPLETE';
 export class SellingCompanyFieldComponent implements OnInit, OnChanges, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly host = inject(ElementRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     @Input({ required: true }) Record!: BaseEntity;
     @Input() FieldName = 'CompanyID';
@@ -166,8 +163,8 @@ export class SellingCompanyFieldComponent implements OnInit, OnChanges, OnDestro
      * `mj-form-field` answering from an engine's cached company list, which it caps at 50 rows.
      */
     public readonly CompanyOrderBy = 'Name';
-    /** Every company in the unfiltered list, not the first 20. See {@link COMPANY_LIST_LIMIT}. */
-    public readonly CompanyListLimit = COMPANY_LIST_LIMIT;
+    /** Every company in the unfiltered list, not the first 20; governed by `CommonAngularLimitsConfig`. */
+    public readonly CompanyListLimit = this.limits.ResourceGuards.SellingCompanyListLimit;
 
     /** The company being asked about, by name, or null when nothing is pending. */
     public AskName: string | null = null;

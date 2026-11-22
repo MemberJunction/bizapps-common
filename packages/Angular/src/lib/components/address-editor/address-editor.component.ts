@@ -275,6 +275,7 @@ export class AddressEditorComponent {
      */
     async onPostalCodeBlur(): Promise<void> {
         const postalCode = this.EditForm.PostalCode?.trim();
+        // UX: Require at least 3 characters before triggering Google Geocoding postal lookup.
         if (!postalCode || postalCode.length < 3) return;
 
         const postalCodeChanged = postalCode !== this.originalPostalCode.trim();

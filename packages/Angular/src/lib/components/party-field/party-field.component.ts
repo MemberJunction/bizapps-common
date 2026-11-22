@@ -18,6 +18,10 @@ import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@me
 import { MJComboboxComponent } from '@memberjunction/ng-ui-components';
 import { Subject, Subscription, debounceTime, from, switchMap } from 'rxjs';
 
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../../config/limits.config';
 import { PARTY_LOOKUP_QUERIES, PartyLookupParamsFor, type PartyKind, type PartyLookupParams } from './party-lookup-term';
 
 /** One row of a party lookup query: the contract every app's lookup query honours. */
@@ -26,10 +30,6 @@ export interface PartyOption {
     Name: string;
     Detail: string | null;
 }
-
-const DEBOUNCE_MS = 250;
-/** How long a search may run before the field says it took too long. */
-const DEFAULT_SEARCH_TIMEOUT_MS = 20_000;
 
 /** The ID of the dropdown row that creates a record rather than picking one. */
 export const PARTY_CREATE_OPTION_ID = '__bizapps-party-create__';
@@ -167,6 +167,9 @@ class PartySearchTimeoutError extends Error {}
 })
 export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     @Input({ required: true }) Record!: BaseEntity;
     @Input({ required: true }) FieldName!: string;
@@ -183,7 +186,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      */
     @Input() AllowCreate = true;
     /** Milliseconds before a search is reported as too slow; zero or less waits indefinitely. */
-    @Input() SearchTimeoutMs = DEFAULT_SEARCH_TIMEOUT_MS;
+    @Input() SearchTimeoutMs = this.limits.ResourceGuards.PartySearchTimeoutMs;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
     @Output() ValueChange = new EventEmitter<{ FieldName: string; OldValue: unknown; NewValue: unknown }>();
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
@@ -213,7 +216,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         this.seedCurrent();
         this.subscription = this.terms
             .pipe(
-                debounceTime(DEBOUNCE_MS),
+                debounceTime(this.limits.Ux.PartySearchDebounceMs),
                 switchMap((term) => from(this.optionsFor(term))),
             )
             .subscribe((options) => {
@@ -414,7 +417,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     /** The options to list, or why there are none (logged). */
     private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError> {
         const search = ++this.searchCount;
-        const params = PartyLookupParamsFor(this.Kind, term);
+        const params = PartyLookupParamsFor(this.Kind, term, this.limits.Ux.PartyLookupMinTermLength);
         if (!params) {
             return term ? [] : this.current;
         }

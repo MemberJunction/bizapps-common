@@ -362,6 +362,7 @@ export class ActivityContentPanel extends BaseFormPanel<mjBizAppsCommonActivityE
 
     public get IsLongContent(): boolean {
         const text = this.Record?.Description || '';
+        // UX: Collapse activity description preview when over 350 characters or 7 lines.
         return text.length > 350 || text.split('\n').length > 7;
     }
 
@@ -398,6 +399,7 @@ export class ActivityContentPanel extends BaseFormPanel<mjBizAppsCommonActivityE
             setTimeout(() => {
                 this.Copied = false;
                 this.cdr?.markForCheck();
+            // UX: Display clipboard copy confirmation badge for 2000 ms.
             }, 2000);
         } catch {
             // fallback
