@@ -58,7 +58,9 @@ export type ActivityVisibilityValue = 'Internal' | 'Private';
 /** How much of an included body to persist. Default Snippet — Full is a per-connection opt-in. */
 export type StoreBodyPolicy = 'None' | 'Snippet' | 'Full';
 
-export const BODY_SNIPPET_CHARS = 500;
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
+
+export const BODY_SNIPPET_CHARS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.BodySnippetChars;
 
 /** Read StoreBody from ActivitySyncConnection.Settings. Missing / invalid / unparseable → Snippet. */
 export function StoreBodyFromSettings(settings: string | null | undefined): StoreBodyPolicy {
@@ -83,7 +85,8 @@ export function BodyForStorage(
     if (policy === 'None') return null;
     if (policy === 'Full') return text.length > 0 ? text : null;
     if (!text) return null;
-    return text.length <= BODY_SNIPPET_CHARS ? text : text.slice(0, BODY_SNIPPET_CHARS);
+    const snippetChars = ResolveActivitySyncLimits().Tuning.BodySnippetChars;
+    return text.length <= snippetChars ? text : text.slice(0, snippetChars);
 }
 
 /**
@@ -385,6 +388,7 @@ export class ActivityWriter {
         contextUser: UserInfo,
     ): void {
         activity.ActivityTypeID = typeID;
+        // ProtocolLimit: Activity.Title schema budget caps synced email subjects at 200 chars.
         activity.Title = (input.Item.Subject || '(no subject)').slice(0, 200);
         activity.StartedAt = input.Item.StartedAt;
         activity.EndedAt = input.Item.EndedAt;
@@ -409,6 +413,7 @@ export class ActivityWriter {
         contextUser: UserInfo,
     ): void {
         activity.ActivityTypeID = typeID;
+        // ProtocolLimit: Activity.Title nvarchar(500) schema width caps manual activity titles at 500 chars.
         activity.Title = input.Title.slice(0, 500);
         activity.StartedAt = input.StartedAt;
         activity.EndedAt = input.EndedAt ?? null;

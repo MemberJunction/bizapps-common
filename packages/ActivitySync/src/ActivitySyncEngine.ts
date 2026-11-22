@@ -120,8 +120,10 @@ export function NotRunConnectionIssues(
     return missing.map((id) => `Connection ${id} was not run: ${why}.`);
 }
 
+import { DEFAULT_ACTIVITY_SYNC_LIMITS } from './limits.config.js';
+
 /** Hard cap on the fleet query. Unbounded RunView is how a tenant with a burst of mailboxes stalls the hourly job. */
-export const MAX_RUNNABLE_CONNECTIONS = 500;
+export const MAX_RUNNABLE_CONNECTIONS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxRunnableConnections;
 
 interface ConnectionRow {
     ID: string;

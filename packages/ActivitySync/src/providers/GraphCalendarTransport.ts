@@ -36,6 +36,8 @@ import {
     type GraphServicePrincipal,
 } from './GraphCommunicationTransport.js';
 
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from '../limits.config.js';
+
 /**
  * How far back a FIRST run reaches when the connection has no calendar watermark.
  *
@@ -44,7 +46,7 @@ import {
  * point, not a rule — it is a constructor argument, and a run that falls back to it says so in its
  * issues rather than letting an operator believe the whole calendar was read.
  */
-export const DEFAULT_FIRST_RUN_LOOKBACK_DAYS = 30;
+export const DEFAULT_FIRST_RUN_LOOKBACK_DAYS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.FirstRunLookbackDays;
 
 /**
  * How far FORWARD a read reaches.
@@ -53,7 +55,7 @@ export const DEFAULT_FIRST_RUN_LOOKBACK_DAYS = 30;
  * yet is a thing this schema models, and a calendar sync that only ever looked backwards could not
  * produce one.
  */
-export const DEFAULT_FORWARD_HORIZON_DAYS = 30;
+export const DEFAULT_FORWARD_HORIZON_DAYS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.ForwardHorizonDays;
 
 /**
  * How many requests one calendar pass may make before it stops and reports.
@@ -63,7 +65,7 @@ export const DEFAULT_FORWARD_HORIZON_DAYS = 30;
  * it, on any run (#312). The pass now pages through the window until a page comes back short; this
  * bound keeps a pathological calendar from turning one run into an unbounded number of requests.
  */
-export const DEFAULT_MAX_CALENDAR_PAGES = 10;
+export const DEFAULT_MAX_CALENDAR_PAGES = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxCalendarPages;
 
 /** The slice of MJ's communication provider this uses. Structural, to avoid a hard runtime import. */
 export interface GraphEventReader {
@@ -116,11 +118,11 @@ export class GraphCalendarTransport implements ActivityMessageTransport {
 
     public constructor(
         private readonly Deps: GraphCalendarTransportDeps,
-        private readonly LookbackDays: number = DEFAULT_FIRST_RUN_LOOKBACK_DAYS,
-        private readonly ForwardDays: number = DEFAULT_FORWARD_HORIZON_DAYS,
+        private readonly LookbackDays: number = ResolveActivitySyncLimits().Tuning.FirstRunLookbackDays,
+        private readonly ForwardDays: number = ResolveActivitySyncLimits().Tuning.ForwardHorizonDays,
         /** Injectable so a test can pin the window without freezing global time. */
         private readonly Now: () => Date = () => new Date(),
-        private readonly MaxPages: number = DEFAULT_MAX_CALENDAR_PAGES,
+        private readonly MaxPages: number = ResolveActivitySyncLimits().ResourceGuards.MaxCalendarPages,
     ) {}
 
     public async Fetch(query: ActivitySourceQuery): Promise<RawBatch> {

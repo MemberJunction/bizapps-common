@@ -8,6 +8,7 @@
  * Design: plans/activity-sync-engine.md
  */
 export * from './types.js';
+export * from './limits.config.js';
 export * from './watermark.js';
 export * from './qualification.js';
 export * from './participants.js';

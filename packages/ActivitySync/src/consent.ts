@@ -52,12 +52,14 @@ export interface ConsentPolicy {
     Sources: string[];
 }
 
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
+
 /** The key under `ActivitySyncConnection.Settings`. */
 export const CONSENT_SETTING = 'Consent';
 export const DEFAULT_CONSENT_TAG = 'AIDP';
-export const DEFAULT_WITHDRAW_WINDOW_DAYS = 30;
+export const DEFAULT_WITHDRAW_WINDOW_DAYS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.WithdrawWindowDays;
 /** Bounds the re-check of tagged items, so one run's cost has a ceiling. Reported when it binds. */
-export const MAX_WITHDRAW_CHECKS = 500;
+export const MAX_WITHDRAW_CHECKS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxWithdrawChecks;
 
 /** A withdrawn activity keeps its row (deal links, notes, holds) but gives up its dedupe key. */
 export const WITHDRAWN_PREFIX = 'withdrawn:';
@@ -90,7 +92,8 @@ export function ConsentPolicyFromSettings(settings: string | null | undefined): 
     }
     const block = bag[CONSENT_SETTING];
     if (block === undefined) {
-        return { Policy: { Mode: 'KnownContact', Tag: null, SweptThrough: null, WithdrawWindowDays: DEFAULT_WITHDRAW_WINDOW_DAYS, SkipTag: null, Sources: [] } };
+        const defaultWindowDays = ResolveActivitySyncLimits().Tuning.WithdrawWindowDays;
+        return { Policy: { Mode: 'KnownContact', Tag: null, SweptThrough: null, WithdrawWindowDays: defaultWindowDays, SkipTag: null, Sources: [] } };
     }
     if (block === null || typeof block !== 'object' || Array.isArray(block)) {
         return { Error: `Settings.${CONSENT_SETTING} must be an object like {"Mode":"Tagged","Tag":"AIDP"}.` };
@@ -108,7 +111,8 @@ function policyFromBlock(block: Record<string, unknown>): ConsentPolicyResult {
     if (mode === 'Tagged' && !tag) {
         return { Error: `Settings.${CONSENT_SETTING}.Tag is blank; a Tagged connection needs the category name.` };
     }
-    const window = block['WithdrawWindowDays'] ?? DEFAULT_WITHDRAW_WINDOW_DAYS;
+    const defaultWindowDays = ResolveActivitySyncLimits().Tuning.WithdrawWindowDays;
+    const window = block['WithdrawWindowDays'] ?? defaultWindowDays;
     if (typeof window !== 'number' || !Number.isInteger(window) || window < 0) {
         return { Error: `Settings.${CONSENT_SETTING}.WithdrawWindowDays must be a whole number of days.` };
     }
@@ -241,7 +245,7 @@ export function PreferTaggedCopy(current: NormalizedItem | undefined, incoming: 
 }
 
 /** How many Message-IDs of a tagged message's `References` are followed back. A real chain is short. */
-export const MAX_ANCESTOR_REFERENCES = 20;
+export const MAX_ANCESTOR_REFERENCES = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxAncestorReferences;
 
 /** The RFC 5322 Message-ID, angle brackets kept, which is how `References` names it. */
 export function InternetMessageId(raw: Record<string, unknown>): string | null {
@@ -441,9 +445,10 @@ function grantAncestors(
     consented: Map<string, ConsentedMessage>,
     byMessageId: ReadonlyMap<string, NormalizedItem>,
 ): void {
+    const maxRefs = ResolveActivitySyncLimits().ResourceGuards.MaxAncestorReferences;
     for (const tagged of items.filter((i) => grants.get(i.ExternalID)?.Kind === 'Tag')) { // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
         const people = new Set(consentedFrom(tagged).Participants);
-        for (const ref of ReplyReferences(tagged.Raw).slice(-MAX_ANCESTOR_REFERENCES)) {
+        for (const ref of ReplyReferences(tagged.Raw).slice(-maxRefs)) {
             const ancestor = byMessageId.get(ref);
             if (!ancestor || grants.has(ancestor.ExternalID)) continue; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
             if (!ancestor.ExternalThreadID || ancestor.ExternalThreadID !== tagged.ExternalThreadID) continue;

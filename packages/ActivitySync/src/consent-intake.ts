@@ -52,28 +52,32 @@ export const SURFACE_TYPE_CODE: Record<ActivitySourceKind, string> = {
     Social: 'Social',
     Chat: 'Chat',
 };
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
+
 /**
  * Requests one sweep may make. Each drains a window, widens the page, halves the window or steps past
  * an instant. Narrowing an hour to one second takes 12 of them and a month takes 22, so the budget
  * has to cover that descent and the way back out, or a crowded instant is never reached.
  */
-export const MAX_SWEEP_REQUESTS = 48;
+export const MAX_SWEEP_REQUESTS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxSweepRequests;
 /**
  * The page a sweep asks for once a window has come back full: Graph's largest `$top` for messages.
  * A burst of tags (a rep back-filling a customer, "mark all as read" over tagged mail) lands in one
  * second of `lastModifiedDateTime`, and a window cannot be narrowed below that.
  */
+// ProtocolLimit: Microsoft Graph messages endpoint maximum $top page size is 1000.
 export const SWEEP_WIDE_PAGE = 1000;
 /** `lastModifiedDateTime` filters resolve to the second, so a narrower window reads nothing new. */
+// ProtocolLimit: Microsoft Graph lastModifiedDateTime OData filter resolves to 1-second (1000 ms) precision.
 const MIN_SWEEP_WINDOW_MS = 1_000;
 /**
  * Each sweep starts this far before its recorded position. The position is our clock; the tag time is
  * Exchange's. A server running ahead of Exchange would otherwise skip a tag made in the gap, for good.
  * Items read twice are absorbed by de-duplication.
  */
-export const SWEEP_OVERLAP_MS = 10 * 60_000;
+export const SWEEP_OVERLAP_MS = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.SweepOverlapMs;
 /** Message-IDs per re-read request, so a page holds every copy of every id it names. */
-export const REREAD_BATCH = 10;
+export const REREAD_BATCH = DEFAULT_ACTIVITY_SYNC_LIMITS.Tuning.RereadBatchSize;
 
 export interface GatherResult {
     Items: NormalizedItem[];
@@ -183,13 +187,14 @@ export class ConsentIntake {
         // next sweep catches every tag made after the read.
         const recorded = policy.SweptThrough ?? query.Since;
         if (recorded === null) return { Items: [], Issues: [], SweptThrough: newestModified(windowItems) };
-        let from = new Date(recorded.getTime() - SWEEP_OVERLAP_MS);
+        const limits = ResolveActivitySyncLimits();
+        let from = new Date(recorded.getTime() - limits.Tuning.SweepOverlapMs);
         let to = now;
         let limit = query.Limit;
         const later: Date[] = []; // upper bounds of the halves set aside, narrowest last
         const items: NormalizedItem[] = [];
         const issues: string[] = [];
-        for (let request = 0; request < MAX_SWEEP_REQUESTS; request++) {
+        for (let request = 0; request < limits.ResourceGuards.MaxSweepRequests; request++) {
             const page = await plugin.Fetch({ ...query, Limit: limit, Lookup: { Kind: 'Tagged', Tag: policy.Tag, ModifiedSince: from, ModifiedBefore: to } });
             if (page.Failed) return { Items: [], Issues: [], SweptThrough: null, Failure: `Late-tag sweep failed: ${page.Issues.join(' | ')}` };
             if (page.Capped && limit < SWEEP_WIDE_PAGE) {
@@ -226,22 +231,24 @@ export class ConsentIntake {
         store: ConsentStore,
         standing: StandingDomains = new Map(),
     ): Promise<WithdrawResult> {
+        const limits = ResolveActivitySyncLimits();
+        const maxWithdrawChecks = limits.ResourceGuards.MaxWithdrawChecks;
         const result: WithdrawResult = { Withdrawn: 0, Unknown: 0, Issues: [], Revoked: [] };
         const since = new Date(this.Now().getTime() - policy.WithdrawWindowDays * 86_400_000);
         const loaded = await store.ConsentedActivities({
             ConnectionID: connectionID,
             TypeCode: SURFACE_TYPE_CODE[plugin.Kind],
             ConsentedSince: since,
-            MaxRows: MAX_WITHDRAW_CHECKS + 1,
+            MaxRows: maxWithdrawChecks + 1,
         });
         if (loaded.Failed) {
             result.Issues.push(`Withdrawal skipped: ${loaded.Issue}`);
             return result;
         }
-        if (loaded.Value.length > MAX_WITHDRAW_CHECKS) {
-            result.Issues.push(`More than ${MAX_WITHDRAW_CHECKS} consented items in the window; only the newest were checked for a removed tag.`);
+        if (loaded.Value.length > maxWithdrawChecks) {
+            result.Issues.push(`More than ${maxWithdrawChecks} consented items in the window; only the newest were checked for a removed tag.`);
         }
-        const candidates = loaded.Value.slice(0, MAX_WITHDRAW_CHECKS);
+        const candidates = loaded.Value.slice(0, maxWithdrawChecks);
         if (candidates.length === 0) return result;
 
         const seen = await this.currentState(plugin, query, present, candidates, policy);
@@ -292,9 +299,10 @@ export class ConsentIntake {
         };
         present.forEach(keep);
         if (plugin.Kind !== 'Message') return { Items: seen };
+        const rereadBatch = ResolveActivitySyncLimits().Tuning.RereadBatchSize;
         const ids = candidates.map((c) => c.ExternalID);
-        for (let i = 0; i < ids.length; i += REREAD_BATCH) {
-            const reread = await plugin.Fetch({ ...query, Lookup: { Kind: 'MessageIds', MessageIds: ids.slice(i, i + REREAD_BATCH) } });
+        for (let i = 0; i < ids.length; i += rereadBatch) {
+            const reread = await plugin.Fetch({ ...query, Lookup: { Kind: 'MessageIds', MessageIds: ids.slice(i, i + rereadBatch) } });
             if (reread.Failed) return { Issue: `Could not re-read consented items, so none were withdrawn: ${reread.Issues.join(' | ')}` };
             if (reread.Capped) return { Issue: 'A re-read of consented items came back cut off, so none were withdrawn this run.' };
             reread.Items.forEach(keep);
@@ -373,11 +381,12 @@ function crowdedInstantIssue(from: Date, to: Date, read: number): string {
 
 /** The request budget ran out before the present. Says whether the next run starts further on or not. */
 function sweepCutShortIssue(from: Date, recorded: Date): string {
+    const maxRequests = ResolveActivitySyncLimits().ResourceGuards.MaxSweepRequests;
     const next =
         from.getTime() > recorded.getTime()
             ? `the next run continues from ${from.toISOString()}`
             : `it read no further than its recorded position (${recorded.toISOString()}), so the next run starts from the same place`;
-    return `The late-tag sweep did not reach the present in ${MAX_SWEEP_REQUESTS} reads; ${next}.`;
+    return `The late-tag sweep did not reach the present in ${maxRequests} reads; ${next}.`;
 }
 
 function newestModified(items: readonly NormalizedItem[]): Date | null {
@@ -391,8 +400,9 @@ function newestModified(items: readonly NormalizedItem[]): Date | null {
 }
 
 function missingAncestors(items: readonly NormalizedItem[], tag: string): string[] {
+    const maxRefs = ResolveActivitySyncLimits().ResourceGuards.MaxAncestorReferences;
     const have = new Set(items.map((i) => InternetMessageId(i.Raw)).filter(Boolean));
-    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES));
+    const wanted = items.filter((i) => HasTag(i.Raw, tag)).flatMap((i) => ReplyReferences(i.Raw).slice(-maxRefs));
     return [...new Set(wanted)].filter((id) => !have.has(id));
 }
 
@@ -407,8 +417,9 @@ async function loadPrior(
     typeCode: string,
     store: ConsentStore,
 ): Promise<{ Failed: false; Value: Map<string, ConsentedMessage> } | { Failed: true; Issue: string }> {
+    const maxRefs = ResolveActivitySyncLimits().ResourceGuards.MaxAncestorReferences;
     const prior = new Map<string, ConsentedMessage>();
-    const named = [...new Set(items.flatMap((i) => ReplyReferences(i.Raw).slice(-MAX_ANCESTOR_REFERENCES)))];
+    const named = [...new Set(items.flatMap((i) => ReplyReferences(i.Raw).slice(-maxRefs)))];
     if (named.length === 0) return { Failed: false, Value: prior };
     const res = await store.ConsentedActivities({ ConnectionID: connectionID, TypeCode: typeCode, ExternalIDs: named });
     if (res.Failed) return { Failed: true, Issue: res.Issue };

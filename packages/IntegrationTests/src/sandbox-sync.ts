@@ -38,6 +38,7 @@ export const SANDBOX_INTERNAL_DOMAIN = 'sandbox-internal.test';
 export const HR_ADDRESS = 'hr@sandbox-internal.test';
 
 /** The hourly job fires at minute 0; never start a check inside it. */
+// ResourceGuard: Caps integration test wait window so checks do not stall waiting across hourly sync slot.
 const MAX_WAIT_MS = 70_000;
 
 export interface SandboxRuleSetOptions {
