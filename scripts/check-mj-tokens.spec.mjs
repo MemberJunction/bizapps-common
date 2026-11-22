@@ -30,9 +30,12 @@ test('a defined token used as a fallback name is not confused with the outer one
     ]);
 });
 
-test('the floor is read from a caret range or an exact version', () => {
+test('the floor is read from a caret range, exact version, or semver prerelease', () => {
     assert.equal(mjFloor('^6.1.5'), '6.1.5');
     assert.equal(mjFloor('6.2.0'), '6.2.0');
+    assert.equal(mjFloor('^6.3.0-edge.1'), '6.3.0');
+    assert.equal(mjFloor('6.3.0-rc.2'), '6.3.0');
+    assert.throws(() => mjFloor('^6.3.0-'));
     assert.throws(() => mjFloor('~6.1.5'));
     assert.throws(() => mjFloor(undefined));
 });
