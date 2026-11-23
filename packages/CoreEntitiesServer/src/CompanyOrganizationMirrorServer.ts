@@ -7,28 +7,38 @@ import {
     BaseEntityResult,
     BaseRemotableOperation,
     CompositeKey,
+    EntityDeleteOptions,
     EntitySaveOptions,
+    EntityTransactionScope,
     IMetadataProvider,
     LogError,
     RunView,
+    TransactionGroupBase,
     UserInfo,
 } from '@memberjunction/core';
 import { MJCompanyEntity } from '@memberjunction/core-entities';
 import { IsValidUUID, RegisterClass, UUIDsEqual, ValidationErrorInfo } from '@memberjunction/global';
 import {
+    BuildOrganizationLinkedCompanyFilter,
     BuildOrganizationMirrorLookupFilter,
     COMPANY_ORG_SYNC_OP_KEY,
+    CompanyDeleteUnlinkOptions,
     CompanyMirrorError,
     CompanyMirrorErrorDetails,
     CompanyMirrorResult,
     CompanyOrganizationMatchStrategy,
     CompanyOrganizationSyncItem,
+    CompanyOrganizationUnlinkOutcomeItem,
+    CompanyUnlinkResult,
     ExtractCompanyMatchKeys,
     FormatCompanyMirrorError,
+    GetCompanyMirrorDeletePolicy,
     NormalizeMirrorErrorCause,
     NormalizeMirrorOptionalString,
     OrganizationLookupCandidate,
     OrganizationMirrorStatus,
+    ResolveOrganizationUnlinkStatus,
+    SelectLinkedOrganizationsForUnlink,
     SelectOrganizationMirrorCandidate,
     SyncCompaniesToOrganizationsInput,
     SyncCompaniesToOrganizationsOperation,
@@ -48,7 +58,14 @@ const ORGANIZATION_LOOKUP_FIELDS: string[] = [
     'LinkedCompanyID',
     'Status',
 ];
+const ORGANIZATION_UNLINK_LOOKUP_FIELDS: string[] = ['ID', 'Name', 'LinkedCompanyID', 'Status'];
 const MAX_LOOKUP_CANDIDATES = 25;
+
+/** Server options for {@link TryUnlinkOrganizationForDeletedCompany} and {@link UnlinkOrganizationForDeletedCompany}. */
+export interface CompanyDeleteUnlinkServerOptions extends CompanyDeleteUnlinkOptions {
+    /** Optional `TransactionGroup` coordinating the Organization unlink save with the Company delete. */
+    readonly TransactionGroup?: TransactionGroupBase | null;
+}
 
 /**
  * Minimal field projection of an `MJ: Companies` record mirrored into
@@ -300,17 +317,202 @@ async function createMirroredOrganization(
 }
 
 /**
+ * Non-throwing Company delete unlink/archive helper returning a strongly typed {@link CompanyUnlinkResult}.
+ *
+ * - Queries `MJ_BizApps_Common: Organizations` via `RunView` (`ResultType: 'simple'`) using a
+ *   dual-dialect-safe `LinkedCompanyID` filter.
+ * - Clears `LinkedCompanyID` and applies the configured safe archive transition (`'Inactive'` by
+ *   default, preserving existing `'Dissolved'`/`'Inactive'` states) WITHOUT deleting the Organization.
+ * - Idempotent when zero rows are linked or when matching rows are already unlinked/archived.
+ */
+export async function TryUnlinkOrganizationForDeletedCompany(
+    companyId: string,
+    provider: IMetadataProvider,
+    contextUser: UserInfo | undefined,
+    options?: CompanyDeleteUnlinkServerOptions,
+): Promise<CompanyUnlinkResult> {
+    try {
+        const item = await executeUnlinkForDeletedCompany(companyId, provider, contextUser, options);
+        return { Success: true, Item: item };
+    } catch (err) {
+        if (err instanceof CompanyMirrorError) {
+            return { Success: false, Error: err.ToDetails() };
+        }
+        const cause = NormalizeMirrorErrorCause(
+            err instanceof Error ? err : typeof err === 'string' ? err : 'Unknown delete unlink failure',
+        );
+        return {
+            Success: false,
+            Error: {
+                Code: 'UNEXPECTED_MIRROR_ERROR',
+                Context: {
+                    CompanyID: companyId,
+                    Operation: 'unlink',
+                },
+                DiagnosticMessage: cause?.Message ?? 'Unexpected error while unlinking mirrored Organization for deleted Company',
+                Cause: cause,
+            },
+        };
+    }
+}
+
+/**
+ * Deterministically unlinks and archives any `MJ_BizApps_Common: Organizations` row(s) referencing
+ * `companyId` via `LinkedCompanyID`, preserving the Organization records.
+ *
+ * @throws {@link CompanyMirrorError} When validation, lookup, load, or save fails.
+ */
+export async function UnlinkOrganizationForDeletedCompany(
+    companyId: string,
+    provider: IMetadataProvider,
+    contextUser: UserInfo | undefined,
+    options?: CompanyDeleteUnlinkServerOptions,
+): Promise<CompanyOrganizationUnlinkOutcomeItem> {
+    const result = await TryUnlinkOrganizationForDeletedCompany(companyId, provider, contextUser, options);
+    if (!result.Success && 'Error' in result) {
+        throw new CompanyMirrorError(result.Error);
+    }
+    return result.Item;
+}
+
+async function executeUnlinkForDeletedCompany(
+    companyId: string,
+    provider: IMetadataProvider,
+    contextUser: UserInfo | undefined,
+    options?: CompanyDeleteUnlinkServerOptions,
+): Promise<CompanyOrganizationUnlinkOutcomeItem> {
+    const extraFilter = BuildOrganizationLinkedCompanyFilter(companyId);
+    const policy = GetCompanyMirrorDeletePolicy(options);
+
+    const rv = RunView.FromMetadataProvider(provider);
+    const lookupRes = await rv.RunView<OrganizationLookupCandidate>(
+        {
+            EntityName: ORGANIZATION_ENTITY_NAME,
+            ExtraFilter: extraFilter,
+            Fields: ORGANIZATION_UNLINK_LOOKUP_FIELDS,
+            MaxRows: MAX_LOOKUP_CANDIDATES,
+            ResultType: 'simple',
+        },
+        contextUser,
+    );
+
+    if (!lookupRes.Success) {
+        throw new CompanyMirrorError({
+            Code: 'ORGANIZATION_LOOKUP_FAILED',
+            Context: {
+                CompanyID: companyId,
+                Operation: 'unlink',
+            },
+            DiagnosticMessage: `Failed querying linked Organizations for deleted Company ${companyId}: ${lookupRes.ErrorMessage}`,
+        });
+    }
+
+    const linkedRows = SelectLinkedOrganizationsForUnlink(lookupRes.Results ?? [], companyId);
+    if (linkedRows.length === 0) {
+        return {
+            CompanyID: companyId,
+            OrganizationID: null,
+            UnlinkedCount: 0,
+            UnlinkedOrganizationIDs: [],
+            Action: 'not_linked',
+            AppliedStatus: null,
+        };
+    }
+
+    const candidateIds = linkedRows.map((row) => row.ID);
+    const unlinkedIds: string[] = [];
+    let appliedStatus: OrganizationMirrorStatus | null = null;
+
+    for (const row of linkedRows) {
+        const org = await provider.GetEntityObject<mjBizAppsCommonOrganizationEntity>(
+            ORGANIZATION_ENTITY_NAME,
+            contextUser,
+        );
+        const loaded = await org.InnerLoad(CompositeKey.FromID(row.ID));
+        if (!loaded) {
+            throw new CompanyMirrorError({
+                Code: 'ORGANIZATION_LOAD_FAILED',
+                Context: {
+                    CompanyID: companyId,
+                    OrganizationID: row.ID,
+                    Operation: 'unlink',
+                    ...(candidateIds.length > 1 ? { CandidateOrganizationIDs: candidateIds } : {}),
+                },
+                DiagnosticMessage: `Could not load linked Organization ${row.ID} while unlinking deleted Company ${companyId}`,
+            });
+        }
+
+        const stillLinked = org.LinkedCompanyID != null && UUIDsEqual(org.LinkedCompanyID, companyId);
+        const targetStatus = ResolveOrganizationUnlinkStatus(org.Status, policy.ArchiveStatus);
+        const needsStatusChange = targetStatus !== null && org.Status !== targetStatus;
+
+        if (!stillLinked && !needsStatusChange) {
+            continue;
+        }
+
+        if (stillLinked) {
+            org.LinkedCompanyID = null;
+        }
+        if (needsStatusChange && targetStatus !== null) {
+            org.Status = targetStatus;
+        }
+        if (options?.TransactionGroup) {
+            org.TransactionGroup = options.TransactionGroup;
+        }
+
+        const saved = await org.Save();
+        if (!saved) {
+            const message = org.LatestResult?.CompleteMessage ?? 'unknown error';
+            throw new CompanyMirrorError({
+                Code: 'ORGANIZATION_SAVE_FAILED',
+                Context: {
+                    CompanyID: companyId,
+                    OrganizationID: org.ID,
+                    Operation: 'unlink',
+                    ...(candidateIds.length > 1 ? { CandidateOrganizationIDs: candidateIds } : {}),
+                },
+                DiagnosticMessage: `Failed unlinking mirrored Organization ${org.ID} for deleted Company ${companyId}: ${message}`,
+            });
+        }
+
+        unlinkedIds.push(org.ID);
+        appliedStatus = targetStatus ?? org.Status ?? null;
+    }
+
+    if (unlinkedIds.length === 0) {
+        return {
+            CompanyID: companyId,
+            OrganizationID: linkedRows[0].ID,
+            UnlinkedCount: 0,
+            UnlinkedOrganizationIDs: [],
+            Action: 'unchanged',
+            AppliedStatus: linkedRows[0].Status ?? null,
+        };
+    }
+
+    return {
+        CompanyID: companyId,
+        OrganizationID: unlinkedIds[0],
+        UnlinkedCount: unlinkedIds.length,
+        UnlinkedOrganizationIDs: unlinkedIds,
+        Action: 'unlinked',
+        AppliedStatus: appliedStatus,
+    };
+}
+
+/**
  * Server-side subclass of `MJ: Companies` that automatically mirrors creates and
- * updates to `MJ_BizApps_Common: Organizations` (`LinkedCompanyID = Company.ID`).
+ * updates to `MJ_BizApps_Common: Organizations` (`LinkedCompanyID = Company.ID`) and
+ * deterministically unlinks/archives mirrored Organizations before Company deletion.
  *
  * Surfaces structured mirror errors deterministically via {@link LastMirrorError} and
- * `BaseEntity.LatestResult` while returning `false` if mirror synchronization fails.
+ * `BaseEntity.LatestResult` while returning `false` if mirror synchronization or unlink fails.
  */
 @RegisterClass(BaseEntity, 'MJ: Companies')
 export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
     private lastMirrorError: CompanyMirrorErrorDetails | null = null;
 
-    /** Most recent structured mirror error recorded during `Save()`, or `null` when clean. */
+    /** Most recent structured mirror error recorded during `Save()` or `Delete()`, or `null` when clean. */
     public get LastMirrorError(): CompanyMirrorErrorDetails | null {
         return this.lastMirrorError;
     }
@@ -341,11 +543,77 @@ export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
         );
 
         if (!mirrorResult.Success && 'Error' in mirrorResult) {
-            this.recordMirrorFailure(mirrorResult.Error);
+            this.recordMirrorFailure(mirrorResult.Error, 'save');
             return false;
         }
 
         return true;
+    }
+
+    public override async Delete(options?: EntityDeleteOptions): Promise<boolean> {
+        this.lastMirrorError = null;
+        const provider = MetadataOf(this);
+        const companyId = typeof this.ID === 'string' ? this.ID.trim() : '';
+        if (!provider || companyId.length === 0) {
+            return super.Delete(options);
+        }
+
+        const entityProvider = this.ProviderToUse;
+        const shouldOpenTransaction =
+            !this.TransactionGroup &&
+            entityProvider?.SupportsEntityTransactions === true &&
+            typeof entityProvider.BeginEntityTransaction === 'function';
+        let scope: EntityTransactionScope | null = null;
+
+        try {
+            if (shouldOpenTransaction && entityProvider.BeginEntityTransaction) {
+                scope = await entityProvider.BeginEntityTransaction();
+            }
+
+            const unlinkResult = await TryUnlinkOrganizationForDeletedCompany(
+                companyId,
+                provider,
+                this.ContextCurrentUser,
+                {
+                    TransactionGroup: this.TransactionGroup,
+                },
+            );
+
+            if (!unlinkResult.Success && 'Error' in unlinkResult) {
+                await scope?.Rollback();
+                this.recordMirrorFailure(unlinkResult.Error, 'delete');
+                return false;
+            }
+
+            const deleted = await super.Delete(options);
+            if (!deleted) {
+                await scope?.Rollback();
+                return false;
+            }
+
+            await scope?.Commit();
+            return true;
+        } catch (err) {
+            await scope?.Rollback();
+            const cause = NormalizeMirrorErrorCause(
+                err instanceof Error ? err : typeof err === 'string' ? err : 'Unexpected delete unlink failure',
+            );
+            this.recordMirrorFailure(
+                {
+                    Code: 'UNEXPECTED_MIRROR_ERROR',
+                    Context: {
+                        CompanyID: companyId,
+                        CompanyName: this.safeReadCompanyName(),
+                        Operation: 'unlink',
+                    },
+                    DiagnosticMessage:
+                        cause?.Message ?? 'Unexpected error while unlinking mirrored Organization during Company delete',
+                    Cause: cause,
+                },
+                'delete',
+            );
+            return false;
+        }
     }
 
     private safeReadDomain(): string | null {
@@ -355,7 +623,15 @@ export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
         return null;
     }
 
-    private recordMirrorFailure(error: CompanyMirrorErrorDetails): void {
+    private safeReadCompanyName(): string | undefined {
+        if (Object.prototype.hasOwnProperty.call(this, 'Name') || Array.isArray(this.Fields)) {
+            const trimmed = this.Name?.trim();
+            return trimmed && trimmed.length > 0 ? trimmed : undefined;
+        }
+        return undefined;
+    }
+
+    private recordMirrorFailure(error: CompanyMirrorErrorDetails, operationType: 'save' | 'delete' = 'save'): void {
         this.lastMirrorError = error;
         const formatted = FormatCompanyMirrorError(error);
         LogError(`CompanyOrganizationMirrorEntityServer: ${formatted}`, undefined, error);
@@ -363,7 +639,7 @@ export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
         if (Array.isArray(this.ResultHistory)) {
             const result = new BaseEntityResult();
             result.Success = false;
-            result.Type = this.IsSaved ? 'update' : 'create';
+            result.Type = operationType === 'delete' ? 'delete' : this.IsSaved ? 'update' : 'create';
             result.Message = formatted;
             result.Errors = [new ValidationErrorInfo('LinkedCompanyID', formatted, this.ID)];
             result.MessageIncludesErrors = true;

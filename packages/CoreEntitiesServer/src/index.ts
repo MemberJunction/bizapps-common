@@ -21,6 +21,9 @@ export {
     MirrorCompanyToOrganization,
     SyncCompaniesToOrganizationsServerOperation,
     TryMirrorCompanyToOrganization,
+    TryUnlinkOrganizationForDeletedCompany,
+    UnlinkOrganizationForDeletedCompany,
+    type CompanyDeleteUnlinkServerOptions,
     type CompanyMirrorSource,
 } from './CompanyOrganizationMirrorServer.js';
 export {
