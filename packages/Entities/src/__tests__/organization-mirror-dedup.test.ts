@@ -84,6 +84,31 @@ describe('Company -> Organization mirror deduplication helpers', () => {
         expect(filter).not.toMatch(/\b(ISNULL|CHARINDEX|ILIKE|TOP)\b/i);
     });
 
+    it('rejects invalid CompanyID in BuildOrganizationMirrorLookupFilter with CompanyMirrorError', () => {
+        expect(() =>
+            BuildOrganizationMirrorLookupFilter({
+                CompanyID: 'not-a-uuid',
+                NormalizedName: 'acme corp',
+                CandidateDomains: [],
+            }),
+        ).toThrowError(CompanyMirrorError);
+
+        try {
+            BuildOrganizationMirrorLookupFilter({
+                CompanyID: "bad' OR '1'='1",
+                NormalizedName: 'acme corp',
+                CandidateDomains: [],
+            });
+            expect.fail('Expected INVALID_COMPANY_ID error');
+        } catch (err) {
+            expect(err).toBeInstanceOf(CompanyMirrorError);
+            const mirrorErr = err as CompanyMirrorError;
+            expect(mirrorErr.Code).toBe('INVALID_COMPANY_ID');
+            expect(mirrorErr.Context.CompanyID).toBe("bad' OR '1'='1");
+            expect(mirrorErr.Context.Operation).toBe('lookup');
+        }
+    });
+
     it('chunks large lookup value arrays into bounded batches', () => {
         expect(ChunkLookupValues(['a', 'b', 'c', 'd', 'e'], 2)).toEqual([['a', 'b'], ['c', 'd'], ['e']]);
         expect(ChunkLookupValues([], 10)).toEqual([]);
