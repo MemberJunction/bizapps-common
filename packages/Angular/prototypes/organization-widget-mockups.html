@@ -12,21 +12,21 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: #eef1f5;
-    color: #333;
+    background: var(--mj-bg-page);
+    color: var(--mj-text-primary);
     padding: 40px;
 }
 h1 {
     text-align: center;
     font-size: 28px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     margin-bottom: 8px;
 }
 .subtitle {
     text-align: center;
     font-size: 14px;
-    color: #888;
+    color: var(--mj-text-muted);
     margin-bottom: 48px;
 }
 .option-wrapper {
@@ -38,8 +38,8 @@ h1 {
     align-items: center;
     gap: 10px;
     padding: 6px 18px;
-    background: #2e7d32;
-    color: white;
+    background: var(--mj-status-success);
+    color: var(--mj-brand-on-primary);
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
@@ -49,15 +49,15 @@ h1 {
 }
 .option-desc {
     font-size: 14px;
-    color: #666;
+    color: var(--mj-text-secondary);
     margin-bottom: 20px;
     line-height: 1.6;
     max-width: 700px;
 }
-.option-desc strong { color: #333; }
+.option-desc strong { color: var(--mj-text-primary); }
 .page-divider {
     height: 2px;
-    background: linear-gradient(90deg, transparent, #d0d0d0, transparent);
+    background: linear-gradient(90deg, transparent, var(--mj-border-default), transparent);
     margin: 64px auto;
     max-width: 400px;
 }
@@ -68,10 +68,10 @@ h1 {
    Bold branding header, metric tiles, tabbed content
    ========================================== */
 .org-profile {
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
 }
 
 /* Branded header */
@@ -85,21 +85,21 @@ h1 {
     width: 80px;
     height: 80px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    background: linear-gradient(135deg, var(--mj-status-success-bg), var(--mj-status-success-border));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 32px;
-    color: #2e7d32;
+    color: var(--mj-status-success-text);
     font-weight: 800;
     flex-shrink: 0;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--mj-border-default);
 }
 .org-profile__identity { flex: 1; }
 .org-profile__name {
     font-size: 26px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     line-height: 1.2;
 }
 .org-profile__meta-line {
@@ -108,14 +108,14 @@ h1 {
     gap: 16px;
     margin-top: 6px;
     font-size: 13px;
-    color: #666;
+    color: var(--mj-text-secondary);
 }
 .org-profile__meta-tag {
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
-.org-profile__meta-tag i { color: #999; font-size: 12px; }
+.org-profile__meta-tag i { color: var(--mj-text-muted); font-size: 12px; }
 .org-profile__status-badge {
     display: inline-flex;
     align-items: center;
@@ -125,18 +125,18 @@ h1 {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 .org-profile__status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #4caf50;
+    background: var(--mj-status-success);
 }
 .org-profile__description {
     font-size: 14px;
-    color: #555;
+    color: var(--mj-text-secondary);
     line-height: 1.6;
     margin-top: 8px;
     max-width: 600px;
@@ -158,10 +158,10 @@ h1 {
     border: none;
     transition: all 0.15s;
 }
-.org-profile__btn--primary { background: #2e7d32; color: white; }
-.org-profile__btn--primary:hover { background: #1b5e20; }
-.org-profile__btn--ghost { background: #f5f5f5; color: #555; }
-.org-profile__btn--ghost:hover { background: #eee; }
+.org-profile__btn--primary { background: var(--mj-status-success); color: var(--mj-brand-on-primary); }
+.org-profile__btn--primary:hover { background: var(--mj-status-success-text); }
+.org-profile__btn--ghost { background: var(--mj-bg-surface-sunken); color: var(--mj-text-secondary); }
+.org-profile__btn--ghost:hover { background: var(--mj-bg-surface-hover); }
 
 /* Metrics row */
 .org-profile__metrics {
@@ -169,23 +169,23 @@ h1 {
     grid-template-columns: repeat(5, 1fr);
     gap: 0;
     margin: 24px 0 0;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
+    border-top: 1px solid var(--mj-border-subtle);
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-profile__metric {
     text-align: center;
     padding: 16px 8px;
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid var(--mj-border-subtle);
 }
 .org-profile__metric:last-child { border-right: none; }
 .org-profile__metric-value {
     font-size: 22px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
 .org-profile__metric-label {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 2px;
@@ -195,22 +195,24 @@ h1 {
 .org-profile__tabs {
     display: flex;
     padding: 0 32px;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--mj-border-subtle);
 }
 .org-profile__tab {
     padding: 14px 20px;
     font-size: 13px;
     font-weight: 600;
-    color: #888;
+    color: var(--mj-text-muted);
     cursor: pointer;
+    background: transparent;
+    border: none;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.15s;
 }
-.org-profile__tab:hover { color: #555; }
+.org-profile__tab:hover { color: var(--mj-text-secondary); }
 .org-profile__tab--active {
-    color: #2e7d32;
-    border-bottom-color: #2e7d32;
+    color: var(--mj-status-success);
+    border-bottom-color: var(--mj-status-success);
 }
 
 /* Tab content */
@@ -224,7 +226,7 @@ h1 {
 .org-profile__section-title {
     font-size: 12px;
     font-weight: 700;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin-bottom: 14px;
@@ -232,7 +234,7 @@ h1 {
     align-items: center;
     gap: 8px;
 }
-.org-profile__section-title i { color: #2e7d32; font-size: 13px; }
+.org-profile__section-title i { color: var(--mj-status-success); font-size: 13px; }
 .org-profile__field-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -241,17 +243,17 @@ h1 {
 .org-profile__field-label {
     font-size: 11px;
     font-weight: 600;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 4px;
 }
 .org-profile__field-value {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
-.org-profile__field-value a { color: #1976d2; text-decoration: none; }
+.org-profile__field-value a { color: var(--mj-text-link); text-decoration: none; }
 .org-profile__field-value a:hover { text-decoration: underline; }
 
 /* Child org list in content */
@@ -260,22 +262,22 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 8px;
     margin-bottom: 8px;
     transition: all 0.15s;
     cursor: pointer;
 }
 .org-profile__child-item:hover {
-    border-color: #2e7d32;
-    background: #f1f8e9;
+    border-color: var(--mj-status-success);
+    background: var(--mj-status-success-bg);
 }
 .org-profile__child-icon {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -284,25 +286,25 @@ h1 {
 .org-profile__child-name {
     font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: var(--mj-text-primary);
 }
 .org-profile__child-type {
     font-size: 12px;
-    color: #888;
+    color: var(--mj-text-muted);
 }
 
 /* Widget placeholder */
 .org-profile__widget-placeholder {
-    border: 1px dashed #d0d0d0;
+    border: 1px dashed var(--mj-border-strong);
     border-radius: 10px;
     padding: 24px;
     text-align: center;
-    color: #888;
+    color: var(--mj-text-muted);
     font-size: 13px;
 }
 .org-profile__widget-placeholder i {
     font-size: 20px;
-    color: #ccc;
+    color: var(--mj-text-disabled);
     display: block;
     margin-bottom: 8px;
 }
@@ -316,16 +318,16 @@ h1 {
 .org-hq {
     display: grid;
     grid-template-columns: 56px 1fr;
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
     min-height: 750px;
 }
 
 /* Icon sidebar nav */
 .org-hq__nav {
-    background: #1a1a2e;
+    background: var(--mj-color-neutral-900);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -339,18 +341,20 @@ h1 {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    color: rgba(255,255,255,0.5);
+    border: none;
+    background: transparent;
+    color: color-mix(in srgb, var(--mj-text-inverse) 55%, transparent);
     font-size: 15px;
     cursor: pointer;
     transition: all 0.15s;
 }
 .org-hq__nav-item:hover {
-    color: white;
-    background: rgba(255,255,255,0.1);
+    color: var(--mj-text-inverse);
+    background: color-mix(in srgb, var(--mj-text-inverse) 10%, transparent);
 }
 .org-hq__nav-item--active {
-    color: white;
-    background: #2e7d32;
+    color: var(--mj-text-inverse);
+    background: var(--mj-status-success);
 }
 
 /* Main area */
@@ -365,30 +369,30 @@ h1 {
     align-items: center;
     gap: 16px;
     padding: 20px 28px;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid var(--mj-border-default);
 }
 .org-hq__logo {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    background: linear-gradient(135deg, var(--mj-status-success-bg), var(--mj-status-success-border));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
     font-weight: 800;
-    color: #2e7d32;
+    color: var(--mj-status-success-text);
     flex-shrink: 0;
 }
 .org-hq__topbar-identity { flex: 1; }
 .org-hq__topbar-name {
     font-size: 20px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
 .org-hq__topbar-sub {
     font-size: 12px;
-    color: #888;
+    color: var(--mj-text-muted);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -403,8 +407,8 @@ h1 {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 .org-hq__topbar-actions {
     display: flex;
@@ -416,19 +420,19 @@ h1 {
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    border: 1px solid #e0e0e0;
-    background: white;
-    color: #555;
+    border: 1px solid var(--mj-border-default);
+    background: var(--mj-bg-surface);
+    color: var(--mj-text-secondary);
     display: inline-flex;
     align-items: center;
     gap: 6px;
     transition: all 0.15s;
 }
-.org-hq__topbar-btn:hover { border-color: #2e7d32; color: #2e7d32; }
+.org-hq__topbar-btn:hover { border-color: var(--mj-status-success); color: var(--mj-status-success); }
 .org-hq__topbar-btn--primary {
-    background: #2e7d32;
-    color: white;
-    border-color: #2e7d32;
+    background: var(--mj-status-success);
+    color: var(--mj-brand-on-primary);
+    border-color: var(--mj-status-success);
 }
 
 /* Content grid */
@@ -441,7 +445,7 @@ h1 {
 
 /* Left column */
 .org-hq__left {
-    border-right: 1px solid #e8e8e8;
+    border-right: 1px solid var(--mj-border-default);
     padding: 24px 28px;
     overflow-y: auto;
 }
@@ -460,23 +464,25 @@ h1 {
 .org-hq__panel-title {
     font-size: 12px;
     font-weight: 700;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     display: flex;
     align-items: center;
     gap: 8px;
 }
-.org-hq__panel-title i { color: #2e7d32; font-size: 12px; }
+.org-hq__panel-title i { color: var(--mj-status-success); font-size: 12px; }
 .org-hq__panel-action {
     font-size: 11px;
-    color: #1976d2;
+    color: var(--mj-text-link);
     cursor: pointer;
     font-weight: 500;
+    background: transparent;
+    border: none;
 }
 .org-hq__panel-card {
-    background: #fafbfd;
-    border: 1px solid #e8e8e8;
+    background: var(--mj-bg-surface-sunken);
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     padding: 16px;
 }
@@ -488,17 +494,17 @@ h1 {
 .org-hq__panel-label {
     font-size: 10px;
     font-weight: 700;
-    color: #aaa;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 2px;
 }
 .org-hq__panel-value {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
-.org-hq__panel-value a { color: #1976d2; text-decoration: none; }
+.org-hq__panel-value a { color: var(--mj-text-link); text-decoration: none; }
 
 /* Hierarchy tree */
 .org-hq__tree {
@@ -513,38 +519,38 @@ h1 {
     transition: background 0.1s;
     cursor: pointer;
 }
-.org-hq__tree-item:hover { background: #f5f5f5; }
+.org-hq__tree-item:hover { background: var(--mj-bg-surface-hover); }
 .org-hq__tree-item--current {
-    background: #e8f5e9;
-    border: 1px solid #c8e6c9;
+    background: var(--mj-status-success-bg);
+    border: 1px solid var(--mj-status-success-border);
 }
 .org-hq__tree-icon {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    background: #f0f4f8;
+    background: var(--mj-bg-surface-sunken);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    color: #666;
+    color: var(--mj-text-secondary);
 }
 .org-hq__tree-item--current .org-hq__tree-icon {
-    background: #2e7d32;
-    color: white;
+    background: var(--mj-status-success);
+    color: var(--mj-brand-on-primary);
 }
 .org-hq__tree-name {
     font-size: 13px;
     font-weight: 500;
-    color: #333;
+    color: var(--mj-text-primary);
 }
 .org-hq__tree-item--current .org-hq__tree-name {
     font-weight: 700;
-    color: #1b5e20;
+    color: var(--mj-status-success-text);
 }
 .org-hq__tree-type {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
 }
 .org-hq__tree-indent {
     margin-left: 24px;
@@ -554,7 +560,7 @@ h1 {
 .org-hq__right {
     padding: 24px 28px;
     overflow-y: auto;
-    background: #fafbfd;
+    background: var(--mj-bg-surface-sunken);
 }
 
 /* Contact / widget sections */
@@ -564,7 +570,7 @@ h1 {
 .org-hq__widget-section-title {
     font-size: 12px;
     font-weight: 700;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin-bottom: 12px;
@@ -572,10 +578,10 @@ h1 {
     align-items: center;
     gap: 8px;
 }
-.org-hq__widget-section-title i { color: #2e7d32; }
+.org-hq__widget-section-title i { color: var(--mj-status-success); }
 .org-hq__widget-card {
-    background: white;
-    border: 1px solid #e8e8e8;
+    background: var(--mj-bg-surface-card);
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -589,7 +595,7 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-hq__contact-item:last-child { border-bottom: none; }
 .org-hq__contact-icon {
@@ -601,19 +607,19 @@ h1 {
     justify-content: center;
     font-size: 13px;
 }
-.org-hq__contact-icon--web { background: #e3f2fd; color: #1565c0; }
-.org-hq__contact-icon--email { background: #e8f5e9; color: #2e7d32; }
-.org-hq__contact-icon--phone { background: #fff3e0; color: #e65100; }
+.org-hq__contact-icon--web { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+.org-hq__contact-icon--email { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+.org-hq__contact-icon--phone { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
 .org-hq__contact-text { flex: 1; }
 .org-hq__contact-primary {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
-.org-hq__contact-primary a { color: #1976d2; text-decoration: none; }
+.org-hq__contact-primary a { color: var(--mj-text-link); text-decoration: none; }
 .org-hq__contact-secondary {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
 }
 
 /* Relationship items */
@@ -622,15 +628,15 @@ h1 {
     align-items: center;
     gap: 10px;
     padding: 10px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-hq__rel-item:last-child { border-bottom: none; }
 .org-hq__rel-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--mj-status-info-bg);
+    color: var(--mj-status-info-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -641,12 +647,13 @@ h1 {
 .org-hq__rel-name {
     font-size: 13px;
     font-weight: 600;
-    color: #1976d2;
+    color: var(--mj-text-link);
     cursor: pointer;
+    text-decoration: none;
 }
 .org-hq__rel-role {
     font-size: 11px;
-    color: #888;
+    color: var(--mj-text-muted);
 }
 .org-hq__rel-badge {
     padding: 2px 8px;
@@ -654,8 +661,8 @@ h1 {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 
 
@@ -665,10 +672,10 @@ h1 {
    Clean, spacious, card-based with visual hierarchy
    ========================================== */
 .org-mag {
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
 }
 
 /* Hero section */
@@ -681,21 +688,21 @@ h1 {
     width: 72px;
     height: 72px;
     border-radius: 18px;
-    background: linear-gradient(135deg, #1b5e20, #2e7d32);
+    background: linear-gradient(135deg, var(--mj-status-success-text), var(--mj-status-success));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 28px;
-    color: white;
+    color: var(--mj-brand-on-primary);
     font-weight: 800;
     flex-shrink: 0;
-    box-shadow: 0 4px 16px rgba(46,125,50,0.25);
+    box-shadow: var(--mj-shadow-md);
 }
 .org-mag__hero-content { flex: 1; }
 .org-mag__hero-name {
     font-size: 28px;
     font-weight: 800;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     letter-spacing: -0.5px;
 }
 .org-mag__hero-tags {
@@ -712,18 +719,18 @@ h1 {
     border-radius: 20px;
     font-size: 12px;
     font-weight: 500;
-    background: #f5f5f5;
-    color: #666;
+    background: var(--mj-bg-surface-sunken);
+    color: var(--mj-text-secondary);
 }
 .org-mag__hero-tag i { font-size: 11px; }
 .org-mag__hero-tag--status {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
     font-weight: 600;
 }
 .org-mag__hero-desc {
     font-size: 15px;
-    color: #555;
+    color: var(--mj-text-secondary);
     line-height: 1.6;
     margin-top: 12px;
     max-width: 640px;
@@ -746,9 +753,9 @@ h1 {
     gap: 8px;
     transition: all 0.15s;
 }
-.org-mag__hero-btn--primary { background: #1a1a2e; color: white; }
-.org-mag__hero-btn--primary:hover { background: #333; }
-.org-mag__hero-btn--secondary { background: #f0f0f0; color: #555; }
+.org-mag__hero-btn--primary { background: var(--mj-color-neutral-900); color: var(--mj-text-inverse); }
+.org-mag__hero-btn--primary:hover { background: var(--mj-color-neutral-800); }
+.org-mag__hero-btn--secondary { background: var(--mj-bg-surface-sunken); color: var(--mj-text-secondary); }
 
 /* Info cards grid */
 .org-mag__info-cards {
@@ -759,13 +766,13 @@ h1 {
 }
 .org-mag__info-card {
     padding: 20px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 14px;
     transition: all 0.15s;
 }
 .org-mag__info-card:hover {
-    border-color: #2e7d32;
-    box-shadow: 0 2px 8px rgba(46,125,50,0.08);
+    border-color: var(--mj-status-success);
+    box-shadow: var(--mj-shadow-sm);
 }
 .org-mag__info-card-header {
     display: flex;
@@ -782,34 +789,34 @@ h1 {
     justify-content: center;
     font-size: 15px;
 }
-.org-mag__info-card-icon--identity { background: #e3f2fd; color: #1565c0; }
-.org-mag__info-card-icon--contact { background: #e8f5e9; color: #2e7d32; }
-.org-mag__info-card-icon--hierarchy { background: #fff3e0; color: #e65100; }
+.org-mag__info-card-icon--identity { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+.org-mag__info-card-icon--contact { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+.org-mag__info-card-icon--hierarchy { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
 .org-mag__info-card-title {
     font-size: 14px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
 .org-mag__info-field {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     padding: 8px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-mag__info-field:last-child { border-bottom: none; }
 .org-mag__info-field-label {
     font-size: 12px;
-    color: #999;
+    color: var(--mj-text-muted);
     font-weight: 500;
 }
 .org-mag__info-field-value {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 600;
     text-align: right;
 }
-.org-mag__info-field-value a { color: #1976d2; text-decoration: none; }
+.org-mag__info-field-value a { color: var(--mj-text-link); text-decoration: none; }
 
 /* Full-width widget sections */
 .org-mag__widgets {
@@ -819,7 +826,7 @@ h1 {
     gap: 20px;
 }
 .org-mag__widget-panel {
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 14px;
     overflow: hidden;
 }
@@ -831,7 +838,7 @@ h1 {
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-mag__widget-title {
     display: flex;
@@ -839,43 +846,43 @@ h1 {
     gap: 10px;
     font-size: 14px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
-.org-mag__widget-title i { color: #2e7d32; font-size: 14px; }
+.org-mag__widget-title i { color: var(--mj-status-success); font-size: 14px; }
 .org-mag__widget-badge {
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--mj-status-info-bg);
+    color: var(--mj-status-info-text);
     padding: 3px 10px;
     border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
 }
 .org-mag__widget-add {
-    border: 1px dashed #ccc;
+    border: 1px dashed var(--mj-border-strong);
     background: none;
     padding: 5px 12px;
     border-radius: 8px;
     font-size: 12px;
-    color: #666;
+    color: var(--mj-text-secondary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     transition: all 0.15s;
 }
-.org-mag__widget-add:hover { border-color: #2e7d32; color: #2e7d32; }
+.org-mag__widget-add:hover { border-color: var(--mj-status-success); color: var(--mj-status-success); }
 .org-mag__widget-body {
     padding: 20px;
 }
 .org-mag__widget-placeholder {
     text-align: center;
     padding: 24px;
-    color: #888;
+    color: var(--mj-text-muted);
     font-size: 13px;
 }
 .org-mag__widget-placeholder i {
     font-size: 20px;
-    color: #ccc;
+    color: var(--mj-text-disabled);
     display: block;
     margin-bottom: 8px;
 }
@@ -886,7 +893,7 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .org-mag__person-row:last-child { border-bottom: none; }
 .org-mag__person-avatar {
@@ -900,19 +907,20 @@ h1 {
     font-weight: 700;
     flex-shrink: 0;
 }
-.org-mag__person-avatar--blue { background: #e3f2fd; color: #1565c0; }
-.org-mag__person-avatar--purple { background: #f3e5f5; color: #7b1fa2; }
-.org-mag__person-avatar--teal { background: #e0f2f1; color: #00695c; }
+.org-mag__person-avatar--blue { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+.org-mag__person-avatar--purple { background: var(--mj-color-violet-100); color: var(--mj-color-violet-700); }
+.org-mag__person-avatar--teal { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
 .org-mag__person-info { flex: 1; }
 .org-mag__person-name {
     font-size: 14px;
     font-weight: 600;
-    color: #1976d2;
+    color: var(--mj-text-link);
     cursor: pointer;
+    text-decoration: none;
 }
 .org-mag__person-role {
     font-size: 12px;
-    color: #888;
+    color: var(--mj-text-muted);
 }
 .org-mag__person-badge {
     padding: 3px 10px;
@@ -920,8 +928,8 @@ h1 {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 
 /* Child org cards */
@@ -935,36 +943,36 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 14px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.15s;
 }
 .org-mag__child-card:hover {
-    border-color: #2e7d32;
-    background: #fafff9;
+    border-color: var(--mj-status-success);
+    background: var(--mj-status-success-bg);
 }
 .org-mag__child-logo {
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: #f0f4f8;
+    background: var(--mj-bg-surface-sunken);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: #666;
+    color: var(--mj-text-secondary);
     font-weight: 700;
 }
 .org-mag__child-text { flex: 1; }
 .org-mag__child-name {
     font-size: 13px;
     font-weight: 600;
-    color: #333;
+    color: var(--mj-text-primary);
 }
 .org-mag__child-meta {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
 }
 </style>
 </head>
@@ -1002,10 +1010,10 @@ h1 {
                 </div>
             </div>
             <div class="org-profile__actions">
-                <button class="org-profile__btn org-profile__btn--primary">
+                <button type="button" class="org-profile__btn org-profile__btn--primary">
                     <i class="fa-solid fa-pen"></i> Edit
                 </button>
-                <button class="org-profile__btn org-profile__btn--ghost">
+                <button type="button" class="org-profile__btn org-profile__btn--ghost">
                     <i class="fa-solid fa-globe"></i> Website
                 </button>
             </div>
@@ -1030,18 +1038,18 @@ h1 {
                 <div class="org-profile__metric-label">Child Orgs</div>
             </div>
             <div class="org-profile__metric">
-                <div class="org-profile__metric-value" style="color: #2e7d32;">Active</div>
+                <div class="org-profile__metric-value" style="color: var(--mj-status-success);">Active</div>
                 <div class="org-profile__metric-label">Status</div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="org-profile__tabs">
-            <div class="org-profile__tab org-profile__tab--active">Overview</div>
-            <div class="org-profile__tab">Hierarchy</div>
-            <div class="org-profile__tab">Addresses</div>
-            <div class="org-profile__tab">Contacts</div>
-            <div class="org-profile__tab">Relationships</div>
+        <div class="org-profile__tabs" role="tablist" aria-label="Organization profile sections">
+            <button type="button" role="tab" aria-selected="true" class="org-profile__tab org-profile__tab--active">Overview</button>
+            <button type="button" role="tab" aria-selected="false" class="org-profile__tab">Hierarchy</button>
+            <button type="button" role="tab" aria-selected="false" class="org-profile__tab">Addresses</button>
+            <button type="button" role="tab" aria-selected="false" class="org-profile__tab">Contacts</button>
+            <button type="button" role="tab" aria-selected="false" class="org-profile__tab">Relationships</button>
         </div>
 
         <!-- Content -->
@@ -1078,14 +1086,14 @@ h1 {
 
             <div class="org-profile__section">
                 <div class="org-profile__section-title"><i class="fa-solid fa-sitemap"></i> Child Organizations</div>
-                <div class="org-profile__child-item">
+                <div class="org-profile__child-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                     <div class="org-profile__child-icon"><i class="fa-solid fa-building"></i></div>
                     <div>
                         <div class="org-profile__child-name">rasa.io Europe</div>
                         <div class="org-profile__child-type">Regional Office · Active</div>
                     </div>
                 </div>
-                <div class="org-profile__child-item">
+                <div class="org-profile__child-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                     <div class="org-profile__child-icon"><i class="fa-solid fa-building"></i></div>
                     <div>
                         <div class="org-profile__child-name">rasa.io Labs</div>
@@ -1105,7 +1113,7 @@ h1 {
 <div class="option-wrapper">
     <div class="option-label"><i class="fa-solid fa-b"></i> Headquarters View</div>
     <p class="option-desc">
-        <strong>Bloomberg / corporate intranet-inspired.</strong> Icon sidebar for section navigation,
+        <strong>Corporate intranet-inspired layout.</strong> Icon sidebar for section navigation,
         left panel with dense structured data and org hierarchy tree, right panel with contacts and
         relationships. Best for: <strong>power users managing complex org structures</strong> with many
         child orgs and relationships.
@@ -1114,12 +1122,12 @@ h1 {
     <div class="org-hq">
         <!-- Sidebar Nav -->
         <div class="org-hq__nav">
-            <div class="org-hq__nav-item org-hq__nav-item--active" title="Overview"><i class="fa-solid fa-building"></i></div>
-            <div class="org-hq__nav-item" title="Hierarchy"><i class="fa-solid fa-sitemap"></i></div>
-            <div class="org-hq__nav-item" title="Addresses"><i class="fa-solid fa-map-marker-alt"></i></div>
-            <div class="org-hq__nav-item" title="Contacts"><i class="fa-solid fa-address-card"></i></div>
-            <div class="org-hq__nav-item" title="Relationships"><i class="fa-solid fa-diagram-project"></i></div>
-            <div class="org-hq__nav-item" title="Settings"><i class="fa-solid fa-cog"></i></div>
+            <button type="button" class="org-hq__nav-item org-hq__nav-item--active" title="Overview" aria-label="Overview"><i class="fa-solid fa-building"></i></button>
+            <button type="button" class="org-hq__nav-item" title="Hierarchy" aria-label="Hierarchy"><i class="fa-solid fa-sitemap"></i></button>
+            <button type="button" class="org-hq__nav-item" title="Addresses" aria-label="Addresses"><i class="fa-solid fa-map-marker-alt"></i></button>
+            <button type="button" class="org-hq__nav-item" title="Contacts" aria-label="Contacts"><i class="fa-solid fa-address-card"></i></button>
+            <button type="button" class="org-hq__nav-item" title="Relationships" aria-label="Relationships"><i class="fa-solid fa-diagram-project"></i></button>
+            <button type="button" class="org-hq__nav-item" title="Settings" aria-label="Settings"><i class="fa-solid fa-cog"></i></button>
         </div>
 
         <div class="org-hq__main">
@@ -1130,13 +1138,13 @@ h1 {
                     <div class="org-hq__topbar-name">rasa.io</div>
                     <div class="org-hq__topbar-sub">
                         Technology Company
-                        <span class="org-hq__topbar-badge"><span style="width:5px; height:5px; border-radius:50%; background:#4caf50; display:inline-block;"></span> Active</span>
+                        <span class="org-hq__topbar-badge"><span style="width:5px; height:5px; border-radius:50%; background:var(--mj-status-success); display:inline-block;"></span> Active</span>
                         Founded 2017
                     </div>
                 </div>
                 <div class="org-hq__topbar-actions">
-                    <button class="org-hq__topbar-btn"><i class="fa-solid fa-globe"></i> Website</button>
-                    <button class="org-hq__topbar-btn org-hq__topbar-btn--primary"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button type="button" class="org-hq__topbar-btn"><i class="fa-solid fa-globe"></i> Website</button>
+                    <button type="button" class="org-hq__topbar-btn org-hq__topbar-btn--primary"><i class="fa-solid fa-pen"></i> Edit</button>
                 </div>
             </div>
 
@@ -1179,7 +1187,7 @@ h1 {
                             <div class="org-hq__panel-title"><i class="fa-solid fa-sitemap"></i> Organization Hierarchy</div>
                         </div>
                         <div class="org-hq__tree">
-                            <div class="org-hq__tree-item">
+                            <div class="org-hq__tree-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                                 <div class="org-hq__tree-icon"><i class="fa-solid fa-building"></i></div>
                                 <div>
                                     <div class="org-hq__tree-name">Meridian Corp</div>
@@ -1187,7 +1195,7 @@ h1 {
                                 </div>
                             </div>
                             <div class="org-hq__tree-indent">
-                                <div class="org-hq__tree-item org-hq__tree-item--current">
+                                <div class="org-hq__tree-item org-hq__tree-item--current" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                                     <div class="org-hq__tree-icon"><i class="fa-solid fa-building"></i></div>
                                     <div>
                                         <div class="org-hq__tree-name">rasa.io</div>
@@ -1195,14 +1203,14 @@ h1 {
                                     </div>
                                 </div>
                                 <div class="org-hq__tree-indent">
-                                    <div class="org-hq__tree-item">
+                                    <div class="org-hq__tree-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                                         <div class="org-hq__tree-icon"><i class="fa-solid fa-building"></i></div>
                                         <div>
                                             <div class="org-hq__tree-name">rasa.io Europe</div>
                                             <div class="org-hq__tree-type">Child · Regional Office</div>
                                         </div>
                                     </div>
-                                    <div class="org-hq__tree-item">
+                                    <div class="org-hq__tree-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                                         <div class="org-hq__tree-icon"><i class="fa-solid fa-building"></i></div>
                                         <div>
                                             <div class="org-hq__tree-name">rasa.io Labs</div>
@@ -1217,10 +1225,10 @@ h1 {
                     <div class="org-hq__panel">
                         <div class="org-hq__panel-header">
                             <div class="org-hq__panel-title"><i class="fa-solid fa-map-marker-alt"></i> Addresses</div>
-                            <div class="org-hq__panel-action">+ Add</div>
+                            <button type="button" class="org-hq__panel-action">+ Add</button>
                         </div>
-                        <div class="org-hq__panel-card" style="text-align: center; color: #888; font-size: 13px; padding: 20px;">
-                            <i class="fa-solid fa-map-marker-alt" style="font-size: 18px; color: #ccc; display: block; margin-bottom: 6px;"></i>
+                        <div class="org-hq__panel-card" style="text-align: center; color: var(--mj-text-muted); font-size: 13px; padding: 20px;">
+                            <i class="fa-solid fa-map-marker-alt" style="font-size: 18px; color: var(--mj-text-disabled); display: block; margin-bottom: 6px;"></i>
                             &lt;bizapps-address-editor&gt; embedded here
                         </div>
                     </div>
@@ -1264,23 +1272,23 @@ h1 {
                                 <div class="org-hq__rel-item">
                                     <div class="org-hq__rel-avatar">AN</div>
                                     <div class="org-hq__rel-text">
-                                        <div class="org-hq__rel-name">Amith Nagarajan</div>
+                                        <a href="#" class="org-hq__rel-name">Amith Nagarajan</a>
                                         <div class="org-hq__rel-role">Chairman · Jan 2019 - Present</div>
                                     </div>
                                     <div class="org-hq__rel-badge">Active</div>
                                 </div>
                                 <div class="org-hq__rel-item">
-                                    <div class="org-hq__rel-avatar" style="background: #f3e5f5; color: #7b1fa2;">JS</div>
+                                    <div class="org-hq__rel-avatar" style="background: var(--mj-color-violet-100); color: var(--mj-color-violet-700);">JS</div>
                                     <div class="org-hq__rel-text">
-                                        <div class="org-hq__rel-name">Jane Smith</div>
+                                        <a href="#" class="org-hq__rel-name">Jane Smith</a>
                                         <div class="org-hq__rel-role">CEO · Mar 2020 - Present</div>
                                     </div>
                                     <div class="org-hq__rel-badge">Active</div>
                                 </div>
                                 <div class="org-hq__rel-item">
-                                    <div class="org-hq__rel-avatar" style="background: #e0f2f1; color: #00695c;">BJ</div>
+                                    <div class="org-hq__rel-avatar" style="background: var(--mj-status-success-bg); color: var(--mj-status-success-text);">BJ</div>
                                     <div class="org-hq__rel-text">
-                                        <div class="org-hq__rel-name">Bob Johnson</div>
+                                        <a href="#" class="org-hq__rel-name">Bob Johnson</a>
                                         <div class="org-hq__rel-role">CTO · Jun 2019 - Present</div>
                                     </div>
                                     <div class="org-hq__rel-badge">Active</div>
@@ -1292,8 +1300,8 @@ h1 {
                     <div class="org-hq__widget-section">
                         <div class="org-hq__widget-section-title"><i class="fa-solid fa-address-card"></i> Contact Methods</div>
                         <div class="org-hq__widget-card">
-                            <div class="org-hq__widget-card-body" style="text-align: center; color: #888; font-size: 13px; padding: 20px;">
-                                <i class="fa-solid fa-address-card" style="font-size: 18px; color: #ccc; display: block; margin-bottom: 6px;"></i>
+                            <div class="org-hq__widget-card-body" style="text-align: center; color: var(--mj-text-muted); font-size: 13px; padding: 20px;">
+                                <i class="fa-solid fa-address-card" style="font-size: 18px; color: var(--mj-text-disabled); display: block; margin-bottom: 6px;"></i>
                                 &lt;bizapps-contact-method-list&gt; embedded here
                             </div>
                         </div>
@@ -1333,8 +1341,8 @@ h1 {
                 </div>
             </div>
             <div class="org-mag__hero-actions">
-                <button class="org-mag__hero-btn org-mag__hero-btn--primary"><i class="fa-solid fa-pen"></i> Edit</button>
-                <button class="org-mag__hero-btn org-mag__hero-btn--secondary"><i class="fa-solid fa-ellipsis"></i></button>
+                <button type="button" class="org-mag__hero-btn org-mag__hero-btn--primary"><i class="fa-solid fa-pen"></i> Edit</button>
+                <button type="button" class="org-mag__hero-btn org-mag__hero-btn--secondary" aria-label="More options"><i class="fa-solid fa-ellipsis"></i></button>
             </div>
         </div>
 
@@ -1410,7 +1418,7 @@ h1 {
                     <div class="org-mag__person-row">
                         <div class="org-mag__person-avatar org-mag__person-avatar--blue">AN</div>
                         <div class="org-mag__person-info">
-                            <div class="org-mag__person-name">Amith Nagarajan</div>
+                            <a href="#" class="org-mag__person-name">Amith Nagarajan</a>
                             <div class="org-mag__person-role">Chairman · Jan 2019 - Present</div>
                         </div>
                         <div class="org-mag__person-badge">Active</div>
@@ -1418,7 +1426,7 @@ h1 {
                     <div class="org-mag__person-row">
                         <div class="org-mag__person-avatar org-mag__person-avatar--purple">JS</div>
                         <div class="org-mag__person-info">
-                            <div class="org-mag__person-name">Jane Smith</div>
+                            <a href="#" class="org-mag__person-name">Jane Smith</a>
                             <div class="org-mag__person-role">CEO · Mar 2020 - Present</div>
                         </div>
                         <div class="org-mag__person-badge">Active</div>
@@ -1426,7 +1434,7 @@ h1 {
                     <div class="org-mag__person-row">
                         <div class="org-mag__person-avatar org-mag__person-avatar--teal">BJ</div>
                         <div class="org-mag__person-info">
-                            <div class="org-mag__person-name">Bob Johnson</div>
+                            <a href="#" class="org-mag__person-name">Bob Johnson</a>
                             <div class="org-mag__person-role">CTO · Jun 2019 - Present</div>
                         </div>
                         <div class="org-mag__person-badge">Active</div>
@@ -1438,7 +1446,7 @@ h1 {
             <div class="org-mag__widget-panel">
                 <div class="org-mag__widget-header">
                     <div class="org-mag__widget-title"><i class="fa-solid fa-address-card"></i> Contact Methods</div>
-                    <button class="org-mag__widget-add"><i class="fa-solid fa-plus"></i> Add</button>
+                    <button type="button" class="org-mag__widget-add"><i class="fa-solid fa-plus"></i> Add</button>
                 </div>
                 <div class="org-mag__widget-body">
                     <div class="org-mag__widget-placeholder">
@@ -1452,7 +1460,7 @@ h1 {
             <div class="org-mag__widget-panel">
                 <div class="org-mag__widget-header">
                     <div class="org-mag__widget-title"><i class="fa-solid fa-map-marker-alt"></i> Addresses</div>
-                    <button class="org-mag__widget-add"><i class="fa-solid fa-plus"></i> Add</button>
+                    <button type="button" class="org-mag__widget-add"><i class="fa-solid fa-plus"></i> Add</button>
                 </div>
                 <div class="org-mag__widget-body">
                     <div class="org-mag__widget-placeholder">
@@ -1470,14 +1478,14 @@ h1 {
                 </div>
                 <div class="org-mag__widget-body">
                     <div class="org-mag__child-grid">
-                        <div class="org-mag__child-card">
+                        <div class="org-mag__child-card" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                             <div class="org-mag__child-logo">RE</div>
                             <div class="org-mag__child-text">
                                 <div class="org-mag__child-name">rasa.io Europe</div>
                                 <div class="org-mag__child-meta">Regional Office</div>
                             </div>
                         </div>
-                        <div class="org-mag__child-card">
+                        <div class="org-mag__child-card" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                             <div class="org-mag__child-logo">RL</div>
                             <div class="org-mag__child-text">
                                 <div class="org-mag__child-name">rasa.io Labs</div>
