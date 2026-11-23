@@ -59,7 +59,7 @@ packages/ActivitySync/src/writer.ts,391,200,fillSyncFields Activity.Title slice(
 packages/ActivitySync/src/writer.ts,416,500,fillManualFields Activity.Title slice(0 500),ProtocolLimit,AnnotatedProtocolLimit,Truncates manual activity title to fit Activity.Title nvarchar(500) schema width (// ProtocolLimit:)
 packages/ActivitySync/src/writer.ts,565,1,findExistingActivity RunView MaxRows,Tuning,NoChange,Single-record dedupe key lookup cap
 packages/ActivitySync/src/writer.ts,586,1,findExistingManualActivity RunView MaxRows,Tuning,NoChange,Single-record lookup cap
-packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts,76,1,findMirroredOrganization RunView MaxRows,Tuning,NoChange,Single-record lookup cap by LinkedCompanyID
+packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts,51,25,MAX_LOOKUP_CANDIDATES RunView MaxRows,Tuning,NoChange,Bounded candidate lookup cap for Company-Organization mirror deduplication
 packages/CoreEntitiesServer/src/entity-guards.ts,87,1,findSingleRecord RunView MaxRows,Tuning,NoChange,Single-record existence lookup cap
 packages/Entities/src/limits.config.ts,51,100,DEFAULT_COMMON_ENTITIES_LIMITS.ResourceGuards.MaxReportingChainDepth,ResourceGuard,ResolvedInResolver,Traversal depth cap preventing infinite recursion/cycles in supervisor reporting chain (wired to PersonEntity.ts)
 packages/Entities/src/PersonEntity.ts,494,1,hasDirectReports RunView MaxRows,Tuning,NoChange,Existence check cap (1 row) for direct reports validation

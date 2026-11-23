@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ *
  * @mj-biz-apps/common-core-entities-server
  *
  * Server-side entity subclasses for BizApps Common entities.
@@ -17,6 +20,7 @@ export {
     CompanyOrganizationMirrorEntityServer,
     MirrorCompanyToOrganization,
     SyncCompaniesToOrganizationsServerOperation,
+    TryMirrorCompanyToOrganization,
     type CompanyMirrorSource,
 } from './CompanyOrganizationMirrorServer.js';
 export {
