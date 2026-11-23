@@ -1,4 +1,9 @@
+/**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
 import { BaseRemotableOperation } from '@memberjunction/core';
+import type { CompanyOrganizationMatchStrategy } from './company-organization-mirror.js';
 
 /**
  * Stable registry key for syncing `MJ: Companies` records into mirrored
@@ -29,6 +34,10 @@ export interface CompanyOrganizationSyncItem {
     CompanyName: string;
     /** Whether the mirror row was newly created, updated for drift, or already in sync. */
     Action: 'created' | 'updated' | 'unchanged';
+    /** True when a pre-existing unlinked internal Organization was detected and linked instead of creating a duplicate. */
+    LinkedExistingOrganization?: boolean;
+    /** Strategy that resolved the Organization record for this Company. */
+    MatchStrategy?: CompanyOrganizationMatchStrategy;
 }
 
 /**

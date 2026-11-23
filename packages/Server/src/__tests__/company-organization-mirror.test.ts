@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BaseEntity, IMetadataProvider, LogError, RunView, RunViewResult, UserInfo } from '@memberjunction/core';
+import { BaseEntity, BaseEntityResult, IMetadataProvider, LogError, RunView, RunViewResult, UserInfo } from '@memberjunction/core';
 import {
     COMPANY_ORG_SYNC_OP_KEY,
     SyncCompaniesToOrganizationsOperation,
@@ -43,6 +43,7 @@ function makeFakeOrg(initial?: Partial<FakeOrgRecord>): FakeOrgRecord {
 
 function makeMockProvider(orgFactory: FakeOrgRecord | (() => FakeOrgRecord)): IMetadataProvider {
     return {
+        Entities: [],
         GetEntityObject: vi.fn().mockImplementation(async () =>
             typeof orgFactory === 'function' ? orgFactory() : orgFactory,
         ),
@@ -349,7 +350,7 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
         }
     });
 
-    it('CompanyOrganizationMirrorEntityServer.Save() skips mirroring if super.Save() fails and never fails Company write on mirror error', async () => {
+    it('CompanyOrganizationMirrorEntityServer.Save() skips mirroring if super.Save() fails and surfaces structured mirror failure', async () => {
         const fakeOrg = makeFakeOrg();
         const provider = makeMockProvider(fakeOrg);
         const superSaveSpy = vi.spyOn(BaseEntity.prototype, 'Save');
@@ -359,6 +360,7 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             // Case 1: super.Save returns false -> mirror is never invoked
             superSaveSpy.mockResolvedValueOnce(false);
             const entity = Object.create(CompanyOrganizationMirrorEntityServer.prototype) as CompanyOrganizationMirrorEntityServer;
+            Object.defineProperty(entity, '_resultHistory', { value: [] as BaseEntityResult[], writable: true, configurable: true });
             Object.defineProperty(entity, 'ProviderToUse', { value: provider, configurable: true });
             Object.defineProperty(entity, 'ContextCurrentUser', { value: user, configurable: true });
             Object.defineProperty(entity, 'ID', { value: companyID, configurable: true });
@@ -368,7 +370,7 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             expect(r1).toBe(false);
             expect(runViewSpy).not.toHaveBeenCalled();
 
-            // Case 2: super.Save returns true, mirror throws -> Company.Save still returns true
+            // Case 2: super.Save returns true, mirror fails -> Company.Save returns false and records structured LastMirrorError + LatestResult
             superSaveSpy.mockResolvedValueOnce(true);
             runViewSpy.mockReturnValue({
                 RunView: vi.fn().mockResolvedValue({ Success: false, ErrorMessage: 'transient mirror error' }),
@@ -378,7 +380,10 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             Object.defineProperty(entity, 'LogoURL', { value: null, configurable: true });
 
             const r2 = await entity.Save();
-            expect(r2).toBe(true);
+            expect(r2).toBe(false);
+            expect(entity.LastMirrorError?.Code).toBe('ORGANIZATION_LOOKUP_FAILED');
+            expect(entity.LastMirrorError?.DiagnosticMessage).toContain('transient mirror error');
+            expect(entity.LatestResult?.Success).toBe(false);
             expect(typeof LogError).toBe('function');
         } finally {
             superSaveSpy.mockRestore();

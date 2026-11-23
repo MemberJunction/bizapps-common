@@ -1,5 +1,10 @@
+/**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
 import {
     BaseEntity,
+    BaseEntityResult,
     BaseRemotableOperation,
     CompositeKey,
     EntitySaveOptions,
@@ -9,10 +14,22 @@ import {
     UserInfo,
 } from '@memberjunction/core';
 import { MJCompanyEntity } from '@memberjunction/core-entities';
-import { RegisterClass } from '@memberjunction/global';
+import { IsValidUUID, RegisterClass, UUIDsEqual, ValidationErrorInfo } from '@memberjunction/global';
 import {
+    BuildOrganizationMirrorLookupFilter,
     COMPANY_ORG_SYNC_OP_KEY,
+    CompanyMirrorError,
+    CompanyMirrorErrorDetails,
+    CompanyMirrorResult,
+    CompanyOrganizationMatchStrategy,
     CompanyOrganizationSyncItem,
+    ExtractCompanyMatchKeys,
+    FormatCompanyMirrorError,
+    NormalizeMirrorErrorCause,
+    NormalizeMirrorOptionalString,
+    OrganizationLookupCandidate,
+    OrganizationMirrorStatus,
+    SelectOrganizationMirrorCandidate,
     SyncCompaniesToOrganizationsInput,
     SyncCompaniesToOrganizationsOperation,
     SyncCompaniesToOrganizationsOutput,
@@ -20,7 +37,18 @@ import {
 } from '@mj-biz-apps/common-entities';
 import { MetadataOf } from './entity-guards.js';
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ORGANIZATION_ENTITY_NAME = 'MJ_BizApps_Common: Organizations';
+const COMPANY_ENTITY_NAME = 'MJ: Companies';
+const ORGANIZATION_LOOKUP_FIELDS: string[] = [
+    'ID',
+    'Name',
+    'LegalName',
+    'Website',
+    'WebsiteDomain',
+    'LinkedCompanyID',
+    'Status',
+];
+const MAX_LOOKUP_CANDIDATES = 25;
 
 /**
  * Minimal field projection of an `MJ: Companies` record mirrored into
@@ -37,11 +65,53 @@ export interface CompanyMirrorSource {
     Website: string | null;
     /** Optional logo URL mirrored to `Organization.LogoURL`. */
     LogoURL: string | null;
+    /** Optional primary email/web domain (`__mj.Company.Domain`) used during duplicate-org detection. */
+    Domain?: string | null;
 }
 
-function normalizeOptionalString(val: string | null | undefined): string | null {
-    const trimmed = val?.trim();
-    return trimmed && trimmed.length > 0 ? trimmed : null;
+interface NormalizedMirrorFields {
+    readonly Name: string;
+    readonly Description: string | null;
+    readonly Website: string | null;
+    readonly LogoURL: string | null;
+}
+
+/**
+ * Non-throwing mirror synchronization helper returning a strongly typed {@link CompanyMirrorResult}.
+ *
+ * - Detects an existing linked (`LinkedCompanyID`) or pre-existing unlinked internal Organization via
+ *   `RunView` (`ResultType: 'simple'`) before creating a new Organization record.
+ * - Surfaces deterministic structured {@link CompanyMirrorErrorDetails} instead of swallowing failures.
+ */
+export async function TryMirrorCompanyToOrganization(
+    company: CompanyMirrorSource,
+    provider: IMetadataProvider,
+    contextUser: UserInfo | undefined,
+): Promise<CompanyMirrorResult> {
+    try {
+        const item = await executeMirrorSync(company, provider, contextUser);
+        return { Success: true, Item: item };
+    } catch (err) {
+        if (err instanceof CompanyMirrorError) {
+            return { Success: false, Error: err.ToDetails() };
+        }
+        const cause = NormalizeMirrorErrorCause(
+            err instanceof Error ? err : typeof err === 'string' ? err : 'Unknown mirror failure',
+        );
+        return {
+            Success: false,
+            Error: {
+                Code: 'UNEXPECTED_MIRROR_ERROR',
+                Context: {
+                    CompanyID: company.ID,
+                    CompanyName: company.Name,
+                    Operation: 'link',
+                },
+                DiagnosticMessage: cause?.Message ?? 'Unexpected error during Company mirror synchronization',
+                Cause: cause,
+            },
+        };
+    }
 }
 
 /**
@@ -49,102 +119,183 @@ function normalizeOptionalString(val: string | null | undefined): string | null 
  * `MJ_BizApps_Common: Organizations` (`LinkedCompanyID = company.ID`).
  *
  * Idempotent:
- * - Creates a new `Active` Organization if no row currently references `company.ID`.
- * - Updates mirrored fields (`Name`, `Website`, `LogoURL`, `Description`) only when drifted.
- * - Skips redundant database writes (`Action: 'unchanged'`) when all fields match.
+ * - Links a matching pre-existing internal Organization before creating a new row.
+ * - Creates a new `Active` Organization only when no matching row exists.
+ * - Updates `LinkedCompanyID` and mirrored fields (`Name`, `Website`, `LogoURL`, `Description`) only when drifted.
+ * - Skips redundant database writes (`Action: 'unchanged'`) when already linked and all fields match.
  *
- * @param company Source `MJ: Companies` projection.
- * @param provider Active server-side MJ metadata/entity data provider.
- * @param contextUser Authenticated user context for MJ entity reads/writes.
- * @returns Per-company sync result containing the canonical `OrganizationID` and action taken.
- * @throws When `company.ID` is not a valid UUID or an entity read/save fails.
+ * @throws {@link CompanyMirrorError} When validation, lookup, load, or save fails.
  */
 export async function MirrorCompanyToOrganization(
     company: CompanyMirrorSource,
     provider: IMetadataProvider,
     contextUser: UserInfo | undefined,
 ): Promise<CompanyOrganizationSyncItem> {
-    if (!UUID_PATTERN.test(company.ID)) {
-        throw new Error(`Invalid Company ID '${company.ID}'`);
+    const result = await TryMirrorCompanyToOrganization(company, provider, contextUser);
+    if (!result.Success && 'Error' in result) {
+        throw new CompanyMirrorError(result.Error);
     }
+    return result.Item;
+}
+
+async function executeMirrorSync(
+    company: CompanyMirrorSource,
+    provider: IMetadataProvider,
+    contextUser: UserInfo | undefined,
+): Promise<CompanyOrganizationSyncItem> {
+    const keys = ExtractCompanyMatchKeys(company);
+    const nextFields: NormalizedMirrorFields = {
+        Name: company.Name.trim(),
+        Website: NormalizeMirrorOptionalString(company.Website),
+        LogoURL: NormalizeMirrorOptionalString(company.LogoURL),
+        Description: NormalizeMirrorOptionalString(company.Description),
+    };
 
     const rv = RunView.FromMetadataProvider(provider);
-    const existingRes = await rv.RunView<{ ID: string }>({
-        EntityName: 'MJ_BizApps_Common: Organizations',
-        ExtraFilter: `LinkedCompanyID = '${company.ID}'`,
-        Fields: ['ID'],
-        MaxRows: 1,
-        ResultType: 'simple',
-    }, contextUser);
-
-    if (!existingRes.Success) {
-        throw new Error(`Failed querying mirrored Organization for Company ${company.ID}: ${existingRes.ErrorMessage}`);
-    }
-
-    const existingId = existingRes.Results?.[0]?.ID;
-    const org = await provider.GetEntityObject<mjBizAppsCommonOrganizationEntity>(
-        'MJ_BizApps_Common: Organizations',
+    const existingRes = await rv.RunView<OrganizationLookupCandidate>(
+        {
+            EntityName: ORGANIZATION_ENTITY_NAME,
+            ExtraFilter: BuildOrganizationMirrorLookupFilter(keys),
+            Fields: ORGANIZATION_LOOKUP_FIELDS,
+            MaxRows: MAX_LOOKUP_CANDIDATES,
+            ResultType: 'simple',
+        },
         contextUser,
     );
 
-    const nextName = company.Name.trim();
-    const nextWebsite = normalizeOptionalString(company.Website);
-    const nextLogoURL = normalizeOptionalString(company.LogoURL);
-    const nextDescription = normalizeOptionalString(company.Description);
-
-    if (existingId) {
-        const loaded = await org.InnerLoad(CompositeKey.FromID(existingId));
-        if (!loaded) {
-            throw new Error(`Could not load mirrored Organization ${existingId} for Company ${company.ID}`);
-        }
-        const changed =
-            org.Name !== nextName ||
-            normalizeOptionalString(org.Website) !== nextWebsite ||
-            normalizeOptionalString(org.LogoURL) !== nextLogoURL ||
-            normalizeOptionalString(org.Description) !== nextDescription;
-
-        if (!changed) {
-            return {
+    if (!existingRes.Success) {
+        throw new CompanyMirrorError({
+            Code: 'ORGANIZATION_LOOKUP_FAILED',
+            Context: {
                 CompanyID: company.ID,
-                OrganizationID: org.ID,
-                CompanyName: nextName,
-                Action: 'unchanged',
-            };
-        }
+                CompanyName: nextFields.Name,
+                Operation: 'lookup',
+            },
+            DiagnosticMessage: `Failed querying mirrored Organization for Company ${company.ID}: ${existingRes.ErrorMessage}`,
+        });
+    }
 
-        org.Name = nextName;
-        org.Website = nextWebsite;
-        org.LogoURL = nextLogoURL;
-        org.Description = nextDescription;
-        const saved = await org.Save();
-        if (!saved) {
-            throw new Error(`Failed updating mirrored Organization ${org.ID}: ${org.LatestResult?.CompleteMessage ?? 'unknown error'}`);
-        }
+    const selection = SelectOrganizationMirrorCandidate(existingRes.Results ?? [], keys);
+    const org = await provider.GetEntityObject<mjBizAppsCommonOrganizationEntity>(
+        ORGANIZATION_ENTITY_NAME,
+        contextUser,
+    );
+
+    if (selection) {
+        return syncExistingOrganization(org, company.ID, nextFields, selection.Candidate.ID, selection.Strategy);
+    }
+
+    return createMirroredOrganization(org, company.ID, nextFields);
+}
+
+async function syncExistingOrganization(
+    org: mjBizAppsCommonOrganizationEntity,
+    companyId: string,
+    nextFields: NormalizedMirrorFields,
+    organizationId: string,
+    strategy: Exclude<CompanyOrganizationMatchStrategy, 'created'>,
+): Promise<CompanyOrganizationSyncItem> {
+    const loaded = await org.InnerLoad(CompositeKey.FromID(organizationId));
+    if (!loaded) {
+        throw new CompanyMirrorError({
+            Code: 'ORGANIZATION_LOAD_FAILED',
+            Context: {
+                CompanyID: companyId,
+                CompanyName: nextFields.Name,
+                OrganizationID: organizationId,
+                Operation: 'load',
+            },
+            DiagnosticMessage: `Could not load mirrored Organization ${organizationId} for Company ${companyId}`,
+        });
+    }
+
+    const needsLink = !UUIDsEqual(org.LinkedCompanyID, companyId);
+    const changed =
+        needsLink ||
+        org.Name !== nextFields.Name ||
+        NormalizeMirrorOptionalString(org.Website) !== nextFields.Website ||
+        NormalizeMirrorOptionalString(org.LogoURL) !== nextFields.LogoURL ||
+        NormalizeMirrorOptionalString(org.Description) !== nextFields.Description;
+
+    if (!changed) {
         return {
-            CompanyID: company.ID,
+            CompanyID: companyId,
             OrganizationID: org.ID,
-            CompanyName: nextName,
-            Action: 'updated',
+            CompanyName: nextFields.Name,
+            Action: 'unchanged',
+            LinkedExistingOrganization: false,
+            MatchStrategy: strategy,
         };
     }
 
-    org.NewRecord();
-    org.Name = nextName;
-    org.Website = nextWebsite;
-    org.LogoURL = nextLogoURL;
-    org.Description = nextDescription;
-    org.LinkedCompanyID = company.ID;
-    org.Status = 'Active';
+    if (needsLink) {
+        org.LinkedCompanyID = companyId;
+    }
+    org.Name = nextFields.Name;
+    org.Website = nextFields.Website;
+    org.LogoURL = nextFields.LogoURL;
+    org.Description = nextFields.Description;
 
     const saved = await org.Save();
     if (!saved) {
-        throw new Error(`Failed creating mirrored Organization for Company ${company.ID}: ${org.LatestResult?.CompleteMessage ?? 'unknown error'}`);
+        const message = org.LatestResult?.CompleteMessage ?? 'unknown error';
+        throw new CompanyMirrorError({
+            Code: 'ORGANIZATION_SAVE_FAILED',
+            Context: {
+                CompanyID: companyId,
+                CompanyName: nextFields.Name,
+                OrganizationID: org.ID,
+                Operation: needsLink ? 'link' : 'update',
+            },
+            DiagnosticMessage: `Failed updating mirrored Organization ${org.ID}: ${message}`,
+        });
     }
+
     return {
-        CompanyID: company.ID,
+        CompanyID: companyId,
         OrganizationID: org.ID,
-        CompanyName: nextName,
+        CompanyName: nextFields.Name,
+        Action: 'updated',
+        LinkedExistingOrganization: needsLink,
+        MatchStrategy: strategy,
+    };
+}
+
+async function createMirroredOrganization(
+    org: mjBizAppsCommonOrganizationEntity,
+    companyId: string,
+    nextFields: NormalizedMirrorFields,
+): Promise<CompanyOrganizationSyncItem> {
+    const activeStatus: OrganizationMirrorStatus = 'Active';
+    org.NewRecord();
+    org.Name = nextFields.Name;
+    org.Website = nextFields.Website;
+    org.LogoURL = nextFields.LogoURL;
+    org.Description = nextFields.Description;
+    org.LinkedCompanyID = companyId;
+    org.Status = activeStatus;
+
+    const saved = await org.Save();
+    if (!saved) {
+        const message = org.LatestResult?.CompleteMessage ?? 'unknown error';
+        throw new CompanyMirrorError({
+            Code: 'ORGANIZATION_SAVE_FAILED',
+            Context: {
+                CompanyID: companyId,
+                CompanyName: nextFields.Name,
+                Operation: 'create',
+            },
+            DiagnosticMessage: `Failed creating mirrored Organization for Company ${companyId}: ${message}`,
+        });
+    }
+
+    return {
+        CompanyID: companyId,
+        OrganizationID: org.ID,
+        CompanyName: nextFields.Name,
         Action: 'created',
+        LinkedExistingOrganization: false,
+        MatchStrategy: 'created',
     };
 }
 
@@ -152,12 +303,20 @@ export async function MirrorCompanyToOrganization(
  * Server-side subclass of `MJ: Companies` that automatically mirrors creates and
  * updates to `MJ_BizApps_Common: Organizations` (`LinkedCompanyID = Company.ID`).
  *
- * Keeps internal legal entities from `__mj.Company` and external organizations
- * unified inside `Organization` across BizApps (Tasks, Close Automation, CRM, etc.).
+ * Surfaces structured mirror errors deterministically via {@link LastMirrorError} and
+ * `BaseEntity.LatestResult` while returning `false` if mirror synchronization fails.
  */
 @RegisterClass(BaseEntity, 'MJ: Companies')
 export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
+    private lastMirrorError: CompanyMirrorErrorDetails | null = null;
+
+    /** Most recent structured mirror error recorded during `Save()`, or `null` when clean. */
+    public get LastMirrorError(): CompanyMirrorErrorDetails | null {
+        return this.lastMirrorError;
+    }
+
     public override async Save(options?: EntitySaveOptions): Promise<boolean> {
+        this.lastMirrorError = null;
         const saved = await super.Save(options);
         if (!saved) {
             return false;
@@ -167,25 +326,51 @@ export class CompanyOrganizationMirrorEntityServer extends MJCompanyEntity {
         if (!provider) {
             return true;
         }
-        try {
-            await MirrorCompanyToOrganization(
-                {
-                    ID: this.ID,
-                    Name: this.Name,
-                    Description: this.Description,
-                    Website: this.Website,
-                    LogoURL: this.LogoURL,
-                },
-                provider,
-                this.ContextCurrentUser,
-            );
-        } catch (err) {
-            // Do not fail the core MJ: Companies write if Organization mirroring hits a transient error;
-            // callers can also run BizAppsCommon.SyncCompaniesToOrganizations to reconcile.
-            LogError(`CompanyOrganizationMirrorEntityServer: failed to mirror Company ${this.ID} to Organization`, undefined, err);
+
+        const mirrorResult = await TryMirrorCompanyToOrganization(
+            {
+                ID: this.ID,
+                Name: this.Name,
+                Description: this.Description,
+                Website: this.Website,
+                LogoURL: this.LogoURL,
+                Domain: this.safeReadDomain(),
+            },
+            provider,
+            this.ContextCurrentUser,
+        );
+
+        if (!mirrorResult.Success && 'Error' in mirrorResult) {
+            this.recordMirrorFailure(mirrorResult.Error);
+            return false;
         }
 
         return true;
+    }
+
+    private safeReadDomain(): string | null {
+        if (Object.prototype.hasOwnProperty.call(this, 'Domain') || Array.isArray(this.Fields)) {
+            return this.Domain;
+        }
+        return null;
+    }
+
+    private recordMirrorFailure(error: CompanyMirrorErrorDetails): void {
+        this.lastMirrorError = error;
+        const formatted = FormatCompanyMirrorError(error);
+        LogError(`CompanyOrganizationMirrorEntityServer: ${formatted}`, undefined, error);
+
+        if (Array.isArray(this.ResultHistory)) {
+            const result = new BaseEntityResult();
+            result.Success = false;
+            result.Type = this.IsSaved ? 'update' : 'create';
+            result.Message = formatted;
+            result.Errors = [new ValidationErrorInfo('LinkedCompanyID', formatted, this.ID)];
+            result.MessageIncludesErrors = true;
+            result.StartedAt = new Date();
+            result.EndedAt = new Date();
+            this.RegisterResultHistoryEntry(result);
+        }
     }
 }
 
@@ -201,26 +386,28 @@ export class SyncCompaniesToOrganizationsServerOperation extends SyncCompaniesTo
         provider: IMetadataProvider,
         user: UserInfo,
     ): Promise<SyncCompaniesToOrganizationsOutput> {
-        const extraFilter = input?.CompanyID
-            ? (() => {
-                  if (!UUID_PATTERN.test(input.CompanyID)) {
-                      throw new Error(`Invalid CompanyID '${input.CompanyID}'`);
-                  }
-                  return `ID = '${input.CompanyID}'`;
-              })()
-            : '';
-
+        const extraFilter = buildCompanyExtraFilter(input?.CompanyID);
         const rv = RunView.FromMetadataProvider(provider);
-        const companiesRes = await rv.RunView<CompanyMirrorSource>({
-            EntityName: 'MJ: Companies',
-            ExtraFilter: extraFilter,
-            Fields: ['ID', 'Name', 'Description', 'Website', 'LogoURL'],
-            OrderBy: 'Name ASC',
-            ResultType: 'simple',
-        }, user);
+        const companiesRes = await rv.RunView<CompanyMirrorSource>(
+            {
+                EntityName: COMPANY_ENTITY_NAME,
+                ExtraFilter: extraFilter,
+                Fields: ['ID', 'Name', 'Description', 'Website', 'LogoURL', 'Domain'],
+                OrderBy: 'Name ASC',
+                ResultType: 'simple',
+            },
+            user,
+        );
 
         if (!companiesRes.Success) {
-            throw new Error(`Failed loading MJ: Companies: ${companiesRes.ErrorMessage}`);
+            throw new CompanyMirrorError({
+                Code: 'COMPANIES_LOAD_FAILED',
+                Context: {
+                    CompanyID: input?.CompanyID ?? '',
+                    Operation: 'batch_sync',
+                },
+                DiagnosticMessage: `Failed loading MJ: Companies: ${companiesRes.ErrorMessage}`,
+            });
         }
 
         const companies = companiesRes.Results ?? [];
@@ -245,4 +432,21 @@ export class SyncCompaniesToOrganizationsServerOperation extends SyncCompaniesTo
             Items: items,
         };
     }
+}
+
+function buildCompanyExtraFilter(companyId: string | null | undefined): string {
+    if (!companyId) {
+        return '';
+    }
+    if (!IsValidUUID(companyId)) {
+        throw new CompanyMirrorError({
+            Code: 'INVALID_COMPANY_ID',
+            Context: {
+                CompanyID: companyId,
+                Operation: 'batch_sync',
+            },
+            DiagnosticMessage: `Invalid CompanyID '${companyId}'`,
+        });
+    }
+    return `ID = '${companyId}'`;
 }
