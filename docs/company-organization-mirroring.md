@@ -13,8 +13,8 @@ This follows the exact same architectural symmetry as `Person.LinkedUserID → _
 
 ## Why Canonical Organizations?
 
-Downstream BizApps (Tasks, Close Automation, CRM, Meetings, Committees, etc.) need to scope work and records to **both**:
-1. **Internal operating entities / tenants** (defined in `__mj.Company`, such as *Blue Cypress US LLC* or *Blue Cypress UK Ltd*), and
+Downstream BizApps (Tasks, Close Automation, Relationship Management, Meetings, Committees, etc.) need to scope work and records to **both**:
+1. **Internal operating entities / tenants** (defined in `__mj.Company`, such as *Meridian US LLC* or *Meridian UK Ltd*), and
 2. **External organizations** (clients, vendors, partners, subsidiaries — such as *Acme Enterprise Corp*) that do not belong in `__mj.Company`.
 
 By mirroring every `MJ: Companies` row into `MJ_BizApps_Common: Organizations`, downstream applications only ever need a single nullable `OrganizationID` foreign key (`FK → __mj_BizAppsCommon.Organization(ID)`). Internal companies remain unmistakably distinguishable (`Organization.LinkedCompanyID != null`) while sharing the same pickers, filters, permissions, and record links as external organizations.
@@ -29,10 +29,11 @@ flowchart LR
     S["CompanyOrganizationMirrorEntityServer<br/>(@RegisterClass BaseEntity 'MJ: Companies')"]
     RPC["SyncCompaniesToOrganizationsServerOperation<br/>(BizAppsCommon.SyncCompaniesToOrganizations)"]
     O["__mj_BizAppsCommon.Organization<br/>(LinkedCompanyID FK + UQ Filtered Index)"]
-    Apps["Downstream BizApps<br/>(Tasks, Close Automation, CRM, ...)"]
+    Apps["Downstream BizApps<br/>(Tasks, Close Automation, ...)"]
 
     C -- "Create / Update Save()" --> S
-    S -- "Auto-mirror Name, Description, Website, LogoURL" --> O
+    C -- "Delete() Unlink/Archive" --> S
+    S -- "Deduplicate & Auto-mirror" --> O
     RPC -- "Idempotent Backfill / Drift Reconciliation" --> O
     Apps -- "Single OrganizationID FK" --> O
 ```
@@ -46,13 +47,12 @@ flowchart LR
 - Adds filtered unique index `UQ_Organization_LinkedCompanyID` (`WHERE [LinkedCompanyID] IS NOT NULL`) so at most one Organization mirrors a given Company while any number of external Organizations can have `LinkedCompanyID = NULL`.
 - Regenerates `vwOrganizations`, `spCreateOrganization`, `spUpdateOrganization`, and CodeGen entity properties (`LinkedCompanyID`, `LinkedCompany`).
 
-### 2. Server-Side Auto-Mirroring (`CompanyOrganizationMirrorEntityServer`)
-Located in [`packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts`](../packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts) and registered via `@RegisterClass(BaseEntity, 'MJ: Companies')`.
+### 2. Server-Side Auto-Mirroring & Delete Unlink (`CompanyOrganizationMirrorEntityServer`)
+Located in [`packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts`](../packages/CoreEntitiesServer/src/CompanyOrganizationMirrorServer.ts) and registered via `@RegisterClass(BaseEntity, 'MJ: Companies')`, backed by pure dual-dialect helpers in [`packages/Entities/src/company-organization-mirror.ts`](../packages/Entities/src/company-organization-mirror.ts).
 
-- Runs automatically after every successful `MJ: Companies` `Save()`.
-- Creates a new `Active` `MJ_BizApps_Common: Organizations` row when no row is linked to `Company.ID`.
-- Updates mirrored fields (`Name`, `Website`, `LogoURL`, `Description`) when values drift, and skips redundant saves when unchanged.
-- **Fault isolation:** Mirroring errors are logged via `LogError` and never fail the core `MJ: Companies` write; callers can reconcile at any time via the Remotable Operation below.
+- **Pre-create deduplication (`Save()`):** Queries `MJ_BizApps_Common: Organizations` via `RunView.FromMetadataProvider(provider).RunView` with `ResultType: 'simple'` and a dual-dialect ANSI SQL `ExtraFilter` (`BuildOrganizationMirrorLookupFilter`) checking `LinkedCompanyID` first and then unlinked rows matching normalized `Name`, `LegalName`, or `WebsiteDomain`. Links a unique existing match (`LinkedExistingOrganization: true`), rejects ties deterministically with `AMBIGUOUS_ORGANIZATION_MATCH`, and creates a new `Active` Organization only when no match exists.
+- **Structured error surfacing:** `TryMirrorCompanyToOrganization` / `TryUnlinkOrganizationForDeletedCompany` return discriminated result unions (`CompanyMirrorResult`, `CompanyUnlinkResult`) with typed `CompanyMirrorErrorDetails` (`Code`, `Context`, `DiagnosticMessage`, `Cause`). `CompanyOrganizationMirrorEntityServer.Save()` and `.Delete()` surface failures deterministically via `LastMirrorError`, `BaseEntity.LatestResult`, and `LogError` (returning `false` on mirror/unlink failure).
+- **Deterministic delete unlink/archive (`Delete()`):** Prior to `super.Delete()`, queries linked Organizations (`LinkedCompanyID = '<companyId>'`), clears `LinkedCompanyID = null`, transitions `'Active'` records to `'Inactive'` (preserving `'Dissolved'` / `'Inactive'` without regression, configurable via `RegisterCompanyMirrorDeletePolicy`), coordinates writes via `EntityTransactionScope` / `TransactionGroup`, and aborts deletion if unlinking fails so shared internal Organizations are never orphaned or destroyed.
 
 ### 3. Remotable Operation (`BizAppsCommon.SyncCompaniesToOrganizations`)
 - **Typed client/server contract:** [`SyncCompaniesToOrganizationsOperation`](../packages/Entities/src/company-organization-sync.operation.ts) in `@mj-biz-apps/common-entities`.
@@ -84,7 +84,15 @@ const single = await new SyncCompaniesToOrganizationsOperation().Execute({
 
 ## Testing
 
-- **Unit Tests:** `pnpm --filter @mj-biz-apps/common-server test` (`packages/Server/src/__tests__/company-organization-mirror.test.ts`)
+- **Entity Unit & Static Hygiene Tests (`@mj-biz-apps/common-entities`):**
+  - `packages/Entities/src/__tests__/organization-mirror-dedup.test.ts`
+  - `packages/Entities/src/__tests__/mirror-error-contract.test.ts`
+  - `packages/Entities/src/__tests__/company-delete-unlink.test.ts`
+  - `packages/Entities/src/__tests__/mirror-hygiene.test.ts`
+- **Server Lifecycle Unit Tests (`@mj-biz-apps/common-server`):**
+  - `packages/Server/src/__tests__/company-organization-mirror.test.ts`
+  - `packages/Server/src/__tests__/company-mirror-sync.test.ts`
+  - `packages/Server/src/__tests__/company-delete-unlink.test.ts`
 - **Live GraphQL Integration Tests:**
   ```bash
   pnpm --filter @mj-biz-apps/common-integration-tests build

@@ -1,5 +1,18 @@
+/**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
 import { describe, expect, it, vi } from 'vitest';
-import { BaseEntity, IMetadataProvider, LogError, RunView, RunViewResult, UserInfo } from '@memberjunction/core';
+import {
+    BaseEntity,
+    BaseEntityResult,
+    IMetadataProvider,
+    LogError,
+    ProviderBase,
+    RunView,
+    RunViewResult,
+    UserInfo,
+} from '@memberjunction/core';
 import {
     COMPANY_ORG_SYNC_OP_KEY,
     SyncCompaniesToOrganizationsOperation,
@@ -42,11 +55,21 @@ function makeFakeOrg(initial?: Partial<FakeOrgRecord>): FakeOrgRecord {
 }
 
 function makeMockProvider(orgFactory: FakeOrgRecord | (() => FakeOrgRecord)): IMetadataProvider {
-    return {
-        GetEntityObject: vi.fn().mockImplementation(async () =>
+    const provider = Object.create(ProviderBase.prototype) as IMetadataProvider;
+    Object.defineProperty(provider, 'Entities', { value: [], enumerable: true, configurable: true });
+    Object.defineProperty(provider, 'GetEntityObject', {
+        value: vi.fn().mockImplementation(async () =>
             typeof orgFactory === 'function' ? orgFactory() : orgFactory,
         ),
-    } as unknown as IMetadataProvider;
+        configurable: true,
+    });
+    return provider;
+}
+
+function makeMockRunView(runViewFn: (...args: never[]) => Promise<Partial<RunViewResult>>): RunView {
+    const rv = Object.create(RunView.prototype) as RunView;
+    Object.defineProperty(rv, 'RunView', { value: runViewFn, configurable: true });
+    return rv;
 }
 
 describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperation', () => {
@@ -72,17 +95,17 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
     it('creates a new mirrored Active Organization with normalized fields when none exists for CompanyID', async () => {
         const fakeOrg = makeFakeOrg();
         const provider = makeMockProvider(fakeOrg);
-        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: true, Results: [] } as Partial<RunViewResult>),
-        } as unknown as RunView);
+        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: true, Results: [] })),
+        );
 
         try {
             const res = await MirrorCompanyToOrganization(
                 {
                     ID: companyID,
-                    Name: '  Blue Cypress US LLC  ',
+                    Name: '  Meridian US LLC  ',
                     Description: '  Primary US operating entity  ',
-                    Website: '  https://bluecypress.io  ',
+                    Website: '  https://meridian.example  ',
                     LogoURL: '   ',
                 },
                 provider,
@@ -92,12 +115,12 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             expect(res.Action).toBe('created');
             expect(res.CompanyID).toBe(companyID);
             expect(res.OrganizationID).toBe(fakeOrg.ID);
-            expect(res.CompanyName).toBe('Blue Cypress US LLC');
+            expect(res.CompanyName).toBe('Meridian US LLC');
             expect(fakeOrg.NewRecord).toHaveBeenCalledTimes(1);
             expect(fakeOrg.LinkedCompanyID).toBe(companyID);
-            expect(fakeOrg.Name).toBe('Blue Cypress US LLC');
+            expect(fakeOrg.Name).toBe('Meridian US LLC');
             expect(fakeOrg.Description).toBe('Primary US operating entity');
-            expect(fakeOrg.Website).toBe('https://bluecypress.io');
+            expect(fakeOrg.Website).toBe('https://meridian.example');
             expect(fakeOrg.LogoURL).toBeNull();
             expect(fakeOrg.Status).toBe('Active');
             expect(fakeOrg.Save).toHaveBeenCalledTimes(1);
@@ -110,32 +133,32 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
         const fakeOrg = makeFakeOrg({
             ID: '22222222-2222-4222-8222-222222222222',
             Name: 'Old Legal Name',
-            Website: 'https://bluecypress.io',
+            Website: 'https://meridian.example',
             Description: 'Primary US operating entity',
             LogoURL: null,
             LinkedCompanyID: companyID,
         });
         const provider = makeMockProvider(fakeOrg);
-        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: true, Results: [{ ID: fakeOrg.ID }] } as Partial<RunViewResult>),
-        } as unknown as RunView);
+        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: true, Results: [{ ID: fakeOrg.ID }] })),
+        );
 
         try {
             const res = await MirrorCompanyToOrganization(
                 {
                     ID: companyID,
-                    Name: 'Blue Cypress US Holdings LLC',
+                    Name: 'Meridian US Holdings LLC',
                     Description: 'Primary US operating entity',
-                    Website: 'https://bluecypress.io',
-                    LogoURL: 'https://cdn.bluecypress.io/logo.png',
+                    Website: 'https://meridian.example',
+                    LogoURL: 'https://cdn.meridian.example/logo.png',
                 },
                 provider,
                 user,
             );
 
             expect(res.Action).toBe('updated');
-            expect(fakeOrg.Name).toBe('Blue Cypress US Holdings LLC');
-            expect(fakeOrg.LogoURL).toBe('https://cdn.bluecypress.io/logo.png');
+            expect(fakeOrg.Name).toBe('Meridian US Holdings LLC');
+            expect(fakeOrg.LogoURL).toBe('https://cdn.meridian.example/logo.png');
             expect(fakeOrg.Save).toHaveBeenCalledTimes(1);
 
             // Second call with identical data (and trailing whitespace) is a no-op
@@ -143,10 +166,10 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             const res2 = await MirrorCompanyToOrganization(
                 {
                     ID: companyID,
-                    Name: '  Blue Cypress US Holdings LLC ',
+                    Name: '  Meridian US Holdings LLC ',
                     Description: 'Primary US operating entity',
-                    Website: 'https://bluecypress.io',
-                    LogoURL: 'https://cdn.bluecypress.io/logo.png',
+                    Website: 'https://meridian.example',
+                    LogoURL: 'https://cdn.meridian.example/logo.png',
                 },
                 provider,
                 user,
@@ -180,9 +203,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
         const provider = makeMockProvider(fakeOrg);
 
         // 1. RunView failure
-        let runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: false, ErrorMessage: 'db offline' } as Partial<RunViewResult>),
-        } as unknown as RunView);
+        let runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: false, ErrorMessage: 'db offline' })),
+        );
         try {
             await expect(
                 MirrorCompanyToOrganization(
@@ -197,9 +220,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
 
         // 2. InnerLoad failure on existing mirror
         fakeOrg.InnerLoad.mockResolvedValueOnce(false);
-        runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: true, Results: [{ ID: fakeOrg.ID }] } as Partial<RunViewResult>),
-        } as unknown as RunView);
+        runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: true, Results: [{ ID: fakeOrg.ID }] })),
+        );
         try {
             await expect(
                 MirrorCompanyToOrganization(
@@ -214,9 +237,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
 
         // 3. Save failure on create
         fakeOrg.Save.mockResolvedValueOnce(false);
-        runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: true, Results: [] } as Partial<RunViewResult>),
-        } as unknown as RunView);
+        runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: true, Results: [] })),
+        );
         try {
             await expect(
                 MirrorCompanyToOrganization(
@@ -236,12 +259,12 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             ID: '11111111-1111-4111-8111-111111111102',
             Name: 'Old UK Ltd',
             Description: 'UK subsidiary',
-            Website: 'https://bluecypress.co.uk',
+            Website: 'https://meridian-uk.example',
             LinkedCompanyID: companyID2,
         });
         const orgUnchanged = makeFakeOrg({
             ID: '11111111-1111-4111-8111-111111111103',
-            Name: 'Blue Cypress CA Inc',
+            Name: 'Meridian CA Inc',
             Description: 'Canada entity',
             Website: null,
             LinkedCompanyID: companyID3,
@@ -256,9 +279,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             .mockResolvedValueOnce({
                 Success: true,
                 Results: [
-                    { ID: companyID, Name: 'Blue Cypress US LLC', Description: 'US', Website: 'https://us.bc.io', LogoURL: null },
-                    { ID: companyID2, Name: 'Blue Cypress UK Ltd', Description: 'UK subsidiary', Website: 'https://bluecypress.co.uk', LogoURL: null },
-                    { ID: companyID3, Name: 'Blue Cypress CA Inc', Description: 'Canada entity', Website: null, LogoURL: null },
+                    { ID: companyID, Name: 'Meridian US LLC', Description: 'US', Website: 'https://us.meridian.example', LogoURL: null },
+                    { ID: companyID2, Name: 'Meridian UK Ltd', Description: 'UK subsidiary', Website: 'https://meridian-uk.example', LogoURL: null },
+                    { ID: companyID3, Name: 'Meridian CA Inc', Description: 'Canada entity', Website: null, LogoURL: null },
                 ],
             })
             // 2. Lookup for company 1 -> none (create)
@@ -268,9 +291,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             // 4. Lookup for company 3 -> exists identical (unchanged)
             .mockResolvedValueOnce({ Success: true, Results: [{ ID: orgUnchanged.ID }] });
 
-        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: runViewMock,
-        } as unknown as RunView);
+        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(runViewMock),
+        );
 
         try {
             const serverOp = new SyncCompaniesToOrganizationsServerOperation();
@@ -301,9 +324,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             })
             .mockResolvedValueOnce({ Success: true, Results: [] });
 
-        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: runViewMock,
-        } as unknown as RunView);
+        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(runViewMock),
+        );
 
         try {
             const serverOp = new SyncCompaniesToOrganizationsServerOperation();
@@ -329,9 +352,9 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
 
     it('SyncCompaniesToOrganizationsServerOperation succeeds with zeros when MJ: Companies is empty', async () => {
         const provider = makeMockProvider(makeFakeOrg());
-        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue({
-            RunView: vi.fn().mockResolvedValue({ Success: true, Results: [] }),
-        } as unknown as RunView);
+        const runViewSpy = vi.spyOn(RunView, 'FromMetadataProvider').mockReturnValue(
+            makeMockRunView(vi.fn().mockResolvedValue({ Success: true, Results: [] })),
+        );
 
         try {
             const serverOp = new SyncCompaniesToOrganizationsServerOperation();
@@ -349,7 +372,7 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
         }
     });
 
-    it('CompanyOrganizationMirrorEntityServer.Save() skips mirroring if super.Save() fails and never fails Company write on mirror error', async () => {
+    it('CompanyOrganizationMirrorEntityServer.Save() skips mirroring if super.Save() fails and surfaces structured mirror failure', async () => {
         const fakeOrg = makeFakeOrg();
         const provider = makeMockProvider(fakeOrg);
         const superSaveSpy = vi.spyOn(BaseEntity.prototype, 'Save');
@@ -359,6 +382,7 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             // Case 1: super.Save returns false -> mirror is never invoked
             superSaveSpy.mockResolvedValueOnce(false);
             const entity = Object.create(CompanyOrganizationMirrorEntityServer.prototype) as CompanyOrganizationMirrorEntityServer;
+            Object.defineProperty(entity, '_resultHistory', { value: [] as BaseEntityResult[], writable: true, configurable: true });
             Object.defineProperty(entity, 'ProviderToUse', { value: provider, configurable: true });
             Object.defineProperty(entity, 'ContextCurrentUser', { value: user, configurable: true });
             Object.defineProperty(entity, 'ID', { value: companyID, configurable: true });
@@ -368,17 +392,20 @@ describe('Company -> Organization mirroring & SyncCompaniesToOrganizationsOperat
             expect(r1).toBe(false);
             expect(runViewSpy).not.toHaveBeenCalled();
 
-            // Case 2: super.Save returns true, mirror throws -> Company.Save still returns true
+            // Case 2: super.Save returns true, mirror fails -> Company.Save returns false and records structured LastMirrorError + LatestResult
             superSaveSpy.mockResolvedValueOnce(true);
-            runViewSpy.mockReturnValue({
-                RunView: vi.fn().mockResolvedValue({ Success: false, ErrorMessage: 'transient mirror error' }),
-            } as unknown as RunView);
+            runViewSpy.mockReturnValue(
+                makeMockRunView(vi.fn().mockResolvedValue({ Success: false, ErrorMessage: 'transient mirror error' })),
+            );
             Object.defineProperty(entity, 'Description', { value: null, configurable: true });
             Object.defineProperty(entity, 'Website', { value: null, configurable: true });
             Object.defineProperty(entity, 'LogoURL', { value: null, configurable: true });
 
             const r2 = await entity.Save();
-            expect(r2).toBe(true);
+            expect(r2).toBe(false);
+            expect(entity.LastMirrorError?.Code).toBe('ORGANIZATION_LOOKUP_FAILED');
+            expect(entity.LastMirrorError?.DiagnosticMessage).toContain('transient mirror error');
+            expect(entity.LatestResult?.Success).toBe(false);
             expect(typeof LogError).toBe('function');
         } finally {
             superSaveSpy.mockRestore();
