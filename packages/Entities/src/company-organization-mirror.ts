@@ -271,6 +271,14 @@ export function ExtractCompanyMatchKeys(company: {
  * unlinked pre-existing Organization (`LinkedCompanyID IS NULL`) sharing normalized identity keys.
  */
 export function BuildOrganizationMirrorLookupFilter(keys: CompanyMatchKeys): string {
+    if (!IsValidUUID(keys.CompanyID)) {
+        throw new CompanyMirrorError({
+            Code: 'INVALID_COMPANY_ID',
+            Context: { CompanyID: keys.CompanyID, Operation: 'lookup' },
+            DiagnosticMessage: `Invalid Company ID '${keys.CompanyID}'`,
+        });
+    }
+
     const escapedName = EscapeSQLString(keys.NormalizedName);
     const unlinkedClauses: string[] = [
         `LOWER(Name) = '${escapedName}'`,

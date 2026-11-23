@@ -1,4 +1,8 @@
 /**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
+/**
  * @fileoverview Consent: who decides that a mail or meeting belongs in the CRM.
  *
  * ── TWO MODES, CHOSEN PER CONNECTION ──────────────────────────────────────────────────────────
