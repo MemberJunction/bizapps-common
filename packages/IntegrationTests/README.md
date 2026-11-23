@@ -54,7 +54,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 
 These checks run the real `Common.SyncActivities` action over GraphQL against Microsoft365
 connections whose mail and calendar come from fixture files in [`sandbox/`](sandbox/), instead of
-Microsoft Graph. Like Stripe test mode: same front door, test data.
+Microsoft Graph. Like a payment sandbox test mode: same front door, test data.
 
 - **The host must opt in.** Start MJAPI with `ACTIVITY_SYNC_SANDBOX_DIR` set to the absolute path of
   `packages/IntegrationTests/sandbox`. On any other host a `sandbox:` connection is refused (never
