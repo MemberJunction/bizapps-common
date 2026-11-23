@@ -3,11 +3,45 @@
  * SPDX-License-Identifier: BUSL-1.1
  */
 import { RemoteOperationError } from '@memberjunction/core';
-import { EscapeSQLString, IsValidUUID, UUIDsEqual } from '@memberjunction/global';
+import { EscapeSQLString, IsValidUUID, NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import type { mjBizAppsCommonOrganizationEntity } from './generated/entity_subclasses';
 
 /** Status union derived directly from the generated `MJ_BizApps_Common: Organizations` entity. */
 export type OrganizationMirrorStatus = mjBizAppsCommonOrganizationEntity['Status'];
+
+/** Valid status values derived from {@link OrganizationMirrorStatus}. */
+const VALID_ORGANIZATION_MIRROR_STATUSES: ReadonlySet<OrganizationMirrorStatus> = new Set<OrganizationMirrorStatus>([
+    'Active',
+    'Dissolved',
+    'Inactive',
+]);
+
+/** Default archive status applied to an active mirrored Organization when its linked Company is deleted. */
+export const DEFAULT_COMPANY_DELETE_ARCHIVE_STATUS: OrganizationMirrorStatus = 'Inactive';
+
+/**
+ * Configures how deleting a mirrored `MJ: Companies` record transitions the linked
+ * `MJ_BizApps_Common: Organizations` row after clearing `LinkedCompanyID`.
+ */
+export interface CompanyDeleteUnlinkOptions {
+    /**
+     * Target `Status` applied when the linked Organization is currently `'Active'`.
+     * Defaults to `'Inactive'`. Pass `null` to clear `LinkedCompanyID` without changing `Status`.
+     */
+    readonly ArchiveStatus?: OrganizationMirrorStatus | null;
+}
+
+/** Resolved runtime policy for safe Company delete unlink/archive transitions. */
+export interface CompanyMirrorDeletePolicy {
+    readonly ArchiveStatus: OrganizationMirrorStatus | null;
+}
+
+/** Canonical default delete-unlink policy (`ArchiveStatus: 'Inactive'`). */
+export const DEFAULT_COMPANY_MIRROR_DELETE_POLICY: Readonly<CompanyMirrorDeletePolicy> = {
+    ArchiveStatus: DEFAULT_COMPANY_DELETE_ARCHIVE_STATUS,
+};
+
+let registeredDeletePolicy: CompanyMirrorDeletePolicy | null = null;
 
 /** Machine-readable error codes emitted by Company <-> Organization mirror synchronization. */
 export type CompanyMirrorErrorCode =
@@ -21,7 +55,7 @@ export type CompanyMirrorErrorCode =
     | 'UNEXPECTED_MIRROR_ERROR';
 
 /** Lifecycle phase in which a Company <-> Organization mirror operation failed. */
-export type CompanyMirrorOperationPhase = 'lookup' | 'load' | 'create' | 'update' | 'link' | 'batch_sync';
+export type CompanyMirrorOperationPhase = 'lookup' | 'load' | 'create' | 'update' | 'link' | 'unlink' | 'batch_sync';
 
 /** Strategy that matched or created the target `MJ_BizApps_Common: Organizations` record. */
 export type CompanyOrganizationMatchStrategy =
@@ -44,6 +78,21 @@ export interface CompanyOrganizationMirrorOutcomeItem {
 /** Discriminated result union returned by non-throwing mirror sync helpers. */
 export type CompanyMirrorResult =
     | { readonly Success: true; readonly Item: CompanyOrganizationMirrorOutcomeItem }
+    | { readonly Success: false; readonly Error: CompanyMirrorErrorDetails };
+
+/** Summary emitted after safely unlinking/archiving Organizations for a deleted `MJ: Companies` row. */
+export interface CompanyOrganizationUnlinkOutcomeItem {
+    readonly CompanyID: string;
+    readonly OrganizationID: string | null;
+    readonly UnlinkedCount: number;
+    readonly UnlinkedOrganizationIDs: readonly string[];
+    readonly Action: 'unlinked' | 'unchanged' | 'not_linked';
+    readonly AppliedStatus: OrganizationMirrorStatus | null;
+}
+
+/** Discriminated result union returned by non-throwing delete-unlink helpers. */
+export type CompanyUnlinkResult =
+    | { readonly Success: true; readonly Item: CompanyOrganizationUnlinkOutcomeItem }
     | { readonly Success: false; readonly Error: CompanyMirrorErrorDetails };
 
 /** Entity & operation metadata attached to every {@link CompanyMirrorErrorDetails}. */
@@ -334,4 +383,114 @@ function buildAmbiguousMatchError(
         },
         DiagnosticMessage: `${reason} for Company ${keys.CompanyID}: candidates [${candidateIds.join(', ')}]`,
     });
+}
+
+function sanitizeArchiveStatus(
+    status: OrganizationMirrorStatus | null | undefined,
+    fallback: OrganizationMirrorStatus | null,
+): OrganizationMirrorStatus | null {
+    if (status === undefined) {
+        return fallback;
+    }
+    if (status === null) {
+        return null;
+    }
+    return VALID_ORGANIZATION_MIRROR_STATUSES.has(status) ? status : fallback;
+}
+
+/**
+ * Registers a process-wide default delete-unlink policy for `CompanyOrganizationMirrorEntityServer`.
+ * Pass `null` to restore {@link DEFAULT_COMPANY_MIRROR_DELETE_POLICY}.
+ */
+export function RegisterCompanyMirrorDeletePolicy(policy: CompanyDeleteUnlinkOptions | null): void {
+    if (!policy) {
+        registeredDeletePolicy = null;
+        return;
+    }
+    registeredDeletePolicy = {
+        ArchiveStatus: sanitizeArchiveStatus(policy.ArchiveStatus, DEFAULT_COMPANY_DELETE_ARCHIVE_STATUS),
+    };
+}
+
+/** Clears any registered delete-unlink policy override (for test isolation). */
+export function ResetCompanyMirrorDeletePolicy(): void {
+    registeredDeletePolicy = null;
+}
+
+/** Resolves the effective delete-unlink policy from defaults, registered policy, and optional call override. */
+export function GetCompanyMirrorDeletePolicy(override?: CompanyDeleteUnlinkOptions): CompanyMirrorDeletePolicy {
+    const base = registeredDeletePolicy ?? DEFAULT_COMPANY_MIRROR_DELETE_POLICY;
+    if (!override || override.ArchiveStatus === undefined) {
+        return { ArchiveStatus: base.ArchiveStatus };
+    }
+    return {
+        ArchiveStatus: sanitizeArchiveStatus(override.ArchiveStatus, base.ArchiveStatus),
+    };
+}
+
+/**
+ * Builds a dual-dialect-safe ANSI SQL `ExtraFilter` (no dialect brackets, quotes, or proprietary
+ * functions) matching Organizations currently linked to `companyId` via `LinkedCompanyID`.
+ */
+export function BuildOrganizationLinkedCompanyFilter(companyId: string): string {
+    if (!IsValidUUID(companyId)) {
+        throw new CompanyMirrorError({
+            Code: 'INVALID_COMPANY_ID',
+            Context: { CompanyID: companyId, Operation: 'unlink' },
+            DiagnosticMessage: `Invalid Company ID '${companyId}'`,
+        });
+    }
+    return `LinkedCompanyID = '${companyId}'`;
+}
+
+/**
+ * Filters and deterministically orders `OrganizationLookupCandidate` rows that actually carry
+ * `LinkedCompanyID` matching `companyId` (defending against unlinked or foreign-linked rows).
+ */
+export function SelectLinkedOrganizationsForUnlink(
+    candidates: readonly OrganizationLookupCandidate[],
+    companyId: string,
+): OrganizationLookupCandidate[] {
+    if (!IsValidUUID(companyId)) {
+        throw new CompanyMirrorError({
+            Code: 'INVALID_COMPANY_ID',
+            Context: { CompanyID: companyId, Operation: 'unlink' },
+            DiagnosticMessage: `Invalid Company ID '${companyId}'`,
+        });
+    }
+
+    const seenIds = new Set<string>();
+    const matched: OrganizationLookupCandidate[] = [];
+    for (const candidate of candidates) {
+        if (candidate.LinkedCompanyID == null || !UUIDsEqual(candidate.LinkedCompanyID, companyId)) {
+            continue;
+        }
+        const normalizedId = NormalizeUUID(candidate.ID);
+        if (seenIds.has(normalizedId)) {
+            continue;
+        }
+        seenIds.add(normalizedId);
+        matched.push(candidate);
+    }
+
+    return matched.sort((a, b) => NormalizeUUID(a.ID).localeCompare(NormalizeUUID(b.ID)));
+}
+
+/**
+ * Resolves the safe Organization `Status` after unlinking a deleted Company.
+ * Preserves `'Dissolved'` and `'Inactive'` states without regression, and transitions `'Active'`
+ * organizations to `archiveStatus` (default `'Inactive'`) unless `archiveStatus === null`.
+ */
+export function ResolveOrganizationUnlinkStatus(
+    currentStatus: OrganizationMirrorStatus | null | undefined,
+    archiveStatus: OrganizationMirrorStatus | null | undefined = DEFAULT_COMPANY_DELETE_ARCHIVE_STATUS,
+): OrganizationMirrorStatus | null {
+    const resolvedTarget = sanitizeArchiveStatus(archiveStatus, DEFAULT_COMPANY_DELETE_ARCHIVE_STATUS);
+    if (resolvedTarget === null) {
+        return currentStatus ?? null;
+    }
+    if (currentStatus === 'Dissolved' || currentStatus === 'Inactive') {
+        return currentStatus;
+    }
+    return resolvedTarget;
 }
