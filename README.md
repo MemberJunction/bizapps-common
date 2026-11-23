@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-6.1.6%2B-blue?style=flat-square" />
+  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-6.3%2B-blue?style=flat-square" />
   <img alt="Angular" src="https://img.shields.io/badge/Angular-21-DD0031?style=flat-square&logo=angular&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <a href="./LICENSE"><img alt="License: BUSL-1.1" src="https://img.shields.io/badge/License-BUSL--1.1-green?style=flat-square" /></a>
@@ -61,7 +61,7 @@ mj app install https://github.com/MemberJunction/mj-bizapps-common
 This single command:
 
 1. Fetches the `mj-app.json` manifest from this repository
-2. Validates MJ version compatibility (`>=5.0.0 <6.0.0`)
+2. Validates MJ version compatibility (`>=6.3.0-edge.1 <7.0.0`)
 3. Creates the `__mj_BizAppsCommon` database schema
 4. Runs Skyway migrations to create all 11 tables
 5. Installs npm packages into your MJAPI and MJExplorer workspaces
@@ -394,7 +394,7 @@ Entities ──► Actions ──► Server ──► MJAPI
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| **Platform** | [MemberJunction](https://github.com/MemberJunction/MJ) | 5.8.0 |
+| **Platform** | [MemberJunction](https://github.com/MemberJunction/MJ) | 6.3.0-edge |
 | **Runtime** | Node.js | 18+ |
 | **Language** | TypeScript | 5.9 |
 | **Database** | SQL Server / Azure SQL | 2019+ |
