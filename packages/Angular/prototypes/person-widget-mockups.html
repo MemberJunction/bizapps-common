@@ -12,21 +12,21 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: #eef1f5;
-    color: #333;
+    background: var(--mj-bg-page);
+    color: var(--mj-text-primary);
     padding: 40px;
 }
 h1 {
     text-align: center;
     font-size: 28px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     margin-bottom: 8px;
 }
 .subtitle {
     text-align: center;
     font-size: 14px;
-    color: #888;
+    color: var(--mj-text-muted);
     margin-bottom: 48px;
 }
 .option-wrapper {
@@ -38,8 +38,8 @@ h1 {
     align-items: center;
     gap: 10px;
     padding: 6px 18px;
-    background: #1976d2;
-    color: white;
+    background: var(--mj-brand-primary);
+    color: var(--mj-brand-on-primary);
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
@@ -49,12 +49,12 @@ h1 {
 }
 .option-desc {
     font-size: 14px;
-    color: #666;
+    color: var(--mj-text-secondary);
     margin-bottom: 20px;
     line-height: 1.6;
     max-width: 700px;
 }
-.option-desc strong { color: #333; }
+.option-desc strong { color: var(--mj-text-primary); }
 
 /* ==========================================
    OPTION A — PROFILE HERO CARD
@@ -62,22 +62,23 @@ h1 {
    Large visual header, tabbed sections below
    ========================================== */
 .person-hero {
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
 }
 
 /* Cover / banner */
 .person-hero__banner {
     height: 140px;
-    background: linear-gradient(135deg, #1565c0 0%, #1976d2 40%, #42a5f5 100%);
+    background: linear-gradient(135deg, var(--mj-brand-primary-active) 0%, var(--mj-brand-primary) 40%, var(--mj-brand-primary-light) 100%);
     position: relative;
 }
 .person-hero__banner-pattern {
     position: absolute;
     inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background: radial-gradient(circle, color-mix(in srgb, var(--mj-brand-on-primary) 12%, transparent) 2px, transparent 2px);
+    background-size: 28px 28px;
 }
 
 /* Avatar */
@@ -94,14 +95,14 @@ h1 {
     width: 96px;
     height: 96px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-    border: 4px solid white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    background: linear-gradient(135deg, var(--mj-status-info-bg), var(--mj-color-brand-200));
+    border: 4px solid var(--mj-bg-surface);
+    box-shadow: var(--mj-shadow-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 36px;
-    color: #1976d2;
+    color: var(--mj-brand-primary);
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -112,17 +113,18 @@ h1 {
 .person-hero__name {
     font-size: 24px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     line-height: 1.2;
 }
 .person-hero__title-line {
     font-size: 14px;
-    color: #666;
+    color: var(--mj-text-secondary);
     margin-top: 2px;
 }
-.person-hero__title-line strong {
-    color: #1976d2;
-    cursor: pointer;
+.person-hero__title-line a {
+    color: var(--mj-text-link);
+    font-weight: 700;
+    text-decoration: none;
 }
 .person-hero__actions {
     display: flex;
@@ -142,39 +144,39 @@ h1 {
     transition: all 0.15s;
 }
 .person-hero__btn--primary {
-    background: #1976d2;
-    color: white;
+    background: var(--mj-brand-primary);
+    color: var(--mj-brand-on-primary);
 }
-.person-hero__btn--primary:hover { background: #1565c0; }
+.person-hero__btn--primary:hover { background: var(--mj-brand-primary-hover); }
 .person-hero__btn--ghost {
-    background: #f5f5f5;
-    color: #555;
+    background: var(--mj-bg-surface-sunken);
+    color: var(--mj-text-secondary);
 }
-.person-hero__btn--ghost:hover { background: #eee; }
+.person-hero__btn--ghost:hover { background: var(--mj-bg-surface-hover); }
 
 /* Quick stats row */
 .person-hero__stats {
     display: flex;
     gap: 0;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
+    border-top: 1px solid var(--mj-border-subtle);
+    border-bottom: 1px solid var(--mj-border-subtle);
     margin: 16px 0 0;
 }
 .person-hero__stat {
     flex: 1;
     text-align: center;
     padding: 14px 8px;
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid var(--mj-border-subtle);
 }
 .person-hero__stat:last-child { border-right: none; }
 .person-hero__stat-value {
     font-size: 20px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
 .person-hero__stat-label {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 2px;
@@ -184,22 +186,24 @@ h1 {
 .person-hero__tabs {
     display: flex;
     padding: 0 32px;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--mj-border-subtle);
 }
 .person-hero__tab {
     padding: 14px 20px;
     font-size: 13px;
     font-weight: 600;
-    color: #888;
+    color: var(--mj-text-muted);
     cursor: pointer;
+    background: transparent;
+    border: none;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.15s;
 }
-.person-hero__tab:hover { color: #555; }
+.person-hero__tab:hover { color: var(--mj-text-secondary); }
 .person-hero__tab--active {
-    color: #1976d2;
-    border-bottom-color: #1976d2;
+    color: var(--mj-brand-primary);
+    border-bottom-color: var(--mj-brand-primary);
 }
 
 /* Tab content */
@@ -213,7 +217,7 @@ h1 {
 .person-hero__section-title {
     font-size: 12px;
     font-weight: 700;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin-bottom: 14px;
@@ -221,7 +225,7 @@ h1 {
     align-items: center;
     gap: 8px;
 }
-.person-hero__section-title i { color: #1976d2; font-size: 13px; }
+.person-hero__section-title i { color: var(--mj-brand-primary); font-size: 13px; }
 .person-hero__field-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -230,25 +234,25 @@ h1 {
 .person-hero__field-label {
     font-size: 11px;
     font-weight: 600;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 4px;
 }
 .person-hero__field-value {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
 .person-hero__field-value a {
-    color: #1976d2;
+    color: var(--mj-text-link);
     text-decoration: none;
 }
 .person-hero__field-value a:hover { text-decoration: underline; }
 
 /* Embedded widget placeholder */
 .person-hero__widget {
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -257,21 +261,21 @@ h1 {
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
+    background: var(--mj-bg-surface-sunken);
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .person-hero__widget-title {
     font-size: 13px;
     font-weight: 600;
-    color: #555;
+    color: var(--mj-text-secondary);
     display: flex;
     align-items: center;
     gap: 8px;
 }
-.person-hero__widget-title i { color: #1976d2; }
+.person-hero__widget-title i { color: var(--mj-brand-primary); }
 .person-hero__widget-count {
     font-size: 12px;
-    color: #999;
+    color: var(--mj-text-muted);
 }
 .person-hero__widget-body {
     padding: 16px;
@@ -281,7 +285,7 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .person-hero__widget-item:last-child { border-bottom: none; }
 .person-hero__widget-icon {
@@ -294,21 +298,21 @@ h1 {
     font-size: 14px;
     flex-shrink: 0;
 }
-.person-hero__widget-icon--email { background: #e3f2fd; color: #1565c0; }
-.person-hero__widget-icon--phone { background: #e8f5e9; color: #2e7d32; }
-.person-hero__widget-icon--address { background: #fff3e0; color: #e65100; }
-.person-hero__widget-icon--rel { background: #f3e5f5; color: #7b1fa2; }
+.person-hero__widget-icon--email { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+.person-hero__widget-icon--phone { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+.person-hero__widget-icon--address { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
+.person-hero__widget-icon--rel { background: var(--mj-color-violet-100); color: var(--mj-color-violet-700); }
 .person-hero__widget-item-text {
     flex: 1;
 }
 .person-hero__widget-item-primary {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
 .person-hero__widget-item-secondary {
     font-size: 12px;
-    color: #888;
+    color: var(--mj-text-muted);
 }
 
 
@@ -320,17 +324,17 @@ h1 {
 .person-split {
     display: grid;
     grid-template-columns: 320px 1fr;
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
     min-height: 700px;
 }
 
 /* Sidebar */
 .person-split__sidebar {
-    background: #f8f9fc;
-    border-right: 1px solid #e8e8e8;
+    background: var(--mj-bg-surface-sunken);
+    border-right: 1px solid var(--mj-border-default);
     padding: 32px 24px;
     display: flex;
     flex-direction: column;
@@ -340,34 +344,35 @@ h1 {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    background: linear-gradient(135deg, var(--mj-color-indigo-50), var(--mj-color-indigo-100));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 40px;
-    color: #3f51b5;
+    color: var(--mj-color-indigo-600);
     font-weight: 700;
     margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(63,81,181,0.2);
+    box-shadow: var(--mj-shadow-brand-sm);
 }
 .person-split__name {
     font-size: 20px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     text-align: center;
 }
 .person-split__title {
     font-size: 13px;
-    color: #888;
+    color: var(--mj-text-muted);
     text-align: center;
     margin-top: 4px;
 }
 .person-split__org {
     font-size: 13px;
-    color: #1976d2;
+    color: var(--mj-text-link);
     font-weight: 500;
     margin-top: 2px;
     cursor: pointer;
+    text-decoration: none;
 }
 .person-split__status {
     display: inline-flex;
@@ -379,14 +384,14 @@ h1 {
     font-weight: 600;
     text-transform: uppercase;
     margin-top: 12px;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 .person-split__status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #4caf50;
+    background: var(--mj-status-success);
 }
 
 /* Quick contact buttons */
@@ -395,7 +400,7 @@ h1 {
     gap: 12px;
     margin-top: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--mj-border-default);
     width: 100%;
     justify-content: center;
 }
@@ -403,20 +408,20 @@ h1 {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid #e0e0e0;
-    background: white;
+    border: 1px solid var(--mj-border-default);
+    background: var(--mj-bg-surface);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    color: #666;
+    color: var(--mj-text-secondary);
     cursor: pointer;
     transition: all 0.15s;
 }
 .person-split__quick-btn:hover {
-    border-color: #1976d2;
-    color: #1976d2;
-    background: #f5f9ff;
+    border-color: var(--mj-brand-primary);
+    color: var(--mj-brand-primary);
+    background: var(--mj-status-info-bg);
 }
 
 /* Sidebar info list */
@@ -429,36 +434,36 @@ h1 {
     align-items: flex-start;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .person-split__info-item:last-child { border-bottom: none; }
 .person-split__info-icon {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    background: #f0f4f8;
+    background: var(--mj-bg-surface-hover);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    color: #666;
+    color: var(--mj-text-secondary);
     flex-shrink: 0;
     margin-top: 1px;
 }
 .person-split__info-label {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
 .person-split__info-value {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
     margin-top: 1px;
 }
 .person-split__info-value a {
-    color: #1976d2;
+    color: var(--mj-text-link);
     text-decoration: none;
 }
 
@@ -479,18 +484,18 @@ h1 {
 .person-split__section-title {
     font-size: 15px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
     display: flex;
     align-items: center;
     gap: 10px;
 }
 .person-split__section-title i {
-    color: #1976d2;
+    color: var(--mj-brand-primary);
     font-size: 14px;
 }
 .person-split__section-badge {
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--mj-status-info-bg);
+    color: var(--mj-status-info-text);
     padding: 3px 10px;
     border-radius: 12px;
     font-size: 11px;
@@ -499,8 +504,8 @@ h1 {
 
 /* Card rows for detail fields */
 .person-split__card {
-    background: #fafbfd;
-    border: 1px solid #e8e8e8;
+    background: var(--mj-bg-surface-sunken);
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     padding: 20px;
 }
@@ -512,20 +517,20 @@ h1 {
 .person-split__card-field-label {
     font-size: 11px;
     font-weight: 600;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 4px;
 }
 .person-split__card-field-value {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
 
 /* Embedded widget cards */
 .person-split__widget-card {
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -534,11 +539,11 @@ h1 {
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
+    background: var(--mj-bg-surface-sunken);
+    border-bottom: 1px solid var(--mj-border-subtle);
     font-size: 13px;
     font-weight: 600;
-    color: #555;
+    color: var(--mj-text-secondary);
 }
 .person-split__widget-card-body {
     padding: 12px 16px;
@@ -548,15 +553,15 @@ h1 {
     align-items: center;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .person-split__rel-item:last-child { border-bottom: none; }
 .person-split__rel-icon {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--mj-status-info-bg);
+    color: var(--mj-status-info-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -565,15 +570,16 @@ h1 {
 .person-split__rel-text { flex: 1; }
 .person-split__rel-label {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
 }
-.person-split__rel-label strong {
-    color: #1976d2;
-    cursor: pointer;
+.person-split__rel-label a {
+    color: var(--mj-text-link);
+    font-weight: 700;
+    text-decoration: none;
 }
 .person-split__rel-meta {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
 }
 .person-split__rel-badge {
     padding: 2px 8px;
@@ -581,8 +587,8 @@ h1 {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mj-status-success-bg);
+    color: var(--mj-status-success-text);
 }
 
 
@@ -592,10 +598,10 @@ h1 {
    Summary cards at top, two-column detail layout
    ========================================== */
 .person-cmd {
-    background: white;
+    background: var(--mj-bg-surface);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--mj-shadow-sm);
 }
 
 /* Header bar */
@@ -604,14 +610,14 @@ h1 {
     align-items: center;
     gap: 20px;
     padding: 24px 32px;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--mj-color-neutral-900) 0%, var(--mj-color-neutral-800) 100%);
+    color: var(--mj-text-inverse);
 }
 .person-cmd__avatar {
     width: 64px;
     height: 64px;
     border-radius: 16px;
-    background: rgba(255,255,255,0.15);
+    background: color-mix(in srgb, var(--mj-text-inverse) 15%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -627,11 +633,11 @@ h1 {
 }
 .person-cmd__title-line {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: color-mix(in srgb, var(--mj-text-inverse) 70%, transparent);
     margin-top: 2px;
 }
 .person-cmd__title-line a {
-    color: #90caf9;
+    color: var(--mj-brand-primary-light);
     text-decoration: none;
 }
 .person-cmd__header-actions {
@@ -650,13 +656,13 @@ h1 {
     gap: 6px;
 }
 .person-cmd__header-btn--primary {
-    background: #42a5f5;
-    color: white;
+    background: var(--mj-brand-primary);
+    color: var(--mj-brand-on-primary);
 }
 .person-cmd__header-btn--ghost {
-    background: rgba(255,255,255,0.1);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.2);
+    background: color-mix(in srgb, var(--mj-text-inverse) 10%, transparent);
+    color: var(--mj-text-inverse);
+    border: 1px solid color-mix(in srgb, var(--mj-text-inverse) 20%, transparent);
 }
 
 /* Summary cards */
@@ -665,20 +671,20 @@ h1 {
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     padding: 24px 32px;
-    background: #f8f9fc;
-    border-bottom: 1px solid #e8e8e8;
+    background: var(--mj-bg-surface-sunken);
+    border-bottom: 1px solid var(--mj-border-default);
 }
 .person-cmd__card {
-    background: white;
+    background: var(--mj-bg-surface-card);
     border-radius: 12px;
     padding: 16px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     transition: all 0.15s;
     cursor: default;
 }
 .person-cmd__card:hover {
-    border-color: #1976d2;
-    box-shadow: 0 2px 8px rgba(25,118,210,0.1);
+    border-color: var(--mj-brand-primary);
+    box-shadow: var(--mj-shadow-sm);
 }
 .person-cmd__card-icon {
     width: 36px;
@@ -690,29 +696,29 @@ h1 {
     font-size: 15px;
     margin-bottom: 10px;
 }
-.person-cmd__card-icon--email { background: #e3f2fd; color: #1565c0; }
-.person-cmd__card-icon--phone { background: #e8f5e9; color: #2e7d32; }
-.person-cmd__card-icon--address { background: #fff3e0; color: #e65100; }
-.person-cmd__card-icon--rel { background: #f3e5f5; color: #7b1fa2; }
+.person-cmd__card-icon--email { background: var(--mj-status-info-bg); color: var(--mj-status-info-text); }
+.person-cmd__card-icon--phone { background: var(--mj-status-success-bg); color: var(--mj-status-success-text); }
+.person-cmd__card-icon--address { background: var(--mj-status-warning-bg); color: var(--mj-status-warning-text); }
+.person-cmd__card-icon--rel { background: var(--mj-color-violet-100); color: var(--mj-color-violet-700); }
 .person-cmd__card-label {
     font-size: 11px;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
 }
 .person-cmd__card-value {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 600;
 }
 .person-cmd__card-value a {
-    color: #1976d2;
+    color: var(--mj-text-link);
     text-decoration: none;
 }
 .person-cmd__card-sub {
     font-size: 11px;
-    color: #888;
+    color: var(--mj-text-muted);
     margin-top: 2px;
 }
 
@@ -729,7 +735,7 @@ h1 {
     gap: 24px;
 }
 .person-cmd__section {
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--mj-border-default);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -738,13 +744,13 @@ h1 {
     align-items: center;
     gap: 10px;
     padding: 14px 20px;
-    background: #fafbfd;
-    border-bottom: 1px solid #f0f0f0;
+    background: var(--mj-bg-surface-sunken);
+    border-bottom: 1px solid var(--mj-border-subtle);
     font-size: 13px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--mj-text-primary);
 }
-.person-cmd__section-header i { color: #1976d2; }
+.person-cmd__section-header i { color: var(--mj-brand-primary); }
 .person-cmd__section-body {
     padding: 20px;
 }
@@ -757,14 +763,14 @@ h1 {
 .person-cmd__detail-label {
     font-size: 11px;
     font-weight: 600;
-    color: #999;
+    color: var(--mj-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 3px;
 }
 .person-cmd__detail-value {
     font-size: 14px;
-    color: #333;
+    color: var(--mj-text-primary);
     font-weight: 500;
 }
 
@@ -773,7 +779,7 @@ h1 {
     display: flex;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--mj-border-subtle);
 }
 .person-cmd__timeline-item:last-child { border-bottom: none; }
 .person-cmd__timeline-dot {
@@ -783,27 +789,28 @@ h1 {
     margin-top: 4px;
     flex-shrink: 0;
 }
-.person-cmd__timeline-dot--active { background: #4caf50; }
-.person-cmd__timeline-dot--ended { background: #bbb; }
+.person-cmd__timeline-dot--active { background: var(--mj-status-success); }
+.person-cmd__timeline-dot--ended { background: var(--mj-text-disabled); }
 .person-cmd__timeline-text { flex: 1; }
 .person-cmd__timeline-primary {
     font-size: 13px;
-    color: #333;
+    color: var(--mj-text-primary);
 }
-.person-cmd__timeline-primary strong {
-    color: #1976d2;
-    cursor: pointer;
+.person-cmd__timeline-primary a {
+    color: var(--mj-text-link);
+    font-weight: 700;
+    text-decoration: none;
 }
 .person-cmd__timeline-secondary {
     font-size: 11px;
-    color: #888;
+    color: var(--mj-text-muted);
     margin-top: 2px;
 }
 
 /* Separator */
 .page-divider {
     height: 2px;
-    background: linear-gradient(90deg, transparent, #d0d0d0, transparent);
+    background: linear-gradient(90deg, transparent, var(--mj-border-default), transparent);
     margin: 64px auto;
     max-width: 400px;
 }
@@ -820,7 +827,7 @@ h1 {
 <div class="option-wrapper">
     <div class="option-label"><i class="fa-solid fa-a"></i> Profile Hero Card</div>
     <p class="option-desc">
-        <strong>LinkedIn-inspired profile layout.</strong> Prominent visual header with avatar and name,
+        <strong>Directory-inspired profile layout.</strong> Prominent visual header with avatar and name,
         horizontal tab bar for section switching, and embedded widgets for addresses/contacts/relationships.
         Best for: <strong>full-page detail views</strong> where the person is the primary focus.
     </p>
@@ -836,16 +843,16 @@ h1 {
             <div class="person-hero__avatar">AN</div>
             <div class="person-hero__identity">
                 <div class="person-hero__name">Amith Nagarajan</div>
-                <div class="person-hero__title-line">Chairman at <strong>rasa.io</strong></div>
+                <div class="person-hero__title-line">Chairman at <a href="#">rasa.io</a></div>
             </div>
             <div class="person-hero__actions">
-                <button class="person-hero__btn person-hero__btn--primary">
+                <button type="button" class="person-hero__btn person-hero__btn--primary">
                     <i class="fa-solid fa-envelope"></i> Email
                 </button>
-                <button class="person-hero__btn person-hero__btn--ghost">
+                <button type="button" class="person-hero__btn person-hero__btn--ghost">
                     <i class="fa-solid fa-phone"></i> Call
                 </button>
-                <button class="person-hero__btn person-hero__btn--ghost">
+                <button type="button" class="person-hero__btn person-hero__btn--ghost" aria-label="More actions">
                     <i class="fa-solid fa-ellipsis"></i>
                 </button>
             </div>
@@ -866,18 +873,18 @@ h1 {
                 <div class="person-hero__stat-label">Relationships</div>
             </div>
             <div class="person-hero__stat">
-                <div class="person-hero__stat-value" style="color: #4caf50;">Active</div>
+                <div class="person-hero__stat-value" style="color: var(--mj-status-success);">Active</div>
                 <div class="person-hero__stat-label">Status</div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="person-hero__tabs">
-            <div class="person-hero__tab person-hero__tab--active">Overview</div>
-            <div class="person-hero__tab">Addresses</div>
-            <div class="person-hero__tab">Contacts</div>
-            <div class="person-hero__tab">Relationships</div>
-            <div class="person-hero__tab">History</div>
+        <div class="person-hero__tabs" role="tablist" aria-label="Person profile sections">
+            <button type="button" role="tab" aria-selected="true" class="person-hero__tab person-hero__tab--active">Overview</button>
+            <button type="button" role="tab" aria-selected="false" class="person-hero__tab">Addresses</button>
+            <button type="button" role="tab" aria-selected="false" class="person-hero__tab">Contacts</button>
+            <button type="button" role="tab" aria-selected="false" class="person-hero__tab">Relationships</button>
+            <button type="button" role="tab" aria-selected="false" class="person-hero__tab">History</button>
         </div>
 
         <!-- Content: Overview tab shown -->
@@ -942,14 +949,14 @@ h1 {
                         <div class="person-hero__widget-item">
                             <div class="person-hero__widget-icon person-hero__widget-icon--rel"><i class="fa-solid fa-briefcase"></i></div>
                             <div class="person-hero__widget-item-text">
-                                <div class="person-hero__widget-item-primary">Chairman at <strong style="color: #1976d2; cursor: pointer;">rasa.io</strong></div>
+                                <div class="person-hero__widget-item-primary">Chairman at <a href="#" style="color: var(--mj-text-link); font-weight: 700; text-decoration: none;">rasa.io</a></div>
                                 <div class="person-hero__widget-item-secondary">Jan 2019 - Present · Active</div>
                             </div>
                         </div>
                         <div class="person-hero__widget-item">
                             <div class="person-hero__widget-icon person-hero__widget-icon--rel"><i class="fa-solid fa-briefcase"></i></div>
                             <div class="person-hero__widget-item-text">
-                                <div class="person-hero__widget-item-primary">CEO at <strong style="color: #1976d2; cursor: pointer;">Meridian Corp</strong></div>
+                                <div class="person-hero__widget-item-primary">CEO at <a href="#" style="color: var(--mj-text-link); font-weight: 700; text-decoration: none;">Meridian Corp</a></div>
                                 <div class="person-hero__widget-item-secondary">Mar 2020 - Present · Active</div>
                             </div>
                         </div>
@@ -980,23 +987,23 @@ h1 {
             <div class="person-split__avatar">AN</div>
             <div class="person-split__name">Amith Nagarajan</div>
             <div class="person-split__title">Chairman</div>
-            <div class="person-split__org">rasa.io</div>
+            <a href="#" class="person-split__org">rasa.io</a>
             <div class="person-split__status">
                 <span class="person-split__status-dot"></span>
                 Active
             </div>
 
             <div class="person-split__quick-actions">
-                <button class="person-split__quick-btn" title="Email">
+                <button type="button" class="person-split__quick-btn" title="Email" aria-label="Email">
                     <i class="fa-solid fa-envelope"></i>
                 </button>
-                <button class="person-split__quick-btn" title="Call">
+                <button type="button" class="person-split__quick-btn" title="Call" aria-label="Call">
                     <i class="fa-solid fa-phone"></i>
                 </button>
-                <button class="person-split__quick-btn" title="Map">
+                <button type="button" class="person-split__quick-btn" title="Map" aria-label="Map">
                     <i class="fa-solid fa-map-marker-alt"></i>
                 </button>
-                <button class="person-split__quick-btn" title="More">
+                <button type="button" class="person-split__quick-btn" title="More" aria-label="More">
                     <i class="fa-solid fa-ellipsis"></i>
                 </button>
             </div>
@@ -1089,11 +1096,11 @@ h1 {
                 </div>
                 <div class="person-split__widget-card">
                     <div class="person-split__widget-card-header">
-                        <span style="font-size: 12px; color: #888;">Sorted by type · Primary highlighted</span>
-                        <button style="border: 1px dashed #ccc; background: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; color: #666; cursor: pointer;">+ Add</button>
+                        <span style="font-size: 12px; color: var(--mj-text-muted);">Sorted by type · Primary highlighted</span>
+                        <button type="button" style="border: 1px dashed var(--mj-border-strong); background: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; color: var(--mj-text-secondary); cursor: pointer;">+ Add</button>
                     </div>
-                    <div class="person-split__widget-card-body" style="color: #888; font-size: 13px; text-align: center; padding: 24px;">
-                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                    <div class="person-split__widget-card-body" style="color: var(--mj-text-muted); font-size: 13px; text-align: center; padding: 24px;">
+                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: var(--mj-text-disabled); display: block; margin-bottom: 8px;"></i>
                         &lt;bizapps-address-editor&gt; embedded here
                     </div>
                 </div>
@@ -1112,7 +1119,7 @@ h1 {
                         <div class="person-split__rel-item">
                             <div class="person-split__rel-icon"><i class="fa-solid fa-briefcase"></i></div>
                             <div class="person-split__rel-text">
-                                <div class="person-split__rel-label">employs at <strong>rasa.io</strong></div>
+                                <div class="person-split__rel-label">employs at <a href="#">rasa.io</a></div>
                                 <div class="person-split__rel-meta">Chairman · Jan 2019 - Present</div>
                             </div>
                             <div class="person-split__rel-badge">Active</div>
@@ -1120,15 +1127,15 @@ h1 {
                         <div class="person-split__rel-item">
                             <div class="person-split__rel-icon"><i class="fa-solid fa-briefcase"></i></div>
                             <div class="person-split__rel-text">
-                                <div class="person-split__rel-label">employs at <strong>Meridian Corp</strong></div>
+                                <div class="person-split__rel-label">employs at <a href="#">Meridian Corp</a></div>
                                 <div class="person-split__rel-meta">CEO · Mar 2020 - Present</div>
                             </div>
                             <div class="person-split__rel-badge">Active</div>
                         </div>
                         <div class="person-split__rel-item">
-                            <div class="person-split__rel-icon" style="background: #fce4ec; color: #c62828;"><i class="fa-solid fa-heart"></i></div>
+                            <div class="person-split__rel-icon" style="background: var(--mj-status-error-bg); color: var(--mj-status-error-text);"><i class="fa-solid fa-heart"></i></div>
                             <div class="person-split__rel-text">
-                                <div class="person-split__rel-label">spouse of <strong>Jane Nagarajan</strong></div>
+                                <div class="person-split__rel-label">spouse of <a href="#">Jane Nagarajan</a></div>
                                 <div class="person-split__rel-meta">2005 - Present</div>
                             </div>
                             <div class="person-split__rel-badge">Active</div>
@@ -1146,8 +1153,8 @@ h1 {
                     <div class="person-split__section-badge">5</div>
                 </div>
                 <div class="person-split__widget-card">
-                    <div class="person-split__widget-card-body" style="color: #888; font-size: 13px; text-align: center; padding: 24px;">
-                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                    <div class="person-split__widget-card-body" style="color: var(--mj-text-muted); font-size: 13px; text-align: center; padding: 24px;">
+                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: var(--mj-text-disabled); display: block; margin-bottom: 8px;"></i>
                         &lt;bizapps-contact-method-list&gt; embedded here
                     </div>
                 </div>
@@ -1179,10 +1186,10 @@ h1 {
                 <div class="person-cmd__title-line">Chairman at <a href="#">rasa.io</a> · Nashville, TN</div>
             </div>
             <div class="person-cmd__header-actions">
-                <button class="person-cmd__header-btn person-cmd__header-btn--primary">
+                <button type="button" class="person-cmd__header-btn person-cmd__header-btn--primary">
                     <i class="fa-solid fa-pen"></i> Edit
                 </button>
-                <button class="person-cmd__header-btn person-cmd__header-btn--ghost">
+                <button type="button" class="person-cmd__header-btn person-cmd__header-btn--ghost" aria-label="More options">
                     <i class="fa-solid fa-ellipsis"></i>
                 </button>
             </div>
@@ -1262,7 +1269,7 @@ h1 {
                             </div>
                             <div class="person-cmd__detail-item" style="grid-column: 1 / -1;">
                                 <div class="person-cmd__detail-label">Organization</div>
-                                <div class="person-cmd__detail-value" style="color: #1976d2; cursor: pointer;">rasa.io</div>
+                                <div class="person-cmd__detail-value"><a href="#" style="color: var(--mj-text-link); text-decoration: none;">rasa.io</a></div>
                             </div>
                         </div>
                     </div>
@@ -1272,8 +1279,8 @@ h1 {
                     <div class="person-cmd__section-header">
                         <i class="fa-solid fa-map-marker-alt"></i> Addresses
                     </div>
-                    <div class="person-cmd__section-body" style="color: #888; font-size: 13px; text-align: center; padding: 20px;">
-                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                    <div class="person-cmd__section-body" style="color: var(--mj-text-muted); font-size: 13px; text-align: center; padding: 20px;">
+                        <i class="fa-solid fa-map-marker-alt" style="font-size: 20px; color: var(--mj-text-disabled); display: block; margin-bottom: 8px;"></i>
                         &lt;bizapps-address-editor&gt; embedded here
                     </div>
                 </div>
@@ -1289,28 +1296,28 @@ h1 {
                         <div class="person-cmd__timeline-item">
                             <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
                             <div class="person-cmd__timeline-text">
-                                <div class="person-cmd__timeline-primary">employs at <strong>rasa.io</strong></div>
+                                <div class="person-cmd__timeline-primary">employs at <a href="#">rasa.io</a></div>
                                 <div class="person-cmd__timeline-secondary">Chairman · Jan 2019 - Present</div>
                             </div>
                         </div>
                         <div class="person-cmd__timeline-item">
                             <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
                             <div class="person-cmd__timeline-text">
-                                <div class="person-cmd__timeline-primary">employs at <strong>Meridian Corp</strong></div>
+                                <div class="person-cmd__timeline-primary">employs at <a href="#">Meridian Corp</a></div>
                                 <div class="person-cmd__timeline-secondary">CEO · Mar 2020 - Present</div>
                             </div>
                         </div>
                         <div class="person-cmd__timeline-item">
                             <div class="person-cmd__timeline-dot person-cmd__timeline-dot--active"></div>
                             <div class="person-cmd__timeline-text">
-                                <div class="person-cmd__timeline-primary">board member of <strong>ASAE</strong></div>
+                                <div class="person-cmd__timeline-primary">board member of <a href="#">ASAE</a></div>
                                 <div class="person-cmd__timeline-secondary">Board Member · 2021 - Present</div>
                             </div>
                         </div>
                         <div class="person-cmd__timeline-item">
                             <div class="person-cmd__timeline-dot person-cmd__timeline-dot--ended"></div>
                             <div class="person-cmd__timeline-text">
-                                <div class="person-cmd__timeline-primary" style="opacity: 0.6;">employee of <strong>Aptify</strong></div>
+                                <div class="person-cmd__timeline-primary" style="opacity: 0.6;">employee of <a href="#">Aptify</a></div>
                                 <div class="person-cmd__timeline-secondary">CTO · 2001 - 2018 · Ended</div>
                             </div>
                         </div>
@@ -1321,8 +1328,8 @@ h1 {
                     <div class="person-cmd__section-header">
                         <i class="fa-solid fa-address-card"></i> Contact Methods
                     </div>
-                    <div class="person-cmd__section-body" style="color: #888; font-size: 13px; text-align: center; padding: 20px;">
-                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: #ccc; display: block; margin-bottom: 8px;"></i>
+                    <div class="person-cmd__section-body" style="color: var(--mj-text-muted); font-size: 13px; text-align: center; padding: 20px;">
+                        <i class="fa-solid fa-address-card" style="font-size: 20px; color: var(--mj-text-disabled); display: block; margin-bottom: 8px;"></i>
                         &lt;bizapps-contact-method-list&gt; embedded here
                     </div>
                 </div>
@@ -1336,12 +1343,12 @@ h1 {
                             <div class="person-cmd__detail-item">
                                 <div class="person-cmd__detail-label">Status</div>
                                 <div class="person-cmd__detail-value">
-                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">Active</span>
+                                    <span style="background: var(--mj-status-success-bg); color: var(--mj-status-success-text); padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">Active</span>
                                 </div>
                             </div>
                             <div class="person-cmd__detail-item">
                                 <div class="person-cmd__detail-label">Linked User</div>
-                                <div class="person-cmd__detail-value" style="color: #1976d2; cursor: pointer;">amith.nag</div>
+                                <div class="person-cmd__detail-value"><a href="#" style="color: var(--mj-text-link); text-decoration: none;">amith.nag</a></div>
                             </div>
                         </div>
                     </div>
