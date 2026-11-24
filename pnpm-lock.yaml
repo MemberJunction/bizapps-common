@@ -114,8 +114,8 @@ importers:
   packages/ActivitySync:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Entities
     devDependencies:
       '@memberjunction/communication-types':
         specifier: ^6.3.0-edge.1
@@ -139,8 +139,8 @@ importers:
   packages/Angular:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Entities
     devDependencies:
       '@angular/animations':
         specifier: 21.1.3
@@ -212,8 +212,8 @@ importers:
   packages/CoreEntitiesServer:
     dependencies:
       '@mj-biz-apps/common-entities':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Entities
     devDependencies:
       '@memberjunction/core':
         specifier: ^6.3.0-edge.1
@@ -274,8 +274,8 @@ importers:
         specifier: ^6.3.0-edge.1
         version: 6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@4.6.7))(@smithy/signature-v4@5.7.5)(@types/node@22.20.1)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(vitest@4.1.10(@opentelemetry/api@1.10.0)(@types/node@22.20.1)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)))(ws@8.22.2)(zod@4.6.7)
       '@mj-biz-apps/common-entities':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Entities
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -293,17 +293,17 @@ importers:
   packages/Server:
     dependencies:
       '@mj-biz-apps/common-actions':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/actions-base@6.3.0-edge.1)(@memberjunction/actions@6.3.0-edge.1)(@memberjunction/ai@6.3.0-edge.1)(@memberjunction/aiengine@6.3.0-edge.1(encoding@0.1.13)(typescript@5.9.3))(@memberjunction/core-entities-server@6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2))(@memberjunction/core-entities@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Actions
       '@mj-biz-apps/common-activity-sync':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/communication-types@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/credentials@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../ActivitySync
       '@mj-biz-apps/common-core-entities-server':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core-entities@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/generic-database-provider@6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76))(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../CoreEntitiesServer
       '@mj-biz-apps/common-entities':
-        specifier: ^5.67.0
-        version: 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
+        specifier: ^6.3.0-edge.1
+        version: link:../Entities
       class-validator:
         specifier: ^0.14.3
         version: 0.14.4
@@ -2997,40 +2997,6 @@ packages:
 
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
-
-  '@mj-biz-apps/common-actions@5.67.2':
-    resolution: {integrity: sha512-uf6WMOv+4gv27/px4a3/MdQA78MMaaJJZb9cxC0ISdO5Ef7UQUHwfVrlWoTDZ5pSwM4FiSDzw4hg55W+ZJVKOg==}
-    peerDependencies:
-      '@memberjunction/actions': '>=6.2.1 <6.3.0'
-      '@memberjunction/actions-base': '>=6.2.1 <6.3.0'
-      '@memberjunction/ai': '>=6.2.1 <6.3.0'
-      '@memberjunction/aiengine': '>=6.2.1 <6.3.0'
-      '@memberjunction/core': ^6.3.0-edge.1
-      '@memberjunction/core-entities': '>=6.2.1 <6.3.0'
-      '@memberjunction/core-entities-server': '>=6.2.1 <6.3.0'
-      '@memberjunction/global': ^6.3.0-edge.1
-
-  '@mj-biz-apps/common-activity-sync@5.67.2':
-    resolution: {integrity: sha512-P2mJC3nVcogzOAghGVd0JPKJN6YcuI3ZvDoGkXMMR5Q/QKj9P98ic6uawryXyDScKVHdgm+Exrlu0TWz5mVmTQ==}
-    peerDependencies:
-      '@memberjunction/communication-types': '>=6.2.1 <6.3.0'
-      '@memberjunction/core': ^6.3.0-edge.1
-      '@memberjunction/credentials': '>=6.2.1 <6.3.0'
-      '@memberjunction/global': ^6.3.0-edge.1
-
-  '@mj-biz-apps/common-core-entities-server@5.67.2':
-    resolution: {integrity: sha512-uAZCDSrboqA1wTtR4q7gc5JvKA0FK3ZLXHpzGBU8Zhi628D/8tVgu4IOfsqPpwilrduPevPm7jSIujg4YppwYg==}
-    peerDependencies:
-      '@memberjunction/core': ^6.3.0-edge.1
-      '@memberjunction/core-entities': '>=6.2.1 <6.3.0'
-      '@memberjunction/generic-database-provider': '>=6.2.1 <6.3.0'
-      '@memberjunction/global': ^6.3.0-edge.1
-
-  '@mj-biz-apps/common-entities@5.67.2':
-    resolution: {integrity: sha512-3Y7qJgbN2FUrqPjrCt0lJX7t2WOWl7JIckjzP86GkwzR3szJLW+dt1yX2tlF3siDIUOZRqH20QSda4Mdl++lSw==}
-    peerDependencies:
-      '@memberjunction/core': ^6.3.0-edge.1
-      '@memberjunction/global': ^6.3.0-edge.1
 
   '@modelcontextprotocol/sdk@1.30.0':
     resolution: {integrity: sha512-xKd8OIzlqNzcqcNumGAa6g+PW2kjD5vrpcKOnfldAUPP3j7lnqMPwlTXQm8gF+UwH72z0lqaRbjr9hqGz0eITA==}
@@ -10471,7 +10437,24 @@ snapshots:
       - canvas
     optional: true
 
-  '@hyperframes/engine@0.8.134':
+  '@hyperframes/core@0.8.134(@types/node@24.10.11)':
+    dependencies:
+      '@chenglou/pretext': 0.0.5
+      '@hyperframes/lint': 0.8.134
+      '@hyperframes/parsers': 0.8.134
+      '@hyperframes/studio-server': 0.8.134(@types/node@24.10.11)
+      bpm-detective: 2.0.5
+      linkedom: 0.18.15
+      postcss: 8.5.26
+      wawoff2: 2.0.1
+    optionalDependencies:
+      esbuild: 0.25.12
+    transitivePeerDependencies:
+      - '@types/node'
+      - canvas
+    optional: true
+
+  '@hyperframes/engine@0.8.134(@types/node@22.20.1)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.7)
       '@hyperframes/core': 0.8.134(@types/node@22.20.1)
@@ -10481,6 +10464,25 @@ snapshots:
       puppeteer: 25.16.0
       puppeteer-core: 25.16.0
     transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - canvas
+      - proxy-agent
+      - utf-8-validate
+      - yauzl
+    optional: true
+
+  '@hyperframes/engine@0.8.134(@types/node@24.10.11)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.7)
+      '@hyperframes/core': 0.8.134(@types/node@24.10.11)
+      '@hyperframes/parsers': 0.8.134
+      hono: 4.13.7
+      linkedom: 0.18.15
+      puppeteer: 25.16.0
+      puppeteer-core: 25.16.0
+    transitivePeerDependencies:
+      - '@types/node'
       - bufferutil
       - canvas
       - proxy-agent
@@ -10517,7 +10519,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.7)
       '@hyperframes/core': 0.8.134(@types/node@22.20.1)
-      '@hyperframes/engine': 0.8.134
+      '@hyperframes/engine': 0.8.134(@types/node@22.20.1)
       '@hyperframes/lint': 0.8.134
       '@hyperframes/parsers': 0.8.134
       '@hyperframes/studio-server': 0.8.134(@types/node@22.20.1)
@@ -10538,8 +10540,8 @@ snapshots:
   '@hyperframes/producer@0.8.134(@types/node@24.10.11)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.7)
-      '@hyperframes/core': 0.8.134(@types/node@22.20.1)
-      '@hyperframes/engine': 0.8.134
+      '@hyperframes/core': 0.8.134(@types/node@24.10.11)
+      '@hyperframes/engine': 0.8.134(@types/node@24.10.11)
       '@hyperframes/lint': 0.8.134
       '@hyperframes/parsers': 0.8.134
       '@hyperframes/studio-server': 0.8.134(@types/node@24.10.11)
@@ -10573,7 +10575,7 @@ snapshots:
 
   '@hyperframes/studio-server@0.8.134(@types/node@24.10.11)':
     dependencies:
-      '@hyperframes/core': 0.8.134(@types/node@22.20.1)
+      '@hyperframes/core': 0.8.134(@types/node@24.10.11)
       '@hyperframes/parsers': 0.8.134
       hono: 4.13.7
       linkedom: 0.18.15
@@ -21730,7 +21732,7 @@ snapshots:
   '@memberjunction/video-studio-render-worker@6.3.0-edge.1(@types/node@22.20.1)':
     dependencies:
       '@hyperframes/core': 0.8.134(@types/node@22.20.1)
-      '@hyperframes/engine': 0.8.134
+      '@hyperframes/engine': 0.8.134(@types/node@22.20.1)
       '@hyperframes/lint': 0.8.134
       '@hyperframes/parsers': 0.8.134
       '@hyperframes/producer': 0.8.134(@types/node@22.20.1)
@@ -21749,8 +21751,8 @@ snapshots:
 
   '@memberjunction/video-studio-render-worker@6.3.0-edge.1(@types/node@24.10.11)':
     dependencies:
-      '@hyperframes/core': 0.8.134(@types/node@22.20.1)
-      '@hyperframes/engine': 0.8.134
+      '@hyperframes/core': 0.8.134(@types/node@24.10.11)
+      '@hyperframes/engine': 0.8.134(@types/node@24.10.11)
       '@hyperframes/lint': 0.8.134
       '@hyperframes/parsers': 0.8.134
       '@hyperframes/producer': 0.8.134(@types/node@24.10.11)
@@ -22103,40 +22105,6 @@ snapshots:
       - utf-8-validate
 
   '@mixmark-io/domino@2.2.0': {}
-
-  '@mj-biz-apps/common-actions@5.67.2(@memberjunction/actions-base@6.3.0-edge.1)(@memberjunction/actions@6.3.0-edge.1)(@memberjunction/ai@6.3.0-edge.1)(@memberjunction/aiengine@6.3.0-edge.1(encoding@0.1.13)(typescript@5.9.3))(@memberjunction/core-entities-server@6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2))(@memberjunction/core-entities@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)':
-    dependencies:
-      '@memberjunction/actions': 6.3.0-edge.1
-      '@memberjunction/actions-base': 6.3.0-edge.1
-      '@memberjunction/ai': 6.3.0-edge.1
-      '@memberjunction/aiengine': 6.3.0-edge.1(encoding@0.1.13)(typescript@5.9.3)
-      '@memberjunction/core': 6.3.0-edge.1
-      '@memberjunction/core-entities': 6.3.0-edge.1
-      '@memberjunction/core-entities-server': 6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)
-      '@memberjunction/global': 6.3.0-edge.1
-      zod: 3.25.76
-
-  '@mj-biz-apps/common-activity-sync@5.67.2(@memberjunction/communication-types@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/credentials@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)':
-    dependencies:
-      '@memberjunction/communication-types': 6.3.0-edge.1
-      '@memberjunction/core': 6.3.0-edge.1
-      '@memberjunction/credentials': 6.3.0-edge.1
-      '@memberjunction/global': 6.3.0-edge.1
-      '@mj-biz-apps/common-entities': 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
-
-  '@mj-biz-apps/common-core-entities-server@5.67.2(@memberjunction/core-entities@6.3.0-edge.1)(@memberjunction/core@6.3.0-edge.1)(@memberjunction/generic-database-provider@6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76))(@memberjunction/global@6.3.0-edge.1)':
-    dependencies:
-      '@memberjunction/core': 6.3.0-edge.1
-      '@memberjunction/core-entities': 6.3.0-edge.1
-      '@memberjunction/generic-database-provider': 6.3.0-edge.1(@aws-sdk/credential-provider-node@3.972.95)(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@smithy/signature-v4@5.7.5)(@types/node@24.10.11)(axios@1.20.0)(chokidar@3.6.0)(encoding@0.1.13)(typescript@5.9.3)(ws@8.22.2)(zod@3.25.76)
-      '@memberjunction/global': 6.3.0-edge.1
-      '@mj-biz-apps/common-entities': 5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)
-
-  '@mj-biz-apps/common-entities@5.67.2(@memberjunction/core@6.3.0-edge.1)(@memberjunction/global@6.3.0-edge.1)':
-    dependencies:
-      '@memberjunction/core': 6.3.0-edge.1
-      '@memberjunction/global': 6.3.0-edge.1
-      zod: 3.25.76
 
   '@modelcontextprotocol/sdk@1.30.0(zod@3.25.76)':
     dependencies:
