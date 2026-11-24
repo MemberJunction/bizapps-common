@@ -13,11 +13,15 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BaseEntity, LogError, Metadata, RunQuery, RunView } from '@memberjunction/core';
-import { EscapeSQLString } from '@memberjunction/global';
+import { EscapeSQLString, UUIDsEqual } from '@memberjunction/global';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { MJComboboxComponent } from '@memberjunction/ng-ui-components';
 import { Subject, Subscription, debounceTime, from, switchMap } from 'rxjs';
 
+import {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    ResolveCommonAngularLimits,
+} from '../../config/limits.config';
 import { PARTY_LOOKUP_QUERIES, PartyLookupParamsFor, type PartyKind, type PartyLookupParams } from './party-lookup-term';
 
 /** One row of a party lookup query: the contract every app's lookup query honours. */
@@ -26,10 +30,6 @@ export interface PartyOption {
     Name: string;
     Detail: string | null;
 }
-
-const DEBOUNCE_MS = 250;
-/** How long a search may run before the field says it took too long. */
-const DEFAULT_SEARCH_TIMEOUT_MS = 20_000;
 
 /** The ID of the dropdown row that creates a record rather than picking one. */
 export const PARTY_CREATE_OPTION_ID = '__bizapps-party-create__';
@@ -80,7 +80,7 @@ class PartySearchTimeoutError extends Error {}
                     (ValueChange)="OnSelect($event)"
                 >
                     <ng-template #mjComboboxItem let-item>
-                        @if (item.ID === CreateOptionID) {
+                        @if (item.ID === CreateOptionID) { <!-- uuid-compare-ok: sentinel string, not a record ID -->
                             <div class="bizapps-party-option bizapps-party-option-create">
                                 <span><i class="fa-solid fa-plus" aria-hidden="true"></i> {{ item.Name }}</span>
                             </div>
@@ -167,6 +167,9 @@ class PartySearchTimeoutError extends Error {}
 })
 export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
     private readonly cdr = inject(ChangeDetectorRef);
+    private readonly limits = ResolveCommonAngularLimits(
+        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
+    );
 
     @Input({ required: true }) Record!: BaseEntity;
     @Input({ required: true }) FieldName!: string;
@@ -183,7 +186,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      */
     @Input() AllowCreate = true;
     /** Milliseconds before a search is reported as too slow; zero or less waits indefinitely. */
-    @Input() SearchTimeoutMs = DEFAULT_SEARCH_TIMEOUT_MS;
+    @Input() SearchTimeoutMs = this.limits.ResourceGuards.PartySearchTimeoutMs;
     /** The shape mj-form-field emits, so handlers written for it keep working. */
     @Output() ValueChange = new EventEmitter<{ FieldName: string; OldValue: unknown; NewValue: unknown }>();
     @Output() Navigate = new EventEmitter<FormNavigationEvent>();
@@ -216,7 +219,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         this.seedCurrent();
         this.subscription = this.terms
             .pipe(
-                debounceTime(DEBOUNCE_MS),
+                debounceTime(this.limits.Ux.PartySearchDebounceMs),
                 switchMap((term) => from(this.optionsFor(term))),
             )
             .subscribe((options) => {
@@ -339,14 +342,14 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      * so a list built from an unsaved record shows the name rather than nothing.
      */
     public OnSelect(value: unknown): void {
-        if (value === PARTY_CREATE_OPTION_ID) {
+        if (value === PARTY_CREATE_OPTION_ID) { // uuid-compare-ok: sentinel string, not a record ID
             this.OnCreateNew();
             this.RefreshComboboxText();
             return;
         }
         const oldValue = this.Record.Get(this.FieldName);
         const newValue = value ? String(value) : null;
-        const picked = this.Options.find((option) => option.ID === newValue);
+        const picked = this.Options.find((option) => UUIDsEqual(option.ID, newValue));
         this.Record.Set(this.FieldName, newValue);
         const nameField = this.fieldInfo()?.RelatedEntityNameFieldMap;
         if (nameField && (picked || !newValue)) {
@@ -429,7 +432,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
      */
     private async optionsFor(term: string): Promise<PartyOption[] | PartySearchError | null> {
         const search = ++this.searchCount;
-        const params = PartyLookupParamsFor(this.Kind, term);
+        const params = PartyLookupParamsFor(this.Kind, term, this.limits.Ux.PartyLookupMinTermLength);
         if (!params) {
             return term ? [] : this.current;
         }
@@ -507,7 +510,7 @@ export class PartyFieldComponent implements OnInit, DoCheck, OnDestroy {
         if (!result.Success) {
             LogError(`bizapps-party-field: could not read the name of ${field.RelatedEntity} ${id}: ${result.ErrorMessage}`);
         }
-        if (name && this.CurrentID === id) {
+        if (name && UUIDsEqual(this.CurrentID, id)) {
             this.current = [{ ID: id, Name: String(name), Detail: null }];
             this.Options = this.current;
             this.RefreshComboboxText();

@@ -22,12 +22,15 @@ People records with demographics and optional linkage to the MJ system user tabl
 | Gender | nvarchar | Optional |
 | Title | nvarchar | Denormalized professional info (e.g., "VP Engineering") |
 | Company | nvarchar | Denormalized professional info (e.g., "Acme Corp") |
+| SupervisorPersonID | uniqueidentifier | Optional self-referential FK to `Person.ID` (`FK_Person_SupervisorPerson`), guarded against direct and transitive reporting cycles |
 | LinkedUserID | uniqueidentifier | Optional 1:1 FK to `MJ: Users` (`__mj.User.ID`), enforced by filtered unique index `UQ_Person_LinkedUserID` (`WHERE LinkedUserID IS NOT NULL`) |
 | Bio | nvarchar(max) | Free-form biography |
 | Notes | nvarchar(max) | Internal notes |
 | IsActive | bit | Soft-delete flag |
 
 > **Security Principal Linkage (`LinkedUserID`):** `Person.LinkedUserID` optionally binds a business/CRM `Person` record to an authenticated MemberJunction `User` (`MJ: Users`). Saving or deleting a `Person` **never** auto-provisions, modifies, or deactivates `MJ: Users` records — security principals are managed strictly through administrative user management or explicit IS-A subtypes. Downstream apps (`bizapps-tasks`, `bizapps-issues`) and user-scoped AI agents (such as the Chief of Staff agent) query `LinkedUserID` to bridge `contextUser.ID` with the user's organizational identity, relationships, tasks, and issues.
+
+> **Supervisor Hierarchy & Reporting Chain (`SupervisorPersonID` / `vwPersonReportingChain`):** `PersonEntity` enforces cycle detection in `Validate()` (synchronous self-supervisor guard), `ValidateAsync()`, and `Save()` (ancestor traversal via `RunView` with `ResultType: 'simple'`), rejecting direct, 2-node, and multi-hop cycles before any write occurs. Whenever `SupervisorPersonID` is set, changed, or cleared, `PersonEntity.Save()` atomically closes prior active `'Reports To'` rows (`Status = 'Ended'`, `EndDate`) and creates a new active `'Reports To'` row (`StartDate`) inside the provider's `EntityTransactionScope`, rolling back all writes on failure. Same-row concurrent updates rely on MJ's `ConcurrencyCheck` (`'enforce'` on GraphQL mutations) and `BaseEntity` save debouncing; `vwPersonReportingChain` also guards transitive queries with `VisitedPath` and `Depth < 100`.
 
 ### Organization
 

@@ -5483,6 +5483,10 @@ export class mjBizAppsCommonOrganization_ {
     @MaxLength(20)
     Acronym?: string;
         
+    @Field({nullable: true, description: "Optional 1:1 foreign key to the MJ: Companies record mirrored by this Organization (enforced unique when non-null via UQ_Organization_LinkedCompanyID). Enables internal legal entities and external client/partner organizations to share Organization as the single canonical entity across BizApps."}) 
+    @MaxLength(36)
+    LinkedCompanyID?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     OrganizationType?: string;
@@ -5490,6 +5494,10 @@ export class mjBizAppsCommonOrganization_ {
     @Field({nullable: true}) 
     @MaxLength(255)
     Parent?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(50)
+    LinkedCompany?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -5607,6 +5615,9 @@ export class CreatemjBizAppsCommonOrganizationInput {
     @Field({ nullable: true })
     Acronym: string | null;
 
+    @Field({ nullable: true })
+    LinkedCompanyID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -5658,6 +5669,9 @@ export class UpdatemjBizAppsCommonOrganizationInput {
 
     @Field({ nullable: true })
     Acronym?: string | null;
+
+    @Field({ nullable: true })
+    LinkedCompanyID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
@@ -5906,6 +5920,14 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(100)
     PrimaryJobFunction?: string;
         
+    @Field({nullable: true, description: "Optional self-referential foreign key to the Person record who directly supervises this person."}) 
+    @MaxLength(36)
+    SupervisorPersonID?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(250)
+    SupervisorPerson?: string;
+        
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
     ReadableFields___?: string[];
         
@@ -5967,6 +5989,9 @@ export class CreatemjBizAppsCommonPersonInput {
     @Field({ nullable: true })
     SeniorityLevelID: string | null;
 
+    @Field({ nullable: true })
+    SupervisorPersonID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -6027,6 +6052,9 @@ export class UpdatemjBizAppsCommonPersonInput {
 
     @Field({ nullable: true })
     SeniorityLevelID?: string | null;
+
+    @Field({ nullable: true })
+    SupervisorPersonID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];

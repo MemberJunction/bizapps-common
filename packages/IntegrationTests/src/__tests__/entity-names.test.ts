@@ -12,6 +12,8 @@ describe('COMMON_ENTITIES', () => {
         expect(COMMON_ENTITIES.ActivityFile).toBe('MJ_BizApps_Common: Activity Files');
         expect(COMMON_ENTITIES.ActivitySyncConnection).toBe('MJ_BizApps_Common: Activity Sync Connections');
         expect(COMMON_ENTITIES.ActivitySyncRule).toBe('MJ_BizApps_Common: Activity Sync Rules');
+        expect(COMMON_ENTITIES.ActivitySyncRun).toBe('MJ_BizApps_Common: Activity Sync Runs');
+        expect(COMMON_ENTITIES.ActivitySyncRunDetail).toBe('MJ_BizApps_Common: Activity Sync Run Details');
         expect(WORLD_EMAIL_DOMAIN).toBe('com-world.test');
     });
 });

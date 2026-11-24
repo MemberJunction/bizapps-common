@@ -22,6 +22,7 @@ import { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifes
 export { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
 export { GeneratedFormsModule } from './lib/generated/generated-forms.module';
 export { CustomFormsModule } from './lib/custom/custom-forms.module';
+export { mjBizAppsCommonAddressLinkFormComponent } from './lib/generated/Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component';
 
 // Reusable UI components
 export { AddressEditorComponent } from './lib/components/address-editor/address-editor.component';
@@ -39,6 +40,57 @@ export {
     type PartyLookupParams,
 } from './lib/components/party-field/party-lookup-term';
 export { RelatedChipsComponent } from './lib/components/related-chips/related-chips.component';
+
+// Dashboard filter bar: period + company, plus the pure period and ID-list rules it applies.
+export { DashboardFilterBarComponent } from './lib/components/dashboard-filter-bar/dashboard-filter-bar.component';
+export {
+    BusinessToday,
+    CALENDAR_YEAR_START,
+    DEFAULT_PERIOD,
+    DayLabel,
+    DescribeFiscalBasis,
+    FiscalQuarterOf,
+    FiscalYearOf,
+    FormatWindow,
+    IsoDay,
+    MonthDayLabel,
+    MonthDayText,
+    PENDING_FISCAL_BASIS,
+    PERIOD_OPTIONS,
+    PeriodKeyOf,
+    PeriodParameters,
+    PeriodPhrase,
+    PeriodSqlFilter,
+    ResolveFiscalYearStart,
+    ResolvePeriod,
+    WithinWindow,
+    type CustomRange,
+    type FiscalBasis,
+    type FiscalYearStart,
+    type FiscalYearStartResolution,
+    type PeriodKey,
+    type PeriodWindow,
+} from './lib/components/dashboard-filter-bar/dashboard-period';
+export {
+    DEFAULT_PERIOD_STATE,
+    NormalizePeriodState,
+    PERIOD_PARAM,
+    ParsePeriodParams,
+    ParsePeriodStateJSON,
+    PeriodStateParams,
+    PeriodWindowOf,
+    SamePeriodState,
+    type DashboardPeriodState,
+} from './lib/components/dashboard-filter-bar/dashboard-period-state';
+export {
+    CleanIDs,
+    HasID,
+    SameIDs,
+    SelectionLabel,
+    SortedOptions,
+    ToggleID,
+    type FilterOption,
+} from './lib/components/dashboard-filter-bar/dashboard-id-lists';
 export {
     FilterForRelatedLink,
     LabelForRelatedLink,
@@ -103,6 +155,27 @@ export { PartySignalStore } from './lib/data/party-signal-store';
 export { CommonSettings, COMMON_SETTING } from './lib/data/common-settings';
 export { SellingCompanyFieldComponent } from './lib/components/selling-company-field/selling-company-field.component';
 export { SellingCompanyConfirm } from './lib/components/selling-company-field/selling-company-confirm';
+export {
+    COMMON_ANGULAR_LIMITS_CONFIG,
+    COMMON_ANGULAR_LIMITS_BOUNDS,
+    DEFAULT_COMMON_ANGULAR_LIMITS,
+    RegisterCommonAngularLimits,
+    ResetCommonAngularLimits,
+    GetRegisteredCommonAngularLimits,
+    ResolveCommonAngularLimits,
+    ResolveCommonAngularLimitsWithProvenance,
+    type CommonAngularLimitBounds,
+    type CommonAngularRunawayGuardsConfig,
+    type CommonAngularResourceGuardsConfig,
+    type CommonAngularTuningConfig,
+    type CommonAngularUxConfig,
+    type CommonAngularLimitsConfig,
+    type CommonAngularLimitsOverride,
+    type CommonAngularLimitKeyPath,
+    type CommonAngularLimitsSourceTier,
+    type CommonAngularLimitProvenance,
+    type CommonAngularLimitsResolutionResult,
+} from './lib/config/limits.config';
 
 /**
  * Bootstrap function called during MJExplorer initialization.

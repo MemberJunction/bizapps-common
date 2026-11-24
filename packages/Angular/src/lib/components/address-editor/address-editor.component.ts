@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseEntity, Metadata, RunView } from '@memberjunction/core';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
@@ -274,6 +275,7 @@ export class AddressEditorComponent {
      */
     async onPostalCodeBlur(): Promise<void> {
         const postalCode = this.EditForm.PostalCode?.trim();
+        // UX: Require at least 3 characters before triggering Google Geocoding postal lookup.
         if (!postalCode || postalCode.length < 3) return;
 
         const postalCodeChanged = postalCode !== this.originalPostalCode.trim();
@@ -390,7 +392,7 @@ export class AddressEditorComponent {
 
             // Load all referenced addresses in one batch if we have links
             if (links.length > 0) {
-                const addressIDs = links.map(l => `'${l.AddressID}'`).join(',');
+                const addressIDs = links.map(l => `'${EscapeFilterValue(l.AddressID)}'`).join(',');
                 const addressResult = await rv.RunView<mjBizAppsCommonAddressEntity>({
                     EntityName: 'MJ_BizApps_Common: Addresses',
                     ExtraFilter: `ID IN (${addressIDs})`,
@@ -400,15 +402,15 @@ export class AddressEditorComponent {
                 const addressMap = new Map<string, mjBizAppsCommonAddressEntity>();
                 if (addressResult.Success) {
                     for (const addr of addressResult.Results) {
-                        addressMap.set(addr.ID, addr);
+                        addressMap.set(NormalizeUUID(addr.ID), addr);
                     }
                 }
 
                 this.AddressItems = links
-                    .filter(link => addressMap.has(link.AddressID))
+                    .filter(link => addressMap.has(NormalizeUUID(link.AddressID)))
                     .map(link => ({
                         Link: link,
-                        Address: addressMap.get(link.AddressID)!
+                        Address: addressMap.get(NormalizeUUID(link.AddressID))!
                     }));
 
                 // Sort: primary first, then by rank/type
@@ -443,7 +445,7 @@ export class AddressEditorComponent {
      * @returns The CSS class string for the icon (e.g., `'fa-solid fa-home'`)
      */
     getAddressTypeIcon(typeID: string): string {
-        const addrType = this.AddressTypes.find(t => t.ID === typeID);
+        const addrType = this.AddressTypes.find(t => UUIDsEqual(t.ID, typeID));
         return AddressEditorComponent.resolveIconClass(addrType?.IconClass);
     }
 
@@ -533,7 +535,8 @@ export class AddressEditorComponent {
     onEdit(index: number): void {
         const item = this.AddressItems[index];
         this.EditForm = {
-            TypeID: item.Link.AddressTypeID,
+            // The select matches options with ===, so use the option's own ID spelling.
+            TypeID: this.AddressTypes.find(t => UUIDsEqual(t.ID, item.Link.AddressTypeID))?.ID ?? item.Link.AddressTypeID,
             IsPrimary: item.Link.IsPrimary,
             Line1: item.Address.Line1 || '',
             Line2: item.Address.Line2 || '',
@@ -662,7 +665,7 @@ export class AddressEditorComponent {
             : null;
 
         for (const item of this.AddressItems) {
-            if (item.Link.IsPrimary && item.Link.ID !== currentEditingLinkID) {
+            if (item.Link.IsPrimary && !UUIDsEqual(item.Link.ID, currentEditingLinkID)) {
                 item.Link.IsPrimary = false;
                 await item.Link.Save();
             }

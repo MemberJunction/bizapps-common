@@ -11,7 +11,7 @@ import {
     type IMetadataProvider,
     type UserInfo,
 } from '@memberjunction/core';
-import { MJGlobal } from '@memberjunction/global';
+import { MJGlobal, NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import type {
     mjBizAppsCommonActivitySyncConnectionEntity,
     mjBizAppsCommonActivitySyncExtensionEntity,
@@ -19,6 +19,13 @@ import type {
     mjBizAppsCommonActivitySyncRunEntity,
 } from '@mj-biz-apps/common-entities';
 
+import {
+    AskConsentSources,
+    BaseActivityConsentSource,
+    StandingGrantDomains,
+    type KeyedConsentSource,
+    type StandingConsent,
+} from './BaseActivityConsentSource.js';
 import { BaseActivitySyncExtension } from './BaseActivitySyncExtension.js';
 import { BaseActivitySyncProvider } from './BaseActivitySyncProvider.js';
 import { ACTIVITY_SYNC_ENTITIES } from './entity-names.js';
@@ -29,7 +36,7 @@ import {
     type ExtensionStamp,
 } from './extensions.js';
 import { IdentityResolver } from './identity.js';
-import { ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
+import { DomainOf, ParseInternalDomains, ParticipantScopeWarning } from './participants.js';
 import { AttachmentPolicyFor, HostActivityFileSink, type ActivityFileSink } from './attachments.js';
 import {
     DefaultDeterministicStages,
@@ -37,6 +44,10 @@ import {
     type ExclusionRow,
     type RuleRow,
 } from './stages.js';
+import { ConsentPolicyFromSettings, HasTag, MergeConsentSweptThrough, ResolveConsent, type ConsentPolicy, type StandingDomains } from './consent.js';
+import { ConsentIntake } from './consent-intake.js';
+import { DatabaseConsentStore } from './consent-store.js';
+import { ConsentEligible, ConsentStages, type ConsentQualificationContext } from './consent-stages.js';
 import { FixtureActivitySyncProvider } from './providers/FixtureActivitySyncProvider.js';
 import { MSGraphActivitySyncProvider } from './providers/MSGraphActivitySyncProvider.js';
 import { MSGraphCalendarSyncProvider } from './providers/MSGraphCalendarSyncProvider.js';
@@ -49,6 +60,7 @@ import {
 import {
     AsDryRunDecision,
     IsConnectionActive,
+    RunnableConnectionFilter,
     ResolveCapturePlan,
     ResolvePolicy,
     type SkippedContentPolicy,
@@ -70,6 +82,7 @@ import {
     type RunOutcome,
 } from './watermark.js';
 import { ExclusionsExtraFilter, FromRunView, RulesExtraFilter, type ViewLoad } from './load.js';
+import { DEFAULT_ACTIVITY_SYNC_LIMITS, ResolveActivitySyncLimits } from './limits.config.js';
 import { ActivityWriter, StoreBodyFromSettings } from './writer.js';
 
 export interface SyncEngineResult {
@@ -92,8 +105,24 @@ export interface FleetRunResult {
     Issues: string[];
 }
 
+/**
+ * One issue per requested connection the fleet query did not return.
+ *
+ * Naming a connection and hearing nothing back reads as "it ran and found nothing", which is the
+ * wrong conclusion to draw during a go-live review. A requested id is missing because it does not
+ * exist, is Disabled, or is Paused on a live run.
+ */
+export function NotRunConnectionIssues(
+    options: Pick<SyncRunOptions, 'DryRun' | 'ConnectionIDs'>,
+    loaded: ReadonlyArray<{ ID: string }>,
+): string[] {
+    const missing = (options.ConnectionIDs ?? []).filter((id) => !loaded.some((row) => UUIDsEqual(row.ID, id)));
+    const why = options.DryRun ? 'it does not exist or is Disabled' : 'it does not exist, is Disabled, or is Paused';
+    return missing.map((id) => `Connection ${id} was not run: ${why}.`);
+}
+
 /** Hard cap on the fleet query. Unbounded RunView is how a tenant with a burst of mailboxes stalls the hourly job. */
-export const MAX_RUNNABLE_CONNECTIONS = 500;
+export const MAX_RUNNABLE_CONNECTIONS = DEFAULT_ACTIVITY_SYNC_LIMITS.ResourceGuards.MaxRunnableConnections;
 
 interface ConnectionRow {
     ID: string;
@@ -111,6 +140,8 @@ interface ConnectionRow {
     /** Overrides the provider type's default key. Null means "use the type's". */
     EncryptionKeyID: string | null;
     Settings: string | null;
+    /** Whose mailbox this is. Standing consent is asked about this user; null means it cannot be asked. */
+    OwnerUserID: string | null;
 }
 
 interface ProviderTypeRow {
@@ -168,6 +199,32 @@ export function healthErrorFromResults(results: readonly SyncEngineResult[]): st
 }
 
 /**
+ * The connection row the fleet already loaded, when it is the one this run is for.
+ *
+ * SQL Server returns IDs upper-cased and PostgreSQL lower-cased, so the fleet's row and the caller's
+ * `connectionID` can name the same connection in different casings. A raw `!==` reloaded the row
+ * for no reason (#314).
+ */
+export function reusableConnection<T extends { ID: string }>(
+    loaded: T | undefined,
+    connectionID: string,
+): T | undefined {
+    return loaded && UUIDsEqual(loaded.ID, connectionID) ? loaded : undefined;
+}
+
+/**
+ * The rule that decided an item, matched case-insensitively. A raw `===` missed it when the
+ * verdict's ID and the loaded rule's ID came back in different casings, and the item lost that
+ * rule's attachment policy without saying so (#314).
+ */
+export function decidingRuleFor<T extends { ID: string }>(
+    rules: readonly T[],
+    ruleID: string | null | undefined,
+): T | null {
+    return ruleID ? (rules.find((r) => UUIDsEqual(r.ID, ruleID)) ?? null) : null;
+}
+
+/**
  * One Load+Save per extension row after the batch — not N items × M extensions.
  *
  * An error is sticky within the batch on purpose: a later success on a different item must
@@ -175,16 +232,18 @@ export function healthErrorFromResults(results: readonly SyncEngineResult[]): st
  * is clean for that row writes null.
  */
 export function collapseExtensionStamps(stamps: readonly ExtensionStamp[]): ExtensionStamp[] {
-    const byId = new Map<string, string | null>();
+    // Keyed by the normalized ID so one row stamped in two casings is still one save.
+    const byId = new Map<string, ExtensionStamp>();
     for (const stamp of stamps) {
-        const prev = byId.get(stamp.ID);
+        const key = NormalizeUUID(stamp.ID);
+        const prev = byId.get(key);
         if (stamp.LastError) {
-            byId.set(stamp.ID, stamp.LastError);
+            byId.set(key, { ID: prev?.ID ?? stamp.ID, LastError: stamp.LastError });
         } else if (prev === undefined) {
-            byId.set(stamp.ID, null);
+            byId.set(key, { ID: stamp.ID, LastError: null });
         }
     }
-    return [...byId.entries()].map(([ID, LastError]) => ({ ID, LastError }));
+    return [...byId.values()];
 }
 
 function failedSurfaceResult(issues: readonly string[]): SyncEngineResult {
@@ -252,6 +311,7 @@ export class ActivitySyncEngine {
          * the host registry or the seam is unreachable. `common-server` fills it at bootstrap.
          */
         private readonly cipher: ActivityContentCipher | null = HostActivityContentCipher(),
+        private readonly consentIntake: ConsentIntake = new ConsentIntake(),
     ) {}
 
     public async Run(
@@ -276,8 +336,8 @@ export class ActivitySyncEngine {
             Issues: [],
         };
 
-        let connection = surface?.connection;
-        if (!connection || connection.ID !== connectionID) {
+        let connection = reusableConnection(surface?.connection, connectionID);
+        if (!connection) {
             const loadedConnection = await this.loadConnection(connectionID, contextUser);
             if (loadedConnection.Failed) {
                 result.Issues.push(loadedConnection.Issue);
@@ -296,6 +356,7 @@ export class ActivitySyncEngine {
                 connection.StartAt ? new Date(connection.StartAt) : null,
                 connection.EndAt ? new Date(connection.EndAt) : null,
                 now,
+                options.DryRun,
             )
         ) {
             result.Issues.push(`Connection ${connectionID} is not in its Active window.`);
@@ -321,6 +382,25 @@ export class ActivitySyncEngine {
             result.Issues.push(`Provider type '${typeRow.Code}' is not active.`);
             return result;
         }
+        // CONSENT IS SETTLED BEFORE ANYTHING IS READ, for the reason retention is: a connection whose
+        // consent block cannot be read must not touch the mailbox, least of all by falling back to the
+        // broadest mode there is.
+        const consentRead = ConsentPolicyFromSettings(connection.Settings);
+        if (consentRead.Error !== undefined) {
+            result.Issues.push(consentRead.Error);
+            return result;
+        }
+        const consent: ConsentPolicy = consentRead.Policy;
+        const tagged = consent.Mode === 'Tagged' && consent.Tag ? { ...consent, Tag: consent.Tag } : null;
+        // A SOURCE KEY NOBODY REGISTERED IS A BAD SETTING, and is treated as one: the run stops here,
+        // before the mailbox is read. Carrying on tag-only would look like automatic capture that
+        // happens to find nothing.
+        const consentSources = this.resolveConsentSources(consent.Sources);
+        if ('Issue' in consentSources) {
+            result.Issues.push(consentSources.Issue);
+            return result;
+        }
+
         /**
          * AUDIT RETENTION IS SETTLED BEFORE ANYTHING IS READ, not at persist time.
          *
@@ -347,6 +427,16 @@ export class ActivitySyncEngine {
             result.Issues.push(String(err instanceof Error ? err.message : err));
             return result;
         }
+        if (tagged && capture.Capture !== 'None') {
+            // A TAGGED CONNECTION RETAINS NOTHING IT WAS NOT GIVEN. Everything it excludes is excluded for
+            // want of the owner's consent, so keeping its subject or body, encrypted or not, is the very
+            // capture the mode exists to prevent. The policy is set aside and the run says so.
+            result.Issues.push(
+                'SkippedContentPolicy is ignored on a Tagged connection: content of items the owner did not ' +
+                    'tag is never retained.',
+            );
+            capture = { Capture: 'None', EncryptionKeyID: null };
+        }
         if (capture.Capture !== 'None' && !this.cipher) {
             // The ActivityFileSink lesson, applied. A host that asked for retention and cannot
             // encrypt must not quietly proceed: plaintext is forbidden outright, and writing nothing
@@ -362,6 +452,7 @@ export class ActivitySyncEngine {
         // Missing type row: the cascade still needs a default, and that default is
         // Exclude — never `?? 'Include'`.
         const defaultPolicy = DefaultPolicyFromProviderType(typeRow?.DefaultQualificationPolicy);
+
 
         const plugin = (surface?.source ?? source) ?? (typeRow ? this.resolvePlugin(typeRow.DriverClass) : null);
         if (!plugin) {
@@ -400,6 +491,16 @@ export class ActivitySyncEngine {
         if (extensions.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue, stampHealth);
         }
+        // STANDING CONSENT IS ASKED BEFORE THE MAILBOX IS READ. A source that cannot answer leaves the run
+        // not knowing what the owner agreed to, so the run fails whole: no item is decided, no tag is
+        // processed, the watermark stays, and the next run starts from the same place.
+        let standingAsked: StandingConsent;
+        try {
+            standingAsked = await this.askStandingConsent(consentSources.Sources, connection, provider, contextUser);
+        } catch (err) {
+            return this.failClosed(connection, options, result, since, provider, contextUser, err instanceof Error ? err.message : String(err), stampHealth);
+        }
+        result.Issues.push(...standingAsked.Issues);
         const batch = await plugin.Fetch({
             Mailbox: connection.Mailbox ?? '',
             Since: since,
@@ -418,6 +519,20 @@ export class ActivitySyncEngine {
                 batch.Issues.join(' | ') || 'Provider fetch failed.',
                 stampHealth,
             );
+        }
+
+        const fetchQuery = { Mailbox: connection.Mailbox ?? '', Since: since, Limit: options.Limit };
+        const consentStore = new DatabaseConsentStore(provider, contextUser);
+        const gathered = tagged
+            ? await this.consentIntake.Gather(plugin, fetchQuery, batch.Items, tagged, connection.ID, consentStore)
+            : null;
+        if (gathered) {
+            result.Issues.push(...gathered.Issues);
+            if (gathered.Failure) {
+                return this.failClosed(connection, options, result, since, provider, contextUser, gathered.Failure, stampHealth);
+            }
+            batch.Items = gathered.Items;
+            result.Fetched = batch.Items.length;
         }
 
         const bound = await this.loadBoundSetIds(connectionID, contextUser);
@@ -457,6 +572,13 @@ export class ActivitySyncEngine {
             result.Issues.push(scopeWarning);
         }
 
+        // The mailbox's own domain counts as ours even when no rule set lists it: a deployment that kept
+        // itself as an account and configured no InternalDomains must still not capture its internal mail.
+        const ownDomain = DomainOf(connection.Mailbox ?? '');
+        const standingClean = StandingGrantDomains(standingAsked.Domains, ownDomain ? [...internalDomains.Rows, ownDomain] : internalDomains.Rows);
+        result.Issues.push(...standingClean.Issues);
+        const standing: StandingDomains = standingClean.Granting;
+
         const allParticipants = batch.Items.flatMap((i) => i.Participants);
         const extensionStamps: ExtensionStamp[] = [];
         const identities = await this.resolver.Resolve(allParticipants, contextUser, provider);
@@ -486,19 +608,34 @@ export class ActivitySyncEngine {
             ActivityID?: string | null;
         }> = [];
 
+        const base: EngineQualificationContext = {
+            ConnectionID: connection.ID,
+            ProviderTypeCode: sourceSystem,
+            Exclusions: exclusions.Rows,
+            Rules: rules.Rows,
+            InternalDomains: internalDomains.Rows,
+            KnownAddresses: identities.Known,
+        };
+        // Only items the cascade will not block or exclude may grant consent to others (see ConsentEligible).
+        const grants =
+            tagged && gathered
+                ? ResolveConsent(
+                      batch.Items,
+                      gathered.Prior,
+                      tagged.Tag,
+                      plugin.Kind,
+                      await ConsentEligible(batch.Items, { ...base, Consent: new Map(), Kind: plugin.Kind, Tag: tagged.Tag, SkipTag: tagged.SkipTag }),
+                      standing,
+                  )
+                : null;
+        const stages = tagged ? ConsentStages() : this.stages;
         for (const item of batch.Items) {
-            const ctx: EngineQualificationContext = {
-                ConnectionID: connection.ID,
-                ProviderTypeCode: sourceSystem,
-                Exclusions: exclusions.Rows,
-                Rules: rules.Rows,
-                InternalDomains: internalDomains.Rows,
-                KnownAddresses: identities.Known,
-            };
+            const ctx: EngineQualificationContext | ConsentQualificationContext =
+                tagged && grants ? { ...base, Consent: grants, Kind: plugin.Kind, Tag: tagged.Tag, SkipTag: tagged.SkipTag } : base;
             let verdict;
             try {
                 verdict = await RunQualificationCascade(
-                    this.stages,
+                    stages,
                     item,
                     ctx,
                     defaultPolicy,
@@ -572,9 +709,7 @@ export class ActivitySyncEngine {
             // The BYTES are not moved yet — that needs a file sink, and this host has no
             // FileStorageAccount configured, so there is nowhere to put them. What changed is that
             // the request is now honoured or REPORTED, instead of silently discarded.
-            const decidingRule = verdict.ActivitySyncRuleID
-                ? rules.Rows.find((r) => r.ID === verdict.ActivitySyncRuleID)
-                : null;
+            const decidingRule = decidingRuleFor(rules.Rows, verdict.ActivitySyncRuleID);
             const attachmentPolicy = AttachmentPolicyFor(decidingRule, item);
             if (attachmentPolicy.Fetch && !this.fileSink) {
                 result.Issues.push(
@@ -641,8 +776,11 @@ export class ActivitySyncEngine {
                 details.push({
                     Item: item,
                     Decision: 'Duplicate',
-                    Stage: 'Write',
-                    Reason: 'SourceSystem+ExternalID already present',
+                    // ON A TAGGED CONNECTION THE DUPLICATE IS STILL THIS MAILBOX'S CONSENT. One email in two
+                    // ADs' mailboxes is one Activity; the second owner's tag is recorded here, on their own
+                    // connection's run, or their consent would be invisible to proof and to withdrawal.
+                    Stage: tagged ? verdict.StageName : 'Write',
+                    Reason: tagged ? verdict.Reason : 'SourceSystem+ExternalID already present',
                     ActivityID: written.ActivityID,
                 });
                 continue;
@@ -660,6 +798,31 @@ export class ActivitySyncEngine {
 
         if (!options.DryRun) {
             await this.stampExtensions(collapseExtensionStamps(extensionStamps), provider, contextUser);
+        }
+
+        if (tagged) {
+            const withdrawn = await this.consentIntake.Withdraw(
+                plugin, fetchQuery, batch.Items, tagged, connection.ID, options.DryRun, consentStore, standing,
+            );
+            result.Issues.push(...withdrawn.Issues);
+            // Record that THIS mailbox's consent ended, so it stops counting as consenting (see ConsentStore).
+            for (const item of withdrawn.Revoked) {
+                details.push({
+                    Item: item,
+                    Decision: options.DryRun ? 'WouldExclude' : 'Excluded',
+                    Stage: 'Consent',
+                    Reason:
+                        tagged.SkipTag && HasTag(item.Raw, tagged.SkipTag)
+                            ? `Consent withdrawn: the owner tagged it "${tagged.SkipTag}"`
+                            : 'Consent withdrawn: the tag was removed',
+                });
+            }
+            const sweptThrough = gathered?.SweptThrough ?? null;
+            if (!options.DryRun && sweptThrough && result.Failed === 0) {
+                if (!(await this.stampConsentSweep(connectionID, sweptThrough, contextUser, provider))) {
+                    result.Issues.push('Failed to persist the late-tag sweep position; the next run re-reads it.');
+                }
+            }
         }
 
         const outcome: RunOutcome = {
@@ -722,13 +885,15 @@ export class ActivitySyncEngine {
         provider: IMetadataProvider,
         contextUser: UserInfo,
     ): Promise<FleetRunResult> {
+        const MAX_RUNNABLE_CONNECTIONS = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections;
         const fleet: FleetRunResult = { Success: true, ConnectionsAttempted: 0, Results: [], Issues: [] };
-        const loaded = await this.loadRunnableConnections(contextUser);
+        const loaded = await this.loadRunnableConnections(options, contextUser, MAX_RUNNABLE_CONNECTIONS);
         if (loaded.Failed) {
             fleet.Success = false;
             fleet.Issues.push(loaded.Issue);
             return fleet;
         }
+        fleet.Issues.push(...NotRunConnectionIssues(options, loaded.Rows));
         if (loaded.Rows.length === 0) {
             return fleet;
         }
@@ -859,6 +1024,51 @@ export class ActivitySyncEngine {
         return result;
     }
 
+    /** Every `Settings.Consent.Sources` key as a registered source, or the first key that is not one. */
+    private resolveConsentSources(keys: readonly string[]): { Sources: KeyedConsentSource[] } | { Issue: string } {
+        const sources: KeyedConsentSource[] = [];
+        for (const key of keys) {
+            const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivityConsentSource>(BaseActivityConsentSource, key);
+            if (!created.Resolved || !created.Instance) {
+                return {
+                    Issue:
+                        `Settings.Consent.Sources names "${key}", but no BaseActivityConsentSource is registered under that key ` +
+                        'in this host. Fix the key or install the app that provides it; the mailbox was not read.',
+                };
+            }
+            sources.push({ Key: key, Source: created.Instance });
+        }
+        return { Sources: sources };
+    }
+
+    /**
+     * What the connection's sources grant its owner. Throws when a source does (see `AskConsentSources`).
+     *
+     * A connection with no owner is not an error: there is nobody to ask about, so nothing is granted,
+     * the run says so, and the tag goes on working.
+     */
+    private async askStandingConsent(
+        sources: readonly KeyedConsentSource[],
+        connection: ConnectionRow,
+        provider: IMetadataProvider,
+        contextUser: UserInfo,
+    ): Promise<StandingConsent> {
+        if (sources.length === 0) return { Domains: [], Issues: [] };
+        if (!connection.OwnerUserID) {
+            return {
+                Domains: [],
+                Issues: [`Connection ${connection.ID} has no OwnerUserID, so its consent sources were not asked; only tagged items are captured.`],
+            };
+        }
+        return AskConsentSources(sources, {
+            ConnectionID: connection.ID,
+            OwnerUserID: connection.OwnerUserID,
+            Mailbox: connection.Mailbox ?? '',
+            ContextUser: contextUser,
+            Provider: provider,
+        });
+    }
+
     private resolveExtension(driverClass: string): BaseActivitySyncExtension | null {
         try {
             const created = MJGlobal.Instance.ClassFactory.TryCreateInstance<BaseActivitySyncExtension>(
@@ -955,12 +1165,16 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
     }
 
-    private async loadRunnableConnections(user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
+    private async loadRunnableConnections(
+        options: SyncRunOptions,
+        user: UserInfo,
+        MAX_RUNNABLE_CONNECTIONS: number = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections,
+    ): Promise<ViewLoad<ConnectionRow>> {
         const rv = new RunView();
         const res = await rv.RunView<ConnectionRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
-                ExtraFilter: `Status = 'Active' OR Status = 'Error'`,
+                ExtraFilter: RunnableConnectionFilter(options),
                 MaxRows: MAX_RUNNABLE_CONNECTIONS + 1,
                 ResultType: 'simple',
             },
@@ -1087,6 +1301,22 @@ export class ActivitySyncEngine {
             user,
         );
         return FromRunView(res.Success, res.Results, 'ActivitySyncRule');
+    }
+
+    /** Record how far the late-tag sweep read, so the next sweep starts there. */
+    private async stampConsentSweep(
+        connectionID: string,
+        at: Date,
+        user: UserInfo,
+        provider: IMetadataProvider,
+    ): Promise<boolean> {
+        const row = await provider.GetEntityObject<mjBizAppsCommonActivitySyncConnectionEntity>(
+            ACTIVITY_SYNC_ENTITIES.Connections,
+            user,
+        );
+        if (!(await row.Load(connectionID))) return false;
+        row.Settings = MergeConsentSweptThrough(row.Settings, at);
+        return row.Save();
     }
 
     private async stampSurfaceWatermark(
@@ -1273,6 +1503,7 @@ export class ActivitySyncEngine {
 export function LoadActivitySyncEngine(): void {
     void ActivitySyncEngine;
     void BaseActivitySyncExtension;
+    void BaseActivityConsentSource;
     void FixtureActivitySyncProvider;
     void MSGraphActivitySyncProvider;
     void MSGraphCalendarSyncProvider;

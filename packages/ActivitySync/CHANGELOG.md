@@ -1,5 +1,49 @@
 # @mj-biz-apps/common-activity-sync
 
+## 5.67.0
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+
+## 5.65.0
+
+### Minor Changes
+
+- 16a34b2: Fix filed common bugs: record IDs compare case-insensitively (#314); calendar sync pages its whole window and Graph mail sync drains a backlog larger than one page (#312, #308); the Job Function and Seniority pipeline scopes to unclassified people (#324); the Organization and Person heroes render every field of the sections they claim (#343); saving with the selling-company question open says the change was not applied (#344); the Activity header shows the parent link from ParentActivityID (#311); undefined `--mj-*` token names are replaced (#299).
+
+### Patch Changes
+
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-entities@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
+## 5.63.0
+
+### Minor Changes
+
+- 1c1c754: `Common.SyncActivities` takes two optional inputs, `DryRun` and `ConnectionIDs`. A dry run previews what each connection would file without writing an Activity or moving a watermark, and it includes Paused connections. That lets a new mailbox be built Paused, reviewed, and only then set Active. `ConnectionIDs` narrows a run to the named connections and reports each one that did not run. The hourly job passes neither input, so it behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
 ## 5.62.0
 
 ### Patch Changes

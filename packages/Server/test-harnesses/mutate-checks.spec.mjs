@@ -171,6 +171,15 @@ function isProcessAlive(pid) {
     }
 }
 
+async function waitForProcessToExit(pid, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (!isProcessAlive(pid)) return true;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return !isProcessAlive(pid);
+}
+
 function listMutTempDirs(mutantId) {
     return new Set(readdirSync(tmpdir()).filter((name) => name.startsWith(`mut-${mutantId}-`)));
 }
@@ -225,7 +234,8 @@ test('SIGTERM kills the whole process group (no orphaned grandchild) and removes
         child.kill('SIGTERM');
         await waitForExit(child, 5000);
 
-        assert.ok(!isProcessAlive(grandchildPid), 'the grandchild process must not survive the harness');
+        const exited = await waitForProcessToExit(grandchildPid, 2000);
+        assert.ok(exited, 'the grandchild process must not survive the harness');
         grandchildPid = null;
 
         const leaked = [...listMutTempDirs(mutantId)].filter((name) => !before.has(name));

@@ -224,7 +224,23 @@ export class MSGraphActivitySyncProvider extends BaseActivitySyncProvider {
         const isEnvelope = !!only && Array.isArray((only as { value?: unknown }).value);
         const mapped = MapGraphMessages(isEnvelope ? only : raw.Payloads, query.Mailbox);
         raw.Issues.push(...mapped.Issues);
-        const since = query.Since ? query.Since.getTime() : null;
-        return since === null ? mapped.Items : mapped.Items.filter((i) => i.StartedAt.getTime() > since);
+        // A lookup names its items; the received-time window does not apply to it (see `Lookup`).
+        const since = query.Since && !query.Lookup ? query.Since.getTime() : null;
+        return since === null ? mapped.Items : mapped.Items.filter((i) => receivedTime(i) > since);
     }
+}
+
+/**
+ * When the mailbox got the message, falling back to `StartedAt` (its sent time, when Graph has one).
+ *
+ * The transport bounds its windows by received time, and a partial pass reports `ReadThrough` in
+ * those units. Filtering by sent time instead would drop a delayed message, sent before the
+ * watermark and received after it, on every later run, because each run fetches it and then
+ * discards it as already seen. Filtering by received time keeps it; a message already written is
+ * caught by the writer's SourceSystem/ExternalID dedupe.
+ */
+function receivedTime(item: NormalizedItem): number {
+    const received = item.Raw?.['receivedDateTime'];
+    const time = typeof received === 'string' ? Date.parse(received) : Number.NaN;
+    return Number.isNaN(time) ? item.StartedAt.getTime() : time;
 }

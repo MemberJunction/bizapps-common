@@ -4,9 +4,13 @@ import {
     AsDryRunDecision,
     IsConnectionActive,
     ResolveCapturePlan,
+    RunnableConnectionFilter,
+    RunnableStatuses,
     ResolvePolicy,
     type SkippedContentPolicy,
 } from '../run.js';
+import { NotRunConnectionIssues } from '../ActivitySyncEngine.js';
+import { InvalidFilterInputError } from '../sql.js';
 
 const NOW = new Date('2026-08-29T12:00:00Z');
 const EARLIER = new Date('2026-08-01T00:00:00Z');
@@ -106,5 +110,47 @@ describe('AsDryRunDecision', () => {
         // written — those describe the item, not our action.
         expect(AsDryRunDecision('Duplicate')).toBe('Duplicate');
         expect(AsDryRunDecision('Failed')).toBe('Failed');
+    });
+});
+
+describe('dry run previews a Paused connection', () => {
+    const A = '6A1F3E2C-0B1D-4C7E-9F00-1A2B3C4D5E6F';
+    const B = '7B2F3E2C-0B1D-4C7E-9F00-1A2B3C4D5E6F';
+
+    it('a live run honours Paused; a dry run may read it; Disabled is never run', () => {
+        expect(IsConnectionActive('Paused', null, null, NOW, false)).toBe(false);
+        expect(IsConnectionActive('Paused', null, null, NOW, true)).toBe(true);
+        expect(IsConnectionActive('Disabled', null, null, NOW, true)).toBe(false);
+        expect(RunnableStatuses(true)).not.toContain('Disabled');
+    });
+
+    it('the window still applies to a dry run', () => {
+        expect(IsConnectionActive('Paused', LATER, null, NOW, true)).toBe(false);
+    });
+
+    it('the fleet filter adds Paused only for a dry run', () => {
+        expect(RunnableConnectionFilter({ DryRun: false })).toBe(`Status IN ('Active', 'Error')`);
+        expect(RunnableConnectionFilter({ DryRun: true })).toBe(`Status IN ('Active', 'Error', 'Paused')`);
+    });
+
+    it('narrows to the named connections, and an empty list means all of them', () => {
+        expect(RunnableConnectionFilter({ DryRun: true, ConnectionIDs: [A, B] })).toBe(
+            `Status IN ('Active', 'Error', 'Paused') AND ID IN ('${A}','${B}')`,
+        );
+        expect(RunnableConnectionFilter({ DryRun: true, ConnectionIDs: [] })).toBe(
+            `Status IN ('Active', 'Error', 'Paused')`,
+        );
+    });
+
+    it('refuses an id that is not a UUID rather than widening the query', () => {
+        expect(() => RunnableConnectionFilter({ DryRun: true, ConnectionIDs: [`x' OR 1=1 --`] })).toThrow(
+            InvalidFilterInputError,
+        );
+    });
+
+    it('reports each named connection the query did not return, matching ids case-insensitively', () => {
+        const issues = NotRunConnectionIssues({ DryRun: false, ConnectionIDs: [A, B] }, [{ ID: A.toLowerCase() }]);
+        expect(issues).toEqual([`Connection ${B} was not run: it does not exist, is Disabled, or is Paused.`]);
+        expect(NotRunConnectionIssues({ DryRun: true }, [])).toEqual([]);
     });
 });

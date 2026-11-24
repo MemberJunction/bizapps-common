@@ -1,5 +1,41 @@
 # @mj-biz-apps/common-integration-tests
 
+## 5.67.0
+
+### Patch Changes
+
+- @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+
+## 5.65.0
+
+### Patch Changes
+
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-entities@5.65.0
+
+## 5.64.0
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
+## 5.63.0
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
 ## 5.62.0
 
 ### Patch Changes

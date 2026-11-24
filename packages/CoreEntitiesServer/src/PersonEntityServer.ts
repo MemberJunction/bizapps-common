@@ -1,6 +1,10 @@
+/**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
 import { BaseEntity, UserInfo } from '@memberjunction/core';
 import { RegisterClass, UUIDsEqual } from '@memberjunction/global';
-import { mjBizAppsCommonPersonEntity } from '@mj-biz-apps/common-entities';
+import { PersonEntity } from '@mj-biz-apps/common-entities';
 import { UserCache } from '@memberjunction/generic-database-provider';
 
 /**
@@ -23,11 +27,11 @@ import { UserCache } from '@memberjunction/generic-database-provider';
  * linking a `Person` record to an authenticated `MJ: Users` security principal.
  * Downstream applications (Tasks, Issues) and user-scoped agents (such as Chief of Staff)
  * use `LinkedUserID` to resolve a platform user's organizational `Person` identity,
- * while platform layers that need custom user-provisioning rules (e.g., BCSaaS `BC: People`)
+ * while platform layers that need custom user-provisioning rules (e.g., a downstream host module's custom People subtype)
  * can implement them in an IS-A subtype or explicit administrative workflow.
  */
 @RegisterClass(BaseEntity, 'MJ_BizApps_Common: People')
-export class PersonEntityServer extends mjBizAppsCommonPersonEntity {
+export class PersonEntityServer extends PersonEntity {
 
     /**
      * Find an existing MJ User by email using the cached UserCache.

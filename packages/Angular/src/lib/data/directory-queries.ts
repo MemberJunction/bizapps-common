@@ -1,5 +1,6 @@
 import { LogError, RunQuery, RunView } from '@memberjunction/core';
 import { AddDays, BusinessTimeZoneEngine, FromCalendarDay, type CalendarDay } from '@mj-biz-apps/common-entities';
+import { ResolveCommonAngularLimits, type CommonAngularLimitsOverride } from '../config/limits.config';
 import { COMMON_ENTITIES } from './entity-names';
 import type {
     DirectoryAttentionItem,
@@ -12,6 +13,11 @@ import type {
 } from './directory-types';
 
 const DIRECTORY_SUMMARY_QUERY = 'Common: Directory Dashboard Summary';
+/**
+ * The "people added" bars, read apart from the summary: the business-day function it calls cannot
+ * be inlined by SQL Server and would make the whole summary single-threaded (see the SQL file).
+ */
+const DIRECTORY_PEOPLE_PER_DAY_QUERY = 'Common: Directory People Per Day';
 const DIRECTORY_SUMMARY_CATEGORY = 'Common';
 
 export interface DirectoryDashboardSummary {
@@ -49,16 +55,37 @@ function businessWeekday(today: CalendarDay, daysAgo: number): string {
     return FromCalendarDay(AddDays(today, -daysAgo)).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
 }
 
-export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboardSummary | null> {
-    const result = await new RunQuery().RunQuery({
-        QueryName: DIRECTORY_SUMMARY_QUERY,
-        CategoryPath: DIRECTORY_SUMMARY_CATEGORY,
-    });
-    if (!result?.Success) {
-        LogError(`Common: Directory Dashboard Summary failed — ${result?.ErrorMessage ?? 'unknown error'}`);
+/**
+ * The first row of a saved query in the Common category, or `null` when the query fails, throws or
+ * returns nothing. A throw (a dropped connection, a gateway timeout) is logged and reported the same
+ * way as a failed result, so callers have one failure case to handle.
+ */
+async function loadSingleRow(queryName: string): Promise<Record<string, unknown> | null> {
+    try {
+        const result = await new RunQuery().RunQuery({
+            QueryName: queryName,
+            CategoryPath: DIRECTORY_SUMMARY_CATEGORY,
+        });
+        if (!result?.Success) {
+            LogError(`${queryName} failed — ${result?.ErrorMessage ?? 'unknown error'}`);
+            return null;
+        }
+        return ((result.Results ?? [])[0] as Record<string, unknown> | undefined) ?? null;
+    } catch (e) {
+        LogError(`${queryName} failed — ${e instanceof Error ? e.message : String(e)}`);
         return null;
     }
-    const row = (result.Results ?? [])[0] as Record<string, unknown> | undefined;
+}
+
+/**
+ * The dashboard's headline figures. `null` when the summary query fails. When only the per-day
+ * query fails, the summary is still returned, with no bars: the headline counts do not depend on it.
+ */
+export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboardSummary | null> {
+    const [row, days] = await Promise.all([
+        loadSingleRow(DIRECTORY_SUMMARY_QUERY),
+        loadSingleRow(DIRECTORY_PEOPLE_PER_DAY_QUERY),
+    ]);
     if (!row) {
         return null;
     }
@@ -150,11 +177,13 @@ export async function LoadDirectoryDashboardSummary(): Promise<DirectoryDashboar
         PeopleMissingOrganization: num(row['PeopleMissingOrganization']),
         OrganizationsMissingType: num(row['OrganizationsMissingType']),
         OrganizationsMissingWebsite: num(row['OrganizationsMissingWebsite']),
-        PeoplePerDay: [6, 5, 4, 3, 2, 1, 0].map((ago) => ({
-            Label: businessWeekday(today, ago),
-            Value: num(row[`PeopleAddedD${ago}`]),
-            Current: ago === 0,
-        })),
+        PeoplePerDay: days
+            ? [6, 5, 4, 3, 2, 1, 0].map((ago) => ({
+                  Label: businessWeekday(today, ago),
+                  Value: num(days[`PeopleAddedD${ago}`]),
+                  Current: ago === 0,
+              }))
+            : [],
         OrganizationTypeMix: mix,
         WorthALook: worth,
         Queues: queues.filter((q) => q.Count > 0),
@@ -210,32 +239,33 @@ const RELATIONSHIP_FIELDS = [
 ] as const;
 
 /** Cheap directory load — one round trip, no aggregates. */
-export async function LoadDirectorySnapshot(): Promise<{
+export async function LoadDirectorySnapshot(limitsOverride?: CommonAngularLimitsOverride | null): Promise<{
     People: DirectoryPersonRow[];
     Organizations: DirectoryOrganizationRow[];
     Relationships: DirectoryRelationshipRow[];
 }> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const [people, orgs, relationships] = await rv.RunViews([
         {
             EntityName: COMMON_ENTITIES.Person,
             Fields: [...PERSON_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotPeopleMaxRows,
             ResultType: 'simple',
         },
         {
             EntityName: COMMON_ENTITIES.Organization,
             Fields: [...ORGANIZATION_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotOrganizationsMaxRows,
             ResultType: 'simple',
         },
         {
             EntityName: COMMON_ENTITIES.Relationship,
             Fields: [...RELATIONSHIP_FIELDS],
             OrderBy: '__mj_CreatedAt DESC',
-            MaxRows: 1000,
+            MaxRows: limits.ResourceGuards.DirectorySnapshotRelationshipsMaxRows,
             ResultType: 'simple',
         },
     ]);
@@ -247,27 +277,45 @@ export async function LoadDirectorySnapshot(): Promise<{
     };
 }
 
-export async function SearchPeople(filter: string | undefined): Promise<DirectoryPersonRow[]> {
+/**
+ * @param filter A trusted, pre-escaped SQL fragment passed verbatim as `ExtraFilter` — NEVER raw
+ * user text. Build it with {@link EscapeFilterValue}/{@link EscapeLikeValue} from
+ * `./directory-stats` (e.g. `` `FirstName LIKE '%${EscapeLikeValue(term)}%'` ``); quote characters
+ * in unescaped input break the query, and the server evaluates whatever arrives here.
+ */
+export async function SearchPeople(
+    filter: string | undefined,
+    limitsOverride?: CommonAngularLimitsOverride | null,
+): Promise<DirectoryPersonRow[]> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const result = await rv.RunView<DirectoryPersonRow>({
         EntityName: COMMON_ENTITIES.Person,
         Fields: [...PERSON_FIELDS],
         ExtraFilter: filter,
         OrderBy: 'LastName, FirstName',
-        MaxRows: 200,
+        MaxRows: limits.Tuning.DirectorySearchPeopleMaxRows,
         ResultType: 'simple',
     });
     return result.Success ? result.Results : [];
 }
 
-export async function SearchOrganizations(filter: string | undefined): Promise<DirectoryOrganizationRow[]> {
+/**
+ * @param filter A trusted, pre-escaped SQL fragment passed verbatim as `ExtraFilter` — NEVER raw
+ * user text. See {@link SearchPeople} for the escaping contract.
+ */
+export async function SearchOrganizations(
+    filter: string | undefined,
+    limitsOverride?: CommonAngularLimitsOverride | null,
+): Promise<DirectoryOrganizationRow[]> {
+    const limits = ResolveCommonAngularLimits(limitsOverride);
     const rv = new RunView();
     const result = await rv.RunView<DirectoryOrganizationRow>({
         EntityName: COMMON_ENTITIES.Organization,
         Fields: [...ORGANIZATION_FIELDS],
         ExtraFilter: filter,
         OrderBy: 'Name',
-        MaxRows: 200,
+        MaxRows: limits.Tuning.DirectorySearchOrganizationsMaxRows,
         ResultType: 'simple',
     });
     return result.Success ? result.Results : [];

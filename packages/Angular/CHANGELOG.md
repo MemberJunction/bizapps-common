@@ -1,5 +1,56 @@
 # @mj-biz-apps/common-ng
 
+## 5.67.0
+
+### Minor Changes
+
+- 2e80c8d: Add `DashboardFilterBarComponent` (`bizapps-dashboard-filter-bar`), a period and company filter bar for BizApps dashboards, with the pure period-window, period-state and ID-list helpers it applies. The period dropdown offers this, last and next quarter, this and last year, all time and a custom range; quarters and years follow a fiscal year start the app supplies through `ResolveFiscalYearStart`. App-specific filters are projected into the bar.
+
+### Patch Changes
+
+- 969e536: Make Activity Type, Title, Direction, Status, Outcome, Sentiment Score and Details editable in the Activity form header. The header replaces the generated Activity Details section, so these fields had no editor on an existing Activity.
+- b588ffa: The selling company dropdown on orders and contracts lists every company in name order. It used to stop at the first 20, so a company past that point could only be found by typing its name (golive #456).
+  - @mj-biz-apps/common-entities@5.67.0
+
+## 5.66.0
+
+### Patch Changes
+
+- 6fb9fcd: Adopt the declarative `[mjRecordLink]` directive from `@memberjunction/ng-base-forms` across identity headers (`PersonIdentityComponent`, `OrganizationIdentityComponent`, `ActivityIdentityComponent`), related record chips (`RelatedChipsComponent`), relationship timeline items (`RelationshipListComponent`), organization staff table links (`OrganizationStaffPanel`), activity participant link cards (`ActivityLinksPanel`), and organization hierarchy outline nodes (`OrgHierarchyTreeComponent`).
+- Updated dependencies [8bae1a8]
+- Updated dependencies [d888586]
+  - @mj-biz-apps/common-entities@5.66.0
+
+## 5.65.0
+
+### Minor Changes
+
+- 16a34b2: Fix filed common bugs: record IDs compare case-insensitively (#314); calendar sync pages its whole window and Graph mail sync drains a backlog larger than one page (#312, #308); the Job Function and Seniority pipeline scopes to unclassified people (#324); the Organization and Person heroes render every field of the sections they claim (#343); saving with the selling-company question open says the change was not applied (#344); the Activity header shows the parent link from ParentActivityID (#311); undefined `--mj-*` token names are replaced (#299).
+
+### Patch Changes
+
+- Updated dependencies [9365ded]
+  - @mj-biz-apps/common-entities@5.65.0
+
+## 5.64.0
+
+### Minor Changes
+
+- 152c046: Directory dashboard: the page no longer hangs on "Loading the directory…". The two grids show as soon as their views load and the count cards say "Counting…" until the summary arrives; a failed or thrown load ends its loading state. The summary query runs in about 9 seconds instead of 45–70 on a 1.3M-person directory: the people-added bars move to a new query, Common: Directory People Per Day, because their non-inlinable business-day function made the whole statement single-threaded, and people without an organization are counted with NOT EXISTS instead of through vwPeople's per-row OUTER APPLY.
+
+### Patch Changes
+
+- Updated dependencies [eb8654d]
+  - @mj-biz-apps/common-entities@5.64.0
+
+## 5.63.0
+
+### Patch Changes
+
+- Updated dependencies [0a36764]
+- Updated dependencies [b32b175]
+  - @mj-biz-apps/common-entities@5.63.0
+
 ## 5.62.0
 
 ### Patch Changes

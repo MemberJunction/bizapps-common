@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ *
  * @mj-biz-apps/common-core-entities-server
  *
  * Server-side entity subclasses for BizApps Common entities.
@@ -10,3 +13,23 @@
  */
 
 export { PersonEntityServer } from './PersonEntityServer.js';
+export { ActivityEntityServer } from './ActivityEntityServer.js';
+export { ActivityLinkEntityServer, KeyMatchesPrimaryKeys } from './ActivityLinkEntityServer.js';
+export { ActivitySyncConnectionEntityServer } from './ActivitySyncConnectionEntityServer.js';
+export {
+    CompanyOrganizationMirrorEntityServer,
+    MirrorCompanyToOrganization,
+    SyncCompaniesToOrganizationsServerOperation,
+    TryMirrorCompanyToOrganization,
+    TryUnlinkOrganizationForDeletedCompany,
+    UnlinkOrganizationForDeletedCompany,
+    type CompanyDeleteUnlinkServerOptions,
+    type CompanyMirrorSource,
+} from './CompanyOrganizationMirrorServer.js';
+export {
+    CALENDAR_WATERMARK_KEY,
+    CONNECTION_ROUTING_FIELDS,
+    ChangedRoutingFields,
+    SettingsWithoutWatermark,
+} from './activity-sync-connection-routing.js';
+export { IsOwnerUser, IsSystemUser, SYSTEM_USER_ID } from './entity-guards.js';

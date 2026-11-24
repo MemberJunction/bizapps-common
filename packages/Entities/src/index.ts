@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
 export * from './generated/entity_subclasses'
 export type {
     ActivityDetails,
@@ -14,6 +18,11 @@ export * from './sender-identity.js';
 export * from './CompanySenderIdentityEntity.js';
 export * from './contact-method-consent-entity.js';
 export * from './contact-preference-engine.js';
+export * from './company-organization-mirror.js';
+export * from './company-organization-sync.operation.js';
+export * from './reporting-chain.js';
+export * from './limits.config.js';
+export * from './PersonEntity.js';
 
 /**
  * This function is used to force the generated entities to be loaded. This is necessary because of the way that tree shaking works in webpack.

@@ -8,6 +8,7 @@
  * Design: plans/activity-sync-engine.md
  */
 export * from './types.js';
+export * from './limits.config.js';
 export * from './watermark.js';
 export * from './qualification.js';
 export * from './participants.js';
@@ -16,11 +17,16 @@ export * from './content-capture.js';
 export * from './run.js';
 export * from './BaseActivitySyncProvider.js';
 export * from './BaseActivitySyncExtension.js';
+export * from './BaseActivityConsentSource.js';
 export * from './entity-names.js';
 export * from './identity.js';
 export * from './writer.js';
 export * from './manual-log.js';
 export * from './stages.js';
+export * from './consent.js';
+export * from './consent-stages.js';
+export * from './consent-intake.js';
+export * from './consent-store.js';
 export * from './ActivitySyncEngine.js';
 export * from './action-result.js';
 export * from './extensions.js';

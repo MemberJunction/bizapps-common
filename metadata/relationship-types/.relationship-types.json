@@ -236,5 +236,18 @@
       "lastModified": "2026-05-14T15:55:52.021Z",
       "checksum": "c1633686bc59a3c599df750b2753045fc318f00a1ac4a7f511d822324e4bcaca"
     }
+  },
+  {
+    "fields": {
+      "Name": "Reports To",
+      "Description": "Direct reporting line between a person and their supervisor",
+      "Category": "PersonToPerson",
+      "IsDirectional": true,
+      "ForwardLabel": "reports to",
+      "ReverseLabel": "supervises"
+    },
+    "primaryKey": {
+      "ID": "F1449971-6488-49E3-8F5B-823EB3E8CB11"
+    }
   }
 ]

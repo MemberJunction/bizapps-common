@@ -1,5 +1,39 @@
 # Change Log - mj_generatedentities
 
+## 5.67.0
+
+## 5.66.0
+
+### Minor Changes
+
+- 8bae1a8: Field-level security is now on for `MJ_BizApps_Common: People`. It lets an app such as Collaboration give guest and participant roles People's name and email fields without phone, birth date, gender or address. The migration also gives every role that can read People a permission row on each field, computed from the host's own People permissions with MemberJunction's snapshot rule, so no role's access changes until an administrator tightens a field. If a role ever loses People fields after this release, save any People Entity Permission in the UI: MemberJunction then reconciles People's field permissions for all roles. Entities that extend People, such as `MJ_BizApps_Sales: Sales Contacts`, apply the same People field rules. Applies on SQL Server and PostgreSQL hosts. Requires MemberJunction 6.2.1 or later (already the floor).
+- d888586: Adds a resolver between MemberJunction users and People, exported from `@mj-biz-apps/common-entities` (browser-safe, so Angular and server code can both use it). `People.LinkedUserID` has been deprecated since 5.33.0; a platform now binds a user to a Person through an IS-A subtype of People and records it on the user's `LinkedEntityID` / `LinkedEntityRecordID`. The resolver reads that link first and falls back to `LinkedUserID` for users without one.
+
+  - `ResolvePersonIDForUser` and `ResolvePersonIDsForUsers`: user to Person, with an optional `ActiveOnly` filter on Person status.
+  - `ResolveUserIDForPerson` and `ResolveUserIDsForPeople`: Person to user, active users first when several link one Person.
+  - `IsPeopleEntity` and `LinkedPersonRecordID`: the checks the resolvers use, for callers that already hold the user record.
+
+  Lookups throw on a failed read, so a caller can tell an error from a missing link. Apps that copied their own `person-user-link.ts` can switch to this export once they raise their common floor (#254).
+
+## 5.65.0
+
+### Minor Changes
+
+- 9365ded: Release seed for the Job Function and Seniority scope filter: `V…__v5.65.x__Metadata_Sync` updates the "Job Function and Seniority Derivation" record process's ScopeFilter to the `ID NOT IN (SELECT PersonID …)` form, by ID and only when the record process exists. It has a Postgres counterpart.
+
+## 5.64.0
+
+### Minor Changes
+
+- eb8654d: Release seed for the Directory dashboard fix: `V…__v5.64.x__Metadata_Sync` updates the `Common: Directory Dashboard Summary` query's SQL and adds its result fields, and creates the `Common: Directory People Per Day` query with its fields. The summary update is applied by ID; everything else is create-only, guarded on its ID or key. It has a Postgres counterpart.
+
+## 5.63.0
+
+### Minor Changes
+
+- 0a36764: The 5.63 Metadata_Sync ships the Sync Activities action's DryRun and ConnectionIDs inputs and its updated description, so a host that upgrades by migration gets the same metadata as one that ran `mj sync push`. It has a Postgres counterpart. Field-level security for People stays held back.
+- b32b175: Move to MemberJunction's 6.2 LTS line: every `@memberjunction/*` range and the core/global overrides are `^6.2.1` (exact `6.2.1` devDependency anchors), and `mjVersionRange` is `>=6.2.1 <7.0.0`. Hosts must run MJ 6.2.1 or later to install this release.
+
 ## 5.62.0
 
 ### Minor Changes

@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-6.1.6%2B-blue?style=flat-square" />
+  <img alt="MJ Version" src="https://img.shields.io/badge/MemberJunction-6.3%2B-blue?style=flat-square" />
   <img alt="Angular" src="https://img.shields.io/badge/Angular-21-DD0031?style=flat-square&logo=angular&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <a href="./LICENSE"><img alt="License: BUSL-1.1" src="https://img.shields.io/badge/License-BUSL--1.1-green?style=flat-square" /></a>
@@ -61,7 +61,7 @@ mj app install https://github.com/MemberJunction/mj-bizapps-common
 This single command:
 
 1. Fetches the `mj-app.json` manifest from this repository
-2. Validates MJ version compatibility (`>=5.0.0 <6.0.0`)
+2. Validates MJ version compatibility (`>=6.3.0-edge.1 <7.0.0`)
 3. Creates the `__mj_BizAppsCommon` database schema
 4. Runs Skyway migrations to create all 11 tables
 5. Installs npm packages into your MJAPI and MJExplorer workspaces
@@ -195,6 +195,8 @@ line is hidden while editing so it does not compete with the live fields.
 **Polymorphic Address Linking** -- Addresses are standalone records joined to any entity via `AddressLink(EntityID, RecordID)`. This means any entity in the system can have addresses without schema changes.
 
 **Directional Relationships** -- Each RelationshipType defines `ForwardLabel` and `ReverseLabel` (e.g., "is employee of" / "employs"). The UI automatically selects the correct label based on perspective.
+
+**Supervisor Hierarchy & Reporting Chain** -- `Person.SupervisorPersonID` models direct reporting lines with `vwPersonReportingChain` (`PersonID`, `SupervisorPersonID`, `Depth`) for cycle-safe transitive lookups and `SyncEmployeesToPeople` for employee-to-person synchronization. `PersonEntity` rejects direct, 2-node, and multi-hop reporting cycles in `Validate()`, `ValidateAsync()`, and `Save()`, and atomically synchronizes dated `'Reports To'` rows in `Relationships` inside the provider's `EntityTransactionScope` so `People.SupervisorPersonID` and active `'Reports To'` links never diverge.
 
 **Contact Method Flexibility** -- ContactMethods attach to either a Person or Organization via nullable FKs. Primary flags are scoped per ContactType, so a person can have a primary email AND a primary phone.
 
@@ -382,6 +384,7 @@ Entities ──► Actions ──► Server ──► MJAPI
 | [Getting Started (Contributors)](docs/getting-started.md) | Full local dev setup with prerequisites and troubleshooting |
 | [Architecture](docs/architecture.md) | System architecture, Open App pattern, data flow, and design decisions |
 | [Entity Model](docs/entity-model.md) | Complete schema reference, ER diagram, relationships, and access patterns |
+| [Company → Organization Mirroring](docs/company-organization-mirroring.md) | Canonical `Organization.LinkedCompanyID` bridge, server auto-mirroring, and `BizAppsCommon.SyncCompaniesToOrganizations` Remotable Operation |
 | [Angular Components](docs/angular-components.md) | Component API reference, usage examples, and styling guide |
 | [Development Guide](docs/development.md) | Build system, code generation, TypeScript conventions, and Git workflow |
 | [API & Server](docs/api-server.md) | GraphQL API, server bootstrap, actions system, and deployment |
@@ -393,7 +396,7 @@ Entities ──► Actions ──► Server ──► MJAPI
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| **Platform** | [MemberJunction](https://github.com/MemberJunction/MJ) | 5.8.0 |
+| **Platform** | [MemberJunction](https://github.com/MemberJunction/MJ) | 6.3.0-edge |
 | **Runtime** | Node.js | 18+ |
 | **Language** | TypeScript | 5.9 |
 | **Database** | SQL Server / Azure SQL | 2019+ |
