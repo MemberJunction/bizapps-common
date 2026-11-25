@@ -1,4 +1,8 @@
 /**
+ * Copyright (c) MemberJunction.com
+ * SPDX-License-Identifier: BUSL-1.1
+ */
+/**
  * @fileoverview Consent: who decides that a mail or meeting belongs in the CRM.
  *
  * ── TWO MODES, CHOSEN PER CONNECTION ──────────────────────────────────────────────────────────
@@ -7,8 +11,8 @@
  * any participant matches a stored ContactMethod. A personal note to a customer who is also a friend
  * matches as well as a quote does, and nothing in a mailbox can tell the two apart.
  *
- * `Tagged`: an item is captured only when the MAILBOX OWNER put an Outlook category on it (the
- * Dynamics 365 "Tracked to Dynamics 365" model), or when it is a PROVEN reply to, or ancestor of, an
+ * `Tagged`: an item is captured only when the MAILBOX OWNER put a category tag on it (the
+ * explicit mailbox-owner tracked-item model), or when it is a PROVEN reply to, or ancestor of, an
  * item that was. Consent is the owner's and stays in the owner's mailbox: a colleague tagging their
  * copy of a thread consents nothing on anyone else's behalf.
  *
