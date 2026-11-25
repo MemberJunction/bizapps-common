@@ -32,7 +32,10 @@
     "job-functions",
     "seniority-levels",
     "prompts",
-    "record-processes"
+    "record-processes",
+    "tours",
+    "learning-paths",
+    "tour-publications"
   ],
   "sqlLogging": {
     "enabled": true,
