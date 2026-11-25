@@ -1,5 +1,30 @@
 # @mj-biz-apps/common-server
 
+## 5.69.0
+
+### Minor Changes
+
+- 84367da: Server-side write guards on Activity data. An Activity's `LoggedByUserID` is always the user who saved it and cannot be changed afterwards (#395). An Activity Link can be saved only by a user who can read the record it links to (#396). Only an Owner-type user (or the System user) may create an Activity Sync Connection or change its `Mailbox`, `CredentialsRef`, `Provider`, provider type, owner, or `Settings` other than the calendar watermark (#392); hosts whose Developer or Integration users create connections need an Owner-type user to do it from this release on.
+
+  Organization search now matches the website domain: `Organizations.WebsiteDomain` is a user-search field with a starts-with predicate on its existing index, so typing "acme" finds `https://www.acme-widgets.example` (#329).
+
+### Patch Changes
+
+- 564340a: Consolidated security hardening across server actions, activity sync, entity helpers, Angular filters, and release workflow credentials:
+
+  - Require `ContextUser` in `Common.SyncActivities` (`SyncActivitiesAction`) returning `VALIDATION_ERROR`, matching sibling actions.
+  - Validate `Links[].EntityName` against `provider.EntityByName` in `ActivityWriter.WriteManual` before opening a write transaction.
+  - Enforce UUID validation inside `quoteList` in `person-user-link.ts` as defense-in-depth.
+  - Route `AddressEditorComponent` address IDs and `related-links.ts` through the shared `EscapeFilterValue` helper; document the pre-escaped `filter` contract on `SearchPeople`/`SearchOrganizations`; replace `href="javascript:void(0)"` in `relationship-list` with a `<button type="button">`.
+  - Harden `.github/workflows/publish.yml` with `persist-credentials: false` on checkout and explicit per-step credentials, minting the GitHub App token only after install/build/publish.
+
+- Updated dependencies [84367da]
+- Updated dependencies [564340a]
+  - @mj-biz-apps/common-core-entities-server@5.69.0
+  - @mj-biz-apps/common-activity-sync@5.69.0
+  - @mj-biz-apps/common-entities@5.69.0
+  - @mj-biz-apps/common-actions@5.69.0
+
 ## 5.68.0
 
 ### Patch Changes
