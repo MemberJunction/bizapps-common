@@ -83,7 +83,7 @@ describe('Company <-> Organization mirror static hygiene & release-line alignmen
         }
     });
 
-    it('aligns release-lines.json and mj-app.json for MJ 6.3 edge targeting next', () => {
+    it('aligns release-lines.json and mj-app.json with the MJ 6.2 line', () => {
         const releaseLines = JSON.parse(readFileSync(join(REPO_ROOT, 'release-lines.json'), 'utf8')) as {
             next?: { edgeOnlyMigrations?: string[] };
             lines?: Record<string, { branch: string; status: string; mjVersion: string; appMajor: number; releasesThrough: string }>;
@@ -97,6 +97,6 @@ describe('Company <-> Organization mirror static hygiene & release-line alignmen
             license?: string;
         };
         expect(mjApp.license).toBe('BUSL-1.1');
-        expect(mjApp.mjVersionRange).toContain('6.3.0-edge');
+        expect(mjApp.mjVersionRange).toBe('>=6.2.1 <6.3.0');
     });
 });
