@@ -14,6 +14,12 @@ export { ActivityEntityServer } from './ActivityEntityServer.js';
 export { ActivityLinkEntityServer, KeyMatchesPrimaryKeys } from './ActivityLinkEntityServer.js';
 export { ActivitySyncConnectionEntityServer } from './ActivitySyncConnectionEntityServer.js';
 export {
+    CompanyOrganizationMirrorEntityServer,
+    MirrorCompanyToOrganization,
+    SyncCompaniesToOrganizationsServerOperation,
+    type CompanyMirrorSource,
+} from './CompanyOrganizationMirrorServer.js';
+export {
     CALENDAR_WATERMARK_KEY,
     CONNECTION_ROUTING_FIELDS,
     ChangedRoutingFields,

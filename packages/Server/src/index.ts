@@ -82,6 +82,9 @@ export {
     SANDBOX_DISABLED_REFUSAL,
     SANDBOX_REF_PREFIX,
     SandboxAwareTransportFactory,
+    SandboxNoEmployeeSource,
+    SandboxOwnedAccountsSource,
+    SandboxUnreadableSource,
 } from './custom/activity-sync-sandbox.js';
 export { MJActivityContentCipher, LoadActivityContentCipher } from './custom/activity-content-cipher.js';
 export {
