@@ -1,0 +1,40 @@
+-- =============================================================================
+-- PostgreSQL counterpart of V202611121645__v5.67.x__Single_Write_spUpdate_And_Trigger_Guard.sql
+-- =============================================================================
+-- Nothing to change on PostgreSQL. PostgreSQL already saves a record in one
+-- write; this file only keeps the two migration sets in step.
+--
+-- WHAT THE T-SQL FILE DOES
+--
+-- It regenerates the 30 spUpdate* procedures of this schema so they set
+-- [__mj_UpdatedAt] in the UPDATE itself, and wraps each table's trgUpdate*
+-- trigger in IF NOT UPDATE([__mj_UpdatedAt]). On SQL Server trgUpdate* is an
+-- AFTER UPDATE trigger that runs a second UPDATE on the row to stamp
+-- __mj_UpdatedAt, so every BaseEntity.Save() wrote the row twice. With the
+-- change, a save writes once and the trigger stamps only UPDATEs that leave
+-- __mj_UpdatedAt out. The procedures keep the parameter lists of their previous
+-- definitions, so no caller changes.
+--
+-- WHY POSTGRESQL NEEDS NONE OF IT
+--
+-- Every __mj_UpdatedAt trigger this schema has on PostgreSQL is a BEFORE UPDATE
+-- row trigger that assigns NEW."__mj_UpdatedAt" in place and returns NEW:
+--   - the ones the PostgreSQL files create themselves (trg_update_<table> for
+--     Address, AddressLink, AddressType, ContactMethod, ContactType,
+--     Organization, OrganizationType, Person, Relationship, RelationshipType;
+--     baseline and the 5.28/5.29 regenerations);
+--   - the rest, which `mj codegen` generates on PostgreSQL
+--     (docs/postgresql.md), in the same BEFORE UPDATE form
+--     (PostgreSQLCodeGenProvider.generateTimestampTrigger in MJ CodeGenLib).
+-- There is no second UPDATE, so every UPDATE, through spUpdate* or direct SQL,
+-- is already one write, with or without __mj_UpdatedAt in its SET list.
+-- Regenerating the spUpdate* functions to set the column would change nothing,
+-- since the BEFORE trigger overwrites the value. MJ core's PostgreSQL
+-- counterpart of its own single-write migration (V202611121645__v6.3.x) is
+-- empty for the same reason. The GRANT EXECUTE statements in the T-SQL file
+-- re-grant what PostgreSQL CodeGen already grants.
+--
+-- Runs once, in order, after V202611120618.
+-- =============================================================================
+
+SET search_path TO __mj_bizappscommon, public;
