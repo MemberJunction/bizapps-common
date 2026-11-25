@@ -1,5 +1,18 @@
 # @mj-biz-apps/common-ng
 
+## 5.68.0
+
+### Minor Changes
+
+- 34d9795: Export mjBizAppsCommonAddressLinkFormComponent in @mj-biz-apps/common-ng public-api for clean manifest/chunk resolution, and configure @RegisterForStartup({ deferred: typeof window !== 'undefined' }) on BusinessTimeZoneEngine in @mj-biz-apps/common-entities to defer browser startup initialization off the critical first-paint path.
+
+### Patch Changes
+
+- Updated dependencies [00ec7d0]
+- Updated dependencies [36db472]
+- Updated dependencies [34d9795]
+  - @mj-biz-apps/common-entities@5.68.0
+
 ## 5.67.2
 
 ### Patch Changes

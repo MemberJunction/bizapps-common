@@ -1,5 +1,13 @@
 # Change Log - mj_generatedentities
 
+## 5.68.0
+
+### Minor Changes
+
+- 00ec7d0: Add the PostgreSQL counterpart of the single-write `spUpdate*` / trigger-guard migration. It changes nothing on PostgreSQL, whose `__mj_UpdatedAt` triggers are already BEFORE UPDATE triggers that stamp the row in one write; it keeps the two migration sets paired for the release gate.
+- 36db472: Re-enable `SaveReturnMode: 'datestamps_only'` (and `TrackRecordChanges: false`) on `MJ_BizApps_Common: Activity Sync Runs` and `MJ_BizApps_Common: Activity Sync Run Details` with paired SQL Server and PostgreSQL migrations now that MJ 6.2.1 ships full runtime and CodeGen support, and restore integration benchmark check `activities.A6`.
+- 34d9795: Export mjBizAppsCommonAddressLinkFormComponent in @mj-biz-apps/common-ng public-api for clean manifest/chunk resolution, and configure @RegisterForStartup({ deferred: typeof window !== 'undefined' }) on BusinessTimeZoneEngine in @mj-biz-apps/common-entities to defer browser startup initialization off the critical first-paint path.
+
 ## 5.67.2
 
 ## 5.67.1
