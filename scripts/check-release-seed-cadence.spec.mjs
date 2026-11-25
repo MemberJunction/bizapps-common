@@ -21,7 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { findUnconsolidatedSeedDeltas, findUnshippedMetadataDrift, findStaleOrEmptySeeds, readReleaseState } from './check-release-seed-cadence.mjs';
+import { findUnconsolidatedSeedDeltas, findUnshippedMetadataDrift, findStaleOrEmptySeeds, readReleaseState, parseShippedBy } from './check-release-seed-cadence.mjs';
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(SCRIPTS_DIR, 'check-release-seed-cadence.mjs');
@@ -37,7 +37,7 @@ function check(name, condition, detail) {
 }
 
 /** A stubbed git boundary: what the tag holds, what the tree holds, what moved under metadata/. */
-const state = (tag, released, current, metadataChanged = []) => () => ({ tag, released, current, metadataChanged });
+const state = (tag, released, current, metadataChanged = [], shippedBy = []) => () => ({ tag, released, current, metadataChanged, shippedBy });
 
 const A = 'V202608081700__v0.8.x__Metadata_Sync.sql';
 const B = 'V202608182130__v0.11.x__Metadata_Sync_Designer_Taxonomy.sql';
@@ -372,6 +372,64 @@ withGitRepo(
     (root) => {
         const r = staleness(root);
         check('known limitation: a seed newer than the edit but missing it still passes', r.problems.length === 0, JSON.stringify(r.problems));
+    },
+);
+
+// ---------------------------------------------------------------------------------------------
+// Cases 29-33: ci/metadata-shipped-by.txt. A feature migration that writes the same rows as a
+// metadata change ships it, so the release owes no seed for it, but only while that migration is
+// itself unreleased. The same file and rule as ci/check-metadata-shipped.sh.
+// ---------------------------------------------------------------------------------------------
+
+const FEATURE = 'V202611201230__v5.68.x__SaveReturnMode_DatestampsOnly_StoredProcedures.sql';
+const SAVE_RETURN = 'metadata/entities/.save-return-datestamps-only.json';
+
+// 29. Declared against an unreleased feature migration: no seed owed.
+{
+    const r = findUnshippedMetadataDrift('/x', state('v0.10.0', [A], [A, FEATURE], [SAVE_RETURN], [{ metadata: SAVE_RETURN, migration: FEATURE }]));
+    check('metadata declared against an unreleased feature migration owes no seed', r.problems.length === 0, JSON.stringify(r.problems));
+}
+
+// 30. The same entry once its migration has shipped covers nothing: a later edit owes a seed.
+{
+    const r = findUnshippedMetadataDrift('/x', state('v0.10.0', [A, FEATURE], [A, FEATURE], [SAVE_RETURN], [{ metadata: SAVE_RETURN, migration: FEATURE }]));
+    check('an entry whose migration already shipped does not count', r.problems.length === 1 && r.problems[0].includes(SAVE_RETURN), JSON.stringify(r.problems));
+}
+
+// 31. An entry naming a migration that is not in the tree covers nothing either.
+{
+    const r = findUnshippedMetadataDrift('/x', state('v0.10.0', [A], [A], [SAVE_RETURN], [{ metadata: SAVE_RETURN, migration: FEATURE }]));
+    check('an entry naming a missing migration does not count', r.problems.length === 1, JSON.stringify(r.problems));
+}
+
+// 32. An entry covers only its own file: another changed record still owes a seed, and the
+//     message names that one, not the declared one.
+{
+    const r = findUnshippedMetadataDrift('/x', state('v0.10.0', [A], [A, FEATURE], [SAVE_RETURN, REC], [{ metadata: SAVE_RETURN, migration: FEATURE }]));
+    check('an undeclared record alongside a declared one still fails', r.problems.length === 1 && r.problems[0].includes(REC) && !r.problems[0].includes(SAVE_RETURN), JSON.stringify(r.problems));
+}
+
+// 33. The parser skips comments and blank lines and keeps the two fields.
+{
+    const entries = parseShippedBy(`# comment\n\n  ${SAVE_RETURN}   ${FEATURE}  \n# ${REC} ${A}\nlonely-path\n`);
+    check('parseShippedBy keeps entries, skips comments, blanks and one-field lines', entries.length === 1 && entries[0].metadata === SAVE_RETURN && entries[0].migration === FEATURE, JSON.stringify(entries));
+}
+
+// 34. Real git: readReleaseState reads ci/metadata-shipped-by.txt, and the declared change passes.
+withGitRepo(
+    (root, git) => {
+        released(root, git);
+        mkdirSync(join(root, 'ci'), { recursive: true });
+        writeFileSync(join(root, RECORD), record('B'));
+        writeFileSync(join(root, 'migrations', FEATURE), "UPDATE Entity SET Name = 'B';\n");
+        writeFileSync(join(root, 'ci', 'metadata-shipped-by.txt'), `# header\n${RECORD} ${FEATURE}\n`);
+        git('add', '-A'); git('commit', '-qm', 'feature migration + declaration');
+    },
+    (root) => {
+        const s = readReleaseState(root);
+        check('real git: the declarations file is read', s.shippedBy.length === 1 && s.shippedBy[0].migration === FEATURE, JSON.stringify(s.shippedBy));
+        const d = findUnshippedMetadataDrift(root);
+        check('real git: a declared change with no seed passes drift', d.problems.length === 0, JSON.stringify(d.problems));
     },
 );
 
