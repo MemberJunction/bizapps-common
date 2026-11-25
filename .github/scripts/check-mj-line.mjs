@@ -4,7 +4,7 @@
 //
 // Each line is cut for one MJ minor (the 6.2 line for MJ 6.2) and declares the MJ version it was
 // cut for as its floor, which it never raises (release-lines.json `mjVersion`). On a line branch,
-// and on the release PR into `main`, this checks four places:
+// and on the release PR into `main`, this checks five places:
 //
 //   1. peerDependencies on @memberjunction/* are exactly the line range, `>=<mjVersion> <X.(Y+1).0`.
 //      A caret (`^6.2.1`) would let a host on MJ 6.3 install a 6.2-line release; the cap is what
@@ -15,11 +15,15 @@
 //      repo builds or tests against has moved to a newer MJ (or an Edge prerelease). 0.x packages
 //      in the scope (the Skyway migration engine) are versioned on their own, not with MJ, and
 //      are skipped.
-//   4. mj-app.json declares `"line": "X.Y"` and `mjVersionRange` equal to the line range, so the
+//   4. Overrides on @memberjunction/* (pnpm-workspace.yaml `overrides:`, root package.json
+//      `pnpm.overrides` and `overrides`) are an exact version inside the line or the line range.
+//      An override wins over every manifest, so a caret there (`^6.2.1`) would let MJ 6.3 into the
+//      install once it is released, whatever the packages declare.
+//   5. mj-app.json declares `"line": "X.Y"` and `mjVersionRange` equal to the line range, so the
 //      installer refuses a host outside the line and one manifest read tells which line a release
 //      belongs to.
 //
-// `--fix` rewrites 1, 2 and 4 to the line's values (the line cut uses it); run
+// `--fix` rewrites 1, 2, 4 and 5 to the line's values (the line cut uses it); run
 // `pnpm install --lockfile-only` afterwards for 3.
 //
 // Usage:  node check-mj-line.mjs --line 6.2 [--fix] [--file release-lines.json | --ref origin/next] [root]
@@ -100,6 +104,57 @@ export function CheckManifest(json, line, fix = false) {
   return problems;
 }
 
+/** True when an override value keeps MJ inside the line: the line range or an exact in-line version. */
+function overrideOk(value, line) {
+  return value === MjRange(line) || InLine(value.replace(/^=/, ''), line);
+}
+
+function overrideProblem(where, name, value, line) {
+  return `${where} ${name}@${value}: the ${line.key} line needs an exact ${line.key}.x version at or above ${line.mjVersion}, or "${MjRange(line)}"`;
+}
+
+/** Problems in root package.json overrides (`pnpm.overrides`, npm `overrides`); with `fix`, rewrites `json`. */
+export function CheckPackageOverrides(json, line, fix = false) {
+  const problems = [];
+  for (const [where, map] of [['pnpm.overrides', json.pnpm?.overrides], ['overrides', json.overrides]]) {
+    for (const [name, spec] of Object.entries(map ?? {})) {
+      if (!name.startsWith(MJ_SCOPE) || typeof spec !== 'string' || overrideOk(spec.trim(), line)) {
+        continue;
+      }
+      problems.push(overrideProblem(where, name, spec.trim(), line));
+      if (fix) {
+        map[name] = MjRange(line);
+      }
+    }
+  }
+  return problems;
+}
+
+const WORKSPACE_OVERRIDE = /^(\s+)(['"]?)(@memberjunction\/[^'":\s]+)\2\s*:\s*(['"]?)([^'"#\n]*?)\4\s*(#.*)?$/;
+
+/** Problems in pnpm-workspace.yaml's `overrides:` block; with `fix`, returns the corrected text too. */
+export function CheckWorkspaceOverrides(text, line, fix = false) {
+  const problems = [];
+  const lines = text.split('\n');
+  let inOverrides = false;
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    if (/^\S/.test(raw)) {
+      inOverrides = /^overrides\s*:/.test(raw);
+      continue;
+    }
+    const m = inOverrides ? WORKSPACE_OVERRIDE.exec(raw) : null;
+    if (!m || overrideOk(m[5].trim(), line)) {
+      continue;
+    }
+    problems.push(overrideProblem('overrides', m[3], m[5].trim(), line));
+    if (fix) {
+      lines[i] = `${m[1]}${m[2]}${m[3]}${m[2]}: '${MjRange(line)}'${m[6] ? ` ${m[6]}` : ''}`;
+    }
+  }
+  return { problems, text: lines.join('\n') };
+}
+
 /** Problems in pnpm-lock.yaml: every resolved @memberjunction/* version must be inside the line. */
 export function CheckLockfile(text, line) {
   const outside = new Map();
@@ -142,10 +197,23 @@ export function CheckRepo(root, line, fix = false) {
   for (const file of manifestPaths(root)) {
     const json = JSON.parse(readFileSync(file, 'utf8'));
     const problems = CheckManifest(json, line, fix);
+    if (file === join(root, 'package.json')) {
+      problems.push(...CheckPackageOverrides(json, line, fix));
+    }
     if (problems.length > 0) {
       results.push({ file: relative(root, file), problems });
       if (fix) {
         writeFileSync(file, JSON.stringify(json, null, 2) + '\n');
+      }
+    }
+  }
+  const workspace = join(root, 'pnpm-workspace.yaml');
+  if (existsSync(workspace)) {
+    const { problems, text } = CheckWorkspaceOverrides(readFileSync(workspace, 'utf8'), line, fix);
+    if (problems.length > 0) {
+      results.push({ file: 'pnpm-workspace.yaml', problems });
+      if (fix) {
+        writeFileSync(workspace, text);
       }
     }
   }
@@ -211,7 +279,7 @@ function main(args) {
   if (results.length > 0) {
     return 1;
   }
-  console.log(`✓ Every MJ dependency, the lockfile and mj-app.json stay inside the ${line.key} line (${MjRange(line)})`);
+  console.log(`✓ Every MJ dependency, override, the lockfile and mj-app.json stay inside the ${line.key} line (${MjRange(line)})`);
   return 0;
 }
 

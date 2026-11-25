@@ -1,0 +1,13 @@
+# Metadata changes that ship through a migration other than a *__Metadata_Sync.sql one.
+#
+# ci/check-metadata-shipped.sh and scripts/check-release-seed-cadence.mjs fail a release when
+# metadata/ changed since the last tag and no Metadata_Sync migration was added. Some changes
+# already reach hosts through a feature migration that writes the same rows. List them here so
+# the release needs no empty placeholder seed.
+#
+# One entry per line: <metadata path> <migration file name>. An entry counts only while its
+# migration was added since the last release tag, so entries from earlier releases stop applying
+# on their own. This file lives outside migrations/ on purpose: naming the metadata inside the
+# migration would change its checksum on every database that already ran it.
+
+metadata/entities/.save-return-datestamps-only.json V202611201230__v5.68.x__SaveReturnMode_DatestampsOnly_StoredProcedures.sql

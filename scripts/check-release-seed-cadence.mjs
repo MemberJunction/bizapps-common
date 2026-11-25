@@ -26,7 +26,9 @@
  *                                  came back.
  *   findUnshippedMetadataDrift   — `metadata/` moved since the last release tag, so a seed is
  *                                  OWED. Zero unreleased seeds is then a release that silently
- *                                  ships none of it.
+ *                                  ships none of it. A change listed in ci/metadata-shipped-by.txt
+ *                                  against an unreleased feature migration that writes the same
+ *                                  rows owes none (the same file ci/check-metadata-shipped.sh reads).
  *   findStaleOrEmptySeeds        — the unreleased seed must CARRY something and be CURRENT: an
  *                                  empty file fails, and so does any metadata record changed after
  *                                  the seed's last commit. "A seed exists" is not "the seed has it".
@@ -64,6 +66,23 @@ import { stripSqlComments } from '../.github/scripts/strip-sql-comments.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SEED_PATTERN = /Metadata_Sync.*\.sql$/i;
+/** Shared with ci/check-metadata-shipped.sh: `<metadata path> <migration file name>` per line. */
+const SHIPPED_BY_FILE = join('ci', 'metadata-shipped-by.txt');
+
+/**
+ * Parses ci/metadata-shipped-by.txt: metadata changes a feature migration already writes, so the
+ * release owes no Metadata_Sync for them. Blank lines and `#` comments are skipped; the first two
+ * whitespace-separated fields are the metadata path and the migration file name.
+ */
+export function parseShippedBy(text) {
+    const entries = [];
+    for (const raw of text.split('\n')) {
+        const [metadata, migration] = raw.trim().split(/\s+/);
+        if (!metadata || metadata.startsWith('#') || !migration) continue;
+        entries.push({ metadata, migration });
+    }
+    return entries;
+}
 
 function git(repoRoot, args) {
     return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -123,7 +142,7 @@ export function readReleaseState(repoRoot) {
         .map((t) => t.trim())
         .filter(Boolean)
         .sort(compareVersions);
-    if (tags.length === 0) return { tag: null, released: [], current: [] };
+    if (tags.length === 0) return { tag: null, released: [], current: [], shippedBy: [] };
 
     const tag = tags[tags.length - 1];
     const listMigrations = (ref) =>
@@ -143,7 +162,10 @@ export function readReleaseState(repoRoot) {
     const migrationsDir = join(repoRoot, 'migrations');
     const current = existsSync(migrationsDir) ? readdirSync(migrationsDir) : [];
 
-    return { tag, released: listMigrations(tag), current, metadataChanged };
+    const shippedByPath = join(repoRoot, SHIPPED_BY_FILE);
+    const shippedBy = existsSync(shippedByPath) ? parseShippedBy(readFileSync(shippedByPath, 'utf8')) : [];
+
+    return { tag, released: listMigrations(tag), current, metadataChanged, shippedBy };
 }
 
 export function findUnconsolidatedSeedDeltas(repoRoot = REPO_ROOT, readState = readReleaseState) {
@@ -211,8 +233,17 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
         };
     }
 
-    const changed = (state.metadataChanged ?? []).filter(isRecordPath).sort();
-    const unreleasedSeeds = state.current.filter((f) => SEED_PATTERN.test(f) && !new Set(state.released).has(f));
+    // A change listed in ci/metadata-shipped-by.txt ships in the feature migration named there, but
+    // only while that migration is unreleased (on disk, not in the tag): an entry left over from an
+    // earlier release covers nothing, so a later edit to the same file owes a seed again.
+    const releasedSet = new Set(state.released);
+    const shippedBy = new Map((state.shippedBy ?? []).map((e) => [e.metadata, e.migration]));
+    const shipsInFeatureMigration = (file) => {
+        const migration = shippedBy.get(file);
+        return migration !== undefined && state.current.includes(migration) && !releasedSet.has(migration);
+    };
+    const changed = (state.metadataChanged ?? []).filter(isRecordPath).filter((f) => !shipsInFeatureMigration(f)).sort();
+    const unreleasedSeeds = state.current.filter((f) => SEED_PATTERN.test(f) && !releasedSet.has(f));
     const problems = [];
     if (changed.length > 0 && unreleasedSeeds.length === 0) {
         problems.push(
@@ -220,7 +251,9 @@ export function findUnshippedMetadataDrift(repoRoot = REPO_ROOT, readState = rea
                 changed.map((f) => `      ${f}`).join('\n') +
                 '\n\n  Coverage cannot catch this: it compares declared ids against shipped SQL, and an EDITED\n' +
                 '  record keeps its id. Generate the consolidated seed (migrations/README.md) — the push emits\n' +
-                '  spUpdate* for edited records by construction, which is the half no id check can see.',
+                '  spUpdate* for edited records by construction, which is the half no id check can see.\n' +
+                '  If a feature migration added since the last tag already writes these rows, list it in\n' +
+                '  ci/metadata-shipped-by.txt instead.',
         );
     }
     return { problems, tag: state.tag, changed };
