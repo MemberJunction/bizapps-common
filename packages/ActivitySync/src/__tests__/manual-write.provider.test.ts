@@ -49,6 +49,7 @@ function fakeProvider(options: { rollbackThrows?: boolean; saveFails?: boolean }
     const state = { rolledBack: false, saved: 0 };
     const provider = {
         Entities: [],
+        EntityByName: () => undefined,
         BeginEntityTransaction: async () => ({
             Commit: async () => undefined,
             Rollback: async () => {

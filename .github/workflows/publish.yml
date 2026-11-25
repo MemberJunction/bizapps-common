@@ -110,20 +110,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # The back-merge at the end has to open a PR, and a PR opened with GITHUB_TOKEN creates
-      # runs in `action_required` that wait for a click. The App is already registered and its
-      # credentials are already repository secrets, so this is a step, not new setup.
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
+      # persist-credentials: false — this job runs `pnpm install` and a full build (arbitrary
+      # dependency lifecycle scripts), and the default would leave a `contents: write` GITHUB_TOKEN
+      # sitting in .git/config for all of them to read. Every later remote operation supplies its
+      # own credential explicitly (tag push, back-merge push, next changeset cleanup).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       # Must precede setup-node: `cache: 'pnpm'` needs pnpm already on PATH.
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -206,12 +202,16 @@ jobs:
       # `packages/` as the tag; a hotfix that skipped the bump does not.
       - name: Tag the release
         id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="v$(jq -r .version packages/Entities/package.json)"
           PUBLISHED="${{ steps.publish.outputs.count }}"
+          # Credential supplied per remote call (checkout sets persist-credentials: false).
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
 
           TAG_EXISTED=false
-          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+          if git ls-remote --exit-code --tags "$REPO_URL" "refs/tags/$VERSION" >/dev/null 2>&1; then
             TAG_EXISTED=true
           fi
 
@@ -222,7 +222,7 @@ jobs:
             fi
 
             # Make sure the tag object is local before diffing against it.
-            git fetch --no-tags origin "refs/tags/$VERSION:refs/tags/$VERSION" 2>/dev/null || true
+            git fetch --no-tags "$REPO_URL" "refs/tags/$VERSION:refs/tags/$VERSION" 2>/dev/null || true
             if ! git diff --quiet "$VERSION" HEAD -- packages/; then
               echo "::error::$VERSION is already tagged and already on npm, but packages/ has changed since that tag. This commit reached main WITHOUT a version bump — a genuine re-run of a completed release would have an identical tree. Raise a changeset, run 'pnpm run version:prepare', and merge the bump."
               git --no-pager diff --stat "$VERSION" HEAD -- packages/ | tail -20
@@ -240,7 +240,7 @@ jobs:
             echo "Tag $VERSION already exists on origin — leaving it alone"
           else
             git tag "$VERSION"
-            git push origin "refs/tags/$VERSION"
+            git push "$REPO_URL" "refs/tags/$VERSION"
             echo "Tagged $VERSION"
           fi
           echo "released=true" >> "$GITHUB_OUTPUT"
@@ -294,6 +294,16 @@ jobs:
       # on npm by then, so a red run here means "action needed", not "the release failed" -- but
       # a warning on a green run is easy to miss, and until the back-merge lands the next release
       # PR is blocked by `rr: release base current`. Red is what makes someone look.
+      # Mint the App token AFTER install/build/publish so it is never live while dependency
+      # lifecycle scripts run. The back-merge and next-cleanup PRs must be App-opened so their CI
+      # starts automatically (a GITHUB_TOKEN PR creates runs in `action_required`).
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        if: steps.tag.outputs.released == 'true'
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Carry the release back to the line
         if: steps.tag.outputs.released == 'true' && needs.resolve.outputs.back_merge != ''
         env:
@@ -303,7 +313,7 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="release-back-merge/$VERSION"
-          git push origin "HEAD:refs/heads/$BRANCH"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" "HEAD:refs/heads/$BRANCH"
 
           BODY="Carries the $VERSION bump, CHANGELOGs, mj-app.json sync and refreshed lockfile back to $LINE_BRANCH.
 
@@ -346,7 +356,8 @@ jobs:
           LINE: ${{ needs.resolve.outputs.line }}
         run: |
           set -euo pipefail
-          git fetch --no-tags origin next
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          git fetch --no-tags "$REPO_URL" next:refs/remotes/origin/next
           CONSUMED=()
           while IFS= read -r f; do
             case "$f" in *.md) ;; *) continue ;; esac
@@ -367,7 +378,7 @@ jobs:
           git checkout -q -B "$BRANCH" origin/next
           git rm -q -- "${CONSUMED[@]}"
           git commit -q -m "chore(release): drop changesets released in $VERSION ($LINE line)"
-          git push origin "HEAD:refs/heads/$BRANCH"
+          git push "$REPO_URL" "HEAD:refs/heads/$BRANCH"
 
           LIST=$(printf -- '- `%s`\n' "${CONSUMED[@]}")
           BODY="$VERSION (the $LINE line) released these changesets. next never versions, so they are removed here; otherwise the next line cut would release them again.

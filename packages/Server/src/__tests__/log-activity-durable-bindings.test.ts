@@ -24,11 +24,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const H = vi.hoisted(() => {
     const saved: Array<{ Entity: string; Row: Record<string, unknown> }> = [];
     let nextID = 0;
+    const entities = [
+        { Name: 'MJ_BizApps_Common: People', ID: 'entity-people' },
+        { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-organizations' },
+    ];
     const own = {
-        Entities: [
-            { Name: 'MJ_BizApps_Common: People', ID: 'entity-people' },
-            { Name: 'MJ_BizApps_Common: Organizations', ID: 'entity-organizations' },
-        ],
+        Entities: entities,
+        EntityByName: (name: string) => entities.find((e) => e.Name.toLowerCase() === name.trim().toLowerCase()),
         BeginEntityTransaction: async () => ({ Commit: async () => undefined, Rollback: async () => undefined }),
         GetEntityObject: async (entity: string) => {
             const row: Record<string, unknown> = {
