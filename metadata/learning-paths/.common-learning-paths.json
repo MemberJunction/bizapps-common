@@ -15,13 +15,13 @@
       "ID": "3205526D-B06A-432D-9BA5-700645F03DB3"
     },
     "relatedEntities": {
-      "MJ: Learning Path Tours": [
+      "MJ: Tour Learning Path Tour Links": [
         {
           "fields": {
-            "LearningPathID": "@parent:ID",
             "TourID": "@lookup:MJ: Tours.TourKey=core.welcome",
             "Sequence": 1,
-            "IsRequired": false
+            "IsRequired": false,
+            "TourLearningPathID": "@parent:ID"
           },
           "primaryKey": {
             "ID": "3A99911B-3FDE-426F-AE73-EFE4CD4C0E38"
@@ -29,10 +29,10 @@
         },
         {
           "fields": {
-            "LearningPathID": "@parent:ID",
             "TourID": "@lookup:MJ: Tours.TourKey=common.directory",
             "Sequence": 2,
-            "IsRequired": true
+            "IsRequired": true,
+            "TourLearningPathID": "@parent:ID"
           },
           "primaryKey": {
             "ID": "BCF7B65A-6844-4C7F-87DF-5A3FAE27D74A"
@@ -40,10 +40,10 @@
         },
         {
           "fields": {
-            "LearningPathID": "@parent:ID",
             "TourID": "@lookup:MJ: Tours.TourKey=common.relationships-activities",
             "Sequence": 3,
-            "IsRequired": true
+            "IsRequired": true,
+            "TourLearningPathID": "@parent:ID"
           },
           "primaryKey": {
             "ID": "44876B28-2C7B-4FC6-B84E-143862D369AB"
