@@ -1,0 +1,331 @@
+[
+  {
+    "fields": {
+      "Name": "People, Organizations & Consent Directory",
+      "TourKey": "common.directory",
+      "Description": "Navigate the shared party directory, manage People and Organizations records, and maintain contact methods, addresses, and per-purpose consent history.",
+      "ApplicationID": "@lookup:MJ: Applications.Name=Common",
+      "RunInAuthenticatedHosts": true,
+      "Status": "Draft",
+      "EstimatedMinutes": 2,
+      "Priority": 85,
+      "DefaultGuideMode": "Visual",
+      "AllowAgentActions": false,
+      "Goal": {
+        "Type": "Navigation",
+        "AppName": "Common",
+        "NavItemKey": "CommonDirectoryResource",
+        "Description": "User learns the Common Directory dashboard, People & Organizations tabs, and contact/address/consent panels."
+      },
+      "StartLocation": {
+        "Application": "Common",
+        "NavItem": "CommonDirectoryResource"
+      }
+    },
+    "primaryKey": {
+      "ID": "1B543FA0-C9C4-4D35-BC73-BFD5E1260D83"
+    },
+    "relatedEntities": {
+      "MJ: Tour Steps": [
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-dir-welcome",
+            "Sequence": 1,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Modal",
+            "Title": "Shared People & Organizations Directory",
+            "Body": "The **Common** app is the shared party directory used across MemberJunction BizApps. From **Directory**, monitor headline counts for People, Organizations, Relationships, and data-completeness gaps.",
+            "Configuration": {
+              "Variant": "welcome",
+              "PrimaryButtonText": "Explore Directory",
+              "ShowProgress": true
+            },
+            "Placement": "Center",
+            "Mode": "Show",
+            "Prepare": {
+              "ApplicationName": "Common",
+              "DriverClass": "CommonDirectoryResource"
+            },
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "8994C97B-89CA-493F-9C4E-C15F64EF2C29"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-dir-people-orgs",
+            "Sequence": 2,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Spotlight",
+            "Title": "Browse People & Organizations",
+            "Body": "Switch to **People** or **Organizations** to filter records, inspect identity headers, and resolve attention queues such as records missing a primary email, organization link, or website.",
+            "Configuration": {
+              "ShowProgress": true
+            },
+            "Anchor": {
+              "Strategy": "NavItem",
+              "DriverClass": "CommonPeopleResource"
+            },
+            "Placement": "Bottom",
+            "Mode": "Guide",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "55D0EE4D-043C-4B28-997E-9A22A7A429B1"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-dir-contacts-consent",
+            "Sequence": 3,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Spotlight",
+            "Title": "Contact Methods, Locations & Consent History",
+            "Body": "Inside any Person or Organization record, manage primary **Contact Methods** with per-purpose consent badges and audit history alongside structured **Addresses**.",
+            "Configuration": {
+              "ShowProgress": true
+            },
+            "Anchor": {
+              "Strategy": "Registered",
+              "Key": "common.contact-methods.header"
+            },
+            "Placement": "Bottom",
+            "Mode": "Guide",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "07B565C6-CAA1-46D7-B12D-0C28F815C201"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-dir-summary",
+            "Sequence": 4,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Modal",
+            "Title": "Next: Hierarchies, Graphs & Activity Sync",
+            "Body": "Your party directory is ready. Continue to **Org Hierarchies, Relationship Graphs & Activity Sync** to explore parent-subsidiary trees, network graphs, and synced communications.",
+            "Configuration": {
+              "Variant": "summary",
+              "PrimaryButtonText": "Finish",
+              "NextTourKey": "common.relationships-activities",
+              "ShowProgress": true
+            },
+            "Placement": "Center",
+            "Mode": "Show",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "0CABDD62-0B67-45EE-8655-8DBA274DCD7F"
+          }
+        }
+      ],
+      "MJ: Tour Triggers": [
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "TriggerType": "FirstVisit",
+            "Configuration": {
+              "Application": "Common"
+            },
+            "Delivery": "Offer",
+            "CooldownDays": 30,
+            "Priority": 85,
+            "Status": "Active"
+          },
+          "primaryKey": {
+            "ID": "8B3A9184-9D08-442A-BB43-11AC9EEE448F"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fields": {
+      "Name": "Org Hierarchies, Relationship Graphs & Activity Sync",
+      "TourKey": "common.relationships-activities",
+      "Description": "Explore parent-subsidiary org hierarchies, interactive relationship graphs, and Activity Sync Connections across People and Organizations.",
+      "ApplicationID": "@lookup:MJ: Applications.Name=Common",
+      "RunInAuthenticatedHosts": true,
+      "Status": "Draft",
+      "EstimatedMinutes": 3,
+      "Priority": 80,
+      "DefaultGuideMode": "Visual",
+      "AllowAgentActions": false,
+      "Goal": {
+        "Type": "Navigation",
+        "AppName": "Common",
+        "NavItemKey": "CommonRelationshipGraphResource",
+        "Description": "User explores Org Hierarchy Tree, Relationship Graph & List, and Activities / Activity Sync Connections."
+      },
+      "StartLocation": {
+        "Application": "Common",
+        "NavItem": "CommonRelationshipGraphResource"
+      }
+    },
+    "primaryKey": {
+      "ID": "D43FF0CE-6668-4524-95F8-0CB4A86C4AFD"
+    },
+    "relatedEntities": {
+      "MJ: Tour Steps": [
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-rel-welcome",
+            "Sequence": 1,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Modal",
+            "Title": "Map Hierarchies, Relationships & Activities",
+            "Body": "Visualize how Organizations roll up into parent trees, trace People-to-Organization connections in the network graph, and keep external emails and calendar events synced.",
+            "Configuration": {
+              "Variant": "welcome",
+              "PrimaryButtonText": "Explore Connections",
+              "ShowProgress": true
+            },
+            "Placement": "Center",
+            "Mode": "Show",
+            "Prepare": {
+              "ApplicationName": "Common",
+              "DriverClass": "CommonRelationshipGraphResource"
+            },
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "4A6CABB0-2B7D-4446-897C-15ABBABEE9C3"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-rel-org-hierarchy",
+            "Sequence": 2,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Spotlight",
+            "Title": "Visual Org Chart & Outline Hierarchy",
+            "Body": "On any Organization record, use the **Organization Hierarchy** panel to switch between **Visual Org Chart** and **Outline** views and jump across parent and subsidiary organizations.",
+            "Configuration": {
+              "ShowProgress": true
+            },
+            "Anchor": {
+              "Strategy": "Registered",
+              "Key": "common.org-hierarchy.view-mode"
+            },
+            "Placement": "Bottom",
+            "Mode": "Guide",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "1095ADF1-975C-49C8-9016-D4B6F0AE74DA"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-rel-graph-list",
+            "Sequence": 3,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Spotlight",
+            "Title": "Interactive Relationship Graph & Timeline",
+            "Body": "Open **Relationships** to inspect multi-hop networks across People and Organizations, or edit grouped relationship timelines with job functions, seniority levels, and active/ended dates.",
+            "Configuration": {
+              "ShowProgress": true
+            },
+            "Anchor": {
+              "Strategy": "Registered",
+              "Key": "common.relationships.list"
+            },
+            "Placement": "Bottom",
+            "Mode": "Guide",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "2EDF8FFA-58FC-439D-913B-242006706199"
+          }
+        },
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "StepKey": "common-rel-activities-sync",
+            "Sequence": 4,
+            "StepTypeID": "@lookup:MJ: Tour Step Types.Name=Modal",
+            "Title": "Activities & Activity Sync Connections",
+            "Body": "Visit the **Activities** tab to review calls, meetings, and email threads across accounts, and configure **Activity Sync Connections** with consent rules and exclusion windows.",
+            "Configuration": {
+              "Variant": "summary",
+              "PrimaryButtonText": "Finish",
+              "ShowProgress": true
+            },
+            "Placement": "Center",
+            "Mode": "Show",
+            "Completion": {
+              "Type": "NextButton"
+            },
+            "OnMissing": "Center",
+            "IsOptional": false
+          },
+          "primaryKey": {
+            "ID": "32A103A5-30FE-4B29-83B4-6848D599F899"
+          }
+        }
+      ],
+      "MJ: Tour Prerequisites": [
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "PrerequisiteType": "Tour",
+            "RequiredTourID": "@lookup:MJ: Tours.TourKey=common.directory",
+            "Strength": "Recommended",
+            "Sequence": 1
+          },
+          "primaryKey": {
+            "ID": "A6157692-3463-4614-88DD-207868CAA90F"
+          }
+        }
+      ],
+      "MJ: Tour Triggers": [
+        {
+          "fields": {
+            "TourID": "@parent:ID",
+            "TriggerType": "FirstVisit",
+            "Configuration": {
+              "Application": "Common"
+            },
+            "Delivery": "Beacon",
+            "CooldownDays": 30,
+            "Priority": 75,
+            "Status": "Active"
+          },
+          "primaryKey": {
+            "ID": "F9ECDF88-367D-4781-A587-884AED65401A"
+          }
+        }
+      ]
+    }
+  }
+]
