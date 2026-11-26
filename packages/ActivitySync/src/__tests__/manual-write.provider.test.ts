@@ -6,6 +6,7 @@ import type { IMetadataProvider, UserInfo } from '@memberjunction/core';
 // that a failed read is reported as a failure, not as "nothing found".
 const H = vi.hoisted(() => ({
     runViewProviders: [] as unknown[],
+    runViewsBatches: [] as Array<Array<{ ExtraFilter?: string }>>,
     failTypeLookup: false,
     failDedupeLookup: false,
     logError: vi.fn(),
@@ -26,6 +27,10 @@ vi.mock('@memberjunction/core', () => ({
                 return { Success: false, ErrorMessage: 'deadlock victim', Results: [] };
             }
             return { Success: true, Results: [] };
+        }
+        public async RunViews(requests: Array<{ ExtraFilter?: string }>) {
+            H.runViewsBatches.push(requests);
+            return Promise.all(requests.map((params) => this.RunView(params)));
         }
     },
     LogError: H.logError,
@@ -72,6 +77,7 @@ function fakeProvider(options: { rollbackThrows?: boolean; saveFails?: boolean }
 describe('ActivityWriter — provider discipline and read failures', () => {
     beforeEach(() => {
         H.runViewProviders.length = 0;
+        H.runViewsBatches.length = 0;
         H.failTypeLookup = false;
         H.failDedupeLookup = false;
         H.logError.mockClear();
@@ -85,8 +91,10 @@ describe('ActivityWriter — provider discipline and read failures', () => {
             USER,
         );
         expect(result.Success).toBe(true);
-        expect(H.runViewProviders).toHaveLength(2); // type lookup + dedupe lookup
+        expect(H.runViewProviders).toHaveLength(1); // single batched RunViews instance
         expect(H.runViewProviders.every((p) => p === provider)).toBe(true);
+        expect(H.runViewsBatches).toHaveLength(1);
+        expect(H.runViewsBatches[0]).toHaveLength(2); // type lookup + dedupe lookup in one batch
     });
 
     it('reports a failed type lookup as a failure, not as an unseeded type', async () => {
