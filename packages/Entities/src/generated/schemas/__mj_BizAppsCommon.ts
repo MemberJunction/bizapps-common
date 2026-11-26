@@ -153,6 +153,12 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Display Name: Sentiment Score
         * * SQL Data Type: decimal(4, 3)
         * * Description: Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline.`),
+    ArtifactID: z.string().nullable().describe(`
+        * * Field Name: ArtifactID
+        * * Display Name: Artifact ID
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ: Artifacts (vwArtifacts.ID)
+        * * Description: Optional foreign key to an MJ: Artifacts (MJ Doc) record linked to this activity. Remains NULL for frictionless quick notes, calls, meetings, and emails; populated only when a user explicitly links or expands an activity into a rich MJ Doc.`),
     ActivityType: z.string().nullable().describe(`
         * * Field Name: ActivityType
         * * Display Name: Activity Type Name
@@ -173,6 +179,10 @@ export const mjBizAppsCommonActivitySchema = z.object({
         * * Field Name: ActivitySyncConnection
         * * Display Name: Sync Connection Name
         * * SQL Data Type: nvarchar(200)`),
+    Artifact: z.string().nullable().describe(`
+        * * Field Name: Artifact
+        * * Display Name: Artifact
+        * * SQL Data Type: nvarchar(255)`),
     RootParentActivityID: z.string().nullable().describe(`
         * * Field Name: RootParentActivityID
         * * Display Name: Root Parent Activity
@@ -2279,6 +2289,12 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Display Name: Email Domain
         * * SQL Data Type: nvarchar(255)
         * * Description: Lower-cased domain of Email: the text after the first @. NULL when Email is empty, has no @, or has nothing after it. Computed and stored, indexed for prefix search by domain.`),
+    SupervisorPersonID: z.string().nullable().describe(`
+        * * Field Name: SupervisorPersonID
+        * * Display Name: Supervisor
+        * * SQL Data Type: uniqueidentifier
+        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
+        * * Description: Optional self-referential foreign key to the Person record who directly supervises this person.`),
     LinkedUser: z.string().nullable().describe(`
         * * Field Name: LinkedUser
         * * Display Name: Linked User
@@ -2287,6 +2303,10 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Field Name: SeniorityLevel
         * * Display Name: Seniority Level
         * * SQL Data Type: nvarchar(100)`),
+    SupervisorPerson: z.string().nullable().describe(`
+        * * Field Name: SupervisorPerson
+        * * Display Name: Supervisor Name
+        * * SQL Data Type: nvarchar(250)`),
     PrimaryAddressLine1: z.string().nullable().describe(`
         * * Field Name: PrimaryAddressLine1
         * * Display Name: Primary Address Line 1
@@ -2351,16 +2371,6 @@ export const mjBizAppsCommonPersonSchema = z.object({
         * * Field Name: PrimaryJobFunction
         * * Display Name: Primary Job Function Name
         * * SQL Data Type: nvarchar(100)`),
-    SupervisorPersonID: z.string().nullable().describe(`
-        * * Field Name: SupervisorPersonID
-        * * Display Name: Supervisor
-        * * SQL Data Type: uniqueidentifier
-        * * Related Entity/Foreign Key: MJ_BizApps_Common: People (vwPeople.ID)
-        * * Description: Optional self-referential foreign key to the Person record who directly supervises this person.`),
-    SupervisorPerson: z.string().nullable().describe(`
-        * * Field Name: SupervisorPerson
-        * * Display Name: Supervisor Name
-        * * SQL Data Type: nvarchar(250)`),
 });
 
 export type mjBizAppsCommonPersonEntityType = z.infer<typeof mjBizAppsCommonPersonSchema>;
