@@ -1,4 +1,4 @@
-import { LogError, RunQuery, RunView } from '@memberjunction/core';
+import { LogError, Metadata, RunQuery, RunView } from '@memberjunction/core';
 import { AddDays, BusinessTimeZoneEngine, FromCalendarDay, type CalendarDay } from '@mj-biz-apps/common-entities';
 import { ResolveCommonAngularLimits, type CommonAngularLimitsOverride } from '../config/limits.config';
 import { COMMON_ENTITIES } from './entity-names';
@@ -245,7 +245,7 @@ export async function LoadDirectorySnapshot(limitsOverride?: CommonAngularLimits
     Relationships: DirectoryRelationshipRow[];
 }> {
     const limits = ResolveCommonAngularLimits(limitsOverride);
-    const rv = new RunView();
+    const rv = RunView.FromMetadataProvider(Metadata.Provider);
     const [people, orgs, relationships] = await rv.RunViews([
         {
             EntityName: COMMON_ENTITIES.Person,
@@ -288,7 +288,7 @@ export async function SearchPeople(
     limitsOverride?: CommonAngularLimitsOverride | null,
 ): Promise<DirectoryPersonRow[]> {
     const limits = ResolveCommonAngularLimits(limitsOverride);
-    const rv = new RunView();
+    const rv = RunView.FromMetadataProvider(Metadata.Provider);
     const result = await rv.RunView<DirectoryPersonRow>({
         EntityName: COMMON_ENTITIES.Person,
         Fields: [...PERSON_FIELDS],
@@ -309,7 +309,7 @@ export async function SearchOrganizations(
     limitsOverride?: CommonAngularLimitsOverride | null,
 ): Promise<DirectoryOrganizationRow[]> {
     const limits = ResolveCommonAngularLimits(limitsOverride);
-    const rv = new RunView();
+    const rv = RunView.FromMetadataProvider(Metadata.Provider);
     const result = await rv.RunView<DirectoryOrganizationRow>({
         EntityName: COMMON_ENTITIES.Organization,
         Fields: [...ORGANIZATION_FIELDS],

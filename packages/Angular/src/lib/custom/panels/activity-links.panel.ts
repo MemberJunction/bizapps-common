@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey, RunView } from '@memberjunction/core';
+import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
 import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
@@ -196,10 +196,11 @@ export class ActivityLinksPanel extends BaseFormPanel<mjBizAppsCommonActivityEnt
         this.cdr.markForCheck();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
             const res = await rv.RunView<ActivityLinkRow>({
                 EntityName: 'MJ_BizApps_Common: Activity Links',
                 ExtraFilter: `ActivityID = '${EscapeFilterValue(this.Record.ID)}'`,
+                Fields: ['ID', 'Role', 'EntityID', 'RecordID', 'Entity', 'IdentityKind', 'IdentityValue'],
                 OrderBy: 'Sequence ASC, __mj_CreatedAt ASC',
                 ResultType: 'simple',
             });

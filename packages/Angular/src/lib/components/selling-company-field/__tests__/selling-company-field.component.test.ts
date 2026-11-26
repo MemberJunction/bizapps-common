@@ -13,6 +13,7 @@ const H = vi.hoisted(() => ({
     ],
     employeeRows: [] as { CompanyID: string }[],
     runView: vi.fn(),
+    runViews: vi.fn(),
 }));
 
 vi.mock('@memberjunction/core', async (importOriginal) => {
@@ -29,7 +30,12 @@ vi.mock('@memberjunction/core', async (importOriginal) => {
     return {
         ...actual,
         Metadata: MockMetadata,
-        RunView: { FromMetadataProvider: () => ({ RunView: H.runView }) },
+        RunView: {
+            FromMetadataProvider: () => ({
+                RunView: H.runView,
+                RunViews: H.runViews,
+            }),
+        },
     };
 });
 
@@ -101,10 +107,15 @@ describe('SellingCompanyFieldComponent', () => {
         H.settingValue = 'default-co';
         H.employeeID = null;
         H.employeeRows = [];
+        H.runView.mockReset();
+        H.runViews.mockReset();
         H.runView.mockImplementation(async (params: { EntityName: string }) =>
             params.EntityName === 'MJ: Employees'
                 ? { Success: true, Results: H.employeeRows }
                 : { Success: true, Results: H.companies },
+        );
+        H.runViews.mockImplementation(async (list: Array<{ EntityName: string }>) =>
+            Promise.all(list.map((params) => H.runView(params))),
         );
     });
 
@@ -135,13 +146,15 @@ describe('SellingCompanyFieldComponent', () => {
         expect(rec.values['CompanyID']).toBe('default-co');
     });
 
-    it('prefers the user own company over the configured setting', async () => {
+    it('prefers the user own company over the configured setting and batches both lookups in one RunViews call', async () => {
         H.employeeID = 'emp-1';
         H.employeeRows = [{ CompanyID: 'employee-co' }];
         const rec = record(false);
         const component = await build(rec);
         expect(rec.values['CompanyID']).toBe('employee-co');
         expect(component.DefaultName).toBe('Employee Co');
+        expect(H.runViews).toHaveBeenCalledTimes(1);
+        expect(H.runViews.mock.calls[0][0]).toHaveLength(2);
     });
 
     it('ignores an employee company this instance does not know', async () => {

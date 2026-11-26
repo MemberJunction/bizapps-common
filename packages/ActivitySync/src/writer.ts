@@ -16,6 +16,7 @@
 import {
     LogError,
     RunView,
+    type RunViewParams,
     type DatabaseProviderBase,
     type IMetadataProvider,
     type UserInfo,
@@ -511,7 +512,8 @@ export class ActivityWriter {
 
     /**
      * The reads both entry points make before opening the write transaction: the ActivityType id,
-     * then — when a dedupe key is given — whether that SourceSystem/ExternalID was already written.
+     * and — when a dedupe key is given — whether that SourceSystem/ExternalID was already written,
+     * batched into a single `RunViews` round trip.
      *
      * Returns the type id to write with, or null when `result` is already final: an unseeded type,
      * a failed read, or an idempotent repeat (Success + AlreadyPresent). A failed read is reported as
@@ -525,7 +527,34 @@ export class ActivityWriter {
         contextUser: UserInfo,
         result: WriteActivityResult,
     ): Promise<string | null> {
-        const type = await this.findTypeByCode(provider, typeCode, contextUser);
+        const rv = new RunView(provider);
+        const typeQuery = {
+            EntityName: ACTIVITY_SYNC_ENTITIES.ActivityTypes,
+            ExtraFilter: `Code = '${EscapeText(typeCode)}'`,
+            Fields: ['ID'],
+            MaxRows: 1,
+            ResultType: 'simple' as const,
+        };
+        const existingQuery = dedupeKey
+            ? {
+                  EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
+                  ExtraFilter:
+                      `SourceSystem = '${EscapeText(dedupeKey.SourceSystem)}' AND ExternalID = '${EscapeText(dedupeKey.ExternalID)}'`,
+                  Fields: ['ID'],
+                  MaxRows: 1,
+                  ResultType: 'simple' as const,
+              }
+            : null;
+
+        const requests: RunViewParams[] = existingQuery ? [typeQuery, existingQuery] : [typeQuery];
+        const responses = typeof rv.RunViews === 'function'
+            ? await rv.RunViews(requests, contextUser)
+            : await Promise.all(requests.map((req) => rv.RunView<{ ID: string }>(req, contextUser)));
+
+        const typeRes = responses[0];
+        const type: LookupResult = typeRes?.Success
+            ? { Success: true, ID: (typeRes.Results as Array<{ ID: string }> | undefined)?.[0]?.ID ?? null }
+            : { Success: false, Error: typeRes?.ErrorMessage || 'RunView failed with no message.' };
         if (!type.Success) {
             result.Issues.push(`Could not look up ActivityType '${typeCode}': ${type.Error}`);
             return null;
@@ -536,7 +565,10 @@ export class ActivityWriter {
         }
 
         if (!dedupeKey) return type.ID;
-        const existing = await this.findByExternalKey(provider, dedupeKey.SourceSystem, dedupeKey.ExternalID, contextUser);
+        const existingRes = responses[1];
+        const existing: LookupResult = existingRes?.Success
+            ? { Success: true, ID: (existingRes.Results as Array<{ ID: string }> | undefined)?.[0]?.ID ?? null }
+            : { Success: false, Error: existingRes?.ErrorMessage || 'RunView failed with no message.' };
         if (!existing.Success) {
             result.Issues.push(
                 `Could not check for an existing activity (${dedupeKey.SourceSystem} / ${dedupeKey.ExternalID}): ${existing.Error}`,
@@ -550,46 +582,5 @@ export class ActivityWriter {
             return null;
         }
         return type.ID;
-    }
-
-    /** Reads run on the writer's own provider — the global one may be carrying someone else's transaction (#195). */
-    private async findTypeByCode(
-        provider: DatabaseProviderBase,
-        code: string,
-        contextUser: UserInfo,
-    ): Promise<LookupResult> {
-        const res = await new RunView(provider).RunView<{ ID: string }>(
-            {
-                EntityName: ACTIVITY_SYNC_ENTITIES.ActivityTypes,
-                ExtraFilter: `Code = '${EscapeText(code)}'`,
-                MaxRows: 1,
-                ResultType: 'simple',
-            },
-            contextUser,
-        );
-        return res.Success
-            ? { Success: true, ID: res.Results?.[0]?.ID ?? null }
-            : { Success: false, Error: res.ErrorMessage || 'RunView failed with no message.' };
-    }
-
-    private async findByExternalKey(
-        provider: DatabaseProviderBase,
-        sourceSystem: string,
-        externalID: string,
-        contextUser: UserInfo,
-    ): Promise<LookupResult> {
-        const res = await new RunView(provider).RunView<{ ID: string }>(
-            {
-                EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
-                ExtraFilter:
-                    `SourceSystem = '${EscapeText(sourceSystem)}' AND ExternalID = '${EscapeText(externalID)}'`,
-                MaxRows: 1,
-                ResultType: 'simple',
-            },
-            contextUser,
-        );
-        return res.Success
-            ? { Success: true, ID: res.Results?.[0]?.ID ?? null }
-            : { Success: false, Error: res.ErrorMessage || 'RunView failed with no message.' };
     }
 }

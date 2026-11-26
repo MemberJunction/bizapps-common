@@ -11,7 +11,8 @@ import {
     mjBizAppsCommonOrganizationEntity,
     mjBizAppsCommonJobFunctionEntity,
     mjBizAppsCommonSeniorityLevelEntity,
-    BusinessTimeZoneEngine
+    BusinessTimeZoneEngine,
+    CommonEngine
 } from '@mj-biz-apps/common-entities';
 import { FormatRelationshipDateRange, RelationshipDateInputValue } from './relationship-dates';
 import { PartyFieldComponent } from '../party-field/party-field.component';
@@ -392,47 +393,17 @@ export class RelationshipListComponent {
         this.cdr.detectChanges();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
 
-            // Ensure relationship types are loaded
-            if (this.RelationshipTypes.length === 0) {
-                const typesResult = await rv.RunView<mjBizAppsCommonRelationshipTypeEntity>({
-                    EntityName: 'MJ_BizApps_Common: Relationship Types',
-                    ExtraFilter: 'IsActive=1',
-                    ResultType: 'entity_object'
-                });
-                if (typesResult.Success && typesResult.Results) {
-                    this.RelationshipTypes = typesResult.Results;
-                    this.relationshipTypeMap.clear();
-                    for (const rt of this.RelationshipTypes) {
-                        this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
-                    }
-                }
+            // Populate cached taxonomy catalogs from CommonEngine (single shared BaseEngine load)
+            await CommonEngine.Instance.Config(false, Metadata.Provider.CurrentUser, Metadata.Provider);
+            this.RelationshipTypes = CommonEngine.Instance.ActiveRelationshipTypes;
+            this.relationshipTypeMap.clear();
+            for (const rt of this.RelationshipTypes) {
+                this.relationshipTypeMap.set(NormalizeUUID(rt.ID), rt);
             }
-
-            if (this.JobFunctions.length === 0) {
-                const jfResult = await rv.RunView<mjBizAppsCommonJobFunctionEntity>({
-                    EntityName: 'MJ_BizApps_Common: Job Functions',
-                    ExtraFilter: "Status='Active'",
-                    OrderBy: 'Sequence ASC, Name ASC',
-                    ResultType: 'entity_object'
-                });
-                if (jfResult.Success && jfResult.Results) {
-                    this.JobFunctions = jfResult.Results;
-                }
-            }
-
-            if (this.SeniorityLevels.length === 0) {
-                const slResult = await rv.RunView<mjBizAppsCommonSeniorityLevelEntity>({
-                    EntityName: 'MJ_BizApps_Common: Seniority Levels',
-                    ExtraFilter: "Status='Active'",
-                    OrderBy: 'Sequence ASC, Name ASC',
-                    ResultType: 'entity_object'
-                });
-                if (slResult.Success && slResult.Results) {
-                    this.SeniorityLevels = slResult.Results;
-                }
-            }
+            this.JobFunctions = CommonEngine.Instance.ActiveJobFunctions;
+            this.SeniorityLevels = CommonEngine.Instance.ActiveSeniorityLevels;
 
             let relationships: mjBizAppsCommonRelationshipEntity[] = [];
 

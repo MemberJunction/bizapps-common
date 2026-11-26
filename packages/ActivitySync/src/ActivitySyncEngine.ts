@@ -8,6 +8,7 @@
 import {
     LogError,
     RunView,
+    type RunViewParams,
     type IMetadataProvider,
     type UserInfo,
 } from '@memberjunction/core';
@@ -338,7 +339,7 @@ export class ActivitySyncEngine {
 
         let connection = reusableConnection(surface?.connection, connectionID);
         if (!connection) {
-            const loadedConnection = await this.loadConnection(connectionID, contextUser);
+            const loadedConnection = await this.loadConnection(connectionID, contextUser, provider);
             if (loadedConnection.Failed) {
                 result.Issues.push(loadedConnection.Issue);
                 return result;
@@ -367,7 +368,7 @@ export class ActivitySyncEngine {
         if (surface && Object.prototype.hasOwnProperty.call(surface, 'typeRow')) {
             typeRow = surface.typeRow ?? null;
         } else if (connection.ActivitySyncProviderTypeID) {
-            const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
+            const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser, provider);
             if (loadedType.Failed) {
                 result.Issues.push(loadedType.Issue);
                 return result;
@@ -487,7 +488,7 @@ export class ActivitySyncEngine {
         const sourceSystem = typeRow?.Code ?? plugin.ProviderTypeCode;
         const since = SurfaceWatermark(plugin.Kind, connection.LastSyncAt, connection.Settings);
 
-        const extensions = await this.loadExtensions(connection.ID, typeRow?.ID ?? null, contextUser);
+        const extensions = await this.loadExtensions(connection.ID, typeRow?.ID ?? null, contextUser, provider);
         if (extensions.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, extensions.Issue, stampHealth);
         }
@@ -535,20 +536,17 @@ export class ActivitySyncEngine {
             result.Fetched = batch.Items.length;
         }
 
-        const bound = await this.loadBoundSetIds(connectionID, contextUser);
+        const bound = await this.loadBoundSetIds(connectionID, contextUser, provider);
         if (bound.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, bound.Issue, stampHealth);
         }
-        const exclusions = await this.loadExclusions(bound.Rows, contextUser);
+        const { exclusions, rules, internalDomains } = await this.loadRuleContext(connectionID, bound.Rows, contextUser, provider);
         if (exclusions.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, exclusions.Issue, stampHealth);
         }
-        const rules = await this.loadRules(connectionID, bound.Rows, contextUser);
         if (rules.Failed) {
             return this.failClosed(connection, options, result, since, provider, contextUser, rules.Issue, stampHealth);
         }
-
-        const internalDomains = await this.loadInternalDomains(bound.Rows, contextUser);
         if (internalDomains.Failed) {
             return this.failClosed(
                 connection,
@@ -887,7 +885,7 @@ export class ActivitySyncEngine {
     ): Promise<FleetRunResult> {
         const MAX_RUNNABLE_CONNECTIONS = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections;
         const fleet: FleetRunResult = { Success: true, ConnectionsAttempted: 0, Results: [], Issues: [] };
-        const loaded = await this.loadRunnableConnections(options, contextUser, MAX_RUNNABLE_CONNECTIONS);
+        const loaded = await this.loadRunnableConnections(options, contextUser, MAX_RUNNABLE_CONNECTIONS, provider);
         if (loaded.Failed) {
             fleet.Success = false;
             fleet.Issues.push(loaded.Issue);
@@ -905,11 +903,17 @@ export class ActivitySyncEngine {
             );
             rows = rows.slice(0, MAX_RUNNABLE_CONNECTIONS);
         }
+        const providerTypeCache = new Map<string, ViewLoad<ProviderTypeRow>>();
         for (const connection of rows) {
             fleet.ConnectionsAttempted++;
             let typeRow: ProviderTypeRow | null = null;
             if (connection.ActivitySyncProviderTypeID) {
-                const loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser);
+                const typeKey = NormalizeUUID(connection.ActivitySyncProviderTypeID);
+                let loadedType = providerTypeCache.get(typeKey);
+                if (!loadedType) {
+                    loadedType = await this.loadProviderType(connection.ActivitySyncProviderTypeID, contextUser, provider);
+                    providerTypeCache.set(typeKey, loadedType);
+                }
                 if (loadedType.Failed) {
                     const failed = failedSurfaceResult([loadedType.Issue]);
                     fleet.Results.push({ ConnectionID: connection.ID, Surface: 'primary', Result: failed });
@@ -1082,12 +1086,20 @@ export class ActivitySyncEngine {
         }
     }
 
+    private createRunView(provider?: IMetadataProvider): RunView {
+        if (provider && typeof RunView.FromMetadataProvider === 'function') {
+            return RunView.FromMetadataProvider(provider);
+        }
+        return new RunView();
+    }
+
     private async loadExtensions(
         connectionID: string,
         providerTypeID: string | null,
         user: UserInfo,
+        provider?: IMetadataProvider,
     ): Promise<ViewLoad<ExtensionRegistration>> {
-        const rv = new RunView();
+        const rv = this.createRunView(provider);
         const res = await rv.RunView<ExtensionRegistration>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Extensions,
@@ -1151,8 +1163,12 @@ export class ActivitySyncEngine {
         }
     }
 
-    private async loadConnection(id: string, user: UserInfo): Promise<ViewLoad<ConnectionRow>> {
-        const rv = new RunView();
+    private async loadConnection(
+        id: string,
+        user: UserInfo,
+        provider?: IMetadataProvider,
+    ): Promise<ViewLoad<ConnectionRow>> {
+        const rv = this.createRunView(provider);
         const res = await rv.RunView<ConnectionRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
@@ -1169,8 +1185,9 @@ export class ActivitySyncEngine {
         options: SyncRunOptions,
         user: UserInfo,
         MAX_RUNNABLE_CONNECTIONS: number = ResolveActivitySyncLimits().ResourceGuards.MaxRunnableConnections,
+        provider?: IMetadataProvider,
     ): Promise<ViewLoad<ConnectionRow>> {
-        const rv = new RunView();
+        const rv = this.createRunView(provider);
         const res = await rv.RunView<ConnectionRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Connections,
@@ -1183,8 +1200,12 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncConnection');
     }
 
-    private async loadProviderType(id: string, user: UserInfo): Promise<ViewLoad<ProviderTypeRow>> {
-        const rv = new RunView();
+    private async loadProviderType(
+        id: string,
+        user: UserInfo,
+        provider?: IMetadataProvider,
+    ): Promise<ViewLoad<ProviderTypeRow>> {
+        const rv = this.createRunView(provider);
         const res = await rv.RunView<ProviderTypeRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ProviderTypes,
@@ -1212,12 +1233,17 @@ export class ActivitySyncEngine {
         return FromRunView(res.Success, res.Results, 'ActivitySyncProviderType');
     }
 
-    private async loadBoundSetIds(connectionID: string, user: UserInfo): Promise<ViewLoad<string>> {
-        const rv = new RunView();
+    private async loadBoundSetIds(
+        connectionID: string,
+        user: UserInfo,
+        provider?: IMetadataProvider,
+    ): Promise<ViewLoad<string>> {
+        const rv = this.createRunView(provider);
         const bound = await rv.RunView<{ ActivitySyncRuleSetID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.ConnectionRuleSets,
                 ExtraFilter: `ActivitySyncConnectionID = '${RequireUUID(connectionID, 'ActivitySyncConnectionID')}'`,
+                Fields: ['ActivitySyncRuleSetID'],
                 ResultType: 'simple',
             },
             user,
@@ -1232,75 +1258,89 @@ export class ActivitySyncEngine {
     }
 
     /**
-     * The domains this deployment calls INTERNAL, merged across every rule set bound to the
-     * connection.
-     *
-     * WHY THIS EXISTS. `ActivitySyncRuleSet.InternalDomains` describes itself as "Required for any
-     * rule using ParticipantScope", `participants.ts` names it as where the list lives, and the
-     * engine passed a hard-coded `[]` — so nothing ever read the column. Same shape as the
-     * `CredentialsRef` gap: a column that documents its own purpose, with no reader.
+     * Loads exclusions, rules, and bound rule sets' internal domains in a single batched `RunViews`
+     * round trip once the connection's bound rule set IDs are known.
      *
      * MALFORMED IS NOT EMPTY. A list that fails to parse fails the run rather than degrading to
-     * `[]`, because `[]` silently inverts every participant rule (see the caller). Parsing itself
-     * lives in {@link ParseInternalDomains} so it is testable without standing up a RunView.
+     * `[]`, because `[]` silently inverts every participant rule. Parsing itself lives in
+     * {@link ParseInternalDomains} so it is testable without standing up a RunView.
      */
-    private async loadInternalDomains(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<string>> {
-        if (setIds.length === 0) {
-            return { Failed: false, Rows: [] };
-        }
-        const rv = new RunView();
-        const res = await rv.RunView<{ ID: string; Name: string; InternalDomains: string | null }>(
-            {
-                EntityName: ACTIVITY_SYNC_ENTITIES.RuleSets,
-                ExtraFilter: `ID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`,
-                Fields: ['ID', 'Name', 'InternalDomains'],
-                ResultType: 'simple',
-            },
-            user,
-        );
-        if (!res.Success) {
-            return { Failed: true, Issue: 'ActivitySyncRuleSet lookup failed.' };
-        }
-
-        const domains = new Set<string>();
-        for (const row of res.Results ?? []) {
-            const parsed = ParseInternalDomains(row.InternalDomains, row.Name);
-            if (!parsed.Ok) {
-                return { Failed: true, Issue: parsed.Issue };
-            }
-            for (const d of parsed.Domains) domains.add(d);
-        }
-        return { Failed: false, Rows: [...domains] };
-    }
-
-    private async loadExclusions(setIds: readonly string[], user: UserInfo): Promise<ViewLoad<ExclusionRow>> {
-        const rv = new RunView();
-        const res = await rv.RunView<ExclusionRow>(
-            {
-                EntityName: ACTIVITY_SYNC_ENTITIES.Exclusions,
-                ExtraFilter: ExclusionsExtraFilter(setIds),
-                ResultType: 'simple',
-            },
-            user,
-        );
-        return FromRunView(res.Success, res.Results, 'ActivitySyncExclusion');
-    }
-
-    private async loadRules(
+    private async loadRuleContext(
         connectionID: string,
         setIds: readonly string[],
         user: UserInfo,
-    ): Promise<ViewLoad<RuleRow>> {
-        const rv = new RunView();
-        const res = await rv.RunView<RuleRow>(
+        provider?: IMetadataProvider,
+    ): Promise<{
+        exclusions: ViewLoad<ExclusionRow>;
+        rules: ViewLoad<RuleRow>;
+        internalDomains: ViewLoad<string>;
+    }> {
+        const rv = this.createRunView(provider);
+        const requests: RunViewParams[] = [
+            {
+                EntityName: ACTIVITY_SYNC_ENTITIES.Exclusions,
+                ExtraFilter: ExclusionsExtraFilter(setIds),
+                ResultType: 'simple' as const,
+            },
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Rules,
                 ExtraFilter: RulesExtraFilter(setIds, connectionID),
-                ResultType: 'simple',
+                ResultType: 'simple' as const,
             },
-            user,
+            ...(setIds.length > 0
+                ? [
+                      {
+                          EntityName: ACTIVITY_SYNC_ENTITIES.RuleSets,
+                          ExtraFilter: `ID IN (${UuidInList(setIds, 'ActivitySyncRuleSetID')})`,
+                          Fields: ['ID', 'Name', 'InternalDomains'],
+                          ResultType: 'simple' as const,
+                      },
+                  ]
+                : []),
+        ];
+
+        const results = typeof rv.RunViews === 'function'
+            ? await rv.RunViews(requests, user)
+            : await Promise.all(requests.map((req) => rv.RunView(req, user)));
+
+        const exclusionsRes = results[0];
+        const rulesRes = results[1];
+        const exclusions = FromRunView<ExclusionRow>(
+            Boolean(exclusionsRes?.Success),
+            exclusionsRes?.Results as ExclusionRow[] | undefined,
+            'ActivitySyncExclusion',
         );
-        return FromRunView(res.Success, res.Results, 'ActivitySyncRule');
+        const rules = FromRunView<RuleRow>(
+            Boolean(rulesRes?.Success),
+            rulesRes?.Results as RuleRow[] | undefined,
+            'ActivitySyncRule',
+        );
+
+        let internalDomains: ViewLoad<string>;
+        if (setIds.length === 0) {
+            internalDomains = { Failed: false, Rows: [] };
+        } else {
+            const domainsRes = results[2];
+            if (!domainsRes?.Success) {
+                internalDomains = { Failed: true, Issue: 'ActivitySyncRuleSet lookup failed.' };
+            } else {
+                const domains = new Set<string>();
+                let parseFailure: string | null = null;
+                for (const row of (domainsRes.Results ?? []) as Array<{ ID: string; Name: string; InternalDomains: string | null }>) {
+                    const parsed = ParseInternalDomains(row.InternalDomains, row.Name);
+                    if (!parsed.Ok) {
+                        parseFailure = parsed.Issue;
+                        break;
+                    }
+                    for (const d of parsed.Domains) domains.add(d);
+                }
+                internalDomains = parseFailure
+                    ? { Failed: true, Issue: parseFailure }
+                    : { Failed: false, Rows: [...domains] };
+            }
+        }
+
+        return { exclusions, rules, internalDomains };
     }
 
     /** Record how far the late-tag sweep read, so the next sweep starts there. */

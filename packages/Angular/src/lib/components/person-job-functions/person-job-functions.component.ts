@@ -17,6 +17,7 @@ import { UUIDsEqual } from '@memberjunction/global';
 import { EscapeFilterValue } from '../../data/directory-stats';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import {
+    CommonEngine,
     mjBizAppsCommonJobFunctionEntity,
     mjBizAppsCommonPersonJobFunctionEntity,
 } from '@mj-biz-apps/common-entities';
@@ -87,18 +88,10 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
 
         try {
             const p = this.ProviderToUse;
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(p);
 
-            const [catalogRes, assignedRes] = await Promise.all([
-                rv.RunView<mjBizAppsCommonJobFunctionEntity>(
-                    {
-                        EntityName: 'MJ_BizApps_Common: Job Functions',
-                        ExtraFilter: "Status = 'Active'",
-                        OrderBy: 'Name ASC',
-                        ResultType: 'entity_object',
-                    },
-                    p.CurrentUser
-                ),
+            const [, assignedRes] = await Promise.all([
+                CommonEngine.Instance.Config(false, p.CurrentUser, p),
                 rv.RunView<mjBizAppsCommonPersonJobFunctionEntity>(
                     {
                         EntityName: 'MJ_BizApps_Common: Person Job Functions',
@@ -110,11 +103,9 @@ export class PersonJobFunctionsComponent implements OnInit, OnChanges {
                 ),
             ]);
 
-            if (catalogRes.Success && catalogRes.Results) {
-                this.AvailableFunctions = catalogRes.Results;
-            } else if (!catalogRes.Success) {
-                this.ErrorMessage = catalogRes.ErrorMessage || 'Failed to load job function catalog';
-            }
+            this.AvailableFunctions = [...CommonEngine.Instance.ActiveJobFunctions].sort((a, b) =>
+                (a.Name || '').localeCompare(b.Name || '')
+            );
 
             if (assignedRes.Success && assignedRes.Results) {
                 this.Items = [...assignedRes.Results].sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0));

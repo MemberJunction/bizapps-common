@@ -201,9 +201,9 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
 
     public async Config(forceRefresh?: boolean, contextUser?: UserInfo, provider?: IMetadataProvider): Promise<unknown> {
         const params: Array<Partial<BaseEnginePropertyConfig>> = [
-            { PropertyName: '_contactTypes', EntityName: ContactPreferenceEngine.CONTACT_TYPES_ENTITY, ResultType: 'simple' },
-            { PropertyName: '_messageTypes', EntityName: ContactPreferenceEngine.MESSAGE_TYPES_ENTITY, ResultType: 'simple' },
-            { PropertyName: '_purposes', EntityName: ContactPreferenceEngine.PURPOSES_ENTITY, ResultType: 'simple' },
+            { PropertyName: '_contactTypes', EntityName: ContactPreferenceEngine.CONTACT_TYPES_ENTITY, ResultType: 'simple', AutoRefresh: true, CacheLocal: false },
+            { PropertyName: '_messageTypes', EntityName: ContactPreferenceEngine.MESSAGE_TYPES_ENTITY, ResultType: 'simple', AutoRefresh: true, CacheLocal: false },
+            { PropertyName: '_purposes', EntityName: ContactPreferenceEngine.PURPOSES_ENTITY, ResultType: 'simple', AutoRefresh: true, CacheLocal: false },
         ];
         return await this.Load(params, provider as IMetadataProvider, forceRefresh ?? false, contextUser);
     }
@@ -349,23 +349,40 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
         const rv = new RunView(this.RunViewProviderToUse);
         const typeList = typeIDs.map((id) => `'${EscapeSQLString(id)}'`).join(',');
         const methodFilter = `${this.subjectFilter(subject)} AND ContactTypeID IN (${typeList})`;
-        const [methods, consents] = await rv.RunViews(
-            [
-                { EntityName: ContactPreferenceEngine.CONTACT_METHODS_ENTITY, ExtraFilter: methodFilter, Fields: ['ID'], ResultType: 'simple' },
-                {
-                    EntityName: ContactPreferenceEngine.CONSENTS_ENTITY,
-                    ExtraFilter: `${this.purposeFilter(key.PurposeID ?? null)} AND ContactMethodID IN (SELECT ID FROM [${this.contactMethodsView()}] WHERE ${methodFilter})`,
-                    Fields: ['ContactMethodID', 'ConsentPurposeID', 'RequestingOrganizationID', 'ConsentStatus'],
-                    ResultType: 'simple',
-                },
-            ],
+        // Two-step RLS-safe read: query Contact Methods via RunView first so any host RLS filter on
+        // Contact Methods is honored, then fetch consents by explicit ContactMethodID IN (...).
+        const methods = await rv.RunView<Pick<mjBizAppsCommonContactMethodEntity, 'ID'>>(
+            {
+                EntityName: ContactPreferenceEngine.CONTACT_METHODS_ENTITY,
+                ExtraFilter: methodFilter,
+                Fields: ['ID'],
+                ResultType: 'simple',
+                CacheLocal: false,
+            },
             contextUser,
         );
-        if (!methods.Success || !consents.Success) {
-            throw new Error(`ContactPreferenceEngine: could not read consents: ${methods.ErrorMessage ?? consents.ErrorMessage}`);
+        if (!methods.Success) {
+            throw new Error(`ContactPreferenceEngine: could not read contact methods: ${methods.ErrorMessage}`);
         }
-        const methodRows = methods.Results as Pick<mjBizAppsCommonContactMethodEntity, 'ID'>[];
-        const consentRows = consents.Results as ConsentRow[];
+        const methodRows = methods.Results ?? [];
+        if (methodRows.length === 0) {
+            return [];
+        }
+        const methodIdList = methodRows.map((m) => `'${EscapeSQLString(m.ID)}'`).join(',');
+        const consents = await rv.RunView<ConsentRow>(
+            {
+                EntityName: ContactPreferenceEngine.CONSENTS_ENTITY,
+                ExtraFilter: `${this.purposeFilter(key.PurposeID ?? null)} AND ContactMethodID IN (${methodIdList})`,
+                Fields: ['ContactMethodID', 'ConsentPurposeID', 'RequestingOrganizationID', 'ConsentStatus'],
+                ResultType: 'simple',
+                CacheLocal: false,
+            },
+            contextUser,
+        );
+        if (!consents.Success) {
+            throw new Error(`ContactPreferenceEngine: could not read consents: ${consents.ErrorMessage}`);
+        }
+        const consentRows = consents.Results ?? [];
         return methodRows.map((m) => {
             const mine = consentRows.filter((c) => UUIDsEqual(c.ContactMethodID, m.ID));
             return ContactPreferenceEngine.ResolveConsentForScope(mine, key)?.ConsentStatus ?? ContactMethodConsentEntity.UnspecifiedStatus;
@@ -375,15 +392,6 @@ export class ContactPreferenceEngine extends BaseEngine<ContactPreferenceEngine>
     /** The rows that can answer for a purpose: that purpose's rows and the general (no purpose) rows. */
     private purposeFilter(purposeID: string | null): string {
         return purposeID ? `(ConsentPurposeID='${EscapeSQLString(purposeID)}' OR ConsentPurposeID IS NULL)` : 'ConsentPurposeID IS NULL';
-    }
-
-    /** The schema-qualified base view of contact methods, for the subquery in a consent filter. */
-    private contactMethodsView(): string {
-        const entity = this.ProviderToUse.EntityByName(ContactPreferenceEngine.CONTACT_METHODS_ENTITY);
-        if (!entity) {
-            throw new Error(`ContactPreferenceEngine: entity '${ContactPreferenceEngine.CONTACT_METHODS_ENTITY}' is not in metadata`);
-        }
-        return `${entity.SchemaName}].[${entity.BaseView}`;
     }
 
     private async findOrCreateConsent(

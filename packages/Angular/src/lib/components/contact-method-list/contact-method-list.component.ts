@@ -5,6 +5,7 @@ import { IMetadataProvider, IRunViewProvider, LogError, Metadata, RunView, type 
 import { EscapeSQLString, NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import {
+    CommonEngine,
     ContactConsentSource,
     ContactConsentStatus,
     ContactMethodConsentEntity,
@@ -318,32 +319,12 @@ export class ContactMethodListComponent {
         }
     }
 
-    /** Reads contact types and consent purposes once, in one round trip. */
+    /** Reads contact types and consent purposes from the shared CommonEngine cache. */
     private async loadLookups(): Promise<void> {
-        if (this.ContactTypes.length > 0 && this.ConsentPurposes.length > 0) {
-            return;
-        }
-        const rv = new RunView(this.runViewToUse);
-        const [types, purposes] = await rv.RunViews([
-            {
-                EntityName: 'MJ_BizApps_Common: Contact Types',
-                ExtraFilter: 'IsActive=1',
-                OrderBy: 'DisplayRank ASC',
-                ResultType: 'entity_object'
-            },
-            {
-                EntityName: 'MJ_BizApps_Common: Consent Purposes',
-                ExtraFilter: 'IsActive=1',
-                OrderBy: 'Sequence ASC',
-                ResultType: 'entity_object'
-            }
-        ]);
-        if (types.Success) {
-            this.ContactTypes = types.Results as mjBizAppsCommonContactTypeEntity[];
-        }
-        if (purposes.Success) {
-            this.ConsentPurposes = purposes.Results as mjBizAppsCommonConsentPurposeEntity[];
-        }
+        const provider = this.ProviderToUse;
+        await CommonEngine.Instance.Config(false, provider.CurrentUser, provider);
+        this.ContactTypes = CommonEngine.Instance.ActiveContactTypes;
+        this.ConsentPurposes = CommonEngine.Instance.ActiveConsentPurposes;
     }
 
     /** Reads the person's or organization's contact methods when no collection was bound. */

@@ -10,7 +10,7 @@ import { StatTileComponent } from '../components/stat-tile/stat-tile.component';
 import { COMMON_ENTITIES } from '../data/entity-names';
 import { LoadDirectoryDashboardSummary } from '../data/directory-queries';
 import { BuildDirectoryHeadline } from '../data/directory-stats';
-import { LoadLatestPeopleView, LoadLatestRelationshipsView } from '../data/directory-views';
+import { LoadLatestDirectoryViews } from '../data/directory-views';
 import type {
     DirectoryAttentionItem,
     DirectoryBarRow,
@@ -570,7 +570,7 @@ export class CommonDashboardPageComponent implements OnInit, OnDestroy {
     public async ngOnInit(): Promise<void> {
         void this.loadSummary();
         try {
-            const [peopleView, relView] = await Promise.all([LoadLatestPeopleView(), LoadLatestRelationshipsView()]);
+            const { people: peopleView, relationships: relView } = await LoadLatestDirectoryViews();
             this.PersonEntity = peopleView.entity;
             this.LatestPeopleView = peopleView.view;
             this.RelationshipEntity = relView.entity;

@@ -13,7 +13,7 @@ import {
     ViewEncapsulation,
     inject,
 } from '@angular/core';
-import { BaseEntity, BaseEntityEvent, Metadata, RunView } from '@memberjunction/core';
+import { BaseEntity, BaseEntityEvent, Metadata, RunView, type RunViewParams } from '@memberjunction/core';
 import { MJEventType, MJGlobal, type MJEvent } from '@memberjunction/global';
 import type { Subscription } from 'rxjs';
 import { BaseFormsModule, type FormContext, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
@@ -192,9 +192,9 @@ export class SellingCompanyFieldComponent implements OnInit, OnChanges, OnDestro
         });
         const metadata = new Metadata();
         await CommonSettings.Load(Metadata.Provider, metadata.CurrentUser);
-        await this.loadCompanyNames();
+        const employeeCompanyID = await this.loadCompaniesAndEmployeeCompanyID(metadata);
 
-        const defaultID = (await this.employeeCompanyID(metadata)) ?? CommonSettings.DefaultSellingCompanyID;
+        const defaultID = employeeCompanyID ?? CommonSettings.DefaultSellingCompanyID;
         this.confirm = new SellingCompanyConfirm(defaultID);
         this.DefaultName = defaultID ? this.nameOf(defaultID) : '';
         this.applyDefault(defaultID);
@@ -317,39 +317,44 @@ export class SellingCompanyFieldComponent implements OnInit, OnChanges, OnDestro
         return this.names.get(id.trim().toLowerCase()) ?? id;
     }
 
-    private async loadCompanyNames(): Promise<void> {
-        const result = await RunView.FromMetadataProvider(Metadata.Provider).RunView<{ ID: string; Name: string }>({
-            EntityName: COMPANIES_ENTITY,
-            Fields: ['ID', 'Name'],
-            ResultType: 'simple',
-            OrderBy: 'Name',
-        });
-        if (!result.Success) {
-            return; // The question falls back to naming companies by ID rather than not appearing.
-        }
-        for (const company of result.Results) {
-            this.names.set(company.ID.trim().toLowerCase(), company.Name);
-        }
-    }
-
     /**
-     * The user's own company, when they are linked to an employee record and that employee's
-     * company is one this instance knows. An employee of a company that is not in the list is not
-     * a signal about where to book.
+     * Loads company names and (when the current user is linked to an employee) that employee's
+     * company ID in a single batched `RunViews` round trip.
      */
-    private async employeeCompanyID(metadata: Metadata): Promise<string | null> {
+    private async loadCompaniesAndEmployeeCompanyID(metadata: Metadata): Promise<string | null> {
         const employeeID = metadata.CurrentUser?.EmployeeID;
-        if (!employeeID) {
+        const rv = RunView.FromMetadataProvider(Metadata.Provider);
+        const requests: RunViewParams[] = [
+            {
+                EntityName: COMPANIES_ENTITY,
+                Fields: ['ID', 'Name'],
+                ResultType: 'simple',
+                OrderBy: 'Name',
+            },
+            ...(employeeID
+                ? [
+                      {
+                          EntityName: EMPLOYEES_ENTITY,
+                          ExtraFilter: `ID = '${EscapeFilterValue(String(employeeID))}'`,
+                          Fields: ['CompanyID'],
+                          ResultType: 'simple' as const,
+                          MaxRows: 1,
+                      },
+                  ]
+                : []),
+        ];
+
+        const [companiesResult, employeeResult] = await rv.RunViews(requests);
+        if (companiesResult?.Success) {
+            for (const company of companiesResult.Results as Array<{ ID: string; Name: string }>) {
+                this.names.set(company.ID.trim().toLowerCase(), company.Name);
+            }
+        }
+
+        if (!employeeID || !employeeResult?.Success) {
             return null;
         }
-        const result = await RunView.FromMetadataProvider(Metadata.Provider).RunView<{ CompanyID: string }>({
-            EntityName: EMPLOYEES_ENTITY,
-            ExtraFilter: `ID = '${EscapeFilterValue(String(employeeID))}'`,
-            Fields: ['CompanyID'],
-            ResultType: 'simple',
-            MaxRows: 1,
-        });
-        const companyID = result.Success ? result.Results[0]?.CompanyID : null;
+        const companyID = (employeeResult.Results as Array<{ CompanyID: string }>)[0]?.CompanyID ?? null;
         return companyID && this.names.has(companyID.trim().toLowerCase()) ? companyID : null;
     }
 }

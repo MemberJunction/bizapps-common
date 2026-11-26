@@ -11,7 +11,7 @@ import {
     inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RunView, CompositeKey } from '@memberjunction/core';
+import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
 import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
@@ -200,7 +200,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
         this.cdr.markForCheck();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
             let filter = '';
 
             if (this.PersonID) {
@@ -348,7 +348,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
         if (!rawId) return;
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
             const filter = isPerson
                 ? `FromPersonID = '${rawId}' OR ToPersonID = '${rawId}'`
                 : `FromOrganizationID = '${rawId}' OR ToOrganizationID = '${rawId}'`;
@@ -356,6 +356,7 @@ export class CommonRelationshipGraphComponent implements OnInit, OnChanges {
             const result = await rv.RunView<DirectoryRelationshipRow>({
                 EntityName: COMMON_ENTITIES.Relationship,
                 ExtraFilter: filter,
+                Fields: ['ID', 'FromPersonID', 'ToPersonID', 'FromOrganizationID', 'ToOrganizationID', 'FromPerson', 'ToPerson', 'FromOrganization', 'ToOrganization', 'RelationshipType', 'Title'],
                 OrderBy: '__mj_CreatedAt DESC',
                 MaxRows: this.limits.Tuning.RelationshipGraphHopMaxRows,
                 ResultType: 'simple'
