@@ -26,6 +26,7 @@ export * from './entity-names.js';
 export * from './wire.js';
 export * from './world/world.js';
 export * from './world/load-world.js';
+export * from './world/activity-hybrid-world.js';
 export * from './checks/common-world.checks.js';
 export * from './checks/people.checks.js';
 export * from './checks/organizations.checks.js';

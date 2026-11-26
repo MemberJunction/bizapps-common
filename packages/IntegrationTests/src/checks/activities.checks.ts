@@ -8,6 +8,8 @@ import {
     IntegrationCheckRegistry,
     type NamedCheck,
 } from '@memberjunction/testing-integration/registry';
+import type { MJArtifactEntity } from '@memberjunction/core-entities';
+import { UUIDsEqual } from '@memberjunction/global';
 import {
     mjBizAppsCommonActivityEntity,
     mjBizAppsCommonActivityLinkEntity,
@@ -19,6 +21,7 @@ import {
 import { COMMON_ENTITIES, WORLD_EMAIL_DOMAIN } from '../entity-names.js';
 import { FindRows, Quote, RequireSave } from '../wire.js';
 import { GetOrLoadWorld } from '../world/load-world.js';
+import { ResolveActivityTypeIdMap } from '../world/activity-hybrid-world.js';
 
 /**
  * The system Activity Types this app seeds, in the order `metadata/activity-types/.activity-types.json`
@@ -325,6 +328,203 @@ const checks: NamedCheck[] = [
                     await sr.Delete();
                 }
                 await connection.Delete();
+            }
+        },
+    },
+    {
+        Id: 'activities.A7',
+        Name: 'A7 — Category B Hybrid Activity: fast-path ArtifactID=NULL (0 Artifacts), opt-in MJ Doc link/unlink, vwActivities.Artifact, and dangling FK refusal',
+        RequiresMutation: true,
+        Fn: async (ctx) => {
+            const typeIds = await ResolveActivityTypeIdMap(ctx);
+            const runStamp = `COM-HYBRID-${Date.now()}`;
+            const createdActivities: mjBizAppsCommonActivityEntity[] = [];
+            let createdArtifact: MJArtifactEntity | null = null;
+
+            try {
+                // 1. Snapshot MJ: Artifacts count before fast-path quick capture
+                const artifactsBefore = await FindRows<{ ID: string }>(
+                    ctx,
+                    COMMON_ENTITIES.Artifact,
+                    `Name LIKE '${Quote(runStamp)}%'`,
+                    ['ID'],
+                );
+                AssertEqual(artifactsBefore.length, 0, 'no pre-existing artifacts for run stamp');
+
+                // 2. Fast-path quick capture across Note/Call/Meeting/Email with ArtifactID = null
+                const quickNote = await ctx.Provider.GetEntityObject<mjBizAppsCommonActivityEntity>(
+                    COMMON_ENTITIES.Activity,
+                    ctx.User,
+                );
+                quickNote.NewRecord();
+                quickNote.ActivityTypeID = typeIds.Note;
+                quickNote.StartedAt = new Date();
+                quickNote.Title = `${runStamp} Quick Note`;
+                quickNote.Description = 'Captured in under 2 seconds without creating an MJ Doc.';
+                quickNote.Details = JSON.stringify({ Channel: 'QuickNote', FastPath: true });
+                quickNote.Direction = 'Internal';
+                quickNote.Status = 'Logged';
+                quickNote.Visibility = 'Internal';
+                quickNote.Source = 'Manual';
+                quickNote.LoggedByUserID = ctx.User.ID;
+                Assert(quickNote.ArtifactID === null, 'default ArtifactID must be null');
+                await RequireSave(quickNote, 'A7 fast-path quick note');
+                createdActivities.push(quickNote);
+
+                const fastRows = await FindRows<{
+                    ID: string;
+                    Description: string | null;
+                    Details: string | null;
+                    ArtifactID: string | null;
+                    Artifact: string | null;
+                }>(
+                    ctx,
+                    COMMON_ENTITIES.Activity,
+                    `ID = '${Quote(quickNote.ID)}'`,
+                    ['ID', 'Description', 'Details', 'ArtifactID', 'Artifact'],
+                );
+                AssertEqual(fastRows.length, 1, 'fast-path activity visible via vwActivities');
+                Assert(fastRows[0].ArtifactID === null, 'fast-path ArtifactID remains null');
+                Assert(fastRows[0].Artifact === null, 'fast-path vwActivities.Artifact remains null');
+                AssertEqual(
+                    fastRows[0].Description ?? '',
+                    'Captured in under 2 seconds without creating an MJ Doc.',
+                    'fast-path Description preserved',
+                );
+
+                // Verify zero MJ: Artifacts were auto-created by quick capture
+                const artifactsAfterFast = await FindRows<{ ID: string }>(
+                    ctx,
+                    COMMON_ENTITIES.Artifact,
+                    `Name LIKE '${Quote(runStamp)}%'`,
+                    ['ID'],
+                );
+                AssertEqual(artifactsAfterFast.length, 0, 'fast-path capture must create zero MJ: Artifacts');
+
+                // 3. Opt-in linked MJ Doc (ArtifactID FK -> __mj.Artifact)
+                const artifactTypes = await FindRows<{ ID: string; Name: string }>(
+                    ctx,
+                    COMMON_ENTITIES.ArtifactType,
+                    '',
+                    ['ID', 'Name'],
+                );
+                Assert(artifactTypes.length > 0, 'at least one MJ: Artifact Type must exist');
+                const environments = await FindRows<{ ID: string }>(
+                    ctx,
+                    COMMON_ENTITIES.Environment,
+                    '',
+                    ['ID'],
+                );
+                Assert(environments.length > 0, 'at least one MJ: Environment must exist');
+
+                const artifact = await ctx.Provider.GetEntityObject<MJArtifactEntity>(
+                    COMMON_ENTITIES.Artifact,
+                    ctx.User,
+                );
+                artifact.NewRecord();
+                artifact.EnvironmentID = environments[0].ID;
+                artifact.TypeID = artifactTypes[0].ID;
+                artifact.UserID = ctx.User.ID;
+                artifact.Name = `${runStamp} Executive QBR Brief`;
+                artifact.Description = 'Opt-in long-form collaborative MJ Doc linked to Meeting Activity.';
+                artifact.Visibility = 'Always';
+                await RequireSave(artifact, 'A7 opt-in artifact');
+                createdArtifact = artifact;
+
+                const linkedMeeting = await ctx.Provider.GetEntityObject<mjBizAppsCommonActivityEntity>(
+                    COMMON_ENTITIES.Activity,
+                    ctx.User,
+                );
+                linkedMeeting.NewRecord();
+                linkedMeeting.ActivityTypeID = typeIds.Meeting;
+                linkedMeeting.StartedAt = new Date();
+                linkedMeeting.Title = `${runStamp} Executive QBR Meeting`;
+                linkedMeeting.Description = 'Concise summary preserved alongside linked MJ Doc.';
+                linkedMeeting.Details = JSON.stringify({ Location: 'Boardroom', LinkedDocMode: 'OptIn' });
+                linkedMeeting.Direction = 'Outbound';
+                linkedMeeting.Status = 'Completed';
+                linkedMeeting.Visibility = 'Internal';
+                linkedMeeting.Source = 'Manual';
+                linkedMeeting.LoggedByUserID = ctx.User.ID;
+                linkedMeeting.ArtifactID = artifact.ID;
+                await RequireSave(linkedMeeting, 'A7 linked meeting activity');
+                createdActivities.push(linkedMeeting);
+
+                const linkedRows = await FindRows<{
+                    ID: string;
+                    ArtifactID: string | null;
+                    Artifact: string | null;
+                    Description: string | null;
+                }>(
+                    ctx,
+                    COMMON_ENTITIES.Activity,
+                    `ID = '${Quote(linkedMeeting.ID)}'`,
+                    ['ID', 'ArtifactID', 'Artifact', 'Description'],
+                );
+                AssertEqual(linkedRows.length, 1, 'linked activity visible via vwActivities');
+                Assert(UUIDsEqual(linkedRows[0].ArtifactID, artifact.ID), 'linked ArtifactID matches');
+                AssertEqual(linkedRows[0].Artifact ?? '', artifact.Name, 'vwActivities.Artifact projects Artifact.Name');
+
+                // 4. Unlink ArtifactID back to null preserving Description & Details and leaving Artifact intact
+                linkedMeeting.ArtifactID = null;
+                await RequireSave(linkedMeeting, 'A7 unlink artifact from activity');
+
+                const unlinkedRows = await FindRows<{
+                    ID: string;
+                    ArtifactID: string | null;
+                    Artifact: string | null;
+                    Description: string | null;
+                    Details: string | null;
+                }>(
+                    ctx,
+                    COMMON_ENTITIES.Activity,
+                    `ID = '${Quote(linkedMeeting.ID)}'`,
+                    ['ID', 'ArtifactID', 'Artifact', 'Description', 'Details'],
+                );
+                Assert(unlinkedRows[0].ArtifactID === null, 'unlinked ArtifactID is null');
+                Assert(unlinkedRows[0].Artifact === null, 'unlinked vwActivities.Artifact is null');
+                AssertEqual(
+                    unlinkedRows[0].Description ?? '',
+                    'Concise summary preserved alongside linked MJ Doc.',
+                    'Description preserved on unlink',
+                );
+                Assert(
+                    (unlinkedRows[0].Details ?? '').includes('Boardroom'),
+                    'Details preserved on unlink',
+                );
+
+                const stillThere = await FindRows<{ ID: string }>(
+                    ctx,
+                    COMMON_ENTITIES.Artifact,
+                    `ID = '${Quote(artifact.ID)}'`,
+                    ['ID'],
+                );
+                AssertEqual(stillThere.length, 1, 'unlinking must preserve underlying MJ: Artifact record');
+
+                // 5. Adversarial FK boundary check: dangling non-existent ArtifactID must be refused
+                const dangling = await ctx.Provider.GetEntityObject<mjBizAppsCommonActivityEntity>(
+                    COMMON_ENTITIES.Activity,
+                    ctx.User,
+                );
+                dangling.NewRecord();
+                dangling.ActivityTypeID = typeIds.Call;
+                dangling.StartedAt = new Date();
+                dangling.Title = `${runStamp} Dangling Artifact FK`;
+                dangling.Direction = 'Outbound';
+                dangling.Status = 'Logged';
+                dangling.Visibility = 'Internal';
+                dangling.Source = 'Manual';
+                dangling.LoggedByUserID = ctx.User.ID;
+                dangling.ArtifactID = 'deadbeef-dead-4eef-8eef-deadbeef0001';
+                const danglingSaved = await dangling.Save();
+                Assert(!danglingSaved, 'dangling non-existent ArtifactID must be refused by FK_Activity_Artifact');
+            } finally {
+                for (const act of createdActivities.reverse()) {
+                    await act.Delete();
+                }
+                if (createdArtifact) {
+                    await createdArtifact.Delete();
+                }
             }
         },
     },

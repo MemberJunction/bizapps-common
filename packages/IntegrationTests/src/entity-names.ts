@@ -1,5 +1,8 @@
 export const COMMON_ENTITIES = {
     Company: 'MJ: Companies',
+    Artifact: 'MJ: Artifacts',
+    ArtifactType: 'MJ: Artifact Types',
+    Environment: 'MJ: Environments',
     Person: 'MJ_BizApps_Common: People',
     Organization: 'MJ_BizApps_Common: Organizations',
     OrganizationType: 'MJ_BizApps_Common: Organization Types',
