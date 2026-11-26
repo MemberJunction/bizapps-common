@@ -69,6 +69,44 @@ jobs:
           node --test scripts/check-uuid-comparisons.spec.mjs
           node scripts/check-uuid-comparisons.mjs
 
+      - name: PostgreSQL counterpart and split-bake v1 provenance parity gate
+        run: |
+          node -e '
+            const crypto = require("node:crypto");
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const pgDir = "migrations-pg";
+            const tsDir = "migrations";
+            const provRe = /^-- @mj-pg-provenance: split-bake v1 source=([^\s]+) source-sha256=([0-9a-f]{64}) mode=(baked|needs-hand-rebaked)$/;
+            let checked = 0;
+            const errors = [];
+            for (const f of fs.readdirSync(pgDir).filter((n) => n.endsWith(".pg.sql")).sort()) {
+              const firstLine = fs.readFileSync(path.join(pgDir, f), "utf8").split(/\r?\n/, 1)[0] || "";
+              if (!firstLine.startsWith("-- @mj-pg-provenance:")) continue;
+              const m = firstLine.match(provRe);
+              if (!m) {
+                errors.push(`${f}: malformed provenance header: ${firstLine}`);
+                continue;
+              }
+              const tsPath = path.join(tsDir, m[1]);
+              if (!fs.existsSync(tsPath)) {
+                errors.push(`${f}: referenced T-SQL source ${tsPath} does not exist`);
+                continue;
+              }
+              const actualSha = crypto.createHash("sha256").update(fs.readFileSync(tsPath)).digest("hex");
+              if (actualSha !== m[2]) {
+                errors.push(`${f}: SHA-256 mismatch (header=${m[2]}, actual=${actualSha})`);
+                continue;
+              }
+              checked++;
+            }
+            if (errors.length > 0) {
+              console.error("PG provenance parity failures:\n" + errors.join("\n"));
+              process.exit(1);
+            }
+            console.log(`PG provenance parity gate passed (${checked} split-bake v1 file(s) verified)`);
+          '
+
       - name: Validate Epic 1b limits sweep artifacts
         run: |
           node -e '

@@ -45,7 +45,7 @@ Rows are keyed by `@com-world.test` emails so they are idempotent and easy to fi
 | `organizations` | O1–O3 |
 | `contacts-addresses` | CA1–CA3 |
 | `relationships` | R1–R4 |
-| `activities` | A1–A5 |
+| `activities` | A1–A7 (types, regarding/xor/unresolved links, ExternalID, sync, `SaveReturnMode`, and A7 Category B Hybrid `Activity.ArtifactID` fast-path/link/unlink/FK refusal) |
 | `party-lookup` | PL1–PL4 |
 | `company-org-mirror` | CM1–CM4 (`MJ: Companies` → `Organization` auto-mirroring, update sync, `SyncCompaniesToOrganizations` RPC, `UQ_Organization_LinkedCompanyID` uniqueness) |
 | `activity-sync` | AS-D1–D4, AS-R1–R5, AS-S1–S3, AS-C1–C5 (needs a sandbox host, below; not in the default run, so name it) |
@@ -89,5 +89,20 @@ Microsoft Graph. Like a payment sandbox test mode: same front door, test data.
 
 1. Use `ctx.Provider.GetEntityObject<TypedEntity>(...)` and typed properties — never `.Get()` / `.Set()`.
 2. Lookups go through `RunView.FromMetadataProvider(ctx.Provider)` — never `ctx.Pool`.
-3. Compare IDs with `SameID` (SQL Server uppercases GUIDs).
+3. Compare IDs with `SameID` / `UUIDsEqual` (SQL Server uppercases GUIDs; PostgreSQL lowercases UUIDs).
 4. A refused save must assert the refusal (`Assert(!saved)`), not only that something failed.
+
+## Dual-DBMS Cross-Stack Activity Hybrid Verification
+
+For parallel SQL Server + PostgreSQL schema parity, multi-entity domain seeding (`scripts/seed-activity-hybrid-world.mjs`, `>= 20` domain records across organizations, people, roles/permissions, `Note`/`Call`/`Meeting`/`Email` activities, and linked/unlinked MJ Docs), FK adversarial checks, RLS boundaries, and transactional rollback hygiene, run via the workspace broker:
+
+```bash
+node ../bizapps-software-factory/scripts/sf-workspace-db-broker.mjs rehearse-dual-db \
+  --repo . \
+  --schema __mj_BizAppsCommon \
+  --migrations migrations/V202611261245__v6.3.x__Activity_ArtifactID.sql \
+  --sync-metadata \
+  --integration-cmd "node packages/IntegrationTests/checks/activity-hybrid-artifact.check.mjs"
+```
+
+Deterministic offline parity and guard checks also run automatically inside `pnpm test` via `src/__tests__/ActivityPgParityAndGuards.test.ts`.

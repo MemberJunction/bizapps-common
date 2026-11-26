@@ -219,6 +219,20 @@ Every data-access path in `bizapps-common` (`packages/Entities`, `packages/Angul
 
 This repository provides foundational business entities that other MemberJunction applications consume. Applications can reference the BizApps entities in their own migrations, link their entities to Person, Organization and so on, and extend the core entities with additional fields or relationships. The Committees application, for example, links Committee Members to BizApps Person records.
 
+## MJ Docs (MJ: Artifacts) vs. MJ: Comments vs. Quick Notes
+
+`MJ_BizApps_Common: Activities` (`[__mj_BizAppsCommon].[Activity]`) follows the **Category B Hybrid Spine** pattern:
+
+- **Fast path by default (`ArtifactID = NULL`, `<2s` capture):** Quick Notes, Calls, Meetings, and Emails persist directly into `Activity.Description` and `Activity.Details` with `ArtifactID = NULL`. **Never** auto-create an `MJ: Artifacts` record during quick capture or activity sync.
+- **Opt-in MJ Doc link or expansion (`Activity.ArtifactID` -> `[__mj].[Artifact]([ID])`):** When an activity requires a long-form, versioned, shareable collaborative document (account plan, legal brief, steering memo, proposal), the user explicitly links an existing `MJ: Artifacts` record or triggers opt-in expansion (atomically via `TransactionGroup` or compensating rollback). Unlinking resets `ArtifactID = NULL` without altering `Description`/`Details` or deleting the underlying Artifact.
+- **Batched hydration & graceful degradation:** Activity timelines hydrate distinct non-null `ArtifactID`s in a single batched `RunViews` query (`ResultType: 'simple'`, `Fields: ['ID', 'Name', 'Type']`, `CacheLocal: false`), short-circuiting with zero queries when no visible rows carry an `ArtifactID`, and rendering an unavailable fallback badge when an Artifact is deleted or permission-restricted.
+
+| Surface | Primary Purpose | Storage & Versioning | Latency / UX | When to Choose |
+|---|---|---|---|---|
+| **Quick Notes (`Common.Activity`, `ArtifactID = NULL`)** | Fast operational logging of Notes, Calls, Meetings, Emails tied to People/Organizations via `ActivityLink` | `Activity.Description` + JSON `Activity.Details`; single-table write, filtered FK index excludes `NULL` | `<2s` frictionless inline capture | Default for everyday CRM/interaction notes, call logs, meeting summaries, and synced emails |
+| **MJ: Comments** | Threaded record-level discussions, `@mentions`, and short back-and-forth feedback on an existing entity record | Core MJ comment stream attached to `(EntityID, RecordID)` | Instant inline thread replies | Conversational Q&A or review discussion scoped to a specific record rather than a standalone activity or formal document |
+| **MJ Docs (`MJ: Artifacts`, opt-in via `Activity.ArtifactID`)** | Long-form structured deliverables, collaborative briefs, proposals, and AI-authored/co-edited documents | `[__mj].[Artifact]` + `ArtifactVersion` + `ArtifactPermission` (version history, sharing, visibility) | Explicit opt-in **Link MJ Doc** or **Expand to MJ Doc** action; opens via `NavigationService` | Multi-section documents that need version history, sharing/permissions, or reuse across multiple records/conversations |
+
 ## Angular pinning model
 
 **Angular pinning model** (family-wide, 2026-08-07, with MemberJunction/MJ#3580): `@angular/*` peers in `packages/*` are **caret ranges at the platform pin** (`^21.1.3`) — compatibility claims, never exact. Each package that consumes Angular **anchors** the concrete version with exact `21.1.3` entries in its own `devDependencies`; the anchor is what actually installs. In the shared pnpm dev workspace `auto-install-peers=true` turns unanchored peer ranges into install instructions, which is how two copies of `@angular/core` ended up installed family-wide. Rev anchors with the era platform pin, never with MJ pins.

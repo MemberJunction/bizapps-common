@@ -51,6 +51,16 @@ All code in `packages/Entities`, `packages/Angular`, `packages/ActivitySync`, `p
 
 ---
 
+## MJ Docs (MJ: Artifacts) vs. MJ: Comments vs. Quick Notes
+
+`MJ_BizApps_Common: Activities` (`[__mj_BizAppsCommon].[Activity]`) is a **Category B Hybrid Spine**:
+
+- **Quick Notes (Default Fast Path, `ArtifactID = NULL`):** Capture Notes, Calls, Meetings, and Emails directly in `Activity.Description` and `Activity.Details` in under 2 seconds. **Never** automatically create an `MJ: Artifacts` record for quick notes or synced activities.
+- **MJ: Comments:** Use for lightweight threaded discussion, `@mentions`, and review feedback anchored to a specific record rather than an activity log entry or versioned document.
+- **MJ Docs (`MJ: Artifacts`, Opt-In `Activity.ArtifactID` FK):** Use only when a user explicitly links an existing `MJ: Artifacts` record or expands an Activity into a rich, versioned, shareable document. Hydrate timeline badges in one batched `RunViews` query (`ResultType: 'simple'`, deduplicated non-null UUIDs, `CacheLocal: false`, zero-call short-circuit when none are linked), open via `NavigationService`, and preserve `Description`/`Details` on unlink.
+
+---
+
 ## Verification Checklist
 
 Before opening or updating a PR, run from the repository root:
