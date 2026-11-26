@@ -1,7 +1,7 @@
 <div class="biz-hero" [class.biz-hero--collapsed]="Collapsed">
     <div class="biz-hero__identity">
         <div class="biz-hero__avatar" [style.background]="TypeBackground" aria-hidden="true">
-            <i [class]="TypeIcon" style="font-size: 1.5rem; color: #ffffff;"></i>
+            <i [class]="TypeIcon" style="font-size: 1.5rem; color: var(--mj-brand-on-primary);"></i>
         </div>
 
         <div class="biz-hero__copy">
@@ -10,12 +10,12 @@
             </div>
             <div class="biz-hero__badges">
                 <span class="biz-hero__entity-chip">
-                    <i [class]="TypeIcon"></i>
+                    <i [class]="TypeIcon" aria-hidden="true"></i>
                     {{ Record.ActivityType || 'Activity' }}
                 </span>
                 @if (Record.Direction) {
                     <span class="biz-hero__chip" data-tone="info">
-                        <i [class]="DirectionIcon"></i>
+                        <i [class]="DirectionIcon" aria-hidden="true"></i>
                         {{ Record.Direction }}
                     </span>
                 }
@@ -26,15 +26,20 @@
                 }
                 @if (Record.Outcome) {
                     <span class="biz-hero__chip" data-tone="purple">
-                        <i class="fa-solid fa-flag"></i>
+                        <i class="fa-solid fa-flag" aria-hidden="true"></i>
                         {{ Record.Outcome }}
                     </span>
                 }
                 @if (SentimentDisplay) {
                     <span class="biz-hero__chip" [attr.data-tone]="SentimentTone" title="Derived Sentiment Score">
-                        <i [class]="SentimentIcon"></i>
+                        <i [class]="SentimentIcon" aria-hidden="true"></i>
                         Sentiment {{ SentimentDisplay }}
                     </span>
+                }
+                @if (Record.ArtifactID) {
+                    <bizapps-activity-artifact-badge
+                        [Badge]="LinkedArtifactBadge"
+                        (OpenDoc)="OnOpenLinkedDoc($event)" />
                 }
             </div>
         </div>
@@ -44,7 +49,7 @@
                 [title]="Collapsed ? 'Expand header' : 'Collapse header'"
                 [attr.aria-label]="Collapsed ? 'Expand header' : 'Collapse header'"
                 (click)="ToggleCollapsed()">
-            <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'"></i>
+            <i [class]="Collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" aria-hidden="true"></i>
         </button>
     </div>
 
@@ -71,7 +76,7 @@
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Location</span>
                     <span class="biz-hero__stat-val">
-                        <i class="fa-solid fa-location-dot" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        <i class="fa-solid fa-location-dot" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;" aria-hidden="true"></i>
                         {{ LocationDisplay }}
                     </span>
                 </div>
@@ -80,7 +85,7 @@
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Video Meeting</span>
                     <a [href]="MeetingURL" target="_blank" rel="noopener noreferrer" class="biz-hero__stat-val" style="color: var(--mj-brand-primary); text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-video"></i>
+                        <i class="fa-solid fa-video" aria-hidden="true"></i>
                         Join Meeting
                     </a>
                 </div>
@@ -89,7 +94,7 @@
                 <div class="biz-hero__stat">
                     <span class="biz-hero__stat-label">Source</span>
                     <span class="biz-hero__stat-val">
-                        <i class="fa-solid fa-cloud" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        <i class="fa-solid fa-cloud" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;" aria-hidden="true"></i>
                         {{ SourceDisplay }}
                     </span>
                 </div>
@@ -104,7 +109,7 @@
                             [HandleClick]="false"
                             (Navigate)="Navigate.emit($event)"
                             (click)="OnParentActivityClick($event)">
-                        <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;"></i>
+                        <i class="fa-solid fa-reply" style="font-size: 0.85em; opacity: 0.7; margin-right: 4px;" aria-hidden="true"></i>
                         {{ ParentActivityLabel }}
                     </button>
                 </div>
@@ -112,7 +117,7 @@
         </div>
 
         @if (Record.Description) {
-            <div style="padding-top: var(--mj-space-2, 8px); border-top: 1px solid var(--mj-border-subtle, #f1f5f9); font-size: var(--mj-text-sm, 13px); line-height: 1.5; color: var(--mj-text-secondary, #334155); white-space: pre-wrap;">
+            <div style="padding-top: var(--mj-space-2, 8px); border-top: 1px solid var(--mj-border-subtle); font-size: var(--mj-text-sm, 13px); line-height: 1.5; color: var(--mj-text-secondary); white-space: pre-wrap;">
                 {{ Record.Description }}
             </div>
         }
@@ -121,9 +126,9 @@
     <!--
       EDIT MODE. This hero replaces the generated "Activity Details" section (`replacesSectionKey:
       'activityDetails'` on ActivityHeaderPanel), so every field that section carried has to be
-      editable here or it is editable nowhere (bc-aidp-next-golive#430: the Type of a logged activity
-      could not be changed). Description is owned by the Notes panel (ActivityContentPanel) and is
-      left out so one field is not bound to two editors. Shown whether or not the hero is collapsed.
+      editable here or it is editable nowhere. Description is owned by the Notes panel
+      (ActivityContentPanel) and is left out so one field is not bound to two editors.
+      Shown whether or not the hero is collapsed.
     -->
     @if (EditMode) {
         <div class="biz-hero__edit">

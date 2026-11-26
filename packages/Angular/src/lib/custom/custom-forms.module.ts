@@ -12,6 +12,9 @@ import { CommonRelationshipGraphComponent } from '../components/relationship-gra
 import { PersonIdentityComponent } from '../components/identity-header/person-identity.component';
 import { OrganizationIdentityComponent } from '../components/identity-header/organization-identity.component';
 import { ActivityIdentityComponent } from '../components/identity-header/activity-identity.component';
+import { ActivityArtifactBadgeComponent } from '../components/activity-artifact-badge/activity-artifact-badge.component';
+import { ActivityArtifactSectionComponent } from '../components/activity-artifact-section/activity-artifact-section.component';
+import { ActivityComposerComponent } from '../components/activity-composer/activity-composer.component';
 import { PersonHeaderPanel } from './panels/person-header.panel';
 import { OrganizationHeaderPanel } from './panels/organization-header.panel';
 import { ActivityHeaderPanel } from './panels/activity-header.panel';
@@ -66,6 +69,9 @@ const PANELS = [
         CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
+        ActivityArtifactBadgeComponent,
+        ActivityArtifactSectionComponent,
+        ActivityComposerComponent,
         ActivityTypeHierarchyPanel,
         ActivityHierarchyPanel,
         ActivityLinksPanel,
@@ -80,6 +86,9 @@ const PANELS = [
         CompanySenderIdentitiesComponent,
         OrganizationIdentityComponent,
         ActivityIdentityComponent,
+        ActivityArtifactBadgeComponent,
+        ActivityArtifactSectionComponent,
+        ActivityComposerComponent,
         ActivityTypeHierarchyPanel,
         ActivityHierarchyPanel,
         ActivityLinksPanel,
