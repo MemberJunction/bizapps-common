@@ -395,6 +395,7 @@ describe('CommonEngine', () => {
         // BaseEntity save event invalidates only the saved record
         await invokeBaseEntityEvent({
             type: 'save',
+            payload: {},
             baseEntity: {
                 EntityInfo: { Name: COMMON_ENGINE_ENTITIES.People },
                 PrimaryKey: { KeyValuePairs: [{ FieldName: 'ID', Value: PERSON_2_ID.toUpperCase() }] },
