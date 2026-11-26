@@ -73,13 +73,19 @@ export interface RelatedLinkReadResult {
     Results?: Record<string, unknown>[];
 }
 
-/** Reads one row for a link. The component supplies a provider-scoped `RunView`. */
-export type RelatedLinkReader = (params: {
+/** Parameters for reading one related link row. */
+export interface RelatedLinkReadParams {
     EntityName: string;
     Fields: string[];
     ExtraFilter: string;
     MaxRows: number;
-}) => Promise<RelatedLinkReadResult>;
+}
+
+/** Reads one row for a link. The component supplies a provider-scoped `RunView`. */
+export type RelatedLinkReader = (params: RelatedLinkReadParams) => Promise<RelatedLinkReadResult>;
+
+/** Reads all valid links in a single batched `RunViews` call. */
+export type RelatedLinkBatchReader = (paramsList: RelatedLinkReadParams[]) => Promise<RelatedLinkReadResult[]>;
 
 /** A link that resolved to something openable. Anything that did not resolve is absent, not blank. */
 export interface ResolvedRelatedChip {
@@ -203,24 +209,107 @@ export async function ResolveRelatedChip(
             ExtraFilter: filter,
             MaxRows: 1,
         });
-        if (result?.Success === false) {
-            return null;
-        }
-        const row = result?.Success ? result.Results?.[0] : undefined;
-        if (result?.Success && !row) {
-            return null;
-        }
-        if (!row) {
-            return unreadableChip(link, entity, label, pkField);
-        }
-        const recordID = String(row[pkField] ?? link.RecordID ?? '');
-        if (!isPresent(recordID)) {
-            return null;
-        }
-        return chip(link, entity, label, pkField, recordID, String(row[nameField] ?? ''));
+        return interpretRelatedLinkResult(link, entity, label, pkField, nameField, result);
     } catch {
         return unreadableChip(link, entity, label, pkField);
     }
+}
+
+/**
+ * Resolves all links in a single batched `RunViews` round trip while preserving the exact
+ * per-link visibility and fallback semantics of {@link ResolveRelatedChip}.
+ */
+export async function ResolveRelatedChips(
+    links: readonly BizAppsRelatedLink[],
+    entities: RelatedLinkEntity[],
+    readBatch: RelatedLinkBatchReader,
+): Promise<ResolvedRelatedChip[]> {
+    interface PreparedLink {
+        link: BizAppsRelatedLink;
+        entity: RelatedLinkEntity;
+        label: string;
+        pkField: string;
+        nameField: string;
+        params: RelatedLinkReadParams;
+    }
+
+    const prepared: PreparedLink[] = [];
+    for (const link of links) {
+        const entity = entities?.find((e) => e.Name === link.EntityName) ?? null;
+        if (!entity) continue;
+        const nameField = entity.NameField?.Name;
+        if (!isPresent(nameField)) continue;
+        const filter = FilterForRelatedLink(link, entity);
+        if (!filter) continue;
+        const pkField = PrimaryKeyFieldFor(entity);
+        const label = LabelForRelatedLink(link, entity);
+        prepared.push({
+            link,
+            entity,
+            label,
+            pkField,
+            nameField,
+            params: {
+                EntityName: entity.Name,
+                Fields: [pkField, nameField],
+                ExtraFilter: filter,
+                MaxRows: 1,
+            },
+        });
+    }
+
+    if (prepared.length === 0) {
+        return [];
+    }
+
+    try {
+        const results = await readBatch(prepared.map((item) => item.params));
+        const chips: ResolvedRelatedChip[] = [];
+        for (let i = 0; i < prepared.length; i++) {
+            const item = prepared[i];
+            const resolved = interpretRelatedLinkResult(
+                item.link,
+                item.entity,
+                item.label,
+                item.pkField,
+                item.nameField,
+                results?.[i],
+            );
+            if (resolved) {
+                chips.push(resolved);
+            }
+        }
+        return chips;
+    } catch {
+        return prepared
+            .map((item) => unreadableChip(item.link, item.entity, item.label, item.pkField))
+            .filter((item): item is ResolvedRelatedChip => item !== null);
+    }
+}
+
+function interpretRelatedLinkResult(
+    link: BizAppsRelatedLink,
+    entity: RelatedLinkEntity,
+    label: string,
+    pkField: string,
+    nameField: string,
+    result: RelatedLinkReadResult | undefined,
+): ResolvedRelatedChip | null {
+    if (result?.Success === false) {
+        return null;
+    }
+    const row = result?.Success ? result.Results?.[0] : undefined;
+    if (result?.Success && !row) {
+        return null;
+    }
+    if (!row) {
+        return unreadableChip(link, entity, label, pkField);
+    }
+    const recordID = String(row[pkField] ?? link.RecordID ?? '');
+    if (!isPresent(recordID)) {
+        return null;
+    }
+    return chip(link, entity, label, pkField, recordID, String(row[nameField] ?? ''));
 }
 
 /**

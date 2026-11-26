@@ -4,8 +4,7 @@
  * thumbnails (entity-viewer image cells). Until metadata is pushed, we fall
  * back to an in-memory view with the same GridState.
  */
-import { Metadata, RunView } from '@memberjunction/core';
-import type { EntityInfo } from '@memberjunction/core';
+import { Metadata, RunView, type EntityInfo, type RunViewParams } from '@memberjunction/core';
 import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
 import { COMMON_ENTITIES } from './entity-names';
 import { EscapeFilterValue } from './directory-stats';
@@ -77,20 +76,14 @@ export function RelationshipsGridState() {
 }
 
 async function loadViewByName(name: string): Promise<MJUserViewEntityExtended | null> {
-    const rv = new RunView();
-    const found = await rv.RunView<{ ID: string }>({
+    const rv = RunView.FromMetadataProvider(Metadata.Provider);
+    const found = await rv.RunView<MJUserViewEntityExtended>({
         EntityName: 'MJ: User Views',
         ExtraFilter: `Name = '${EscapeFilterValue(name)}'`,
-        Fields: ['ID'],
         MaxRows: 1,
-        ResultType: 'simple',
+        ResultType: 'entity_object',
     });
-    const id = found.Success ? found.Results?.[0]?.ID : undefined;
-    if (!id) return null;
-    const md = new Metadata();
-    const view = await md.GetEntityObject<MJUserViewEntityExtended>('MJ: User Views');
-    const ok = await view.Load(id);
-    return ok ? view : null;
+    return found.Success ? (found.Results?.[0] ?? null) : null;
 }
 
 function synthetic(
@@ -122,6 +115,65 @@ export async function LoadDirectoryView(
     const named = await loadViewByName(viewName);
     if (named) return { entity, view: named };
     return { entity, view: synthetic(entity, viewName, gridState, orderBy) };
+}
+
+/**
+ * Loads the Latest People and Latest Relationships views in a single batched `RunViews` round trip,
+ * falling back to synthetic grid views if either named view has not yet been seeded.
+ */
+export async function LoadLatestDirectoryViews(): Promise<{
+    people: { entity: EntityInfo | null; view: MJUserViewEntityExtended | null };
+    relationships: { entity: EntityInfo | null; view: MJUserViewEntityExtended | null };
+}> {
+    const md = new Metadata();
+    const peopleEntity = md.EntityByName(COMMON_ENTITIES.Person) ?? null;
+    const relEntity = md.EntityByName(COMMON_ENTITIES.Relationship) ?? null;
+
+    const rv = RunView.FromMetadataProvider(Metadata.Provider);
+    const requests: RunViewParams[] = [
+        ...(peopleEntity
+            ? [
+                  {
+                      EntityName: 'MJ: User Views',
+                      ExtraFilter: `Name = '${EscapeFilterValue(DIRECTORY_VIEW_NAMES.LatestPeople)}'`,
+                      MaxRows: 1,
+                      ResultType: 'entity_object' as const,
+                  },
+              ]
+            : []),
+        ...(relEntity
+            ? [
+                  {
+                      EntityName: 'MJ: User Views',
+                      ExtraFilter: `Name = '${EscapeFilterValue(DIRECTORY_VIEW_NAMES.LatestRelationships)}'`,
+                      MaxRows: 1,
+                      ResultType: 'entity_object' as const,
+                  },
+              ]
+            : []),
+    ];
+
+    const results = requests.length > 0 ? await rv.RunViews(requests) : [];
+    let idx = 0;
+
+    let peopleView: MJUserViewEntityExtended | null = null;
+    if (peopleEntity) {
+        const res = results[idx++];
+        const named = res?.Success ? ((res.Results as MJUserViewEntityExtended[])?.[0] ?? null) : null;
+        peopleView = named ?? synthetic(peopleEntity, DIRECTORY_VIEW_NAMES.LatestPeople, LatestPeopleGridState(), '__mj_CreatedAt DESC');
+    }
+
+    let relView: MJUserViewEntityExtended | null = null;
+    if (relEntity) {
+        const res = results[idx++];
+        const named = res?.Success ? ((res.Results as MJUserViewEntityExtended[])?.[0] ?? null) : null;
+        relView = named ?? synthetic(relEntity, DIRECTORY_VIEW_NAMES.LatestRelationships, RelationshipsGridState(), '__mj_CreatedAt DESC');
+    }
+
+    return {
+        people: { entity: peopleEntity, view: peopleView },
+        relationships: { entity: relEntity, view: relView },
+    };
 }
 
 export async function LoadPeopleDirectoryView() {

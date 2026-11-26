@@ -1,10 +1,10 @@
 import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey, RunView } from '@memberjunction/core';
+import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
 import { BaseFormsModule, FormNavigationEvent, RecordNavigationEvent } from '@memberjunction/ng-base-forms';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { HierarchyTreeComponent, HierarchyTreeConfig } from '@memberjunction/ng-hierarchy-tree';
-import { mjBizAppsCommonOrganizationEntity } from '@mj-biz-apps/common-entities';
+import { CommonEngine, type CommonOrganizationSummary } from '@mj-biz-apps/common-entities';
 import { EscapeFilterValue } from '../../data/directory-stats';
 
 /**
@@ -102,28 +102,49 @@ export class OrgHierarchyTreeComponent implements OnInit {
         this.cdr.detectChanges();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
+            const escapedOrgID = EscapeFilterValue(this._organizationID);
+            const hierarchyFields = ['ID', 'Name', 'OrganizationType', 'ParentID'];
 
-            const currentResult = await rv.RunView<mjBizAppsCommonOrganizationEntity>({
-                EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${EscapeFilterValue(this._organizationID)}'`,
-                ResultType: 'entity_object'
-            });
+            // Batch current organization and its direct children in a single RunViews round trip
+            const [currentResult, childrenResult] = await rv.RunViews([
+                {
+                    EntityName: 'MJ_BizApps_Common: Organizations',
+                    ExtraFilter: `ID='${escapedOrgID}'`,
+                    Fields: hierarchyFields,
+                    MaxRows: 1,
+                    ResultType: 'simple'
+                },
+                {
+                    EntityName: 'MJ_BizApps_Common: Organizations',
+                    ExtraFilter: `ParentID='${escapedOrgID}'`,
+                    Fields: hierarchyFields,
+                    OrderBy: 'Name ASC',
+                    ResultType: 'simple'
+                }
+            ]);
 
-            if (!currentResult.Success || currentResult.Results.length === 0) {
+            if (!currentResult?.Success || currentResult.Results.length === 0) {
                 return;
             }
 
-            const currentOrg = currentResult.Results[0];
+            const currentOrg = currentResult.Results[0] as Pick<CommonOrganizationSummary, 'ID' | 'Name' | 'OrganizationType' | 'ParentID'>;
             this.CurrentNode = this.buildTreeNode(currentOrg, true);
             this.TreeRoot = this.CurrentNode;
 
-            const parentID = currentOrg.ParentID;
-            const batchViews = this.buildBatchQueries(parentID);
+            if (childrenResult?.Success) {
+                const childOrgs = childrenResult.Results as Array<Pick<CommonOrganizationSummary, 'ID' | 'Name' | 'OrganizationType' | 'ParentID'>>;
+                this.ChildNodes = childOrgs.map(org => this.buildTreeNode(org, false));
+            }
 
-            if (batchViews.length > 0) {
-                const results = await rv.RunViews(batchViews);
-                this.processBatchResults(results, parentID);
+            if (currentOrg.ParentID) {
+                const parentOrg = await CommonEngine.Instance.GetOrganizationByID(currentOrg.ParentID, {
+                    provider: Metadata.Provider,
+                    contextUser: Metadata.Provider.CurrentUser,
+                });
+                if (parentOrg) {
+                    this.ParentNode = this.buildTreeNode(parentOrg, false);
+                }
             }
         } catch (err) {
             console.error('OrgHierarchyTree: Error loading hierarchy', err);
@@ -133,48 +154,10 @@ export class OrgHierarchyTreeComponent implements OnInit {
         }
     }
 
-    private buildBatchQueries(parentID: string | null): Parameters<RunView['RunViews']>[0] {
-        const queries: Parameters<RunView['RunViews']>[0] = [];
-
-        if (parentID) {
-            queries.push({
-                EntityName: 'MJ_BizApps_Common: Organizations',
-                ExtraFilter: `ID='${EscapeFilterValue(parentID)}'`,
-                ResultType: 'entity_object'
-            });
-        }
-
-        queries.push({
-            EntityName: 'MJ_BizApps_Common: Organizations',
-            ExtraFilter: `ParentID='${EscapeFilterValue(this._organizationID)}'`,
-            OrderBy: 'Name ASC',
-            ResultType: 'entity_object'
-        });
-
-        return queries;
-    }
-
-    private processBatchResults(
-        results: Awaited<ReturnType<RunView['RunViews']>>,
-        parentID: string | null
-    ): void {
-        let resultIndex = 0;
-
-        if (parentID && results[resultIndex]?.Success) {
-            const parentOrgs = results[resultIndex].Results as mjBizAppsCommonOrganizationEntity[];
-            if (parentOrgs.length > 0) {
-                this.ParentNode = this.buildTreeNode(parentOrgs[0], false);
-            }
-            resultIndex++;
-        }
-
-        if (results[resultIndex]?.Success) {
-            const childOrgs = results[resultIndex].Results as mjBizAppsCommonOrganizationEntity[];
-            this.ChildNodes = childOrgs.map(org => this.buildTreeNode(org, false));
-        }
-    }
-
-    private buildTreeNode(org: mjBizAppsCommonOrganizationEntity, isCurrent: boolean): OrgTreeNode {
+    private buildTreeNode(
+        org: Pick<CommonOrganizationSummary, 'ID' | 'Name' | 'OrganizationType'>,
+        isCurrent: boolean
+    ): OrgTreeNode {
         return {
             ID: org.ID,
             Name: org.Name,

@@ -1,12 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
     FilterForRelatedLink,
     LabelForRelatedLink,
     RelatedChipNavigation,
     ResolveRelatedChip,
+    ResolveRelatedChips,
     type BizAppsRelatedLink,
     type RelatedChipClick,
     type RelatedLinkEntity,
+    type RelatedLinkReadParams,
     type RelatedLinkReadResult,
     type ResolvedRelatedChip,
 } from '../related-links';
@@ -272,5 +274,59 @@ describe('navigation', () => {
         expect(event.Kind === 'record' && event.PrimaryKey.KeyValuePairs).toEqual([
             { FieldName: 'OrderKey', Value: 'O1' },
         ]);
+    });
+});
+
+describe('ResolveRelatedChips batched RunViews resolution', () => {
+    it('batches all valid links into a single readBatch call and preserves link order', async () => {
+        const readBatch = vi.fn(async (paramsList: RelatedLinkReadParams[]): Promise<RelatedLinkReadResult[]> => {
+            expect(paramsList).toHaveLength(2);
+            return [
+                { Success: true, Results: [{ ID: 'D1', DealName: 'Acme Deal' }] },
+                { Success: true, Results: [{ OrderKey: 'O1', OrderNumber: 'ORD-42' }] },
+            ];
+        });
+
+        const chips = await ResolveRelatedChips(
+            [
+                DEAL_LINK,
+                { Key: 'missing-app', EntityName: 'MJ_BizApps_Unknown: Foo', RecordID: 'X1' },
+                { Key: 'order', EntityName: ORDERS.Name, RecordID: 'O1' },
+            ],
+            CATALOG,
+            readBatch,
+        );
+
+        expect(readBatch).toHaveBeenCalledTimes(1);
+        expect(chips.map((c) => [c.Key, c.Name])).toEqual([
+            ['source', 'Acme Deal'],
+            ['order', 'ORD-42'],
+        ]);
+    });
+
+    it('drops refused and empty results while falling back to unreadable chips for forward links on throw', async () => {
+        const chipsFromPartial = await ResolveRelatedChips(
+            [
+                DEAL_LINK,
+                { Key: 'order', EntityName: ORDERS.Name, RecordID: 'O1' },
+            ],
+            CATALOG,
+            async () => [{ Success: false }, { Success: true, Results: [] }],
+        );
+        expect(chipsFromPartial).toEqual([]);
+
+        const chipsFromThrow = await ResolveRelatedChips(
+            [
+                DEAL_LINK,
+                { Key: 'reverse', EntityName: ORDERS.Name, Filter: `DealID = 'D1'` },
+            ],
+            CATALOG,
+            async () => {
+                throw new Error('network error');
+            },
+        );
+        expect(chipsFromThrow).toHaveLength(1);
+        expect(chipsFromThrow[0].Key).toBe('source');
+        expect(chipsFromThrow[0].Name).toBe('');
     });
 });

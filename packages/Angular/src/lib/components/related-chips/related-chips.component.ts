@@ -13,7 +13,7 @@ import { Metadata, RunView, type IMetadataProvider } from '@memberjunction/core'
 import { BaseFormsModule, type FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import {
     RelatedChipNavigation,
-    ResolveRelatedChip,
+    ResolveRelatedChips,
     type BizAppsRelatedLink,
     type ResolvedRelatedChip,
 } from './related-links';
@@ -280,19 +280,15 @@ export class RelatedChipsComponent implements OnDestroy {
         const entities = provider?.Entities ?? [];
         const runView = RunView.FromMetadataProvider(provider);
 
-        const resolved = await Promise.all(
-            links.map((link) =>
-                ResolveRelatedChip(link, entities, (params) =>
-                    runView.RunView<Record<string, unknown>>({ ...params, ResultType: 'simple' }),
-                ),
-            ),
+        const resolved = await ResolveRelatedChips(links, entities, (paramsList) =>
+            runView.RunViews(paramsList.map((params) => ({ ...params, ResultType: 'simple' as const }))),
         );
 
         if (this.generation !== generation || this.destroyed) {
             return;
         }
 
-        this.Chips = resolved.filter((chip): chip is ResolvedRelatedChip => chip !== null);
+        this.Chips = resolved;
         this.cdr.detectChanges();
     }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RunView } from '@memberjunction/core';
+import { Metadata, RunView } from '@memberjunction/core';
 import { UUIDsEqual } from '@memberjunction/global';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
 import {
@@ -621,9 +621,26 @@ export class CommonActivitiesPageComponent implements OnInit {
         this.cdr.markForCheck();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
             const res = await rv.RunView<ActivityDashboardRow>({
                 EntityName: COMMON_ENTITIES.Activity,
+                Fields: [
+                    'ID',
+                    'Title',
+                    'Description',
+                    'StartedAt',
+                    'EndedAt',
+                    'Direction',
+                    'Status',
+                    'Outcome',
+                    'Location',
+                    'ActivityTypeID',
+                    'ActivityType',
+                    'Source',
+                    'SourceSystem',
+                    'LoggedByUser',
+                    '__mj_CreatedAt',
+                ],
                 OrderBy: 'StartedAt DESC',
                 MaxRows: this.limits.Tuning.ActivitiesDashboardMaxRows,
                 ResultType: 'simple',

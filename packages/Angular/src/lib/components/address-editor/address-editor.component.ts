@@ -6,6 +6,7 @@ import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
 import { GraphQLDataProvider, GraphQLActionClient } from '@memberjunction/graphql-dataprovider';
 import { ActionParam, ActionEngineBase } from '@memberjunction/actions-base';
 import {
+    CommonEngine,
     mjBizAppsCommonAddressEntity,
     mjBizAppsCommonAddressLinkEntity,
     mjBizAppsCommonAddressTypeEntity
@@ -368,27 +369,22 @@ export class AddressEditorComponent {
             this.LoadError = null;
             this.resolvedEntityID = entity.ID;
 
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
 
-            // Load address links and address types in parallel
-            const [linksResult, typesResult] = await rv.RunViews([
-                {
+            // Reuse cached Address Types from CommonEngine and load address links concurrently
+            const [, linksResult] = await Promise.all([
+                CommonEngine.Instance.Config(false, md.CurrentUser, Metadata.Provider),
+                rv.RunView<mjBizAppsCommonAddressLinkEntity>({
                     EntityName: 'MJ_BizApps_Common: Address Links',
                     // RecordID is a caller-supplied @Input and may be a string primary key for any
                     // entity, so it is escaped before reaching the filter rather than interpolated raw.
                     ExtraFilter: `EntityID='${EscapeFilterValue(this.resolvedEntityID)}' AND RecordID='${EscapeFilterValue(this._recordID)}'`,
                     ResultType: 'entity_object'
-                },
-                {
-                    EntityName: 'MJ_BizApps_Common: Address Types',
-                    ExtraFilter: 'IsActive=1',
-                    OrderBy: 'DefaultRank ASC',
-                    ResultType: 'entity_object'
-                }
+                })
             ]);
 
-            const links = linksResult.Success ? linksResult.Results as mjBizAppsCommonAddressLinkEntity[] : [];
-            this.AddressTypes = typesResult.Success ? typesResult.Results as mjBizAppsCommonAddressTypeEntity[] : [];
+            const links = linksResult.Success ? linksResult.Results : [];
+            this.AddressTypes = CommonEngine.Instance.ActiveAddressTypes;
 
             // Load all referenced addresses in one batch if we have links
             if (links.length > 0) {

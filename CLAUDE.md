@@ -193,10 +193,25 @@ Declarative JSON under `metadata/`, pushed by `mj sync push`. Every record, nest
 ## Repo-specific conventions
 
 - **Server code always passes `contextUser`** to `GetEntityObject`, `RunView` and `RunViews`, and uses the request's provider rather than `new Metadata()`.
-- **Never `RunView` in a loop.** One `RunViews` per batch; use the denormalized fields on `vwPeople`, `vwRelationships` and friends instead of lookups.
 - **Angular:** `<mj-loading>` from `@memberjunction/ng-shared-generic` for every wait, never a custom spinner; confirm buttons on the **left**, cancel on the right; Font Awesome icons; getter/setter `@Input()`s; `cdr.detectChanges()` after programmatic changes and `Promise.resolve().then()` instead of `setTimeout`; semantic `--mj-*` tokens only.
+- **UUID comparisons:** Record IDs compare with `UUIDsEqual` from `@memberjunction/global` and map/set keys use `NormalizeUUID(id)` (`scripts/check-uuid-comparisons.mjs`).
 - **Functions stay short**, about 30 to 40 lines; decompose anything longer.
 - Everything else about data access, typing, naming and styling: the rules below.
+
+## Performance Standard (Canonical 5 Rules)
+
+Every data-access path in `bizapps-common` (`packages/Entities`, `packages/Angular`, `packages/ActivitySync`, `packages/CoreEntitiesServer`, `packages/Server`) must follow these five rules:
+
+1. **`BaseEngine` (`BaseSingleton`) for bounded reference/taxonomy metadata.**
+   Cache bounded reference/taxonomy tables (`Activity Types`, `Address Types`, `Consent Purposes`, `Contact Types`, `Job Functions`, `Organization Types`, `Relationship Types`, `Seniority Levels`, `Activity Sync Provider Types`) in `CommonEngine` (`packages/Entities/src/common-engine.ts`) via `BaseEnginePropertyConfig` with `AutoRefresh: true` and O(1) lookup maps rebuilt on every reload in `AdditionalLoading`. Components and services read taxonomy data from `CommonEngine.Instance` instead of issuing per-view `RunView`s.
+2. **Multi-Provider & Impersonation Safety.**
+   An engine's active `ProviderToUse` must follow the provider passed to `Config()` (or ambient `Metadata.Provider` when none is pinned); switching provider or `userId` (impersonation / persona switch) must auto-evict per-user caches; set `CacheLocal: false` on any RLS-filtered entity; gate optional queries on `EntityInfo.GetUserPermisions(user)?.CanRead`.
+3. **Mandatory `rv.RunViews([...])` single-request batching.**
+   Always create views via `RunView.FromMetadataProvider(provider)`, use `ResultType: 'simple'` + narrow `Fields` whenever mutation is not needed, and collapse independent reads into a single `rv.RunViews([...])` batch. Never write `Promise.all([new RunView().RunView(...), ...])`, never call `RunView` in a loop, and never write multi-hop `ParentID` loops when `RootParentID` exists.
+4. **`ConversationEngine`-style bounded container caching.**
+   Cache only bounded per-container windows/subtrees or bounded ID-keyed caches (such as `CommonEngine.Instance.GetPeopleByIDs` / `GetOrganizationsByIDs`) with `BaseEntity` event invalidation, explicit `Invalidate*()` helpers, and persona-switch eviction. **NEVER** globally cache unbounded transactional tables (`People`, `Organizations`, `Activities`, `Relationships`, `Addresses`) or arbitrary `ExtraFilter` list queries.
+5. **RLS-safe two-step entity reads.**
+   Never embed raw SQL subqueries against RLS-filtered `vw*` views inside `ExtraFilter` (they bypass entity-level RLS filters). Query the RLS-filtered entity first via `RunView`, then pass the resolved IDs (`ID IN (...)`) into the dependent query.
 
 ## Purpose
 

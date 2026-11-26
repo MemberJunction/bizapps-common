@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { IRunViewProvider, RunViewParams } from '@memberjunction/core';
 import { ConsentRow, ContactPreferenceEngine } from '../contact-preference-engine.js';
 
 const METHOD = '11111111-1111-1111-1111-111111111111';
@@ -100,5 +101,59 @@ describe('ContactPreferenceEngine.CanContact with an unknown purpose', () => {
 describe('ContactPreferenceEngine.Channels', () => {
     it('lists the three core message types Comms routes on', () => {
         expect([...ContactPreferenceEngine.Channels]).toEqual(['Email', 'Phone', 'SMS']);
+    });
+});
+
+describe('ContactPreferenceEngine RLS-safe two-step consent reads', () => {
+    it('reads Contact Methods first and queries Consents by explicit ContactMethodID IN (...) with no raw vw* subquery', async () => {
+        const seenParams: RunViewParams[] = [];
+        const mockProvider = {
+            RunView: vi.fn(async (params: RunViewParams) => {
+                seenParams.push(params);
+                if (params.EntityName === 'MJ_BizApps_Common: Contact Methods') {
+                    return { Success: true, Results: [{ ID: METHOD }] };
+                }
+                return {
+                    Success: true,
+                    Results: [consent('Opted In', PURPOSE, null)],
+                };
+            }),
+        } as unknown as IRunViewProvider;
+
+        const engine = Object.create(ContactPreferenceEngine.prototype) as ContactPreferenceEngine;
+        Object.defineProperty(engine, 'EnsureLoaded', { value: async () => undefined });
+        Object.defineProperty(engine, 'Purposes', { value: [{ ID: PURPOSE, Name: 'Marketing', IsActive: true, Sequence: 10 }] });
+        Object.defineProperty(engine, 'MessageTypes', { value: [{ ID: 'msg-email', Type: 'Email' }] });
+        Object.defineProperty(engine, 'ContactTypes', {
+            value: [{ ID: 'ct-email', Name: 'Email', IsActive: true, CommunicationBaseMessageTypeID: 'msg-email' }],
+        });
+        Object.defineProperty(engine, 'RunViewProviderToUse', { value: mockProvider });
+
+        const decision = await engine.CanContact({ PersonID: 'person-1' }, 'Email', { Purpose: 'Marketing' });
+        expect(decision.Allowed).toBe(true);
+        expect(decision.Status).toBe('Opted In');
+        expect(seenParams).toHaveLength(2);
+        expect(seenParams[0].EntityName).toBe('MJ_BizApps_Common: Contact Methods');
+        expect(seenParams[1].EntityName).toBe('MJ_BizApps_Common: Contact Method Consents');
+        expect(seenParams[1].ExtraFilter).toContain(`ContactMethodID IN ('${METHOD}')`);
+        expect(seenParams[1].ExtraFilter).not.toMatch(/\bSELECT\b/i);
+        expect(seenParams[0].CacheLocal).toBe(false);
+        expect(seenParams[1].CacheLocal).toBe(false);
+    });
+
+    it('short-circuits without querying Consents when no Contact Methods match on that channel', async () => {
+        const runView = vi.fn(async () => ({ Success: true, Results: [] }));
+        const engine = Object.create(ContactPreferenceEngine.prototype) as ContactPreferenceEngine;
+        Object.defineProperty(engine, 'EnsureLoaded', { value: async () => undefined });
+        Object.defineProperty(engine, 'Purposes', { value: [] });
+        Object.defineProperty(engine, 'MessageTypes', { value: [{ ID: 'msg-email', Type: 'Email' }] });
+        Object.defineProperty(engine, 'ContactTypes', {
+            value: [{ ID: 'ct-email', Name: 'Email', IsActive: true, CommunicationBaseMessageTypeID: 'msg-email' }],
+        });
+        Object.defineProperty(engine, 'RunViewProviderToUse', { value: { RunView: runView } as unknown as IRunViewProvider });
+
+        const decision = await engine.CanContact({ PersonID: 'person-1' }, 'Email', {});
+        expect(decision.Status).toBe('No Contact Method');
+        expect(runView).toHaveBeenCalledTimes(1);
     });
 });

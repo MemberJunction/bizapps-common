@@ -34,7 +34,7 @@ export class PersonIdentityComponent implements OnInit {
         if (this.ShowAllFunctions && this.AllJobFunctions.length === 0 && this.Record.ID) {
             this.LoadingFunctions = true;
             try {
-                const rv = new RunView();
+                const rv = new RunView(this.Record.RunViewProviderToUse);
                 const result = await rv.RunView<{ JobFunction: string }>({
                     EntityName: 'MJ_BizApps_Common: Person Job Functions',
                     Fields: ['JobFunction'],

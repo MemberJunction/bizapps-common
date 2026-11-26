@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey, RunView } from '@memberjunction/core';
+import { CompositeKey, Metadata, RunView } from '@memberjunction/core';
 import { RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
@@ -216,10 +216,11 @@ export class ActivityFilesPanel extends BaseFormPanel<mjBizAppsCommonActivityEnt
         this.cdr.markForCheck();
 
         try {
-            const rv = new RunView();
+            const rv = RunView.FromMetadataProvider(Metadata.Provider);
             const res = await rv.RunView<ActivityFileRow>({
                 EntityName: 'MJ_BizApps_Common: Activity Files',
                 ExtraFilter: `ActivityID = '${EscapeFilterValue(this.Record.ID)}'`,
+                Fields: ['ID', 'ActivityID', 'FileID', 'Kind', 'File', '__mj_CreatedAt'],
                 OrderBy: '__mj_CreatedAt DESC',
                 ResultType: 'simple',
             });

@@ -100,71 +100,113 @@ export class DatabaseConsentStore implements ConsentStore {
     ) {}
 
     public async ConsentedActivities(query: ConsentQuery): Promise<StoreResult<ConsentRecord[]>> {
-        const runs = this.view(ACTIVITY_SYNC_ENTITIES.Runs);
-        const live = this.liveActivities(query.TypeCode);
-        if (!runs || !live) return { Failed: true, Issue: 'Consent lookup: an Activity Sync entity is missing from metadata.' };
         const conn = RequireUUID(query.ConnectionID, 'ActivitySyncConnectionID');
         const rv = RunView.FromMetadataProvider(this.provider);
+
+        // Step 1 (RLS-safe, batched): read this connection's runs and the surface's Activity Type
+        // via RunViews instead of embedding raw SQL subqueries against vw* views.
+        const [runsRes, typesRes] = await rv.RunViews(
+            [
+                {
+                    EntityName: ACTIVITY_SYNC_ENTITIES.Runs,
+                    ExtraFilter: `ActivitySyncConnectionID = '${conn}'`,
+                    Fields: ['ID'],
+                    ResultType: 'simple',
+                    CacheLocal: false,
+                },
+                {
+                    EntityName: ACTIVITY_SYNC_ENTITIES.ActivityTypes,
+                    ExtraFilter: `Code = '${EscapeText(query.TypeCode)}'`,
+                    Fields: ['ID'],
+                    ResultType: 'simple',
+                    CacheLocal: false,
+                },
+            ],
+            this.user,
+        );
+        if (!runsRes?.Success) return { Failed: true, Issue: `Consent run lookup failed: ${runsRes?.ErrorMessage}` };
+        if (!typesRes?.Success) return { Failed: true, Issue: `Consent activity type lookup failed: ${typesRes?.ErrorMessage}` };
+
+        const runIDs = ((runsRes.Results ?? []) as Array<{ ID: string }>).map((r) => r.ID);
+        const typeIDs = ((typesRes.Results ?? []) as Array<{ ID: string }>).map((t) => t.ID);
+        if (runIDs.length === 0 || typeIDs.length === 0) {
+            return { Failed: false, Value: [] };
+        }
+
+        // Step 2: read consent-stage run details scoped to those runs.
         const details = await rv.RunView<DetailRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.RunDetails,
                 ExtraFilter:
-                    `${CONSENT_STAGE} AND ActivitySyncRunID IN (SELECT ID FROM ${runs} WHERE ActivitySyncConnectionID = '${conn}') ` +
-                    `AND ExternalID IN (${live})` +
+                    `${CONSENT_STAGE} AND ActivitySyncRunID IN (${UuidInList(runIDs, 'ActivitySyncRunID')})` +
                     (query.ExternalIDs ? ` AND ExternalID IN (${inList(query.ExternalIDs)})` : '') +
                     (query.ConsentedSince ? ` AND __mj_CreatedAt >= '${query.ConsentedSince.toISOString()}'` : ''),
                 Fields: ['ExternalID', 'ActivitySyncRunID', 'Decision', 'Reason', '__mj_CreatedAt'],
                 OrderBy: '__mj_CreatedAt DESC',
                 ResultType: 'simple',
+                CacheLocal: false,
             },
             this.user,
         );
         if (!details.Success) return { Failed: true, Issue: `Consent lookup failed: ${details.ErrorMessage}` };
         const granting = latestPerMessage(details.Results ?? []).filter((d) => GRANTING.has(d.Decision));
-        const latest = query.MaxRows === undefined ? granting : granting.slice(0, query.MaxRows);
-        if (latest.length === 0) return { Failed: false, Value: [] };
+        if (granting.length === 0) return { Failed: false, Value: [] };
+
+        // Step 3: read matching live (non-withdrawn) activities for this surface via RunView.
         const rows = await rv.RunView<ActivityRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Activities,
-                ExtraFilter: `ExternalID IN (${inList(latest.map((d) => d.ExternalID))}) AND ExternalID IN (${live})`,
+                ExtraFilter:
+                    `ExternalID IN (${inList(granting.map((d) => d.ExternalID))}) ` +
+                    `AND ExternalID NOT LIKE '${WITHDRAWN_PREFIX}%' ` +
+                    `AND ActivityTypeID IN (${UuidInList(typeIDs, 'ActivityTypeID')})`,
                 Fields: ['ID', 'ExternalID', 'ExternalThreadID', 'Details'],
                 ResultType: 'simple',
+                CacheLocal: false,
             },
             this.user,
         );
         if (!rows.Success) return { Failed: true, Issue: `Consented activity lookup failed: ${rows.ErrorMessage}` };
         const byExternal = new Map((rows.Results ?? []).map((r) => [r.ExternalID, r] as const));
-        return { Failed: false, Value: latest.flatMap((d) => toRecord(d, byExternal.get(d.ExternalID))) }; // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        const records = granting.flatMap((d) => toRecord(d, byExternal.get(d.ExternalID))); // uuid-compare-ok: an RFC Message-ID / iCalUId / conversation id, not a UUID
+        return {
+            Failed: false,
+            Value: query.MaxRows === undefined ? records : records.slice(0, query.MaxRows),
+        };
     }
 
     public async ConsentedElsewhere(externalIDs: readonly string[], connectionID: string): Promise<StoreResult<Set<string>>> {
         const found = new Set<string>();
         if (externalIDs.length === 0) return { Failed: false, Value: found };
-        const runs = this.view(ACTIVITY_SYNC_ENTITIES.Runs);
-        if (!runs) return { Failed: true, Issue: 'Consent lookup: the Activity Sync Runs entity is missing from metadata.' };
         const conn = RequireUUID(connectionID, 'ActivitySyncConnectionID');
         const rv = RunView.FromMetadataProvider(this.provider);
+
+        // Two-step RLS-safe read: query consent details for the specific ExternalIDs first, then
+        // resolve their runs excluding this connection via RunView (never a raw vw* subquery).
         const details = await rv.RunView<DetailRow>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.RunDetails,
-                ExtraFilter:
-                    `${CONSENT_STAGE} AND ExternalID IN (${inList(externalIDs)}) ` +
-                    `AND ActivitySyncRunID IN (SELECT ID FROM ${runs} WHERE ActivitySyncConnectionID <> '${conn}')`,
+                ExtraFilter: `${CONSENT_STAGE} AND ExternalID IN (${inList(externalIDs)})`,
                 Fields: ['ExternalID', 'ActivitySyncRunID', 'Decision', 'Reason', '__mj_CreatedAt'],
                 OrderBy: '__mj_CreatedAt DESC',
                 ResultType: 'simple',
+                CacheLocal: false,
             },
             this.user,
         );
         if (!details.Success) return { Failed: true, Issue: `Other-mailbox consent lookup failed: ${details.ErrorMessage}` };
         const rows = details.Results ?? [];
         if (rows.length === 0) return { Failed: false, Value: found };
+
         const runRows = await rv.RunView<{ ID: string; ActivitySyncConnectionID: string }>(
             {
                 EntityName: ACTIVITY_SYNC_ENTITIES.Runs,
-                ExtraFilter: `ID IN (${UuidInList([...new Set(rows.map((r) => r.ActivitySyncRunID))], 'ActivitySyncRunID')})`,
+                ExtraFilter:
+                    `ID IN (${UuidInList([...new Set(rows.map((r) => r.ActivitySyncRunID))], 'ActivitySyncRunID')}) ` +
+                    `AND ActivitySyncConnectionID <> '${conn}'`,
                 Fields: ['ID', 'ActivitySyncConnectionID'],
                 ResultType: 'simple',
+                CacheLocal: false,
             },
             this.user,
         );
@@ -174,7 +216,9 @@ export class DatabaseConsentStore implements ConsentStore {
         // Newest first: the first row per (connection, message) is that mailbox's current decision.
         const decided = new Set<string>();
         for (const d of rows) {
-            const key = `${(connectionOf.Get(d.ActivitySyncRunID) ?? '').toLowerCase()}|${d.ExternalID}`;
+            const otherConn = connectionOf.Get(d.ActivitySyncRunID);
+            if (!otherConn) continue;
+            const key = `${otherConn.toLowerCase()}|${d.ExternalID}`;
             if (decided.has(key)) continue;
             decided.add(key);
             if (GRANTING.has(d.Decision)) found.add(d.ExternalID);
@@ -214,23 +258,6 @@ export class DatabaseConsentStore implements ConsentStore {
             await scope.Rollback();
             return `Withdraw ${activityID} failed and was rolled back: ${(e as Error).message}`;
         }
-    }
-
-    /** A subquery: ExternalIDs of this surface's activities that have not been withdrawn. */
-    private liveActivities(typeCode: string): string | null {
-        const activities = this.view(ACTIVITY_SYNC_ENTITIES.Activities);
-        const types = this.view(ACTIVITY_SYNC_ENTITIES.ActivityTypes);
-        if (!activities || !types) return null;
-        return (
-            `SELECT ExternalID FROM ${activities} WHERE ExternalID NOT LIKE '${WITHDRAWN_PREFIX}%' ` +
-            `AND ActivityTypeID IN (SELECT ID FROM ${types} WHERE Code = '${EscapeText(typeCode)}')`
-        );
-    }
-
-    /** `[schema].[baseView]` of an entity, for a subquery (RunView accepts subqueries over base views). */
-    private view(entityName: string): string | null {
-        const info = this.provider.EntityByName(entityName);
-        return info ? `[${info.SchemaName}].[${info.BaseView}]` : null;
     }
 }
 
