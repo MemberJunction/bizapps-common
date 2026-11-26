@@ -268,9 +268,16 @@ npm test
 
 ## Code Generation
 
-This package is automatically maintained by MemberJunction's code generation system. The `entity_subclasses.ts` file is generated based on your database schema.
+This package (`@mj-biz-apps/common-entities`) is maintained by MemberJunction's code generation system against the `__mj_BizAppsCommon` schema (`packages/Entities/src/generated/entities/__mj_BizAppsCommon.ts` and `packages/Entities/src/generated/schemas/__mj_BizAppsCommon.ts`), alongside hand-written engines and helpers (`CommonEngine`, `PersonEntity`, `ContactPreferenceEngine`, `company-organization-mirror`).
 
-**Important**: Do not manually edit files in the `generated/` directory as they will be overwritten during the next code generation cycle.
+### `mjBizAppsCommonActivityEntity` (Category B Hybrid Spine)
+
+`mjBizAppsCommonActivityEntity` (`MJ_BizApps_Common: Activities`) exposes strongly-typed `ArtifactID: string | null` (FK to `[__mj].[Artifact]([ID])`, indexed via filtered index `IDX_AUTO_MJ_FKEY_Activity_ArtifactID WHERE [ArtifactID] IS NOT NULL`) and read-only view projection `Artifact: string | null` (from `vwActivities`):
+
+- **Fast path (`ArtifactID = null`):** Quick notes, calls, meetings, and emails persist directly in `Description` and `Details` with `ArtifactID = null` and never auto-create an `MJ: Artifacts` record.
+- **Opt-in MJ Doc link:** Populate `ArtifactID` only when explicitly linking or expanding into a versioned `MJ: Artifacts` record; setting `ArtifactID = null` unlinks without mutating `Description`, `Details`, or the underlying Artifact.
+
+**Important**: Do not manually edit files in the `src/generated/` directory as they will be overwritten during the next code generation cycle.
 
 To regenerate entities:
 1. Ensure your database schema is up to date

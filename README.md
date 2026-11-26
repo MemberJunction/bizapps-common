@@ -119,13 +119,15 @@ Production-ready, standalone Angular widgets that handle their own data loading,
 
 ### Explorer Directory
 
-The **Common** application is a first-class Explorer app with three tabs:
+The **Common** application is a first-class Explorer app with five tabs (`DefaultNavItems`, each mounted as a `BaseResourceComponent` wrapped in `<mj-page-layout>`):
 
 | Tab | Driver class | What it is |
 |-----|--------------|------------|
 | **Directory** | `CommonDirectoryResource` | Operational home — active counts, gap queues (missing email / org / type / website), people added this week, organization-type mix, latest people, and named attention items |
 | **People** | `CommonPeopleResource` | Searchable people list; **New person** opens `/record/.../new` |
 | **Organizations** | `CommonOrganizationsResource` | Searchable organization list; **New organization** same pattern |
+| **Relationship Graph** | `CommonRelationshipGraphResource` | Interactive person/organization relationship graph |
+| **Activities** | `CommonActivitiesResource` | Operational activity stream with `<2s` quick capture (`<bizapps-activity-composer>`), batched linked MJ Doc badges (`<bizapps-activity-artifact-badge>`), and opt-in link/expand/unlink drawer |
 
 Every figure on the dashboard is a cheap count over rows already loaded (one `RunViews` batch). Queues are clickable and open the matching tab. Tiles and rows open the person or organization record.
 
@@ -197,6 +199,8 @@ line is hidden while editing so it does not compete with the live fields.
 **Directional Relationships** -- Each RelationshipType defines `ForwardLabel` and `ReverseLabel` (e.g., "is employee of" / "employs"). The UI automatically selects the correct label based on perspective.
 
 **Supervisor Hierarchy & Reporting Chain** -- `Person.SupervisorPersonID` models direct reporting lines with `vwPersonReportingChain` (`PersonID`, `SupervisorPersonID`, `Depth`) for cycle-safe transitive lookups and `SyncEmployeesToPeople` for employee-to-person synchronization. `PersonEntity` rejects direct, 2-node, and multi-hop reporting cycles in `Validate()`, `ValidateAsync()`, and `Save()`, and atomically synchronizes dated `'Reports To'` rows in `Relationships` inside the provider's `EntityTransactionScope` so `People.SupervisorPersonID` and active `'Reports To'` links never diverge.
+
+**Category B Hybrid Activities (`Activity.ArtifactID`)** -- `MJ_BizApps_Common: Activities` preserves `<2s` frictionless capture on `Description` and `Details` with `ArtifactID = NULL` by default (never auto-creating an `MJ: Artifacts` record for quick notes, calls, meetings, or emails), while providing an additive, nullable `ArtifactID` FK to `[__mj].[Artifact]([ID])` with a filtered nonclustered index (`IDX_AUTO_MJ_FKEY_Activity_ArtifactID WHERE [ArtifactID] IS NOT NULL`) for opt-in linked or expanded **MJ Docs**. See the `'MJ Docs (MJ: Artifacts) vs. MJ: Comments vs. Quick Notes'` rubric in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
 
 **Contact Method Flexibility** -- ContactMethods attach to either a Person or Organization via nullable FKs. Primary flags are scoped per ContactType, so a person can have a primary email AND a primary phone.
 

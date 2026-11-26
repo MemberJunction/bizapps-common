@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { EntityInfo } from '@memberjunction/core';
@@ -15,6 +15,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
     selector: 'bizapps-common-people-page',
     standalone: true,
     imports: [CommonModule, FormsModule, MJButtonDirective, EntityViewerModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="mjc-list">
             <header class="mjc-list__head">

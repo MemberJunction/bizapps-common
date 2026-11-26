@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RegisterClass } from '@memberjunction/global';
 import { BaseResourceComponent, NavigationService } from '@memberjunction/ng-shared';
+import { MJPageLayoutComponent } from '@memberjunction/ng-ui-components';
 import type { ResourceData } from '@memberjunction/core-entities';
 import type { FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { CommonDashboardPageComponent } from '../pages/common-dashboard.page';
@@ -12,16 +13,25 @@ import { CommonActivitiesPageComponent } from '../pages/activities-dashboard.pag
 @Component({
     selector: 'bizapps-common-directory-resource',
     standalone: true,
-    imports: [CommonDashboardPageComponent],
+    imports: [MJPageLayoutComponent, CommonDashboardPageComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `<bizapps-common-dashboard-page></bizapps-common-dashboard-page>`,
+    template: `
+        <mj-page-layout>
+            <bizapps-common-dashboard-page></bizapps-common-dashboard-page>
+        </mj-page-layout>
+    `,
     styles: [`:host { display: block; width: 100%; height: 100%; }`],
 })
 @RegisterClass(BaseResourceComponent, 'CommonDirectoryResource')
 export class CommonDirectoryResource extends BaseResourceComponent {
+    protected readonly navService = inject(NavigationService, { optional: true });
+
     override ngOnInit(): void {
         super.ngOnInit();
-        this.NotifyLoadComplete();
+        queueMicrotask(() => {
+            this.NotifyLoadStarted();
+            this.NotifyLoadComplete();
+        });
     }
 
     async GetResourceDisplayName(_data: ResourceData): Promise<string> {
@@ -36,16 +46,25 @@ export class CommonDirectoryResource extends BaseResourceComponent {
 @Component({
     selector: 'bizapps-common-people-resource',
     standalone: true,
-    imports: [CommonPeoplePageComponent],
+    imports: [MJPageLayoutComponent, CommonPeoplePageComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `<bizapps-common-people-page></bizapps-common-people-page>`,
+    template: `
+        <mj-page-layout>
+            <bizapps-common-people-page></bizapps-common-people-page>
+        </mj-page-layout>
+    `,
     styles: [`:host { display: block; width: 100%; height: 100%; }`],
 })
 @RegisterClass(BaseResourceComponent, 'CommonPeopleResource')
 export class CommonPeopleResource extends BaseResourceComponent {
+    protected readonly navService = inject(NavigationService, { optional: true });
+
     override ngOnInit(): void {
         super.ngOnInit();
-        this.NotifyLoadComplete();
+        queueMicrotask(() => {
+            this.NotifyLoadStarted();
+            this.NotifyLoadComplete();
+        });
     }
 
     async GetResourceDisplayName(_data: ResourceData): Promise<string> {
@@ -60,16 +79,25 @@ export class CommonPeopleResource extends BaseResourceComponent {
 @Component({
     selector: 'bizapps-common-organizations-resource',
     standalone: true,
-    imports: [CommonOrganizationsPageComponent],
+    imports: [MJPageLayoutComponent, CommonOrganizationsPageComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `<bizapps-common-organizations-page></bizapps-common-organizations-page>`,
+    template: `
+        <mj-page-layout>
+            <bizapps-common-organizations-page></bizapps-common-organizations-page>
+        </mj-page-layout>
+    `,
     styles: [`:host { display: block; width: 100%; height: 100%; }`],
 })
 @RegisterClass(BaseResourceComponent, 'CommonOrganizationsResource')
 export class CommonOrganizationsResource extends BaseResourceComponent {
+    protected readonly navService = inject(NavigationService, { optional: true });
+
     override ngOnInit(): void {
         super.ngOnInit();
-        this.NotifyLoadComplete();
+        queueMicrotask(() => {
+            this.NotifyLoadStarted();
+            this.NotifyLoadComplete();
+        });
     }
 
     async GetResourceDisplayName(_data: ResourceData): Promise<string> {
@@ -84,14 +112,19 @@ export class CommonOrganizationsResource extends BaseResourceComponent {
 @Component({
     selector: 'bizapps-common-relationship-graph-resource',
     standalone: true,
-    imports: [CommonRelationshipGraphComponent],
+    imports: [MJPageLayoutComponent, CommonRelationshipGraphComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div style="padding: 24px; width: 100%; height: 100%; box-sizing: border-box;">
-            <bizapps-relationship-graph [Height]="'100%'" (Navigate)="onNavigate($event)"></bizapps-relationship-graph>
-        </div>
+        <mj-page-layout>
+            <div class="mjc-graph-shell">
+                <bizapps-relationship-graph [Height]="'100%'" (Navigate)="onNavigate($event)"></bizapps-relationship-graph>
+            </div>
+        </mj-page-layout>
     `,
-    styles: [`:host { display: block; width: 100%; height: 100%; }`],
+    styles: [`
+        :host { display: block; width: 100%; height: 100%; }
+        .mjc-graph-shell { padding: var(--mj-space-6, 24px); width: 100%; height: 100%; box-sizing: border-box; }
+    `],
 })
 @RegisterClass(BaseResourceComponent, 'CommonRelationshipGraphResource')
 export class CommonRelationshipGraphResource extends BaseResourceComponent {
@@ -99,7 +132,10 @@ export class CommonRelationshipGraphResource extends BaseResourceComponent {
 
     override ngOnInit(): void {
         super.ngOnInit();
-        this.NotifyLoadComplete();
+        queueMicrotask(() => {
+            this.NotifyLoadStarted();
+            this.NotifyLoadComplete();
+        });
     }
 
     public onNavigate(event: FormNavigationEvent): void {
@@ -121,16 +157,25 @@ export class CommonRelationshipGraphResource extends BaseResourceComponent {
 @Component({
     selector: 'bizapps-common-activities-resource',
     standalone: true,
-    imports: [CommonActivitiesPageComponent],
+    imports: [MJPageLayoutComponent, CommonActivitiesPageComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `<bizapps-common-activities-page></bizapps-common-activities-page>`,
+    template: `
+        <mj-page-layout>
+            <bizapps-common-activities-page></bizapps-common-activities-page>
+        </mj-page-layout>
+    `,
     styles: [`:host { display: block; width: 100%; height: 100%; }`],
 })
 @RegisterClass(BaseResourceComponent, 'CommonActivitiesResource')
 export class CommonActivitiesResource extends BaseResourceComponent {
+    protected readonly navService = inject(NavigationService, { optional: true });
+
     override ngOnInit(): void {
         super.ngOnInit();
-        this.NotifyLoadComplete();
+        queueMicrotask(() => {
+            this.NotifyLoadStarted();
+            this.NotifyLoadComplete();
+        });
     }
 
     async GetResourceDisplayName(_data: ResourceData): Promise<string> {

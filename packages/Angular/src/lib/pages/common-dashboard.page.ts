@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogError, type EntityInfo } from '@memberjunction/core';
 import type { MJUserViewEntityExtended } from '@memberjunction/core-entities';
@@ -33,7 +33,7 @@ import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
  */
 @Component({
     selector: 'bizapps-common-dashboard-page',
-    standalone: true,
+    standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CommonModule, MJAlertComponent, MJButtonDirective, MJEmptyStateComponent, EntityViewerModule, StatRowComponent, StatTileComponent],
     template: `
         <div class="mjc-dash">

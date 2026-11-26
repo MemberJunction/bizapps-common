@@ -110,6 +110,10 @@ export class mjBizAppsCommonActivity_ {
     @Field(() => Float, {nullable: true, description: "Derived sentiment score for this activity, bounded between -1.000 (most negative) and +1.000 (most positive). Populated by the Activity Tagging and Sentiment feature pipeline."}) 
     SentimentScore?: number;
         
+    @Field({nullable: true, description: "Optional foreign key to an MJ: Artifacts (MJ Doc) record linked to this activity. Remains NULL for frictionless quick notes, calls, meetings, and emails; populated only when a user explicitly links or expands an activity into a rich MJ Doc."}) 
+    @MaxLength(36)
+    ArtifactID?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     ActivityType?: string;
@@ -129,6 +133,10 @@ export class mjBizAppsCommonActivity_ {
     @Field({nullable: true}) 
     @MaxLength(200)
     ActivitySyncConnection?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(255)
+    Artifact?: string;
         
     @Field({nullable: true}) 
     @MaxLength(36)
@@ -219,6 +227,9 @@ export class CreatemjBizAppsCommonActivityInput {
     @Field(() => Float, { nullable: true })
     SentimentScore: number | null;
 
+    @Field({ nullable: true })
+    ArtifactID: string | null;
+
     @Field(() => RestoreContextInput, { nullable: true })
     RestoreContext___?: RestoreContextInput;
 }
@@ -291,6 +302,9 @@ export class UpdatemjBizAppsCommonActivityInput {
 
     @Field(() => Float, { nullable: true })
     SentimentScore?: number | null;
+
+    @Field({ nullable: true })
+    ArtifactID?: string | null;
 
     @Field(() => [KeyValuePairInput], { nullable: true })
     OldValues___?: KeyValuePairInput[];
@@ -5850,6 +5864,10 @@ export class mjBizAppsCommonPerson_ {
     @MaxLength(255)
     EmailDomain?: string;
         
+    @Field({nullable: true, description: "Optional self-referential foreign key to the Person record who directly supervises this person."}) 
+    @MaxLength(36)
+    SupervisorPersonID?: string;
+        
     @Field({nullable: true}) 
     @MaxLength(100)
     LinkedUser?: string;
@@ -5857,6 +5875,10 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     SeniorityLevel?: string;
+        
+    @Field({nullable: true}) 
+    @MaxLength(250)
+    SupervisorPerson?: string;
         
     @Field({nullable: true}) 
     @MaxLength(255)
@@ -5919,14 +5941,6 @@ export class mjBizAppsCommonPerson_ {
     @Field({nullable: true}) 
     @MaxLength(100)
     PrimaryJobFunction?: string;
-        
-    @Field({nullable: true, description: "Optional self-referential foreign key to the Person record who directly supervises this person."}) 
-    @MaxLength(36)
-    SupervisorPersonID?: string;
-        
-    @Field({nullable: true}) 
-    @MaxLength(250)
-    SupervisorPerson?: string;
         
     @Field(() => [String], { nullable: true, description: `Field-level security: when non-null, the fields on this entity the calling user may read. Any other field arriving as null was withheld by the server rather than genuinely empty. Null for callers with no field restrictions.` })
     ReadableFields___?: string[];

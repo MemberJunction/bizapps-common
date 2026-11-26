@@ -9,19 +9,15 @@
 // Import entity package to trigger @RegisterClass decorators for entity subclasses
 import '@mj-biz-apps/common-entities';
 
-// Import generated form components (triggers @RegisterClass for form components)
-import './lib/generated/generated-forms.module';
-
-// Import custom form panels so @RegisterClassEx contributions fire
-import './lib/custom/custom-forms.module';
+import { GeneratedFormsModule } from './lib/generated/generated-forms.module';
+import { CustomFormsModule } from './lib/custom/custom-forms.module';
 
 // Import class registrations manifest
 import { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
 
 // Re-export for consumers
 export { CLASS_REGISTRATIONS } from './lib/generated/class-registrations-manifest';
-export { GeneratedFormsModule } from './lib/generated/generated-forms.module';
-export { CustomFormsModule } from './lib/custom/custom-forms.module';
+export { GeneratedFormsModule, CustomFormsModule };
 export { mjBizAppsCommonAddressLinkFormComponent } from './lib/generated/Entities/mjBizAppsCommonAddressLink/mjbizappscommonaddresslink.form.component';
 
 // Reusable UI components
@@ -114,6 +110,34 @@ export { CompanySenderIdentitiesComponent } from './lib/components/company-sende
 export { CompanySenderIdentitiesPanel } from './lib/custom/panels/company-sender-identities.panel';
 export { OrganizationIdentityComponent } from './lib/components/identity-header/organization-identity.component';
 export { ActivityIdentityComponent } from './lib/components/identity-header/activity-identity.component';
+export { ActivityArtifactBadgeComponent } from './lib/components/activity-artifact-badge/activity-artifact-badge.component';
+export { ActivityArtifactSectionComponent } from './lib/components/activity-artifact-section/activity-artifact-section.component';
+export {
+    ActivityComposerComponent,
+    type ActivityComposerSavedEvent,
+    type QuickActivityTypeOption,
+} from './lib/components/activity-composer/activity-composer.component';
+export {
+    MJ_ARTIFACT_ENTITIES,
+    ARTIFACT_BADGE_FIELDS,
+    ARTIFACT_PICKER_FIELDS,
+    StripActivityMarkdownExcerpt,
+    CollectDistinctValidArtifactIDs,
+    LoadActivityArtifactsByIDs,
+    ResolveActivityArtifactBadge,
+    SearchLinkableArtifacts,
+    SaveQuickActivity,
+    LinkExistingArtifactToActivity,
+    UnlinkArtifactFromActivity,
+    ExpandActivityToArtifact,
+    OpenLinkedArtifact,
+    type ActivityArtifactSummary,
+    type ActivityArtifactBadgeState,
+    type ActivityQuickCaptureInput,
+    type ActivityQuickCaptureResult,
+    type ActivityArtifactActionResult,
+    type ExpandActivityToArtifactOptions,
+} from './lib/data/activity-artifact';
 export { ActivityTypeHierarchyPanel } from './lib/custom/panels/activity-type-hierarchy.panel';
 export { ActivityHierarchyPanel } from './lib/custom/panels/activity-hierarchy.panel';
 export { ActivityHeaderPanel } from './lib/custom/panels/activity-header.panel';
@@ -185,5 +209,8 @@ export {
  * Static imports above handle all registration.
  */
 export function LoadBizAppsCommonClient(): void {
+    void CLASS_REGISTRATIONS;
+    void GeneratedFormsModule;
+    void CustomFormsModule;
     LoadCommonSectionResources();
 }

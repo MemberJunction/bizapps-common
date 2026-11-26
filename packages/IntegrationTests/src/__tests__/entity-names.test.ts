@@ -14,6 +14,8 @@ describe('COMMON_ENTITIES', () => {
         expect(COMMON_ENTITIES.ActivitySyncRule).toBe('MJ_BizApps_Common: Activity Sync Rules');
         expect(COMMON_ENTITIES.ActivitySyncRun).toBe('MJ_BizApps_Common: Activity Sync Runs');
         expect(COMMON_ENTITIES.ActivitySyncRunDetail).toBe('MJ_BizApps_Common: Activity Sync Run Details');
+        expect(COMMON_ENTITIES.Artifact).toBe('MJ: Artifacts');
+        expect(COMMON_ENTITIES.ArtifactType).toBe('MJ: Artifact Types');
         expect(WORLD_EMAIL_DOMAIN).toBe('com-world.test');
     });
 });

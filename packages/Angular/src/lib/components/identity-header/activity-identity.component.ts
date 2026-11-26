@@ -1,13 +1,13 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Optional, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CompositeKey, LogError, RunView } from '@memberjunction/core';
+import { CompositeKey, LogError, Metadata, RunView } from '@memberjunction/core';
 import { IsValidUUID, UUIDsEqual } from '@memberjunction/global';
 import { UserInfoEngine } from '@memberjunction/core-entities';
 import { BaseFormsModule, FormContext, FormNavigationEvent } from '@memberjunction/ng-base-forms';
 import { LinkDirectivesModule } from '@memberjunction/ng-link-directives';
+import { NavigationService } from '@memberjunction/ng-shared';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
-
-
+import { ActivityArtifactBadgeComponent } from '../activity-artifact-badge/activity-artifact-badge.component'; import { LoadActivityArtifactsByIDs, OpenLinkedArtifact, ResolveActivityArtifactBadge, type ActivityArtifactBadgeState, type ActivityArtifactSummary } from '../../data/activity-artifact';
 const ACTIVITIES_ENTITY = 'MJ_BizApps_Common: Activities';
 
 export interface ActivityTypeStyle {
@@ -63,12 +63,12 @@ const DEFAULT_STYLE: ActivityTypeStyle = {
 /**
  * Presentational Activity identity strip.
  * Provides type-aware dynamic iconography, directional badges, status tones,
- * computed duration timing, meeting URLs, and participant/source summaries.
+ * computed duration timing, meeting URLs, linked MJ Doc badge, and participant/source summaries.
  */
 @Component({
-    standalone: true,
+    standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'bizapps-activity-identity',
-    imports: [CommonModule, BaseFormsModule, LinkDirectivesModule],
+    imports: [CommonModule, BaseFormsModule, LinkDirectivesModule, ActivityArtifactBadgeComponent],
     templateUrl: './activity-identity.component.html',
     styleUrls: ['./identity-header.css'],
 })
@@ -84,7 +84,7 @@ export class ActivityIdentityComponent implements OnInit {
     private parentTitleFor: string | null = null;
 
     public ngOnInit(): void {
-        void this.loadParentTitle();
+        void this.loadParentTitle(); void this.loadLinkedArtifact();
         const raw = UserInfoEngine.Instance.GetSetting('mj.identityHeader.collapsed.activity');
         if (raw) {
             try {
@@ -185,7 +185,7 @@ export class ActivityIdentityComponent implements OnInit {
     public get MeetingURL(): string | null {
         if (!this.Record.Details) return null;
         try {
-            const parsed = JSON.parse(this.Record.Details);
+            const parsed = JSON.parse(this.Record.Details) as { MeetingURL?: string; JoinURL?: string; ConferenceURL?: string };
             return parsed.MeetingURL || parsed.JoinURL || parsed.ConferenceURL || null;
         } catch {
             return null;
@@ -209,7 +209,7 @@ export class ActivityIdentityComponent implements OnInit {
     /**
      * The "Thread / Parent" label. Reads `ParentActivityID` and the parent's own Title, never the
      * virtual `ParentActivity` name field: V202609112330 removes that field on hosts whose
-     * `vwActivities` lacks the column, where it always reads null and hid the link (#311).
+     * `vwActivities` lacks the column, where it always reads null and hid the link.
      */
     public get ParentActivityLabel(): string {
         const loaded = this.parentTitle && UUIDsEqual(this.parentTitleFor, this.Record.ParentActivityID);
@@ -235,11 +235,12 @@ export class ActivityIdentityComponent implements OnInit {
         });
         if (!result.Success) {
             // The link still renders, with a generic label; only the parent's name is missing.
-            LogError(`ActivityIdentity: failed to load parent activity '${parentID}': ${result.ErrorMessage ?? 'unknown error'}`);
+            LogError(`ActivityIdentity: failed to load parent activity '${parentID}': ${result.ErrorMessage ?? 'error'}`);
             return;
         }
         this.parentTitle = result.Results[0]?.Title || null;
         this.parentTitleFor = parentID;
+        this.cdr?.markForCheck();
     }
 
     public OnParentActivityClick(event: MouseEvent): void {
@@ -253,5 +254,35 @@ export class ActivityIdentityComponent implements OnInit {
             PrimaryKey: CompositeKey.FromKeyValuePair('ID', id),
             OpenInNewTab: event.ctrlKey || event.metaKey,
         });
+    }
+
+    public HydratedArtifacts = new Map<string, ActivityArtifactSummary>();
+    public ArtifactHydrated = false;
+
+    constructor(
+        @Optional() private readonly cdr?: ChangeDetectorRef,
+        @Optional() private readonly navService?: NavigationService,
+    ) {}
+
+    public get LinkedArtifactBadge(): ActivityArtifactBadgeState {
+        return ResolveActivityArtifactBadge(this.Record?.ArtifactID, this.HydratedArtifacts, {
+            hydrationComplete: this.ArtifactHydrated,
+            virtualName: this.Record?.Artifact ?? null,
+        });
+    }
+
+    public OnOpenLinkedDoc(event: { ArtifactID: string; Name: string }): void {
+        OpenLinkedArtifact(event.ArtifactID, event.Name, this.navService ?? null, (nav) => this.Navigate.emit(nav));
+    }
+
+    private async loadLinkedArtifact(): Promise<void> {
+        const artifactID = this.Record?.ArtifactID;
+        if (!artifactID) {
+            this.ArtifactHydrated = true;
+            return;
+        }
+        this.HydratedArtifacts = await LoadActivityArtifactsByIDs([artifactID], Metadata.Provider);
+        this.ArtifactHydrated = true;
+        this.cdr?.markForCheck();
     }
 }

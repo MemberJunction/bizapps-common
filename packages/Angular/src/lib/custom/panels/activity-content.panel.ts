@@ -1,17 +1,16 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, Input, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RegisterClassEx } from '@memberjunction/global';
+import { IMetadataProvider, Metadata } from '@memberjunction/core';
+import { NormalizeUUID, RegisterClassEx } from '@memberjunction/global';
 import { BaseFormPanel, BaseFormsModule } from '@memberjunction/ng-base-forms';
+import { NavigationService } from '@memberjunction/ng-shared';
 import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
+import { ActivityArtifactSectionComponent } from '../../components/activity-artifact-section/activity-artifact-section.component';
+import { ExpandActivityToArtifact, LinkExistingArtifactToActivity, LoadActivityArtifactsByIDs, OpenLinkedArtifact, ResolveActivityArtifactBadge, UnlinkArtifactFromActivity, type ActivityArtifactBadgeState, type ActivityArtifactSummary } from '../../data/activity-artifact';
 
 /**
- * Rich Activity Notes & Full Text Panel.
- *
- * Placed as a primary lead section above Details in the left rail.
- * Renders the full activity description, meeting notes, call takeaways, or email excerpts
- * in an elevated reading view with typography, text stats, copy actions,
- * and expand/collapse reading mode.
+ * Rich Activity Notes & Full Text Panel with optional linked MJ Doc (`MJ: Artifacts`) strip.
  */
 @RegisterClassEx(BaseFormPanel, {
     key: 'form-panel:Activities:content',
@@ -26,7 +25,7 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
 @Component({
     selector: 'bizapps-activity-content-panel',
     standalone: true,
-    imports: [CommonModule, FormsModule, BaseFormsModule],
+    imports: [CommonModule, FormsModule, BaseFormsModule, ActivityArtifactSectionComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <mj-collapsible-panel
@@ -36,8 +35,8 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             [Form]="FormComponent"
             [FormContext]="FormContext"
             [DefaultExpanded]="true">
-
             <div class="mja-content">
+                <bizapps-activity-artifact-section [Record]="Record" [EditMode]="EditMode" [FormComponent]="FormComponent" [Provider]="Provider"></bizapps-activity-artifact-section>
                 @if (EditMode) {
                     <!-- EDIT MODE: Rich textarea -->
                     <div class="mja-content__edit">
@@ -261,8 +260,8 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
             max-height: 240px;
             overflow: hidden;
             position: relative;
-            mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+            mask-image: linear-gradient(to bottom, var(--mj-text-primary) 65%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, var(--mj-text-primary) 65%, transparent 100%);
         }
 
         .mja-content__expand-footer {
@@ -344,7 +343,9 @@ import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities
     `]
 })
 export class ActivityContentPanel extends BaseFormPanel<mjBizAppsCommonActivityEntity> implements OnInit {
-    constructor(private cdr?: ChangeDetectorRef) {
+    @Input() public Provider?: IMetadataProvider;
+
+    constructor(@Optional() private cdr?: ChangeDetectorRef, @Optional() private navService?: NavigationService) {
         super();
     }
 
@@ -352,8 +353,8 @@ export class ActivityContentPanel extends BaseFormPanel<mjBizAppsCommonActivityE
     public Copied = false;
 
     public ngOnInit(): void {
-        // Default to collapsed if long content
         this.IsExpanded = false;
+        void this.HydrateArtifactBadge();
     }
 
     public get HasContent(): boolean {
@@ -410,5 +411,86 @@ export class ActivityContentPanel extends BaseFormPanel<mjBizAppsCommonActivityE
         if (this.FormComponent) {
             this.FormComponent.EditMode = true;
         }
+    }
+
+    public HydratedArtifacts = new Map<string, ActivityArtifactSummary>();
+    public ArtifactHydrated = false;
+    public ArtifactActionError: string | null = null;
+
+    public async HydrateArtifactBadge(): Promise<void> {
+        const artifactID = this.Record?.ArtifactID ?? null;
+        if (!artifactID) {
+            this.HydratedArtifacts.clear();
+            this.ArtifactHydrated = true;
+            this.cdr?.markForCheck();
+            return;
+        }
+        this.HydratedArtifacts = await LoadActivityArtifactsByIDs([artifactID], this.Provider ?? Metadata.Provider);
+        this.ArtifactHydrated = true;
+        this.cdr?.markForCheck();
+    }
+
+    public get ArtifactBadge(): ActivityArtifactBadgeState {
+        return ResolveActivityArtifactBadge(this.Record?.ArtifactID, this.HydratedArtifacts, {
+            hydrationComplete: this.ArtifactHydrated,
+            virtualName: this.Record?.Artifact ?? null,
+        });
+    }
+
+    public OnOpenLinkedDoc(event: { ArtifactID: string; Name: string }): void {
+        OpenLinkedArtifact(
+            event.ArtifactID,
+            event.Name,
+            this.navService ?? null,
+            this.FormComponent?.OnFormNavigate ? (nav) => this.FormComponent.OnFormNavigate(nav) : undefined,
+        );
+    }
+
+    public async LinkExistingArtifact(doc: ActivityArtifactSummary): Promise<boolean> {
+        if (!this.Record) return false;
+        const res = await LinkExistingArtifactToActivity(this.Record, doc.ID, {
+            saveNow: Boolean(this.Record.IsSaved && !this.EditMode),
+            artifactName: doc.Name,
+        });
+        if (!res.Success) {
+            this.ArtifactActionError = res.ErrorMessage ?? 'Failed to link MJ Doc.';
+            return false;
+        }
+        this.HydratedArtifacts.set(NormalizeUUID(doc.ID), doc);
+        this.ArtifactHydrated = true;
+        this.cdr?.markForCheck();
+        return true;
+    }
+
+    public async ExpandToArtifact(): Promise<boolean> {
+        if (!this.Record) return false;
+        const res = await ExpandActivityToArtifact(this.Record, { Provider: this.Provider ?? Metadata.Provider });
+        if (!res.Success || !res.ArtifactID) {
+            this.ArtifactActionError = res.ErrorMessage ?? 'Failed to expand activity into an MJ Doc.';
+            return false;
+        }
+        this.HydratedArtifacts.set(NormalizeUUID(res.ArtifactID), {
+            ID: res.ArtifactID,
+            Name: res.ArtifactName ?? this.Record.Title,
+            Type: 'Markdown Document',
+        });
+        this.ArtifactHydrated = true;
+        this.cdr?.markForCheck();
+        return true;
+    }
+
+    public async UnlinkArtifact(): Promise<boolean> {
+        if (!this.Record) return false;
+        const res = await UnlinkArtifactFromActivity(this.Record, {
+            saveNow: Boolean(this.Record.IsSaved && !this.EditMode),
+        });
+        if (!res.Success) {
+            this.ArtifactActionError = res.ErrorMessage ?? 'Failed to unlink MJ Doc.';
+            return false;
+        }
+        this.HydratedArtifacts.clear();
+        this.ArtifactHydrated = true;
+        this.cdr?.markForCheck();
+        return true;
     }
 }

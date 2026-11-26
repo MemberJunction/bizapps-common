@@ -1,18 +1,50 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    Inject,
+    Input,
+    OnInit,
+    Optional,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Metadata, RunView } from '@memberjunction/core';
-import { UUIDsEqual } from '@memberjunction/global';
+import { IMetadataProvider, Metadata, RunView } from '@memberjunction/core';
+import { UserInfoEngine } from '@memberjunction/core-entities';
+import { NormalizeUUID, UUIDsEqual } from '@memberjunction/global';
+import { NavigationService } from '@memberjunction/ng-shared';
+import { SharedGenericModule } from '@memberjunction/ng-shared-generic';
 import { MJButtonDirective } from '@memberjunction/ng-ui-components';
+import type { mjBizAppsCommonActivityEntity } from '@mj-biz-apps/common-entities';
 import {
     COMMON_ANGULAR_LIMITS_CONFIG,
     ResolveCommonAngularLimits,
+    type CommonAngularLimitsOverride,
 } from '../config/limits.config';
 import { DashboardFilterBarComponent } from '../components/dashboard-filter-bar/dashboard-filter-bar.component';
 import { CALENDAR_YEAR_START, WithinWindow } from '../components/dashboard-filter-bar/dashboard-period';
 import { PeriodWindowOf, type DashboardPeriodState } from '../components/dashboard-filter-bar/dashboard-period-state';
+import { ActivityArtifactBadgeComponent } from '../components/activity-artifact-badge/activity-artifact-badge.component';
+import {
+    ActivityComposerComponent,
+    type ActivityComposerSavedEvent,
+} from '../components/activity-composer/activity-composer.component';
+import {
+    ExpandActivityToArtifact,
+    LinkExistingArtifactToActivity,
+    LoadActivityArtifactsByIDs,
+    OpenLinkedArtifact,
+    ResolveActivityArtifactBadge,
+    SearchLinkableArtifacts,
+    StripActivityMarkdownExcerpt,
+    UnlinkArtifactFromActivity,
+    type ActivityArtifactBadgeState,
+    type ActivityArtifactSummary,
+} from '../data/activity-artifact';
 import { OpenCommonRecord, OpenNewCommonRecord } from '../open-record';
 import { COMMON_ENTITIES } from '../data/entity-names';
+
+const COMPOSER_OPEN_SETTING_KEY = 'mj.common.activities.quickComposerOpen';
 
 export interface ActivityDashboardRow {
     ID: string;
@@ -29,6 +61,8 @@ export interface ActivityDashboardRow {
     Source: string;
     SourceSystem: string | null;
     LoggedByUser: string | null;
+    ArtifactID: string | null;
+    Artifact?: string | null;
     __mj_CreatedAt: string;
 }
 
@@ -42,7 +76,15 @@ export interface ActivityKPIs {
 @Component({
     selector: 'bizapps-common-activities-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, MJButtonDirective, DashboardFilterBarComponent],
+    imports: [
+        CommonModule,
+        FormsModule,
+        MJButtonDirective,
+        SharedGenericModule,
+        DashboardFilterBarComponent,
+        ActivityArtifactBadgeComponent,
+        ActivityComposerComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="mja-dash">
@@ -60,8 +102,12 @@ export interface ActivityKPIs {
                     </div>
 
                     <div class="mja-head__actions">
-                        <button mjButton variant="primary" size="sm" type="button" (click)="NewActivity()">
-                            <i class="fa-solid fa-plus" aria-hidden="true"></i> New Activity
+                        <button mjButton variant="primary" size="sm" type="button" (click)="ToggleQuickComposer()">
+                            <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                            {{ ShowQuickComposer ? 'Hide Quick Log' : 'Quick Log' }}
+                        </button>
+                        <button mjButton variant="outline" size="sm" type="button" (click)="NewActivity()">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> Full Form
                         </button>
                     </div>
                 </div>
@@ -95,7 +141,7 @@ export interface ActivityKPIs {
                                 class="mja-chip"
                                 [class.mja-chip--active]="ActiveTypeFilter === chip.id"
                                 (click)="SetTypeFilter(chip.id)">
-                                <i [class]="chip.icon"></i> {{ chip.label }}
+                                <i [class]="chip.icon" aria-hidden="true"></i> {{ chip.label }}
                             </button>
                         }
                     </div>
@@ -116,16 +162,22 @@ export interface ActivityKPIs {
                 </div>
             </header>
 
+            <!-- Frictionless <2s Quick-Capture Activity Composer (defaults ArtifactID = null) -->
+            @if (ShowQuickComposer) {
+                <bizapps-activity-composer
+                    (ActivityCreated)="OnQuickActivityCreated($event)"
+                    (Cancelled)="SetQuickComposerOpen(false)" />
+            }
+
             <!-- Activity Stream -->
             <main class="mja-main">
                 @if (IsLoading) {
                     <div class="mja-loading">
-                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--mj-brand-primary);"></i>
-                        <span>Loading activity timeline…</span>
+                        <mj-loading text="Loading activity timeline…" size="medium"></mj-loading>
                     </div>
                 } @else if (FilteredActivities.length === 0) {
                     <div class="mja-empty">
-                        <i class="fa-solid fa-bolt-slash"></i>
+                        <i class="fa-solid fa-bolt-slash" aria-hidden="true"></i>
                         <h3>No activities found</h3>
                         <p>No logged communications match the selected filters.</p>
                     </div>
@@ -134,7 +186,7 @@ export interface ActivityKPIs {
                         @for (act of FilteredActivities; track act.ID) {
                             <div class="mja-item" (click)="SelectActivity(act)" [class.mja-item--selected]="IsSelected(act)">
                                 <div class="mja-item__icon" [attr.data-dir]="act.Direction">
-                                    <i [class]="getTypeIcon(act.ActivityType)"></i>
+                                    <i [class]="getTypeIcon(act.ActivityType)" aria-hidden="true"></i>
                                 </div>
                                 <div class="mja-item__body">
                                     <div class="mja-item__header">
@@ -147,26 +199,31 @@ export interface ActivityKPIs {
                                             @if (act.Outcome) {
                                                 <span class="mja-pill mja-pill--outcome">{{ act.Outcome }}</span>
                                             }
+                                            @if (act.ArtifactID) {
+                                                <bizapps-activity-artifact-badge
+                                                    [Badge]="GetArtifactBadge(act)"
+                                                    (OpenDoc)="OnOpenLinkedDoc($event)" />
+                                            }
                                         </div>
                                         <span class="mja-item__time">{{ act.StartedAt | date:'mediumDate' }} {{ act.StartedAt | date:'shortTime' }}</span>
                                     </div>
                                     @if (act.Description) {
-                                        <p class="mja-item__desc">{{ act.Description }}</p>
+                                        <p class="mja-item__desc">{{ FormatCardExcerpt(act.Description) }}</p>
                                     }
                                     <div class="mja-item__footer">
                                         @if (act.Location) {
-                                            <span class="mja-item__tag"><i class="fa-solid fa-location-dot"></i> {{ act.Location }}</span>
+                                            <span class="mja-item__tag"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ act.Location }}</span>
                                         }
                                         @if (act.Source && act.Source !== 'Manual') {
-                                            <span class="mja-item__tag"><i class="fa-solid fa-cloud-arrow-down"></i> {{ act.SourceSystem || act.Source }}</span>
+                                            <span class="mja-item__tag"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> {{ act.SourceSystem || act.Source }}</span>
                                         }
                                         @if (act.LoggedByUser) {
-                                            <span class="mja-item__tag"><i class="fa-solid fa-user-pen"></i> {{ act.LoggedByUser }}</span>
+                                            <span class="mja-item__tag"><i class="fa-solid fa-user-pen" aria-hidden="true"></i> {{ act.LoggedByUser }}</span>
                                         }
                                     </div>
                                 </div>
                                 <button type="button" class="mja-item__open-btn" (click)="OpenFullRecord(act.ID); $event.stopPropagation()" title="Open Full Record">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
                                 </button>
                             </div>
                         }
@@ -177,18 +234,18 @@ export interface ActivityKPIs {
             <!-- Slide-in Detail Drawer -->
             @if (SelectedActivity) {
                 <div class="mja-drawer-backdrop" (click)="CloseDrawer()"></div>
-                <aside class="mja-drawer">
+                <aside class="mja-drawer" aria-label="Activity Details">
                     <div class="mja-drawer__head">
                         <div class="mja-drawer__type">
-                            <i [class]="getTypeIcon(SelectedActivity.ActivityType)"></i>
+                            <i [class]="getTypeIcon(SelectedActivity.ActivityType)" aria-hidden="true"></i>
                             <span>{{ SelectedActivity.ActivityType || 'Activity' }}</span>
                         </div>
                         <div class="mja-drawer__actions">
                             <button mjButton variant="primary" size="sm" type="button" (click)="OpenFullRecord(SelectedActivity.ID)">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Record
+                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Open Record
                             </button>
-                            <button type="button" class="mja-drawer__close" (click)="CloseDrawer()">
-                                <i class="fa-solid fa-xmark"></i>
+                            <button type="button" class="mja-drawer__close" aria-label="Close detail drawer" (click)="CloseDrawer()">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
@@ -217,17 +274,80 @@ export interface ActivityKPIs {
                             }
                         </div>
 
+                        <!-- Optional Linked MJ Doc Section -->
+                        <div class="mja-drawer__section">
+                            <label class="mja-drawer__section-label">Linked MJ Doc (Optional)</label>
+                            @if (IsMutatingArtifact) {
+                                <mj-loading text="Updating linked MJ Doc…" size="small"></mj-loading>
+                            } @else if (SelectedActivity.ArtifactID) {
+                                <div class="mja-drawer__doc-row">
+                                    <bizapps-activity-artifact-badge
+                                        [Badge]="GetArtifactBadge(SelectedActivity)"
+                                        [AllowUnlink]="true"
+                                        (OpenDoc)="OnOpenLinkedDoc($event)"
+                                        (UnlinkDoc)="UnlinkSelectedActivityDoc()" />
+                                </div>
+                            } @else {
+                                <div class="mja-drawer__doc-actions">
+                                    <button
+                                        type="button"
+                                        class="mja-doc-action-btn"
+                                        (click)="ToggleDrawerLinkPicker()">
+                                        <i class="fa-solid fa-link" aria-hidden="true"></i> Link Existing MJ Doc
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="mja-doc-action-btn mja-doc-action-btn--primary"
+                                        (click)="ExpandSelectedActivityToDoc()">
+                                        <i class="fa-solid fa-file-circle-plus" aria-hidden="true"></i> Expand to MJ Doc
+                                    </button>
+                                </div>
+                            }
+
+                            @if (ShowDrawerLinkPicker) {
+                                <div class="mja-drawer__picker">
+                                    <input
+                                        class="mj-input mja-drawer__picker-input"
+                                        type="search"
+                                        placeholder="Search existing MJ Docs…"
+                                        [(ngModel)]="DrawerArtifactSearch"
+                                        (ngModelChange)="SearchDrawerArtifacts($event)" />
+                                    @if (IsSearchingDrawerArtifacts) {
+                                        <mj-loading text="Searching…" size="small"></mj-loading>
+                                    } @else if (DrawerArtifactOptions.length === 0) {
+                                        <p class="mja-drawer__picker-empty">No matching MJ Docs found.</p>
+                                    } @else {
+                                        <div class="mja-drawer__picker-list">
+                                            @for (doc of DrawerArtifactOptions; track doc.ID) {
+                                                <button
+                                                    type="button"
+                                                    class="mja-drawer__picker-item"
+                                                    (click)="LinkSelectedActivityToDoc(doc)">
+                                                    <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+                                                    <span>{{ doc.Name }}</span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (DrawerArtifactError) {
+                                <div class="mja-drawer__error" role="alert">{{ DrawerArtifactError }}</div>
+                            }
+                        </div>
+
                         @if (SelectedActivity.Description) {
                             <div class="mja-drawer__section">
                                 <label class="mja-drawer__section-label">Notes &amp; Details</label>
-                                <div class="mja-drawer__notes">{{ SelectedActivity.Description }}</div>
+                                <div class="mja-drawer__notes">{{ FormatCardExcerpt(SelectedActivity.Description, 2000) }}</div>
                             </div>
                         }
 
                         @if (SelectedActivity.Location) {
                             <div class="mja-drawer__section">
                                 <label class="mja-drawer__section-label">Location</label>
-                                <div><i class="fa-solid fa-location-dot"></i> {{ SelectedActivity.Location }}</div>
+                                <div><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ SelectedActivity.Location }}</div>
                             </div>
                         }
                     </div>
@@ -265,6 +385,13 @@ export interface ActivityKPIs {
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .mja-head__actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
@@ -582,20 +709,119 @@ export interface ActivityKPIs {
             color: var(--mj-text-secondary);
             white-space: pre-wrap;
         }
+
+        .mja-drawer__doc-row,
+        .mja-drawer__doc-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mja-doc-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: var(--mj-radius-sm, 6px);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
+            color: var(--mj-text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+        }
+
+        .mja-doc-action-btn:hover {
+            border-color: var(--mj-brand-primary);
+            color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
+        }
+
+        .mja-doc-action-btn--primary {
+            background: var(--mj-status-info-bg);
+            color: var(--mj-status-info-text);
+            border-color: var(--mj-status-info-border, var(--mj-border-default));
+        }
+
+        .mja-drawer__picker {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            border-radius: var(--mj-radius-sm, 6px);
+            background: var(--mj-bg-surface-sunken);
+            border: 1px solid var(--mj-border-default);
+        }
+
+        .mja-drawer__picker-input {
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+
+        .mja-drawer__picker-empty {
+            margin: 0;
+            font-size: 12px;
+            color: var(--mj-text-muted);
+        }
+
+        .mja-drawer__picker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .mja-drawer__picker-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: var(--mj-radius-sm, 6px);
+            border: 1px solid var(--mj-border-default);
+            background: var(--mj-bg-surface);
+            color: var(--mj-text-primary);
+            font-size: 12px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .mja-drawer__picker-item:hover {
+            border-color: var(--mj-brand-primary);
+            background: var(--mj-bg-surface-hover);
+        }
+
+        .mja-drawer__error {
+            padding: 8px 10px;
+            border-radius: var(--mj-radius-sm, 6px);
+            background: var(--mj-status-error-bg);
+            color: var(--mj-status-error-text);
+            font-size: 12px;
+        }
     `]
 })
 export class CommonActivitiesPageComponent implements OnInit {
-    private cdr = inject(ChangeDetectorRef);
-    private readonly limits = ResolveCommonAngularLimits(
-        inject(COMMON_ANGULAR_LIMITS_CONFIG, { optional: true }),
-    );
+    @Input() public Provider?: IMetadataProvider;
+    private readonly limits;
 
     public Activities: ActivityDashboardRow[] = [];
+    public HydratedArtifacts = new Map<string, ActivityArtifactSummary>();
+    public ArtifactsHydrated = false;
     public IsLoading = false;
     public SearchQuery = '';
     public ActiveTypeFilter = 'all';
     public PeriodFilter: DashboardPeriodState = { Period: 'alltime', CustomStart: null, CustomEnd: null };
     public SelectedActivity: ActivityDashboardRow | null = null;
+    public ShowQuickComposer = false;
+    public ShowDrawerLinkPicker = false;
+    public DrawerArtifactSearch = '';
+    public DrawerArtifactOptions: ActivityArtifactSummary[] = [];
+    public IsSearchingDrawerArtifacts = false;
+    public IsMutatingArtifact = false;
+    public DrawerArtifactError: string | null = null;
 
     public KPIs: ActivityKPIs = {
         TotalThisWeek: 0,
@@ -612,16 +838,27 @@ export class CommonActivitiesPageComponent implements OnInit {
         { id: 'note', label: 'Notes', icon: 'fa-solid fa-note-sticky' },
     ];
 
+    constructor(
+        @Optional() private readonly cdr?: ChangeDetectorRef,
+        @Optional() @Inject(COMMON_ANGULAR_LIMITS_CONFIG) limitsOverride?: CommonAngularLimitsOverride | null,
+        @Optional() private readonly navService?: NavigationService,
+    ) {
+        this.limits = ResolveCommonAngularLimits(limitsOverride);
+    }
+
     ngOnInit(): void {
-        this.LoadActivities();
+        this.restoreComposerPreference();
+        void this.LoadActivities();
     }
 
     public async LoadActivities(): Promise<void> {
         this.IsLoading = true;
-        this.cdr.markForCheck();
+        this.ArtifactsHydrated = false;
+        this.cdr?.markForCheck();
 
         try {
-            const rv = RunView.FromMetadataProvider(Metadata.Provider);
+            const provider = this.activeProvider;
+            const rv = RunView.FromMetadataProvider(provider);
             const res = await rv.RunView<ActivityDashboardRow>({
                 EntityName: COMMON_ENTITIES.Activity,
                 Fields: [
@@ -639,22 +876,253 @@ export class CommonActivitiesPageComponent implements OnInit {
                     'Source',
                     'SourceSystem',
                     'LoggedByUser',
+                    'ArtifactID',
+                    'Artifact',
                     '__mj_CreatedAt',
                 ],
                 OrderBy: 'StartedAt DESC',
                 MaxRows: this.limits.Tuning.ActivitiesDashboardMaxRows,
                 ResultType: 'simple',
+                CacheLocal: false,
             });
 
             if (res.Success && res.Results) {
                 this.Activities = res.Results;
                 this.computeKPIs(this.Activities);
+                await this.HydrateLinkedArtifacts(this.Activities);
             }
         } catch {
-            // ignore
+            // Degrade gracefully without throwing console errors.
         } finally {
             this.IsLoading = false;
-            this.cdr.markForCheck();
+            this.cdr?.markForCheck();
+        }
+    }
+
+    /**
+     * Hydrates linked `MJ: Artifacts` summaries in a single batched `RunView` call.
+     * Short-circuits completely with zero `RunView` calls when zero visible rows have a non-null `ArtifactID`.
+     */
+    public async HydrateLinkedArtifacts(rows: ReadonlyArray<ActivityDashboardRow>): Promise<void> {
+        this.HydratedArtifacts = await LoadActivityArtifactsByIDs(
+            rows.map((r) => r.ArtifactID),
+            this.activeProvider,
+        );
+        this.ArtifactsHydrated = true;
+        this.cdr?.markForCheck();
+    }
+
+    public GetArtifactBadge(act: ActivityDashboardRow): ActivityArtifactBadgeState {
+        return ResolveActivityArtifactBadge(act.ArtifactID, this.HydratedArtifacts, {
+            hydrationComplete: this.ArtifactsHydrated,
+            virtualName: act.Artifact ?? null,
+        });
+    }
+
+    public FormatCardExcerpt(raw: string | null | undefined, maxLength = 220): string {
+        return StripActivityMarkdownExcerpt(raw, maxLength);
+    }
+
+    public OnOpenLinkedDoc(event: { ArtifactID: string; Name: string }): void {
+        OpenLinkedArtifact(event.ArtifactID, event.Name, this.navService ?? null);
+    }
+
+    public ToggleQuickComposer(): void {
+        this.SetQuickComposerOpen(!this.ShowQuickComposer);
+    }
+
+    public SetQuickComposerOpen(open: boolean): void {
+        this.ShowQuickComposer = open;
+        try {
+            UserInfoEngine.Instance.SetSettingDebounced(COMPOSER_OPEN_SETTING_KEY, JSON.stringify(open));
+        } catch {
+            // UserInfoEngine may not be configured in isolated unit tests.
+        }
+        this.cdr?.markForCheck();
+    }
+
+    public OnQuickActivityCreated(event: ActivityComposerSavedEvent): void {
+        const entity = event.Activity;
+        const row: ActivityDashboardRow = {
+            ID: entity.ID,
+            Title: entity.Title,
+            Description: entity.Description,
+            StartedAt: entity.StartedAt instanceof Date ? entity.StartedAt.toISOString() : String(entity.StartedAt ?? new Date().toISOString()),
+            EndedAt: entity.EndedAt instanceof Date ? entity.EndedAt.toISOString() : null,
+            Direction: entity.Direction,
+            Status: entity.Status,
+            Outcome: entity.Outcome,
+            Location: entity.Location,
+            ActivityTypeID: entity.ActivityTypeID,
+            ActivityType: event.ActivityTypeLabel,
+            Source: entity.Source,
+            SourceSystem: entity.SourceSystem,
+            LoggedByUser: entity.LoggedByUser,
+            ArtifactID: entity.ArtifactID,
+            Artifact: event.LinkedArtifact?.Name ?? entity.Artifact ?? null,
+            __mj_CreatedAt: new Date().toISOString(),
+        };
+
+        if (event.LinkedArtifact && entity.ArtifactID) {
+            this.HydratedArtifacts.set(NormalizeUUID(entity.ArtifactID), event.LinkedArtifact);
+        }
+
+        this.Activities = [row, ...this.Activities];
+        this.computeKPIs(this.Activities);
+        this.cdr?.markForCheck();
+    }
+
+    public async ToggleDrawerLinkPicker(): Promise<void> {
+        this.ShowDrawerLinkPicker = !this.ShowDrawerLinkPicker;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
+        if (this.ShowDrawerLinkPicker) {
+            await this.SearchDrawerArtifacts(this.DrawerArtifactSearch);
+        }
+    }
+
+    public async SearchDrawerArtifacts(term: string): Promise<void> {
+        this.DrawerArtifactSearch = term;
+        this.IsSearchingDrawerArtifacts = true;
+        this.cdr?.markForCheck();
+        try {
+            this.DrawerArtifactOptions = await SearchLinkableArtifacts(term, this.activeProvider);
+        } finally {
+            this.IsSearchingDrawerArtifacts = false;
+            this.cdr?.markForCheck();
+        }
+    }
+
+    public async LinkSelectedActivityToDoc(doc: ActivityArtifactSummary): Promise<boolean> {
+        if (!this.SelectedActivity || this.IsMutatingArtifact) {
+            return false;
+        }
+        this.IsMutatingArtifact = true;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
+
+        try {
+            const entity = await this.loadActivityEntity(this.SelectedActivity.ID);
+            if (!entity) {
+                this.DrawerArtifactError = 'Could not load activity record to link MJ Doc.';
+                return false;
+            }
+            const res = await LinkExistingArtifactToActivity(entity, doc.ID, {
+                saveNow: true,
+                artifactName: doc.Name,
+            });
+            if (!res.Success) {
+                this.DrawerArtifactError = res.ErrorMessage ?? 'Failed to link MJ Doc.';
+                return false;
+            }
+            this.HydratedArtifacts.set(NormalizeUUID(doc.ID), doc);
+            this.applyRowArtifactUpdate(this.SelectedActivity.ID, doc.ID, doc.Name);
+            this.ShowDrawerLinkPicker = false;
+            return true;
+        } finally {
+            this.IsMutatingArtifact = false;
+            this.cdr?.markForCheck();
+        }
+    }
+
+    public async ExpandSelectedActivityToDoc(): Promise<boolean> {
+        if (!this.SelectedActivity || this.IsMutatingArtifact) {
+            return false;
+        }
+        this.IsMutatingArtifact = true;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
+
+        try {
+            const entity = await this.loadActivityEntity(this.SelectedActivity.ID);
+            if (!entity) {
+                this.DrawerArtifactError = 'Could not load activity record to expand.';
+                return false;
+            }
+            const res = await ExpandActivityToArtifact(entity, { Provider: this.activeProvider });
+            if (!res.Success || !res.ArtifactID) {
+                this.DrawerArtifactError = res.ErrorMessage ?? 'Failed to expand activity into an MJ Doc.';
+                return false;
+            }
+            const summary: ActivityArtifactSummary = {
+                ID: res.ArtifactID,
+                Name: res.ArtifactName ?? entity.Title,
+                Type: 'Markdown Document',
+            };
+            this.HydratedArtifacts.set(NormalizeUUID(res.ArtifactID), summary);
+            this.applyRowArtifactUpdate(this.SelectedActivity.ID, res.ArtifactID, summary.Name);
+            this.ShowDrawerLinkPicker = false;
+            return true;
+        } finally {
+            this.IsMutatingArtifact = false;
+            this.cdr?.markForCheck();
+        }
+    }
+
+    public async UnlinkSelectedActivityDoc(): Promise<boolean> {
+        if (!this.SelectedActivity || this.IsMutatingArtifact) {
+            return false;
+        }
+        this.IsMutatingArtifact = true;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
+
+        try {
+            const entity = await this.loadActivityEntity(this.SelectedActivity.ID);
+            if (!entity) {
+                this.DrawerArtifactError = 'Could not load activity record to unlink.';
+                return false;
+            }
+            const res = await UnlinkArtifactFromActivity(entity, { saveNow: true });
+            if (!res.Success) {
+                this.DrawerArtifactError = res.ErrorMessage ?? 'Failed to unlink MJ Doc.';
+                return false;
+            }
+            this.applyRowArtifactUpdate(this.SelectedActivity.ID, null, null);
+            return true;
+        } finally {
+            this.IsMutatingArtifact = false;
+            this.cdr?.markForCheck();
+        }
+    }
+
+    private get activeProvider(): IMetadataProvider {
+        return this.Provider ?? Metadata.Provider;
+    }
+
+    private restoreComposerPreference(): void {
+        try {
+            const raw = UserInfoEngine.Instance.GetSetting(COMPOSER_OPEN_SETTING_KEY);
+            if (raw) {
+                this.ShowQuickComposer = JSON.parse(raw) === true;
+            }
+        } catch {
+            this.ShowQuickComposer = false;
+        }
+    }
+
+    private async loadActivityEntity(activityID: string): Promise<mjBizAppsCommonActivityEntity | null> {
+        const provider = this.activeProvider;
+        const entity = await provider.GetEntityObject<mjBizAppsCommonActivityEntity>(
+            COMMON_ENTITIES.Activity,
+            provider.CurrentUser,
+        );
+        const loaded = await entity.Load(activityID);
+        return loaded ? entity : null;
+    }
+
+    private applyRowArtifactUpdate(activityID: string, artifactID: string | null, artifactName: string | null): void {
+        this.Activities = this.Activities.map((row) =>
+            UUIDsEqual(row.ID, activityID)
+                ? { ...row, ArtifactID: artifactID, Artifact: artifactName }
+                : row,
+        );
+        if (this.SelectedActivity && UUIDsEqual(this.SelectedActivity.ID, activityID)) {
+            this.SelectedActivity = {
+                ...this.SelectedActivity,
+                ArtifactID: artifactID,
+                Artifact: artifactName,
+            };
         }
     }
 
@@ -711,16 +1179,16 @@ export class CommonActivitiesPageComponent implements OnInit {
 
     public SetTypeFilter(typeId: string): void {
         this.ActiveTypeFilter = typeId;
-        this.cdr.markForCheck();
+        this.cdr?.markForCheck();
     }
 
     public OnPeriodFilterChanged(period: DashboardPeriodState): void {
         this.PeriodFilter = period;
-        this.cdr.markForCheck();
+        this.cdr?.markForCheck();
     }
 
     public OnSearchChanged(): void {
-        this.cdr.markForCheck();
+        this.cdr?.markForCheck();
     }
 
     /** Whether this row is the open one. IDs compare case-insensitively. */
@@ -730,12 +1198,16 @@ export class CommonActivitiesPageComponent implements OnInit {
 
     public SelectActivity(act: ActivityDashboardRow): void {
         this.SelectedActivity = act;
-        this.cdr.markForCheck();
+        this.ShowDrawerLinkPicker = false;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
     }
 
     public CloseDrawer(): void {
         this.SelectedActivity = null;
-        this.cdr.markForCheck();
+        this.ShowDrawerLinkPicker = false;
+        this.DrawerArtifactError = null;
+        this.cdr?.markForCheck();
     }
 
     public OpenFullRecord(id: string): void {

@@ -36,11 +36,13 @@ export class AppModule {}
 
 ## Explorer Directory
 
-`LoadBizAppsCommonClient()` also registers three `BaseResourceComponent` drivers so MJ Explorer can mount the Common application:
+`LoadBizAppsCommonClient()` registers five `BaseResourceComponent` drivers (each wrapped in `<mj-page-layout>`, using `NavigationService`, `ChangeDetectionStrategy.OnPush`, and `queueMicrotask`-deferred `NotifyLoadStarted()`/`NotifyLoadComplete()`) alongside live `@RegisterClass(BaseFormComponent, ...)` forms for all 30 Common entities:
 
 - `CommonDirectoryResource` — operational dashboard (counts, gap queues, recent people)
 - `CommonPeopleResource` — searchable people list
 - `CommonOrganizationsResource` — searchable organization list
+- `CommonRelationshipGraphResource` — relationship graph view
+- `CommonActivitiesResource` — hybrid Activity dashboard (`<2s` quick capture with `ArtifactID = null`, batched linked MJ Doc badges, and opt-in link/expand/unlink drawer)
 
 See the root README and `docs/angular-components.md` for the information architecture.
 
@@ -94,6 +96,14 @@ Form Components (NgModule-declared, @RegisterClass)
 | Component | Selector | Description |
 |---|---|---|
 | `DashboardFilterBarComponent` | `<bizapps-dashboard-filter-bar>` | Period dropdown (this/last/next quarter, this/last year, all time, custom range) and a multi-select company picker. Holds no data: the app supplies the companies, the selection, the period and the fiscal basis, and applies what the bar emits to its own reads. App-specific filters are projected between the tags |
+
+### Atomic Widgets — Hybrid Activity & Linked MJ Docs
+
+| Component | Selector | Description |
+|---|---|---|
+| `ActivityComposerComponent` | `<bizapps-activity-composer>` | Standalone `OnPush` `<2s` quick-capture composer for Note, Call, Meeting, and Email activities preserving `ArtifactID = null` by default (zero auto-created Artifacts) with a collapsed opt-in MJ Doc picker |
+| `ActivityArtifactBadgeComponent` | `<bizapps-activity-artifact-badge>` | Standalone `OnPush` clickable MJ Doc badge hydrated via batched `LoadActivityArtifactsByIDs` (`RunViews`, `ResultType: 'simple'`, `CacheLocal: false`, zero-call short-circuit) with graceful unavailable fallback state and `NavigationService` navigation |
+| `ActivityArtifactSectionComponent` | `<bizapps-activity-artifact-section>` | Standalone `OnPush` opt-in MJ Doc link, atomic expand (`TransactionGroup` / compensating rollback), and safe unlink (preserving `Description`/`Details`) section embedded in Activity forms and drawers |
 
 ### Composed Detail Views
 
