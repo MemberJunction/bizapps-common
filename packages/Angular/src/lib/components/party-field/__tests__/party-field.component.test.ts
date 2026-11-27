@@ -257,6 +257,53 @@ describe('PartyFieldComponent', () => {
         expect(c.Options).toEqual([{ ID: 'o-old', Name: 'Old Co', Detail: null }]);
     });
 
+    // bizapps-common#387: ClearSearch's '' waits out the debounce before switchMap drops the search in flight,
+    // so a search that settled in that window used to repopulate the list or log its failure.
+    it('ignores results of a search that settles after ClearSearch, before the debounce passes', async () => {
+        const c = build(record('o-old', 'Old Co'));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.ClearSearch();
+        c.Calls[0].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([{ ID: 'o-old', Name: 'Old Co', Detail: null }]);
+    });
+
+    it('neither shows nor logs a search that fails after ClearSearch', async () => {
+        const c = build(record('o-old', 'Old Co'));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.ClearSearch();
+        c.Calls[0].reject(new Error('late'));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.logError).not.toHaveBeenCalled();
+        expect(c.SearchFailed).toBe(false);
+        expect(c.Options).toEqual([{ ID: 'o-old', Name: 'Old Co', Detail: null }]);
+    });
+
+    it('does not log a search that fails after the field is destroyed', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.ngOnDestroy();
+        c.Calls[0].reject(new Error('late'));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(H.logError).not.toHaveBeenCalled();
+    });
+
+    it('searches normally again after ClearSearch', async () => {
+        const c = build(record(null));
+        c.OnFilterChange('da');
+        await vi.advanceTimersByTimeAsync(250);
+        c.ClearSearch();
+        await vi.advanceTimersByTimeAsync(250);
+        c.OnFilterChange('dave');
+        await vi.advanceTimersByTimeAsync(250);
+        c.Calls[1].resolve([DAVE]);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(c.Options).toEqual([DAVE]);
+    });
+
     it('shows the resolved name in the combobox, not only in the option list', async () => {
         H.runView.mockResolvedValue({ Success: true, Results: [{ ID: 'o-new', Name: 'New Co' }] });
         const c = build(record('o-new', null));

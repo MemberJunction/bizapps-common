@@ -10,7 +10,7 @@ packages/Angular/src/lib/components/identity-header/activity-identity.component.
 packages/Angular/src/lib/components/identity-header/identity-header.css,305,720,@media (max-width: 720px),UX,NoChange,Responsive mobile layout breakpoint in pixels for identity hero header
 packages/Angular/src/lib/config/limits.config.ts,147,250,DEFAULT_COMMON_ANGULAR_LIMITS.Ux.PartySearchDebounceMs,UX,ResolvedInResolver,Typeahead search input debounce interval in milliseconds (wired to party-field.component.ts)
 packages/Angular/src/lib/config/limits.config.ts,123,20_000,DEFAULT_COMMON_ANGULAR_LIMITS.ResourceGuards.PartySearchTimeoutMs,ResourceGuard,ResolvedInResolver,Client search query timeout guard in milliseconds (wired to party-field.component.ts)
-packages/Angular/src/lib/components/party-field/party-field.component.ts,490,1,loadDisplayName RunView MaxRows,UX,NoChange,Single-record primary-key lookup cap for selected party display name
+packages/Angular/src/lib/components/party-field/party-field.component.ts,507,1,loadDisplayName RunView MaxRows,UX,NoChange,Single-record primary-key lookup cap for selected party display name
 packages/Angular/src/lib/config/limits.config.ts,149,2,DEFAULT_COMMON_ANGULAR_LIMITS.Ux.PartyLookupMinTermLength,UX,ResolvedInResolver,Minimum non-wildcard character count before querying party lookup (wired to party-lookup-term.ts)
 packages/Angular/src/lib/components/related-chips/related-links.ts,210,1,loadRecordById RunView MaxRows,UX,NoChange,Single-record primary-key lookup cap for related chip navigation
 packages/Angular/src/lib/components/relationship-graph/common-relationship-graph.component.ts,94,480,.graph-container min-height px,UX,NoChange,Graph container CSS minimum height layout bound (480px)
