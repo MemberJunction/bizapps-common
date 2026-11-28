@@ -31,12 +31,10 @@ bizapps-common/
 
 ## CRITICAL RULES - VIOLATIONS ARE UNACCEPTABLE
 
-### 1. NO COMMITS WITHOUT EXPLICIT APPROVAL
-- **NEVER run `git commit` without the user explicitly asking you to**
-- **Each commit requires ONE-TIME explicit approval** - don't assume ongoing permission
-- **NEVER ask to commit** - wait for the user to request it
-- **ONLY commit what is staged** - never modify or add to staged changes
-- **NEVER commit work-in-progress** that isn't staged by the user
+### 1. COMMIT YOUR OWN WORK ONLY
+- Commits need no approval: commit your work on a feature branch as it reaches a sound state.
+- **Commit only the files you changed.** Stage them by path, never `git add -A` or `git add .` in a shared checkout: the user may have other sessions with uncommitted work in it.
+- **Never modify, unstage or add to what someone else staged.**
 
 ### 2. NO DESTRUCTIVE GIT OPERATIONS WITHOUT EXPLICIT APPROVAL
 - **NEVER run `git checkout -- <file>`, `git restore <file>` or `git reset --hard`** without the user approving it, even in auto-approve mode. They destroy uncommitted work and cannot be undone.
@@ -102,7 +100,7 @@ There is no hand-opened `next` → `main` PR and no PR straight into a line.
 - **Nothing pushes to `main`, `next` or a line**, whether a human or a workflow. Every change reaches them through a PR; the release workflows push only `changeset-release/*`, `release-back-merge/*`, `release-changesets/*` and the `vX.Y.Z` tag.
 - **`Metadata_Sync` is release work, not PR work.** A feature PR carries only declarative JSON under `metadata/`: no `sync` block and no `*__Metadata_Sync.sql`. The build engineer generates one consolidated seed per release from a clean database: [`migrations/README.md`](migrations/README.md). `rr: metadata shipped` checks it on the release PR. The model: [Release Metadata Migrations Guide](https://github.com/MemberJunction/MJ/blob/next/guides/RELEASE_METADATA_MIGRATIONS_GUIDE.md).
 - **`mj-app.json` is checked on every PR** (`repo: guards` runs `scripts/sync-app-version.spec.mjs`): a PR that changes the `@memberjunction/core` pin must run `node scripts/sync-app-version.mjs` and commit `mj-app.json`. At release, `version:prepare` also syncs its `version` and range.
-- **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable. Changesets are written by the user, not by you.
+- **Migrations need a changeset with at least a `minor` bump** (`changes.yml`'s `migration changeset` check), and a migration that has shipped is immutable. Write the changeset yourself (`pnpm changeset`, or a file under `.changeset/`) in the PR that makes the change.
 - **Hotfixes** still go through a PR — into `next`, with a changeset, labelled for the lines that need it — and ship through each line's Version Packages PR.
 
 ---
@@ -123,7 +121,7 @@ The pins are a **floor**, not a target. `^6.2.1` means "at least 6.2.1"; develop
 - **Declared ranges.** In a published package, `@memberjunction/*` (and any other app's `@mj-biz-apps/*`) is a **peer** with a caret range and never appears in `dependencies`: the host installs one copy, and a `~6.2.N` or exact peer makes every later host install a second tree, which splits the ClassFactory. Each peer also has a `devDependencies` entry with the same caret floor. `.github/scripts/check-dependency-model.mjs` enforces this in CI; it accepts a prerelease caret such as `^6.3.0-edge.1`. Packages MJ versions separately (`@memberjunction/connector-*`, `@memberjunction/skyway-*`) keep their own ranges.
 - **Overrides (`overrides:` in `pnpm-workspace.yaml`).** `@memberjunction/core` and `@memberjunction/global` carry the same caret floor as every other MJ range, so every request in the graph resolves to one copy. Two copies of `core` split the ClassFactory: registrations land in one factory while the resolver reads the other, and nothing errors. Overrides are workspace-local and never published. Keep them here rather than under `package.json`'s `pnpm` field so there is one place to look — not because that field is ignored: pnpm 10.33 does read `pnpm.overrides` from `package.json` and applies it, with no warning (bizapps-contracts keeps its MJ overrides there and its committed lockfile shows both applied). Do not exact-pin sibling `@mj-biz-apps/*` packages here.
 - **One copy of each.** After any install at the parent, `pnpm why @memberjunction/core` must show a single version. A sibling app package that exact-pins an old MJ build brings a second copy in; fix it by raising that package's floor, not with more overrides.
-- **Raising the floor.** Do it when this repo's code or migrations start to need something newer than the current floor, and raise it to the first **published** MJ build that carries it: CI's `clean-room-gate.yml` installs MJ core at the floor of `mj-app.json`'s `mjVersionRange` and replays this repo's migrations on it, so a floor below what the code needs fails there, not on your machine. Raise every `^` floor in peers, devDependencies and both overrides; `pnpm install` at the parent; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json`; rebuild the database from migrations and regenerate; run the full test suite; the user adds a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
+- **Raising the floor.** Do it when this repo's code or migrations start to need something newer than the current floor, and raise it to the first **published** MJ build that carries it: CI's `clean-room-gate.yml` installs MJ core at the floor of `mj-app.json`'s `mjVersionRange` and replays this repo's migrations on it, so a floor below what the code needs fails there, not on your machine. Raise every `^` floor in peers, devDependencies and both overrides; `pnpm install` at the parent; confirm one copy; run `node scripts/sync-app-version.mjs` and commit `mj-app.json`; rebuild the database from migrations and regenerate; run the full test suite; add a `patch` changeset; commit the lockfile. If CI then fails on the lockfile although a clean local install works, GitHub is testing the merge with `next`: merge `next` in, run `pnpm install --no-frozen-lockfile`, and commit the lockfile.
 - **Never patch MemberJunction.** No `pnpm patch`, `patchedDependencies`, patch-package or `sed` against `@memberjunction/*` `dist/`. Fix it on MJ `next`.
 
 ### CodeGen output must be reproducible from this repo
@@ -178,7 +176,7 @@ CodeGen output lives in `packages/Entities/src/generated`, `packages/Actions/src
 
 ## Database migrations
 
-- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Plain DDL with no existence guards: Skyway runs each migration exactly once, in order, so no `IF OBJECT_ID(...) IS NULL`, `IF COL_LENGTH(...) IS NULL` or `IF NOT EXISTS` wrappers, around descriptions included. A guard turns a schema mismatch into silence and makes the PostgreSQL conversion harder. `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
+- Placeholders: `[${flyway:defaultSchema}]` for this schema, `[${mjSchema}]` for core. Migrations are not idempotent and must not try to be. Plain DDL with no existence guards: Skyway runs each migration exactly once, in order, so no `IF OBJECT_ID(...) IS NULL`, `IF COL_LENGTH(...) IS NULL` or `IF NOT EXISTS` wrappers, around descriptions included. A guard turns a schema mismatch into silence and makes the PostgreSQL conversion harder. `MS_Description` on every column, no `__mj_CreatedAt`/`__mj_UpdatedAt` columns and no foreign-key indexes (CodeGen adds both), then 50 blank lines, then the appended CodeGen output with no literal `Sequence` on `EntityField` inserts.
 - The stamp (`V<YYYYMMDDHHMM>`, Central Time) must sort after every migration on `next` at merge time; `changes.yml` rejects one that doesn't. A shipped migration is immutable.
 - T-SQL only in a feature PR. The PostgreSQL twin is release work (`docs/postgresql.md`).
 - Full rules: [`.claude/mj/migrations/CLAUDE.md`](.claude/mj/migrations/CLAUDE.md); the release-seed runbook: [`migrations/README.md`](migrations/README.md).
@@ -271,7 +269,7 @@ MemberJunction's own Claude guidance is copied into this repo by `scripts/sync-m
 | [`design-tokens.md`](.claude/rules/design-tokens.md) | `**/*.scss`, `**/*.css` | Semantic `--mj-*` tokens only, hex to token mappings, `color-mix()` |
 | [`testing.md`](.claude/rules/testing.md) | `**/*.test.ts`, `**/__tests__/**` | Vitest conventions, structure, fixing test drift |
 
-MJ's `changesets.md` rule is deliberately not copied: here changesets are user-authored and `changes.yml` enforces `minor` for migrations.
+MJ's `changesets.md` rule is deliberately not copied: this repo's bump rules differ, and `changes.yml` enforces `minor` for migrations.
 
 ### Skills (`.claude/skills/`), load only when invoked
 
