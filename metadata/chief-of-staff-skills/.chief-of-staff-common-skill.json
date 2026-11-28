@@ -1,0 +1,55 @@
+[
+  {
+    "fields": {
+      "Name": "Common Directory & Activity",
+      "Description": "Look up people, organizations, relationships, contact methods, consent status, and unified timeline activities, discover cross-app customer/party signals, and log manual activities. Installed by the BizApps Common app.",
+      "Instructions": "@file:templates/common-chief-of-staff.skill.md",
+      "Status": "Active",
+      "ActivationMode": "Auto",
+      "Category": "Operations",
+      "IconClass": "fa-solid fa-address-book",
+      "CreatedByUserID": "@lookup:MJ: Users.Name=System"
+    },
+    "relatedEntities": {
+      "MJ: AI Agent Skills": [
+        {
+          "fields": {
+            "AgentID": "@lookup:MJ: AI Agents.Name=Chief of Staff",
+            "SkillID": "@parent:ID",
+            "Status": "Active"
+          },
+          "primaryKey": {
+            "ID": "F3321EF5-59B8-4030-8377-97127D093855"
+          }
+        }
+      ],
+      "MJ: AI Skill Actions": [
+        {
+          "fields": {
+            "SkillID": "@parent:ID",
+            "ActionID": "@lookup:MJ: Actions.Name=Common.GetPartySignals",
+            "Role": "Tool",
+            "ExposeToModel": true
+          },
+          "primaryKey": {
+            "ID": "591ED6A1-BF78-4AD7-BA65-CABDA81F008B"
+          }
+        },
+        {
+          "fields": {
+            "SkillID": "@parent:ID",
+            "ActionID": "@lookup:MJ: Actions.Name=Common.LogActivity",
+            "Role": "Tool",
+            "ExposeToModel": true
+          },
+          "primaryKey": {
+            "ID": "5D3C9AA3-B842-4FD4-A344-CEB93C6051C2"
+          }
+        }
+      ]
+    },
+    "primaryKey": {
+      "ID": "189FE93A-7576-43DB-B18D-72FE486EDECF"
+    }
+  }
+]
