@@ -12,6 +12,7 @@ export type {
 export * from './business-day.js';
 export * from './common-engine.js';
 export * from './party-signals.js';
+export * from './offboarding-holdings.js';
 export * from './business-time-zone-engine.js';
 export * from './external-field-limits.js';
 export * from './person-user-link.js';

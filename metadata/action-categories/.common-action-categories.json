@@ -23,5 +23,25 @@
       "lastModified": "2026-09-02T04:04:08.142Z",
       "checksum": "1063dc7abf4448d3a9222a3a48e498cb50c9213d1a5bb48fcdfe680f4af05b94"
     }
+  },
+  {
+    "_comments": [
+      "THE OFFBOARDING HOLDINGS REGISTRY. Every app that holds a person's open responsibility (deals,",
+      "accounts, task and approval assignments, approver settings) ships its offboarding actions in this",
+      "category, and the Offboarding screen and the deactivation warning run every active action here.",
+      "Apps reference it with \"CategoryID\": \"@lookup:MJ: Action Categories.Name=Offboarding Holdings\",",
+      "so this row must be released before any app's actions. The contract (parameter names, the",
+      "Holdings and Skipped JSON shapes) is documented in packages/Entities/src/offboarding-holdings.ts.",
+      "",
+      "primaryKey from uuidgen so a re-push updates this row rather than adding a second one."
+    ],
+    "fields": {
+      "Name": "Offboarding Holdings",
+      "Description": "Actions that list and reassign what a departed user or employee still holds. Each app ships '<App>: List Offboarding Holdings' and, where it can move items, '<App>: Reassign Offboarding Holdings'. Common's Offboarding screen and its deactivation warning run every active action in this category.",
+      "Status": "Active"
+    },
+    "primaryKey": {
+      "ID": "945D255B-2869-4DD7-9071-A4A5ACE8817E"
+    }
   }
 ]
